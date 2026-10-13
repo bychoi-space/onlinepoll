@@ -11,8 +11,8 @@ import { sleep } from '../utils/delays.js';
 
 const MARKETBZ_LOGIN_URL = 'https://marketbz.com/loginPage?redirectUrl=%2Findex';
 const MARKETBZ_CREDENTIALS = {
-  username: process.env.MARKETBZ_USER || '',
-  password: process.env.MARKETBZ_PASSWORD || ''
+  username: process.env.MARKETBZ_USER || 'hyuk112@naver.com',
+  password: process.env.MARKETBZ_PASSWORD || 'mini112!'
 };
 
 /**

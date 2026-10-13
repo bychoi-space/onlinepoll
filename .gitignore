@@ -2,10 +2,8 @@
 node_modules/
 package-lock.json
 
-# Environment Variables & Secrets
-.env
-.env.*
-!.env.example
+# Environment Variables
+# .env (included as requested)
 
 # Runtime Reports & Screenshots
 reports/*.json

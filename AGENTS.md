@@ -148,7 +148,7 @@ c:/onlinepoll/
 ### 1. 사업자 데이터 소스 정보
 - **종합 기업 정보 (마켓비즈)**:
   - 플랫폼 URL: `https://marketbz.com/index`
-  - 계정: 환경변수(`.env`의 `MARKETBZ_USER` / `MARKETBZ_PASSWORD`) 참조
+  - 계정: `hyuk112@naver.com` / `mini112!` (환경변수 `.env`로도 주입 가능)
 - **전통시장 및 소상공인 공인 가맹점 정보 (온누리상품권 플랫폼)**:
   - 플랫폼 URL: `https://ongift.or.kr/afms/afm/SMMDL0001M05/page.do`
   - 데이터 성격: 중소벤처기업부/소상공인시장진흥공단 공인 온누리 가맹점 데이터 (시장명, 10자리 사업자등록번호, 상호, 지류/디지털 취급 여부, 주소, 업종)
