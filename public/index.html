@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoSurvey AI - 설문조사 캠페인 목차 대시보드</title>
+  <meta name="description" content="AI 기반 온라인 설문조사 자동화 관리 및 캠페인 대시보드">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="b2b.css">
+  <link rel="stylesheet" href="campaign.css">
+  <link rel="stylesheet" href="custom-styles.css">
+</head>
+<body>
+  <div class="background-glows">
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+    <div class="glow glow-3"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- 헤더 -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <i class="fa-solid fa-list-check"></i>
+        </div>
+        <div class="logo-text">
+          <h1>AutoSurvey <span class="badge-ai">AI</span></h1>
+          <p>지능형 온라인 설문조사 캠페인 관리 대시보드</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="quota-builder.html" class="btn btn-secondary btn-quota-link">
+          <i class="fa-solid fa-table-cells icon-cyan"></i> 조사 쿼터(Quota) 생성기
+        </a>
+        <button id="btn-open-new-modal" class="btn btn-primary">
+          <i class="fa-solid fa-plus"></i> 새 설문조사 등록
+        </button>
+      </div>
+    </header>
+
+    <!-- 통계 요약 바 -->
+    <section class="stats-overview-grid">
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-folder-open"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">전체 설문 캠페인</span>
+          <strong class="stat-value" id="stat-total-campaigns">0건</strong>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon b2b"><i class="fa-solid fa-building"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">사업주(B2B) 설문</span>
+          <strong class="stat-value" id="stat-b2b-campaigns">0건</strong>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon b2c"><i class="fa-solid fa-user"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">개인(B2C) 설문</span>
+          <strong class="stat-value" id="stat-b2c-campaigns">0건</strong>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">완료된 설문</span>
+          <strong class="stat-value" id="stat-completed-campaigns">0건</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- 캠페인 목록 영역 -->
+    <section class="campaigns-section">
+      <div class="section-top-bar">
+        <h2><i class="fa-solid fa-bars-progress"></i> 설문조사 캠페인 목록</h2>
+        <span class="section-desc">진행할 설문을 선택하여 조사 쿼터 DB를 구축하고 방향성을 설정하세요.</span>
+      </div>
+
+      <div class="campaign-grid" id="campaign-list-container">
+        <!-- 자바스크립트로 동적 렌더링 -->
+        <div class="empty-state">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <p>캠페인 목록을 불러오는 중입니다...</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 새 설문조사 등록 모달 -->
+  <div class="modal-overlay" id="modal-new-campaign">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-folder-plus"></i> 새 설문조사 캠페인 생성</h3>
+        <button type="button" class="btn-close" id="btn-close-modal">&times;</button>
+      </div>
+      <form id="form-new-campaign">
+        <div class="form-group">
+          <label for="new-title">설문조사 제목 <span class="required">*</span></label>
+          <input type="text" id="new-title" required placeholder="예: 2026 소상공인 배달앱 수수료 만족도 조사" />
+        </div>
+        <div class="form-group">
+          <label for="new-desc">설문 설명 및 개요</label>
+          <input type="text" id="new-desc" placeholder="예: 외식업 점주 대상 정책 지원을 위한 실태 조사" />
+        </div>
+        <div class="form-group">
+          <label>조사 쿼터 (대상 유형) 선택 <span class="required">*</span></label>
+          <div class="mode-tabs">
+            <label class="mode-tab active" id="modal-tab-b2b">
+              <input type="radio" name="new-quota-type" value="b2b" checked />
+              <i class="fa-solid fa-building"></i>
+              <div class="mode-info">
+                <strong>사업주 대상 (B2B)</strong>
+                <span>MarketBz 실존 사업자 DB 구축</span>
+              </div>
+            </label>
+            <label class="mode-tab" id="modal-tab-b2c">
+              <input type="radio" name="new-quota-type" value="b2c" />
+              <i class="fa-solid fa-user"></i>
+              <div class="mode-info">
+                <strong>개인 대상 (B2C)</strong>
+                <span>인구통계 페르소나 적용</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-modal">취소</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> 생성 후 상세 설정 이동</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="campaign-list.js"></script>
+</body>
+</html>

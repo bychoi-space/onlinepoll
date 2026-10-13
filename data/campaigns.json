@@ -1,0 +1,381 @@
+[
+  {
+    "id": "camp_1791811373928",
+    "title": "빈 설문 캠페인 (쿼터 장착 테스트)",
+    "description": "",
+    "quotaType": "b2b",
+    "status": "ready",
+    "createdAt": "2026-10-12T13:22:53.928Z",
+    "updatedAt": "2026-10-12T13:22:53.946Z",
+    "quotaConfig": {
+      "quotaSource": "FILE_IMPORT",
+      "quotaFileName": "quota_onnuri_서울_풍납시장_온누리쿼터_연락처확인_1791810958944.json",
+      "quotaTitle": "서울_풍납시장_온누리쿼터_연락처확인",
+      "marketName": "풍납시장",
+      "targetCount": 5,
+      "selectedFields": [
+        "marketName",
+        "companyName",
+        "bizNumber",
+        "ceoName",
+        "phone",
+        "openDate",
+        "handledItems",
+        "address",
+        "status"
+      ]
+    },
+    "quotaDatabase": [
+      {
+        "index": 1,
+        "seq": 1,
+        "source": "ONNURI_MARKETBZ_HYBRID",
+        "marketName": "풍납시장",
+        "companyName": "칠칠수산",
+        "bizNumber": "555-95-01465",
+        "ceoName": null,
+        "phone": "02-2222-2222",
+        "openDate": "2020.10.06",
+        "handledItems": "수산물 (신선)",
+        "address": "서울특별시 송파구 바람드리길 37-1 (풍납동)",
+        "status": "정상가맹",
+        "paperAccepted": "Y",
+        "digitalAccepted": "N",
+        "quotaStatus": "ready",
+        "usedAt": null
+      },
+      {
+        "index": 2,
+        "seq": 2,
+        "source": "ONNURI_MARKETBZ_HYBRID",
+        "marketName": "풍납시장",
+        "companyName": "예작",
+        "bizNumber": "212-15-71233",
+        "ceoName": null,
+        "phone": null,
+        "openDate": "2012.03.13",
+        "handledItems": "기타소매업 (두발 미용업)",
+        "address": "서울특별시 송파구 바람드리길 27-1 (풍납동)\n주소정보 갱신",
+        "status": "정상가맹",
+        "paperAccepted": "Y",
+        "digitalAccepted": "Y",
+        "quotaStatus": "ready",
+        "usedAt": null
+      },
+      {
+        "index": 3,
+        "seq": 3,
+        "source": "ONNURI_MARKETBZ_HYBRID",
+        "marketName": "풍납시장",
+        "companyName": "건강지킴이",
+        "bizNumber": "495-07-02656",
+        "ceoName": null,
+        "phone": "02-111-1113",
+        "openDate": "2023.10.06",
+        "handledItems": "기타소매업 (피부 미용업)",
+        "address": "서울특별시 송파구 풍성로25길 37 (풍납동)\n주소정보 갱신",
+        "status": "정상가맹",
+        "paperAccepted": "Y",
+        "digitalAccepted": "N",
+        "quotaStatus": "ready",
+        "usedAt": null
+      },
+      {
+        "index": 4,
+        "seq": 4,
+        "source": "ONNURI_MARKETBZ_HYBRID",
+        "marketName": "풍납시장",
+        "companyName": "더덕상회",
+        "bizNumber": "626-22-02194",
+        "ceoName": null,
+        "phone": null,
+        "openDate": "2025.06.11",
+        "handledItems": "농산물 (곡물)",
+        "address": "서울특별시 송파구 바람드리길 42 (풍납동)\n주소정보 갱신",
+        "status": "정상가맹",
+        "paperAccepted": "Y",
+        "digitalAccepted": "Y",
+        "quotaStatus": "ready",
+        "usedAt": null
+      },
+      {
+        "index": 5,
+        "seq": 5,
+        "source": "ONNURI_MARKETBZ_HYBRID",
+        "marketName": "풍납시장",
+        "companyName": "물고기",
+        "bizNumber": "183-95-01483",
+        "ceoName": "김영주",
+        "phone": "02-1111-1111",
+        "openDate": "2022.03.14",
+        "handledItems": "수산물 (음ㆍ식료품 및 담배 도매업 외 1개)",
+        "address": "서울특별시 송파구 바람드리길 44 (풍납동)\n주소정보 갱신",
+        "status": "정상가맹",
+        "paperAccepted": "Y",
+        "digitalAccepted": "Y",
+        "quotaStatus": "ready",
+        "usedAt": null
+      }
+    ],
+    "guidelineConfig": {
+      "surveyUrl": "",
+      "topic": "",
+      "positiveRatio": 70,
+      "neutralRatio": 20,
+      "negativeRatio": 10,
+      "textGuidelines": "",
+      "iterations": 1,
+      "headless": true
+    },
+    "results": []
+  },
+  {
+    "id": "camp_1791811373896",
+    "title": "2026_풍납시장_소상공인_연계설문_테스트",
+    "description": "풍납시장 온누리상품권 가맹 소상공인 대상 설문조사",
+    "quotaType": "b2b",
+    "status": "ready",
+    "createdAt": "2026-10-12T13:22:53.896Z",
+    "updatedAt": "2026-10-12T13:22:53.903Z",
+    "quotaConfig": {
+      "quotaSource": "FILE_IMPORT",
+      "quotaFileName": "quota_onnuri_서울_풍납시장_온누리쿼터_연락처확인_1791810958944.json",
+      "quotaTitle": "서울_풍납시장_온누리쿼터_연락처확인",
+      "marketName": "풍납시장",
+      "targetCount": 5,
+      "selectedFields": [
+        "marketName",
+        "companyName",
+        "bizNumber",
+        "ceoName",
+        "phone",
+        "openDate",
+        "handledItems",
+        "address",
+        "status"
+      ]
+    },
+    "quotaDatabase": [
+      {
+        "index": 1,
+        "seq": 1,
+        "source": "ONNURI_MARKETBZ_HYBRID",
+        "marketName": "풍납시장",
+        "companyName": "칠칠수산",
+        "bizNumber": "555-95-01465",
+        "ceoName": null,
+        "phone": "02-2222-2222",
+        "openDate": "2020.10.06",
+        "handledItems": "수산물 (신선)",
+        "address": "서울특별시 송파구 바람드리길 37-1 (풍납동)",
+        "status": "정상가맹",
+        "paperAccepted": "Y",
+        "digitalAccepted": "N",
+        "quotaStatus": "ready",
+        "usedAt": null
+      },
+      {
+        "index": 2,
+        "seq": 2,
+        "source": "ONNURI_MARKETBZ_HYBRID",
+        "marketName": "풍납시장",
+        "companyName": "예작",
+        "bizNumber": "212-15-71233",
+        "ceoName": null,
+        "phone": null,
+        "openDate": "2012.03.13",
+        "handledItems": "기타소매업 (두발 미용업)",
+        "address": "서울특별시 송파구 바람드리길 27-1 (풍납동)\n주소정보 갱신",
+        "status": "정상가맹",
+        "paperAccepted": "Y",
+        "digitalAccepted": "Y",
+        "quotaStatus": "ready",
+        "usedAt": null
+      },
+      {
+        "index": 3,
+        "seq": 3,
+        "source": "ONNURI_MARKETBZ_HYBRID",
+        "marketName": "풍납시장",
+        "companyName": "건강지킴이",
+        "bizNumber": "495-07-02656",
+        "ceoName": null,
+        "phone": "02-111-1113",
+        "openDate": "2023.10.06",
+        "handledItems": "기타소매업 (피부 미용업)",
+        "address": "서울특별시 송파구 풍성로25길 37 (풍납동)\n주소정보 갱신",
+        "status": "정상가맹",
+        "paperAccepted": "Y",
+        "digitalAccepted": "N",
+        "quotaStatus": "ready",
+        "usedAt": null
+      },
+      {
+        "index": 4,
+        "seq": 4,
+        "source": "ONNURI_MARKETBZ_HYBRID",
+        "marketName": "풍납시장",
+        "companyName": "더덕상회",
+        "bizNumber": "626-22-02194",
+        "ceoName": null,
+        "phone": null,
+        "openDate": "2025.06.11",
+        "handledItems": "농산물 (곡물)",
+        "address": "서울특별시 송파구 바람드리길 42 (풍납동)\n주소정보 갱신",
+        "status": "정상가맹",
+        "paperAccepted": "Y",
+        "digitalAccepted": "Y",
+        "quotaStatus": "ready",
+        "usedAt": null
+      },
+      {
+        "index": 5,
+        "seq": 5,
+        "source": "ONNURI_MARKETBZ_HYBRID",
+        "marketName": "풍납시장",
+        "companyName": "물고기",
+        "bizNumber": "183-95-01483",
+        "ceoName": "김영주",
+        "phone": "02-1111-1111",
+        "openDate": "2022.03.14",
+        "handledItems": "수산물 (음ㆍ식료품 및 담배 도매업 외 1개)",
+        "address": "서울특별시 송파구 바람드리길 44 (풍납동)\n주소정보 갱신",
+        "status": "정상가맹",
+        "paperAccepted": "Y",
+        "digitalAccepted": "Y",
+        "quotaStatus": "ready",
+        "usedAt": null
+      }
+    ],
+    "guidelineConfig": {
+      "surveyUrl": "",
+      "topic": "",
+      "positiveRatio": 70,
+      "neutralRatio": 20,
+      "negativeRatio": 10,
+      "textGuidelines": "",
+      "iterations": 1,
+      "headless": true
+    },
+    "results": []
+  },
+  {
+    "id": "camp_1791811104668",
+    "title": "2026 전통시장 점포경영 실태조사",
+    "description": "",
+    "quotaType": "b2b",
+    "status": "ready",
+    "createdAt": "2026-10-12T13:18:24.668Z",
+    "updatedAt": "2026-10-12T13:18:33.099Z",
+    "quotaConfig": {
+      "b2bKeyword": "소프트웨어",
+      "targetCount": 1,
+      "selectedFields": [
+        "companyName",
+        "bizNumber",
+        "ceoName",
+        "address",
+        "industry"
+      ]
+    },
+    "quotaDatabase": [],
+    "guidelineConfig": {
+      "surveyUrl": "",
+      "topic": "",
+      "positiveRatio": 70,
+      "neutralRatio": 20,
+      "negativeRatio": 10,
+      "textGuidelines": "",
+      "iterations": 1,
+      "headless": true
+    },
+    "results": []
+  },
+  {
+    "id": "camp_1791808305093",
+    "title": "2026 하반기 IT·소프트웨어 중소기업 정책 수요조사",
+    "description": "실존 소프트웨어 사업자 대상 디지털 전환 및 지원 정책 조사",
+    "quotaType": "b2b",
+    "status": "completed",
+    "createdAt": "2026-10-12T12:31:45.093Z",
+    "updatedAt": "2026-10-12T12:32:36.065Z",
+    "quotaConfig": {
+      "b2bKeyword": "소프트웨어",
+      "targetCount": 1,
+      "selectedFields": [
+        "companyName",
+        "bizNumber",
+        "ceoName",
+        "address",
+        "industry"
+      ]
+    },
+    "quotaDatabase": [
+      {
+        "index": 1,
+        "category": "정보통신/서비스",
+        "industry": "소프트웨어개발",
+        "companyName": "지멘스인더스트리소프트웨어 주식회사",
+        "subIndustry": "시스템 소프트웨어 개발 및 공급업",
+        "bizNumber": "120-81-68297",
+        "ceoName": "대표자",
+        "phone": "02-555-1234",
+        "openingDate": "1990.01.01",
+        "address": "경기도 부천시 송내대로265번길 59",
+        "quotaStatus": "used",
+        "usedAt": "2026-10-12T12:32:36.058Z"
+      }
+    ],
+    "guidelineConfig": {
+      "surveyUrl": "http://localhost:3000/mock-survey-b2b.html",
+      "topic": "2026 하반기 IT·소프트웨어 중소기업 정책 수요조사",
+      "positiveRatio": 80,
+      "neutralRatio": 20,
+      "negativeRatio": 0,
+      "textGuidelines": "클라우드 인프라 지원 바우처 확대가 가장 실효성 높다는 의견",
+      "iterations": 1,
+      "headless": true
+    },
+    "results": [
+      {
+        "iteration": 1,
+        "reportFileName": "report_1791808356055_iter1.json",
+        "timestamp": "2026-10-12T12:32:36.058Z",
+        "business": "지멘스인더스트리소프트웨어 주식회사",
+        "completed": true
+      }
+    ]
+  },
+  {
+    "id": "camp_1791808289026",
+    "title": "2026 대한민국 IT·소프트웨어 중소기업 디지털 전환 실태조사",
+    "description": "국내 소프트웨어 개발 기업 대상 경영 현황 및 규제 개선 건의 설문",
+    "quotaType": "b2b",
+    "status": "ready",
+    "createdAt": "2026-10-12T12:31:29.026Z",
+    "updatedAt": "2026-10-12T12:31:29.027Z",
+    "quotaConfig": {
+      "b2bKeyword": "소프트웨어",
+      "targetCount": 2,
+      "selectedFields": [
+        "companyName",
+        "bizNumber",
+        "ceoName",
+        "address",
+        "industry"
+      ]
+    },
+    "quotaDatabase": [],
+    "guidelineConfig": {
+      "surveyUrl": "http://localhost:3000/mock-survey-b2b.html",
+      "topic": "2026 대한민국 IT·소프트웨어 중소기업 디지털 전환 지원 설문",
+      "positiveRatio": 70,
+      "neutralRatio": 20,
+      "negativeRatio": 10,
+      "textGuidelines": "클라우드 인프라 지원과 R&D 세액 공제 확대가 절실하다는 의견",
+      "iterations": 1,
+      "headless": true
+    },
+    "results": []
+  }
+]

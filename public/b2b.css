@@ -1,0 +1,101 @@
+/* B2B 모드 탭 및 체크박스 스타일 */
+.mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mode-tab {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.mode-tab input[type="radio"] {
+  display: none;
+}
+
+.mode-tab i {
+  font-size: 20px;
+  color: var(--text-dim);
+  transition: var(--transition-fast);
+}
+
+.mode-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.mode-info strong {
+  font-size: 13px;
+  color: #e2e8f0;
+}
+
+.mode-info span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.mode-tab.active {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.25);
+}
+
+.mode-tab.active i {
+  color: #818cf8;
+}
+
+.mode-tab.active strong {
+  color: #fff;
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+@media (max-width: 600px) {
+  .checkbox-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.custom-cb-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.custom-cb-label:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.custom-cb-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}

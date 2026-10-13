@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사업주 조사 쿼터(Quota) 생성기 - AutoSurvey AI</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="b2b.css">
+  <link rel="stylesheet" href="campaign.css">
+  <link rel="stylesheet" href="custom-styles.css">
+</head>
+<body>
+  <div class="background-glows">
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+    <div class="glow glow-3"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- 헤더 -->
+    <header class="app-header detail-header">
+      <div class="nav-left">
+        <a href="index.html" class="btn btn-secondary btn-back">
+          <i class="fa-solid fa-arrow-left"></i> 설문 캠페인 목차로
+        </a>
+        <div class="campaign-title-area">
+          <h1><i class="fa-solid fa-table-cells"></i> [사업주 대상] 조사 쿼터(Quota) 생성기</h1>
+          <p class="builder-header-desc">MarketBz 실존 사업자 데이터를 100% 팩트 기반으로 수집하여 JSON 및 Excel 표 형태로 구성합니다.</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <span class="badge-quota-type b2b badge-quota-type-pad">
+          <i class="fa-solid fa-shield-halved"></i> 100% 실존 데이터 검증 모드
+        </span>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <!-- 좌측: 쿼터 설정 및 항목 동적 추가 패널 -->
+      <section class="glass-card config-panel">
+        <div class="card-header">
+          <h2><i class="fa-solid fa-sliders"></i> 조사 쿼터 수집 조건 설정</h2>
+          <span class="card-desc">필요한 수량과 수집 항목(기본 + 커스텀 추가)을 지정하세요.</span>
+        </div>
+
+        <!-- 수집 모드 선택 탭 -->
+        <div class="source-mode-selector">
+          <button type="button" id="tab-mode-marketbz" class="mode-tab-btn active">
+            <i class="fa-solid fa-building"></i> 마켓비즈 단독 수집 (일반 B2B)
+          </button>
+          <button type="button" id="tab-mode-onnuri" class="mode-tab-btn">
+            <i class="fa-solid fa-store"></i> 온누리상품권 시장 연계 (1차 온누리 ➔ 2차 마켓비즈)
+          </button>
+        </div>
+
+        <form id="quota-builder-form">
+          <input type="hidden" id="current-source-mode" value="marketbz" />
+
+          <!-- [공통] 쿼터 기본 정보 -->
+          <div class="form-section">
+            <h3 class="section-title"><i class="fa-solid fa-tag"></i> 쿼터 기본 정보</h3>
+            <div class="form-group">
+              <label for="quota-title">조사 쿼터 명칭 <span class="required">*</span></label>
+              <input type="text" id="quota-title" required value="2026_소프트웨어_사업자_조사쿼터" placeholder="예: 2026_풍납시장_온누리가맹점_조사쿼터" />
+            </div>
+          </div>
+
+          <!-- [모드 1] 마켓비즈 단독 설정 영역 -->
+          <div id="section-marketbz-mode" class="form-section">
+            <h3 class="section-title"><i class="fa-solid fa-magnifying-glass"></i> 마켓비즈 검색 조건</h3>
+            <div class="grid-2col">
+              <div class="form-group">
+                <label for="quota-keyword">타겟 업종 / 검색어 <span class="required">*</span></label>
+                <input type="text" id="quota-keyword" value="소프트웨어" placeholder="예: 소프트웨어, 외식업, 제조업 등" />
+              </div>
+              <div class="form-group">
+                <label for="quota-count">목표 표본 수량 (N개 기업) <span class="required">*</span></label>
+                <input type="number" id="quota-count" min="1" max="100" value="2" />
+              </div>
+            </div>
+          </div>
+
+          <!-- [모드 2] 온누리상품권 연계 설정 영역 -->
+          <div id="section-onnuri-mode" class="form-section section-onnuri-box">
+            <div class="section-title-with-bar">
+              <h3 class="section-title onnuri-section-title"><i class="fa-solid fa-shop"></i> 온누리상품권 가맹점 타겟 설정</h3>
+              <span class="badge onnuri-verified-badge">공인 ongift.or.kr 100% 팩트</span>
+            </div>
+            
+            <div class="grid-2col mt-12">
+              <div class="form-group">
+                <label for="onnuri-region">시/도 선택 <span class="required">*</span></label>
+                <select id="onnuri-region" class="form-select onnuri-select">
+                  <option value="01">서울</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="onnuri-district">시/군/구 선택 <span class="required">*</span></label>
+                <select id="onnuri-district" class="form-select onnuri-select">
+                  <option value="01018">송파구</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-2col mt-12">
+              <div class="form-group">
+                <label for="onnuri-market-name">대상 전통시장명 <span class="required">*</span></label>
+                <input type="text" id="onnuri-market-name" class="onnuri-input-market" value="풍납시장" placeholder="예: 풍납시장, 방산시장, 망원시장 등" />
+              </div>
+              <div class="form-group">
+                <label for="onnuri-quota-count">목표 가맹점 수량 (N개 사업자) <span class="required">*</span></label>
+                <input type="number" id="onnuri-quota-count" min="1" max="50" value="5" />
+              </div>
+            </div>
+
+            <div class="grid-2col mt-12">
+              <div class="form-group">
+                <label>가맹 상태 필터</label>
+                <div class="flex-row-gap-14 mt-8">
+                  <label class="radio-filter-label active">
+                    <input type="radio" name="onnuri-status" value="ACTIVE" checked /> 정상 가맹점만 (권장)
+                  </label>
+                  <label class="radio-filter-label dim">
+                    <input type="radio" name="onnuri-status" value="ALL" /> 전체
+                  </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>온누리 취급 유형</label>
+                <div class="flex-row-gap-14 mt-8">
+                  <label class="radio-filter-label active">
+                    <input type="radio" name="onnuri-payment" value="ALL" checked /> 전체
+                  </label>
+                  <label class="radio-filter-label dim">
+                    <input type="radio" name="onnuri-payment" value="PAPER" /> 지류 취급점
+                  </label>
+                  <label class="radio-filter-label dim">
+                    <input type="radio" name="onnuri-payment" value="DIGITAL" /> 디지털/카드 취급점
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="onnuri-helper-info">
+              <i class="fa-solid fa-circle-info"></i> 온누리에서 가맹점 상호/사업자번호를 1차 확보 후, 마켓비즈와 1:1 매칭하여 상세 정보를 결합합니다.
+            </div>
+          </div>
+
+          <!-- 기본 사업자 항목 선택 (필요한 컬럼 지정) -->
+          <div class="form-section">
+            <div class="section-title-with-bar">
+              <h3 class="section-title"><i class="fa-solid fa-list-check"></i> 수집 항목 선택 (테이블 & 엑셀 컬럼)</h3>
+              <div class="preset-buttons">
+                <button type="button" id="btn-select-all" class="btn-chip">전체</button>
+                <button type="button" id="btn-select-core" class="btn-chip">핵심 5종</button>
+              </div>
+            </div>
+            <div class="checkbox-grid">
+              <label class="custom-cb-label"><input type="checkbox" name="base-fields" value="companyName" checked /><span>상호 (가맹점명)</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="base-fields" value="bizNumber" checked /><span>사업자등록번호</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="base-fields" value="ceoName" checked /><span>대표자명</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="base-fields" value="phone" checked /><span>연락처</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="base-fields" value="openDate" checked /><span>개업연월</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="base-fields" value="handledItems" checked /><span>취급품목</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="base-fields" value="address" checked /><span>사업장 주소</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="base-fields" value="status" checked /><span>가맹상태</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="base-fields" value="paperAccepted" checked /><span>온누리지류</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="base-fields" value="digitalAccepted" checked /><span>온누리디지털</span></label>
+            </div>
+          </div>
+
+          <!-- 사용자 정의 동적 항목 추가 패널 -->
+          <div class="form-section">
+            <div class="section-title-with-bar">
+              <h3 class="section-title"><i class="fa-solid fa-plus-circle"></i> 새로운 항목 추가 (동적 컬럼 확장)</h3>
+              <span class="card-desc">필요한 추가 정보를 자유롭게 추가하세요.</span>
+            </div>
+            
+            <div class="input-wrapper flex-row-gap-8">
+              <input type="text" id="input-new-field" placeholder="추가할 항목명 입력 (예: 종업원수, 기업규모, 법인구분, 홈페이지)" />
+              <button type="button" id="btn-add-field" class="btn btn-secondary btn-add-field-action">
+                <i class="fa-solid fa-plus"></i> 항목 추가
+              </button>
+            </div>
+
+            <!-- 추가된 커스텀 항목 칩 리스트 -->
+            <div class="custom-chip-group" id="custom-fields-chip-list">
+              <!-- JS로 동적 추가 -->
+            </div>
+          </div>
+
+          <!-- 쿼터 만들기 실행 버튼 -->
+          <div class="action-buttons">
+            <button type="submit" id="btn-generate-quota" class="btn btn-primary btn-generate-quota-action">
+              <i class="fa-solid fa-bolt"></i> 조사 쿼터 만들기 (JSON & Excel 동시 생성)
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- 우측: Excel 표 형태 스프레드시트 뷰어 및 다운로드 -->
+      <section class="glass-card monitor-panel">
+        <div class="card-header">
+          <h2><i class="fa-solid fa-file-excel icon-excel-green"></i> 실시간 조사 쿼터 엑셀(Excel) 표 뷰어</h2>
+          <div id="download-actions" class="excel-actions">
+            <button type="button" id="btn-create-campaign-from-quota" class="btn-create-campaign-shortcut">
+              <i class="fa-solid fa-rocket"></i> 이 쿼터로 설문 시작
+            </button>
+            <a href="#" id="link-excel-download" class="btn-excel" download>
+              <i class="fa-solid fa-file-arrow-down"></i> Excel(.xlsx) 다운로드
+            </a>
+            <a href="#" id="link-json-download" class="btn-json" download>
+              <i class="fa-solid fa-download"></i> JSON 다운로드
+            </a>
+          </div>
+        </div>
+
+        <!-- 엑셀 스프레드시트 뷰어 컨테이너 -->
+        <div class="excel-spreadsheet-container">
+          <div class="excel-toolbar">
+            <div class="excel-title" id="sheet-title-text">
+              <i class="fa-solid fa-table"></i> [미생성] 조건을 설정하고 쿼터 만들기를 실행해 주세요.
+            </div>
+            <span class="badge-status ready" id="sheet-row-count-badge">0개 행</span>
+          </div>
+
+          <div class="excel-grid-scroll">
+            <table class="excel-grid-table" id="excel-grid-table">
+              <thead id="excel-grid-thead">
+                <tr>
+                  <th>No</th>
+                  <th>상호</th>
+                  <th>사업자등록번호</th>
+                  <th>대표자이름</th>
+                  <th>업종</th>
+                  <th>사업장주소</th>
+                </tr>
+              </thead>
+              <tbody id="excel-grid-tbody">
+                <tr>
+                  <td colspan="6" class="empty-table-msg">
+                    <i class="fa-solid fa-database empty-db-icon"></i>
+                    좌측에서 <strong>[조사 쿼터 만들기]</strong>를 실행하면,<br>
+                    MarketBz 실존 사업자 데이터가 여기에 <strong>Excel 표 형태</strong>로 구성됩니다.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 실시간 진행 터미널 콘솔 로그 -->
+        <div class="terminal-container quota-terminal-container">
+          <div class="terminal-bar">
+            <span class="term-dot green"></span>
+            <span class="term-title">MarketBz Live Extraction Stream</span>
+          </div>
+          <div class="terminal-body quota-terminal-logs-body" id="quota-terminal-logs">
+            <div class="log-entry info">
+              <span class="log-time">[대기]</span>
+              <span class="log-badge info">READY</span>
+              <span class="log-msg">조사 쿼터 생성기가 준비되었습니다. 조건 입력 후 시작을 눌러주세요.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="quota-builder.js"></script>
+</body>
+</html>

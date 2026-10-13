@@ -1,0 +1,449 @@
+/**
+ * AutoSurvey AI - 통합 커스텀 스타일시트 (custom-styles.css)
+ * HTML 파일 내 모든 인라인 디자인 속성을 이관하여 통합 관리하는 전용 CSS
+ */
+
+/* ==========================================================================
+   1. 공통 유틸리티 클래스 (Common Utilities)
+   ========================================================================== */
+.m-0 { margin: 0 !important; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-14 { margin-top: 14px; }
+.mt-18 { margin-top: 18px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-20 { margin-bottom: 20px; }
+.w-full { width: 100%; }
+
+.d-none { display: none !important; }
+.flex-row-gap-8 { display: flex; gap: 8px; }
+.flex-row-gap-10 { display: flex; gap: 10px; }
+.flex-row-gap-14 { display: flex; gap: 14px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.flex-center-gap-8 { display: flex; align-items: center; gap: 8px; }
+.flex-center-gap-10 { display: flex; align-items: center; gap: 10px; }
+.flex-end { display: flex; justify-content: flex-end; }
+
+.icon-cyan { color: #38bdf8; }
+.icon-excel-green { color: #107c41; }
+.empty-db-icon {
+  font-size: 24px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ==========================================================================
+   2. 설문 목록 화면 (index.html)
+   ========================================================================== */
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-quota-link {
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.modal-overlay {
+  display: none; /* 기본 숨김 (JS 모달 제어) */
+}
+
+/* ==========================================================================
+   3. 설문 상세 화면 (survey-detail.html)
+   ========================================================================== */
+.import-quota-box {
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.import-quota-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-new-quota-link {
+  font-size: 11px;
+  padding: 5px 12px;
+  text-decoration: none;
+}
+
+.import-quota-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.select-saved-quota {
+  flex: 1;
+  background: #0f172a;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.btn-import-quota-action {
+  flex: 0 0 auto;
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 18px;
+}
+
+.marketbz-direct-details {
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.marketbz-direct-summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.marketbz-btn-wrapper {
+  margin: 14px 0 6px;
+}
+
+.btn-build-quota-full {
+  width: 100%;
+}
+
+#panel-b2c-quota {
+  display: none;
+}
+
+/* 응답 비중 세그먼트 기본 초기값 */
+#bar-pos { width: 70%; }
+#bar-neu { width: 20%; }
+#bar-neg { width: 10%; }
+
+/* STEP 3 자동화 실행 제어 바 */
+.action-sub-card {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.step-badge-step3 {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.action-step3-title {
+  color: #fff;
+  font-size: 14px;
+}
+
+.action-buttons-compact {
+  margin: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.btn-start-automation-lg {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.btn-stop-automation-md {
+  padding: 12px 18px;
+}
+
+.progress-fill {
+  width: 0%;
+}
+
+/* ==========================================================================
+   4. 조사 쿼터 생성기 화면 (quota-builder.html)
+   ========================================================================== */
+.builder-header-desc {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.badge-quota-type-pad {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.source-mode-selector {
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px;
+  border-radius: 12px;
+  display: flex;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mode-tab-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mode-tab-btn.active {
+  background: #0284c7;
+  color: #fff;
+}
+
+.mode-tab-btn:not(.active) {
+  background: transparent;
+  color: #94a3b8;
+}
+
+.section-onnuri-box {
+  display: none;
+  background: rgba(56, 189, 248, 0.04);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.onnuri-section-title {
+  color: #38bdf8;
+}
+
+.onnuri-verified-badge {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.onnuri-select {
+  background: #0f172a;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.onnuri-input-market {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.radio-filter-label {
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.radio-filter-label.active {
+  color: #e2e8f0;
+}
+
+.radio-filter-label.dim {
+  color: #94a3b8;
+}
+
+.onnuri-helper-info {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-add-field-action {
+  flex: 0 0 auto;
+  padding: 10px 18px;
+}
+
+.btn-generate-quota-action {
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  font-size: 15px;
+  padding: 16px;
+}
+
+#download-actions {
+  display: none;
+}
+
+.btn-create-campaign-shortcut {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-create-campaign-shortcut:hover {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  transform: translateY(-1px);
+}
+
+.quota-terminal-container {
+  margin-top: 18px;
+}
+
+.quota-terminal-logs-body {
+  height: 160px;
+}
+
+/* 엑셀 스타일 스프레드시트 뷰 */
+.excel-spreadsheet-container {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: 16px;
+}
+.excel-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: #090d16;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.excel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.excel-actions {
+  display: flex;
+  gap: 10px;
+}
+.btn-excel {
+  background: linear-gradient(135deg, #107c41, #15803d);
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: var(--transition-fast);
+}
+.btn-excel:hover { opacity: 0.95; transform: translateY(-1px); }
+.btn-json {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+.excel-grid-scroll {
+  max-height: 480px;
+  overflow: auto;
+}
+.excel-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+.excel-grid-table th {
+  background: #1e293b;
+  color: #94a3b8;
+  font-weight: 600;
+  padding: 10px 14px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+  white-space: nowrap;
+}
+.excel-grid-table td {
+  padding: 10px 14px;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #f1f5f9;
+  white-space: nowrap;
+}
+.excel-grid-table tr:hover td {
+  background: rgba(56, 189, 248, 0.05);
+}
+
+/* 동적 커스텀 항목 칩 */
+.custom-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.custom-field-chip {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip-remove {
+  cursor: pointer;
+  color: #ef4444;
+  font-weight: bold;
+}
+.chip-remove:hover { color: #f87171; }
+
+/* ==========================================================================
+   5. 모의 설문 화면 (mock-survey.html, mock-survey-b2b.html)
+   ========================================================================== */
+.survey-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
