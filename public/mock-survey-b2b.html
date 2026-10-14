@@ -6,120 +6,9 @@
   <title>2026 대한민국 IT·소프트웨어 중소기업 디지털 전환 지원 설문 (B2B 모의 설문지)</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="custom-styles.css">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Noto Sans KR', sans-serif;
-      background-color: #e0f2fe;
-      color: #0f172a;
-      padding: 40px 16px;
-    }
-    .survey-card {
-      max-width: 680px;
-      margin: 0 auto 16px;
-      background: #ffffff;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      padding: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    }
-    .header-card {
-      border-top: 10px solid #0284c7;
-    }
-    .survey-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: #0369a1;
-      margin-bottom: 8px;
-    }
-    .survey-desc {
-      font-size: 14px;
-      color: #475569;
-      line-height: 1.6;
-    }
-    .required-notice {
-      color: #e11d48;
-      font-size: 13px;
-      margin-top: 12px;
-    }
-    .q-header {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 14px;
-    }
-    .q-req {
-      color: #e11d48;
-      margin-left: 4px;
-    }
-    .options-group {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .option-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .custom-radio {
-      width: 20px;
-      height: 20px;
-      border: 2px solid #64748b;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    .custom-radio.checked {
-      border-color: #0284c7;
-      background-color: #0284c7;
-      box-shadow: inset 0 0 0 4px #ffffff;
-    }
-    textarea, input[type="text"] {
-      width: 100%;
-      border: none;
-      border-bottom: 1px solid #cbd5e1;
-      padding: 8px 0;
-      font-size: 14px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    textarea:focus, input[type="text"]:focus {
-      border-bottom: 2px solid #0284c7;
-    }
-    textarea {
-      resize: vertical;
-      min-height: 70px;
-    }
-    .btn-submit {
-      background-color: #0284c7;
-      color: white;
-      border: none;
-      padding: 12px 28px;
-      font-size: 14px;
-      font-weight: 600;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    .btn-submit:hover { background-color: #0369a1; }
-    .completed-message {
-      display: none;
-      text-align: center;
-      padding: 40px 20px;
-    }
-    .completed-message h2 {
-      font-size: 22px;
-      margin-bottom: 12px;
-      color: #0369a1;
-    }
-  </style>
+  <link rel="stylesheet" href="mock-survey.css">
 </head>
-<body>
+<body class="mock-survey-b2b-body">
   <div id="survey-form-container">
     <div class="survey-card header-card">
       <h1 class="survey-title">2026 대한민국 IT·소프트웨어 기업 실태조사 (B2B)</h1>
@@ -226,8 +115,8 @@
     });
 
     document.getElementById('submit-btn').addEventListener('click', () => {
-      document.getElementById('survey-form-container').style.display = 'none';
-      document.getElementById('completed-view').style.display = 'block';
+      document.getElementById('survey-form-container').classList.add('d-none');
+      document.getElementById('completed-view').classList.add('is-visible');
     });
   </script>
 </body>

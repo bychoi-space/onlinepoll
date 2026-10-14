@@ -33,10 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 모달 토글
-  btnOpenModal.addEventListener('click', () => { modal.style.display = 'flex'; });
-  btnCloseModal.addEventListener('click', () => { modal.style.display = 'none'; });
-  btnCancelModal.addEventListener('click', () => { modal.style.display = 'none'; });
+  // 모달 토글 (Zero-Inline: CSS 클래스 제어)
+  btnOpenModal.addEventListener('click', () => { modal.classList.add('is-open'); });
+  btnCloseModal.addEventListener('click', () => { modal.classList.remove('is-open'); });
+  btnCancelModal.addEventListener('click', () => { modal.classList.remove('is-open'); });
 
   // 캠페인 목록 로드
   async function loadCampaigns() {
@@ -60,10 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderCampaigns(campaigns) {
     if (campaigns.length === 0) {
       container.innerHTML = `
-        <div class="empty-state" style="grid-column: 1 / -1; padding: 48px; text-align: center;">
-          <i class="fa-solid fa-folder-open" style="font-size: 36px; color: var(--text-dim); margin-bottom: 12px;"></i>
-          <p style="color: var(--text-muted); font-size: 14px;">등록된 설문조사 캠페인이 없습니다.</p>
-          <button class="btn btn-primary" onclick="document.getElementById('btn-open-new-modal').click()" style="margin-top: 14px;">
+        <div class="empty-state empty-state-card">
+          <i class="fa-solid fa-folder-open empty-state-icon"></i>
+          <p class="empty-state-text">등록된 설문조사 캠페인이 없습니다.</p>
+          <button class="btn-pill btn-pill-primary mt-14" onclick="document.getElementById('btn-open-new-modal').click()">
             <i class="fa-solid fa-plus"></i> 첫 번째 설문 캠페인 만들기
           </button>
         </div>
@@ -110,10 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="campaign-card-footer">
-              <a href="survey-detail.html?id=${c.id}" class="btn btn-primary" style="text-decoration: none; font-size: 13px;">
+              <a href="survey-detail.html?id=${c.id}" class="btn-pill btn-pill-primary btn-enter-room">
                 설문 작업실 입장 <i class="fa-solid fa-arrow-right"></i>
               </a>
-              <button type="button" class="btn btn-secondary btn-delete" data-id="${c.id}" title="캠페인 삭제">
+              <button type="button" class="btn-icon-circle btn-delete" data-id="${c.id}" title="캠페인 삭제">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>

@@ -120,21 +120,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 쿼터 타입 전환 (B2C vs B2B)
+  // 쿼터 타입 전환 (B2C vs B2B, Zero-Inline: CSS 클래스 제어)
   function setQuotaType(type) {
     if (type === 'b2b') {
       tabB2b.classList.add('active');
       tabB2c.classList.remove('active');
-      panelB2b.style.display = 'block';
-      panelB2c.style.display = 'none';
+      panelB2b.classList.remove('hidden');
+      panelB2c.classList.add('hidden');
       quotaBadge.className = 'badge-quota-type b2b';
       quotaBadge.innerHTML = '<i class="fa-solid fa-building"></i> 사업주 대상 (B2B)';
       quotaSummaryBadge.textContent = '대상: 사업주 (MarketBz DB 연동)';
     } else {
       tabB2c.classList.add('active');
       tabB2b.classList.remove('active');
-      panelB2c.style.display = 'block';
-      panelB2b.style.display = 'none';
+      panelB2c.classList.remove('hidden');
+      panelB2b.classList.add('hidden');
       quotaBadge.className = 'badge-quota-type b2c';
       quotaBadge.innerHTML = '<i class="fa-solid fa-user"></i> 개인 대상 (B2C)';
       quotaSummaryBadge.textContent = '대상: 개인 (페르소나 자동변주)';
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <td>${escapeHtml(ceoVal)}</td>
             <td>${escapeHtml(phoneVal)}</td>
             <td>${escapeHtml(openDateVal)}</td>
-            <td><span class="badge-quota-type b2b" style="font-size: 11px;">${escapeHtml(itemVal)}</span></td>
+            <td><span class="badge-quota-type b2b">${escapeHtml(itemVal)}</span></td>
             <td>${escapeHtml(item.address ? (item.address.length > 25 ? item.address.slice(0, 25) + '...' : item.address) : '-')}</td>
             <td>${statusBadgeHtml}</td>
           </tr>

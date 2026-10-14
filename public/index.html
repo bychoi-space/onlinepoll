@@ -3,115 +3,160 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AutoSurvey AI - 설문조사 캠페인 목차 대시보드</title>
-  <meta name="description" content="AI 기반 온라인 설문조사 자동화 관리 및 캠페인 대시보드">
-  <!-- Google Fonts -->
+  <title>AutoSurvey AI - 설문조사 캠페인 대시보드</title>
+  <meta name="description" content="Figma 에디토리얼 & 파스텔 컬러블록 기반의 지능형 온라인 설문 자동화 플랫폼">
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Pretendard Korean Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="b2b.css">
+  
+  <!-- Figma Design System Modular CSS -->
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="figma-base.css">
+  <link rel="stylesheet" href="color-blocks.css">
   <link rel="stylesheet" href="campaign.css">
   <link rel="stylesheet" href="custom-styles.css">
 </head>
 <body>
-  <div class="background-glows">
-    <div class="glow glow-1"></div>
-    <div class="glow glow-2"></div>
-    <div class="glow glow-3"></div>
-  </div>
 
-  <div class="app-container">
-    <!-- 헤더 -->
-    <header class="app-header">
-      <div class="logo-area">
-        <div class="logo-icon">
-          <i class="fa-solid fa-list-check"></i>
-        </div>
-        <div class="logo-text">
-          <h1>AutoSurvey <span class="badge-ai">AI</span></h1>
-          <p>지능형 온라인 설문조사 캠페인 관리 대시보드</p>
-        </div>
+  <!-- 1. Sticky Top Navigation (56px) -->
+  <nav class="figma-top-nav">
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>AutoSurvey</span>
+        <span class="brand-badge">AI</span>
       </div>
-      <div class="header-actions">
-        <a href="quota-builder.html" class="btn btn-secondary btn-quota-link">
-          <i class="fa-solid fa-table-cells icon-cyan"></i> 조사 쿼터(Quota) 생성기
+      
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link-item active">캠페인 대시보드</a></li>
+        <li><a href="quota-builder.html" class="nav-link-item">조사 쿼터 생성기</a></li>
+        <li><a href="survey-detail.html" class="nav-link-item">설문 작업실</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="quota-builder.html" class="btn-pill btn-pill-secondary">
+          <i class="fa-solid fa-table-cells"></i> 조사 쿼터 생성기
         </a>
-        <button id="btn-open-new-modal" class="btn btn-primary">
+        <button id="btn-open-new-modal" class="btn-pill btn-pill-primary">
           <i class="fa-solid fa-plus"></i> 새 설문조사 등록
         </button>
       </div>
+    </div>
+  </nav>
+
+  <!-- 2. Marquee Strip (36px Ribbon) -->
+  <div class="figma-marquee-strip">
+    <div class="marquee-content">
+      <span>AUTOSURVEY AI • INTELLIGENT BROWSER AUTOMATION</span>
+      <span>• GOOGLE FORMS VERIFIED</span>
+      <span>• MARKETBZ B2B ENGINE</span>
+      <span>• ONNURI NATIONAL HYBRID PIPELINE</span>
+      <span>• ZERO DATA FALSIFICATION</span>
+      <span>• REALTIME SSE STREAMING</span>
+      <span>• AUTOSURVEY AI • INTELLIGENT BROWSER AUTOMATION</span>
+      <span>• GOOGLE FORMS VERIFIED</span>
+    </div>
+  </div>
+
+  <!-- 3. Main Content Canvas -->
+  <main class="figma-container mt-18">
+    
+    <!-- Hero Editorial Header -->
+    <header class="py-16 mb-16">
+      <div class="font-eyebrow mb-8">CAMPAIGN REPOSITORY & OPERATIONS</div>
+      <h1 class="font-display-lg mb-12">스마트 설문조사의 새로운 표준</h1>
+      <p class="font-subhead max-w-720">실존 사업자 쿼터 DB와 정밀 페르소나 가이드라인을 바탕으로 설문 응답을 사람처럼 완수하는 고지능 자동화 플랫폼</p>
     </header>
 
-    <!-- 통계 요약 바 -->
-    <section class="stats-overview-grid">
-      <div class="stat-card">
-        <div class="stat-icon"><i class="fa-solid fa-folder-open"></i></div>
-        <div class="stat-info">
-          <span class="stat-label">전체 설문 캠페인</span>
-          <strong class="stat-value" id="stat-total-campaigns">0건</strong>
-        </div>
+    <!-- 4. Signature Color-Block: Stats Overview (Block Cream) -->
+    <section class="color-block color-block-cream">
+      <div class="block-eyebrow">
+        <i class="fa-solid fa-chart-simple"></i>
+        <span>REALTIME METRICS & AGGREGATE STATS</span>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon b2b"><i class="fa-solid fa-building"></i></div>
-        <div class="stat-info">
-          <span class="stat-label">사업주(B2B) 설문</span>
-          <strong class="stat-value" id="stat-b2b-campaigns">0건</strong>
+      <h2 class="block-title">캠페인 통합 현황</h2>
+      <p class="block-desc">등록된 전체 설문 캠페인과 사업자(B2B), 개인(B2C) 및 완료된 누적 자동화 작업 통계입니다.</p>
+
+      <div class="stats-overview-grid">
+        <div class="stat-card block-card">
+          <div class="stat-icon"><i class="fa-solid fa-folder-open"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">전체 설문 캠페인</span>
+            <strong class="stat-value" id="stat-total-campaigns">0건</strong>
+          </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon b2c"><i class="fa-solid fa-user"></i></div>
-        <div class="stat-info">
-          <span class="stat-label">개인(B2C) 설문</span>
-          <strong class="stat-value" id="stat-b2c-campaigns">0건</strong>
+        <div class="stat-card block-card">
+          <div class="stat-icon b2b"><i class="fa-solid fa-building"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">사업주(B2B) 설문</span>
+            <strong class="stat-value" id="stat-b2b-campaigns">0건</strong>
+          </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
-        <div class="stat-info">
-          <span class="stat-label">완료된 설문</span>
-          <strong class="stat-value" id="stat-completed-campaigns">0건</strong>
+        <div class="stat-card block-card">
+          <div class="stat-icon b2c"><i class="fa-solid fa-user"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">개인(B2C) 설문</span>
+            <strong class="stat-value" id="stat-b2c-campaigns">0건</strong>
+          </div>
+        </div>
+        <div class="stat-card block-card">
+          <div class="stat-icon success"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">완료된 설문</span>
+            <strong class="stat-value" id="stat-completed-campaigns">0건</strong>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- 캠페인 목록 영역 -->
-    <section class="campaigns-section">
-      <div class="section-top-bar">
-        <h2><i class="fa-solid fa-bars-progress"></i> 설문조사 캠페인 목록</h2>
-        <span class="section-desc">진행할 설문을 선택하여 조사 쿼터 DB를 구축하고 방향성을 설정하세요.</span>
+    <!-- 5. Active Campaigns Gallery (White Canvas with Hairline Grid) -->
+    <section class="campaigns-section mb-20">
+      <div class="section-top-bar flex-between mb-16">
+        <div>
+          <div class="font-eyebrow mb-8">ACTIVE SURVEY REPOSITORY</div>
+          <h2 class="font-headline"><i class="fa-solid fa-bars-progress"></i> 설문조사 캠페인 목록</h2>
+          <span class="font-body-sm text-dim">진행할 설문을 선택하여 1차 조사 쿼터 DB를 장착하고 2차 방향성을 설정하세요.</span>
+        </div>
+        <button id="btn-open-new-modal-sub" class="btn-pill btn-pill-secondary" onclick="document.getElementById('btn-open-new-modal').click()">
+          <i class="fa-solid fa-plus"></i> 새 설문 추가
+        </button>
       </div>
 
       <div class="campaign-grid" id="campaign-list-container">
         <!-- 자바스크립트로 동적 렌더링 -->
-        <div class="empty-state">
-          <i class="fa-solid fa-spinner fa-spin"></i>
-          <p>캠페인 목록을 불러오는 중입니다...</p>
+        <div class="empty-state empty-state-card">
+          <i class="fa-solid fa-spinner fa-spin empty-state-icon"></i>
+          <p class="empty-state-text">캠페인 목록을 불러오는 중입니다...</p>
         </div>
       </div>
     </section>
-  </div>
 
-  <!-- 새 설문조사 등록 모달 -->
-  <div class="modal-overlay" id="modal-new-campaign">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3><i class="fa-solid fa-folder-plus"></i> 새 설문조사 캠페인 생성</h3>
+  </main>
+
+  <!-- 6. New Campaign Modal (Figma Modal Dialog) -->
+  <div class="modal-overlay figma-modal-backdrop" id="modal-new-campaign">
+    <div class="modal-card figma-modal-dialog">
+      <div class="modal-header flex-between mb-16">
+        <h3 class="font-card-title"><i class="fa-solid fa-folder-plus"></i> 새 설문조사 캠페인 생성</h3>
         <button type="button" class="btn-close" id="btn-close-modal">&times;</button>
       </div>
       <form id="form-new-campaign">
-        <div class="form-group">
-          <label for="new-title">설문조사 제목 <span class="required">*</span></label>
-          <input type="text" id="new-title" required placeholder="예: 2026 소상공인 배달앱 수수료 만족도 조사" />
+        <div class="form-group mb-12">
+          <label for="new-title" class="figma-label">설문조사 제목 <span class="required">*</span></label>
+          <input type="text" id="new-title" class="figma-input" required placeholder="예: 2026 소상공인 배달앱 수수료 만족도 조사" />
         </div>
-        <div class="form-group">
-          <label for="new-desc">설문 설명 및 개요</label>
-          <input type="text" id="new-desc" placeholder="예: 외식업 점주 대상 정책 지원을 위한 실태 조사" />
+        <div class="form-group mb-16">
+          <label for="new-desc" class="figma-label">설문 설명 및 개요</label>
+          <input type="text" id="new-desc" class="figma-input" placeholder="예: 외식업 점주 대상 정책 지원을 위한 실태 조사" />
         </div>
-        <div class="form-group">
-          <label>조사 쿼터 (대상 유형) 선택 <span class="required">*</span></label>
+        <div class="form-group mb-20">
+          <label class="figma-label">조사 쿼터 (대상 유형) 선택 <span class="required">*</span></label>
           <div class="mode-tabs">
             <label class="mode-tab active" id="modal-tab-b2b">
               <input type="radio" name="new-quota-type" value="b2b" checked />
@@ -131,9 +176,11 @@
             </label>
           </div>
         </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" id="btn-cancel-modal">취소</button>
-          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> 생성 후 상세 설정 이동</button>
+        <div class="modal-actions flex-end gap-10">
+          <button type="button" class="btn-pill btn-pill-secondary" id="btn-cancel-modal">취소</button>
+          <button type="submit" class="btn-pill btn-pill-primary">
+            <i class="fa-solid fa-arrow-right"></i> 생성 후 상세 설정 이동
+          </button>
         </div>
       </form>
     </div>

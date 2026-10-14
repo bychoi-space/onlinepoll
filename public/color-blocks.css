@@ -1,0 +1,115 @@
+/* ========================================================
+   Figma Signature Color-Block Sections
+   Reference: design.md (Color-Block Sections)
+   ======================================================== */
+
+.color-block {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto var(--spacing-xl);
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-xxl);
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition-fast);
+}
+
+/* Individual Color-Block Surfaces */
+.color-block-lime {
+  background-color: var(--colors-block-lime);
+  color: var(--colors-ink);
+}
+
+.color-block-lilac {
+  background-color: var(--colors-block-lilac);
+  color: var(--colors-ink);
+}
+
+.color-block-cream {
+  background-color: var(--colors-block-cream);
+  color: var(--colors-ink);
+}
+
+.color-block-mint {
+  background-color: var(--colors-block-mint);
+  color: var(--colors-ink);
+}
+
+.color-block-coral {
+  background-color: var(--colors-block-coral);
+  color: var(--colors-ink);
+}
+
+.color-block-pink {
+  background-color: var(--colors-block-pink);
+  color: var(--colors-ink);
+}
+
+.color-block-navy {
+  background-color: var(--colors-block-navy);
+  color: var(--colors-inverse-ink);
+}
+
+/* Color-Block Inner Typography & Hierarchy */
+.color-block .block-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.54px;
+  margin-bottom: var(--spacing-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-block-navy .block-eyebrow {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.color-block .block-title {
+  font-family: var(--font-sans);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.8px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.color-block .block-desc {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  max-width: 720px;
+  margin-bottom: var(--spacing-lg);
+  opacity: 0.9;
+}
+
+/* Inner white tile surfaces sitting inside color blocks */
+.block-card {
+  background-color: var(--colors-canvas);
+  color: var(--colors-ink);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--colors-hairline);
+}
+
+.color-block-navy .block-card {
+  background-color: #242436;
+  color: var(--colors-inverse-ink);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Responsive adjustment for color blocks */
+@media (max-width: 768px) {
+  .color-block {
+    padding: var(--spacing-lg);
+    border-radius: var(--rounded-md);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .color-block .block-title {
+    font-size: 24px;
+  }
+}

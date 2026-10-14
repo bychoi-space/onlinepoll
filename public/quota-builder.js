@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tabMarketBz.classList.add('active');
       tabOnnuri.classList.remove('active');
 
-      sectionMarketBz.style.display = 'block';
-      sectionOnnuri.style.display = 'none';
+      sectionMarketBz.classList.remove('hidden');
+      sectionOnnuri.classList.add('hidden');
 
       inputTitle.value = '2026_소프트웨어_사업자_조사쿼터';
       btnGenerate.innerHTML = '<i class="fa-solid fa-bolt"></i> 마켓비즈 조사 쿼터 만들기 (JSON & Excel)';
@@ -64,8 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tabOnnuri.classList.add('active');
       tabMarketBz.classList.remove('active');
 
-      sectionMarketBz.style.display = 'none';
-      sectionOnnuri.style.display = 'block';
+      sectionMarketBz.classList.add('hidden');
+      sectionOnnuri.classList.remove('hidden');
 
       inputTitle.value = `2026_${inputOnnuriMarket.value || '풍납시장'}_온누리가맹점_조사쿼터`;
       btnGenerate.innerHTML = '<i class="fa-solid fa-store"></i> 온누리 ➔ 마켓비즈 연계 쿼터 만들기 (JSON & Excel)';
@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderExcelGrid(res) {
     const { columns, data, title, count, jsonDownloadUrl, excelDownloadUrl } = res;
 
-    sheetTitleText.innerHTML = `<i class="fa-solid fa-file-excel" style="color: #107c41;"></i> ${escapeHtml(title)} (생성 완료)`;
+    sheetTitleText.innerHTML = `<i class="fa-solid fa-file-excel icon-excel-green"></i> ${escapeHtml(title)} (생성 완료)`;
     sheetRowCountBadge.className = 'badge-status completed';
     sheetRowCountBadge.textContent = `${count}개 사업자 행`;
 
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
       columns.forEach(col => {
         const rawVal = row[col.key] !== undefined ? row[col.key] : row[col.label];
         if (rawVal === null || rawVal === undefined || rawVal === '') {
-          tbodyHtml += `<td><span style="color: #64748b; font-style: italic; font-size: 11px;">null</span></td>`;
+          tbodyHtml += `<td><span class="null-val-text">null</span></td>`;
         } else {
           tbodyHtml += `<td>${escapeHtml(String(rawVal))}</td>`;
         }
@@ -328,10 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     excelTbody.innerHTML = tbodyHtml;
 
-    // 다운로드 버튼 활성화
+    // 다운로드 버튼 활성화 (Zero-Inline: CSS 클래스 제어)
     linkExcelDownload.href = excelDownloadUrl;
     linkJsonDownload.href = jsonDownloadUrl;
-    downloadActions.style.display = 'flex';
+    downloadActions.classList.remove('hidden');
+    downloadActions.classList.add('is-flex');
 
     // 마지막 생성된 쿼터 정보 보관
     lastCreatedQuota = res;

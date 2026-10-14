@@ -1,47 +1,59 @@
 /* ========================================================
-   AutoSurvey AI - Campaign & Quota DB UI Styling
+   AutoSurvey AI - Campaign & Quota DB UI Styling (Figma Theme)
    ======================================================== */
 
 /* 통계 오버뷰 그리드 */
 .stats-overview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: var(--spacing-md, 16px);
+  margin-bottom: var(--spacing-lg, 24px);
 }
 
 .stat-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-md);
+  background: var(--colors-canvas, #ffffff);
+  border: 1px solid var(--colors-hairline, #e5e5e5);
+  border-radius: var(--rounded-md, 8px);
   padding: 18px 20px;
   display: flex;
   align-items: center;
   gap: 16px;
-  backdrop-filter: blur(12px);
-  transition: transform var(--transition-fast);
+  transition: transform var(--transition-fast, 0.15s), border-color var(--transition-fast, 0.15s);
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: var(--colors-primary, #000000);
 }
 
 .stat-icon {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
-  background: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
+  border-radius: var(--rounded-md, 8px);
+  background: var(--colors-surface-soft, #f8f8f8);
+  color: var(--colors-ink, #000000);
+  border: 1px solid var(--colors-hairline, #e5e5e5);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
 }
 
-.stat-icon.b2b { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-.stat-icon.b2c { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
-.stat-icon.success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.stat-icon.b2b { 
+  background: var(--colors-block-lilac, #e0d6ff); 
+  color: #4f3b89; 
+  border-color: #c2b0f4; 
+}
+.stat-icon.b2c { 
+  background: var(--colors-block-cream, #fff5e0); 
+  color: #8f6500; 
+  border-color: #f0d58a; 
+}
+.stat-icon.success { 
+  background: var(--colors-block-mint, #c4f4e4); 
+  color: #0b6b4e; 
+  border-color: #7ce2c0; 
+}
 
 .stat-info {
   display: flex;
@@ -50,13 +62,17 @@
 
 .stat-label {
   font-size: 12px;
-  color: var(--text-muted);
+  font-family: var(--font-mono, monospace);
+  color: var(--colors-ink-muted, #555555);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .stat-value {
-  font-size: 20px;
-  font-weight: 800;
-  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-sans, sans-serif);
+  color: var(--colors-ink, #000000);
 }
 
 /* 캠페인 섹션 */
@@ -72,98 +88,119 @@
 }
 
 .section-top-bar h2 {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
-  color: #fff;
+  color: var(--colors-ink, #000000);
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .section-desc {
-  font-size: 13px;
-  color: var(--text-muted);
+  font-size: 14px;
+  color: var(--colors-ink-muted, #555555);
 }
 
 /* 캠페인 그리드 */
 .campaign-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 20px;
+  gap: 24px;
 }
 
 .campaign-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
+  background: var(--colors-canvas, #ffffff);
+  border: 1px solid var(--colors-hairline, #e5e5e5);
+  border-radius: var(--rounded-lg, 24px);
   padding: 24px;
-  backdrop-filter: blur(16px);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast, 0.15s), box-shadow var(--transition-fast, 0.15s), transform var(--transition-fast, 0.15s);
   position: relative;
   overflow: hidden;
 }
 
 .campaign-card:hover {
-  border-color: var(--card-hover-border);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  border-color: var(--colors-primary, #000000);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
 .campaign-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .badge-quota-type {
+  font-family: var(--font-mono, monospace);
   font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 10px;
+  border-radius: var(--rounded-pill, 50px);
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
 .badge-quota-type.b2b {
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: var(--colors-block-lilac, #e0d6ff);
+  color: #4f3b89;
+  border: 1px solid #c2b0f4;
 }
 
 .badge-quota-type.b2c {
-  background: rgba(168, 85, 247, 0.15);
-  color: #c084fc;
-  border: 1px solid rgba(168, 85, 247, 0.3);
+  background: var(--colors-block-cream, #fff5e0);
+  color: #8f6500;
+  border: 1px solid #f0d58a;
 }
 
 .badge-status {
+  font-family: var(--font-mono, monospace);
   font-size: 11px;
   font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 10px;
+  border-radius: var(--rounded-pill, 50px);
 }
 
-.badge-status.ready { background: rgba(255, 255, 255, 0.08); color: var(--text-muted); }
-.badge-status.building { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-.badge-status.running { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-.badge-status.completed { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.badge-status.ready { 
+  background: var(--colors-surface-soft, #f8f8f8); 
+  color: var(--colors-ink-muted, #555555);
+  border: 1px solid var(--colors-hairline, #e5e5e5);
+}
+.badge-status.building { 
+  background: var(--colors-block-coral, #ffb59e); 
+  color: #922b0f; 
+  border: 1px solid #f79a7d;
+}
+.badge-status.running { 
+  background: var(--colors-block-mint, #c4f4e4); 
+  color: #0b6b4e; 
+  border: 1px solid #7ce2c0;
+}
+.badge-status.completed { 
+  background: #f1f3f5; 
+  color: #495057; 
+  border: 1px solid #ced4da;
+}
 
 .campaign-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--colors-ink, #000000);
   margin-bottom: 8px;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .campaign-desc {
-  font-size: 13px;
-  color: var(--text-muted);
+  font-size: 14px;
+  color: var(--colors-ink-muted, #555555);
   line-height: 1.5;
   margin-bottom: 18px;
   display: -webkit-box;
@@ -173,28 +210,62 @@
 }
 
 .campaign-meta-box {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: var(--radius-sm);
-  padding: 12px;
+  background: var(--colors-surface-soft, #f8f8f8);
+  border: 1px solid var(--colors-hairline-soft, #f0f0f0);
+  border-radius: var(--rounded-md, 8px);
+  padding: 12px 14px;
   margin-bottom: 18px;
   display: flex;
-  justify-content: space-between;
-  font-size: 12px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .meta-item {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
 }
 
-.meta-item span { color: var(--text-dim); }
-.meta-item strong { color: #e2e8f0; }
+.meta-item span {
+  color: var(--colors-ink-muted, #555555);
+}
+
+.meta-item strong {
+  color: var(--colors-ink, #000000);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+}
 
 .campaign-card-footer {
   display: flex;
-  gap: 10px;
   align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--colors-hairline-soft, #f0f0f0);
+}
+
+/* 빈 상태 카드 */
+.empty-state-card {
+  grid-column: 1 / -1;
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--colors-canvas, #ffffff);
+  border: 1px dashed var(--colors-hairline, #e5e5e5);
+  border-radius: var(--rounded-lg, 24px);
+}
+
+.empty-state-icon {
+  font-size: 40px;
+  color: #aaaaaa;
+  margin-bottom: 14px;
+  display: block;
+}
+
+.empty-state-text {
+  font-size: 15px;
+  color: var(--colors-ink-muted, #555555);
 }
 
 /* 모달 팝업 */

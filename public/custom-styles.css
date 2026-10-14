@@ -51,6 +51,9 @@
 .modal-overlay {
   display: none; /* 기본 숨김 (JS 모달 제어) */
 }
+.modal-overlay.is-open {
+  display: flex !important;
+}
 
 /* ==========================================================================
    3. 설문 상세 화면 (survey-detail.html)
@@ -87,34 +90,33 @@
 
 .select-saved-quota {
   flex: 1;
-  background: #0f172a;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  background: var(--colors-canvas, #ffffff);
+  color: var(--colors-ink, #000000);
+  border: 1px solid var(--colors-hairline, #e5e5e5);
+  border-radius: var(--rounded-md, 8px);
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .btn-import-quota-action {
   flex: 0 0 auto;
-  background: linear-gradient(135deg, #0284c7, #2563eb);
-  font-size: 13px;
-  font-weight: 700;
-  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--rounded-pill, 50px);
 }
 
 .marketbz-direct-details {
   margin-bottom: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
-  padding: 12px 16px;
+  background: var(--colors-canvas, #ffffff);
+  border: 1px solid var(--colors-hairline, #e5e5e5);
+  border-radius: var(--rounded-md, 8px);
+  padding: 14px 18px;
 }
 
 .marketbz-direct-summary {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--colors-ink, #000000);
   cursor: pointer;
 }
 
@@ -144,29 +146,15 @@
   gap: 16px;
 }
 
-.step-badge-step3 {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
-
 .action-step3-title {
-  color: #fff;
-  font-size: 14px;
+  color: var(--colors-ink, #000000);
+  font-size: 15px;
 }
 
 .action-buttons-compact {
   margin: 0;
   display: flex;
   gap: 10px;
-}
-
-.btn-start-automation-lg {
-  padding: 12px 24px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.btn-stop-automation-md {
-  padding: 12px 18px;
 }
 
 .progress-fill {
@@ -177,34 +165,34 @@
    4. 조사 쿼터 생성기 화면 (quota-builder.html)
    ========================================================================== */
 .builder-header-desc {
-  color: var(--text-muted);
+  color: var(--colors-ink-muted, #555555);
   font-size: 13px;
 }
 
 .badge-quota-type-pad {
-  padding: 6px 12px;
+  padding: 6px 14px;
   font-size: 12px;
 }
 
 .source-mode-selector {
   margin-bottom: 20px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.06);
   padding: 6px;
-  border-radius: 12px;
+  border-radius: var(--rounded-pill, 50px);
   display: flex;
   gap: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--colors-hairline, #e5e5e5);
 }
 
 .mode-tab-btn {
   flex: 1;
-  padding: 10px 14px;
-  border-radius: 8px;
+  padding: 10px 16px;
+  border-radius: var(--rounded-pill, 50px);
   border: none;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast, 0.15s);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,41 +200,42 @@
 }
 
 .mode-tab-btn.active {
-  background: #0284c7;
-  color: #fff;
+  background: var(--colors-primary, #000000);
+  color: var(--colors-on-primary, #ffffff);
 }
 
 .mode-tab-btn:not(.active) {
   background: transparent;
-  color: #94a3b8;
+  color: var(--colors-ink-muted, #555555);
 }
 
 .section-onnuri-box {
   display: none;
-  background: rgba(56, 189, 248, 0.04);
-  border: 1px solid rgba(56, 189, 248, 0.2);
-  border-radius: 12px;
+  background: var(--colors-canvas, #ffffff);
+  border: 1px solid var(--colors-hairline, #e5e5e5);
+  border-radius: var(--rounded-md, 8px);
   padding: 18px;
   margin-bottom: 20px;
 }
 
 .onnuri-section-title {
-  color: #38bdf8;
+  color: var(--colors-ink, #000000);
 }
 
 .onnuri-verified-badge {
-  background: rgba(56, 189, 248, 0.2);
-  color: #38bdf8;
+  background: var(--colors-block-mint, #c4f4e4);
+  color: #0b6b4e;
   font-size: 11px;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--rounded-pill, 50px);
+  border: 1px solid #7ce2c0;
 }
 
 .onnuri-select {
-  background: #0f172a;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  background: var(--colors-canvas, #ffffff);
+  color: var(--colors-ink, #000000);
+  border: 1px solid var(--colors-hairline, #e5e5e5);
+  border-radius: var(--rounded-md, 8px);
   padding: 10px 12px;
   width: 100%;
 }
@@ -412,6 +401,12 @@
 }
 .excel-grid-table tr:hover td {
   background: rgba(56, 189, 248, 0.05);
+}
+
+.null-val-text {
+  color: #64748b;
+  font-style: italic;
+  font-size: 11px;
 }
 
 /* 동적 커스텀 항목 칩 */

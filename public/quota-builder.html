@@ -4,53 +4,76 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>사업주 조사 쿼터(Quota) 생성기 - AutoSurvey AI</title>
-  <!-- Google Fonts -->
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Pretendard Korean Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="b2b.css">
+  
+  <!-- Figma Design System CSS Modules -->
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="figma-base.css">
+  <link rel="stylesheet" href="color-blocks.css">
   <link rel="stylesheet" href="campaign.css">
   <link rel="stylesheet" href="custom-styles.css">
 </head>
 <body>
-  <div class="background-glows">
-    <div class="glow glow-1"></div>
-    <div class="glow glow-2"></div>
-    <div class="glow glow-3"></div>
-  </div>
 
-  <div class="app-container">
-    <!-- 헤더 -->
-    <header class="app-header detail-header">
-      <div class="nav-left">
-        <a href="index.html" class="btn btn-secondary btn-back">
-          <i class="fa-solid fa-arrow-left"></i> 설문 캠페인 목차로
+  <!-- 1. Sticky Top Navigation (56px) -->
+  <nav class="figma-top-nav">
+    <div class="nav-inner">
+      <div class="nav-left flex-center-gap-10">
+        <a href="index.html" class="btn-pill btn-pill-secondary">
+          <i class="fa-solid fa-arrow-left"></i> 캠페인 목록으로
         </a>
         <div class="campaign-title-area">
-          <h1><i class="fa-solid fa-table-cells"></i> [사업주 대상] 조사 쿼터(Quota) 생성기</h1>
-          <p class="builder-header-desc">MarketBz 실존 사업자 데이터를 100% 팩트 기반으로 수집하여 JSON 및 Excel 표 형태로 구성합니다.</p>
+          <h1 class="font-card-title"><i class="fa-solid fa-table-cells"></i> 사업주 조사 쿼터(Quota) 생성기</h1>
         </div>
       </div>
+      
       <div class="header-status">
-        <span class="badge-quota-type b2b badge-quota-type-pad">
+        <span class="figma-badge badge-b2b">
           <i class="fa-solid fa-shield-halved"></i> 100% 실존 데이터 검증 모드
         </span>
       </div>
-    </header>
+    </div>
+  </nav>
 
-    <main class="dashboard-grid">
-      <!-- 좌측: 쿼터 설정 및 항목 동적 추가 패널 -->
-      <section class="glass-card config-panel">
-        <div class="card-header">
-          <h2><i class="fa-solid fa-sliders"></i> 조사 쿼터 수집 조건 설정</h2>
-          <span class="card-desc">필요한 수량과 수집 항목(기본 + 커스텀 추가)을 지정하세요.</span>
+  <!-- 2. Marquee Strip (36px Ribbon) -->
+  <div class="figma-marquee-strip">
+    <div class="marquee-content">
+      <span>B2B RESEARCH QUOTA ENGINE</span>
+      <span>• ONNURI NATIONAL PLATFORM ON-DEMAND</span>
+      <span>• MARKETBZ 1:1 ENRICHMENT</span>
+      <span>• EXCEL XLSX EXPORT</span>
+      <span>• ZERO SYNTHETIC BIAS</span>
+      <span>• REALTIME SSE TELEMETRY</span>
+      <span>• B2B RESEARCH QUOTA ENGINE</span>
+      <span>• ONNURI NATIONAL PLATFORM</span>
+    </div>
+  </div>
+
+  <!-- 3. Main Workspace Container -->
+  <main class="figma-container mt-18">
+    <div class="dashboard-grid">
+      
+      <!-- ============================================== -->
+      <!-- 좌측: 쿼터 설정 및 파이프라인 제어 (Block Lime) -->
+      <!-- ============================================== -->
+      <section class="color-block color-block-lime">
+        <div class="block-eyebrow">
+          <i class="fa-solid fa-sliders"></i>
+          <span>SYSTEMS / B2B PIPELINE CONFIGURATION</span>
         </div>
+        <h2 class="block-title">조사 쿼터 수집 조건 설정</h2>
+        <p class="block-desc">소상공인 및 기업 데이터를 팩트 기반으로 수집하여 JSON 및 Excel 표 형태로 구성합니다.</p>
 
         <!-- 수집 모드 선택 탭 -->
-        <div class="source-mode-selector">
+        <div class="source-mode-selector mb-16">
           <button type="button" id="tab-mode-marketbz" class="mode-tab-btn active">
             <i class="fa-solid fa-building"></i> 마켓비즈 단독 수집 (일반 B2B)
           </button>
@@ -63,65 +86,65 @@
           <input type="hidden" id="current-source-mode" value="marketbz" />
 
           <!-- [공통] 쿼터 기본 정보 -->
-          <div class="form-section">
-            <h3 class="section-title"><i class="fa-solid fa-tag"></i> 쿼터 기본 정보</h3>
+          <div class="block-card mb-16">
+            <h3 class="font-body-lg font-bold mb-12"><i class="fa-solid fa-tag"></i> 쿼터 기본 정보</h3>
             <div class="form-group">
-              <label for="quota-title">조사 쿼터 명칭 <span class="required">*</span></label>
-              <input type="text" id="quota-title" required value="2026_소프트웨어_사업자_조사쿼터" placeholder="예: 2026_풍납시장_온누리가맹점_조사쿼터" />
+              <label for="quota-title" class="figma-label">조사 쿼터 명칭 <span class="required">*</span></label>
+              <input type="text" id="quota-title" class="figma-input" required value="2026_소프트웨어_사업자_조사쿼터" placeholder="예: 2026_풍납시장_온누리가맹점_조사쿼터" />
             </div>
           </div>
 
           <!-- [모드 1] 마켓비즈 단독 설정 영역 -->
-          <div id="section-marketbz-mode" class="form-section">
-            <h3 class="section-title"><i class="fa-solid fa-magnifying-glass"></i> 마켓비즈 검색 조건</h3>
+          <div id="section-marketbz-mode" class="block-card mb-16">
+            <h3 class="font-body-lg font-bold mb-12"><i class="fa-solid fa-magnifying-glass"></i> 마켓비즈 검색 조건</h3>
             <div class="grid-2col">
-              <div class="form-group">
-                <label for="quota-keyword">타겟 업종 / 검색어 <span class="required">*</span></label>
-                <input type="text" id="quota-keyword" value="소프트웨어" placeholder="예: 소프트웨어, 외식업, 제조업 등" />
+              <div class="form-group mb-12">
+                <label for="quota-keyword" class="figma-label">타겟 업종 / 검색어 <span class="required">*</span></label>
+                <input type="text" id="quota-keyword" class="figma-input" value="소프트웨어" placeholder="예: 소프트웨어, 외식업, 제조업 등" />
               </div>
-              <div class="form-group">
-                <label for="quota-count">목표 표본 수량 (N개 기업) <span class="required">*</span></label>
-                <input type="number" id="quota-count" min="1" max="100" value="2" />
+              <div class="form-group mb-12">
+                <label for="quota-count" class="figma-label">목표 표본 수량 (N개 기업) <span class="required">*</span></label>
+                <input type="number" id="quota-count" class="figma-input" min="1" max="100" value="2" />
               </div>
             </div>
           </div>
 
           <!-- [모드 2] 온누리상품권 연계 설정 영역 -->
-          <div id="section-onnuri-mode" class="form-section section-onnuri-box">
-            <div class="section-title-with-bar">
-              <h3 class="section-title onnuri-section-title"><i class="fa-solid fa-shop"></i> 온누리상품권 가맹점 타겟 설정</h3>
-              <span class="badge onnuri-verified-badge">공인 ongift.or.kr 100% 팩트</span>
+          <div id="section-onnuri-mode" class="block-card mb-16 hidden">
+            <div class="flex-between mb-12">
+              <h3 class="font-body-lg font-bold"><i class="fa-solid fa-shop"></i> 온누리상품권 가맹점 타겟 설정</h3>
+              <span class="figma-badge badge-running">공인 ongift.or.kr 100% 팩트</span>
             </div>
             
-            <div class="grid-2col mt-12">
+            <div class="grid-2col mb-12">
               <div class="form-group">
-                <label for="onnuri-region">시/도 선택 <span class="required">*</span></label>
-                <select id="onnuri-region" class="form-select onnuri-select">
+                <label for="onnuri-region" class="figma-label">시/도 선택 <span class="required">*</span></label>
+                <select id="onnuri-region" class="figma-select">
                   <option value="01">서울</option>
                 </select>
               </div>
               <div class="form-group">
-                <label for="onnuri-district">시/군/구 선택 <span class="required">*</span></label>
-                <select id="onnuri-district" class="form-select onnuri-select">
+                <label for="onnuri-district" class="figma-label">시/군/구 선택 <span class="required">*</span></label>
+                <select id="onnuri-district" class="figma-select">
                   <option value="01018">송파구</option>
                 </select>
               </div>
             </div>
 
-            <div class="grid-2col mt-12">
+            <div class="grid-2col mb-12">
               <div class="form-group">
-                <label for="onnuri-market-name">대상 전통시장명 <span class="required">*</span></label>
-                <input type="text" id="onnuri-market-name" class="onnuri-input-market" value="풍납시장" placeholder="예: 풍납시장, 방산시장, 망원시장 등" />
+                <label for="onnuri-market-name" class="figma-label">대상 전통시장명 <span class="required">*</span></label>
+                <input type="text" id="onnuri-market-name" class="figma-input" value="풍납시장" placeholder="예: 풍납시장, 방산시장, 망원시장 등" />
               </div>
               <div class="form-group">
-                <label for="onnuri-quota-count">목표 가맹점 수량 (N개 사업자) <span class="required">*</span></label>
-                <input type="number" id="onnuri-quota-count" min="1" max="50" value="5" />
+                <label for="onnuri-quota-count" class="figma-label">목표 가맹점 수량 (N개 사업자) <span class="required">*</span></label>
+                <input type="number" id="onnuri-quota-count" class="figma-input" min="1" max="50" value="5" />
               </div>
             </div>
 
-            <div class="grid-2col mt-12">
+            <div class="grid-2col mb-12">
               <div class="form-group">
-                <label>가맹 상태 필터</label>
+                <label class="figma-label">가맹 상태 필터</label>
                 <div class="flex-row-gap-14 mt-8">
                   <label class="radio-filter-label active">
                     <input type="radio" name="onnuri-status" value="ACTIVE" checked /> 정상 가맹점만 (권장)
@@ -132,7 +155,7 @@
                 </div>
               </div>
               <div class="form-group">
-                <label>온누리 취급 유형</label>
+                <label class="figma-label">온누리 취급 유형</label>
                 <div class="flex-row-gap-14 mt-8">
                   <label class="radio-filter-label active">
                     <input type="radio" name="onnuri-payment" value="ALL" checked /> 전체
@@ -147,15 +170,15 @@
               </div>
             </div>
 
-            <div class="onnuri-helper-info">
+            <div class="onnuri-helper-info font-body-sm text-dim">
               <i class="fa-solid fa-circle-info"></i> 온누리에서 가맹점 상호/사업자번호를 1차 확보 후, 마켓비즈와 1:1 매칭하여 상세 정보를 결합합니다.
             </div>
           </div>
 
-          <!-- 기본 사업자 항목 선택 (필요한 컬럼 지정) -->
-          <div class="form-section">
-            <div class="section-title-with-bar">
-              <h3 class="section-title"><i class="fa-solid fa-list-check"></i> 수집 항목 선택 (테이블 & 엑셀 컬럼)</h3>
+          <!-- 기본 사업자 항목 선택 -->
+          <div class="block-card mb-16">
+            <div class="flex-between mb-12">
+              <h3 class="font-body-lg font-bold"><i class="fa-solid fa-list-check"></i> 수집 항목 선택 (테이블 & 엑셀 컬럼)</h3>
               <div class="preset-buttons">
                 <button type="button" id="btn-select-all" class="btn-chip">전체</button>
                 <button type="button" id="btn-select-core" class="btn-chip">핵심 5종</button>
@@ -175,21 +198,20 @@
             </div>
           </div>
 
-          <!-- 사용자 정의 동적 항목 추가 패널 -->
-          <div class="form-section">
-            <div class="section-title-with-bar">
-              <h3 class="section-title"><i class="fa-solid fa-plus-circle"></i> 새로운 항목 추가 (동적 컬럼 확장)</h3>
-              <span class="card-desc">필요한 추가 정보를 자유롭게 추가하세요.</span>
+          <!-- 동적 항목 추가 패널 -->
+          <div class="block-card mb-16">
+            <div class="flex-between mb-12">
+              <h3 class="font-body-lg font-bold"><i class="fa-solid fa-plus-circle"></i> 새로운 항목 추가</h3>
+              <span class="font-caption text-dim">필요한 추가 정보 컬럼 확장</span>
             </div>
             
-            <div class="input-wrapper flex-row-gap-8">
-              <input type="text" id="input-new-field" placeholder="추가할 항목명 입력 (예: 종업원수, 기업규모, 법인구분, 홈페이지)" />
-              <button type="button" id="btn-add-field" class="btn btn-secondary btn-add-field-action">
+            <div class="input-wrapper flex-row-gap-8 mb-12">
+              <input type="text" id="input-new-field" class="figma-input" placeholder="추가할 항목명 (예: 종업원수, 법인구분, 홈페이지)" />
+              <button type="button" id="btn-add-field" class="btn-pill btn-pill-secondary">
                 <i class="fa-solid fa-plus"></i> 항목 추가
               </button>
             </div>
 
-            <!-- 추가된 커스텀 항목 칩 리스트 -->
             <div class="custom-chip-group" id="custom-fields-chip-list">
               <!-- JS로 동적 추가 -->
             </div>
@@ -197,41 +219,47 @@
 
           <!-- 쿼터 만들기 실행 버튼 -->
           <div class="action-buttons">
-            <button type="submit" id="btn-generate-quota" class="btn btn-primary btn-generate-quota-action">
+            <button type="submit" id="btn-generate-quota" class="btn-pill btn-pill-primary w-full">
               <i class="fa-solid fa-bolt"></i> 조사 쿼터 만들기 (JSON & Excel 동시 생성)
             </button>
           </div>
         </form>
       </section>
 
-      <!-- 우측: Excel 표 형태 스프레드시트 뷰어 및 다운로드 -->
-      <section class="glass-card monitor-panel">
-        <div class="card-header">
-          <h2><i class="fa-solid fa-file-excel icon-excel-green"></i> 실시간 조사 쿼터 엑셀(Excel) 표 뷰어</h2>
-          <div id="download-actions" class="excel-actions">
-            <button type="button" id="btn-create-campaign-from-quota" class="btn-create-campaign-shortcut">
+      <!-- ============================================== -->
+      <!-- 우측: Excel 표 형태 스프레드시트 뷰어 (Hairline Table) -->
+      <!-- ============================================== -->
+      <section class="figma-card monitor-panel">
+        <div class="flex-between mb-16">
+          <div class="flex-center-gap-8">
+            <i class="fa-solid fa-file-excel icon-excel-green"></i>
+            <h2 class="font-card-title">실시간 조사 쿼터 엑셀(Excel) 표 뷰어</h2>
+          </div>
+          
+          <div id="download-actions" class="excel-actions flex-row-gap-8 hidden">
+            <button type="button" id="btn-create-campaign-from-quota" class="btn-pill btn-pill-primary">
               <i class="fa-solid fa-rocket"></i> 이 쿼터로 설문 시작
             </button>
-            <a href="#" id="link-excel-download" class="btn-excel" download>
-              <i class="fa-solid fa-file-arrow-down"></i> Excel(.xlsx) 다운로드
+            <a href="#" id="link-excel-download" class="btn-pill btn-pill-secondary" download>
+              <i class="fa-solid fa-file-arrow-down"></i> Excel 다운로드
             </a>
-            <a href="#" id="link-json-download" class="btn-json" download>
-              <i class="fa-solid fa-download"></i> JSON 다운로드
+            <a href="#" id="link-json-download" class="btn-pill btn-pill-secondary" download>
+              <i class="fa-solid fa-download"></i> JSON
             </a>
           </div>
         </div>
 
         <!-- 엑셀 스프레드시트 뷰어 컨테이너 -->
-        <div class="excel-spreadsheet-container">
-          <div class="excel-toolbar">
-            <div class="excel-title" id="sheet-title-text">
+        <div class="figma-card-soft mb-16">
+          <div class="excel-toolbar flex-between mb-12">
+            <div class="excel-title font-body-sm font-bold" id="sheet-title-text">
               <i class="fa-solid fa-table"></i> [미생성] 조건을 설정하고 쿼터 만들기를 실행해 주세요.
             </div>
-            <span class="badge-status ready" id="sheet-row-count-badge">0개 행</span>
+            <span class="figma-badge badge-ready font-mono" id="sheet-row-count-badge">0개 행</span>
           </div>
 
-          <div class="excel-grid-scroll">
-            <table class="excel-grid-table" id="excel-grid-table">
+          <div class="figma-table-container">
+            <table class="figma-table excel-grid-table" id="excel-grid-table">
               <thead id="excel-grid-thead">
                 <tr>
                   <th>No</th>
@@ -270,8 +298,9 @@
           </div>
         </div>
       </section>
-    </main>
-  </div>
+
+    </div>
+  </main>
 
   <script type="module" src="quota-builder.js"></script>
 </body>

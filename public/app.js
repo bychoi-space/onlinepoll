@@ -45,14 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mode === 'b2b') {
       tabB2b.classList.add('active');
       tabB2c.classList.remove('active');
-      sectionB2bConfig.style.display = 'block';
-      sectionB2cPersona.style.display = 'none';
+      sectionB2bConfig.classList.remove('hidden');
+      sectionB2cPersona.classList.add('hidden');
       appendLog('info', '사업자 대상(B2B) 설문 모드가 활성화되었습니다. MarketBz 실존 데이터가 연동됩니다.');
     } else {
       tabB2c.classList.add('active');
       tabB2b.classList.remove('active');
-      sectionB2cPersona.style.display = 'block';
-      sectionB2bConfig.style.display = 'none';
+      sectionB2cPersona.classList.remove('hidden');
+      sectionB2bConfig.classList.add('hidden');
       appendLog('info', '개인 대상(B2C) 설문 모드가 활성화되었습니다.');
     }
   }

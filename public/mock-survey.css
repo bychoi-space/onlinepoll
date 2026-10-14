@@ -1,0 +1,220 @@
+/* ========================================================
+   Mock Survey Stylesheet (Zero-Inline Extraction)
+   Used by mock-survey.html & mock-survey-b2b.html
+   ======================================================== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body.mock-survey-body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background-color: #ede7f6;
+  color: #202124;
+  padding: 40px 16px;
+}
+
+body.mock-survey-b2b-body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background-color: #e0f2fe;
+  color: #0f172a;
+  padding: 40px 16px;
+}
+
+.survey-card {
+  max-width: 680px;
+  margin: 0 auto 16px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #dadce0;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.header-card {
+  border-top: 10px solid #673ab7;
+}
+
+.header-card-b2b {
+  border-top: 10px solid #0284c7;
+}
+
+.survey-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.survey-title-b2b {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0369a1;
+  margin-bottom: 8px;
+}
+
+.survey-desc {
+  font-size: 14px;
+  color: #5f6368;
+  line-height: 1.6;
+}
+
+.survey-desc-b2b {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.required-notice {
+  color: #d93025;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.q-header {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.q-req {
+  color: #d93025;
+  margin-left: 4px;
+}
+
+.options-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.custom-radio, .custom-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #5f6368;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.custom-radio {
+  border-radius: 50%;
+}
+
+.custom-checkbox {
+  border-radius: 3px;
+}
+
+.custom-radio.checked {
+  border-color: #673ab7;
+  background-color: #673ab7;
+  box-shadow: inset 0 0 0 4px #ffffff;
+}
+
+.mock-survey-b2b-body .custom-radio.checked {
+  border-color: #0284c7;
+  background-color: #0284c7;
+}
+
+.custom-checkbox.checked {
+  border-color: #673ab7;
+  background-color: #673ab7;
+  color: #ffffff;
+}
+
+.mock-survey-b2b-body .custom-checkbox.checked {
+  border-color: #0284c7;
+  background-color: #0284c7;
+}
+
+.custom-checkbox.checked::after {
+  content: '✔';
+  font-size: 12px;
+}
+
+.mock-survey-body textarea,
+.mock-survey-body input[type="text"],
+.mock-survey-b2b-body textarea,
+.mock-survey-b2b-body input[type="text"] {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #dadce0;
+  padding: 8px 0;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.mock-survey-body textarea:focus,
+.mock-survey-body input[type="text"]:focus {
+  border-bottom: 2px solid #673ab7;
+}
+
+.mock-survey-b2b-body textarea:focus,
+.mock-survey-b2b-body input[type="text"]:focus {
+  border-bottom: 2px solid #0284c7;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.btn-submit {
+  background-color: #673ab7;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+  background-color: #5e35b1;
+}
+
+.btn-submit-b2b {
+  background-color: #0284c7;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-submit-b2b:hover {
+  background-color: #0369a1;
+}
+
+.completed-message {
+  display: none;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.completed-message.is-visible {
+  display: block;
+}
+
+.completed-message h2 {
+  font-size: 22px;
+  margin-bottom: 12px;
+  color: #202124;
+}
