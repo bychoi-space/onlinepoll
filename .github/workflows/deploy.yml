@@ -29,8 +29,8 @@ jobs:
           cat /tmp/ssh.log
           echo "=== SSH LOG END ==="
           if [ $SSH_EXIT -ne 0 ]; then
-            SUMMARY=$(tail -n 15 /tmp/ssh.log | tr '\n' ' | ')
-            echo "::error title=SSH_Failure::$SUMMARY"
+            B64=$(tail -n 30 /tmp/ssh.log | base64 -w 0)
+            echo "::error title=SSH_B64::$B64"
             exit $SSH_EXIT
           fi
 
