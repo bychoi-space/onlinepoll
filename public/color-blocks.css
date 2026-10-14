@@ -52,11 +52,11 @@
 
 /* Color-Block Inner Typography & Hierarchy */
 .color-block .block-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.54px;
+  letter-spacing: 0.4px;
   margin-bottom: var(--spacing-xs);
   display: inline-flex;
   align-items: center;

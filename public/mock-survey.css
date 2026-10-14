@@ -10,14 +10,14 @@
 }
 
 body.mock-survey-body {
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
   background-color: #ede7f6;
   color: #202124;
   padding: 40px 16px;
 }
 
 body.mock-survey-b2b-body {
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
   background-color: #e0f2fe;
   color: #0f172a;
   padding: 40px 16px;
