@@ -22,5 +22,15 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
 
           echo "🚀 [Deploy] Connecting to GCP VM (34.64.233.77)..."
-          ssh -v -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 "cd ~/onlinepoll && git pull origin main && npm install --production=false && pm2 restart onlinepoll"
+          set +e
+          ssh -vvv -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 "cd ~/onlinepoll && git pull origin main && npm install --production=false && pm2 restart onlinepoll" > /tmp/ssh.log 2>&1
+          SSH_EXIT=$?
+          echo "=== SSH LOG START ==="
+          cat /tmp/ssh.log
+          echo "=== SSH LOG END ==="
+          if [ $SSH_EXIT -ne 0 ]; then
+            SUMMARY=$(grep -iE "permission denied|authenticat|refused|debug1" /tmp/ssh.log | tail -n 10 | tr '\n' ' ')
+            echo "::error title=SSH_Failure::$SUMMARY"
+            exit $SSH_EXIT
+          fi
 
