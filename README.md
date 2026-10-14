@@ -105,6 +105,16 @@ npm start
 
 ---
 
+## ☁️ 클라우드 호스팅 & 무중단 자동 배포 (Production & CI/CD)
+
+본 시스템은 상시 가동을 위해 **Google Cloud Compute Engine VM**에서 독립 운영 중이며, GitHub Actions CI/CD를 통해 코드가 푸시되면 15초 내에 클라우드 서버에 자동 배포됩니다.
+
+- **프로덕션 대시보드 URL**: [http://34.64.233.77:3000](http://34.64.233.77:3000)
+- **CI/CD 파이프라인**: GitHub Actions (`.github/workflows/deploy.yml`) ➔ SSH 원격 자동 배포 및 PM2 무중단 리로드
+
+---
+
 ## 🔒 보안 및 원칙 (Security & Compliance)
 - 계정 정보 및 API 키는 절대 깃 저장소에 커밋되지 않도록 `.gitignore` 및 환경변수(`.env`)로 철저히 분리되어 있습니다.
 - 실존 데이터 검증 원칙: 허위/날조된 사업자 번호나 더미 데이터를 생성하지 않으며 공인 플랫폼의 팩트 데이터만을 연동합니다.
+
