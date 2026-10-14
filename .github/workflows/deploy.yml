@@ -17,20 +17,18 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           echo "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
-          # Ensure trailing newline
           echo "" >> ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
 
           echo "🚀 [Deploy] Connecting to GCP VM (34.64.233.77)..."
-          set +e
-          ssh -vvv -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 "cd ~/onlinepoll && git pull origin main && npm install --production=false && pm2 restart onlinepoll" > /tmp/ssh.log 2>&1
-          SSH_EXIT=$?
-          echo "=== SSH LOG START ==="
-          cat /tmp/ssh.log
-          echo "=== SSH LOG END ==="
-          if [ $SSH_EXIT -ne 0 ]; then
-            B64=$(tail -n 30 /tmp/ssh.log | base64 -w 0)
-            echo "::error title=SSH_B64::$B64"
-            exit $SSH_EXIT
-          fi
-
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 << 'EOF'
+            set -e
+            echo "📥 [Deploy] Pulling latest code on GCP VM..."
+            cd ~/onlinepoll
+            git pull origin main
+            echo "📦 [Deploy] Updating dependencies..."
+            npm install --production=false
+            echo "🔄 [Deploy] Reloading PM2 process..."
+            pm2 restart onlinepoll
+            echo "✅ [Deploy] Deployment completed successfully!"
+          EOF
