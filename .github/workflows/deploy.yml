@@ -1,0 +1,29 @@
+name: Auto Deploy to GCP VM
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Deploy to Google Cloud Compute Engine
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.GCP_HOST || '34.64.233.77' }}
+          username: ${{ secrets.GCP_USERNAME || 'choiby01' }}
+          key: ${{ secrets.GCP_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            echo "🚀 [Deploy] Starting deployment on GCP Compute Engine..."
+            cd ~/onlinepoll
+            echo "📥 [Deploy] Pulling latest changes from main..."
+            git pull origin main
+            echo "📦 [Deploy] Installing dependencies..."
+            npm install --production=false
+            echo "🔄 [Deploy] Restarting PM2 process..."
+            pm2 restart onlinepoll
+            echo "✅ [Deploy] Deployment completed successfully!"

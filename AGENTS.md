@@ -247,12 +247,21 @@ c:/onlinepoll/
 | **유료 전환 후 예상 비용 (2027년 1월 이후)** | 24시간 30일 내내 상시 켜두었을 경우 | **월 약 $14 ~ $16 (약 19,000원 ~ 22,000원)**<br>(시간당 약 $0.02 / 약 27원) |
 | **비용 절약 꿀팁 (종량제 운영)** | 설문 조사를 진행하지 않을 때 GCP 콘솔에서 VM **[중지(Stop)]** 클릭 시 | CPU/RAM 사용료 즉시 0원 중단<br>(디스크 보관료 월 약 1,000원만 발생) |
 
-### 5. 서버 운영 및 최신 코드 업데이트 가이드 (유지보수)
-로컬 PC에서 기능을 개발하고 GitHub(`main` 브랜치)에 `git push`한 후, 구글 클라우드 서버에 반영하는 방법:
+### 5. 무중단 자동 배포 파이프라인 (CI/CD: GitHub Actions)
+본 시스템은 코드 변경 시 매번 서버 SSH에 접속할 필요 없이, GitHub `main` 브랜치에 코드가 푸시되면 **GitHub Actions** 워크플로우(`.github/workflows/deploy.yml`)가 자동으로 GCP VM에 SSH로 원격 접속하여 다음 작업을 완전 자동(15초 내외)으로 수행합니다:
+1. `git pull origin main` (최신 코드 자동 동기화)
+2. `npm install --production=false` (신규 의존성 패키지 자동 설치)
+3. `pm2 restart onlinepoll` (Node.js 데몬 무중단 재기동)
 
-1. **GCP 콘솔 브라우저 SSH 접속**:
-   - `onlinepoll-server` 인스턴스 우측의 **[SSH]** 버튼 클릭
-2. **최신 코드 동기화 및 서버 재시작 (원라이너)**:
+#### GitHub Actions Secret 설정 항목:
+- `GCP_SSH_KEY`: GCP VM 접속용 SSH 프라이빗 키 (필수)
+- `GCP_HOST`: `34.64.233.77` (기본값 내장)
+- `GCP_USERNAME`: `choiby01` (기본값 내장)
+
+### 6. 수동 유지보수 및 비상 복구 가이드 (Fallback)
+자동 배포 외에 직접 서버 상태를 확인하거나 수동으로 동기화할 경우:
+1. **GCP 콘솔 브라우저 SSH 접속**: `onlinepoll-server` 인스턴스 우측의 **[SSH]** 버튼 클릭
+2. **수동 동기화 및 재시작 (원라이너)**:
    ```bash
    cd ~/onlinepoll && git pull origin main && npm install && pm2 restart onlinepoll
    ```
