@@ -221,6 +221,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const mode = inputCurrentMode.value;
     const title = inputTitle.value.trim() || '조사쿼터';
     const baseFields = Array.from(document.querySelectorAll('input[name="base-fields"]:checked')).map(cb => cb.value);
+    const checkAutoEnrich = document.getElementById('check-auto-enrich');
+    const autoEnrich = checkAutoEnrich ? checkAutoEnrich.checked : true;
 
     try {
       btnGenerate.disabled = true;
@@ -245,11 +247,12 @@ document.addEventListener('DOMContentLoaded', () => {
           paymentFilter,
           targetCount,
           baseFields,
-          customFields
+          customFields,
+          autoEnrich
         };
 
         btnGenerate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 온누리 1차 수집 & 마켓비즈 2차 결합 진행 중...';
-        appendLog('info', `[온누리 연계 쿼터 생성] 시장: "${marketName}", 목표: ${targetCount}개 가맹점`);
+        appendLog('info', `[온누리 연계 쿼터 생성] 시장: "${marketName}", 목표: ${targetCount}개 가맹점, 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
 
       } else {
         // 마켓비즈 단독
@@ -262,11 +265,12 @@ document.addEventListener('DOMContentLoaded', () => {
           keyword,
           targetCount,
           baseFields,
-          customFields
+          customFields,
+          autoEnrich
         };
 
         btnGenerate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MarketBz 실존 사업자 데이터 수집 중...';
-        appendLog('info', `[마켓비즈 쿼터 생성 시작] 키워드: "${keyword}", 목표: ${targetCount}개 기업`);
+        appendLog('info', `[마켓비즈 쿼터 생성 시작] 키워드: "${keyword}", 목표: ${targetCount}개 기업, 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
       }
 
       res = await fetch(endpoint, {
@@ -321,7 +325,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rawVal === null || rawVal === undefined || rawVal === '') {
           tbodyHtml += `<td><span class="null-val-text">null</span></td>`;
         } else {
-          tbodyHtml += `<td>${escapeHtml(String(rawVal))}</td>`;
+          let cellContent = escapeHtml(String(rawVal));
+          // 보강된 필드 태그 표시
+          if (col.key === 'ceoName' && (row.isCeoEnriched || row.ceoSource)) {
+            cellContent += ` <span class="badge-enriched" title="${escapeHtml(row.ceoSource || '외부 공인 정보 보강')}"><i class="fa-solid fa-sparkles"></i>보강</span>`;
+          } else if (col.key === 'phone' && (row.isPhoneEnriched || row.phoneSource)) {
+            cellContent += ` <span class="badge-enriched" title="${escapeHtml(row.phoneSource || '외부 검색 보강')}"><i class="fa-solid fa-sparkles"></i>보강</span>`;
+          }
+          tbodyHtml += `<td>${cellContent}</td>`;
         }
       });
       tbodyHtml += '</tr>';
@@ -336,6 +347,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 마지막 생성된 쿼터 정보 보관
     lastCreatedQuota = res;
+  }
+
+  // [신규] '결측치 외부 재보강' 버튼 이벤트 핸들러
+  const btnReEnrich = document.getElementById('btn-re-enrich-quota');
+  if (btnReEnrich) {
+    btnReEnrich.addEventListener('click', async () => {
+      if (!lastCreatedQuota || !lastCreatedQuota.jsonFileName) {
+        alert('먼저 조사 쿼터를 생성해 주세요.');
+        return;
+      }
+
+      try {
+        btnReEnrich.disabled = true;
+        btnReEnrich.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 외부 공인 데이터 탐색 중...';
+        appendLog('info', `[결측치 외부 재보강] "${lastCreatedQuota.title}" 외부 검색 탐색을 시작합니다...`);
+
+        const res = await fetch('/api/quota/enrich', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: lastCreatedQuota.jsonFileName })
+        });
+
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || '보강 실패');
+
+        appendLog('success', result.message);
+        renderExcelGrid(result);
+        alert(`결측치 외부 보강 완료!\n총 ${result.enrichedCount}건의 실존 데이터가 추가 보강되었습니다.`);
+      } catch (err) {
+        appendLog('error', `보강 오류: ${err.message}`);
+        alert('결측치 보강 실패: ' + err.message);
+      } finally {
+        btnReEnrich.disabled = false;
+        btnReEnrich.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i> 결측치 외부 재보강';
+      }
+    });
   }
 
   // [신규] '이 쿼터로 설문 시작' 버튼 이벤트 핸들러

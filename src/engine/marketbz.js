@@ -3,6 +3,7 @@
  * 인증 계정을 통해 로그인 후, 실제 사업자 정보를 수집하여 B2B 설문에 공급합니다.
  */
 import { chromium } from 'playwright';
+import { enrichBusinessData } from './enricher.js';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
 
@@ -18,10 +19,11 @@ const DEFAULT_ACCOUNT = {
  * @param {string} options.keyword 검색할 업종 또는 기업 키워드 (예: '외식업', '소프트웨어', '제조업')
  * @param {number} options.count 수집할 사업자 수 (설문 회차 수에 대응)
  * @param {Array<string>} options.customFields 사용자가 추가한 커스텀 항목명 목록 (예: ['종업원수', '기업규모', '홈페이지'])
+ * @param {boolean} [options.autoEnrich=true] 결측치 외부 공인 데이터 자동 보강 여부
  * @returns {Promise<Array<Object>>} 9대 필드 및 동적 항목이 포함된 실존 사업자 정보 배열
  */
-export async function fetchMarketBzBusinesses({ keyword = '소프트웨어', count = 1, customFields = [] }) {
-  logger.info(`[MarketBz] 사업자 데이터 수집을 시작합니다. (키워드: "${keyword}", 필요 수량: ${count}개, 추가항목: ${customFields.join(', ') || '없음'})`);
+export async function fetchMarketBzBusinesses({ keyword = '소프트웨어', count = 1, customFields = [], autoEnrich = true }) {
+  logger.info(`[MarketBz] 사업자 데이터 수집을 시작합니다. (키워드: "${keyword}", 필요 수량: ${count}개, 외부보강: ${autoEnrich ? 'ON' : 'OFF'})`);
 
   const browser = await chromium.launch({
     headless: true,
@@ -165,34 +167,44 @@ export async function fetchMarketBzBusinesses({ keyword = '소프트웨어', cou
           return res;
         }, customFields);
 
-        // 병합 (상호명은 검색 목록에서 검증된 baseItem.companyName 우선)
-        const finalBiz = {
+        // 병합 (더미 날조 없이 실제 데이터만 반영, 없으면 null 처리)
+        let finalBiz = {
           ...detail,
           category: detail.category || '정보통신/서비스',
           industry: detail.industry || '일반업종',
           companyName: baseItem.companyName,
           subIndustry: detail.subIndustry || detail.industry || '서비스',
           bizNumber: detail.bizNumber || baseItem.bizNumber,
-          ceoName: detail.ceoName || '대표자',
-          phone: detail.phone || '02-123-4567',
-          openingDate: detail.openingDate || '2015년 01월 01일',
-          address: detail.address || '서울특별시'
+          ceoName: detail.ceoName || null,
+          phone: detail.phone || null,
+          openingDate: detail.openingDate || null,
+          address: detail.address || null
         };
 
+        // 결측치 외부 보강 (autoEnrich)
+        if (autoEnrich && (!finalBiz.ceoName || !finalBiz.phone)) {
+          try {
+            const enriched = await enrichBusinessData(finalBiz);
+            finalBiz = { ...finalBiz, ...enriched };
+          } catch (e) {
+            logger.warn(`[MarketBz] 외부 보강 건너뜀: ${e.message}`);
+          }
+        }
+
         collectedBusinesses.push(finalBiz);
-        logger.info(`[MarketBz] [수집 완료] 상호: ${finalBiz.companyName} | 사업자번호: ${finalBiz.bizNumber} | 대표: ${finalBiz.ceoName}`);
+        logger.info(`[MarketBz] [수집 완료] 상호: ${finalBiz.companyName} | 대표: ${finalBiz.ceoName || 'null'}${finalBiz.ceoSource ? `(${finalBiz.ceoSource})` : ''} | 연락처: ${finalBiz.phone || 'null'}${finalBiz.phoneSource ? `(${finalBiz.phoneSource})` : ''}`);
       } catch (subErr) {
-        logger.warn(`[MarketBz] 상세 조회 실패, 기본 정보로 대체합니다: ${subErr.message}`);
+        logger.warn(`[MarketBz] 상세 조회 실패, 팩트 기반 최소 정보 유지: ${subErr.message}`);
         collectedBusinesses.push({
           category: '일반기업',
           industry: '일반업종',
           companyName: baseItem.companyName,
           subIndustry: '서비스',
           bizNumber: baseItem.bizNumber,
-          ceoName: '대표자',
-          phone: '02-000-0000',
-          openingDate: '2020년 01월 01일',
-          address: '서울특별시'
+          ceoName: null,
+          phone: null,
+          openingDate: null,
+          address: null
         });
       }
     }

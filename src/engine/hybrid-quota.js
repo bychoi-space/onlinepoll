@@ -6,6 +6,7 @@
 
 import { chromium } from 'playwright';
 import { getMarketMerchants } from './onnuri.js';
+import { enrichBusinessData } from './enricher.js';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
 
@@ -56,6 +57,7 @@ function formatPhoneNumber(raw) {
  * @param {string} [options.paymentFilter='ALL'] - 온누리 취급 유형 ('ALL'|'PAPER'|'DIGITAL')
  * @param {number} [options.targetCount=10] - 수집 목표 수량
  * @param {Array<string>} [options.customFields=[]] - 추가 결합할 커스텀 항목 목록
+ * @param {boolean} [options.autoEnrich=true] - 결측치(대표자/연락처) 외부 공인 데이터 자동 보강 여부
  * @returns {Promise<Array<Object>>} 실존 데이터로 결합된 쿼터 목록
  */
 export async function buildHybridOnnuriQuota({
@@ -65,10 +67,11 @@ export async function buildHybridOnnuriQuota({
   statusFilter = 'ACTIVE',
   paymentFilter = 'ALL',
   targetCount = 10,
-  customFields = []
+  customFields = [],
+  autoEnrich = true
 }) {
   logger.info(`[Hybrid Quota] === 온누리 연계 조사 쿼터 수집 시작 ===`);
-  logger.info(`[Hybrid Quota] 대상: "${marketName}" | 목표: ${targetCount}개 | 커스텀 필드: ${customFields.join(', ') || '없음'}`);
+  logger.info(`[Hybrid Quota] 대상: "${marketName}" | 목표: ${targetCount}개 | 커스텀 필드: ${customFields.join(', ') || '없음'} | 외부 보강: ${autoEnrich ? 'ON' : 'OFF'}`);
 
   // 1단계: 온누리 플랫폼에서 대상 가맹점 1차 팩트 수집
   logger.info(`[Step 1/2] 온누리상품권 공인 플랫폼에서 "${marketName}" 가맹점 목록을 조회합니다...`);
@@ -274,8 +277,22 @@ export async function buildHybridOnnuriQuota({
       delete mergedItem.mbzRoadAddress;
       delete mergedItem.mbzPhone;
 
+      // 3단계: 결측치(대표자 또는 연락처) 외부 공인 데이터 자동 보강 (autoEnrich)
+      if (autoEnrich && (!mergedItem.ceoName || !mergedItem.phone)) {
+        try {
+          const enriched = await enrichBusinessData(mergedItem);
+          mergedItem.ceoName = enriched.ceoName;
+          mergedItem.phone = enriched.phone;
+          mergedItem.ceoSource = enriched.ceoSource || null;
+          mergedItem.phoneSource = enriched.phoneSource || null;
+          mergedItem.isEnriched = Boolean(enriched.isCeoEnriched || enriched.isPhoneEnriched);
+        } catch (enrichErr) {
+          logger.warn(`[Hybrid Quota] 결측치 외부 보강 실패 건너뜀: ${enrichErr.message}`);
+        }
+      }
+
       finalQuotaList.push(mergedItem);
-      logger.success(`[Hybrid Quota] [결합 완료] ${mergedItem.companyName} | 시장: ${mergedItem.marketName} | 연락처: ${mergedItem.phone || 'null'} | 주소: ${mergedItem.address || 'null'} | 취급품목: ${mergedItem.handledItems || 'null'}`);
+      logger.success(`[Hybrid Quota] [결합 완료] ${mergedItem.companyName} | 시장: ${mergedItem.marketName} | 대표자: ${mergedItem.ceoName || 'null'}${mergedItem.ceoSource ? `(${mergedItem.ceoSource})` : ''} | 연락처: ${mergedItem.phone || 'null'}${mergedItem.phoneSource ? `(${mergedItem.phoneSource})` : ''} | 취급품목: ${mergedItem.handledItems || 'null'}`);
     }
 
     logger.success(`[Hybrid Quota] 총 ${finalQuotaList.length}건의 온누리 연계 사업자 쿼터 생성이 성공적으로 완료되었습니다.`);

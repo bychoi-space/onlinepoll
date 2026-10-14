@@ -166,18 +166,26 @@ document.addEventListener('DOMContentLoaded', async () => {
           ? '<span class="badge-row-status used"><i class="fa-solid fa-check"></i> 응답 완료</span>'
           : '<span class="badge-row-status ready">대기</span>';
 
-        const phoneVal = item.phone || '-';
         const openDateVal = item.openDate || '-';
         const itemVal = item.handledItems || item.industry || '-';
-        const ceoVal = item.ceoName || '-';
+        
+        let ceoVal = item.ceoName ? escapeHtml(item.ceoName) : '-';
+        if (item.isCeoEnriched || item.ceoSource) {
+          ceoVal += ` <span class="badge-enriched" title="${escapeHtml(item.ceoSource || '외부보강')}"><i class="fa-solid fa-sparkles"></i>보강</span>`;
+        }
+
+        let phoneVal = item.phone ? escapeHtml(item.phone) : '-';
+        if (item.isPhoneEnriched || item.phoneSource) {
+          phoneVal += ` <span class="badge-enriched" title="${escapeHtml(item.phoneSource || '외부보강')}"><i class="fa-solid fa-sparkles"></i>보강</span>`;
+        }
 
         return `
           <tr>
             <td>${idx + 1}</td>
             <td><strong>${escapeHtml(item.companyName)}</strong></td>
             <td><code>${escapeHtml(item.bizNumber || '-')}</code></td>
-            <td>${escapeHtml(ceoVal)}</td>
-            <td>${escapeHtml(phoneVal)}</td>
+            <td>${ceoVal}</td>
+            <td>${phoneVal}</td>
             <td>${escapeHtml(openDateVal)}</td>
             <td><span class="badge-quota-type b2b">${escapeHtml(itemVal)}</span></td>
             <td>${escapeHtml(item.address ? (item.address.length > 25 ? item.address.slice(0, 25) + '...' : item.address) : '-')}</td>
@@ -258,6 +266,41 @@ document.addEventListener('DOMContentLoaded', async () => {
       } finally {
         btnImportQuota.disabled = false;
         btnImportQuota.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> 쿼터 장착';
+      }
+    });
+  }
+
+  // [신규] 캠페인 쿼터 결측치 외부 보강 버튼
+  const btnEnrichCampaign = document.getElementById('btn-enrich-campaign-quota');
+  if (btnEnrichCampaign) {
+    btnEnrichCampaign.addEventListener('click', async () => {
+      if (!currentCampaign || !currentCampaign.quotaDatabase || currentCampaign.quotaDatabase.length === 0) {
+        alert('보강할 사업자 DB가 없습니다. 먼저 쿼터를 등록해 주세요.');
+        return;
+      }
+
+      try {
+        btnEnrichCampaign.disabled = true;
+        btnEnrichCampaign.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 외부 공인 데이터 탐색 중...';
+        appendLog('info', `[결측치 외부 보강 시작] "${currentCampaign.title}" ${currentCampaign.quotaDatabase.length}개 사업자 탐색 중...`);
+
+        const res = await fetch(`/api/campaigns/${campId}/enrich-quota`, {
+          method: 'POST'
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '보강 실패');
+
+        currentCampaign.quotaDatabase = data.quotaDatabase;
+        renderQuotaTable(data.quotaDatabase);
+        appendLog('success', data.message);
+        alert(`결측치 외부 보강 완료!\n총 ${data.enrichedCount}건의 사업자 정보가 성공적으로 보강되었습니다.`);
+      } catch (err) {
+        appendLog('error', `결측치 보강 오류: ${err.message}`);
+        alert('결측치 보강 실패: ' + err.message);
+      } finally {
+        btnEnrichCampaign.disabled = false;
+        btnEnrichCampaign.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i> 결측치 외부 보강';
       }
     });
   }

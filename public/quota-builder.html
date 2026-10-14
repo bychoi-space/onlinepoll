@@ -173,6 +173,20 @@
             </div>
           </div>
 
+          <!-- [신규] 대표자/연락처 결측치 외부 공인 데이터 자동 보강 옵션 -->
+          <div class="quota-import-box mb-16">
+            <label class="custom-checkbox flex-items-center cursor-pointer m-0">
+              <input type="checkbox" id="check-auto-enrich" checked />
+              <span class="font-body-sm font-bold ml-8">
+                <i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i>
+                대표자·연락처 결측치 외부 공인 데이터 자동 보강
+              </span>
+            </label>
+            <div class="font-caption text-secondary-color mt-4 ml-24">
+              마켓비즈 미기재 시 네이버 플레이스 및 공정위·국세청 공인 정보를 탐색하여 채워넣습니다 (미발견 시 안전하게 null 유지).
+            </div>
+          </div>
+
           <!-- 쿼터 만들기 실행 버튼 -->
           <div class="action-buttons">
             <button type="submit" id="btn-generate-quota" class="btn-pill btn-pill-primary w-full btn-pill-large">
@@ -193,6 +207,9 @@
           </div>
           
           <div id="download-actions" class="excel-actions flex-row-gap-8 hidden">
+            <button type="button" id="btn-re-enrich-quota" class="btn-pill btn-pill-secondary">
+              <i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i> 결측치 외부 재보강
+            </button>
             <button type="button" id="btn-create-campaign-from-quota" class="btn-pill btn-pill-primary">
               <i class="fa-solid fa-rocket"></i> 이 쿼터로 설문 시작
             </button>

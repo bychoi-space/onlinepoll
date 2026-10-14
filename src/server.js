@@ -469,11 +469,12 @@ app.post('/api/quota/generate', async (req, res) => {
     keyword = '소프트웨어',
     targetCount = 2,
     baseFields = ['companyName', 'bizNumber', 'ceoName', 'address', 'industry'],
-    customFields = []
+    customFields = [],
+    autoEnrich = true
   } = req.body;
 
   const count = Math.max(parseInt(targetCount, 10) || 1, 1);
-  logger.info(`[조사 쿼터 생성 시작] 명칭: "${title}" | 키워드: "${keyword}" | 목표 수량: ${count}개`);
+  logger.info(`[조사 쿼터 생성 시작] 명칭: "${title}" | 키워드: "${keyword}" | 목표 수량: ${count}개 | 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
   if (customFields.length > 0) {
     logger.info(`[추가 요청 항목] ${customFields.join(', ')}`);
   }
@@ -483,7 +484,8 @@ app.post('/api/quota/generate', async (req, res) => {
     const businesses = await fetchMarketBzBusinesses({
       keyword,
       count,
-      customFields
+      customFields,
+      autoEnrich: autoEnrich !== false
     });
 
     if (businesses.length === 0) {
@@ -600,7 +602,8 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
     statusFilter = 'ACTIVE',
     paymentFilter = 'ALL',
     targetCount = 10,
-    customFields = []
+    customFields = [],
+    autoEnrich = true
   } = req.body;
 
   if (!marketName || !marketName.trim()) {
@@ -608,7 +611,7 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
   }
 
   const count = Math.max(1, Math.min(parseInt(targetCount) || 10, 50));
-  logger.info(`[온누리 쿼터 요청] "${title}" | 시장: "${marketName}" | 목표: ${count}개`);
+  logger.info(`[온누리 쿼터 요청] "${title}" | 시장: "${marketName}" | 목표: ${count}개 | 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
 
   try {
     const { buildHybridOnnuriQuota } = await import('./engine/hybrid-quota.js');
@@ -619,7 +622,8 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
       statusFilter,
       paymentFilter,
       targetCount: count,
-      customFields
+      customFields,
+      autoEnrich: autoEnrich !== false
     });
 
     if (businesses.length === 0) {
@@ -735,6 +739,106 @@ app.get('/api/quota/list', (req, res) => {
     res.json(list);
   } catch (err) {
     res.status(500).json({ error: '쿼터 목록을 불러오지 못했습니다.' });
+  }
+});
+
+// [5] 생성된 쿼터 파일 결측치(대표자·연락처) 일괄 외부 보강 API
+app.post('/api/quota/enrich', async (req, res) => {
+  const { fileName } = req.body;
+  if (!fileName) {
+    return res.status(400).json({ error: '보강할 쿼터 파일명을 입력해 주세요.' });
+  }
+
+  const safeFilename = path.basename(fileName);
+  const jsonPath = path.join(quotasDir, safeFilename);
+
+  if (!fs.existsSync(jsonPath)) {
+    return res.status(404).json({ error: '해당 쿼터 파일을 찾을 수 없습니다.' });
+  }
+
+  try {
+    const quotaMeta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+    const { batchEnrichQuota } = await import('./engine/enricher.js');
+
+    logger.info(`[쿼터 보강 요청] "${quotaMeta.title}" (${safeFilename}) 결측치 외부 탐색 시작...`);
+
+    const { enrichedCount, quotaList } = await batchEnrichQuota(quotaMeta.data, (progress) => {
+      logger.info(`[보강 진행] (${progress.current}/${progress.total}) ${progress.companyName} 확인 중 (보강: ${progress.enrichedCount}건)`);
+    });
+
+    quotaMeta.data = quotaList;
+    quotaMeta.enrichedAt = new Date().toISOString();
+    quotaMeta.lastEnrichedCount = enrichedCount;
+
+    // JSON 갱신 저장
+    fs.writeFileSync(jsonPath, JSON.stringify(quotaMeta, null, 2), 'utf-8');
+
+    // Excel 갱신 저장
+    const excelName = safeFilename.replace('.json', '.xlsx');
+    const excelPath = path.join(quotasDir, excelName);
+    exportBusinessesToExcel({
+      data: quotaList,
+      columns: quotaMeta.columns,
+      filePath: excelPath
+    });
+
+    logger.success(`[쿼터 보강 완료] "${quotaMeta.title}" 총 ${enrichedCount}건의 실존 데이터가 추가 보강되었습니다.`);
+
+    res.json({
+      success: true,
+      message: `${enrichedCount}건의 결측치가 공인 데이터로 성공적으로 보강되었습니다.`,
+      title: quotaMeta.title,
+      count: quotaList.length,
+      enrichedCount,
+      columns: quotaMeta.columns,
+      data: quotaList,
+      jsonFileName: safeFilename,
+      excelFileName: excelName,
+      jsonDownloadUrl: `/api/quota/download/${safeFilename}`,
+      excelDownloadUrl: `/api/quota/download/${excelName}`
+    });
+  } catch (err) {
+    logger.error('[쿼터 보강 오류]', err);
+    res.status(500).json({ error: '결측치 보강 중 오류가 발생했습니다: ' + err.message });
+  }
+});
+
+// 특정 캠페인의 쿼터 DB 결측치 일괄 보강 API
+app.post('/api/campaigns/:id/enrich-quota', async (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  const quotaDb = campaign.quotaDatabase || [];
+  if (quotaDb.length === 0) {
+    return res.status(400).json({ error: '캠페인에 등록된 쿼터 데이터가 없습니다.' });
+  }
+
+  try {
+    const { batchEnrichQuota } = await import('./engine/enricher.js');
+    logger.info(`[캠페인 쿼터 보강] "${campaign.title}" (ID: ${campaign.id}) ${quotaDb.length}개 사업자 보강 시작...`);
+
+    const { enrichedCount, quotaList } = await batchEnrichQuota(quotaDb, (progress) => {
+      logger.info(`[캠페인 보강 진행] (${progress.current}/${progress.total}) ${progress.companyName}`);
+    });
+
+    CampaignStore.updateCampaign(campaign.id, {
+      quotaDatabase: quotaList,
+      lastEnrichedAt: new Date().toISOString()
+    });
+
+    logger.success(`[캠페인 쿼터 보강 완료] "${campaign.title}" ${enrichedCount}건 보강 완료`);
+
+    res.json({
+      success: true,
+      message: `${enrichedCount}건의 사업자 정보가 성공적으로 보강되었습니다.`,
+      enrichedCount,
+      quotaDatabase: quotaList
+    });
+  } catch (err) {
+    logger.error('[캠페인 쿼터 보강 실패]', err);
+    res.status(500).json({ error: '캠페인 쿼터 보강 중 오류: ' + err.message });
   }
 });
 
