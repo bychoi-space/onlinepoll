@@ -4,14 +4,17 @@
    ======================================================== */
 
 :root {
-  /* --- 1. Colors: Core Monochrome --- */
-  --colors-primary: #000000;
+  /* --- 1. Colors: Core Monochrome & Clean SaaS Surface --- */
+  --colors-primary: #0f172a;
   --colors-on-primary: #ffffff;
-  --colors-canvas: #ffffff;
-  --colors-inverse-canvas: #000000;
-  --colors-surface-soft: #f8f8f8;
-  --colors-hairline: #e5e5e5;
-  --colors-hairline-soft: #f0f0f0;
+  --colors-canvas: #f8fafc;
+  --colors-surface: #ffffff;
+  --colors-inverse-canvas: #0f172a;
+  --colors-surface-soft: #f1f5f9;
+  --colors-hairline: #e2e8f0;
+  --colors-hairline-soft: #f1f5f9;
+  --colors-border: #e2e8f0;
+  --colors-border-subtle: #f1f5f9;
 
   /* --- 2. Colors: Signature Color Blocks --- */
   --colors-block-lime: #d2e823;

@@ -3,35 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>설문조사 상세 작업실 - AutoSurvey AI</title>
+  <title>설문조사 작업실 - AutoSurvey AI</title>
   
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Pretendard Korean Font -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- Figma Design System CSS Modules -->
+  <!-- CSS Stylesheets -->
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
-  <link rel="stylesheet" href="color-blocks.css">
   <link rel="stylesheet" href="campaign.css">
   <link rel="stylesheet" href="custom-styles.css">
 </head>
 <body>
 
-  <!-- 1. Sticky Top Navigation (56px) -->
+  <!-- Top Navigation (56px) -->
   <nav class="figma-top-nav">
     <div class="nav-inner">
-      <div class="nav-left flex-center-gap-10">
+      <div class="nav-left flex-center-gap-14">
         <a href="index.html" class="btn-pill btn-pill-secondary">
           <i class="fa-solid fa-arrow-left"></i> 목록으로
         </a>
         <div class="campaign-title-area">
-          <h1 id="detail-campaign-title" class="font-card-title">설문조사 불러오는 중...</h1>
+          <h1 id="detail-campaign-title" class="font-card-title m-0">설문조사 불러오는 중...</h1>
           <div class="header-badges">
             <span class="badge-quota-type b2b" id="detail-quota-badge"><i class="fa-solid fa-building"></i> 사업주 대상 (B2B)</span>
             <span class="badge-status ready" id="detail-status-badge">대기 중</span>
@@ -48,22 +47,9 @@
     </div>
   </nav>
 
-  <!-- 2. Marquee Strip (36px Ribbon) -->
-  <div class="figma-marquee-strip">
-    <div class="marquee-content">
-      <span>ACTIVE SURVEY WORKSPACE</span>
-      <span>• STEP 1: QUOTA DB</span>
-      <span>• STEP 2: SURVEY DIRECTION GUIDELINES</span>
-      <span>• STEP 3: PLAYWRIGHT AUTOMATION ENGINE</span>
-      <span>• SSE REALTIME TELEMETRY</span>
-      <span>• ACTIVE SURVEY WORKSPACE</span>
-      <span>• STEP 1: QUOTA DB</span>
-    </div>
-  </div>
-
-  <!-- 3. Main Workspace Container -->
-  <main class="figma-container mt-18">
-    <div class="dashboard-grid detail-dashboard-grid">
+  <!-- Main Workspace (Wide Container with 2-Column Grid) -->
+  <main class="detail-workspace-container">
+    <div class="detail-dashboard-grid">
       
       <!-- ============================================== -->
       <!-- 좌측: STEP 1 쿼터 DB + STEP 2 방향성 + STEP 3 실행 -->
@@ -71,52 +57,43 @@
       <section class="config-panel-container">
         <form id="campaign-config-form">
 
-          <!-- STEP 1: 조사 쿼터(Quota) 설정 & 제반 DB 구축 (Block Mint) -->
-          <div class="color-block color-block-mint mb-16">
-            <div class="step-header-area flex-between mb-12">
-              <div class="step-title-group flex-center-gap-8">
-                <span class="figma-badge badge-ready font-mono">STEP 1</span>
-                <h3 class="font-headline">조사 쿼터 DB 구축</h3>
+          <!-- STEP 1: 조사 쿼터(Quota) 설정 & 제반 DB 구축 -->
+          <div class="clean-step-card">
+            <div class="step-header-area">
+              <div class="step-title-group">
+                <span class="step-num-badge">STEP 1</span>
+                <h2 class="step-card-title">조사 쿼터 DB 구축</h2>
               </div>
-              <span class="figma-badge badge-b2b" id="quota-summary-badge">대상: 사업주 (MarketBz DB)</span>
+              <span class="badge-quota-type b2b" id="quota-summary-badge">대상: 사업주 (MarketBz DB)</span>
             </div>
 
-            <!-- 조사 대상 모드 탭 -->
-            <div class="mode-tabs mb-16">
-              <label class="mode-tab active" id="detail-tab-b2b">
+            <!-- 세그먼트형 조사 대상 모드 탭 -->
+            <div class="segmented-mode-group">
+              <label class="segmented-mode-item active" id="detail-tab-b2b">
                 <input type="radio" name="quota-type" value="b2b" checked />
                 <i class="fa-solid fa-building"></i>
-                <div class="mode-info">
-                  <strong>사업주 대상 (B2B)</strong>
-                  <span>실존 사업자 제반 DB 구축</span>
-                </div>
+                <span>사업주 대상 (B2B)</span>
               </label>
-              <label class="mode-tab" id="detail-tab-b2c">
+              <label class="segmented-mode-item" id="detail-tab-b2c">
                 <input type="radio" name="quota-type" value="b2c" />
                 <i class="fa-solid fa-user"></i>
-                <div class="mode-info">
-                  <strong>개인 대상 (B2C)</strong>
-                  <span>인구통계 페르소나 자동변주</span>
-                </div>
+                <span>개인 대상 (B2C)</span>
               </label>
             </div>
 
-            <!-- B2B 전용 쿼터 DB 구축 패널 -->
+            <!-- B2B 전용 쿼터 DB 패널 -->
             <div id="panel-b2b-quota">
-              <!-- 기존 조사 쿼터 불러오기 (Import) 영역 -->
-              <div class="block-card mb-16">
+              <!-- 기존 조사 쿼터 불러오기 (Import) -->
+              <div class="quota-import-box">
                 <div class="flex-between mb-8">
-                  <h4 class="font-body-lg font-bold">
-                    <i class="fa-solid fa-file-import"></i> 기존 조사 쿼터 불러오기 (권장)
-                  </h4>
+                  <label class="figma-label font-bold m-0">
+                    <i class="fa-solid fa-file-import"></i> 기존 조사 쿼터 불러오기
+                  </label>
                   <a href="quota-builder.html" class="btn-pill btn-pill-secondary btn-new-quota-link">
                     <i class="fa-solid fa-plus"></i> 새 쿼터 생성기
                   </a>
                 </div>
-                <p class="font-body-sm text-dim mb-12">
-                  온누리상품권 또는 마켓비즈에서 사전 구축해 둔 실존 사업자 쿼터를 원클릭으로 장착합니다.
-                </p>
-                <div class="flex-row-gap-8">
+                <div class="quota-import-row">
                   <select id="select-saved-quota" class="figma-select select-saved-quota">
                     <option value="">보관된 쿼터 목록을 불러오는 중...</option>
                   </select>
@@ -126,8 +103,8 @@
                 </div>
               </div>
 
-              <!-- 직접 새로 수집하기 토글 -->
-              <details class="marketbz-direct-details block-card mb-16">
+              <!-- 마켓비즈 직접 검색 토글 -->
+              <details class="marketbz-direct-details mb-16">
                 <summary class="marketbz-direct-summary">
                   <i class="fa-solid fa-sliders"></i> 마켓비즈에서 직접 새로 검색하여 수집하기
                 </summary>
@@ -138,7 +115,7 @@
                     <input type="text" id="input-b2b-keyword" class="figma-input" value="소프트웨어" placeholder="예: 소프트웨어, 외식업 등" />
                   </div>
                   <div class="form-group mb-12">
-                    <label for="input-target-count" class="figma-label">목표 표본 수 (수집할 사업자 수)</label>
+                    <label for="input-target-count" class="figma-label">목표 표본 수</label>
                     <input type="number" id="input-target-count" class="figma-input" min="1" max="50" value="2" />
                   </div>
                 </div>
@@ -169,19 +146,17 @@
                 </div>
               </details>
 
-              <!-- 구축된 사업자 제반 DB 시각화 테이블 (가로 스크롤 지원) -->
-              <div class="block-card quota-db-card">
-                <div class="quota-db-header flex-between mb-12">
-                  <h4 class="font-body-lg font-bold">
-                    <i class="fa-solid fa-table-list"></i> 구축된 사업자 제반 DB (<span id="quota-db-count">0</span>건)
-                  </h4>
+              <!-- 구축된 사업자 제반 DB 테이블 (가로 스크롤) -->
+              <div class="quota-clean-box">
+                <div class="quota-clean-header">
+                  <h4><i class="fa-solid fa-table-list"></i> 구축된 사업자 제반 DB (<span id="quota-db-count">0</span>건)</h4>
                   <div class="flex-center-gap-10">
                     <span class="scroll-hint font-caption"><i class="fa-solid fa-arrows-left-right"></i> 가로 스크롤</span>
-                    <span class="figma-badge badge-ready" id="quota-db-status">DB 준비 필요</span>
+                    <span class="badge-status ready" id="quota-db-status">DB 준비 필요</span>
                   </div>
                 </div>
-                <div class="quota-table-wrapper figma-table-container">
-                  <table class="quota-table figma-table">
+                <div class="table-scroll-container">
+                  <table class="quota-clean-table">
                     <thead>
                       <tr>
                         <th>No</th>
@@ -210,7 +185,7 @@
 
             <!-- B2C 개인 페르소나 패널 -->
             <div id="panel-b2c-quota" class="hidden">
-              <div class="grid-2col block-card">
+              <div class="grid-2col mt-12">
                 <div class="form-group mb-12">
                   <label for="detail-persona-age" class="figma-label">연령대</label>
                   <select id="detail-persona-age" class="figma-select">
@@ -232,113 +207,111 @@
             </div>
           </div>
 
-          <!-- STEP 2: 설문조사 방향성 가이드 설정 (Block Lilac) -->
-          <div class="color-block color-block-lilac mb-16">
-            <div class="step-header-area flex-between mb-12">
-              <div class="step-title-group flex-center-gap-8">
-                <span class="figma-badge badge-b2b font-mono">STEP 2</span>
-                <h3 class="font-headline">설문조사 방향성 가이드</h3>
+          <!-- STEP 2: 설문조사 방향성 가이드 설정 -->
+          <div class="clean-step-card">
+            <div class="step-header-area">
+              <div class="step-title-group">
+                <span class="step-num-badge step2">STEP 2</span>
+                <h2 class="step-card-title">설문조사 방향성 가이드</h2>
               </div>
-              <span class="figma-badge badge-ready" id="val-ratio-badge">가중합: 100%</span>
+              <span class="badge-status ready" id="val-ratio-badge">가중합: 100%</span>
             </div>
             
-            <div class="block-card mb-16">
+            <div class="form-group mb-14">
+              <div class="label-with-action flex-between mb-8">
+                <label for="input-survey-url" class="figma-label font-bold m-0">설문조사 URL <span class="required">*</span></label>
+                <button type="button" id="btn-fill-sample-url" class="btn-pill btn-pill-secondary">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> 샘플 설문지 채우기
+                </button>
+              </div>
+              <input type="url" id="input-survey-url" class="figma-input" required placeholder="https://docs.google.com/forms/..." />
+            </div>
+
+            <div class="form-group mb-16">
+              <label for="input-survey-topic" class="figma-label font-bold">설문 주제 및 목적</label>
+              <input type="text" id="input-survey-topic" class="figma-input" placeholder="예: 2026 IT 소프트웨어 중소기업 지원 실태조사" />
+            </div>
+
+            <!-- 객관식 비중 인터랙티브 슬라이더 -->
+            <div class="form-group mb-16">
+              <label class="figma-label font-bold mb-8">객관식 응답 비중 (%)</label>
+              <div class="ratio-bars-container">
+                <div class="ratio-bar-segment pos" id="bar-pos">긍정 70%</div>
+                <div class="ratio-bar-segment neu" id="bar-neu">중립 20%</div>
+                <div class="ratio-bar-segment neg" id="bar-neg">부정 10%</div>
+              </div>
+              <div class="slider-row mt-12">
+                <div class="slider-group pos-group">
+                  <div class="slider-label"><span class="label-dot dot-pos"></span><span>긍정/만족</span><span class="slider-val" id="val-pos">70%</span></div>
+                  <input type="range" id="slider-pos" min="0" max="100" value="70" />
+                </div>
+                <div class="slider-group neu-group">
+                  <div class="slider-label"><span class="label-dot dot-neu"></span><span>중립/보통</span><span class="slider-val" id="val-neu">20%</span></div>
+                  <input type="range" id="slider-neu" min="0" max="100" value="20" />
+                </div>
+                <div class="slider-group neg-group">
+                  <div class="slider-label"><span class="label-dot dot-neg"></span><span>부정/개선</span><span class="slider-val" id="val-neg">10%</span></div>
+                  <input type="range" id="slider-neg" min="0" max="100" value="10" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 주관식 중점 가이드 -->
+            <div class="form-group mb-16">
+              <label for="input-text-guidelines" class="figma-label font-bold">주관식 서술 중점 방향</label>
+              <textarea id="input-text-guidelines" class="figma-textarea" rows="2" placeholder="예: 클라우드 인프라 지원과 R&D 세액 공제 확대가 절실하다는 의견 위주"></textarea>
+            </div>
+
+            <!-- 실행 제어 옵션 -->
+            <div class="grid-2col">
               <div class="form-group mb-12">
-                <div class="label-with-action flex-between mb-8">
-                  <label for="input-survey-url" class="figma-label font-bold">설문조사 URL <span class="required">*</span></label>
-                  <button type="button" id="btn-fill-sample-url" class="btn-pill btn-pill-secondary">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> 샘플 설문지 채우기
-                  </button>
-                </div>
-                <input type="url" id="input-survey-url" class="figma-input" required placeholder="https://docs.google.com/forms/..." />
+                <label for="input-iterations" class="figma-label">반복 응답 횟수</label>
+                <input type="number" id="input-iterations" class="figma-input" min="1" max="50" value="1" />
               </div>
-
-              <div class="form-group mb-16">
-                <label for="input-survey-topic" class="figma-label font-bold">설문 주제 및 목적</label>
-                <input type="text" id="input-survey-topic" class="figma-input" placeholder="예: 2026 IT 소프트웨어 중소기업 지원 실태조사" />
-              </div>
-
-              <!-- 객관식 비중 인터랙티브 슬라이더 -->
-              <div class="form-group mb-16">
-                <label class="figma-label font-bold mb-8">객관식 응답 비중 (%)</label>
-                <div class="ratio-bars-container">
-                  <div class="ratio-bar-segment pos" id="bar-pos">긍정 70%</div>
-                  <div class="ratio-bar-segment neu" id="bar-neu">중립 20%</div>
-                  <div class="ratio-bar-segment neg" id="bar-neg">부정 10%</div>
-                </div>
-                <div class="slider-row mt-12">
-                  <div class="slider-group pos-group">
-                    <div class="slider-label"><span class="label-dot dot-pos"></span><span>긍정/만족</span><span class="slider-val" id="val-pos">70%</span></div>
-                    <input type="range" id="slider-pos" min="0" max="100" value="70" />
-                  </div>
-                  <div class="slider-group neu-group">
-                    <div class="slider-label"><span class="label-dot dot-neu"></span><span>중립/보통</span><span class="slider-val" id="val-neu">20%</span></div>
-                    <input type="range" id="slider-neu" min="0" max="100" value="20" />
-                  </div>
-                  <div class="slider-group neg-group">
-                    <div class="slider-label"><span class="label-dot dot-neg"></span><span>부정/개선</span><span class="slider-val" id="val-neg">10%</span></div>
-                    <input type="range" id="slider-neg" min="0" max="100" value="10" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- 주관식 중점 가이드 -->
-              <div class="form-group mb-16">
-                <label for="input-text-guidelines" class="figma-label font-bold">주관식 서술 중점 방향</label>
-                <textarea id="input-text-guidelines" class="figma-textarea" rows="2" placeholder="예: 클라우드 인프라 지원과 R&D 세액 공제 확대가 절실하다는 의견 위주"></textarea>
-              </div>
-
-              <!-- 실행 제어 옵션 -->
-              <div class="grid-2col">
-                <div class="form-group mb-12">
-                  <label for="input-iterations" class="figma-label">반복 응답 횟수</label>
-                  <input type="number" id="input-iterations" class="figma-input" min="1" max="50" value="1" />
-                </div>
-                <div class="form-group mb-12">
-                  <label for="input-headless" class="figma-label">브라우저 표시 모드</label>
-                  <select id="input-headless" class="figma-select">
-                    <option value="false">직접 브라우저 창 보기 (권장)</option>
-                    <option value="true">백그라운드 숨김 (Headless)</option>
-                  </select>
-                </div>
+              <div class="form-group mb-12">
+                <label for="input-headless" class="figma-label">브라우저 표시 모드</label>
+                <select id="input-headless" class="figma-select">
+                  <option value="false">직접 브라우저 창 보기 (권장)</option>
+                  <option value="true">백그라운드 숨김 (Headless)</option>
+                </select>
               </div>
             </div>
           </div>
 
-          <!-- STEP 3: 자동화 실행 제어 바 (White Card with Pill CTA) -->
-          <div class="figma-card mb-20 flex-between">
+          <!-- STEP 3: 자동화 실행 제어 바 -->
+          <div class="execution-sticky-card">
             <div class="flex-center-gap-10">
-              <span class="figma-badge badge-running font-mono">STEP 3</span>
-              <strong class="font-body-lg">설정 완료 후 자동화 실행</strong>
+              <span class="step-num-badge step3">STEP 3</span>
+              <strong>설정 완료 후 자동화 실행</strong>
             </div>
             <div class="action-buttons flex-row-gap-10">
-              <button type="submit" id="btn-start-automation" class="btn-pill btn-pill-primary">
-                <i class="fa-solid fa-play"></i> 설문 자동화 시작
+              <button type="submit" id="btn-start-automation" class="btn-pill btn-pill-primary btn-pill-large">
+                <i class="fa-solid fa-play"></i> 자동화 시작
               </button>
-              <button type="button" id="btn-stop-automation" class="btn-pill btn-pill-secondary" disabled>
+              <button type="button" id="btn-stop-automation" class="btn-pill btn-pill-secondary btn-pill-large" disabled>
                 <i class="fa-solid fa-stop"></i> 중지
               </button>
             </div>
           </div>
+
         </form>
       </section>
 
       <!-- ============================================== -->
-      <!-- 우측: 실시간 실행 모니터링 & 로그 패널 (Block Navy) -->
+      <!-- 우측: 실시간 실행 모니터링 & 로그 패널 (420px 고정) -->
       <!-- ============================================== -->
-      <section class="color-block color-block-navy monitor-panel">
-        <div class="flex-between mb-16">
-          <div class="flex-center-gap-8">
-            <i class="fa-solid fa-terminal"></i>
-            <h2 class="font-card-title">실시간 실행 모니터링</h2>
-          </div>
-          <button id="btn-clear-logs" class="btn-pill btn-pill-secondary">
+      <aside class="monitor-panel">
+        <div class="monitor-header">
+          <h3 class="monitor-title">
+            <i class="fa-solid fa-terminal"></i> 실시간 모니터링
+          </h3>
+          <button id="btn-clear-logs" class="btn-pill-ghost">
             <i class="fa-solid fa-trash-can"></i> 로그 비우기
           </button>
         </div>
 
         <!-- 진행률 -->
-        <div class="block-card mb-16">
+        <div class="monitor-card">
           <div class="progress-header flex-between mb-8">
             <span class="font-caption text-dim" id="progress-status-text">대기 중</span>
             <span class="font-mono font-bold" id="progress-percent-text">0%</span>
@@ -349,30 +322,30 @@
         </div>
 
         <!-- 터미널 콘솔 로그 -->
-        <div class="terminal-container mb-16">
+        <div class="monitor-terminal">
           <div class="terminal-bar">
             <span class="term-dot red"></span>
             <span class="term-dot yellow"></span>
             <span class="term-dot green"></span>
-            <span class="term-title">AutoSurvey Execution Live Stream</span>
+            <span class="term-title">AutoSurvey Execution Logs</span>
           </div>
           <div class="terminal-body" id="terminal-logs">
             <div class="log-entry info">
               <span class="log-time">[시스템]</span>
               <span class="log-badge info">READY</span>
-              <span class="log-msg">설문조사 작업실에 입장했습니다. STEP 1(쿼터 DB)과 STEP 2(방향성)를 진행해 주세요.</span>
+              <span class="log-msg">설문조사 작업실에 입장했습니다. STEP 1과 STEP 2를 설정해 주세요.</span>
             </div>
           </div>
         </div>
 
         <!-- 최근 답변 스냅샷 -->
-        <div class="block-card recent-answers-box">
-          <h3 class="font-body font-bold mb-8"><i class="fa-solid fa-list-check"></i> 실시간 응답 스냅샷</h3>
+        <div class="monitor-card">
+          <h4 class="font-body font-bold mb-8 text-dim"><i class="fa-solid fa-list-check"></i> 실시간 응답 스냅샷</h4>
           <div class="answers-list" id="answers-feed">
-            <p class="empty-feed font-body-sm text-dim">설문이 시작되면 로봇이 쿼터 DB와 가이드를 바탕으로 작성한 답변이 여기에 실시간으로 기록됩니다.</p>
+            <p class="empty-feed font-body-sm text-dim">설문이 시작되면 로봇이 제출한 응답 내역이 실시간으로 기록됩니다.</p>
           </div>
         </div>
-      </section>
+      </aside>
 
     </div>
   </main>
