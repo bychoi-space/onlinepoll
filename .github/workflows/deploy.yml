@@ -29,7 +29,7 @@ jobs:
           cat /tmp/ssh.log
           echo "=== SSH LOG END ==="
           if [ $SSH_EXIT -ne 0 ]; then
-            SUMMARY=$(grep -iE "permission denied|authenticat|refused|debug1" /tmp/ssh.log | tail -n 10 | tr '\n' ' ')
+            SUMMARY=$(tail -n 15 /tmp/ssh.log | tr '\n' ' | ')
             echo "::error title=SSH_Failure::$SUMMARY"
             exit $SSH_EXIT
           fi
