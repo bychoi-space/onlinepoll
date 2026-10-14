@@ -12,8 +12,8 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.GCP_HOST || '34.64.233.77' }}
-          username: ${{ secrets.GCP_USERNAME || 'choiby01' }}
+          host: '34.64.233.77'
+          username: 'choiby01'
           key: ${{ secrets.GCP_SSH_KEY }}
           port: 22
           script_stop: true
