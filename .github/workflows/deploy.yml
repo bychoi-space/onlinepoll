@@ -10,20 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: '34.64.233.77'
-          username: 'choiby01'
-          key: ${{ secrets.GCP_SSH_KEY }}
-          port: 22
-          script_stop: true
-          script: |
-            echo "🚀 [Deploy] Starting deployment on GCP Compute Engine..."
-            cd ~/onlinepoll
-            echo "📥 [Deploy] Pulling latest changes from main..."
-            git pull origin main
-            echo "📦 [Deploy] Installing dependencies..."
-            npm install --production=false
-            echo "🔄 [Deploy] Restarting PM2 process..."
-            pm2 restart onlinepoll
-            echo "✅ [Deploy] Deployment completed successfully!"
+        env:
+          SSH_KEY: ${{ secrets.GCP_SSH_KEY }}
+        run: |
+          echo "🚀 [Deploy] Setting up SSH key..."
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
+          # Ensure trailing newline
+          echo "" >> ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          echo "🚀 [Deploy] Connecting to GCP VM (34.64.233.77)..."
+          ssh -v -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 "cd ~/onlinepoll && git pull origin main && npm install --production=false && pm2 restart onlinepoll"
+
