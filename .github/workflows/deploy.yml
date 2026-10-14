@@ -21,12 +21,5 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
 
           echo "🚀 [Deploy] Connecting to GCP VM (34.64.233.77)..."
-          set +e
-          ssh -vvv -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 "cd ~/onlinepoll && git pull origin main && npm install --production=false && pm2 restart onlinepoll" > /tmp/ssh.log 2>&1
-          SSH_EXIT=$?
-          if [ $SSH_EXIT -ne 0 ]; then
-            B64=$(tail -n 30 /tmp/ssh.log | base64 -w 0)
-            echo "::error title=SSH_B64::$B64"
-            exit $SSH_EXIT
-          fi
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 "cd ~/onlinepoll && git pull origin main && npm install --production=false && pm2 restart onlinepoll"
           echo "✅ [Deploy] Deployment completed successfully!"
