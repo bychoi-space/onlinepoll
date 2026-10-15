@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       quotaTableBody.innerHTML = `
         <tr>
           <td colspan="10" class="empty-table-msg">
-            <i class="fa-solid fa-circle-info"></i> 아직 구축된 사업자 DB가 없습니다.<br>
+            아직 구축된 사업자 DB가 없습니다.<br>
             상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.
           </td>
         </tr>
@@ -199,27 +199,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     quotaTableBody.innerHTML = db.map((item, idx) => {
       const st = item.quotaStatus || 'ready';
       let statusHtml = '<span class="badge-status ready">대기</span>';
-      let actionBtnHtml = `<button type="button" class="btn-row-action test" data-idx="${item.index}"><i class="fa-solid fa-play"></i> 테스트</button>`;
+      let actionBtnHtml = `<button type="button" class="btn-row-action test" data-idx="${item.index}">테스트</button>`;
 
       if (st === 'pilot_done') {
-        statusHtml = '<span class="badge-status pilot"><i class="fa-solid fa-vial-circle-check"></i> 검증완료</span>';
-        actionBtnHtml = `<button type="button" class="btn-row-action view" data-idx="${item.index}"><i class="fa-solid fa-camera"></i> 캡처보기</button>`;
+        statusHtml = '<span class="badge-status pilot">검증완료</span>';
+        actionBtnHtml = `<button type="button" class="btn-row-action view" data-idx="${item.index}">캡처보기</button>`;
       } else if (st === 'completed') {
-        statusHtml = '<span class="badge-status success"><i class="fa-solid fa-circle-check"></i> 제출완료</span>';
-        actionBtnHtml = `<button type="button" class="btn-row-action view" data-idx="${item.index}"><i class="fa-solid fa-images"></i> 결과보기</button>`;
+        statusHtml = '<span class="badge-status success">제출완료</span>';
+        actionBtnHtml = `<button type="button" class="btn-row-action view" data-idx="${item.index}">결과보기</button>`;
       } else if (st === 'running') {
-        statusHtml = '<span class="badge-status running">진행 중</span>';
-        actionBtnHtml = `<button type="button" class="btn-row-action" disabled><i class="fa-solid fa-spinner fa-spin"></i> 실행 중</button>`;
+        statusHtml = '<span class="badge-status running">실행 중</span>';
+        actionBtnHtml = `<button type="button" class="btn-row-action" disabled>실행 중</button>`;
       } else if (st === 'error') {
-        statusHtml = '<span class="badge-status error"><i class="fa-solid fa-circle-exclamation"></i> 오류</span>';
-        actionBtnHtml = `<button type="button" class="btn-row-action test" data-idx="${item.index}"><i class="fa-solid fa-rotate-right"></i> 재시도</button>`;
+        statusHtml = '<span class="badge-status error">오류</span>';
+        actionBtnHtml = `<button type="button" class="btn-row-action test" data-idx="${item.index}">재시도</button>`;
       }
 
       let ceoVal = escapeHtml(item.ceoName || '-');
-      if (item.isCeoEnriched) ceoVal += ` <span class="badge-enriched"><i class="fa-solid fa-sparkles"></i>보강</span>`;
+      if (item.isCeoEnriched) ceoVal += ` <span class="badge-enriched">보강</span>`;
 
       let phoneVal = escapeHtml(item.phone || '-');
-      if (item.isPhoneEnriched) phoneVal += ` <span class="badge-enriched"><i class="fa-solid fa-sparkles"></i>보강</span>`;
+      if (item.isPhoneEnriched) phoneVal += ` <span class="badge-enriched">보강</span>`;
 
       const itemVal = item.handledItems || item.industry || '-';
       const addrVal = item.address ? (item.address.length > 28 ? item.address.slice(0, 28) + '...' : item.address) : '-';
@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         appendLog('error', `쿼터 장착 오류: ${err.message}`);
       } finally {
         btnImportQuota.disabled = false;
-        btnImportQuota.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> 쿼터 장착';
+        btnImportQuota.textContent = '쿼터 장착';
       }
     });
   }
@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       try {
         btnEnrichCampaign.disabled = true;
-        btnEnrichCampaign.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 외부 공인 탐색 중...';
+        btnEnrichCampaign.textContent = '외부 공인 탐색 중...';
         appendLog('info', `[결측치 보강] 사업자 공인 데이터 탐색 중...`);
 
         const res = await fetch(`/api/campaigns/${campId}/enrich-quota`, { method: 'POST' });
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         appendLog('error', `결측치 보강 오류: ${err.message}`);
       } finally {
         btnEnrichCampaign.disabled = false;
-        btnEnrichCampaign.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i> 결측치 외부 보강';
+        btnEnrichCampaign.textContent = '결측치 외부 보강';
       }
     });
   }
@@ -579,7 +579,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentScreenshots.length === 0) return;
     const item = currentScreenshots[modalCurrentIndex];
     captureViewerImg.src = item.url;
-    captureModalTitle.innerHTML = `<i class="fa-solid fa-camera"></i> [${item.step}] ${escapeHtml(item.title)}`;
+    captureModalTitle.textContent = `[${item.step}] ${item.title || '단계 스크린샷'}`;
     captureStepIndicator.textContent = `${modalCurrentIndex + 1} / ${currentScreenshots.length}`;
     btnPrevCapture.disabled = modalCurrentIndex === 0;
     btnNextCapture.disabled = modalCurrentIndex === currentScreenshots.length - 1;

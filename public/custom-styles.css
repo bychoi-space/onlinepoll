@@ -1337,41 +1337,87 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-size: 12px !important;
   height: 32px !important;
 }
+/* ==========================================================================
+   2-Phase 디테일 통합 레이아웃 (Unified Detail Layout & Clean Section System)
+   ========================================================================== */
+
+/* 전체 페이지 통합 래퍼 (와이드 화면에 최적화된 공통 여백) */
+.unified-detail-container {
+  width: 100%;
+  max-width: 1540px;
+  margin: 0 auto;
+  padding: 24px 32px 64px;
+  box-sizing: border-box;
+}
+
+/* STEP 1, STEP 2, STEP 3, 모니터링 공통 카드 스타일 (일관된 여백 & 테두리 규격) */
+.clean-section-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.clean-section-card:hover {
+  border-color: #cbd5e1;
+}
+
+/* 스텝 번호 공통 배지 */
+.step-num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.step-num-badge.step2 {
+  background: #2563eb;
+}
+
+.step-num-badge.step3 {
+  background: #059669;
+}
+
+.step-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
 
 /* ==========================================================================
-   2-Tier 와이드 쿼터 레이아웃 & 쿼터 항목별 진행 트래커 (Wide Quota Layout)
+   [STEP 1] 상단 전폭 조사 쿼터 DB & 실시간 진행 현황
    ========================================================================== */
-.quota-fullwidth-section {
-  width: 100%;
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 24px 32px 0;
-}
-
-.quota-fullwidth-inner {
-  width: 100%;
-}
-
 .quota-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
-.quota-title-wrap h2 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #0f172a;
+.quota-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 /* 쿼터 진행 요약 실시간 KPI 바 */
 .quota-kpi-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -1380,16 +1426,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
   align-items: center;
   gap: 8px;
   padding: 6px 14px;
-  background: #ffffff;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
   font-size: 12px;
+  transition: background 0.15s ease;
 }
 
 .kpi-chip .kpi-label {
   color: #64748b;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .kpi-chip .kpi-val {
@@ -1399,11 +1445,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
   color: #0f172a;
 }
 
-.kpi-chip.kpi-ready .kpi-label { color: #64748b; }
-.kpi-chip.kpi-pilot .kpi-label { color: #7e22ce; }
+.kpi-chip.kpi-ready .kpi-val { color: #475569; }
 .kpi-chip.kpi-pilot .kpi-val { color: #7e22ce; }
-.kpi-chip.kpi-completed .kpi-label { color: #059669; }
 .kpi-chip.kpi-completed .kpi-val { color: #059669; }
+.kpi-chip.kpi-rate .kpi-val { color: #2563eb; }
 
 /* 쿼터 상단 액션 컨트롤 바 */
 .quota-action-bar {
@@ -1412,12 +1457,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  background: #ffffff;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 14px 18px;
+  border-radius: 8px;
+  padding: 12px 16px;
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .quota-import-group {
@@ -1425,7 +1469,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   align-items: center;
   gap: 12px;
   flex: 1;
-  min-width: 320px;
+  min-width: 340px;
 }
 
 .quota-import-inputs {
@@ -1438,33 +1482,42 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .quota-action-buttons {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-/* 와이드 쿼터 테이블 최적화 */
-.wide-box {
+/* 와이드 쿼터 테이블 박스 */
+.quota-clean-box.wide-box {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 0;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  margin-bottom: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-.wide-table-container {
+.table-scroll-container.wide-table-container {
   max-height: 420px;
   overflow-y: auto;
   overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
 }
 
-.wide-table {
+.table-scroll-container.wide-table-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.table-scroll-container.wide-table-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.quota-clean-table.wide-table {
   width: 100%;
   min-width: 1360px;
   border-collapse: collapse;
 }
 
-.wide-table th {
+.quota-clean-table.wide-table th {
   background: #f8fafc;
   color: #475569;
   font-size: 12px;
@@ -1478,7 +1531,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   z-index: 10;
 }
 
-.wide-table td {
+.quota-clean-table.wide-table td {
   padding: 12px 14px;
   font-size: 13px;
   color: #1e293b;
@@ -1487,45 +1540,54 @@ input[type="range"]::-webkit-slider-thumb:hover {
   vertical-align: middle;
 }
 
-.wide-table tr:hover td {
+.quota-clean-table.wide-table tr:hover td {
   background: #f8fafc;
 }
 
 /* 컬럼별 너비 배분 */
 .th-no { width: 50px; text-align: center; }
 .th-company { width: 140px; font-weight: 700; }
-.th-biznum { width: 125px; font-family: var(--font-mono); }
-.th-ceo { width: 90px; }
-.th-phone { width: 125px; }
-.th-opendate { width: 95px; }
+.th-biznum { width: 130px; font-family: var(--font-mono); }
+.th-ceo { width: 95px; }
+.th-phone { width: 130px; }
+.th-opendate { width: 100px; }
 .th-items { width: 140px; }
-.th-address { min-width: 240px; }
-.th-status { width: 115px; text-align: center; }
-.th-actions { width: 170px; text-align: center; }
+.th-address { min-width: 250px; }
+.th-status { width: 110px; text-align: center; }
+.th-actions { width: 120px; text-align: center; }
 
-/* 쿼터 상태 배지 (Status Badges) */
+/* 쿼터 상태 배지 */
+.badge-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.badge-status.ready {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
 .badge-status.pilot {
   background: #f3e8ff;
   color: #7e22ce;
   border: 1px solid #d8b4fe;
 }
 
+.badge-status.success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
 .badge-status.running {
   background: #fef3c7;
   color: #b45309;
   border: 1px solid #fcd34d;
-  position: relative;
-}
-
-.badge-status.running::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #f59e0b;
-  margin-right: 5px;
-  animation: pulse 1.2s infinite;
 }
 
 .badge-status.error {
@@ -1534,16 +1596,24 @@ input[type="range"]::-webkit-slider-thumb:hover {
   border: 1px solid #fca5a5;
 }
 
-@keyframes pulse {
-  0% { transform: scale(0.9); opacity: 0.6; }
-  50% { transform: scale(1.3); opacity: 1; }
-  100% { transform: scale(0.9); opacity: 0.6; }
+/* 외부 보강 배지 */
+.badge-enriched {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
 }
 
 /* 쿼터 행 액션 버튼 */
 .btn-row-action {
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: 5px 12px;
+  font-size: 12px;
   font-weight: 600;
   border-radius: 6px;
   border: 1px solid #cbd5e1;
@@ -1553,7 +1623,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transition: all 0.15s ease;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
 }
 
 .btn-row-action:hover {
@@ -1583,18 +1653,60 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 /* ==========================================================================
-   공란 및 스마트 스킵 정책 (Empty / Fallback Policy)
+   하단 2열 워크스페이스 그리드 (STEP 2, STEP 3 / 실시간 모니터링)
    ========================================================================== */
+.detail-split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.32fr) 460px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1280px) {
+  .detail-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.left-workspace-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.right-monitor-column {
+  position: sticky;
+  top: 76px;
+  min-width: 0;
+}
+
+/* STEP 2 헤더 영역 */
+.step-header-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.step-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 공란 및 스마트 스킵 정책 카드 */
 .policy-group-card {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 14px 16px;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
 }
 
 .policy-options-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
 }
 
@@ -1604,53 +1716,220 @@ input[type="range"]::-webkit-slider-thumb:hover {
   height: 34px !important;
 }
 
-/* ==========================================================================
-   STEP 3 2-Phase 듀얼 실행 제어기 (Dual Execution Controls)
-   ========================================================================== */
-.dual-execution-card {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+/* 객관식 비중 바 및 슬라이더 */
+.ratio-bars-container {
+  display: flex;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 28px;
+  text-align: center;
 }
 
-.safety-guard-label {
-  cursor: pointer;
-  user-select: none;
-  color: #475569;
+.ratio-bar-segment.pos { background: #059669; }
+.ratio-bar-segment.neu { background: #f59e0b; }
+.ratio-bar-segment.neg { background: #ef4444; }
+
+.slider-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
-.dual-buttons-row {
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider-label {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.label-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.dot-pos { background: #059669; }
+.dot-neu { background: #f59e0b; }
+.dot-neg { background: #ef4444; }
+
+/* ==========================================================================
+   [STEP 3] 자동화 실행 제어 카드 (완벽한 Spacing & 무결점 정렬)
+   ========================================================================== */
+.execution-master-card {
+  padding: 22px 28px;
+}
+
+.execution-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
-.btn-pill-success {
-  background: #10b981 !important;
-  color: #ffffff !important;
-  border: none !important;
+.execution-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  white-space: nowrap;
 }
 
-.btn-pill-success:hover:not(:disabled) {
-  background: #059669 !important;
+.safety-guard-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
 }
 
-.btn-pill-success:disabled {
-  background: #e2e8f0 !important;
-  color: #94a3b8 !important;
-  cursor: not-allowed !important;
+.safety-guard-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #0284c7;
+  cursor: pointer;
+}
+
+.execution-buttons-flex {
+  display: grid;
+  grid-template-columns: 1.4fr 1.4fr 0.8fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 768px) {
+  .execution-buttons-flex {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn-action-primary {
+  background: #0f172a;
+  color: #ffffff;
+  border: 1px solid #0f172a;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-action-primary:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: #1e293b;
+}
+
+.btn-action-primary:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-action-success {
+  background: #059669;
+  color: #ffffff;
+  border: 1px solid #059669;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);
+}
+
+.btn-action-success:hover:not(:disabled) {
+  background: #047857;
+  border-color: #047857;
+}
+
+.btn-action-success:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-action-secondary {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-action-secondary:hover:not(:disabled) {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.btn-action-secondary:disabled {
+  background: #ffffff;
+  color: #cbd5e1;
+  border-color: #f1f5f9;
+  cursor: not-allowed;
 }
 
 /* ==========================================================================
-   15단계 진행 타임라인 칩 & 갤러리 (Live Timeline & Gallery)
+   우측 실시간 모니터링 카드 (Monitor Master Card)
    ========================================================================== */
+.monitor-master-card {
+  padding: 22px 24px;
+}
+
+.monitor-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.monitor-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* 15단계 진행 타임라인 칩 */
 .timeline-stepper-box {
-  background: #ffffff;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 12px 14px;
 }
 
@@ -1668,7 +1947,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-family: var(--font-mono);
   padding: 4px 8px;
   border-radius: 6px;
-  background: #f1f5f9;
+  background: #ffffff;
   color: #64748b;
   border: 1px solid #e2e8f0;
   transition: all 0.2s ease;
@@ -1678,7 +1957,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   background: #0284c7;
   color: #ffffff;
   border-color: #0284c7;
-  box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.35);
 }
 
 .step-chip.done {
@@ -1694,14 +1973,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* 모니터링 탭 바 */
 .monitor-tab-bar {
   display: flex;
-  gap: 8px;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 8px;
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 12px;
 }
 
 .monitor-tab-btn {
   flex: 1;
-  padding: 6px 12px;
+  padding: 7px 12px;
   font-size: 12px;
   font-weight: 600;
   border-radius: 6px;
@@ -1713,12 +1994,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
 }
 
 .monitor-tab-btn.active {
-  background: #f1f5f9;
+  background: #ffffff;
   color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .monitor-gallery-panel {
@@ -1726,7 +2007,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 12px;
-  min-height: 280px;
+  min-height: 380px;
   max-height: 480px;
   overflow-y: auto;
 }
@@ -1734,7 +2015,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .gallery-strip-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .gallery-item-card {
@@ -1789,12 +2070,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* 파일럿 완료 승인 액션 카드 */
 .pilot-action-card {
   background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 10px;
+  border: 1px solid #86efac;
+  border-radius: 8px;
   padding: 14px 16px;
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
+/* 15단계 스크린샷 뷰어 모달 */
 .capture-modal-container {
   max-width: 1080px !important;
   width: 90% !important;
@@ -1820,6 +2102,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   max-width: 100%;
   object-fit: contain;
 }
+
 
 
 
