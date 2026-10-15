@@ -12,39 +12,6 @@
   },
   {
     "slotIndex": 2,
-    "extraLabel": "(4)추가",
-    "idSel": "76454",
-    "kid": "517",
-    "gid": "4",
-    "ran_id": "EZQPGx4L8",
-    "storeName": "",
-    "phone": "",
-    "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=1"
-  },
-  {
-    "slotIndex": 3,
-    "extraLabel": "(5)추가",
-    "idSel": "76455",
-    "kid": "517",
-    "gid": "5",
-    "ran_id": "VCnUfCY6K",
-    "storeName": "",
-    "phone": "",
-    "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=VCnUfCY6K&type=tapi&prid=2026070802&mnid=900001346&srt=1"
-  },
-  {
-    "slotIndex": 4,
-    "extraLabel": "(6)추가",
-    "idSel": "76456",
-    "kid": "517",
-    "gid": "6",
-    "ran_id": "05anItSeU",
-    "storeName": "",
-    "phone": "",
-    "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=05anItSeU&type=tapi&prid=2026070802&mnid=900001346&srt=1"
-  },
-  {
-    "slotIndex": 5,
     "extraLabel": "(1)추가",
     "idSel": "75514",
     "kid": "517",
@@ -55,7 +22,7 @@
     "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=0E6G9JX98&type=tapi&prid=2026070802&mnid=900001346&srt=1"
   },
   {
-    "slotIndex": 6,
+    "slotIndex": 3,
     "extraLabel": "(2)추가",
     "idSel": "76376",
     "kid": "517",
@@ -66,18 +33,7 @@
     "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=OseLErRyW&type=tapi&prid=2026070802&mnid=900001346&srt=1"
   },
   {
-    "slotIndex": 7,
-    "extraLabel": "(7)추가",
-    "idSel": "76457",
-    "kid": "517",
-    "gid": "7",
-    "ran_id": "9VS1l8O1Y",
-    "storeName": "",
-    "phone": "",
-    "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=9VS1l8O1Y&type=tapi&prid=2026070802&mnid=900001346&srt=1"
-  },
-  {
-    "slotIndex": 8,
+    "slotIndex": 4,
     "extraLabel": "(3)추가",
     "idSel": "76452",
     "kid": "517",
@@ -86,6 +42,50 @@
     "storeName": "",
     "phone": "",
     "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=yJOWyMMVe&type=tapi&prid=2026070802&mnid=900001346&srt=1"
+  },
+  {
+    "slotIndex": 5,
+    "extraLabel": "(4)추가",
+    "idSel": "76454",
+    "kid": "517",
+    "gid": "4",
+    "ran_id": "EZQPGx4L8",
+    "storeName": "더덕상회",
+    "phone": "02-484-4953",
+    "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=1"
+  },
+  {
+    "slotIndex": 6,
+    "extraLabel": "(5)추가",
+    "idSel": "76455",
+    "kid": "517",
+    "gid": "5",
+    "ran_id": "VCnUfCY6K",
+    "storeName": "정주상회",
+    "phone": "02-414-8784",
+    "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=VCnUfCY6K&type=tapi&prid=2026070802&mnid=900001346&srt=1"
+  },
+  {
+    "slotIndex": 7,
+    "extraLabel": "(6)추가",
+    "idSel": "76456",
+    "kid": "517",
+    "gid": "6",
+    "ran_id": "05anItSeU",
+    "storeName": "세일축산",
+    "phone": "010-012-0001",
+    "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=05anItSeU&type=tapi&prid=2026070802&mnid=900001346&srt=1"
+  },
+  {
+    "slotIndex": 8,
+    "extraLabel": "(7)추가",
+    "idSel": "76457",
+    "kid": "517",
+    "gid": "7",
+    "ran_id": "9VS1l8O1Y",
+    "storeName": "",
+    "phone": "",
+    "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=9VS1l8O1Y&type=tapi&prid=2026070802&mnid=900001346&srt=1"
   },
   {
     "slotIndex": 9,
@@ -273,5 +273,16 @@
     "storeName": "",
     "phone": "",
     "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=GycZZf28Z&type=tapi&prid=2026070802&mnid=900001346&srt=1"
+  },
+  {
+    "slotIndex": 26,
+    "extraLabel": "(25)추가",
+    "idSel": "76502",
+    "kid": "517",
+    "gid": "25",
+    "ran_id": "AFEpp7F1e",
+    "storeName": "",
+    "phone": "",
+    "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=AFEpp7F1e&type=tapi&prid=2026070802&mnid=900001346&srt=1"
   }
 ]

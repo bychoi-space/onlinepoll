@@ -15,6 +15,9 @@
 .mb-12 { margin-bottom: 12px; }
 .mb-16 { margin-bottom: 16px; }
 .mb-20 { margin-bottom: 20px; }
+.mb-24 { margin-bottom: 24px; }
+.mb-32 { margin-bottom: 32px; }
+.mb-36 { margin-bottom: 36px; }
 .w-full { width: 100%; }
 
 .d-none { display: none !important; }
@@ -1669,10 +1672,38 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .left-workspace-column {
+  min-width: 0;
+}
+
+#campaign-config-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  min-width: 0;
+  gap: 32px; /* STEP 2와 STEP 3 사이의 여유로운 여백 확보 */
+}
+
+/* 실행 중 STEP 2 등 입력 폼 딤드(잠금) 스타일 */
+.section-locked {
+  opacity: 0.42;
+  filter: grayscale(0.25);
+  pointer-events: none;
+  user-select: none;
+  position: relative;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.section-locked::after {
+  content: "자동화 실행 중 (설정 잠김)";
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .right-monitor-column {
@@ -1923,6 +1954,54 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-size: 16px;
   font-weight: 700;
   color: #0f172a;
+}
+
+/* 실시간 모니터링 프로그레스 바 */
+.monitor-progress-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.monitor-progress-track {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.monitor-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.pulse-dot-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #0284c7;
+  font-weight: 700;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0284c7;
+  box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.7);
+  animation: pulseDotAnim 1.6s infinite;
+}
+
+@keyframes pulseDotAnim {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(2, 132, 199, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
 }
 
 /* 15단계 진행 타임라인 칩 */

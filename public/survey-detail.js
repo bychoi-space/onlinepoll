@@ -70,13 +70,21 @@ async function initSurveyDetailPage() {
   const barNeg = document.getElementById('bar-neg');
   const valRatioBadge = document.getElementById('val-ratio-badge');
 
-  // STEP 3: 2-Phase 듀얼 실행 제어기
+  // STEP 2 & 3 제어기 및 딤드 타깃
+  const step2ConfigCard = document.getElementById('step2-config-card');
   const checkSafetyGuard = document.getElementById('check-safety-guard');
   const btnPilot = document.getElementById('btn-pilot-simulation');
   const btnBatch = document.getElementById('btn-batch-automation');
   const btnStop = document.getElementById('btn-stop-automation');
 
-  // 실시간 모니터링 & 갤러리
+  // 실시간 모니터링 & 프로그레스 바
+  const progressSummaryLabel = document.getElementById('progress-summary-label');
+  const progressPercentLabel = document.getElementById('progress-percent-label');
+  const monitorProgressFill = document.getElementById('monitor-progress-fill');
+  const currentActiveStoreLabel = document.getElementById('current-active-store-label');
+  const currentStorePulse = document.getElementById('current-store-pulse');
+
+  // 로그 및 갤러리
   const btnClearLogs = document.getElementById('btn-clear-logs');
   const terminalLogs = document.getElementById('terminal-logs');
   const currentStepLabel = document.getElementById('current-step-label');
@@ -159,6 +167,20 @@ async function initSurveyDetailPage() {
   }
 
   // -------------------------------------------------------------
+  // 실시간 배치 프로그레스 바 제어
+  // -------------------------------------------------------------
+  function updateBatchProgressBar(completedCount, totalCount, activeStoreName = '') {
+    if (!totalCount) totalCount = currentCampaign?.quotaDatabase?.length || 24;
+    const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    if (progressSummaryLabel) progressSummaryLabel.textContent = `배치 진행률 (${completedCount} / ${totalCount} 완료)`;
+    if (progressPercentLabel) progressPercentLabel.textContent = `${pct}%`;
+    if (monitorProgressFill) monitorProgressFill.style.width = `${pct}%`;
+    if (activeStoreName && currentActiveStoreLabel) {
+      currentActiveStoreLabel.textContent = `현재 대상: ${activeStoreName}`;
+    }
+  }
+
+  // -------------------------------------------------------------
   // 버튼 생명주기 및 상태 머신 (Button State Machine)
   // -------------------------------------------------------------
   function updateButtonStates() {
@@ -169,15 +191,25 @@ async function initSurveyDetailPage() {
 
     // 2번 이상의 잔여 쿼터들
     const remainingQuotas = quotaDb.filter(b => b.index >= 2);
-    const allBatchDone = remainingQuotas.length > 0 && remainingQuotas.every(b => b.quotaStatus === 'completed' || b.quotaStatus === 'pilot_done');
+    const allRemainingDone = remainingQuotas.length > 0 && remainingQuotas.every(b => b.quotaStatus === 'completed' || b.quotaStatus === 'pilot_done');
     const isRunning = currentCampaign.status === 'running' || statusIndicator.classList.contains('running');
+
+    // 프로그레스 바 동기화
+    const completedOrPilotCount = quotaDb.filter(b => b.quotaStatus === 'completed' || b.quotaStatus === 'pilot_done').length;
+    updateBatchProgressBar(completedOrPilotCount, quotaDb.length);
 
     if (isRunning) {
       btnPilot.disabled = true;
       btnBatch.disabled = true;
       btnStop.disabled = false;
+      if (step2ConfigCard) step2ConfigCard.classList.add('section-locked');
+      if (checkSafetyGuard) checkSafetyGuard.disabled = true;
+      if (currentStorePulse) currentStorePulse.classList.remove('d-none');
     } else {
       btnStop.disabled = true;
+      if (step2ConfigCard) step2ConfigCard.classList.remove('section-locked');
+      if (checkSafetyGuard) checkSafetyGuard.disabled = false;
+      if (currentStorePulse) currentStorePulse.classList.add('d-none');
 
       // 1) 1번 쿼터 파일럿 검증 버튼 상태
       if (firstDone) {
@@ -191,9 +223,21 @@ async function initSurveyDetailPage() {
       }
 
       // 2) 2번부터 배치 자동화 가동 버튼 상태
-      if (allBatchDone) {
-        btnBatch.disabled = true;
-        btnBatch.textContent = '배치 자동화 완료 (100%)';
+      if (allRemainingDone) {
+        const allCompleted = quotaDb.every(b => b.quotaStatus === 'completed');
+        if (allCompleted) {
+          btnBatch.disabled = true;
+          btnBatch.textContent = '배치 자동화 최종 마감 완료 (100%)';
+        } else {
+          // 모든 항목이 pilot_done 완료된 상태: 안전가드 체크박스 상태에 따라 초고속 직행 지원
+          if (!checkSafetyGuard.checked) {
+            btnBatch.disabled = false;
+            btnBatch.textContent = '⚡ 안전가드 해제: 최종 제출 일괄 마감 (초고속)';
+          } else {
+            btnBatch.disabled = false;
+            btnBatch.textContent = '배치 사전 검증 완료 (최종 제출 시 안전가드 체크 해제)';
+          }
+        }
       } else if (firstDone) {
         btnBatch.disabled = false;
         btnBatch.textContent = '2번부터 배치 자동화 가동';
@@ -734,6 +778,9 @@ async function initSurveyDetailPage() {
           if (data.screenshotUrl) {
             appendGalleryItem(data.step, data.screenshotUrl, `[#${data.quotaIndex}] ${data.step}`);
           }
+          if (data.bizName && currentActiveStoreLabel) {
+            currentActiveStoreLabel.textContent = `[#${data.quotaIndex}] ${data.bizName}`;
+          }
           if (data.message) {
             appendLog('info', `[#${data.quotaIndex}] ${data.message}`);
           }
@@ -780,12 +827,22 @@ async function initSurveyDetailPage() {
       btnPilot.disabled = true;
       btnBatch.disabled = true;
       btnStop.disabled = false;
+      if (step2ConfigCard) step2ConfigCard.classList.add('section-locked');
+      if (checkSafetyGuard) checkSafetyGuard.disabled = true;
+      if (currentStorePulse) currentStorePulse.classList.remove('d-none');
     } else {
       statusIndicator.classList.remove('running');
       statusText.textContent = '준비 완료 (대기 중)';
       btnStop.disabled = true;
+      if (step2ConfigCard) step2ConfigCard.classList.remove('section-locked');
+      if (checkSafetyGuard) checkSafetyGuard.disabled = false;
+      if (currentStorePulse) currentStorePulse.classList.add('d-none');
       updateButtonStates();
     }
+  }
+
+  if (checkSafetyGuard) {
+    checkSafetyGuard.addEventListener('change', updateButtonStates);
   }
 
   function updateRatios() {

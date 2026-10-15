@@ -617,12 +617,20 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
   const defaultUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
   const quotaDb = campaign.quotaDatabase || [];
 
-  const targets = quotaDb.filter(b => (b.index || b.seq) >= startIndex && b.quotaStatus !== 'completed' && b.quotaStatus !== 'pilot_done');
+  const targets = quotaDb.filter(b => {
+    const idx = (b.index || b.seq);
+    if (idx < startIndex) return false;
+    if (b.quotaStatus === 'completed') return false; // 이미 진짜 마감된 건 제외
+    if (safetyGuard && b.quotaStatus === 'pilot_done') return false; // 안전가드 모드에선 검증완료 제외
+    return true; // 안전가드 OFF 모드에선 pilot_done도 포함하여 최종 제출 마감!
+  });
   if (targets.length === 0) {
     return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다.' });
   }
 
-  logger.info(`[배치 자동화 가동] 캠페인 "${campaign.title}" 잔여 ${targets.length}건 연속 실행 시작 (안전가드: ${safetyGuard ? 'ON' : 'OFF'})`);
+  logger.info(`[배치 자동화 가동] 캠페인 "${campaign.title}" 대상 ${targets.length}건 연속 실행 시작 (안전가드: ${safetyGuard ? 'ON' : 'OFF'})`);
+  currentTask.isRunning = true;
+  currentTask.campaignId = campaign.id;
   CampaignStore.updateCampaign(campaign.id, { status: 'running' });
 
   res.json({
@@ -634,6 +642,11 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
   (async () => {
     try {
       for (let i = 0; i < targets.length; i++) {
+        if (!currentTask.isRunning) {
+          logger.warn(`[배치 일시중지] 사용자에 의해 배치가 안전하게 중지되었습니다.`);
+          break;
+        }
+
         const biz = targets[i];
         const bizUrl = biz.slotUrl || biz.surveyUrl || defaultUrl;
         if (!bizUrl) {
@@ -645,6 +658,10 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
 
         biz.quotaStatus = 'running';
         CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+        logger.broadcast({
+          type: 'QUOTA_UPDATED',
+          quotaDatabase: quotaDb
+        });
 
         const slotInfo = biz.slotIndex ? ` [Kstat 슬롯 #${biz.slotIndex} ${biz.slotExtra || ''}]` : '';
         logger.info(`[배치 진행 ${i + 1}/${targets.length}] "${biz.companyName}" (${biz.bizNumber})${slotInfo} 설문 자동화 시작...`);
@@ -682,9 +699,14 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         }
 
         CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
-        await new Promise(r => setTimeout(r, 3000));
+        logger.broadcast({
+          type: 'QUOTA_UPDATED',
+          quotaDatabase: quotaDb
+        });
+        await new Promise(r => setTimeout(r, 1000));
       }
 
+      currentTask.isRunning = false;
       CampaignStore.updateCampaign(campaign.id, { status: 'completed' });
       logger.success(`🎉 [배치 자동화 완료] 캠페인 "${campaign.title}"의 모든 연속 설문이 완료되었습니다!`);
       logger.broadcast({
@@ -692,6 +714,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         campaignId: campaign.id
       });
     } catch (err) {
+      currentTask.isRunning = false;
       logger.error('[배치 실행 중 오류]', err);
       CampaignStore.updateCampaign(campaign.id, { status: 'ready' });
     }

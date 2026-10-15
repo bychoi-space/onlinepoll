@@ -102,10 +102,10 @@ export async function runKstatSurvey({
   const page = await context.newPage();
   const capturedSteps = [];
 
-  // 사람다운 가변 딜레이 헬퍼들
-  const readingDelay = () => page.waitForTimeout(Math.floor(Math.random() * 1200) + 1800); // 1.8초 ~ 3.0초 질문 독해 텀
-  const itemDelay = () => page.waitForTimeout(Math.floor(Math.random() * 350) + 400); // 400ms ~ 750ms 문항 간 텀
-  const preNextDelay = () => page.waitForTimeout(Math.floor(Math.random() * 500) + 900); // 900ms ~ 1.4초 다음 클릭 전 텀
+  // 사람다운 자연스러운 가변 딜레이 헬퍼들 (건당 약 1분 50초 ~ 2분 10초 안정 궤적)
+  const readingDelay = () => page.waitForTimeout(Math.floor(Math.random() * 600) + 1200); // 1.2초 ~ 1.8초 질문 독해 텀
+  const itemDelay = () => page.waitForTimeout(Math.floor(Math.random() * 200) + 300); // 300ms ~ 500ms 문항 간 텀
+  const preNextDelay = () => page.waitForTimeout(Math.floor(Math.random() * 300) + 600); // 600ms ~ 900ms 다음 클릭 전 텀
 
   page.on('dialog', async (dialog) => {
     console.log(`🔔 [Kstat Alert] "${dialog.message()}"`);
@@ -127,7 +127,7 @@ export async function runKstatSurvey({
     if (page.url().includes('index.asp')) {
       await preNextDelay();
       await page.evaluate(() => document.querySelector('#next')?.click());
-      await page.waitForTimeout(2500);
+      await page.waitForTimeout(1000);
     }
 
     // 2) Survey.asp (SQ1 스크리닝)인 경우
@@ -140,7 +140,7 @@ export async function runKstatSurvey({
       await page.evaluate(() => {
         document.querySelector('#next')?.click();
       });
-      await page.waitForTimeout(2500);
+      await page.waitForTimeout(1000);
     }
 
     // 3) Q1.asp (점포 기본정보)인 경우
@@ -194,7 +194,7 @@ export async function runKstatSurvey({
 
       await preNextDelay();
       await page.evaluate(() => document.querySelector('#next')?.click());
-      await page.waitForTimeout(2500);
+      await page.waitForTimeout(1000);
     }
 
     // 본조사 루프 (P1 ~ P14)
@@ -363,30 +363,52 @@ export async function runKstatSurvey({
 
       // P7: 온누리상품권 현황
       else if (stepName === 'P7') {
-        const fB5A = page.frame({ url: /B5A\.asp/ });
-        if (fB5A) {
-          await safeClick(fB5A, '#B5A_1_1'); // 온누리 가맹
-          await safeClick(fB5A, '#B5A_2_2'); // 지역사랑 미가맹
-          await itemDelay();
-        }
+        const fB5A1 = page.frame({ url: /B5A1\.asp/ }) || page.frame({ url: /B5A\.asp/ });
+        if (fB5A1) await safeClick(fB5A1, '#B5A_1_1, input[value="1"]'); // 온누리 가맹
+        const fB5A2 = page.frame({ url: /B5A2\.asp/ });
+        if (fB5A2) await safeClick(fB5A2, '#B5A_2_2, input[value="2"]'); // 지역사랑 미가맹
+
+        await itemDelay();
+
         const fB5AA = page.frame({ url: /B5AA\.asp/ });
         if (fB5AA) await safeClick(fB5AA, persona.onnuri.satisfactionSelector); // 가중치 반영 만족도
         
-        const fB5B = page.frame({ url: /B5B\.asp/ });
-        if (fB5B) await safeFill(fB5B, 'input[name="B5B"]', persona.onnuri.joinYear);
-        const fB5C = page.frame({ url: /B5C\.asp/ });
-        if (fB5C) await safeFill(fB5C, 'input[name="B5C"]', persona.onnuri.salesRatio);
+        const fB5B = page.frame({ url: /B5B1\.asp/ }) || page.frame({ url: /B5B\.asp/ });
+        if (fB5B) {
+          await safeFill(fB5B, 'input[name="B5B_1"]', persona.onnuri.joinYear);
+          await safeFill(fB5B, 'input[name="B5B"]', persona.onnuri.joinYear);
+        }
+
+        const fB5C = page.frame({ url: /B5C1\.asp/ }) || page.frame({ url: /B5C\.asp/ });
+        if (fB5C) {
+          await safeFill(fB5C, 'input[name="B5C_1"]', persona.onnuri.salesRatio);
+          await safeFill(fB5C, 'input[name="B5C"]', persona.onnuri.salesRatio);
+        }
         
-        const fB5D = page.frame({ url: /B5D\.asp/ });
-        if (fB5D) await safeClick(fB5D, '#B5D_3');
-        const fB5E = page.frame({ url: /B5E\.asp/ });
-        if (fB5E) await safeFill(fB5E, 'input[name="B5E"]', '10');
-        const fB5F = page.frame({ url: /B5F\.asp/ });
-        if (fB5F) await safeClick(fB5F, '#B5F_3');
-        const fB5G = page.frame({ url: /B5G\.asp/ });
-        if (fB5G) await safeFill(fB5G, 'input[name="B5G"]', '10');
+        const fB5D = page.frame({ url: /B5D1\.asp/ }) || page.frame({ url: /B5D\.asp/ });
+        if (fB5D) {
+          await safeClick(fB5D, '#B5D_1_3, #B5D_3, input[value="3"]');
+        }
+
+        const fB5E = page.frame({ url: /B5E1\.asp/ }) || page.frame({ url: /B5E\.asp/ });
+        if (fB5E) {
+          await safeFill(fB5E, 'input[name="B5E_1"]', '10');
+          await safeFill(fB5E, 'input[name="B5E"]', '10');
+        }
+
+        const fB5F = page.frame({ url: /B5F1\.asp/ }) || page.frame({ url: /B5F\.asp/ });
+        if (fB5F) {
+          await safeClick(fB5F, '#B5F_1_3, #B5F_3, input[value="3"]');
+        }
+
+        const fB5G = page.frame({ url: /B5G1\.asp/ }) || page.frame({ url: /B5G\.asp/ });
+        if (fB5G) {
+          await safeFill(fB5G, 'input[name="B5G_1"]', '10');
+          await safeFill(fB5G, 'input[name="B5G"]', '10');
+        }
+
         const fB5AB = page.frame({ url: /B5AB\.asp/ });
-        if (fB5AB) await safeClick(fB5AB, '#B5AB_1');
+        if (fB5AB) await safeClick(fB5AB, '#B5AB_1, input[value="1"]');
       }
 
       // P8: 판로 및 마케팅
@@ -602,6 +624,15 @@ export async function runKstatSurvey({
           message: `🎉 [설문 최종 마감] "${biz.companyName}" 설문이 정식 제출 마감되었습니다!`
         });
       }
+    }
+
+    if (!page.url().includes('Agree.asp')) {
+      return {
+        success: false,
+        error: `최종 동의 단계(Agree.asp)에 도달하지 못했습니다. (현재 위치: ${page.url()})`,
+        capturedSteps,
+        companyName: biz.companyName
+      };
     }
 
     return {

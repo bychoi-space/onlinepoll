@@ -57,7 +57,7 @@
   <div class="unified-detail-container">
 
     <!-- [STEP 1] 상단 전폭 조사 쿼터 DB & 실시간 진행 현황 -->
-    <section class="clean-section-card mb-24">
+    <section class="clean-section-card mb-36">
       <div class="section-card-inner">
         
         <!-- 상단 헤더 & KPI 칩 바 -->
@@ -205,7 +205,7 @@
         <form id="campaign-config-form">
 
           <!-- STEP 2: 설문조사 방향성 및 실전 규칙 가이드 -->
-          <div class="clean-section-card">
+          <div class="clean-section-card" id="step2-config-card">
             <div class="step-header-area">
               <div class="step-title-group">
                 <span class="step-num-badge step2">STEP 2</span>
@@ -364,6 +364,21 @@
             <button id="btn-clear-logs" class="btn-pill-ghost font-caption">
               비우기
             </button>
+          </div>
+
+          <!-- 실시간 배치 진행률 게이지 바 -->
+          <div class="monitor-progress-section mb-16" id="monitor-progress-section">
+            <div class="flex-between font-caption mb-6">
+              <span class="font-bold text-dim" id="progress-summary-label">배치 진행률 (0 / 0)</span>
+              <span class="font-mono font-bold text-primary-color" id="progress-percent-label">0%</span>
+            </div>
+            <div class="monitor-progress-track">
+              <div class="monitor-progress-fill" id="monitor-progress-fill"></div>
+            </div>
+            <div class="current-store-status-bar mt-8 flex-between font-caption text-dim">
+              <span id="current-active-store-label">대기 중</span>
+              <span id="current-store-pulse" class="pulse-dot-wrap d-none"><span class="pulse-dot"></span> 진행 중</span>
+            </div>
           </div>
 
           <!-- 15단계 진행 타임라인 칩 (Breadcrumb Chips) -->
