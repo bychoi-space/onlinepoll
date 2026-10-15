@@ -1769,7 +1769,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
    [STEP 3] 자동화 실행 제어 카드 (완벽한 Spacing & 무결점 정렬)
    ========================================================================== */
 .execution-master-card {
-  padding: 22px 28px;
+  /* clean-section-card 공통 여백(24px 28px) 유지 */
 }
 
 .execution-card-header {
@@ -1909,7 +1909,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
    우측 실시간 모니터링 카드 (Monitor Master Card)
    ========================================================================== */
 .monitor-master-card {
-  padding: 22px 24px;
+  /* clean-section-card 공통 여백(24px 28px) 유지 */
 }
 
 .monitor-card-header {
