@@ -1,7 +1,7 @@
 // scripts/test-auth-logic.js - 인증 로직 단위 검증 스크립트
 import crypto from 'crypto';
 
-const SYSTEM_ACCESS_PASSWORD = process.env.SYSTEM_ACCESS_PASSWORD || 'auto112!';
+const SYSTEM_ACCESS_PASSWORD = process.env.SYSTEM_ACCESS_PASSWORD || '2265';
 const AUTH_COOKIE_NAME = 'autosurvey_auth';
 const AUTH_SECRET = process.env.AUTH_SECRET || 'autosurvey_secure_secret_2026';
 
@@ -42,5 +42,5 @@ const expiredToken = `${expiredPayload}.${expiredHmac}`;
 console.log('만료 토큰 검증 (기대치: false):', verifyAuthToken(expiredToken));
 
 console.log('--- 4. 비밀번호 일치 확인 ---');
-console.log('올바른 패스코드 검증 (기대치: true):', 'auto112!' === SYSTEM_ACCESS_PASSWORD);
+console.log('올바른 패스코드 검증 (기대치: true):', '2265' === SYSTEM_ACCESS_PASSWORD);
 console.log('틀린 패스코드 검증 (기대치: false):', 'wrong_pass' === SYSTEM_ACCESS_PASSWORD);

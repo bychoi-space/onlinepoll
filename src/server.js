@@ -26,7 +26,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 단일 패스코드 기반 인증 설정
-const MASTER_PASSWORD = process.env.SYSTEM_ACCESS_PASSWORD || 'auto112!';
+const MASTER_PASSWORD = process.env.SYSTEM_ACCESS_PASSWORD || '2265';
 const AUTH_COOKIE_NAME = 'autosurvey_auth';
 const TOKEN_SALT = 'autosurvey_secure_salt_2026';
 

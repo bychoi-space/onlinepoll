@@ -1,6 +1,6 @@
 // scripts/test-server-integration.js
 process.env.PORT = '3099';
-process.env.SYSTEM_ACCESS_PASSWORD = 'auto112!';
+process.env.SYSTEM_ACCESS_PASSWORD = '2265';
 
 // server.js import 시 내부의 app.listen(3099)이 실행됨
 await import('../src/server.js');
@@ -35,7 +35,7 @@ async function runTests() {
   const r4 = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ passcode: 'auto112!' })
+    body: JSON.stringify({ passcode: '2265' })
   });
   console.log('4. 올바른 비밀번호 로그인 시도 상태코드:', r4.status);
   const setCookie = r4.headers.get('set-cookie');
