@@ -2036,13 +2036,23 @@ input[type="range"]::-webkit-slider-thumb:hover {
   background: #0284c7;
   color: #ffffff;
   border-color: #0284c7;
-  box-shadow: 0 0 6px rgba(2, 132, 199, 0.35);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.35);
+  transform: scale(1.08);
+  font-weight: 800;
+  animation: chipPulse 1.4s infinite;
+}
+
+@keyframes chipPulse {
+  0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(2, 132, 199, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
 }
 
 .step-chip.done {
-  background: #10b981;
-  color: #ffffff;
-  border-color: #059669;
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #86efac;
+  font-weight: 700;
 }
 
 .step-chip-final {

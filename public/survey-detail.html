@@ -334,10 +334,15 @@
                 <span class="step-num-badge step3">STEP 3</span>
                 <h3 class="execution-card-title m-0">실행 제어 파이프라인</h3>
               </div>
-              <label class="safety-guard-toggle">
-                <input type="checkbox" id="check-safety-guard" checked />
-                <span>최종 제출 안전 가드 (동의 단계에서 대기)</span>
-              </label>
+              <div class="flex-center-gap-12">
+                <button type="button" id="btn-view-pilot-captures" class="btn-pill btn-pill-secondary btn-pill-small d-none">
+                  15단계 캡처 전체보기
+                </button>
+                <label class="safety-guard-toggle">
+                  <input type="checkbox" id="check-safety-guard" checked />
+                  <span>최종 제출 안전 가드 (동의 단계에서 대기)</span>
+                </label>
+              </div>
             </div>
 
             <div class="execution-buttons-flex">
@@ -441,24 +446,7 @@
             </div>
           </div>
 
-          <!-- 검증 완료 시 액션 카드 (동적 노출) -->
-          <div class="pilot-action-card hidden" id="pilot-success-card">
-            <div class="pilot-card-header mb-8">
-              <strong>1번 쿼터 파일럿 검증 완료</strong>
-            </div>
-            <p class="font-caption text-dim mb-12">
-              최종 개인정보 동의(Agree.asp) 단계까지 무결점으로 도달했습니다. 캡처를 확인하고 2번 쿼터부터 연속 자동화를 시작하세요.
-            </p>
-            <div class="pilot-card-actions flex-row-gap-8">
-              <button type="button" id="btn-card-view-captures" class="btn-pill btn-pill-secondary btn-pill-small">
-                15단계 캡처 전체보기
-              </button>
-              <button type="button" id="btn-card-start-batch" class="btn-pill btn-pill-success btn-pill-small">
-                2번부터 연속 실행
-              </button>
-            </div>
           </div>
-
         </div>
       </aside>
 

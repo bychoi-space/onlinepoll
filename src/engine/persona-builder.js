@@ -115,7 +115,13 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
 
   // 7. 온누리상품권 현황 (P7)
   const openYearNum = parseInt(bizData.openDate ? String(bizData.openDate).split(/[-.]/)[0] : '2020', 10) || 2020;
-  const onnuriJoinYear = Math.max(2018, Math.min(2024, openYearNum + randBetween(0, 2)));
+  // Kstat 유효성 검사: 온누리상품권 가맹 시작 년도는 A5(개업연도)보다 이전일 수 없음!
+  let onnuriJoinYear;
+  if (openYearNum >= 2025) {
+    onnuriJoinYear = openYearNum; // 2025/2026 개업 점포는 개업 당해연도 가입
+  } else {
+    onnuriJoinYear = Math.max(openYearNum, Math.min(2024, Math.max(2018, openYearNum + randBetween(0, 2))));
+  }
   const onnuriSalesRatio = String(payOnnuri);
 
   // 가중치 슬라이더(긍정/중립/부정)에 따른 온누리 만족도 선택자 (P7 - B5AA)
@@ -138,18 +144,28 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const deposit = String(randBetween(1000, 3500)); // 보증금 1000~3500만
   const monthlyRent = String(randBetween(70, 160)); // 월세 70~160만
 
-  // 9. 애로사항 및 활성화 과제 (P13 - 10개 선택지 중 사업자별 서로 다른 3종)
-  // F1 (애로사항): 1: 상권쇠퇴/고객감소, 2: 온라인/대형마트 잠식, 3: 임대료부담, 4: 원부자재상승, 5: 인력난, 6: 편의시설부족, 7: 주차난, 8: 홍보부족 등
-  const issuesPool = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  // 셔플 알고리즘
-  for (let i = issuesPool.length - 1; i > 0; i--) {
+  // 9. 애로사항 및 활성화 과제 (P13 - Kstat 선택지 유효 범위 엄수)
+  // F1 (애로사항): 1~8 (9: 기타-주관식 필수, 10: 없음) -> 1~8 중 서로 다른 3종 선택
+  const poolF1 = [1, 2, 3, 4, 5, 6, 7, 8];
+  for (let i = poolF1.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [issuesPool[i], issuesPool[j]] = [issuesPool[j], issuesPool[i]];
+    [poolF1[i], poolF1[j]] = [poolF1[j], poolF1[i]];
   }
-  const selectedIssuesF1 = issuesPool.slice(0, 3); // 서로 다른 3개
-  const selectedIssuesF3 = issuesPool.slice(3, 6); // 활성화 과제 서로 다른 3개
+  const selectedIssuesF1 = poolF1.slice(0, 3); // 1~8 중 3개
 
-  // 10. 향후 운영 계획 (P14)
+  // F3 (활성화 과제): 1~10 (11: 기타-주관식 필수) -> 1~10 중 서로 다른 3종 선택
+  const poolF3 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  for (let i = poolF3.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [poolF3[i], poolF3[j]] = [poolF3[j], poolF3[i]];
+  }
+  const selectedIssuesF3 = poolF3.slice(0, 3); // 1~10 중 3개
+
+  // 10. 부채 및 자금 현황 (P11)
+  const hasDebt = rng() < 0.4; // 40% 부채 있음, 60% 없음
+  const debtAmount = String(randBetween(1500, 4500));
+
+  // 11. 향후 운영 계획 (P14)
   const plannedYears = String(randBetween(5, 12));
   const cashReceiptRatio = String(randBetween(40, 70));
 
@@ -199,6 +215,10 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     issues: {
       f1: selectedIssuesF1,
       f3: selectedIssuesF3
+    },
+    debt: {
+      hasDebt,
+      amount: debtAmount
     },
     future: {
       plannedYears,

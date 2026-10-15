@@ -95,9 +95,7 @@ async function initSurveyDetailPage() {
   const panelTabGallery = document.getElementById('panel-tab-gallery');
   const galleryStrip = document.getElementById('gallery-strip');
   const galleryCount = document.getElementById('gallery-count');
-  const pilotSuccessCard = document.getElementById('pilot-success-card');
-  const btnCardViewCaptures = document.getElementById('btn-card-view-captures');
-  const btnCardStartBatch = document.getElementById('btn-card-start-batch');
+  const btnViewPilotCaptures = document.getElementById('btn-view-pilot-captures');
 
   // 15단계 스크린샷 모달
   const captureModalOverlay = document.getElementById('capture-modal-overlay');
@@ -215,11 +213,11 @@ async function initSurveyDetailPage() {
       if (firstDone) {
         btnPilot.disabled = true;
         btnPilot.textContent = '1번 쿼터 파일럿 검증 완료';
-        pilotSuccessCard.classList.remove('hidden');
+        if (btnViewPilotCaptures) btnViewPilotCaptures.classList.remove('d-none');
       } else {
         btnPilot.disabled = false;
         btnPilot.textContent = '1번 쿼터 파일럿 검증 (Agree 대기)';
-        pilotSuccessCard.classList.add('hidden');
+        if (btnViewPilotCaptures) btnViewPilotCaptures.classList.add('d-none');
       }
 
       // 2) 2번부터 배치 자동화 가동 버튼 상태
@@ -584,20 +582,18 @@ async function initSurveyDetailPage() {
     appendLog('warn', '작업 중지 요청이 전송되었습니다.');
   });
 
-  // 카드 내 연속 실행 버튼
-  btnCardStartBatch.addEventListener('click', () => {
-    btnBatch.click();
-  });
-
-  btnCardViewCaptures.addEventListener('click', async () => {
-    await openCaptureModal();
-  });
+  if (btnViewPilotCaptures) {
+    btnViewPilotCaptures.addEventListener('click', async () => {
+      await openCaptureModal(1);
+    });
+  }
 
   // ------------------------------------------------------------------------
   // 6. 실시간 타임라인 칩 & 캡처 갤러리 탭 제어
   // ------------------------------------------------------------------------
   function setTimelineStep(stepName) {
-    currentStepLabel.textContent = stepName;
+    if (!stepName) return;
+    if (currentStepLabel) currentStepLabel.textContent = stepName;
     let found = false;
 
     timelineChips.forEach(chip => {
@@ -605,6 +601,9 @@ async function initSurveyDetailPage() {
       if (s === stepName) {
         chip.className = 'step-chip active';
         found = true;
+        try {
+          chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        } catch (_) {}
       } else if (!found) {
         chip.className = 'step-chip done';
       } else {
@@ -745,7 +744,12 @@ async function initSurveyDetailPage() {
     const sse = new EventSource('/api/events');
     sse.onmessage = async (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const raw = JSON.parse(event.data);
+        const data = (typeof raw.type === 'object' && raw.type !== null)
+          ? { ...raw, ...raw.type, type: raw.type.type || raw.type }
+          : (raw.data && typeof raw.data === 'object')
+            ? { ...raw, ...raw.data }
+            : raw;
 
         // 일반 로그
         if (data.type === 'log') {
@@ -765,7 +769,7 @@ async function initSurveyDetailPage() {
           setTimelineStep('Agree');
           setRunningState(false);
           await loadCampaign();
-          appendLog('success', `🎉 1번 쿼터 "${data.bizName}" 파일럿 검증 완료! Agree.asp 안전 대기 중.`);
+          appendLog('success', `🎉 1번 쿼터 "${data.bizName || ''}" 파일럿 검증 완료! Agree.asp 안전 대기 중.`);
           appendLog('info', '🔄 3초 후 검증 결과 및 버튼 상태를 완벽 동기화하기 위해 화면을 자동으로 새로고침합니다...');
           setTimeout(() => {
             window.location.reload();
@@ -780,6 +784,11 @@ async function initSurveyDetailPage() {
           }
           if (data.bizName && currentActiveStoreLabel) {
             currentActiveStoreLabel.textContent = `[#${data.quotaIndex}] ${data.bizName}`;
+          }
+          if (data.quotaIndex && currentCampaign) {
+            const total = currentCampaign.quotaDatabase?.length || 24;
+            const completed = currentCampaign.quotaDatabase?.filter(b => b.quotaStatus === 'completed' || b.quotaStatus === 'pilot_done').length || 0;
+            updateBatchProgressBar(completed, total, data.bizName);
           }
           if (data.message) {
             appendLog('info', `[#${data.quotaIndex}] ${data.message}`);

@@ -44,13 +44,22 @@ class EventBroadcaster {
   /**
    * 전체 연결된 클라이언트에 이벤트 브로드캐스트
    */
-  broadcast(type, payload) {
-    const eventData = {
-      id: Date.now(),
-      timestamp: getKstTime(),
-      type,
-      ...payload
-    };
+  broadcast(typeOrData, payload = {}) {
+    let eventData;
+    if (typeof typeOrData === 'object' && typeOrData !== null) {
+      eventData = {
+        id: Date.now(),
+        timestamp: getKstTime(),
+        ...typeOrData
+      };
+    } else {
+      eventData = {
+        id: Date.now(),
+        timestamp: getKstTime(),
+        type: typeOrData,
+        ...payload
+      };
+    }
 
     this.history.push(eventData);
     if (this.history.length > this.maxHistory) {

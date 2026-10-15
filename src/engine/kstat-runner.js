@@ -393,38 +393,56 @@ export async function runKstatSurvey({
         await page.evaluate(() => document.querySelector('#next')?.click());
         await page.waitForTimeout(1500);
 
-        // 2단계: 화면에 동적으로 생성된 추가 문항(가입연도, 비중, 만족도 등) 주입
-        const fB5B = page.frame({ url: /B5B1\.asp/ }) || page.frame({ url: /B5B2\.asp/ }) || page.frame({ url: /B5B\.asp/ });
-        if (fB5B) {
-          await fB5B.evaluate((val) => {
-            const inp = document.querySelector('input[type="text"], input[name^="B5B"]');
-            if (inp) inp.value = val;
+        // 2단계: 화면에 동적으로 생성된 추가 문항 프레임 로딩 대기 (최대 5초)
+        let fB5B1 = null;
+        for (let w = 0; w < 10; w++) {
+          fB5B1 = page.frame({ url: /B5B1\.asp/ });
+          if (fB5B1) break;
+          await page.waitForTimeout(500);
+        }
+
+        if (fB5B1) {
+          await fB5B1.evaluate((val) => {
+            const inp = document.querySelector('input[name="B5B_1"], input[type="tel"], input[type="text"]');
+            if (inp) {
+              inp.value = val;
+              inp.dispatchEvent(new Event('input'));
+              inp.dispatchEvent(new Event('change'));
+            }
           }, persona.onnuri.joinYear).catch(() => {});
         }
 
-        const fB5C = page.frame({ url: /B5C1\.asp/ }) || page.frame({ url: /B5C2\.asp/ }) || page.frame({ url: /B5C\.asp/ });
-        if (fB5C) {
-          await fB5C.evaluate((val) => {
-            const inp = document.querySelector('input[type="text"], input[name^="B5C"]');
-            if (inp) inp.value = val;
+        let fB5C1 = page.frame({ url: /B5C1\.asp/ });
+        if (fB5C1) {
+          await fB5C1.evaluate((val) => {
+            const inp = document.querySelector('input[name="B5C_1"], input[type="tel"], input[type="text"]');
+            if (inp) {
+              inp.value = val;
+              inp.dispatchEvent(new Event('input'));
+              inp.dispatchEvent(new Event('change'));
+            }
           }, persona.onnuri.salesRatio).catch(() => {});
         }
 
-        const fB5D = page.frame({ url: /B5D1\.asp/ }) || page.frame({ url: /B5D\.asp/ });
-        if (fB5D) {
-          await fB5D.evaluate(() => {
+        let fB5D1 = page.frame({ url: /B5D1\.asp/ });
+        if (fB5D1) {
+          await fB5D1.evaluate(() => {
             if (typeof setRadioValue === 'function') setRadioValue('B5D_1', '3');
             const r = document.querySelector('#B5D_1_3, input[value="3"]');
-            if (r) r.checked = true;
+            if (r) { r.checked = true; r.click(); }
+            const td = document.querySelector('#TD_B5D_1_3');
+            if (td && td.onclick) td.onclick();
           }).catch(() => {});
         }
 
-        const fB5F = page.frame({ url: /B5F1\.asp/ }) || page.frame({ url: /B5F\.asp/ });
-        if (fB5F) {
-          await fB5F.evaluate(() => {
+        let fB5F1 = page.frame({ url: /B5F1\.asp/ });
+        if (fB5F1) {
+          await fB5F1.evaluate(() => {
             if (typeof setRadioValue === 'function') setRadioValue('B5F_1', '3');
             const r = document.querySelector('#B5F_1_3, input[value="3"]');
-            if (r) r.checked = true;
+            if (r) { r.checked = true; r.click(); }
+            const td = document.querySelector('#TD_B5F_1_3');
+            if (td && td.onclick) td.onclick();
           }).catch(() => {});
         }
 
@@ -433,7 +451,9 @@ export async function runKstatSurvey({
           await fB5AB.evaluate(() => {
             if (typeof setRadioValue === 'function') setRadioValue('B5AB', '1');
             const r = document.querySelector('#B5AB_1, input[value="1"]');
-            if (r) r.checked = true;
+            if (r) { r.checked = true; r.click(); }
+            const td = document.querySelector('#TD_B5AB_1');
+            if (td && td.onclick) td.onclick();
           }).catch(() => {});
         }
       }
@@ -475,24 +495,43 @@ export async function runKstatSurvey({
       else if (stepName === 'P9') {
         const fC2A = page.frame({ url: /C2A\.asp/ });
         if (fC2A) {
-          await safeClick(fC2A, '#C2A_1');
-          await itemDelay();
+          await fC2A.evaluate(() => {
+            const r = document.querySelector('#C2A_2, input[value="2"]');
+            if (r) { r.checked = true; r.click(); }
+          }).catch(() => {});
         }
-        const fC2AA = page.frame({ url: /C2AA\.asp/ });
-        if (fC2AA) await safeFill(fC2AA, 'input[name="C2AA"]', '100');
         const fC2B = page.frame({ url: /C2B\.asp/ });
         if (fC2B) {
-          await safeClick(fC2B, '#C2B_1');
-          await itemDelay();
+          await fC2B.evaluate(() => {
+            const r = document.querySelector('#C2B_2, input[value="2"]');
+            if (r) { r.checked = true; r.click(); }
+          }).catch(() => {});
         }
-        const fC2BA = page.frame({ url: /C2BA\.asp/ });
-        if (fC2BA) await safeFill(fC2BA, 'input[name="C2BA"]', '100');
         const fC2C = page.frame({ url: /C2C\.asp/ });
-        if (fC2C) await safeClick(fC2C, '#C2C_3');
+        if (fC2C) {
+          await fC2C.evaluate(() => {
+            const r = document.querySelector('#C2C_3, #C2C_2, input[value="3"], input[value="2"]');
+            if (r) { r.checked = true; r.click(); }
+          }).catch(() => {});
+        }
         const fC2D = page.frame({ url: /C2D\.asp/ });
-        if (fC2D) await safeClick(fC2D, '#C2D_3');
+        if (fC2D) {
+          await fC2D.evaluate(() => {
+            const r = document.querySelector('#C2D_3, #C2D_2, input[value="3"], input[value="2"]');
+            if (r) { r.checked = true; r.click(); }
+          }).catch(() => {});
+        }
         const fC2E = page.frame({ url: /C2E\.asp/ });
-        if (fC2E) await safeFill(fC2E, 'input[name="C2E"]', '90');
+        if (fC2E) {
+          await fC2E.evaluate(() => {
+            const inp = document.querySelector('input[name="C2E"], input[type="tel"], input[type="text"]');
+            if (inp) {
+              inp.value = '80';
+              inp.dispatchEvent(new Event('input'));
+              inp.dispatchEvent(new Event('change'));
+            }
+          }).catch(() => {});
+        }
       }
 
       // P10: 사업장 점유형태
@@ -522,30 +561,40 @@ export async function runKstatSurvey({
       // P11: 부채 현황
       else if (stepName === 'P11') {
         const fE1 = page.frame({ url: /E1\.asp/ });
-        if (fE1) await safeClick(fE1, '#E1_2'); // 부채 없음 (스킵)
+        if (fE1) {
+          await fE1.evaluate(() => {
+            const r = document.querySelector('#E1_2');
+            if (r) { r.checked = true; r.click(); }
+          }).catch(() => {});
+        }
       }
 
-      // P12: 안전 및 보험
+      // P12: 안전 및 보험 (동적 확장 없는 필수 가입 선택으로 깔끔한 원패스 통과)
       else if (stepName === 'P12') {
         const fE2A = page.frame({ url: /E2A\.asp/ });
-        if (fE2A) await safeClick(fE2A, '#E2A_1');
+        if (fE2A) {
+          await fE2A.evaluate(() => {
+            const r = document.querySelector('#E2A_1');
+            if (r) { r.checked = true; r.click(); }
+          }).catch(() => {});
+        }
         const fE2B = page.frame({ url: /E2B\.asp/ });
         if (fE2B) {
-          await safeClick(fE2B, '#E2B_2');
-          await itemDelay();
+          await fE2B.evaluate(() => {
+            const r = document.querySelector('#E2B_1');
+            if (r) { r.checked = true; r.click(); }
+          }).catch(() => {});
         }
-        const fE2BA = page.frame({ url: /E2BA\.asp/ });
-        if (fE2BA) await safeClick(fE2BA, '#E2BA_1');
         const fE2C = page.frame({ url: /E2C\.asp/ });
         if (fE2C) {
-          await safeClick(fE2C, '#E2C_1');
-          await itemDelay();
+          await fE2C.evaluate(() => {
+            const r = document.querySelector('#E2C_2');
+            if (r) { r.checked = true; r.click(); }
+          }).catch(() => {});
         }
-        const fE2CA = page.frame({ url: /E2CA\.asp/ });
-        if (fE2CA) await safeFill(fE2CA, 'input[name="E2CA"]', '2');
       }
 
-      // P13: 애로사항 및 활성화 과제 (사업자별 서로 다른 3종 선택)
+      // P13: 애로사항 및 활성화 과제 (사업자별 서로 다른 3종 선택 - 1~8 및 1~10 범위 엄수)
       else if (stepName === 'P13') {
         const fF1 = page.frame({ url: /F1\.asp/ });
         if (fF1) {
@@ -554,7 +603,7 @@ export async function runKstatSurvey({
             document.querySelector(`#VF1_${a}`)?.click();
             document.querySelector(`#VF1_${b}`)?.click();
             document.querySelector(`#VF1_${c}`)?.click();
-          }, [f1_a, f1_b, f1_c]);
+          }, [f1_a, f1_b, f1_c]).catch(() => {});
         }
         await itemDelay();
 
@@ -565,58 +614,102 @@ export async function runKstatSurvey({
             document.querySelector(`#VF3_${a}`)?.click();
             document.querySelector(`#VF3_${b}`)?.click();
             document.querySelector(`#VF3_${c}`)?.click();
-          }, [f3_a, f3_b, f3_c]);
+          }, [f3_a, f3_b, f3_c]).catch(() => {});
         }
       }
 
-      // P14: 향후 운영 계획 및 경영 관리
+      // P14: 향후 운영 계획 및 경영 관리 (2단계 동적 확장 구조 완벽 해결)
       else if (stepName === 'P14') {
         const fG1 = page.frame({ url: /G1\.asp/ });
-        if (fG1) await safeClick(fG1, '#G1_1');
-        const fG1A = page.frame({ url: /G1A\.asp/ });
-        if (fG1A) await safeClick(fG1A, '#G1A_2'); // 승계계획 없음 (공란)
-        const fG1B = page.frame({ url: /G1B\.asp/ });
-        if (fG1B) await safeFill(fG1B, 'input[name="G1B"]', persona.future.plannedYears);
-        
-        await itemDelay();
+        if (fG1) {
+          await fG1.evaluate(() => {
+            if (typeof setRadioValue === 'function') setRadioValue('G1', '1');
+            const r = document.querySelector('#G1_1');
+            if (r) { r.checked = true; r.click(); }
+          }).catch(() => {});
+        }
+
         const fG2 = page.frame({ url: /G2\.asp/ });
         if (fG2) {
-          await safeClick(fG2, '#G2_1_2'); // PB상품 아니오
-          await safeClick(fG2, '#G2_2_1'); // 현금영수증 예
-          await safeFill(fG2, '#G2_2_NOTE', persona.future.cashReceiptRatio);
-          await safeClick(fG2, '#G2_3_2'); // 교환환불 아니오
+          await fG2.evaluate(() => {
+            const r1 = document.querySelector('#G2_1_2');
+            if (r1) { r1.checked = true; r1.click(); }
+            const r2 = document.querySelector('#G2_2_1');
+            if (r2) { r2.checked = true; r2.click(); }
+            const note = document.querySelector('#G2_2_NOTE');
+            if (note) note.value = '50';
+            const r3 = document.querySelector('#G2_3_2');
+            if (r3) { r3.checked = true; r3.click(); }
+          }).catch(() => {});
+        }
+
+        // 1차 클릭: G1A, G1B 동적 로드 트리거 및 Alert 수락
+        await page.evaluate(() => document.querySelector('#next')?.click());
+        await page.waitForTimeout(1500);
+
+        // 2단계: 화면에 동적으로 생성된 G1A(승계계획), G1B(지속년수) 주입
+        const fG1A = page.frame({ url: /G1A\.asp/ });
+        if (fG1A) {
+          await fG1A.evaluate(() => {
+            if (typeof setRadioValue === 'function') setRadioValue('G1A', '2');
+            const r = document.querySelector('#G1A_2');
+            if (r) { r.checked = true; r.click(); }
+          }).catch(() => {});
+        }
+
+        const fG1B = page.frame({ url: /G1B\.asp/ });
+        if (fG1B) {
+          await fG1B.evaluate((val) => {
+            const inp = document.querySelector('input[name="G1B"], input[type="text"], input[type="tel"]');
+            if (inp) { inp.value = val; inp.dispatchEvent(new Event('input')); inp.dispatchEvent(new Event('change')); }
+          }, persona.future.plannedYears).catch(() => {});
         }
       }
 
-      // 스크린샷 캡처 및 진행 알림
+      // 스크린샷 캡처
       const pFileName = `step_${stepName}_${Date.now()}.png`;
       const shotPath = path.join(reportDir, pFileName);
       await page.screenshot({ path: shotPath }).catch(() => {});
       const pUrl = `${webBaseUrl}/${pFileName}`;
       const stepNum = parseInt(stepName.replace('P', ''), 10) || 0;
-      capturedSteps.push({
-        step: stepName,
-        stepIndex: stepNum + 1,
-        title: `${stepName} 완료`,
-        file: pFileName,
-        url: pUrl
-      });
-
-      onProgress({
-        step: stepName,
-        stepIndex: stepNum + 1,
-        totalSteps: 15,
-        screenshotUrl: pUrl,
-        message: `✓ [${stepName}] 단계 응답 완료 및 저장 ➔ 다음 이동`
-      });
 
       // 사람다운 다음 단계 검토 지연 후 클릭
       await preNextDelay();
       const prevUrl = page.url();
       await page.evaluate(() => document.querySelector('#next')?.click());
+
+      // 페이지가 실제로 다음 단계로 넘어갈 때까지 대기
+      let pageAdvanced = false;
       for (let w = 0; w < 16; w++) {
         await page.waitForTimeout(500);
-        if (page.url() !== prevUrl) break;
+        if (page.url() !== prevUrl) {
+          pageAdvanced = true;
+          break;
+        }
+      }
+
+      // 페이지가 실제로 다음 단계로 성공적으로 넘어갔을 때만 1회 정직하게 진행 로그 발행!
+      if (pageAdvanced) {
+        capturedSteps.push({
+          step: stepName,
+          stepIndex: stepNum + 1,
+          title: `${stepName} 완료`,
+          file: pFileName,
+          url: pUrl
+        });
+
+        const nextMatch = page.url().match(/(P\d+|Agree)\.asp/i);
+        const nextStepName = nextMatch ? nextMatch[1] : '다음';
+        onProgress({
+          step: stepName,
+          nextStep: nextStepName,
+          stepIndex: stepNum + 1,
+          totalSteps: 15,
+          screenshotUrl: pUrl,
+          message: `✓ [${stepName}] 단계 완료 ➔ [${nextStepName}] 단계 진입`
+        });
+      } else {
+        console.log(`⚠️ [${stepName}] 페이지가 전환되지 않아 재시도 준비 중... (현재: ${page.url()})`);
       }
     }
 
@@ -663,7 +756,8 @@ export async function runKstatSurvey({
       }
     }
 
-    if (safetyGuard && !page.url().includes('Agree.asp')) {
+    // 최종 관문인 Agree.asp에 도달하지 못했다면 모드와 무관하게 무조건 실패 처리! (거짓 완료 원천 차단)
+    if (!page.url().includes('Agree.asp')) {
       return {
         success: false,
         error: `최종 동의 단계(Agree.asp)에 도달하지 못했습니다. (현재 위치: ${page.url()})`,
