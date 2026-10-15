@@ -103,6 +103,7 @@ async function initSurveyDetailPage() {
   let currentCampaign = null;
   let currentScreenshots = [];
   let modalCurrentIndex = 0;
+  let modalCurrentBizName = '';
 
   // ------------------------------------------------------------------------
   // 1. 캠페인 데이터 로드 및 UI 렌더링
@@ -309,8 +310,9 @@ async function initSurveyDetailPage() {
 
     // [캡처 보기]
     document.querySelectorAll('.btn-row-action.view').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        await openCaptureModal();
+      btn.addEventListener('click', async (e) => {
+        const idx = parseInt(e.currentTarget.dataset.idx, 10);
+        await openCaptureModal(idx);
       });
     });
   }
@@ -633,14 +635,19 @@ async function initSurveyDetailPage() {
   // ------------------------------------------------------------------------
   // 7. 15단계 스크린샷 원본 모달
   // ------------------------------------------------------------------------
-  async function openCaptureModal() {
+  async function openCaptureModal(quotaIndex = null) {
     try {
-      const res = await fetch(`/api/campaigns/${campId}/screenshots`);
+      const url = quotaIndex
+        ? `/api/campaigns/${campId}/screenshots?quotaIndex=${quotaIndex}`
+        : `/api/campaigns/${campId}/screenshots`;
+      const res = await fetch(url);
       const data = await res.json();
       currentScreenshots = data.screenshots || [];
+      modalCurrentBizName = data.bizName || '';
 
       if (currentScreenshots.length === 0) {
-        alert('보관된 스크린샷이 없습니다. 먼저 시뮬레이션을 진행해 주세요.');
+        const targetDesc = modalCurrentBizName ? `"${modalCurrentBizName}" 점포의 ` : '';
+        alert(`${targetDesc}보관된 스크린샷이 없습니다. 먼저 시뮬레이션을 진행해 주세요.`);
         return;
       }
 
@@ -656,7 +663,8 @@ async function initSurveyDetailPage() {
     if (currentScreenshots.length === 0) return;
     const item = currentScreenshots[modalCurrentIndex];
     captureViewerImg.src = item.url;
-    captureModalTitle.textContent = `[${item.step}] ${item.title || '단계 스크린샷'}`;
+    const bizPrefix = modalCurrentBizName ? `[${modalCurrentBizName}] ` : '';
+    captureModalTitle.textContent = `${bizPrefix}[${item.step}] ${item.title || '단계 스크린샷'}`;
     captureStepIndicator.textContent = `${modalCurrentIndex + 1} / ${currentScreenshots.length}`;
     btnPrevCapture.disabled = modalCurrentIndex === 0;
     btnNextCapture.disabled = modalCurrentIndex === currentScreenshots.length - 1;

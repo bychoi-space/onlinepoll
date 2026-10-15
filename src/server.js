@@ -557,7 +557,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
         policy,
         pilotMode: true,
         safetyGuard: true,
-        reportDir: path.join(reportsDir, `pilot_${campaign.id}`),
+        reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`),
         onProgress: (info) => {
           logger.info(`[${info.step}] ${info.message}`);
           logger.broadcast({
@@ -657,7 +657,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           policy,
           pilotMode: safetyGuard,
           safetyGuard,
-          reportDir: path.join(reportsDir, `batch_${campaign.id}`),
+          reportDir: path.join(reportsDir, campaign.id, `item_${biz.index || (i + startIndex)}`),
           onProgress: (info) => {
             logger.info(`[배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
             logger.broadcast({
@@ -674,6 +674,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         if (result.success) {
           biz.quotaStatus = safetyGuard ? 'pilot_done' : 'completed';
           biz.completedAt = new Date().toISOString();
+          biz.capturedSteps = result.capturedSteps;
           logger.success(`[배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" 설문 완료!`);
         } else {
           biz.quotaStatus = 'error';
@@ -741,7 +742,7 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
         policy: campaign.guidelineConfig?.policy || {},
         pilotMode: true,
         safetyGuard: true,
-        reportDir: path.join(reportsDir, `single_${campaign.id}_idx${quotaIndex}`),
+        reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`),
         onProgress: (info) => {
           logger.broadcast({
             type: 'PILOT_PROGRESS',
@@ -776,28 +777,85 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
 });
 
 // ==========================================
-// [3-4] 단계별 화면 캡처 목록 조회
+// [3-4] 단계별 화면 캡처 목록 조회 (쿼터 사업자별 1:1 매핑)
 // ==========================================
 app.get('/api/campaigns/:id/screenshots', (req, res) => {
-  // 칠칠수산 및 최신 캡처 이미지 제공
-  const simDir = path.join(reportsDir, 'simulation_77susan');
-  if (fs.existsSync(simDir)) {
-    const files = fs.readdirSync(simDir).filter(f => f.includes('saved') || f.includes('Agree'));
-    const order = ['Q1', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'Agree'];
-    
-    const screenshots = order.map((step, idx) => {
-      const matchFile = files.find(f => f.toLowerCase().includes(`_${step.toLowerCase()}_`)) || 'step_Agree_saved.png';
-      return {
-        step,
-        stepIndex: idx + 1,
-        title: step === 'Agree' ? '개인정보 수집 동의' : `${step} 단계 응답 완료`,
-        url: `/reports/simulation_77susan/${matchFile}`
-      };
-    });
-    return res.json({ success: true, screenshots });
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
   }
 
-  res.json({ success: true, screenshots: [] });
+  const quotaDb = campaign.quotaDatabase || [];
+  const quotaIndex = req.query.quotaIndex ? parseInt(req.query.quotaIndex, 10) : null;
+
+  // 1) 특정 쿼터 점포가 지정된 경우
+  if (quotaIndex) {
+    const targetBiz = quotaDb.find(b => (b.index || b.seq) === quotaIndex);
+    if (!targetBiz) {
+      return res.status(404).json({ error: '해당 순번의 쿼터 사업자를 찾을 수 없습니다.' });
+    }
+
+    // A) 객체에 저장된 capturedSteps가 있는 경우
+    if (targetBiz.capturedSteps && targetBiz.capturedSteps.length > 0) {
+      return res.json({
+        success: true,
+        bizName: targetBiz.companyName,
+        quotaIndex,
+        screenshots: targetBiz.capturedSteps
+      });
+    }
+
+    // B) 물리 폴더 스캔: reports/:campaignId/item_:quotaIndex
+    const itemDir = path.join(reportsDir, campaign.id, `item_${quotaIndex}`);
+    if (fs.existsSync(itemDir)) {
+      const files = fs.readdirSync(itemDir).filter(f => f.endsWith('.png'));
+      const order = ['Q1', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'Agree'];
+      const screenshots = [];
+      order.forEach((step, idx) => {
+        const matchFile = files.find(f => f.includes(`step_${step}_`));
+        if (matchFile) {
+          screenshots.push({
+            step,
+            stepIndex: idx + 1,
+            title: step === 'Agree' ? '개인정보 수집 동의' : `${step} 단계 응답 완료`,
+            file: matchFile,
+            url: `/reports/${campaign.id}/item_${quotaIndex}/${matchFile}`
+          });
+        }
+      });
+
+      if (screenshots.length > 0) {
+        return res.json({
+          success: true,
+          bizName: targetBiz.companyName,
+          quotaIndex,
+          screenshots
+        });
+      }
+    }
+
+    return res.json({
+      success: true,
+      bizName: targetBiz.companyName,
+      quotaIndex,
+      screenshots: [],
+      message: `"${targetBiz.companyName}" 점포의 캡처 파일이 아직 없습니다.`
+    });
+  }
+
+  // 2) quotaIndex 미지정 시: 최근 실행된 점포의 스크린샷 반환
+  const executedBizList = quotaDb.filter(b => b.capturedSteps && b.capturedSteps.length > 0);
+  if (executedBizList.length > 0) {
+    const latestBiz = executedBizList[executedBizList.length - 1];
+    return res.json({
+      success: true,
+      bizName: latestBiz.companyName,
+      quotaIndex: latestBiz.index || latestBiz.seq,
+      screenshots: latestBiz.capturedSteps
+    });
+  }
+
+  res.json({ success: true, screenshots: [], message: '실행 완료된 스크린샷이 없습니다.' });
 });
 
 // 작업 중지 요청

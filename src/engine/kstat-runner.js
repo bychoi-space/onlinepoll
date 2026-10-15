@@ -70,6 +70,12 @@ export async function runKstatSurvey({
     fs.mkdirSync(reportDir, { recursive: true });
   }
 
+  // 웹 브라우저에서 접근 가능한 상대 경로 계산
+  const rootReportsDir = path.resolve('reports');
+  const absReportDir = path.resolve(reportDir);
+  const relFromReports = path.relative(rootReportsDir, absReportDir).replace(/\\/g, '/');
+  const webBaseUrl = `/reports/${relFromReports}`;
+
   // 1. 사업자 팩트 데이터 정규화
   const biz = {
     companyName: bizData.companyName || '무명점포',
@@ -166,15 +172,23 @@ export async function runKstatSurvey({
       await safeClick(page, '#Q1_12_1'); // 응답자: 점포주
       await safeClick(page, '#Q1_13_2'); // 정보수신: 아니오
 
-      const q1ShotPath = path.join(reportDir, `step_Q1_${Date.now()}.png`);
+      const q1FileName = `step_Q1_${Date.now()}.png`;
+      const q1ShotPath = path.join(reportDir, q1FileName);
       await page.screenshot({ path: q1ShotPath });
-      capturedSteps.push({ step: 'Q1', title: '점포 기본정보 등록', file: path.basename(q1ShotPath) });
+      const q1Url = `${webBaseUrl}/${q1FileName}`;
+      capturedSteps.push({
+        step: 'Q1',
+        stepIndex: 1,
+        title: '점포 기본정보 등록',
+        file: q1FileName,
+        url: q1Url
+      });
 
       onProgress({
         step: 'Q1',
         stepIndex: 1,
         totalSteps: 15,
-        screenshotUrl: `/reports/simulation_77susan/step_Q1_saved.png`,
+        screenshotUrl: q1Url,
         message: `✓ [Q1] 점포 기본정보 등록 완료: "${biz.companyName}" (${persona.industryMeta.categoryName})`
       });
 
@@ -516,16 +530,24 @@ export async function runKstatSurvey({
       }
 
       // 스크린샷 캡처 및 진행 알림
-      const shotPath = path.join(reportDir, `step_${stepName}_${Date.now()}.png`);
+      const pFileName = `step_${stepName}_${Date.now()}.png`;
+      const shotPath = path.join(reportDir, pFileName);
       await page.screenshot({ path: shotPath }).catch(() => {});
-      capturedSteps.push({ step: stepName, title: `${stepName} 완료`, file: path.basename(shotPath) });
-
+      const pUrl = `${webBaseUrl}/${pFileName}`;
       const stepNum = parseInt(stepName.replace('P', ''), 10) || 0;
+      capturedSteps.push({
+        step: stepName,
+        stepIndex: stepNum + 1,
+        title: `${stepName} 완료`,
+        file: pFileName,
+        url: pUrl
+      });
+
       onProgress({
         step: stepName,
         stepIndex: stepNum + 1,
         totalSteps: 15,
-        screenshotUrl: `/reports/simulation_77susan/step_${stepName}_saved.png`,
+        screenshotUrl: pUrl,
         message: `✓ [${stepName}] 단계 응답 완료 및 저장 ➔ 다음 이동`
       });
 
@@ -547,9 +569,17 @@ export async function runKstatSurvey({
       await page.click('#AGREE_1').catch(() => {});
       await preNextDelay();
 
-      const agreeShotPath = path.join(reportDir, `step_Agree_${Date.now()}.png`);
+      const agreeFileName = `step_Agree_${Date.now()}.png`;
+      const agreeShotPath = path.join(reportDir, agreeFileName);
       await page.screenshot({ path: agreeShotPath, fullPage: true }).catch(() => {});
-      capturedSteps.push({ step: 'Agree', title: '개인정보 수집 동의 완료', file: path.basename(agreeShotPath) });
+      const agreeUrl = `${webBaseUrl}/${agreeFileName}`;
+      capturedSteps.push({
+        step: 'Agree',
+        stepIndex: 16,
+        title: '개인정보 수집 동의 완료',
+        file: agreeFileName,
+        url: agreeUrl
+      });
 
       // 파일럿 모드이거나 안전가드가 켜져 있으면 최종 제출 버튼 클릭 전 대기
       if (pilotMode || safetyGuard) {
@@ -557,7 +587,7 @@ export async function runKstatSurvey({
           step: 'Agree',
           stepIndex: 15,
           totalSteps: 15,
-          screenshotUrl: `/reports/simulation_77susan/step_Agree_saved.png`,
+          screenshotUrl: agreeUrl,
           message: `🛡️ [최종 동의 완료] 안전 가드 활성화 상태로 최종 제출 전 대기합니다.`
         });
       } else {
@@ -568,7 +598,7 @@ export async function runKstatSurvey({
           step: 'COMPLETED',
           stepIndex: 15,
           totalSteps: 15,
-          screenshotUrl: `/reports/simulation_77susan/step_Agree_saved.png`,
+          screenshotUrl: agreeUrl,
           message: `🎉 [설문 최종 마감] "${biz.companyName}" 설문이 정식 제출 마감되었습니다!`
         });
       }
