@@ -129,7 +129,7 @@ app.get('/api/events', (req, res) => {
 
 // 인증 API: 패스코드 로그인
 app.post('/api/auth/login', (req, res) => {
-  const { password } = req.body || {};
+  const password = req.body?.password || req.body?.passcode;
   if (!password) {
     return res.status(400).json({ success: false, error: '비밀번호를 입력해 주세요.' });
   }
@@ -1232,3 +1232,5 @@ app.listen(PORT, () => {
   console.log(` 메인 목차 대시보드: http://localhost:${PORT}`);
   console.log(`=======================================================`);
 });
+
+export default app;
