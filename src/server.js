@@ -513,17 +513,16 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
   }
 
   const { surveyUrl, policy = {}, quotaIndex = 1 } = req.body;
-  const targetUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
-  if (!targetUrl) {
-    return res.status(400).json({ error: '설문조사 URL이 필요합니다.' });
-  }
-
   const quotaDb = campaign.quotaDatabase || [];
   if (quotaDb.length === 0) {
     return res.status(400).json({ error: '캠페인에 구축된 조사 쿼터가 없습니다.' });
   }
 
   const targetBiz = quotaDb[Math.max(0, quotaIndex - 1)];
+  const targetUrl = targetBiz?.slotUrl || targetBiz?.surveyUrl || surveyUrl || campaign.guidelineConfig?.surveyUrl;
+  if (!targetUrl) {
+    return res.status(400).json({ error: '설문조사 URL이 필요합니다.' });
+  }
 
   // 가이드라인 설정 보존
   CampaignStore.updateCampaign(campaign.id, {
@@ -612,10 +611,10 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
   }
 
   const { surveyUrl, policy = {}, startIndex = 2, safetyGuard = false } = req.body;
-  const targetUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
+  const defaultUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
   const quotaDb = campaign.quotaDatabase || [];
 
-  const targets = quotaDb.filter(b => b.index >= startIndex && b.quotaStatus !== 'completed');
+  const targets = quotaDb.filter(b => (b.index || b.seq) >= startIndex && b.quotaStatus !== 'completed');
   if (targets.length === 0) {
     return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다.' });
   }
@@ -633,13 +632,22 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     try {
       for (let i = 0; i < targets.length; i++) {
         const biz = targets[i];
+        const bizUrl = biz.slotUrl || biz.surveyUrl || defaultUrl;
+        if (!bizUrl) {
+          logger.error(`[배치 ${i + 1}/${targets.length}] "${biz.companyName}"에 할당된 설문 URL(슬롯)이 없습니다.`);
+          biz.quotaStatus = 'error';
+          CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+          continue;
+        }
+
         biz.quotaStatus = 'running';
         CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
 
-        logger.info(`[배치 진행 ${i + 1}/${targets.length}] "${biz.companyName}" (${biz.bizNumber}) 설문 자동화 시작...`);
+        const slotInfo = biz.slotIndex ? ` [Kstat 슬롯 #${biz.slotIndex} ${biz.slotExtra || ''}]` : '';
+        logger.info(`[배치 진행 ${i + 1}/${targets.length}] "${biz.companyName}" (${biz.bizNumber})${slotInfo} 설문 자동화 시작...`);
 
         const result = await runKstatSurvey({
-          surveyUrl: targetUrl,
+          surveyUrl: bizUrl,
           bizData: biz,
           quotaIndex: biz.index || (i + startIndex),
           guidelineConfig: campaign.guidelineConfig || {},
@@ -651,7 +659,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
             logger.broadcast({
               type: 'BATCH_PROGRESS',
               campaignId: campaign.id,
-              quotaIndex: biz.index,
+              quotaIndex: biz.index || (i + startIndex),
               itemNumber: i + 1,
               totalItems: targets.length,
               ...info
@@ -696,21 +704,22 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
 
   const { quotaIndex } = req.body;
   const quotaDb = campaign.quotaDatabase || [];
-  const targetBiz = quotaDb.find(b => b.index === quotaIndex);
+  const targetBiz = quotaDb.find(b => (b.index || b.seq) === quotaIndex);
 
   if (!targetBiz) {
     return res.status(404).json({ error: '해당 순번의 쿼터 사업자를 찾을 수 없습니다.' });
   }
 
-  const targetUrl = campaign.guidelineConfig?.surveyUrl;
+  const targetUrl = targetBiz.slotUrl || targetBiz.surveyUrl || campaign.guidelineConfig?.surveyUrl;
   if (!targetUrl) {
-    return res.status(400).json({ error: '설문조사 URL이 먼저 설정되어야 합니다.' });
+    return res.status(400).json({ error: '설문조사 URL이 지정되지 않았습니다.' });
   }
 
   targetBiz.quotaStatus = 'running';
   CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
 
-  logger.info(`[개별 쿼터 테스트] "${targetBiz.companyName}" (순번: #${targetBiz.index}) 1건 실행 시작...`);
+  const slotNotice = targetBiz.slotIndex ? ` [Kstat 슬롯 #${targetBiz.slotIndex} ${targetBiz.slotExtra || ''}]` : '';
+  logger.info(`[개별 쿼터 테스트] "${targetBiz.companyName}" (순번: #${targetBiz.index || quotaIndex})${slotNotice} 1건 실행 시작...`);
 
   res.json({
     success: true,

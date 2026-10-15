@@ -2676,9 +2676,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
   animation: btnPulse 1.8s infinite;
 }
 
-
-
-
-
-
-
+/* Kstat 슬롯 배지 스타일 */
+.quota-slot-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-top: 3px;
+  letter-spacing: -0.2px;
+}

@@ -66,7 +66,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": "공정위·국세청 공인등록정보",
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 2,
+      "slotExtra": "(4)추가",
+      "slotIdSel": "76454",
+      "ranId": "EZQPGx4L8",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 2,
@@ -83,7 +88,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 3,
+      "slotExtra": "(5)추가",
+      "slotIdSel": "76455",
+      "ranId": "VCnUfCY6K",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=VCnUfCY6K&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 3,
@@ -100,7 +110,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 4,
+      "slotExtra": "(6)추가",
+      "slotIdSel": "76456",
+      "ranId": "05anItSeU",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=05anItSeU&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 4,
@@ -117,7 +132,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 5,
+      "slotExtra": "(1)추가",
+      "slotIdSel": "75514",
+      "ranId": "0E6G9JX98",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=0E6G9JX98&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 5,
@@ -134,7 +154,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "N",
       "ceoSource": "공정위·국세청 공인등록정보",
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 6,
+      "slotExtra": "(2)추가",
+      "slotIdSel": "76376",
+      "ranId": "OseLErRyW",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=OseLErRyW&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 6,
@@ -151,7 +176,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 7,
+      "slotExtra": "(7)추가",
+      "slotIdSel": "76457",
+      "ranId": "9VS1l8O1Y",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=9VS1l8O1Y&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 7,
@@ -168,7 +198,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 8,
+      "slotExtra": "(3)추가",
+      "slotIdSel": "76452",
+      "ranId": "yJOWyMMVe",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=yJOWyMMVe&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 8,
@@ -185,7 +220,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": "공정위·국세청 공인등록정보",
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 9,
+      "slotExtra": "(8)추가",
+      "slotIdSel": "76460",
+      "ranId": "l72YcIVMm",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=l72YcIVMm&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 9,
@@ -202,7 +242,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 10,
+      "slotExtra": "(9)추가",
+      "slotIdSel": "76462",
+      "ranId": "BtQ09ixb5",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=BtQ09ixb5&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 10,
@@ -219,7 +264,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 11,
+      "slotExtra": "(10)추가",
+      "slotIdSel": "76463",
+      "ranId": "Nn9f36TCG",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=Nn9f36TCG&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 11,
@@ -236,7 +286,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": "공정위·국세청 공인등록정보",
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 12,
+      "slotExtra": "(11)추가",
+      "slotIdSel": "76464",
+      "ranId": "GmWo8WUiG",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=GmWo8WUiG&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 12,
@@ -253,7 +308,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": "공정위·국세청 공인등록정보",
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 13,
+      "slotExtra": "(12)추가",
+      "slotIdSel": "76465",
+      "ranId": "7SyhrpGqg",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=7SyhrpGqg&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 13,
@@ -270,7 +330,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 14,
+      "slotExtra": "(13)추가",
+      "slotIdSel": "76466",
+      "ranId": "ngTrpE4bJ",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=ngTrpE4bJ&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 14,
@@ -287,7 +352,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 15,
+      "slotExtra": "(14)추가",
+      "slotIdSel": "76467",
+      "ranId": "a6l94Y3gX",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=a6l94Y3gX&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 15,
@@ -304,7 +374,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 16,
+      "slotExtra": "(15)추가",
+      "slotIdSel": "76468",
+      "ranId": "jfXJSXy5E",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=jfXJSXy5E&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 16,
@@ -321,7 +396,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 17,
+      "slotExtra": "(16)추가",
+      "slotIdSel": "76469",
+      "ranId": "NdlR9tVqG",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=NdlR9tVqG&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 17,
@@ -338,7 +418,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 18,
+      "slotExtra": "(17)추가",
+      "slotIdSel": "76470",
+      "ranId": "JqrhZwErQ",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=JqrhZwErQ&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 18,
@@ -355,7 +440,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": "공정위·국세청 공인등록정보",
-      "phoneSource": null
+      "phoneSource": null,
+      "slotIndex": 19,
+      "slotExtra": "(18)추가",
+      "slotIdSel": "76471",
+      "ranId": "NjZZUh3EQ",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=NjZZUh3EQ&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 19,
@@ -372,7 +462,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 20,
+      "slotExtra": "(19)추가",
+      "slotIdSel": "76472",
+      "ranId": "oJJjNC5No",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=oJJjNC5No&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 20,
@@ -389,7 +484,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "N",
       "ceoSource": "공정위·국세청 공인등록정보",
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 21,
+      "slotExtra": "(20)추가",
+      "slotIdSel": "76473",
+      "ranId": "4cwi7xkAU",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=4cwi7xkAU&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 21,
@@ -406,7 +506,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 22,
+      "slotExtra": "(21)추가",
+      "slotIdSel": "76474",
+      "ranId": "bOITDPyUG",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=bOITDPyUG&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 22,
@@ -423,7 +528,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 23,
+      "slotExtra": "(22)추가",
+      "slotIdSel": "76475",
+      "ranId": "FOOkcSy06",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=FOOkcSy06&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 23,
@@ -440,7 +550,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 24,
+      "slotExtra": "(23)추가",
+      "slotIdSel": "76476",
+      "ranId": "OH7Lypweo",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=OH7Lypweo&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     },
     {
       "seq": 24,
@@ -457,7 +572,12 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "ceoSource": null,
-      "phoneSource": "네이버 플레이스/검색"
+      "phoneSource": "네이버 플레이스/검색",
+      "slotIndex": 25,
+      "slotExtra": "(24)추가",
+      "slotIdSel": "76477",
+      "ranId": "GycZZf28Z",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=GycZZf28Z&type=tapi&prid=2026070802&mnid=900001346&srt=1"
     }
   ]
 }

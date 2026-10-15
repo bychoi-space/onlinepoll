@@ -131,7 +131,8 @@ async function initSurveyDetailPage() {
 
     // 2차 방향성 가이드 설정 바인딩
     if (camp.guidelineConfig) {
-      inputSurveyUrl.value = camp.guidelineConfig.surveyUrl || '';
+      const firstSlotUrl = camp.quotaDatabase?.[0]?.slotUrl;
+      inputSurveyUrl.value = camp.guidelineConfig.surveyUrl || firstSlotUrl || '';
       inputSurveyTopic.value = camp.guidelineConfig.topic || '';
       inputTextGuidelines.value = camp.guidelineConfig.textGuidelines || '';
       if (inputIterations) inputIterations.value = camp.guidelineConfig.iterations || 10;
@@ -266,10 +267,18 @@ async function initSurveyDetailPage() {
       const itemVal = item.handledItems || item.industry || '-';
       const addrVal = item.address ? (item.address.length > 28 ? item.address.slice(0, 28) + '...' : item.address) : '-';
 
+      let slotTag = '';
+      if (item.slotIndex) {
+        slotTag = `<div class="quota-slot-badge font-mono" title="${escapeHtml(item.slotUrl || '')}">슬롯 #${item.slotIndex} ${escapeHtml(item.slotExtra || '')}</div>`;
+      }
+
       return `
         <tr data-row-idx="${item.index}">
           <td class="text-center font-mono font-bold">${item.index || idx + 1}</td>
-          <td><strong>${escapeHtml(item.companyName)}</strong></td>
+          <td>
+            <strong>${escapeHtml(item.companyName)}</strong>
+            ${slotTag}
+          </td>
           <td><code>${escapeHtml(item.bizNumber || '-')}</code></td>
           <td>${ceoVal}</td>
           <td>${phoneVal}</td>
@@ -443,11 +452,17 @@ async function initSurveyDetailPage() {
 
   // [버튼 1] 1번 쿼터 파일럿 검증 (Agree 직전 안전 대기)
   btnPilot.addEventListener('click', async () => {
-    const surveyUrl = inputSurveyUrl.value.trim();
+    let surveyUrl = inputSurveyUrl.value.trim();
     if (!surveyUrl) {
-      alert('설문조사 URL을 입력해 주세요.');
-      inputSurveyUrl.focus();
-      return;
+      const firstSlot = currentCampaign?.quotaDatabase?.[0]?.slotUrl;
+      if (firstSlot) {
+        surveyUrl = firstSlot;
+        inputSurveyUrl.value = firstSlot;
+      } else {
+        alert('설문조사 URL을 입력해 주세요.');
+        inputSurveyUrl.focus();
+        return;
+      }
     }
 
     try {
@@ -477,9 +492,11 @@ async function initSurveyDetailPage() {
 
   // [버튼 2] 2번 쿼터부터 고속 배치 연속 가동
   btnBatch.addEventListener('click', async () => {
-    const surveyUrl = inputSurveyUrl.value.trim();
-    if (!surveyUrl) {
+    let surveyUrl = inputSurveyUrl.value.trim();
+    const hasSlotUrls = currentCampaign?.quotaDatabase?.some(b => b.slotUrl);
+    if (!surveyUrl && !hasSlotUrls) {
       alert('설문조사 URL을 입력해 주세요.');
+      inputSurveyUrl.focus();
       return;
     }
 

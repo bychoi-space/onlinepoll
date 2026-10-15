@@ -223,6 +223,13 @@ c:/onlinepoll/
 - **전통시장 및 소상공인 공인 가맹점 정보 (온누리상품권 플랫폼)**:
   - 플랫폼 URL: `https://ongift.or.kr/afms/afm/SMMDL0001M05/page.do`
   - 데이터 성격: 중소벤처기업부/소상공인시장진흥공단 공인 온누리 가맹점 데이터 (시장명, 10자리 사업자등록번호, 상호, 지류/디지털 취급 여부, 주소, 업종)
+- **케이스탯 TAPI 통합조사 솔루션 (Kstat TAPI Manager)**:
+  - 플랫폼 URL: `https://survey.kstat.co.kr/kstat_survey/inc/login.php`
+  - 리스트 URL: `https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php`
+  - 계정: `가온김영옥` / `1234`
+  - 대상 프로젝트 ID: `2026070802` (2026년 전통시장·상점가 및 점포경영 실태조사)
+  - 소속 사무소: `가온`
+  - 주 타깃 시장: 서울 송파구 풍납시장 (25개 조사 슬롯 배정)
 
 ### 2. 수집 및 활용 대상 데이터 항목 (Field Specifications)
 - `상호` (Company Name)
