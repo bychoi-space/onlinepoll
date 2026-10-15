@@ -1,3 +1,6 @@
+// 대한민국 표준시 (KST) 강제 설정
+process.env.TZ = 'Asia/Seoul';
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -614,7 +617,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
   const defaultUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
   const quotaDb = campaign.quotaDatabase || [];
 
-  const targets = quotaDb.filter(b => (b.index || b.seq) >= startIndex && b.quotaStatus !== 'completed');
+  const targets = quotaDb.filter(b => (b.index || b.seq) >= startIndex && b.quotaStatus !== 'completed' && b.quotaStatus !== 'pilot_done');
   if (targets.length === 0) {
     return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다.' });
   }
@@ -656,6 +659,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           safetyGuard,
           reportDir: path.join(reportsDir, `batch_${campaign.id}`),
           onProgress: (info) => {
+            logger.info(`[배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
             logger.broadcast({
               type: 'BATCH_PROGRESS',
               campaignId: campaign.id,

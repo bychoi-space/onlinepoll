@@ -2,6 +2,22 @@
  * 실시간 SSE 브로드캐스터 및 통합 로거
  */
 
+const kstTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false
+});
+
+function getKstTime() {
+  try {
+    return kstTimeFormatter.format(new Date());
+  } catch (_) {
+    return new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul' });
+  }
+}
+
 class EventBroadcaster {
   constructor() {
     this.clients = new Set();
@@ -31,7 +47,7 @@ class EventBroadcaster {
   broadcast(type, payload) {
     const eventData = {
       id: Date.now(),
-      timestamp: new Date().toLocaleTimeString(),
+      timestamp: getKstTime(),
       type,
       ...payload
     };

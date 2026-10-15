@@ -592,6 +592,22 @@ async function initSurveyDetailPage() {
     galleryCount.textContent = '0';
   }
 
+  const kstFormatter = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
+  function getKstTime() {
+    try {
+      return kstFormatter.format(new Date());
+    } catch (_) {
+      return new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul' });
+    }
+  }
+
   function appendGalleryItem(step, url, title) {
     const empty = galleryStrip.querySelector('.empty-feed');
     if (empty) empty.remove();
@@ -604,7 +620,7 @@ async function initSurveyDetailPage() {
       </div>
       <div class="gallery-meta">
         <span class="gallery-step-title">[${step}] ${escapeHtml(title || '단계 완료')}</span>
-        <span class="gallery-time">${new Date().toLocaleTimeString()} 완료</span>
+        <span class="gallery-time">${getKstTime()} 완료</span>
       </div>
     `;
     card.addEventListener('click', () => openCaptureModal());
@@ -692,12 +708,16 @@ async function initSurveyDetailPage() {
           }
         }
 
-        // 파일럿 완료
+        // 파일럿 완료 (화면 자동 새로고침 파이프라인)
         else if (data.type === 'PILOT_COMPLETED') {
           setTimelineStep('Agree');
           setRunningState(false);
-          appendLog('success', `🎉 1번 쿼터 "${data.bizName}" 파일럿 검증 완료! Agree.asp 안전 대기 중.`);
           await loadCampaign();
+          appendLog('success', `🎉 1번 쿼터 "${data.bizName}" 파일럿 검증 완료! Agree.asp 안전 대기 중.`);
+          appendLog('info', '🔄 3초 후 검증 결과 및 버튼 상태를 완벽 동기화하기 위해 화면을 자동으로 새로고침합니다...');
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
         }
 
         // 배치 진행
@@ -705,6 +725,9 @@ async function initSurveyDetailPage() {
           setTimelineStep(data.step);
           if (data.screenshotUrl) {
             appendGalleryItem(data.step, data.screenshotUrl, `[#${data.quotaIndex}] ${data.step}`);
+          }
+          if (data.message) {
+            appendLog('info', `[#${data.quotaIndex}] ${data.message}`);
           }
         }
 
@@ -736,7 +759,7 @@ async function initSurveyDetailPage() {
   function appendLog(level, msg, time = null) {
     const entry = document.createElement('div');
     entry.className = `log-entry ${level}`;
-    const t = time || new Date().toLocaleTimeString();
+    const t = time || getKstTime();
     entry.innerHTML = `<span class="log-time">[${t}]</span><span class="log-badge ${level}">${level.toUpperCase()}</span><span class="log-msg">${escapeHtml(msg)}</span>`;
     terminalLogs.appendChild(entry);
     terminalLogs.scrollTop = terminalLogs.scrollHeight;

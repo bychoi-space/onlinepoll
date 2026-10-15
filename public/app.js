@@ -147,7 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const entry = document.createElement('div');
     entry.className = `log-entry ${level}`;
 
-    const timestamp = time || new Date().toLocaleTimeString();
+    const timestamp = time || new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).format(new Date());
     entry.innerHTML = `
       <span class="log-time">[${timestamp}]</span>
       <span class="log-badge ${level}">${level.toUpperCase()}</span>

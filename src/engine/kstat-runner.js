@@ -310,11 +310,21 @@ export async function runKstatSurvey({
       else if (stepName === 'P5') {
         const fB2 = page.frame({ url: /B2\.asp/ });
         if (fB2) {
-          await safeFill(fB2, '#B2_1', persona.paymentMethods.cash);
-          await safeFill(fB2, '#B2_2', persona.paymentMethods.card);
-          await safeFill(fB2, '#B2_3', persona.paymentMethods.onnuri);
-          await safeFill(fB2, '#B2_4', '0');
-          await safeFill(fB2, '#B2_5', '0');
+          await safeClick(fB2, '#B2_1_1'); // 현금 취급: 예
+          await safeClick(fB2, '#B2_2_1'); // 신용카드 취급: 예
+          await safeClick(fB2, '#B2_3_1'); // 온누리상품권 취급: 예
+          await safeClick(fB2, '#B2_4_2'); // 지역사랑상품권: 아니오
+          await safeClick(fB2, '#B2_5_2'); // 기타/모바일: 아니오
+        }
+        await itemDelay();
+
+        const fB2A = page.frame({ url: /B2A\.asp/ });
+        if (fB2A) {
+          await safeFill(fB2A, 'input[name="B2A_1"]', persona.paymentMethods.cash);
+          await safeFill(fB2A, 'input[name="B2A_2"]', persona.paymentMethods.card);
+          await safeFill(fB2A, 'input[name="B2A_3"]', persona.paymentMethods.onnuri);
+          await safeFill(fB2A, 'input[name="B2A_4"]', '0');
+          await safeFill(fB2A, 'input[name="B2A_5"]', '0');
         }
         await itemDelay();
 
