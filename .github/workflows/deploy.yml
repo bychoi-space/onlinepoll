@@ -21,5 +21,5 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
 
           echo "🚀 [Deploy] Connecting to GCP VM (34.64.233.77)..."
-          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 "cd ~/onlinepoll && git fetch origin main && git reset --hard origin/main && npm install --production=false && pm2 restart onlinepoll"
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 "cd ~/onlinepoll && git fetch origin main && cp -r data /tmp/onlinepoll_data_backup 2>/dev/null || true && git reset --hard origin/main && cp -r /tmp/onlinepoll_data_backup/* data/ 2>/dev/null || true && npm install --production=false && pm2 restart onlinepoll"
           echo "✅ [Deploy] Deployment completed successfully!"

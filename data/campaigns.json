@@ -6,7 +6,7 @@
     "quotaType": "b2b",
     "status": "ready",
     "createdAt": "2026-10-15T04:47:33.802Z",
-    "updatedAt": "2026-10-15T05:46:29.323Z",
+    "updatedAt": "2026-10-15T06:18:23.541Z",
     "quotaConfig": {
       "quotaSource": "FILE_IMPORT",
       "quotaFileName": "quota_onnuri_2026_풍납시장_업종별24개_조사쿼터_1792039611646.json",
@@ -49,8 +49,9 @@
         "slotIdSel": "76454",
         "ranId": "EZQPGx4L8",
         "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=1",
-        "quotaStatus": "ready",
-        "usedAt": null
+        "quotaStatus": "pilot_done",
+        "usedAt": null,
+        "pilotAt": "2026-10-15T05:56:35.402Z"
       },
       {
         "index": 2,
@@ -73,8 +74,9 @@
         "slotIdSel": "76455",
         "ranId": "VCnUfCY6K",
         "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=VCnUfCY6K&type=tapi&prid=2026070802&mnid=900001346&srt=1",
-        "quotaStatus": "ready",
-        "usedAt": null
+        "quotaStatus": "completed",
+        "usedAt": null,
+        "completedAt": "2026-10-15T06:09:01.051Z"
       },
       {
         "index": 3,
