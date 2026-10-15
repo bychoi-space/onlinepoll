@@ -17,8 +17,16 @@ async function safeClick(frame, selector) {
     if (el) {
       await el.evaluate(e => {
         e.scrollIntoView({ block: 'center', inline: 'center' });
+        e.checked = true;
         e.click();
         e.dispatchEvent(new Event('change', { bubbles: true }));
+        if (typeof setRadioValue === 'function' && e.name && e.value) {
+          try { setRadioValue(e.name, e.value); } catch (_) {}
+        }
+        const parentTd = e.closest('td');
+        if (parentTd && parentTd.onclick) {
+          try { parentTd.onclick(); } catch (_) {}
+        }
       });
       return true;
     }
@@ -430,27 +438,37 @@ export async function runKstatSurvey({
         }
       }
 
-      // P8: 판로 및 마케팅
+      // P8: 판로 및 마케팅 (동적 C1GA 확장 완벽 해결)
       else if (stepName === 'P8') {
-        const fC1A = page.frame({ url: /C1A\.asp/ });
-        if (fC1A) await safeClick(fC1A, '#C1A_2');
-        const fC1B = page.frame({ url: /C1B\.asp/ });
-        if (fC1B) await safeClick(fC1B, '#C1B_2');
-        const fC1C = page.frame({ url: /C1C\.asp/ });
-        if (fC1C) await safeClick(fC1C, '#C1C_2');
-        const fC1D = page.frame({ url: /C1D\.asp/ });
-        if (fC1D) await safeClick(fC1D, '#C1D_2');
-        const fC1E = page.frame({ url: /C1E\.asp/ });
-        if (fC1E) await safeClick(fC1E, '#C1E_2'); // 택배 미운영 스킵
-        const fC1F = page.frame({ url: /C1F\.asp/ });
-        if (fC1F) await safeClick(fC1F, '#C1F_2');
-        const fC1G = page.frame({ url: /C1G\.asp/ });
-        if (fC1G) {
-          await safeClick(fC1G, '#C1G_2');
-          await itemDelay();
+        for (const letter of ['A', 'B', 'C', 'D', 'E', 'F', 'G']) {
+          const f = page.frame({ url: new RegExp('C1' + letter + '\\.asp') });
+          if (f) {
+            await f.evaluate((l) => {
+              const varName = 'C1' + l;
+              if (typeof setRadioValue === 'function') setRadioValue(varName, '2');
+              const r = document.querySelector(`#${varName}_2, input[value="2"]`);
+              if (r) { r.checked = true; r.click(); }
+              const td = document.querySelector(`#TD_${varName}_2`);
+              if (td && td.onclick) td.onclick();
+            }, letter).catch(() => {});
+          }
         }
-        const fC1GA = page.frame({ url: /C1GA\.asp/ });
-        if (fC1GA) await safeClick(fC1GA, '#C1GA_3');
+
+        // 1차 클릭 (C1GA Alert 트리거 및 동적 로드)
+        await page.evaluate(() => document.querySelector('#next')?.click());
+        await page.waitForTimeout(1500);
+
+        // 2단계: C1GA(미운영 사유) 프레임 주입
+        const fGA = page.frame({ url: /C1GA\.asp/ });
+        if (fGA) {
+          await fGA.evaluate(() => {
+            if (typeof setRadioValue === 'function') setRadioValue('C1GA', '1');
+            const r = document.querySelector('#C1GA_1, input[value="1"]');
+            if (r) { r.checked = true; r.click(); }
+            const td = document.querySelector('#TD_C1GA_1');
+            if (td && td.onclick) td.onclick();
+          }).catch(() => {});
+        }
       }
 
       // P9: 원산지 및 가격표시
