@@ -212,6 +212,27 @@ c:/onlinepoll/
 - `DELETE /api/quota/:fileName`: JSON 및 XLSX 파일 동시 안전 삭제
 - **인라인 스타일 전면 배제 원칙 엄수**: 신규 HTML 내 `style="..."` 속성 0건 유지
 
+
+## 5-4. 시스템 개발 연혁 (Day 5 완료 내역 - 케이스탯 24개 실존 슬롯 바인딩 및 파일럿/배치 고도화)
+
+### 1) 케이스탯(Kstat) 풍납시장 24개 실존 슬롯 1:1 바인딩
+- 케이스탯 TAPI 관리자(`list.php`) 내 풍납시장 25개 슬롯 중 기완료 1번(`예작`) 제외 잔여 24개 공란 슬롯(2번~25번)의 개별 설문 고유 URL(`slotUrl`, `ranId`, `extraLabel`) 전수 추출
+- 풍납시장 9대 업종 24개 쿼터 사업자 객체 및 SheetJS Excel(`quota_onnuri_...xlsx`)에 1:1 매핑 결합
+- 상세 작업실 쿼터 테이블에 각 점포별 `[슬롯 #N (N)추가]` 배지 시각화
+
+### 2) 대한민국 표준시(KST, Asia/Seoul) 타임존 전면 적용
+- GCP VM 리눅스 환경의 기본 UTC 시간대(`6:xx:xx AM`)로 표기되던 문제를 해결
+- 백엔드 `process.env.TZ = 'Asia/Seoul'` 및 `src/utils/logger.js` 내 `Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour12: false })` 24시간 형식 강제 적용
+- 프론트엔드(`survey-detail.js`, `quota-builder.js`, `app.js`) 전역 로그 타임스탬프를 KST(`[15:xx:xx]`)로 일치화
+
+### 3) 파일럿 검증 완료 시 화면 자동 새로고침 (Auto-Refresh) 파이프라인
+- SSE `PILOT_COMPLETED` 수신 시 `3초 카운트다운` 안내 후 `window.location.reload()` 자동 실행
+- 새로고침 후 1번 쿼터 상태 `검증완료`, `[1번 쿼터 파일럿 검증 완료]` 버튼 비활성화, `[2번부터 배치 자동화 가동]` 버튼 즉시 활성화, 파일럿 성공 카드 및 15단계 캡처 갤러리 100% 동기화
+
+### 4) 실시간 배치 실행 단계별 콘솔 스트리밍 및 P5 폼 정밀화
+- 배치 자동화 실행 시 각 점포의 단계별 진행 메시지(`[Q1]`, `[P1]` ~ `[P14]`, `[Agree]`)가 실시간 콘솔 로그에 즉시 출력되도록 연동
+- Kstat P5 결제수단 비중 페이지의 `B2.asp`(취급여부 라디오 5종) 및 `B2A.asp`(현금/카드/온누리 비중 input) 분리 주입을 완성하여 페이지 지연 없는 초고속 통과 달성
+
 ---
 
 ## 6. 비즈니스 리서치 & 사업자 데이터 연동 규칙 (B2B Quota Engine)
