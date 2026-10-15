@@ -15,6 +15,7 @@ if (fs.existsSync('.env') && typeof process.loadEnvFile === 'function') {
 import { logger } from './utils/logger.js';
 import * as CampaignStore from './models/campaign.js';
 import { exportBusinessesToExcel } from './utils/excel.js';
+import { runKstatSurvey } from './engine/kstat-runner.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(rootDir, 'public')));
+app.use('/reports', express.static(reportsDir));
 
 // 리포트 및 쿼터 디렉터리 준비
 const reportsDir = path.join(rootDir, 'reports');
@@ -401,6 +403,281 @@ app.post('/api/campaigns/:id/start', async (req, res) => {
       currentTask.campaignId = null;
     }
   })();
+});
+
+// ==========================================
+// [3-1] 2-Phase 실행: 1번 쿼터 파일럿 시뮬레이션 (Agree 안전 대기)
+// ==========================================
+app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  const { surveyUrl, policy = {}, quotaIndex = 1 } = req.body;
+  const targetUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
+  if (!targetUrl) {
+    return res.status(400).json({ error: '설문조사 URL이 필요합니다.' });
+  }
+
+  const quotaDb = campaign.quotaDatabase || [];
+  if (quotaDb.length === 0) {
+    return res.status(400).json({ error: '캠페인에 구축된 조사 쿼터가 없습니다.' });
+  }
+
+  const targetBiz = quotaDb[Math.max(0, quotaIndex - 1)];
+
+  // 가이드라인 설정 보존
+  CampaignStore.updateCampaign(campaign.id, {
+    guidelineConfig: {
+      ...campaign.guidelineConfig,
+      surveyUrl: targetUrl,
+      policy
+    }
+  });
+
+  logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상 사업자: "${targetBiz.companyName}" (${targetBiz.bizNumber})`);
+  targetBiz.quotaStatus = 'running';
+  CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'running' });
+
+  res.json({
+    success: true,
+    message: `"${targetBiz.companyName}" 파일럿 시뮬레이션이 시작되었습니다. (Agree 직전 안전 정지)`,
+    targetBiz
+  });
+
+  // 비동기 실행
+  (async () => {
+    try {
+      const result = await runKstatSurvey({
+        surveyUrl: targetUrl,
+        bizData: targetBiz,
+        policy,
+        pilotMode: true,
+        reportDir: path.join(reportsDir, `pilot_${campaign.id}`),
+        onProgress: (info) => {
+          logger.info(`[${info.step}] ${info.message}`);
+          logger.broadcast({
+            type: 'PILOT_PROGRESS',
+            campaignId: campaign.id,
+            quotaIndex: targetBiz.index,
+            ...info
+          });
+        }
+      });
+
+      if (result.success) {
+        targetBiz.quotaStatus = 'pilot_done';
+        targetBiz.pilotAt = new Date().toISOString();
+        targetBiz.capturedSteps = result.capturedSteps;
+        CampaignStore.updateCampaign(campaign.id, {
+          quotaDatabase: quotaDb,
+          status: 'ready'
+        });
+        logger.success(`🎉 [파일럿 검증 완료] "${targetBiz.companyName}" 1건 시뮬레이션이 Agree.asp까지 무결점 도달했습니다!`);
+        logger.broadcast({
+          type: 'PILOT_COMPLETED',
+          campaignId: campaign.id,
+          quotaIndex: targetBiz.index,
+          bizName: targetBiz.companyName,
+          capturedSteps: result.capturedSteps
+        });
+      } else {
+        targetBiz.quotaStatus = 'error';
+        CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'ready' });
+        logger.error(`[파일럿 실패] ${result.error || result.message}`);
+        logger.broadcast({
+          type: 'PILOT_ERROR',
+          campaignId: campaign.id,
+          quotaIndex: targetBiz.index,
+          error: result.error || result.message
+        });
+      }
+    } catch (err) {
+      targetBiz.quotaStatus = 'error';
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'ready' });
+      logger.error('[파일럿 오류]', err);
+    }
+  })();
+});
+
+// ==========================================
+// [3-2] 2-Phase 실행: 2번 쿼터부터 고속 배치 가동
+// ==========================================
+app.post('/api/campaigns/:id/batch-run', async (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  const { surveyUrl, policy = {}, startIndex = 2, safetyGuard = false } = req.body;
+  const targetUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
+  const quotaDb = campaign.quotaDatabase || [];
+
+  const targets = quotaDb.filter(b => b.index >= startIndex && b.quotaStatus !== 'completed');
+  if (targets.length === 0) {
+    return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다.' });
+  }
+
+  logger.info(`[배치 자동화 가동] 캠페인 "${campaign.title}" 잔여 ${targets.length}건 연속 실행 시작 (안전가드: ${safetyGuard ? 'ON' : 'OFF'})`);
+  CampaignStore.updateCampaign(campaign.id, { status: 'running' });
+
+  res.json({
+    success: true,
+    message: `잔여 쿼터 ${targets.length}건 배치 자동화가 시작되었습니다.`,
+    totalTargets: targets.length
+  });
+
+  (async () => {
+    try {
+      for (let i = 0; i < targets.length; i++) {
+        const biz = targets[i];
+        biz.quotaStatus = 'running';
+        CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+
+        logger.info(`[배치 진행 ${i + 1}/${targets.length}] "${biz.companyName}" (${biz.bizNumber}) 설문 자동화 시작...`);
+
+        const result = await runKstatSurvey({
+          surveyUrl: targetUrl,
+          bizData: biz,
+          policy,
+          pilotMode: safetyGuard,
+          reportDir: path.join(reportsDir, `batch_${campaign.id}`),
+          onProgress: (info) => {
+            logger.broadcast({
+              type: 'BATCH_PROGRESS',
+              campaignId: campaign.id,
+              quotaIndex: biz.index,
+              itemNumber: i + 1,
+              totalItems: targets.length,
+              ...info
+            });
+          }
+        });
+
+        if (result.success) {
+          biz.quotaStatus = safetyGuard ? 'pilot_done' : 'completed';
+          biz.completedAt = new Date().toISOString();
+          logger.success(`[배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" 설문 완료!`);
+        } else {
+          biz.quotaStatus = 'error';
+          logger.error(`[배치 ${i + 1}/${targets.length} 실패] "${biz.companyName}": ${result.error}`);
+        }
+
+        CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+        await new Promise(r => setTimeout(r, 3000));
+      }
+
+      CampaignStore.updateCampaign(campaign.id, { status: 'completed' });
+      logger.success(`🎉 [배치 자동화 완료] 캠페인 "${campaign.title}"의 모든 연속 설문이 완료되었습니다!`);
+      logger.broadcast({
+        type: 'BATCH_COMPLETED',
+        campaignId: campaign.id
+      });
+    } catch (err) {
+      logger.error('[배치 실행 중 오류]', err);
+      CampaignStore.updateCampaign(campaign.id, { status: 'ready' });
+    }
+  })();
+});
+
+// ==========================================
+// [3-3] 특정 쿼터 단독 1건 테스트 실행
+// ==========================================
+app.post('/api/campaigns/:id/run-single', async (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  const { quotaIndex } = req.body;
+  const quotaDb = campaign.quotaDatabase || [];
+  const targetBiz = quotaDb.find(b => b.index === quotaIndex);
+
+  if (!targetBiz) {
+    return res.status(404).json({ error: '해당 순번의 쿼터 사업자를 찾을 수 없습니다.' });
+  }
+
+  const targetUrl = campaign.guidelineConfig?.surveyUrl;
+  if (!targetUrl) {
+    return res.status(400).json({ error: '설문조사 URL이 먼저 설정되어야 합니다.' });
+  }
+
+  targetBiz.quotaStatus = 'running';
+  CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+
+  logger.info(`[개별 쿼터 테스트] "${targetBiz.companyName}" (순번: #${targetBiz.index}) 1건 실행 시작...`);
+
+  res.json({
+    success: true,
+    message: `"${targetBiz.companyName}" 1건 테스트가 시작되었습니다.`,
+    targetBiz
+  });
+
+  (async () => {
+    try {
+      const result = await runKstatSurvey({
+        surveyUrl: targetUrl,
+        bizData: targetBiz,
+        policy: campaign.guidelineConfig?.policy || {},
+        pilotMode: true,
+        reportDir: path.join(reportsDir, `single_${campaign.id}_idx${quotaIndex}`),
+        onProgress: (info) => {
+          logger.broadcast({
+            type: 'PILOT_PROGRESS',
+            campaignId: campaign.id,
+            quotaIndex: targetBiz.index,
+            ...info
+          });
+        }
+      });
+
+      if (result.success) {
+        targetBiz.quotaStatus = 'pilot_done';
+        targetBiz.pilotAt = new Date().toISOString();
+        targetBiz.capturedSteps = result.capturedSteps;
+        logger.success(`[개별 쿼터 테스트 성공] "${targetBiz.companyName}" 완주 완료!`);
+      } else {
+        targetBiz.quotaStatus = 'error';
+        logger.error(`[개별 쿼터 테스트 실패] "${targetBiz.companyName}": ${result.error}`);
+      }
+
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+      logger.broadcast({
+        type: 'QUOTA_UPDATED',
+        campaignId: campaign.id,
+        quotaDatabase: quotaDb
+      });
+    } catch (err) {
+      targetBiz.quotaStatus = 'error';
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+    }
+  })();
+});
+
+// ==========================================
+// [3-4] 단계별 화면 캡처 목록 조회
+// ==========================================
+app.get('/api/campaigns/:id/screenshots', (req, res) => {
+  // 칠칠수산 및 최신 캡처 이미지 제공
+  const simDir = path.join(reportsDir, 'simulation_77susan');
+  if (fs.existsSync(simDir)) {
+    const files = fs.readdirSync(simDir).filter(f => f.includes('saved') || f.includes('Agree'));
+    const order = ['Q1', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'Agree'];
+    
+    const screenshots = order.map((step, idx) => {
+      const matchFile = files.find(f => f.toLowerCase().includes(`_${step.toLowerCase()}_`)) || 'step_Agree_saved.png';
+      return {
+        step,
+        stepIndex: idx + 1,
+        title: step === 'Agree' ? '개인정보 수집 동의' : `${step} 단계 응답 완료`,
+        url: `/reports/simulation_77susan/${matchFile}`
+      };
+    });
+    return res.json({ success: true, screenshots });
+  }
+
+  res.json({ success: true, screenshots: [] });
 });
 
 // 작업 중지 요청

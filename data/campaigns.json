@@ -163,15 +163,19 @@
         "marketName": "풍납시장",
         "companyName": "칠칠수산",
         "bizNumber": "555-95-01465",
-        "ceoName": null,
-        "phone": "02-2222-2222",
+        "ceoName": "오지은",
+        "phone": "0507-1420-1996",
         "openDate": "2020.10.06",
-        "handledItems": "수산물 (신선)",
-        "address": "서울특별시 송파구 바람드리길 37-1 (풍납동)",
+        "handledItems": "수산물 (생선, 활어, 해산물 소매)",
+        "address": "서울특별시 송파구 바람드리길 37-1, 1층",
+        "zipCode": "05527",
         "status": "정상가맹",
         "paperAccepted": "Y",
         "digitalAccepted": "N",
-        "quotaStatus": "ready",
+        "isCeoEnriched": true,
+        "isPhoneEnriched": true,
+        "quotaStatus": "pilot_done",
+        "pilotAt": "2026-10-15T02:05:00.000Z",
         "usedAt": null
       },
       {
@@ -248,14 +252,20 @@
       }
     ],
     "guidelineConfig": {
-      "surveyUrl": "",
-      "topic": "",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=UlpNCKP9c&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "topic": "2026년 전통시장·상점가 및 점포경영 실태조사 (점포주 대상)",
       "positiveRatio": 70,
       "neutralRatio": 20,
       "negativeRatio": 10,
-      "textGuidelines": "",
-      "iterations": 1,
-      "headless": true
+      "textGuidelines": "전통시장 온누리상품권 가맹 혜택 및 디지털 온누리 환급 지원 강화 의견",
+      "iterations": 5,
+      "headless": true,
+      "policy": {
+        "emptyNotes": "keep_empty",
+        "profitChange": "similar",
+        "debtStatus": "no_debt",
+        "deliveryStatus": "skip_delivery"
+      }
     },
     "results": []
   },
