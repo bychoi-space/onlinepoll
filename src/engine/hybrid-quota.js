@@ -5,7 +5,7 @@
  */
 
 import { chromium } from 'playwright';
-import { getMarketMerchants } from './onnuri.js';
+import { getMarketMerchants, getStratifiedMarketMerchants } from './onnuri.js';
 import { enrichBusinessData } from './enricher.js';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
@@ -55,7 +55,10 @@ function formatPhoneNumber(raw) {
  * @param {string} options.marketName - 대상 시장명 (예: '풍납시장')
  * @param {string} [options.statusFilter='ACTIVE'] - 가맹 상태 필터 ('ACTIVE'|'ALL')
  * @param {string} [options.paymentFilter='ALL'] - 온누리 취급 유형 ('ALL'|'PAPER'|'DIGITAL')
- * @param {number} [options.targetCount=10] - 수집 목표 수량
+ * @param {number} [options.targetCount=10] - 수집 목표 수량 (단순 모드용)
+ * @param {string} [options.samplingMode='simple'] - 'simple'(단순 순차) | 'stratified'(업종별 층화 할당)
+ * @param {Object} [options.industryQuotas={}] - 업종별 목표 수량 { '농산물': 2, '축산물': 2, ... }
+ * @param {boolean} [options.enableSmartFallback=true] - 결손 업종(가정용품 등) 스마트 매핑 허용 여부
  * @param {Array<string>} [options.customFields=[]] - 추가 결합할 커스텀 항목 목록
  * @param {boolean} [options.autoEnrich=true] - 결측치(대표자/연락처) 외부 공인 데이터 자동 보강 여부
  * @returns {Promise<Array<Object>>} 실존 데이터로 결합된 쿼터 목록
@@ -67,22 +70,38 @@ export async function buildHybridOnnuriQuota({
   statusFilter = 'ACTIVE',
   paymentFilter = 'ALL',
   targetCount = 10,
+  samplingMode = 'simple',
+  industryQuotas = {},
+  enableSmartFallback = true,
   customFields = [],
   autoEnrich = true
 }) {
   logger.info(`[Hybrid Quota] === 온누리 연계 조사 쿼터 수집 시작 ===`);
-  logger.info(`[Hybrid Quota] 대상: "${marketName}" | 목표: ${targetCount}개 | 커스텀 필드: ${customFields.join(', ') || '없음'} | 외부 보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+  logger.info(`[Hybrid Quota] 대상: "${marketName}" | 모드: ${samplingMode} | 커스텀 필드: ${customFields.join(', ') || '없음'} | 외부 보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+
+  let onnuriList = [];
 
   // 1단계: 온누리 플랫폼에서 대상 가맹점 1차 팩트 수집
-  logger.info(`[Step 1/2] 온누리상품권 공인 플랫폼에서 "${marketName}" 가맹점 목록을 조회합니다...`);
-  const onnuriList = await getMarketMerchants({
-    regionCode,
-    districtCode,
-    marketName,
-    statusFilter,
-    paymentFilter,
-    limit: targetCount
-  });
+  if (samplingMode === 'stratified' && Object.keys(industryQuotas).length > 0) {
+    logger.info(`[Step 1/2] [업종별 층화 할당] 온누리 플랫폼에서 업종별 맞춤 가맹점을 수집합니다: ${JSON.stringify(industryQuotas)}`);
+    onnuriList = await getStratifiedMarketMerchants({
+      regionCode,
+      districtCode,
+      marketName,
+      industryQuotas,
+      enableSmartFallback
+    });
+  } else {
+    logger.info(`[Step 1/2] [단순 총량 수집] 온누리 플랫폼에서 "${marketName}" 가맹점 목록을 상위 ${targetCount}건 조회합니다...`);
+    onnuriList = await getMarketMerchants({
+      regionCode,
+      districtCode,
+      marketName,
+      statusFilter,
+      paymentFilter,
+      limit: targetCount
+    });
+  }
 
   if (onnuriList.length === 0) {
     logger.warn(`[Hybrid Quota] "${marketName}" 조건에 부합하는 온누리 가맹점을 찾지 못했습니다.`);
@@ -94,7 +113,7 @@ export async function buildHybridOnnuriQuota({
   // 2단계: 마켓비즈 플랫폼 로그인 및 1:1 결합(Enrichment)
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
   });
   const page = await context.newPage();
 
@@ -106,13 +125,14 @@ export async function buildHybridOnnuriQuota({
     await page.fill('#username', MARKETBZ_CREDENTIALS.username);
     await page.fill('#password', MARKETBZ_CREDENTIALS.password);
     await page.click('button.btn-login');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1500);
 
-    const okBtn = await page.$('#successButton');
-    if (okBtn) {
+    const okBtn = page.locator('#successButton, button:has-text("확인")').first();
+    try {
+      await okBtn.waitFor({ state: 'visible', timeout: 5000 });
       await okBtn.click();
-      await page.waitForTimeout(1500);
-    }
+      await page.waitForTimeout(1000);
+    } catch (_) {}
     logger.success(`[Step 2/2] 마켓비즈 인증 완료. 가맹점별 1:1 상세 크로스체크를 진행합니다.`);
 
     for (let i = 0; i < onnuriList.length; i++) {
@@ -164,7 +184,7 @@ export async function buildHybridOnnuriQuota({
             const ceoM = coreText.match(/대표자\s*[:\n\|]?\s*([가-힣A-Za-z]{2,10})(?=\s*\||\n|$)/);
             if (ceoM) {
               const val = ceoM[1].trim();
-              if (!['연락처', '대표자', '서비스', '소재지', '사업자', '설립일', '등록'].includes(val)) {
+              if (!['연락처', '대표자', '서비스', '소재지', '사업자', '설립일', '등록', '기업', '기본', '핵심'].includes(val)) {
                 res.mbzCeoName = val;
               }
             }

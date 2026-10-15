@@ -3,7 +3,7 @@
  * 2-Tier 와이드 쿼터 뷰, 쿼터 항목별 진행 트래커, 2-Phase 파일럿 & 배치 파이프라인 제어
  */
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function initSurveyDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const campId = urlParams.get('id');
 
@@ -134,8 +134,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       inputSurveyUrl.value = camp.guidelineConfig.surveyUrl || '';
       inputSurveyTopic.value = camp.guidelineConfig.topic || '';
       inputTextGuidelines.value = camp.guidelineConfig.textGuidelines || '';
-      inputIterations.value = camp.guidelineConfig.iterations || 10;
-      inputHeadless.value = String(camp.guidelineConfig.headless !== false);
+      if (inputIterations) inputIterations.value = camp.guidelineConfig.iterations || 10;
+      if (inputHeadless) inputHeadless.value = String(camp.guidelineConfig.headless !== false);
 
       sliderPos.value = camp.guidelineConfig.positiveRatio ?? 70;
       sliderNeu.value = camp.guidelineConfig.neutralRatio ?? 20;
@@ -345,10 +345,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectSavedQuota.innerHTML = '<option value="">보관된 쿼터가 없습니다.</option>';
         return;
       }
-      selectSavedQuota.innerHTML = list.map(q => {
+      const defaultOption = '<option value="">-- 보관된 쿼터를 선택하세요 --</option>';
+      const options = list.map(q => {
         const dateStr = q.createdAt ? new Date(q.createdAt).toLocaleDateString() : '';
         return `<option value="${escapeHtml(q.fileName)}">[온누리] ${escapeHtml(q.title)} (${q.count}건) - ${dateStr}</option>`;
       }).join('');
+      selectSavedQuota.innerHTML = defaultOption + options;
     } catch (err) {
       selectSavedQuota.innerHTML = '<option value="">쿼터 목록을 불러오지 못했습니다.</option>';
     }
@@ -656,7 +658,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ------------------------------------------------------------------------
   function initEventSource() {
     const sse = new EventSource('/api/events');
-    sse.onmessage = (event) => {
+    sse.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
 
@@ -772,8 +774,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // 초기 실행
-  await loadSavedQuotas();
-  await loadCampaign();
-  initEventSource();
-});
+  // 초기 실행 (개별 try-catch로 상호 영향 차단)
+  try {
+    await loadSavedQuotas();
+  } catch (err) {
+    console.error('초기 쿼터 목록 로드 실패:', err);
+  }
+
+  try {
+    await loadCampaign();
+  } catch (err) {
+    console.error('초기 캠페인 로드 실패:', err);
+  }
+
+  try {
+    initEventSource();
+  } catch (err) {
+    console.error('초기 SSE 구독 실패:', err);
+  }
+}
+
+// DOM 준비 상태에 따른 안전한 초기화 실행
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSurveyDetailPage);
+} else {
+  initSurveyDetailPage();
+}

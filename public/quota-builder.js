@@ -24,6 +24,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputOnnuriMarket = document.getElementById('onnuri-market-name');
   const inputOnnuriCount = document.getElementById('onnuri-quota-count');
 
+  // [신규] 층화 표본 추출 및 업종별 쿼터 엘리먼트
+  const btnScanMarketStats = document.getElementById('btn-scan-market-stats');
+  const marketStatsChips = document.getElementById('market-stats-chips');
+  const marketStatsStatus = document.getElementById('market-stats-status');
+  const btnModeStratified = document.getElementById('btn-mode-stratified');
+  const btnModeSimple = document.getElementById('btn-mode-simple');
+  const groupSimpleCount = document.getElementById('group-simple-count');
+  const panelStratified = document.getElementById('panel-stratified-allocation');
+  const stratifiedGridTable = document.getElementById('stratified-grid-table');
+  const stratifiedTotalBadge = document.getElementById('stratified-total-badge');
+  const checkSmartFallback = document.getElementById('check-smart-fallback');
+  const btnPreset24 = document.getElementById('btn-preset-24');
+  const btnPresetEqual = document.getElementById('btn-preset-equal');
+  const btnPresetProportional = document.getElementById('btn-preset-proportional');
+  const btnPresetReset = document.getElementById('btn-preset-reset');
+
   const baseCheckboxes = document.querySelectorAll('input[name="base-fields"]');
   const btnSelectAll = document.getElementById('btn-select-all');
   const btnSelectCore = document.getElementById('btn-select-core');
@@ -126,7 +142,252 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 초기 온누리 지역 미리 로드
-  loadOnnuriRegions();
+  loadOnnuriRegions().then(() => {
+    fetchMarketStats();
+  });
+
+  // ==========================================
+  // [2-1] 층화 표본 추출 (Stratified Sampling) 설정 및 상태
+  // ==========================================
+  const STANDARD_INDUSTRIES = [
+    { key: '농산물', label: '농산물', icon: 'fa-wheat-awn', defaultCount: 2 },
+    { key: '축산물', label: '축산물', icon: 'fa-drumstick-bite', defaultCount: 2 },
+    { key: '수산물', label: '수산물', icon: 'fa-fish', defaultCount: 2 },
+    { key: '가공식품', label: '가공식품', icon: 'fa-jar', defaultCount: 3 },
+    { key: '의류신발', label: '의류/신발', icon: 'fa-shirt', defaultCount: 2 },
+    { key: '가정용품', label: '가정용품', icon: 'fa-house-chimney', defaultCount: 3, hasSmartFallback: true },
+    { key: '음식점업', label: '음식점업', icon: 'fa-utensils', defaultCount: 4 },
+    { key: '기타소매', label: '기타소매', icon: 'fa-store', defaultCount: 3 },
+    { key: '근린상권', label: '근린상권', icon: 'fa-hospital-user', defaultCount: 3 }
+  ];
+
+  let currentSamplingMode = 'stratified'; // 'stratified' | 'simple'
+  let currentMarketStats = null;
+  const industryCounts = {
+    '농산물': 2,
+    '축산물': 2,
+    '수산물': 2,
+    '가공식품': 3,
+    '의류신발': 2,
+    '가정용품': 3,
+    '음식점업': 4,
+    '기타소매': 3,
+    '근린상권': 3
+  };
+
+  function getStratifiedTotal() {
+    return Object.values(industryCounts).reduce((acc, v) => acc + (parseInt(v, 10) || 0), 0);
+  }
+
+  function updateQuotaTitle() {
+    if (inputCurrentMode.value === 'onnuri') {
+      const mName = inputOnnuriMarket.value.trim() || '시장';
+      if (currentSamplingMode === 'stratified') {
+        inputTitle.value = `2026_${mName}_업종별${getStratifiedTotal()}개_조사쿼터`;
+      } else {
+        inputTitle.value = `2026_${mName}_온누리가맹점_조사쿼터`;
+      }
+    }
+  }
+
+  function updateStratifiedTotal() {
+    const total = getStratifiedTotal();
+    if (stratifiedTotalBadge) {
+      stratifiedTotalBadge.textContent = `${total}개 설정 완료`;
+      stratifiedTotalBadge.className = total === 24 ? 'badge-total-match' : 'badge-total-mismatch';
+    }
+    updateQuotaTitle();
+  }
+
+  // 실시간 시장 업종별 통계 조회
+  async function fetchMarketStats() {
+    const mName = inputOnnuriMarket.value.trim() || '풍납시장';
+    const rCode = selectOnnuriRegion.value || '01';
+    const dCode = selectOnnuriDistrict.value || '01018';
+
+    if (marketStatsStatus) marketStatsStatus.textContent = `${mName} 실시간 조회 중...`;
+
+    try {
+      const res = await fetch(`/api/onnuri/market-stats?regionCode=${encodeURIComponent(rCode)}&districtCode=${encodeURIComponent(dCode)}&marketName=${encodeURIComponent(mName)}`);
+      if (!res.ok) throw new Error('조회 실패');
+      const stats = await res.json();
+      currentMarketStats = stats;
+      renderMarketStats(stats);
+      renderStratifiedTable();
+      updateStratifiedTotal();
+      if (marketStatsStatus) marketStatsStatus.textContent = `${mName} (정상가맹 ${stats.totalRawCount || 0}건)`;
+    } catch (err) {
+      if (marketStatsStatus) marketStatsStatus.textContent = '통계 조회 오류';
+    }
+  }
+
+  function renderMarketStats(stats) {
+    if (!marketStatsChips || !stats || !stats.categories) return;
+    const cats = stats.categories;
+
+    marketStatsChips.innerHTML = STANDARD_INDUSTRIES.map(ind => {
+      const c = cats[ind.key] || { active: 0, withBiz: 0 };
+      const isZero = (c.withBiz || 0) === 0;
+      let extra = '';
+      if (isZero && ind.hasSmartFallback && stats.householdSubstitutes > 0) {
+        extra = `<span title="실질 대체 가능 점포"> (대체 ${stats.householdSubstitutes})</span>`;
+      }
+      return `
+        <span class="market-stat-chip ${isZero ? 'zero' : ''}">
+          <i class="fa-solid ${ind.icon}"></i> ${escapeHtml(ind.label)}
+          <span class="count">${c.withBiz || 0}</span>${extra}
+        </span>
+      `;
+    }).join('');
+  }
+
+  function renderStratifiedTable() {
+    if (!stratifiedGridTable) return;
+    const cats = currentMarketStats ? currentMarketStats.categories : null;
+
+    stratifiedGridTable.innerHTML = STANDARD_INDUSTRIES.map(ind => {
+      const val = industryCounts[ind.key] || 0;
+      const stock = cats && cats[ind.key] ? (cats[ind.key].withBiz || 0) : 0;
+      
+      let statusHtml = '<span class="badge-status-ok">● 충족 가능</span>';
+      if (val === 0) {
+        statusHtml = '<span class="badge-status-warn">미배분</span>';
+      } else if (stock === 0 && ind.hasSmartFallback) {
+        statusHtml = '<span class="badge-status-smart">🔵 스마트 매핑</span>';
+      } else if (stock < val) {
+        statusHtml = `<span class="badge-status-err">▲ 보유 초과 (${stock}개 보유)</span>`;
+      } else if (stock === val) {
+        statusHtml = '<span class="badge-status-warn">🟡 전량 추출</span>';
+      }
+
+      return `
+        <div class="stratified-row" data-key="${ind.key}">
+          <div class="stratified-col-label">
+            <i class="fa-solid ${ind.icon}"></i> ${escapeHtml(ind.label)}
+          </div>
+          <div class="stratified-col-stock">
+            보유 <strong>${stock}</strong>개
+          </div>
+          <div class="stratified-col-input">
+            <div class="stepper-control">
+              <button type="button" class="btn-stepper btn-minus" data-key="${ind.key}">-</button>
+              <input type="text" class="input-stepper" data-key="${ind.key}" value="${val}" readonly />
+              <button type="button" class="btn-stepper btn-plus" data-key="${ind.key}">+</button>
+            </div>
+          </div>
+          <div class="stratified-col-status">
+            ${statusHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 스텝퍼 이벤트 연결
+    stratifiedGridTable.querySelectorAll('.btn-minus').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const k = btn.getAttribute('data-key');
+        if (industryCounts[k] > 0) {
+          industryCounts[k]--;
+          renderStratifiedTable();
+          updateStratifiedTotal();
+        }
+      });
+    });
+
+    stratifiedGridTable.querySelectorAll('.btn-plus').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const k = btn.getAttribute('data-key');
+        if (industryCounts[k] < 50) {
+          industryCounts[k]++;
+          renderStratifiedTable();
+          updateStratifiedTotal();
+        }
+      });
+    });
+  }
+
+  // 프리셋 설정 이벤트
+  if (btnPreset24) {
+    btnPreset24.addEventListener('click', () => {
+      const preset = { '농산물': 2, '축산물': 2, '수산물': 2, '가공식품': 3, '의류신발': 2, '가정용품': 3, '음식점업': 4, '기타소매': 3, '근린상권': 3 };
+      Object.assign(industryCounts, preset);
+      renderStratifiedTable();
+      updateStratifiedTotal();
+      appendLog('info', '24개 표준 쿼터 프리셋이 적용되었습니다 (합계 24개).');
+    });
+  }
+
+  if (btnPresetEqual) {
+    btnPresetEqual.addEventListener('click', () => {
+      STANDARD_INDUSTRIES.forEach(ind => { industryCounts[ind.key] = 2; });
+      renderStratifiedTable();
+      updateStratifiedTotal();
+      appendLog('info', '모든 업종에 균등 2개씩 배분되었습니다 (합계 18개).');
+    });
+  }
+
+  if (btnPresetProportional) {
+    btnPresetProportional.addEventListener('click', () => {
+      if (!currentMarketStats || !currentMarketStats.categories) {
+        alert('먼저 시장 현황 조회를 완료해 주세요.');
+        return;
+      }
+      const cats = currentMarketStats.categories;
+      const totalStock = Object.values(cats).reduce((acc, c) => acc + (c.withBiz || 0), 0);
+      if (totalStock === 0) return;
+
+      const targetTotal = 24;
+      STANDARD_INDUSTRIES.forEach(ind => {
+        const stock = cats[ind.key] ? (cats[ind.key].withBiz || 0) : 0;
+        if (ind.key === '가정용품' && stock === 0) {
+          industryCounts[ind.key] = 2; // 스마트 대체 기본값
+        } else {
+          industryCounts[ind.key] = Math.max(1, Math.round((stock / totalStock) * targetTotal));
+        }
+      });
+      renderStratifiedTable();
+      updateStratifiedTotal();
+      appendLog('info', '시장 업종 실보유 비율에 맞춘 비례 배분이 적용되었습니다.');
+    });
+  }
+
+  if (btnPresetReset) {
+    btnPresetReset.addEventListener('click', () => {
+      STANDARD_INDUSTRIES.forEach(ind => { industryCounts[ind.key] = 0; });
+      renderStratifiedTable();
+      updateStratifiedTotal();
+      appendLog('info', '업종별 배분이 0개로 초기화되었습니다.');
+    });
+  }
+
+  // 서브모드 토글
+  if (btnModeStratified && btnModeSimple) {
+    btnModeStratified.addEventListener('click', () => {
+      currentSamplingMode = 'stratified';
+      btnModeStratified.classList.add('active');
+      btnModeSimple.classList.remove('active');
+      if (panelStratified) panelStratified.classList.remove('hidden');
+      if (groupSimpleCount) groupSimpleCount.classList.add('hidden');
+      updateStratifiedTotal();
+    });
+
+    btnModeSimple.addEventListener('click', () => {
+      currentSamplingMode = 'simple';
+      btnModeSimple.classList.add('active');
+      btnModeStratified.classList.remove('active');
+      if (panelStratified) panelStratified.classList.add('hidden');
+      if (groupSimpleCount) groupSimpleCount.classList.remove('hidden');
+      updateQuotaTitle();
+    });
+  }
+
+  if (btnScanMarketStats) {
+    btnScanMarketStats.addEventListener('click', fetchMarketStats);
+  }
+
+  // 초기 테이블 렌더링
+  renderStratifiedTable();
+  updateStratifiedTotal();
 
   // ==========================================
   // [3] 커스텀 항목 동적 추가 핸들러
@@ -233,7 +494,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const regionCode = selectOnnuriRegion.value;
         const districtCode = selectOnnuriDistrict.value;
         const marketName = inputOnnuriMarket.value.trim() || '풍납시장';
-        const targetCount = parseInt(inputOnnuriCount.value, 10) || 5;
+        const samplingMode = currentSamplingMode;
+        const totalCount = samplingMode === 'stratified' ? getStratifiedTotal() : (parseInt(inputOnnuriCount.value, 10) || 24);
         const statusFilter = document.querySelector('input[name="onnuri-status"]:checked')?.value || 'ACTIVE';
         const paymentFilter = document.querySelector('input[name="onnuri-payment"]:checked')?.value || 'ALL';
 
@@ -245,14 +507,17 @@ document.addEventListener('DOMContentLoaded', () => {
           marketName,
           statusFilter,
           paymentFilter,
-          targetCount,
+          targetCount: totalCount,
+          samplingMode,
+          industryQuotas: samplingMode === 'stratified' ? industryCounts : {},
+          enableSmartFallback: checkSmartFallback ? checkSmartFallback.checked : true,
           baseFields,
           customFields,
           autoEnrich
         };
 
         btnGenerate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 온누리 1차 수집 & 마켓비즈 2차 결합 진행 중...';
-        appendLog('info', `[온누리 연계 쿼터 생성] 시장: "${marketName}", 목표: ${targetCount}개 가맹점, 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+        appendLog('info', `[온누리 연계 쿼터 생성] 시장: "${marketName}", 모드: ${samplingMode}, 목표: ${totalCount}개 가맹점, 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
 
       } else {
         // 마켓비즈 단독

@@ -2257,6 +2257,219 @@ input[type="range"]::-webkit-slider-thumb:hover {
   background: #fef2f2;
 }
 
+/* ==========================================================================
+   6. 층화 표본 추출 및 업종별 쿼터 생성기 (Stratified Quota Builder)
+   ========================================================================== */
+.market-stats-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.market-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.market-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 3px 10px;
+  font-size: 11px;
+  color: #334155;
+  font-weight: 500;
+}
+
+.market-stat-chip .count {
+  font-weight: 700;
+  color: #0284c7;
+}
+
+.market-stat-chip.zero {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+.market-stat-chip.zero .count {
+  color: #ef4444;
+}
+
+.segmented-mode-group-sm {
+  display: flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  gap: 4px;
+}
+
+.btn-submode {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-submode.active {
+  background: #ffffff;
+  color: #0284c7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.stratified-allocation-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.stratified-grid-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stratified-row {
+  display: grid;
+  grid-template-columns: 100px 70px 110px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+}
+
+.stratified-col-label {
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stratified-col-stock {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.stepper-control {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.btn-stepper {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+
+.btn-stepper:hover {
+  background: #e2e8f0;
+}
+
+.input-stepper {
+  width: 36px;
+  height: 28px;
+  border: none;
+  border-left: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: #0f172a;
+}
+
+.input-stepper:focus {
+  outline: none;
+}
+
+.stratified-col-status {
+  text-align: right;
+  font-size: 11px;
+}
+
+.badge-status-ok {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.badge-status-warn {
+  color: #d97706;
+  font-weight: 600;
+}
+
+.badge-status-smart {
+  color: #0284c7;
+  font-weight: 600;
+}
+
+.badge-status-err {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.smart-fallback-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.quota-total-summary-bar {
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.badge-total-match {
+  background: #0284c7;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.badge-total-mismatch {
+  background: #e2e8f0;
+  color: #475569;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+
 
 
 

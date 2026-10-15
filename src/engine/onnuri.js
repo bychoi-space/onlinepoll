@@ -169,3 +169,204 @@ export async function getMarketMerchants({
     throw err;
   }
 }
+
+/**
+ * 4. 특정 시장의 실시간 업종별 가맹점 보유 통계 조회
+ */
+export async function getMarketIndustryStats({
+  regionCode = '',
+  districtCode = '',
+  marketName = ''
+}) {
+  try {
+    const body = new URLSearchParams({
+      SEARCH_LCLGV_CD: regionCode,
+      SEARCH_SGG_CD: districtCode,
+      SEARCH_MRKT_NM: marketName.trim(),
+      SEARCH_TYPE: '1',
+      SEARCH_WORD: '',
+      pageIndex: '1',
+      recordCountPerPage: '500'
+    });
+
+    const res = await fetch(`${ONNURI_BASE_URL}/afms/afm/common/selectFrcsData.do`, {
+      method: 'POST',
+      headers: DEFAULT_HEADERS,
+      body: body.toString()
+    });
+
+    if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+    const data = await res.json();
+    const rawList = data.list || [];
+
+    // 표준 9대 업종 매핑 키
+    const standardCategories = {
+      '농산물': { key: '농산물', label: '농산물', onnuriKey: '농산물', count: 0, active: 0, withBiz: 0 },
+      '축산물': { key: '축산물', label: '축산물', onnuriKey: '축산물', count: 0, active: 0, withBiz: 0 },
+      '수산물': { key: '수산물', label: '수산물', onnuriKey: '수산물', count: 0, active: 0, withBiz: 0 },
+      '가공식품': { key: '가공식품', label: '가공식품', onnuriKey: '가공식품', count: 0, active: 0, withBiz: 0 },
+      '의류신발': { key: '의류신발', label: '의류/신발', onnuriKey: '의류및신발', count: 0, active: 0, withBiz: 0 },
+      '가정용품': { key: '가정용품', label: '가정용품', onnuriKey: '가정용품', count: 0, active: 0, withBiz: 0 },
+      '음식점업': { key: '음식점업', label: '음식점업', onnuriKey: '음식점업', count: 0, active: 0, withBiz: 0 },
+      '기타소매': { key: '기타소매', label: '기타소매', onnuriKey: '기타소매업', count: 0, active: 0, withBiz: 0 },
+      '근린상권': { key: '근린상권', label: '근린상권', onnuriKey: '근린상권서비스', count: 0, active: 0, withBiz: 0 }
+    };
+
+    let householdSubstitutes = 0;
+    const seenBiz = new Set();
+
+    rawList.forEach(item => {
+      if (marketName && item.MRKT_NM && !item.MRKT_NM.includes(marketName.trim()) && !marketName.trim().includes(item.MRKT_NM)) {
+        return;
+      }
+
+      const tp = (item.TPBIZ_NM || '').trim();
+      const isActive = item.AFFL_STTS_SE === '정상가맹';
+      const rawBiz = (item.FRCS_ENBRNO || '').replace(/\D/g, '');
+      const hasBiz = rawBiz.length === 10;
+      const cName = item.ACTL_FRCS_NM || '';
+
+      // 9대 카테고리 매칭
+      for (const cat of Object.values(standardCategories)) {
+        if (cat.onnuriKey === tp) {
+          cat.count++;
+          if (isActive) cat.active++;
+          if (isActive && hasBiz) cat.withBiz++;
+        }
+      }
+
+      // 가정용품 대체재 실태 파악 (기타소매 중 침구, 철물, 잡화)
+      if (isActive && hasBiz && tp === '기타소매업') {
+        if (cName.includes('침구') || cName.includes('철물') || cName.includes('프라자') || cName.includes('디씨마트')) {
+          householdSubstitutes++;
+        }
+      }
+    });
+
+    return {
+      marketName: marketName.trim(),
+      totalRawCount: rawList.length,
+      categories: standardCategories,
+      householdSubstitutes
+    };
+
+  } catch (err) {
+    logger.error(`[Onnuri] 업종 통계 조회 실패: ${err.message}`);
+    throw err;
+  }
+}
+
+/**
+ * 5. 업종별 층화 표본 추출 (Stratified Sampler)
+ */
+export async function getStratifiedMarketMerchants({
+  regionCode = '',
+  districtCode = '',
+  marketName = '',
+  industryQuotas = {},
+  enableSmartFallback = true
+}) {
+  logger.info(`[Onnuri] 층화 표본 추출 시작 - 대상 시장: "${marketName}", 업종별 할당: ${JSON.stringify(industryQuotas)}`);
+
+  const body = new URLSearchParams({
+    SEARCH_LCLGV_CD: regionCode,
+    SEARCH_SGG_CD: districtCode,
+    SEARCH_MRKT_NM: marketName.trim(),
+    SEARCH_TYPE: '1',
+    SEARCH_WORD: '',
+    pageIndex: '1',
+    recordCountPerPage: '500'
+  });
+
+  const res = await fetch(`${ONNURI_BASE_URL}/afms/afm/common/selectFrcsData.do`, {
+    method: 'POST',
+    headers: DEFAULT_HEADERS,
+    body: body.toString()
+  });
+
+  if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+  const data = await res.json();
+  const rawList = data.list || [];
+
+  // 정상가맹 및 10자리 고유 사업자번호 점포만 필터링
+  const seenBiz = new Set();
+  const validMerchants = [];
+
+  for (const item of rawList) {
+    if (marketName && item.MRKT_NM && !item.MRKT_NM.includes(marketName.trim()) && !marketName.trim().includes(item.MRKT_NM)) {
+      continue;
+    }
+    if (item.AFFL_STTS_SE !== '정상가맹') continue;
+
+    const rawBizNo = (item.FRCS_ENBRNO || '').replace(/\D/g, '');
+    if (rawBizNo.length !== 10 || seenBiz.has(rawBizNo)) continue;
+
+    seenBiz.add(rawBizNo);
+    validMerchants.push({
+      marketName: item.MRKT_NM || marketName,
+      companyName: item.ACTL_FRCS_NM || '가맹점명 미기재',
+      bizNumber: formatBizNumber(rawBizNo),
+      rawBizNumber: rawBizNo,
+      merchantCode: item.FRCS_CD || '',
+      category: '소상공인/전통시장',
+      industry: item.TPBIZ_NM || '전통시장소매',
+      subIndustry: item.TPBIZ_NM || '도소매업',
+      address: (item.ADDR || '').trim(),
+      regDate: item.FRCS_REG_YMD || '',
+      status: item.AFFL_STTS_SE || '정상가맹',
+      paperAccepted: item.KNPP_HNDL_YN === 'Y' ? 'Y' : 'N',
+      digitalAccepted: item.MOBL_HNDL_YN === 'Y' ? 'Y' : 'N'
+    });
+  }
+
+  const standardKeyMap = {
+    '농산물': '농산물',
+    '축산물': '축산물',
+    '수산물': '수산물',
+    '가공식품': '가공식품',
+    '의류신발': '의류및신발',
+    '가정용품': '가정용품',
+    '음식점업': '음식점업',
+    '기타소매': '기타소매업',
+    '근린상권': '근린상권서비스'
+  };
+
+  const selectedResults = [];
+  const usedBizNumbers = new Set();
+
+  // 1. 요청된 업종별로 할당 수량만큼 순차 추출
+  for (const [catName, quotaCount] of Object.entries(industryQuotas)) {
+    const targetCount = parseInt(quotaCount, 10) || 0;
+    if (targetCount <= 0) continue;
+
+    const onnuriCategory = standardKeyMap[catName] || catName;
+    let candidates = validMerchants.filter(m => m.industry === onnuriCategory && !usedBizNumbers.has(m.bizNumber));
+
+    // 스마트 폴백: 가정용품인데 후보가 부족하고 대체 허용된 경우
+    if (catName === '가정용품' && candidates.length < targetCount && enableSmartFallback) {
+      const needed = targetCount - candidates.length;
+      const substitutes = validMerchants.filter(m =>
+        m.industry === '기타소매업' &&
+        !usedBizNumbers.has(m.bizNumber) &&
+        (m.companyName.includes('침구') || m.companyName.includes('철물') || m.companyName.includes('프라자') || m.companyName.includes('디씨마트'))
+      ).slice(0, needed);
+
+      substitutes.forEach(sub => {
+        sub.industry = '가정용품';
+        sub.subIndustry = '침구/철물/생활잡화 (가정용품)';
+      });
+
+      candidates = [...candidates, ...substitutes];
+    }
+
+    const picked = candidates.slice(0, targetCount);
+    for (const p of picked) {
+      usedBizNumbers.add(p.bizNumber);
+      selectedResults.push(p);
+    }
+  }
+
+  logger.info(`[Onnuri] 층화 표본 추출 완료: 총 ${selectedResults.length}건 선별`);
+  return selectedResults.map((item, idx) => ({ seq: idx + 1, ...item }));
+}
+

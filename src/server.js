@@ -976,6 +976,27 @@ app.get('/api/onnuri/districts', async (req, res) => {
   }
 });
 
+// 온누리상품권 전통시장 실시간 업종별 통계 API
+app.get('/api/onnuri/market-stats', async (req, res) => {
+  const { regionCode = '01', districtCode = '', marketName = '' } = req.query;
+  if (!marketName || !marketName.trim()) {
+    return res.status(400).json({ error: '시장명을 입력해 주세요.' });
+  }
+
+  try {
+    const { getMarketIndustryStats } = await import('./engine/onnuri.js');
+    const stats = await getMarketIndustryStats({
+      regionCode,
+      districtCode,
+      marketName: marketName.trim()
+    });
+    res.json(stats);
+  } catch (err) {
+    logger.error(`[Market Stats] 업종 통계 조회 실패: ${err.message}`);
+    res.status(500).json({ error: '업종 통계 조회 중 오류: ' + err.message });
+  }
+});
+
 // 온누리상품권 + 마켓비즈 하이브리드 조사 쿼터 생성 API
 app.post('/api/quota/generate-onnuri', async (req, res) => {
   const {
@@ -986,6 +1007,9 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
     statusFilter = 'ACTIVE',
     paymentFilter = 'ALL',
     targetCount = 10,
+    samplingMode = 'simple',
+    industryQuotas = {},
+    enableSmartFallback = true,
     customFields = [],
     autoEnrich = true
   } = req.body;
@@ -994,8 +1018,8 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
     return res.status(400).json({ error: '대상 전통시장명을 입력해 주세요 (예: 풍납시장)' });
   }
 
-  const count = Math.max(1, Math.min(parseInt(targetCount) || 10, 50));
-  logger.info(`[온누리 쿼터 요청] "${title}" | 시장: "${marketName}" | 목표: ${count}개 | 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+  const count = Math.max(1, Math.min(parseInt(targetCount) || 10, 100));
+  logger.info(`[온누리 쿼터 요청] "${title}" | 시장: "${marketName}" | 모드: ${samplingMode} | 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
 
   try {
     const { buildHybridOnnuriQuota } = await import('./engine/hybrid-quota.js');
@@ -1006,6 +1030,9 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
       statusFilter,
       paymentFilter,
       targetCount: count,
+      samplingMode,
+      industryQuotas,
+      enableSmartFallback: enableSmartFallback !== false,
       customFields,
       autoEnrich: autoEnrich !== false
     });

@@ -123,14 +123,80 @@
                 </select>
               </div>
             </div>
-            <div class="grid-2col">
+            <div class="grid-2col mb-10">
               <div class="form-group">
                 <label for="onnuri-market-name" class="figma-label">전통시장명 <span class="required">*</span></label>
-                <input type="text" id="onnuri-market-name" class="figma-input" value="풍납시장" placeholder="예: 풍납시장, 남대문시장 등" />
+                <div class="flex-row-gap-8">
+                  <input type="text" id="onnuri-market-name" class="figma-input" value="풍납시장" placeholder="예: 풍납시장, 남대문시장 등" />
+                  <button type="button" id="btn-scan-market-stats" class="btn-pill btn-pill-secondary">
+                    <i class="fa-solid fa-chart-pie"></i> 현황조회
+                  </button>
+                </div>
               </div>
-              <div class="form-group">
-                <label for="onnuri-quota-count" class="figma-label">목표 수집 수량 <span class="required">*</span></label>
-                <input type="number" id="onnuri-quota-count" class="figma-input" min="1" max="100" value="5" />
+              <div class="form-group" id="group-simple-count">
+                <label for="onnuri-quota-count" class="figma-label">단순 수집 목표 수량 <span class="required">*</span></label>
+                <input type="number" id="onnuri-quota-count" class="figma-input" min="1" max="100" value="24" />
+              </div>
+            </div>
+
+            <!-- 실시간 시장 업종 보유 현황 뱃지 영역 -->
+            <div id="market-stats-container" class="market-stats-box mb-12">
+              <div class="flex-between mb-8">
+                <span class="font-caption text-secondary-color font-bold">
+                  <i class="fa-solid fa-radar"></i> 시장 실시간 업종별 보유 현황 (정상가맹 기준)
+                </span>
+                <span id="market-stats-status" class="font-caption text-muted">풍납시장</span>
+              </div>
+              <div id="market-stats-chips" class="market-chips-grid">
+                <!-- JS 렌더링 -->
+              </div>
+            </div>
+
+            <!-- 층화 표본 추출 모드 토글 (단순 총량 vs 업종별 층화 할당) -->
+            <div class="stratified-mode-toggle mb-12">
+              <div class="font-body-sm font-bold mb-6">표본 추출 방식</div>
+              <div class="segmented-mode-group-sm">
+                <button type="button" id="btn-mode-stratified" class="btn-submode active">
+                  <i class="fa-solid fa-layer-group"></i> 업종별 층화 할당 (권장)
+                </button>
+                <button type="button" id="btn-mode-simple" class="btn-submode">
+                  <i class="fa-solid fa-arrow-down-1-9"></i> 단순 순차 수집
+                </button>
+              </div>
+            </div>
+
+            <!-- 업종별 층화 할당 매트릭스 그리드 패널 -->
+            <div id="panel-stratified-allocation" class="stratified-allocation-card mb-12">
+              <div class="flex-between mb-10">
+                <h5 class="font-body-sm font-bold m-0"><i class="fa-solid fa-sliders"></i> 업종별 쿼터 배분 설정</h5>
+                <div class="preset-buttons">
+                  <button type="button" id="btn-preset-24" class="btn-chip">24개 표준</button>
+                  <button type="button" id="btn-preset-equal" class="btn-chip">균등</button>
+                  <button type="button" id="btn-preset-proportional" class="btn-chip">비례</button>
+                  <button type="button" id="btn-preset-reset" class="btn-chip">초기화</button>
+                </div>
+              </div>
+
+              <!-- 9대 업종 스텝퍼 그리드 테이블 -->
+              <div id="stratified-grid-table" class="stratified-grid-table">
+                <!-- JS에서 동적 렌더링 -->
+              </div>
+
+              <!-- 스마트 폴백 옵션 -->
+              <div class="smart-fallback-box mt-10">
+                <label class="custom-checkbox flex-items-center cursor-pointer m-0">
+                  <input type="checkbox" id="check-smart-fallback" checked />
+                  <span class="font-caption font-bold ml-6">
+                    <i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i>
+                    공인 코드 0건 업종(가정용품 등)은 실질 품목(침구·철물·잡화)으로 스마트 자동 매핑
+                  </span>
+                </label>
+              </div>
+
+              <!-- 실시간 합계 바 -->
+              <div class="quota-total-summary-bar mt-12 flex-between">
+                <span class="font-body-sm font-bold">총 목표 표본 합계:</span>
+                <span id="stratified-total-badge" class="badge-total-match">24 / 24개 (100% 매칭)</span>
               </div>
             </div>
           </div>
