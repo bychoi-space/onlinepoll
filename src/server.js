@@ -28,13 +28,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(rootDir, 'public')));
-app.use('/reports', express.static(reportsDir));
-
 // 리포트 및 쿼터 디렉터리 준비
 const reportsDir = path.join(rootDir, 'reports');
 if (!fs.existsSync(reportsDir)) {
   fs.mkdirSync(reportsDir, { recursive: true });
 }
+app.use('/reports', express.static(reportsDir));
 
 const quotasDir = path.join(rootDir, 'data', 'quotas');
 if (!fs.existsSync(quotasDir)) {
