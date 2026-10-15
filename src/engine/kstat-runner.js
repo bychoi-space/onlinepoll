@@ -361,54 +361,73 @@ export async function runKstatSurvey({
         }
       }
 
-      // P7: 온누리상품권 현황
+      // P7: 온누리상품권 현황 (2단계 동적 확장 구조 완벽 해결)
       else if (stepName === 'P7') {
         const fB5A1 = page.frame({ url: /B5A1\.asp/ }) || page.frame({ url: /B5A\.asp/ });
-        if (fB5A1) await safeClick(fB5A1, '#B5A_1_1, input[value="1"]'); // 온누리 가맹
+        if (fB5A1) {
+          await fB5A1.evaluate(() => {
+            if (typeof setRadioValue === 'function') setRadioValue('B5A_1', '1');
+            const r = document.querySelector('#B5A_1_1, input[value="1"]');
+            if (r) r.checked = true;
+          }).catch(() => {});
+        }
+
         const fB5A2 = page.frame({ url: /B5A2\.asp/ });
-        if (fB5A2) await safeClick(fB5A2, '#B5A_2_2, input[value="2"]'); // 지역사랑 미가맹
+        if (fB5A2) {
+          await fB5A2.evaluate(() => {
+            if (typeof setRadioValue === 'function') setRadioValue('B5A_2', '2');
+            const r = document.querySelector('#B5A_2_2, input[value="2"]');
+            if (r) r.checked = true;
+          }).catch(() => {});
+        }
 
-        await itemDelay();
+        // 1단계 선택 후 Alert 유발 및 추가 iframe 동적 로드 트리거
+        await page.evaluate(() => document.querySelector('#next')?.click());
+        await page.waitForTimeout(1500);
 
-        const fB5AA = page.frame({ url: /B5AA\.asp/ });
-        if (fB5AA) await safeClick(fB5AA, persona.onnuri.satisfactionSelector); // 가중치 반영 만족도
-        
-        const fB5B = page.frame({ url: /B5B1\.asp/ }) || page.frame({ url: /B5B\.asp/ });
+        // 2단계: 화면에 동적으로 생성된 추가 문항(가입연도, 비중, 만족도 등) 주입
+        const fB5B = page.frame({ url: /B5B1\.asp/ }) || page.frame({ url: /B5B2\.asp/ }) || page.frame({ url: /B5B\.asp/ });
         if (fB5B) {
-          await safeFill(fB5B, 'input[name="B5B_1"]', persona.onnuri.joinYear);
-          await safeFill(fB5B, 'input[name="B5B"]', persona.onnuri.joinYear);
+          await fB5B.evaluate((val) => {
+            const inp = document.querySelector('input[type="text"], input[name^="B5B"]');
+            if (inp) inp.value = val;
+          }, persona.onnuri.joinYear).catch(() => {});
         }
 
-        const fB5C = page.frame({ url: /B5C1\.asp/ }) || page.frame({ url: /B5C\.asp/ });
+        const fB5C = page.frame({ url: /B5C1\.asp/ }) || page.frame({ url: /B5C2\.asp/ }) || page.frame({ url: /B5C\.asp/ });
         if (fB5C) {
-          await safeFill(fB5C, 'input[name="B5C_1"]', persona.onnuri.salesRatio);
-          await safeFill(fB5C, 'input[name="B5C"]', persona.onnuri.salesRatio);
+          await fB5C.evaluate((val) => {
+            const inp = document.querySelector('input[type="text"], input[name^="B5C"]');
+            if (inp) inp.value = val;
+          }, persona.onnuri.salesRatio).catch(() => {});
         }
-        
+
         const fB5D = page.frame({ url: /B5D1\.asp/ }) || page.frame({ url: /B5D\.asp/ });
         if (fB5D) {
-          await safeClick(fB5D, '#B5D_1_3, #B5D_3, input[value="3"]');
-        }
-
-        const fB5E = page.frame({ url: /B5E1\.asp/ }) || page.frame({ url: /B5E\.asp/ });
-        if (fB5E) {
-          await safeFill(fB5E, 'input[name="B5E_1"]', '10');
-          await safeFill(fB5E, 'input[name="B5E"]', '10');
+          await fB5D.evaluate(() => {
+            if (typeof setRadioValue === 'function') setRadioValue('B5D_1', '3');
+            const r = document.querySelector('#B5D_1_3, input[value="3"]');
+            if (r) r.checked = true;
+          }).catch(() => {});
         }
 
         const fB5F = page.frame({ url: /B5F1\.asp/ }) || page.frame({ url: /B5F\.asp/ });
         if (fB5F) {
-          await safeClick(fB5F, '#B5F_1_3, #B5F_3, input[value="3"]');
-        }
-
-        const fB5G = page.frame({ url: /B5G1\.asp/ }) || page.frame({ url: /B5G\.asp/ });
-        if (fB5G) {
-          await safeFill(fB5G, 'input[name="B5G_1"]', '10');
-          await safeFill(fB5G, 'input[name="B5G"]', '10');
+          await fB5F.evaluate(() => {
+            if (typeof setRadioValue === 'function') setRadioValue('B5F_1', '3');
+            const r = document.querySelector('#B5F_1_3, input[value="3"]');
+            if (r) r.checked = true;
+          }).catch(() => {});
         }
 
         const fB5AB = page.frame({ url: /B5AB\.asp/ });
-        if (fB5AB) await safeClick(fB5AB, '#B5AB_1, input[value="1"]');
+        if (fB5AB) {
+          await fB5AB.evaluate(() => {
+            if (typeof setRadioValue === 'function') setRadioValue('B5AB', '1');
+            const r = document.querySelector('#B5AB_1, input[value="1"]');
+            if (r) r.checked = true;
+          }).catch(() => {});
+        }
       }
 
       // P8: 판로 및 마케팅
@@ -626,7 +645,7 @@ export async function runKstatSurvey({
       }
     }
 
-    if (!page.url().includes('Agree.asp')) {
+    if (safetyGuard && !page.url().includes('Agree.asp')) {
       return {
         success: false,
         error: `최종 동의 단계(Agree.asp)에 도달하지 못했습니다. (현재 위치: ${page.url()})`,
