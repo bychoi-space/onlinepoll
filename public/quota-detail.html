@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>조사 쿼터 상세 및 점포 편집기 - AutoSurvey AI</title>
+  
+  <!-- Pretendard Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Google Fonts: JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="figma-base.css">
+  <link rel="stylesheet" href="campaign.css">
+  <link rel="stylesheet" href="custom-styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation (56px) -->
+  <nav class="figma-top-nav">
+    <div class="nav-inner">
+      <div class="flex-center-gap-14">
+        <a href="index.html#quotas" class="btn-pill btn-pill-secondary">
+          <i class="fa-solid fa-arrow-left"></i> 쿼터 보관함으로
+        </a>
+        <div class="campaign-title-area">
+          <h1 id="quota-detail-title" class="font-card-title m-0">조사 쿼터 불러오는 중...</h1>
+          <div class="header-badges">
+            <span class="badge-quota-type b2b" id="badge-market">풍납시장</span>
+            <span class="badge-status success" id="badge-stratified">9대 업종 층화 표본</span>
+            <span class="badge-status ready" id="badge-total-count">0건</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-status flex-center-gap-10">
+        <button type="button" id="btn-save-quota" class="btn-pill btn-pill-primary">
+          <i class="fa-solid fa-floppy-disk"></i> 수정사항 저장 (Excel 동기화)
+        </button>
+        <button type="button" id="btn-launch-campaign" class="btn-pill btn-pill-success">
+          <i class="fa-solid fa-play"></i> 이 쿼터로 캠페인 생성
+        </button>
+        <a id="btn-download-xlsx" href="#" class="btn-pill btn-pill-secondary">
+          <i class="fa-solid fa-file-excel icon-excel-green"></i> 엑셀 다운로드
+        </a>
+        <button type="button" id="btn-enrich-quota" class="btn-pill btn-pill-secondary">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> 결측치 외부 보강
+        </button>
+        <button type="button" class="btn-pill-logout" id="btn-global-logout">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> 로그아웃
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Unified Container -->
+  <main class="unified-detail-container">
+
+    <!-- 1. 쿼터 요약 & 업종 분포 카드 -->
+    <section class="clean-section-card mb-24">
+      <div class="section-card-inner">
+        <div class="quota-meta-header-wrap">
+          <div class="quota-meta-info-block">
+            <div class="flex-center-gap-12 mb-8">
+              <span class="step-num-badge">QUOTA</span>
+              <h2 class="step-card-title m-0" id="quota-display-name">조사 쿼터 정보</h2>
+            </div>
+            <p class="font-caption text-dim m-0" id="quota-display-desc">
+              온누리상품권 및 마켓비즈 연동으로 구축된 팩트 기반 실존 가맹점 DB입니다.
+            </p>
+          </div>
+
+          <div class="quota-kpi-bar" id="quota-distribution-kpi-bar">
+            <!-- 업종별 건수 칩 동적 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 실시간 인라인 편집 가이드 배너 -->
+        <div class="quota-editor-guide-banner mt-16">
+          <div class="guide-banner-left">
+            <i class="fa-solid fa-lightbulb guide-icon"></i>
+            <div>
+              <strong class="guide-title">스프레드시트형 실시간 인라인 점포 편집기</strong>
+              <p class="guide-desc">
+                표의 <strong>대표자명, 연락처, 취급품목, 사업장 주소</strong> 셀을 클릭하면 즉시 수정할 수 있습니다. 
+                수정 완료 후 상단의 <strong>[수정사항 저장]</strong>을 누르면 JSON 파일과 Excel(.xlsx)이 동시에 100% 동기화 갱신됩니다.
+              </p>
+            </div>
+          </div>
+          <div class="guide-banner-right">
+            <span id="unsaved-badge" class="badge-status ready hidden">미저장 변경사항 있음</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 점포 목록 스프레드시트형 편집 그리드 -->
+    <section class="clean-section-card">
+      <div class="section-card-inner">
+        
+        <!-- 그리드 컨트롤 툴바 -->
+        <div class="quota-grid-toolbar">
+          <div class="grid-toolbar-search">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="input-search-merchant" class="figma-input search-input" placeholder="상호, 대표자명, 취급품목, 전화번호 또는 주소로 실시간 검색..." />
+          </div>
+
+          <div class="grid-toolbar-actions">
+            <span id="filtered-count-label" class="font-caption text-dim">전체 0개 중 0개 표시</span>
+            <button type="button" id="btn-open-add-modal" class="btn-pill btn-pill-secondary btn-pill-small">
+              <i class="fa-solid fa-plus"></i> 점포 수동 추가
+            </button>
+          </div>
+        </div>
+
+        <!-- 와이드 가로 스크롤 테이블 -->
+        <div class="table-scroll-container quota-editor-table-wrap">
+          <table class="quota-table quota-editor-table" id="quota-editor-table">
+            <thead>
+              <tr>
+                <th class="col-seq">No</th>
+                <th class="col-ind">업종 분류</th>
+                <th class="col-biz-name">상호 (가맹점명)</th>
+                <th class="col-biz-num">사업자등록번호</th>
+                <th class="col-ceo">대표자명</th>
+                <th class="col-phone">연락처</th>
+                <th class="col-date">개업연월</th>
+                <th class="col-items">취급품목(업종)</th>
+                <th class="col-addr">사업장 주소</th>
+                <th class="col-actions">관리</th>
+              </tr>
+            </thead>
+            <tbody id="quota-editor-tbody">
+              <!-- JS 동적 렌더링 -->
+              <tr>
+                <td colspan="10" class="empty-table-msg">점포 목록을 불러오는 중입니다...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 점포 수동 추가 모달 -->
+  <div class="modal-overlay figma-modal-backdrop" id="modal-add-merchant">
+    <div class="modal-card figma-modal-dialog">
+      <div class="modal-header flex-between mb-16">
+        <h3 class="font-card-title m-0"><i class="fa-solid fa-shop"></i> 새 점포(사업자) 수동 추가</h3>
+        <button type="button" class="btn-close" id="btn-close-add-modal">&times;</button>
+      </div>
+      <form id="form-add-merchant">
+        <div class="grid-2col mb-12">
+          <div class="form-group">
+            <label for="add-company-name" class="figma-label">상호(가맹점명) <span class="required">*</span></label>
+            <input type="text" id="add-company-name" class="figma-input" required placeholder="예: 풍납수산" />
+          </div>
+          <div class="form-group">
+            <label for="add-biz-number" class="figma-label">사업자등록번호(10자리) <span class="required">*</span></label>
+            <input type="text" id="add-biz-number" class="figma-input" required placeholder="000-00-00000" />
+          </div>
+        </div>
+
+        <div class="grid-2col mb-12">
+          <div class="form-group">
+            <label for="add-ceo-name" class="figma-label">대표자명</label>
+            <input type="text" id="add-ceo-name" class="figma-input" placeholder="예: 홍길동" />
+          </div>
+          <div class="form-group">
+            <label for="add-phone" class="figma-label">연락처</label>
+            <input type="text" id="add-phone" class="figma-input" placeholder="예: 02-414-1234" />
+          </div>
+        </div>
+
+        <div class="grid-2col mb-12">
+          <div class="form-group">
+            <label for="add-open-date" class="figma-label">개업연월</label>
+            <input type="date" id="add-open-date" class="figma-input" />
+          </div>
+          <div class="form-group">
+            <label for="add-handled-items" class="figma-label">취급품목(업종) <span class="required">*</span></label>
+            <input type="text" id="add-handled-items" class="figma-input" required placeholder="예: 수산물 (활어회 외 1개)" />
+          </div>
+        </div>
+
+        <div class="form-group mb-20">
+          <label for="add-address" class="figma-label">사업장 도로명 주소</label>
+          <input type="text" id="add-address" class="figma-input" placeholder="예: 서울특별시 송파구 바람드리길 22" />
+        </div>
+
+        <div class="modal-actions flex-end gap-10">
+          <button type="button" class="btn-pill btn-pill-secondary" id="btn-cancel-add-modal">취소</button>
+          <button type="submit" class="btn-pill btn-pill-primary">
+            <i class="fa-solid fa-plus"></i> 점포 추가
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="quota-detail.js"></script>
+  <script type="module" src="nav-auth.js"></script>
+</body>
+</html>

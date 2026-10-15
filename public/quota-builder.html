@@ -27,8 +27,8 @@
   <nav class="figma-top-nav">
     <div class="nav-inner">
       <div class="nav-left flex-center-gap-14">
-        <a href="index.html" class="btn-pill btn-pill-secondary">
-          <i class="fa-solid fa-arrow-left"></i> 캠페인 목록
+        <a href="index.html#quotas" class="btn-pill btn-pill-secondary">
+          <i class="fa-solid fa-arrow-left"></i> 쿼터 보관함
         </a>
         <div class="campaign-title-area">
           <h1 class="font-card-title m-0"><i class="fa-solid fa-table-cells"></i> 조사 쿼터 생성기</h1>
@@ -276,10 +276,16 @@
           </div>
           
           <div id="download-actions" class="excel-actions flex-row-gap-8 hidden">
+            <a href="#" id="link-view-detail" class="btn-pill btn-pill-primary">
+              <i class="fa-solid fa-pen-to-square"></i> 점포 상세·수정
+            </a>
+            <a href="index.html#quotas" class="btn-pill btn-pill-secondary">
+              <i class="fa-solid fa-database"></i> 쿼터 보관함
+            </a>
             <button type="button" id="btn-re-enrich-quota" class="btn-pill btn-pill-secondary">
               <i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i> 결측치 외부 재보강
             </button>
-            <button type="button" id="btn-create-campaign-from-quota" class="btn-pill btn-pill-primary">
+            <button type="button" id="btn-create-campaign-from-quota" class="btn-pill btn-pill-success">
               <i class="fa-solid fa-rocket"></i> 이 쿼터로 설문 시작
             </button>
             <a href="#" id="link-excel-download" class="btn-pill btn-pill-secondary" download>

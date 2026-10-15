@@ -607,6 +607,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 다운로드 버튼 활성화 (Zero-Inline: CSS 클래스 제어)
     linkExcelDownload.href = excelDownloadUrl;
     linkJsonDownload.href = jsonDownloadUrl;
+    const linkViewDetail = document.getElementById('link-view-detail');
+    if (linkViewDetail && res.jsonFileName) {
+      linkViewDetail.href = `quota-detail.html?file=${encodeURIComponent(res.jsonFileName)}`;
+    }
     downloadActions.classList.remove('hidden');
     downloadActions.classList.add('is-flex');
 

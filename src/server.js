@@ -1128,7 +1128,8 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
   }
 });
 
-// 생성된 쿼터 목록 조회
+// [쿼터 관리 허브 API]
+// 1. 생성된 쿼터 목록 조회 (업종별 분포 및 통계 포함)
 app.get('/api/quota/list', (req, res) => {
   try {
     const files = fs.readdirSync(quotasDir).filter(f => f.endsWith('.json'));
@@ -1136,20 +1137,159 @@ app.get('/api/quota/list', (req, res) => {
       const content = JSON.parse(fs.readFileSync(path.join(quotasDir, f), 'utf-8'));
       const excelName = f.replace('.json', '.xlsx');
       const hasExcel = fs.existsSync(path.join(quotasDir, excelName));
+      const data = content.data || [];
+
+      // 업종별 표본 분포 실시간 집계
+      const industryDist = {};
+      const standardKeys = [
+        { key: '농산물', label: '농산물' },
+        { key: '축산물', label: '축산물' },
+        { key: '수산물', label: '수산물' },
+        { key: '가공식품', label: '가공식품' },
+        { key: '의류', label: '의류신발' },
+        { key: '가정용품', label: '가정용품' },
+        { key: '음식점', label: '음식점업' },
+        { key: '기타소매', label: '기타소매' },
+        { key: '근린상권', label: '근린상권' }
+      ];
+
+      data.forEach(item => {
+        const raw = String(item.handledItems || item.industry || '기타');
+        const matched = standardKeys.find(s => raw.includes(s.key))?.label || '기타';
+        industryDist[matched] = (industryDist[matched] || 0) + 1;
+      });
+
       return {
         fileName: f,
         title: content.title || f,
         type: content.type || 'MARKETBZ_DIRECT',
         marketName: content.marketName || null,
         keyword: content.keyword,
-        count: content.count,
+        count: content.count || data.length,
         createdAt: content.createdAt,
+        updatedAt: content.updatedAt || content.createdAt,
+        industryDistribution: Object.keys(industryDist).length > 0 ? industryDist : null,
         excelFileName: hasExcel ? excelName : null
       };
     }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     res.json(list);
   } catch (err) {
-    res.status(500).json({ error: '쿼터 목록을 불러오지 못했습니다.' });
+    res.status(500).json({ error: '쿼터 목록을 불러오지 못했습니다: ' + err.message });
+  }
+});
+
+// 2. 특정 쿼터 상세 데이터 조회
+app.get('/api/quota/:fileName', (req, res) => {
+  try {
+    const safeFilename = path.basename(req.params.fileName);
+    const jsonPath = path.join(quotasDir, safeFilename);
+    if (!fs.existsSync(jsonPath)) {
+      return res.status(404).json({ error: '해당 쿼터 파일을 찾을 수 없습니다.' });
+    }
+
+    const content = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+    const excelName = safeFilename.replace('.json', '.xlsx');
+    const hasExcel = fs.existsSync(path.join(quotasDir, excelName));
+
+    res.json({
+      success: true,
+      fileName: safeFilename,
+      excelFileName: hasExcel ? excelName : null,
+      quota: content
+    });
+  } catch (err) {
+    res.status(500).json({ error: '쿼터 상세 조회 실패: ' + err.message });
+  }
+});
+
+// 3. 특정 쿼터 데이터 수정 및 Excel 실시간 동기화
+app.put('/api/quota/:fileName', (req, res) => {
+  try {
+    const safeFilename = path.basename(req.params.fileName);
+    const jsonPath = path.join(quotasDir, safeFilename);
+    if (!fs.existsSync(jsonPath)) {
+      return res.status(404).json({ error: '해당 쿼터 파일을 찾을 수 없습니다.' });
+    }
+
+    const { title, data: updatedData } = req.body;
+    if (!Array.isArray(updatedData)) {
+      return res.status(400).json({ error: 'data 필드는 점포 목록 배열이어야 합니다.' });
+    }
+
+    const content = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+    if (title) content.title = title.trim();
+
+    // 순번(seq) 재부여 및 데이터 갱신
+    content.data = updatedData.map((item, idx) => ({
+      ...item,
+      seq: idx + 1
+    }));
+    content.count = content.data.length;
+    content.updatedAt = new Date().toISOString();
+
+    // JSON 영구 갱신
+    fs.writeFileSync(jsonPath, JSON.stringify(content, null, 2), 'utf-8');
+
+    // Excel 실시간 동기화 갱신
+    const excelName = safeFilename.replace('.json', '.xlsx');
+    const excelPath = path.join(quotasDir, excelName);
+    const columns = content.columns || [
+      { key: 'seq', label: '순번' },
+      { key: 'marketName', label: '시장명' },
+      { key: 'companyName', label: '상호' },
+      { key: 'bizNumber', label: '사업자등록번호' },
+      { key: 'ceoName', label: '대표자명' },
+      { key: 'phone', label: '연락처' },
+      { key: 'openDate', label: '개업연월' },
+      { key: 'handledItems', label: '취급품목' },
+      { key: 'address', label: '사업장주소' }
+    ];
+
+    exportBusinessesToExcel({
+      data: content.data,
+      columns,
+      filePath: excelPath
+    });
+
+    logger.success(`[쿼터 수정 완료] "${content.title}" (${safeFilename}) ${content.count}건 갱신 및 Excel 동기화 성공!`);
+
+    res.json({
+      success: true,
+      message: `조사 쿼터가 성공적으로 저장 및 Excel과 동기화되었습니다. (총 ${content.count}건)`,
+      quota: content
+    });
+  } catch (err) {
+    logger.error('[쿼터 수정 실패]', err);
+    res.status(500).json({ error: '쿼터 저장 중 오류가 발생했습니다: ' + err.message });
+  }
+});
+
+// 4. 특정 쿼터 파일 삭제 (JSON + XLSX)
+app.delete('/api/quota/:fileName', (req, res) => {
+  try {
+    const safeFilename = path.basename(req.params.fileName);
+    const jsonPath = path.join(quotasDir, safeFilename);
+    if (!fs.existsSync(jsonPath)) {
+      return res.status(404).json({ error: '해당 쿼터 파일을 찾을 수 없습니다.' });
+    }
+
+    fs.unlinkSync(jsonPath);
+
+    const excelName = safeFilename.replace('.json', '.xlsx');
+    const excelPath = path.join(quotasDir, excelName);
+    if (fs.existsSync(excelPath)) {
+      fs.unlinkSync(excelPath);
+    }
+
+    logger.info(`[쿼터 삭제 완료] "${safeFilename}" 및 엑셀 파일이 삭제되었습니다.`);
+
+    res.json({
+      success: true,
+      message: `쿼터 파일("${safeFilename}")이 정상적으로 삭제되었습니다.`
+    });
+  } catch (err) {
+    logger.error('[쿼터 삭제 실패]', err);
+    res.status(500).json({ error: '쿼터 삭제 중 오류가 발생했습니다: ' + err.message });
   }
 });
 

@@ -1,22 +1,66 @@
 /**
- * 메인 목차 대시보드 - 캠페인 목록 제어 스크립트
+ * 메인 목차 대시보드 - 캠페인 목록 및 조사 쿼터 보관함 통합 제어 스크립트
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('campaign-list-container');
+  // ------------------------------------------------------------------------
+  // 1. 탭 네비게이션 & 뷰 전환 (캠페인 목록 vs 조사 쿼터 보관함)
+  // ------------------------------------------------------------------------
+  const tabNavCampaigns = document.getElementById('tab-nav-campaigns');
+  const tabNavQuotas = document.getElementById('tab-nav-quotas');
+  const sectionCampaigns = document.getElementById('section-campaigns');
+  const sectionQuotas = document.getElementById('section-quotas');
+
+  function switchTab(tabKey) {
+    if (tabKey === 'quotas') {
+      tabNavCampaigns.classList.remove('active');
+      tabNavQuotas.classList.add('active');
+      sectionCampaigns.classList.add('hidden');
+      sectionQuotas.classList.remove('hidden');
+      loadQuotas();
+    } else {
+      tabNavQuotas.classList.remove('active');
+      tabNavCampaigns.classList.add('active');
+      sectionQuotas.classList.add('hidden');
+      sectionCampaigns.classList.remove('hidden');
+      loadCampaigns();
+    }
+  }
+
+  tabNavCampaigns.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.location.hash = 'campaigns';
+    switchTab('campaigns');
+  });
+
+  tabNavQuotas.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.location.hash = 'quotas';
+    switchTab('quotas');
+  });
+
+  // URL hash 변경 및 초기 진입 감지
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash === 'quotas') switchTab('quotas');
+    else switchTab('campaigns');
+  });
+
+  // ------------------------------------------------------------------------
+  // 2. 캠페인 관리 관련 요소
+  // ------------------------------------------------------------------------
+  const campaignContainer = document.getElementById('campaign-list-container');
   const btnOpenModal = document.getElementById('btn-open-new-modal');
   const btnCloseModal = document.getElementById('btn-close-modal');
   const btnCancelModal = document.getElementById('btn-cancel-modal');
   const modal = document.getElementById('modal-new-campaign');
   const formNew = document.getElementById('form-new-campaign');
 
-  // 통계 요소
   const statTotal = document.getElementById('stat-total-campaigns');
   const statB2b = document.getElementById('stat-b2b-campaigns');
   const statB2c = document.getElementById('stat-b2c-campaigns');
   const statCompleted = document.getElementById('stat-completed-campaigns');
 
-  // 모달 탭
   const modalTabB2b = document.getElementById('modal-tab-b2b');
   const modalTabB2c = document.getElementById('modal-tab-b2c');
   const modalQuotaRadios = document.querySelectorAll('input[name="new-quota-type"]');
@@ -33,24 +77,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 모달 토글 (Zero-Inline: CSS 클래스 제어)
   btnOpenModal.addEventListener('click', () => { modal.classList.add('is-open'); });
   btnCloseModal.addEventListener('click', () => { modal.classList.remove('is-open'); });
   btnCancelModal.addEventListener('click', () => { modal.classList.remove('is-open'); });
 
-  // 캠페인 목록 로드
   async function loadCampaigns() {
     try {
       const res = await fetch('/api/campaigns');
       const campaigns = await res.json();
       renderCampaigns(campaigns);
-      updateStats(campaigns);
+      updateCampaignStats(campaigns);
     } catch (err) {
-      container.innerHTML = `<div class="empty-state"><p>캠페인 목록을 불러오지 못했습니다: ${err.message}</p></div>`;
+      campaignContainer.innerHTML = `<div class="empty-state"><p>캠페인 목록을 불러오지 못했습니다: ${err.message}</p></div>`;
     }
   }
 
-  function updateStats(campaigns) {
+  function updateCampaignStats(campaigns) {
     statTotal.textContent = `${campaigns.length}건`;
     statB2b.textContent = `${campaigns.filter(c => c.quotaType === 'b2b').length}건`;
     statB2c.textContent = `${campaigns.filter(c => c.quotaType === 'b2c').length}건`;
@@ -59,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderCampaigns(campaigns) {
     if (campaigns.length === 0) {
-      container.innerHTML = `
+      campaignContainer.innerHTML = `
         <div class="empty-state empty-state-card">
           <i class="fa-solid fa-folder-open empty-state-icon"></i>
           <p class="empty-state-text">등록된 설문조사 캠페인이 없습니다.</p>
@@ -71,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    container.innerHTML = campaigns.map(c => {
+    campaignContainer.innerHTML = campaigns.map(c => {
       const quotaLabel = c.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)';
       const quotaBadgeClass = c.quotaType === 'b2b' ? 'b2b' : 'b2c';
       const quotaIcon = c.quotaType === 'b2b' ? 'fa-building' : 'fa-user';
@@ -122,8 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
 
-    // 삭제 버튼 바인딩
-    container.querySelectorAll('.btn-delete').forEach(btn => {
+    campaignContainer.querySelectorAll('.btn-delete').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const id = btn.getAttribute('data-id');
@@ -135,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 새 캠페인 폼 제출
   formNew.addEventListener('submit', async (e) => {
     e.preventDefault();
     const title = document.getElementById('new-title').value.trim();
@@ -155,6 +195,186 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ------------------------------------------------------------------------
+  // 3. 조사 쿼터 보관함 (Quota Library) 관련 로직
+  // ------------------------------------------------------------------------
+  const quotaContainer = document.getElementById('quota-list-container');
+  const statTotalQuotas = document.getElementById('stat-total-quotas');
+  const statTotalMerchants = document.getElementById('stat-total-quota-merchants');
+  const statStratifiedQuotas = document.getElementById('stat-stratified-quotas');
+  const statExcelSync = document.getElementById('stat-excel-sync-rate');
+
+  async function loadQuotas() {
+    try {
+      quotaContainer.innerHTML = `
+        <div class="empty-state empty-state-card">
+          <i class="fa-solid fa-spinner fa-spin empty-state-icon"></i>
+          <p class="empty-state-text">보관된 조사 쿼터 목록을 불러오는 중입니다...</p>
+        </div>
+      `;
+      const res = await fetch('/api/quota/list');
+      if (!res.ok) throw new Error('쿼터 목록을 가져오지 못했습니다.');
+      const quotas = await res.json();
+      updateQuotaStats(quotas);
+      renderQuotas(quotas);
+    } catch (err) {
+      quotaContainer.innerHTML = `<div class="empty-state"><p>쿼터 목록 로드 실패: ${err.message}</p></div>`;
+    }
+  }
+
+  function updateQuotaStats(quotas) {
+    statTotalQuotas.textContent = `${quotas.length}개`;
+    const totalCount = quotas.reduce((sum, q) => sum + (q.count || 0), 0);
+    statTotalMerchants.textContent = `${totalCount}건`;
+    const stratifiedCount = quotas.filter(q => q.industryDistribution && Object.keys(q.industryDistribution).length >= 5).length;
+    statStratifiedQuotas.textContent = `${stratifiedCount}개`;
+    const withExcel = quotas.filter(q => q.excelFileName).length;
+    const rate = quotas.length > 0 ? Math.round((withExcel / quotas.length) * 100) : 100;
+    statExcelSync.textContent = `${rate}%`;
+  }
+
+  function renderQuotas(quotas) {
+    if (quotas.length === 0) {
+      quotaContainer.innerHTML = `
+        <div class="empty-state empty-state-card">
+          <i class="fa-solid fa-database empty-state-icon"></i>
+          <p class="empty-state-text">보관된 조사 쿼터가 아직 없습니다.</p>
+          <a href="quota-builder.html" class="btn-pill btn-pill-primary mt-14">
+            <i class="fa-solid fa-plus"></i> 새 쿼터 생성기 바로가기
+          </a>
+        </div>
+      `;
+      return;
+    }
+
+    quotaContainer.innerHTML = quotas.map(q => {
+      const dateStr = q.createdAt ? new Date(q.createdAt).toLocaleDateString('ko-KR') : '-';
+      const marketName = q.marketName || '일반 사업자';
+      const isStratified = q.industryDistribution && Object.keys(q.industryDistribution).length >= 5;
+
+      // 업종 칩 렌더링
+      let industryChipsHtml = '';
+      if (q.industryDistribution) {
+        const iconMap = {
+          '농산물': '🌾', '축산물': '🥩', '수산물': '🐟',
+          '가공식품': '🍱', '의류신발': '👗', '가정용품': '🏠',
+          '음식점업': '🍽️', '기타소매': '🛒', '근린상권': '💈', '기타': '📦'
+        };
+        industryChipsHtml = `
+          <div class="quota-industry-chips">
+            ${Object.entries(q.industryDistribution).map(([ind, cnt]) => `
+              <span class="quota-ind-badge">${iconMap[ind] || '🏷️'} ${escapeHtml(ind)} ${cnt}</span>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        industryChipsHtml = `
+          <div class="quota-industry-chips">
+            <span class="quota-ind-badge">단일 업종 / 키워드: ${escapeHtml(q.keyword || '전체')}</span>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="campaign-card quota-card" data-filename="${escapeHtml(q.fileName)}">
+          <div>
+            <div class="campaign-card-header">
+              <span class="badge-quota-type b2b"><i class="fa-solid fa-shop"></i> ${escapeHtml(marketName)}</span>
+              <span class="badge-status ${isStratified ? 'success' : 'ready'}">
+                ${isStratified ? '9대 업종 층화 표본' : '단순 순차 수집'}
+              </span>
+            </div>
+            <h3 class="campaign-title">${escapeHtml(q.title)}</h3>
+            <div class="quota-chips-container mt-8 mb-12">
+              ${industryChipsHtml}
+            </div>
+          </div>
+
+          <div>
+            <div class="campaign-meta-box">
+              <div class="meta-item">
+                <span>확보 표본수</span>
+                <strong class="text-primary-color">${q.count}건</strong>
+              </div>
+              <div class="meta-item">
+                <span>생성 일자</span>
+                <strong>${dateStr}</strong>
+              </div>
+            </div>
+
+            <div class="campaign-card-footer quota-card-actions">
+              <a href="quota-detail.html?file=${encodeURIComponent(q.fileName)}" class="btn-pill btn-pill-primary">
+                <i class="fa-solid fa-pen-to-square"></i> 점포 상세·수정
+              </a>
+              ${q.excelFileName ? `
+                <a href="/api/quota/download/${encodeURIComponent(q.excelFileName)}" class="btn-pill btn-pill-secondary btn-download-excel" title="Excel 파일 다운로드">
+                  <i class="fa-solid fa-file-excel icon-excel-green"></i> 엑셀
+                </a>
+              ` : ''}
+              <button type="button" class="btn-pill btn-pill-success btn-create-camp-from-quota" data-filename="${escapeHtml(q.fileName)}" data-title="${escapeHtml(q.title)}" title="이 쿼터로 새 캠페인 생성">
+                <i class="fa-solid fa-play"></i> 캠페인 시작
+              </button>
+              <button type="button" class="btn-icon-circle btn-delete-quota" data-filename="${escapeHtml(q.fileName)}" title="쿼터 삭제">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 이벤트 리스너 바인딩
+    // 1. 캠페인 시작
+    quotaContainer.querySelectorAll('.btn-create-camp-from-quota').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const quotaFileName = btn.getAttribute('data-filename');
+        const defaultTitle = btn.getAttribute('data-title') || '새로운 설문조사 캠페인';
+        const campTitle = prompt('새 캠페인의 제목을 입력해 주세요:', defaultTitle);
+        if (!campTitle || !campTitle.trim()) return;
+
+        try {
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 생성 중...';
+          const res = await fetch('/api/campaigns/create-from-quota', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              quotaFileName,
+              title: campTitle.trim()
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || '캠페인 생성 실패');
+          window.location.href = `survey-detail.html?id=${data.campaign.id}`;
+        } catch (err) {
+          alert('캠페인 생성 오류: ' + err.message);
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-play"></i> 캠페인 시작';
+        }
+      });
+    });
+
+    // 2. 쿼터 삭제
+    quotaContainer.querySelectorAll('.btn-delete-quota').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const fileName = btn.getAttribute('data-filename');
+        if (confirm(`정말로 이 쿼터("${fileName}")를 삭제하시겠습니까?\n보관된 JSON 및 Excel 파일이 영구 삭제됩니다.`)) {
+          try {
+            const res = await fetch(`/api/quota/${encodeURIComponent(fileName)}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || '삭제 실패');
+            alert(data.message || '쿼터가 성공적으로 삭제되었습니다.');
+            loadQuotas();
+          } catch (err) {
+            alert('삭제 오류: ' + err.message);
+          }
+        }
+      });
+    });
+  }
+
   function escapeHtml(str) {
     return String(str || '')
       .replace(/&/g, '&amp;')
@@ -162,5 +382,11 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/>/g, '&gt;');
   }
 
-  loadCampaigns();
+  // 초기 로딩 분기
+  const initialHash = window.location.hash.replace('#', '');
+  if (initialHash === 'quotas') {
+    switchTab('quotas');
+  } else {
+    switchTab('campaigns');
+  }
 });

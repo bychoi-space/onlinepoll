@@ -33,8 +33,9 @@
       </div>
       
       <ul class="nav-links">
-        <li><a href="index.html" class="nav-link-item active">캠페인 목록</a></li>
-        <li><a href="quota-builder.html" class="nav-link-item">조사 쿼터 생성기</a></li>
+        <li><a href="#campaigns" id="tab-nav-campaigns" class="nav-link-item active"><i class="fa-solid fa-list-check"></i> 설문 캠페인</a></li>
+        <li><a href="#quotas" id="tab-nav-quotas" class="nav-link-item"><i class="fa-solid fa-database"></i> 조사 쿼터 보관함</a></li>
+        <li><a href="quota-builder.html" class="nav-link-item"><i class="fa-solid fa-plus-circle"></i> 새 쿼터 생성기</a></li>
       </ul>
 
       <div class="nav-actions">
@@ -48,59 +49,119 @@
   <!-- Main Content Canvas -->
   <main class="figma-container">
     
-    <!-- Page Header -->
-    <div class="page-header">
-      <div class="page-title-wrap">
-        <h1 class="page-title">설문조사 캠페인</h1>
-        <p class="page-subtitle">수집된 조사 쿼터 DB와 설문 가이드라인을 기반으로 자동화를 실행하는 캠페인 목록입니다.</p>
+    <!-- [뷰 1] 설문 캠페인 관리 뷰 -->
+    <div id="section-campaigns" class="tab-view-content">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <h1 class="page-title">설문조사 캠페인</h1>
+          <p class="page-subtitle">수집된 조사 쿼터 DB와 설문 가이드라인을 기반으로 자동화를 실행하는 캠페인 목록입니다.</p>
+        </div>
+        <button id="btn-open-new-modal" class="btn-pill btn-pill-primary">
+          <i class="fa-solid fa-plus"></i> 새 캠페인 등록
+        </button>
       </div>
-      <button id="btn-open-new-modal" class="btn-pill btn-pill-primary">
-        <i class="fa-solid fa-plus"></i> 새 캠페인 등록
-      </button>
+
+      <!-- 4-Stat Metric Summary -->
+      <section class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon"><i class="fa-solid fa-folder-open"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">전체 캠페인</span>
+            <strong class="metric-value" id="stat-total-campaigns">0건</strong>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon b2b"><i class="fa-solid fa-building"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">사업주 (B2B)</span>
+            <strong class="metric-value" id="stat-b2b-campaigns">0건</strong>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon b2c"><i class="fa-solid fa-user"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">개인 (B2C)</span>
+            <strong class="metric-value" id="stat-b2c-campaigns">0건</strong>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon success"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">완료된 설문</span>
+            <strong class="metric-value" id="stat-completed-campaigns">0건</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- Campaigns Grid Section -->
+      <section class="campaigns-section mb-32">
+        <div class="campaign-grid" id="campaign-list-container">
+          <!-- JS로 동적 렌더링 -->
+          <div class="empty-state empty-state-card">
+            <i class="fa-solid fa-spinner fa-spin empty-state-icon"></i>
+            <p class="empty-state-text">캠페인 목록을 불러오는 중입니다...</p>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <!-- 4-Stat Metric Summary -->
-    <section class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-icon"><i class="fa-solid fa-folder-open"></i></div>
-        <div class="metric-info">
-          <span class="metric-label">전체 캠페인</span>
-          <strong class="metric-value" id="stat-total-campaigns">0건</strong>
+    <!-- [뷰 2] 조사 쿼터 보관함 뷰 (신규) -->
+    <div id="section-quotas" class="tab-view-content hidden">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <h1 class="page-title">조사 쿼터 보관함</h1>
+          <p class="page-subtitle">온누리상품권 및 마켓비즈 연계로 수집·검증된 실존 사업자 표본 쿼터를 확인하고 편집·관리합니다.</p>
         </div>
+        <a href="quota-builder.html" class="btn-pill btn-pill-primary">
+          <i class="fa-solid fa-plus"></i> 새 쿼터 생성하기
+        </a>
       </div>
-      <div class="metric-card">
-        <div class="metric-icon b2b"><i class="fa-solid fa-building"></i></div>
-        <div class="metric-info">
-          <span class="metric-label">사업주 (B2B)</span>
-          <strong class="metric-value" id="stat-b2b-campaigns">0건</strong>
-        </div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-icon b2c"><i class="fa-solid fa-user"></i></div>
-        <div class="metric-info">
-          <span class="metric-label">개인 (B2C)</span>
-          <strong class="metric-value" id="stat-b2c-campaigns">0건</strong>
-        </div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-icon success"><i class="fa-solid fa-circle-check"></i></div>
-        <div class="metric-info">
-          <span class="metric-label">완료된 설문</span>
-          <strong class="metric-value" id="stat-completed-campaigns">0건</strong>
-        </div>
-      </div>
-    </section>
 
-    <!-- Campaigns Grid Section -->
-    <section class="campaigns-section mb-32">
-      <div class="campaign-grid" id="campaign-list-container">
-        <!-- JS로 동적 렌더링 -->
-        <div class="empty-state empty-state-card">
-          <i class="fa-solid fa-spinner fa-spin empty-state-icon"></i>
-          <p class="empty-state-text">캠페인 목록을 불러오는 중입니다...</p>
+      <!-- 4-Stat Metric Summary for Quotas -->
+      <section class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon"><i class="fa-solid fa-database"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">총 보관 쿼터</span>
+            <strong class="metric-value" id="stat-total-quotas">0개</strong>
+          </div>
         </div>
-      </div>
-    </section>
+        <div class="metric-card">
+          <div class="metric-icon b2b"><i class="fa-solid fa-shop"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">총 확보 사업자</span>
+            <strong class="metric-value" id="stat-total-quota-merchants">0건</strong>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon b2c"><i class="fa-solid fa-layer-group"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">층화 표본 쿼터</span>
+            <strong class="metric-value" id="stat-stratified-quotas">0개</strong>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon success"><i class="fa-solid fa-file-excel"></i></div>
+          <div class="metric-info">
+            <span class="metric-label">Excel 동기화율</span>
+            <strong class="metric-value" id="stat-excel-sync-rate">100%</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quotas Grid Section -->
+      <section class="campaigns-section mb-32">
+        <div class="campaign-grid" id="quota-list-container">
+          <!-- JS로 동적 렌더링 -->
+          <div class="empty-state empty-state-card">
+            <i class="fa-solid fa-spinner fa-spin empty-state-icon"></i>
+            <p class="empty-state-text">보관된 조사 쿼터 목록을 불러오는 중입니다...</p>
+          </div>
+        </div>
+      </section>
+    </div>
 
   </main>
 
