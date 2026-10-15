@@ -152,11 +152,53 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    // 파일럿 검증 여부에 따른 버튼 상태
-    const hasPilotDone = (camp.quotaDatabase || []).some(b => b.quotaStatus === 'pilot_done' || b.quotaStatus === 'completed');
-    if (hasPilotDone) {
-      btnBatch.disabled = false;
-      pilotSuccessCard.classList.remove('hidden');
+    // 버튼 상태 머신 갱신 (1번 검증 완료 및 배치 완료 제어)
+    updateButtonStates();
+  }
+
+  // -------------------------------------------------------------
+  // 버튼 생명주기 및 상태 머신 (Button State Machine)
+  // -------------------------------------------------------------
+  function updateButtonStates() {
+    if (!currentCampaign) return;
+    const quotaDb = currentCampaign.quotaDatabase || [];
+    const firstQuota = quotaDb.find(b => b.index === 1) || quotaDb[0];
+    const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed');
+
+    // 2번 이상의 잔여 쿼터들
+    const remainingQuotas = quotaDb.filter(b => b.index >= 2);
+    const allBatchDone = remainingQuotas.length > 0 && remainingQuotas.every(b => b.quotaStatus === 'completed' || b.quotaStatus === 'pilot_done');
+    const isRunning = currentCampaign.status === 'running' || statusIndicator.classList.contains('running');
+
+    if (isRunning) {
+      btnPilot.disabled = true;
+      btnBatch.disabled = true;
+      btnStop.disabled = false;
+    } else {
+      btnStop.disabled = true;
+
+      // 1) 1번 쿼터 파일럿 검증 버튼 상태
+      if (firstDone) {
+        btnPilot.disabled = true;
+        btnPilot.textContent = '1번 쿼터 파일럿 검증 완료';
+        pilotSuccessCard.classList.remove('hidden');
+      } else {
+        btnPilot.disabled = false;
+        btnPilot.textContent = '1번 쿼터 파일럿 검증 (Agree 대기)';
+        pilotSuccessCard.classList.add('hidden');
+      }
+
+      // 2) 2번부터 배치 자동화 가동 버튼 상태
+      if (allBatchDone) {
+        btnBatch.disabled = true;
+        btnBatch.textContent = '배치 자동화 완료 (100%)';
+      } else if (firstDone) {
+        btnBatch.disabled = false;
+        btnBatch.textContent = '2번부터 배치 자동화 가동';
+      } else {
+        btnBatch.disabled = true;
+        btnBatch.textContent = '2번부터 배치 자동화 가동';
+      }
     }
   }
 
@@ -635,10 +677,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (data.type === 'PILOT_COMPLETED') {
           setTimelineStep('Agree');
           setRunningState(false);
-          btnBatch.disabled = false;
-          pilotSuccessCard.classList.remove('hidden');
           appendLog('success', `🎉 1번 쿼터 "${data.bizName}" 파일럿 검증 완료! Agree.asp 안전 대기 중.`);
-          loadCampaign();
+          await loadCampaign();
         }
 
         // 배치 진행
@@ -649,10 +689,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
 
-        // 배치 완료
+        // 배치 완료 (화면 자동 리프레시 파이프라인)
         else if (data.type === 'BATCH_COMPLETED') {
+          setTimelineStep('Agree');
           setRunningState(false);
-          loadCampaign();
+          await loadCampaign();
+          appendLog('success', '🎉 모든 쿼터의 배치 자동화가 성공적으로 완료되었습니다!');
+          appendLog('info', '🔄 3초 후 최신 실행 결과를 완벽 동기화하기 위해 화면을 자동으로 새로고침합니다...');
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
         }
 
         // 쿼터 업데이트
@@ -660,6 +706,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (currentCampaign) {
             currentCampaign.quotaDatabase = data.quotaDatabase;
             renderQuotaTable(data.quotaDatabase);
+            updateButtonStates();
           }
         }
       } catch (_) {}
@@ -681,12 +728,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       statusIndicator.classList.add('running');
       statusText.textContent = '자동화 실행 중 (로봇 작동)';
       btnPilot.disabled = true;
+      btnBatch.disabled = true;
       btnStop.disabled = false;
     } else {
       statusIndicator.classList.remove('running');
       statusText.textContent = '준비 완료 (대기 중)';
-      btnPilot.disabled = false;
       btnStop.disabled = true;
+      updateButtonStates();
     }
   }
 

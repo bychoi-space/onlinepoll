@@ -451,8 +451,11 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
       const result = await runKstatSurvey({
         surveyUrl: targetUrl,
         bizData: targetBiz,
+        quotaIndex: targetBiz.index || quotaIndex,
+        guidelineConfig: campaign.guidelineConfig || {},
         policy,
         pilotMode: true,
+        safetyGuard: true,
         reportDir: path.join(reportsDir, `pilot_${campaign.id}`),
         onProgress: (info) => {
           logger.info(`[${info.step}] ${info.message}`);
@@ -539,8 +542,11 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         const result = await runKstatSurvey({
           surveyUrl: targetUrl,
           bizData: biz,
+          quotaIndex: biz.index || (i + startIndex),
+          guidelineConfig: campaign.guidelineConfig || {},
           policy,
           pilotMode: safetyGuard,
+          safetyGuard,
           reportDir: path.join(reportsDir, `batch_${campaign.id}`),
           onProgress: (info) => {
             logger.broadcast({
@@ -618,8 +624,11 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
       const result = await runKstatSurvey({
         surveyUrl: targetUrl,
         bizData: targetBiz,
+        quotaIndex: targetBiz.index || quotaIndex,
+        guidelineConfig: campaign.guidelineConfig || {},
         policy: campaign.guidelineConfig?.policy || {},
         pilotMode: true,
+        safetyGuard: true,
         reportDir: path.join(reportsDir, `single_${campaign.id}_idx${quotaIndex}`),
         onProgress: (info) => {
           logger.broadcast({
