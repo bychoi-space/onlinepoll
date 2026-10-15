@@ -2103,6 +2103,161 @@ input[type="range"]::-webkit-slider-thumb:hover {
   object-fit: contain;
 }
 
+/* ==========================================================================
+   로그인 게이트 페이지 스타일 (Login Gate & Authentication)
+   ========================================================================== */
+.login-gate-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+  background-color: var(--colors-canvas, #f8fafc);
+}
+
+.login-gate-wrapper {
+  width: 100%;
+  max-width: 440px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.login-gate-card {
+  padding: 36px 32px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+}
+
+.login-header-area {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-badge-wrap {
+  margin-bottom: 12px;
+}
+
+.login-security-badge {
+  display: inline-block;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 50px;
+}
+
+.login-brand-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+}
+
+.login-brand-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input {
+  padding-right: 60px !important;
+  height: 44px;
+  font-size: 15px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-toggle-password {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-toggle-password:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.login-error-msg {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.btn-login-submit {
+  height: 44px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.login-footer-info {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.login-notice-text {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 흔들림(Shake) 애니메이션 */
+.shake-card {
+  animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* 상단 네비게이션용 로그아웃 버튼 */
+.btn-pill-logout {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 50px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.4;
+}
+
+.btn-pill-logout:hover {
+  border-color: #fca5a5;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+
 
 
 

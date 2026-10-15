@@ -39,11 +39,14 @@
         </div>
       </div>
       
-      <div class="header-status">
+      <div class="header-status flex-center-gap-14">
         <div class="status-indicator" id="system-status-indicator">
           <span class="status-dot"></span>
           <span class="status-text font-caption" id="system-status-text">준비 완료 (대기 중)</span>
         </div>
+        <button type="button" class="btn-pill-logout" id="btn-global-logout">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> 로그아웃
+        </button>
       </div>
     </div>
   </nav>
@@ -476,5 +479,6 @@
   </div>
 
   <script type="module" src="survey-detail.js"></script>
+  <script type="module" src="nav-auth.js"></script>
 </body>
 </html>
