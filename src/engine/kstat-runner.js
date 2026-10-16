@@ -180,23 +180,17 @@ export async function runKstatSurvey({
       await safeClick(page, '#Q1_12_1'); // 응답자: 점포주
       await safeClick(page, '#Q1_13_2'); // 정보수신: 아니오
 
-      const q1FileName = `step_Q1_${Date.now()}.png`;
-      const q1ShotPath = path.join(reportDir, q1FileName);
-      await page.screenshot({ path: q1ShotPath });
-      const q1Url = `${webBaseUrl}/${q1FileName}`;
       capturedSteps.push({
         step: 'Q1',
         stepIndex: 1,
-        title: '점포 기본정보 등록',
-        file: q1FileName,
-        url: q1Url
+        title: '점포 기본정보 등록'
       });
 
       onProgress({
         step: 'Q1',
         stepIndex: 1,
         totalSteps: 15,
-        screenshotUrl: q1Url,
+        screenshotUrl: null,
         message: `✓ [Q1] 점포 기본정보 등록 완료: "${biz.companyName}" (${persona.industryMeta.categoryName})`
       });
 
@@ -389,16 +383,18 @@ export async function runKstatSurvey({
           }).catch(() => {});
         }
 
-        // 1단계 선택 후 Alert 유발 및 추가 iframe 동적 로드 트리거
-        await page.evaluate(() => document.querySelector('#next')?.click());
-        await page.waitForTimeout(1500);
+        // 1단계 선택 후 Alert 유발 및 추가 iframe 동적 로드 트리거 (하위 문항이 아직 없을 때만 1차 클릭)
+        let fB5B1 = page.frame({ url: /B5B1\.asp/ });
+        if (!fB5B1) {
+          await page.evaluate(() => document.querySelector('#next')?.click());
+          await page.waitForTimeout(1500);
 
-        // 2단계: 화면에 동적으로 생성된 추가 문항 프레임 로딩 대기 (최대 5초)
-        let fB5B1 = null;
-        for (let w = 0; w < 10; w++) {
-          fB5B1 = page.frame({ url: /B5B1\.asp/ });
-          if (fB5B1) break;
-          await page.waitForTimeout(500);
+          // 2단계: 화면에 동적으로 생성된 추가 문항 프레임 로딩 대기 (최대 5초)
+          for (let w = 0; w < 10; w++) {
+            fB5B1 = page.frame({ url: /B5B1\.asp/ });
+            if (fB5B1) break;
+            await page.waitForTimeout(500);
+          }
         }
 
         if (fB5B1) {
@@ -666,11 +662,6 @@ export async function runKstatSurvey({
         }
       }
 
-      // 스크린샷 캡처
-      const pFileName = `step_${stepName}_${Date.now()}.png`;
-      const shotPath = path.join(reportDir, pFileName);
-      await page.screenshot({ path: shotPath }).catch(() => {});
-      const pUrl = `${webBaseUrl}/${pFileName}`;
       const stepNum = parseInt(stepName.replace('P', ''), 10) || 0;
 
       // 사람다운 다음 단계 검토 지연 후 클릭
@@ -693,9 +684,7 @@ export async function runKstatSurvey({
         capturedSteps.push({
           step: stepName,
           stepIndex: stepNum + 1,
-          title: `${stepName} 완료`,
-          file: pFileName,
-          url: pUrl
+          title: `${stepName} 완료`
         });
 
         const nextMatch = page.url().match(/(P\d+|Agree)\.asp/i);
@@ -705,7 +694,7 @@ export async function runKstatSurvey({
           nextStep: nextStepName,
           stepIndex: stepNum + 1,
           totalSteps: 15,
-          screenshotUrl: pUrl,
+          screenshotUrl: null,
           message: `✓ [${stepName}] 단계 완료 ➔ [${nextStepName}] 단계 진입`
         });
       } else {
@@ -721,16 +710,10 @@ export async function runKstatSurvey({
       await page.click('#AGREE_1').catch(() => {});
       await preNextDelay();
 
-      const agreeFileName = `step_Agree_${Date.now()}.png`;
-      const agreeShotPath = path.join(reportDir, agreeFileName);
-      await page.screenshot({ path: agreeShotPath, fullPage: true }).catch(() => {});
-      const agreeUrl = `${webBaseUrl}/${agreeFileName}`;
       capturedSteps.push({
         step: 'Agree',
         stepIndex: 16,
-        title: '개인정보 수집 동의 완료',
-        file: agreeFileName,
-        url: agreeUrl
+        title: '개인정보 수집 동의 완료'
       });
 
       // 파일럿 모드이거나 안전가드가 켜져 있으면 최종 제출 버튼 클릭 전 대기
@@ -739,7 +722,7 @@ export async function runKstatSurvey({
           step: 'Agree',
           stepIndex: 15,
           totalSteps: 15,
-          screenshotUrl: agreeUrl,
+          screenshotUrl: null,
           message: `🛡️ [최종 동의 완료] 안전 가드 활성화 상태로 최종 제출 전 대기합니다.`
         });
       } else {
@@ -750,7 +733,7 @@ export async function runKstatSurvey({
           step: 'COMPLETED',
           stepIndex: 15,
           totalSteps: 15,
-          screenshotUrl: agreeUrl,
+          screenshotUrl: null,
           message: `🎉 [설문 최종 마감] "${biz.companyName}" 설문이 정식 제출 마감되었습니다!`
         });
       }

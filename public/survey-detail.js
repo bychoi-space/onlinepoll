@@ -289,13 +289,13 @@ async function initSurveyDetailPage() {
 
       if (st === 'pilot_done') {
         statusHtml = '<span class="badge-status pilot">검증완료</span>';
-        actionBtnHtml = `<button type="button" class="btn-row-action view" data-idx="${item.index}">캡처보기</button>`;
+        actionBtnHtml = '<span class="text-dim">-</span>';
       } else if (st === 'completed') {
         statusHtml = '<span class="badge-status success">제출완료</span>';
-        actionBtnHtml = `<button type="button" class="btn-row-action view" data-idx="${item.index}">결과보기</button>`;
+        actionBtnHtml = '<span class="text-dim">-</span>';
       } else if (st === 'running') {
         statusHtml = '<span class="badge-status running">실행 중</span>';
-        actionBtnHtml = `<button type="button" class="btn-row-action" disabled>실행 중</button>`;
+        actionBtnHtml = '<span class="text-dim">-</span>';
       } else if (st === 'error') {
         statusHtml = '<span class="badge-status error">오류</span>';
         actionBtnHtml = `<button type="button" class="btn-row-action test" data-idx="${item.index}">재시도</button>`;

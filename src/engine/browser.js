@@ -217,14 +217,10 @@ export async function runSurveySession(options = {}) {
       }
     }
 
-    // 최종 스크린샷 캡처
-    const screenshotFileName = `screenshot_${Date.now()}_iter${iterationIndex}.png`;
-    const screenshotFilePath = path.join(rootDir, 'reports', screenshotFileName);
-    await page.screenshot({ path: screenshotFilePath, fullPage: true });
-    sessionLog.screenshotPath = screenshotFilePath;
+    // 최종 세션 완료 처리 (스크린샷 생성 제거 - 디스크 절약)
+    sessionLog.screenshotPath = null;
     sessionLog.completed = isFinished;
-
-    logger.success(`설문 세션이 마무리되었습니다. 스크린샷 저장: ${screenshotFileName}`);
+    logger.success(`설문 세션이 성공적으로 마무리되었습니다.`);
     return sessionLog;
   } catch (error) {
     logger.error('설문 세션 진행 중 오류 발생:', error);
