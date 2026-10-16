@@ -1978,6 +1978,18 @@ async function initSurveyDetailPage() {
 
         // 일반 로그
         if (data.type === 'log') {
+          // [채널 필터링] 설문 작업실에서는 타 화면의 쿼터 생성/수집 로그를 제외
+          if (data.channel === 'quota') return;
+          const msg = String(data.message || '');
+          if (
+            msg.includes('[온누리 쿼터') ||
+            msg.includes('[MarketBz]') ||
+            msg.includes('[Hybrid Quota]') ||
+            msg.includes('[Step 1/2]') ||
+            msg.includes('[Step 2/2]')
+          ) {
+            return;
+          }
           appendLog(data.level, data.message, data.timestamp);
         }
 

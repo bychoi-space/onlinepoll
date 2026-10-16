@@ -18,6 +18,33 @@ function getKstTime() {
   }
 }
 
+function inferChannel(message) {
+  if (!message || typeof message !== 'string') return 'system';
+  if (
+    message.includes('[온누리') ||
+    message.includes('[MarketBz]') ||
+    message.includes('[Hybrid Quota]') ||
+    message.includes('[Enricher]') ||
+    message.includes('쿼터 생성') ||
+    message.includes('가맹점')
+  ) {
+    return 'quota';
+  }
+  if (
+    message.includes('[배치') ||
+    message.includes('[파일럿') ||
+    message.includes('[ALERT]') ||
+    message.includes('[세션') ||
+    message.includes('[Kstat') ||
+    message.includes('[설문') ||
+    message.includes('Agree.asp') ||
+    message.includes('캠페인')
+  ) {
+    return 'survey';
+  }
+  return 'system';
+}
+
 class EventBroadcaster {
   constructor() {
     this.clients = new Set();
@@ -47,16 +74,32 @@ class EventBroadcaster {
   broadcast(typeOrData, payload = {}) {
     let eventData;
     if (typeof typeOrData === 'object' && typeOrData !== null) {
+      const channel = typeOrData.channel || (
+        String(typeOrData.type || '').startsWith('BATCH_') ||
+        String(typeOrData.type || '').startsWith('PILOT_') ||
+        typeOrData.type === 'QUOTA_UPDATED'
+          ? 'survey'
+          : inferChannel(typeOrData.message || '')
+      );
       eventData = {
         id: Date.now(),
         timestamp: getKstTime(),
+        channel,
         ...typeOrData
       };
     } else {
+      const channel = payload.channel || (
+        String(typeOrData || '').startsWith('BATCH_') ||
+        String(typeOrData || '').startsWith('PILOT_') ||
+        typeOrData === 'QUOTA_UPDATED'
+          ? 'survey'
+          : inferChannel(payload.message || '')
+      );
       eventData = {
         id: Date.now(),
         timestamp: getKstTime(),
         type: typeOrData,
+        channel,
         ...payload
       };
     }
@@ -79,36 +122,37 @@ class EventBroadcaster {
   /**
    * 일반 정보 로그
    */
-  info(message, details = null) {
+  info(message, details = null, channel = null) {
     console.log(`[INFO] ${message}`);
-    this.broadcast('log', { level: 'info', message, details });
+    this.broadcast('log', { level: 'info', message, details, channel: channel || inferChannel(message) });
   }
 
   /**
    * 성공 로그
    */
-  success(message, details = null) {
+  success(message, details = null, channel = null) {
     console.log(`[SUCCESS] ${message}`);
-    this.broadcast('log', { level: 'success', message, details });
+    this.broadcast('log', { level: 'success', message, details, channel: channel || inferChannel(message) });
   }
 
   /**
    * 경고 로그
    */
-  warn(message, details = null) {
+  warn(message, details = null, channel = null) {
     console.warn(`[WARN] ${message}`);
-    this.broadcast('log', { level: 'warn', message, details });
+    this.broadcast('log', { level: 'warn', message, details, channel: channel || inferChannel(message) });
   }
 
   /**
    * 오류 로그
    */
-  error(message, error = null) {
+  error(message, error = null, channel = null) {
     console.error(`[ERROR] ${message}`, error || '');
     this.broadcast('log', {
       level: 'error',
       message,
-      details: error ? (error.stack || error.message || String(error)) : null
+      details: error ? (error.stack || error.message || String(error)) : null,
+      channel: channel || inferChannel(message)
     });
   }
 
