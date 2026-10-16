@@ -294,6 +294,7 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
   const defaultGroupBaselines = {
     group1: {
       ...baseline,
+      empSalesLink: 'auto',
       originLabelTarget: 'yes',
       deliveryFoodAdoption: 15,
       deliverySalesRatio: 10,
@@ -307,6 +308,7 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
     },
     group2: {
       ...baseline,
+      empSalesLink: 'auto',
       originLabelTarget: 'no',
       deliveryFoodAdoption: 5,
       deliverySalesRatio: 5,
@@ -319,6 +321,7 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
     },
     group3: {
       ...baseline,
+      empSalesLink: 'auto',
       originLabelTarget: 'yes',
       deliveryFoodAdoption: 85,
       deliverySalesRatio: 35,

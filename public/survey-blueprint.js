@@ -92,7 +92,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     futurePlan: 'maintain',
     successionPlan: 'none',
     plannedYears: 8,
-    rotationMode: false
+    rotationMode: false,
+    empSalesLink: 'auto'
   };
 
   function updateGroupStatsUI() {
@@ -398,6 +399,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span class="baseline-slider-val" id="val-temp-emp">${currentBaseline.employeeTemp ?? 0}명</span>
           </div>
         `;
+      // P2: 매출 연동 고용 규칙
+      case 'RULE_EMP_SALES': {
+        const curRule = currentBaseline.empSalesLink || 'auto';
+        return `
+          <select class="baseline-select" id="select-emp-sales-link">
+            <option value="auto" ${curRule === 'auto' ? 'selected' : ''}>🟢 매출 비례 자동 연동 (저매출 0명 / 고매출 증가) [권장]</option>
+            <option value="fixed" ${curRule === 'fixed' ? 'selected' : ''}>🔒 슬라이더 지정값 고정 (수동 설정 유지)</option>
+          </select>
+        `;
+      }
       // P3: 일평균 매출액 (만 원)
       case 'B1AA':
         return `
@@ -838,6 +849,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     bindSlider('slider-family-emp', 'val-family-emp', 'employeeFamily', '명');
     bindSlider('slider-paid-emp', 'val-paid-emp', 'employeeRegular', '명', updateRawCost);
     bindSlider('slider-temp-emp', 'val-temp-emp', 'employeeTemp', '명');
+    bindSelect('select-emp-sales-link', 'empSalesLink');
 
     // P3: 매출 & 분기 패턴
     bindSlider('slider-daily-sales', 'val-daily-sales', 'dailySales', '만');

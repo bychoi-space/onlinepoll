@@ -116,28 +116,84 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const groupBaseline = baseCfg.groups?.[groupKey] || {};
   const mb = { ...baseCfg, ...groupBaseline };
 
-  // 3. 매장 면적 및 종업원수 (P2)
+  // 3. 매장 면적 및 점포 규모 계수 (P2)
+  const isAutoEmp = mb.empSalesLink !== 'fixed';
+  const scaleVariance = ((quotaIndex * 7 + 13) % 10) / 10; // 0.0 ~ 0.9 점포별 균등 자연 분산
+  const sizeFactor = isAutoEmp ? (0.70 + scaleVariance * 0.65) : 1.0; // 0.70 ~ 1.35 스케일링 계수
+
   const basePyeong = mb.storePyeong !== undefined ? parseInt(mb.storePyeong, 10) : 14;
-  const areaPyeong = Math.max(5, Math.min(60, basePyeong + randBetween(-2, 2)));
+  const areaPyeong = Math.max(5, Math.min(50, Math.round(basePyeong * (0.8 + sizeFactor * 0.2) + randBetween(-1, 1))));
   const areaSquareMeter = Math.round(areaPyeong * 3.3058);
-
-  const baseFamily = mb.employeeFamily !== undefined ? parseInt(mb.employeeFamily, 10) : 1;
-  const employeeFamily = Math.max(0, baseFamily + (baseFamily > 0 ? randBetween(-1, 0) : 0));
-
-  const baseRegular = mb.employeeRegular !== undefined ? parseInt(mb.employeeRegular, 10) : (rng() > 0.65 ? randBetween(1, 2) : 0);
-  const employeeRegular = Math.max(0, baseRegular);
-
-  const baseTemp = mb.employeeTemp !== undefined ? parseInt(mb.employeeTemp, 10) : 0;
-  const employeeTemp = Math.max(0, baseTemp);
-
-  const hasEmployees = employeeRegular > 0 || employeeTemp > 0;
 
   // 4. 매출액 및 영업이익 (P3, P4)
   const baseDailySales = mb.dailySales !== undefined ? parseInt(mb.dailySales, 10) : 65;
-  const dailySales = Math.max(20, baseDailySales + randBetween(-8, 8));
+  const scaledDaily = Math.round(baseDailySales * sizeFactor + randBetween(-4, 4));
+  const dailySales = Math.max(20, Math.min(220, scaledDaily));
 
-  const baseAnnualSales = mb.annualSales !== undefined ? parseInt(mb.annualSales, 10) : Math.round((dailySales * randBetween(280, 310)) / 100);
-  const annualSales = Math.max(40, baseAnnualSales + randBetween(-10, 10));
+  const baseAnnualSales = mb.annualSales !== undefined ? parseInt(mb.annualSales, 10) : Math.round((dailySales * 290) / 100);
+  const scaledAnnual = Math.round(baseAnnualSales * sizeFactor + randBetween(-6, 6));
+  const annualSales = Math.max(40, Math.min(500, scaledAnnual));
+
+  // 5. 종업원수 산출 (P2 A10) - [규칙] 매출 연동 자동 고용 규칙
+  // 매출이 높으면 종업원수도 올리고, 매출이 낮으면 0명이거나 낮은 숫자로 자동 스케일링
+  let employeeRegular = 0;
+  let employeeTemp = 0;
+  let employeeFamily = 1;
+
+  if (isAutoEmp) {
+    const baseRegular = mb.employeeRegular !== undefined ? parseInt(mb.employeeRegular, 10) : 0;
+    const baseTemp = mb.employeeTemp !== undefined ? parseInt(mb.employeeTemp, 10) : 0;
+    const baseFamily = mb.employeeFamily !== undefined ? parseInt(mb.employeeFamily, 10) : 1;
+
+    // 1) 저매출 구간 (연매출 < 125백만 원 또는 일매출 < 50만 원)
+    // 영세 1인/가족 점포: 상용/임시 종업원 고용 여력 없음 (0명 필수, 인건비 0원)
+    if (annualSales < 125 || dailySales < 50) {
+      employeeRegular = 0;
+      employeeTemp = 0;
+      employeeFamily = annualSales < 90 ? 0 : (rng() < 0.6 ? 1 : 0);
+    }
+    // 2) 중소매출 구간 (연매출 125 ~ 220백만 원 / 일매출 50 ~ 80만 원)
+    // 골목상권 표준: 가족 1명 + (외식업이거나 매출 175M 이상 시 1명 가능, 그 외 0명)
+    else if (annualSales < 220) {
+      employeeFamily = Math.max(0, baseFamily);
+      if (groupKey === 'group3' && annualSales >= 160) {
+        employeeRegular = 1;
+        employeeTemp = (rng() < 0.4 ? 1 : 0);
+      } else if (annualSales >= 175 && (baseRegular > 0 || rng() < 0.45)) {
+        employeeRegular = 1;
+        employeeTemp = 0;
+      } else {
+        employeeRegular = 0;
+        employeeTemp = (annualSales >= 150 && rng() < 0.35) ? 1 : 0;
+      }
+    }
+    // 3) 고매출 구간 (연매출 220 ~ 320백만 원 / 일매출 80 ~ 115만 원)
+    // 성업 점포: 1인 운영 불가, 유급 상용 1~2명 필수 고용
+    else if (annualSales < 320) {
+      employeeFamily = 1;
+      employeeRegular = Math.max(1, baseRegular + (annualSales >= 265 ? 1 : 0));
+      employeeTemp = (baseTemp > 0 ? baseTemp : (rng() < 0.5 ? 1 : 0));
+    }
+    // 4) 초고매출 구간 (연매출 320백만 원 이상 / 일매출 115만 원 이상)
+    // 대형/기업형 점포: 상용 2~3명, 임시 1~2명
+    else {
+      employeeFamily = Math.max(1, baseFamily);
+      employeeRegular = Math.max(2, baseRegular + randBetween(1, 2));
+      employeeTemp = Math.max(1, (baseTemp || 1));
+    }
+  } else {
+    // 수동 고정 모드 (사용자 슬라이더 지정값 엄격 유지)
+    const baseFamily = mb.employeeFamily !== undefined ? parseInt(mb.employeeFamily, 10) : 1;
+    employeeFamily = Math.max(0, baseFamily + (baseFamily > 0 ? randBetween(-1, 0) : 0));
+
+    const baseRegular = mb.employeeRegular !== undefined ? parseInt(mb.employeeRegular, 10) : 0;
+    employeeRegular = Math.max(0, baseRegular);
+
+    const baseTemp = mb.employeeTemp !== undefined ? parseInt(mb.employeeTemp, 10) : 0;
+    employeeTemp = Math.max(0, baseTemp);
+  }
+
+  const hasEmployees = employeeRegular > 0 || employeeTemp > 0;
   
   // 회전 선택 헬퍼 (인덱스 기반 균등 분산)
   const rotate = (arr, idx) => arr[(idx - 1) % arr.length];

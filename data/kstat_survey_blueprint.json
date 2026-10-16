@@ -46,7 +46,8 @@
     "policyPriority": "standard",
     "futurePlan": "maintain",
     "successionPlan": "none",
-    "plannedYears": 8
+    "plannedYears": 8,
+    "empSalesLink": "auto"
   },
   "stages": [
     {
@@ -216,6 +217,13 @@
           "baseline": "0 명",
           "range": "0~3 명",
           "note": "임시/일용 종업원 기준"
+        },
+        {
+          "id": "RULE_EMP_SALES",
+          "label": "매출 연동 고용 규칙",
+          "type": "tunable",
+          "baseline": "auto",
+          "note": "매출 수준에 따라 종업원수 0~N명 자동 스케일링"
         }
       ]
     },
