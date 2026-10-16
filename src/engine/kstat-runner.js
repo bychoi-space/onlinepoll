@@ -91,7 +91,7 @@ export async function runKstatSurvey({
     ceoName: bizData.ceoName || '점포주',
     phone: bizData.phone || '02-1234-5678',
     openDate: bizData.openDate || '2020-05-01',
-    openYear: bizData.openDate ? String(bizData.openDate).split(/[-.]/)[0] : '2020',
+    openYear: bizData.openDate ? String(Math.min(2025, parseInt(String(bizData.openDate).split(/[-.]/)[0], 10) || 2020)) : '2020',
     openMonth: bizData.openDate ? (String(bizData.openDate).split(/[-.]/)[1] || '05') : '05',
     zipCode: bizData.zipCode || '05527',
     address: bizData.address || '서울특별시 송파구 바람드리길',

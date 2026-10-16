@@ -84,32 +84,13 @@ async function initSurveyDetailPage() {
   const currentActiveStoreLabel = document.getElementById('current-active-store-label');
   const currentStorePulse = document.getElementById('current-store-pulse');
 
-  // 로그 및 갤러리
+  // 실시간 로그
   const btnClearLogs = document.getElementById('btn-clear-logs');
   const terminalLogs = document.getElementById('terminal-logs');
   const currentStepLabel = document.getElementById('current-step-label');
   const timelineChips = document.querySelectorAll('.step-chip');
-  const tabBtnLogs = document.getElementById('tab-btn-logs');
-  const tabBtnGallery = document.getElementById('tab-btn-gallery');
-  const panelTabLogs = document.getElementById('panel-tab-logs');
-  const panelTabGallery = document.getElementById('panel-tab-gallery');
-  const galleryStrip = document.getElementById('gallery-strip');
-  const galleryCount = document.getElementById('gallery-count');
-  const btnViewPilotCaptures = document.getElementById('btn-view-pilot-captures');
-
-  // 15단계 스크린샷 모달
-  const captureModalOverlay = document.getElementById('capture-modal-overlay');
-  const captureModalTitle = document.getElementById('capture-modal-title');
-  const captureViewerImg = document.getElementById('capture-viewer-img');
-  const btnCloseCaptureModal = document.getElementById('btn-close-capture-modal');
-  const btnPrevCapture = document.getElementById('btn-prev-capture');
-  const btnNextCapture = document.getElementById('btn-next-capture');
-  const captureStepIndicator = document.getElementById('capture-step-indicator');
 
   let currentCampaign = null;
-  let currentScreenshots = [];
-  let modalCurrentIndex = 0;
-  let modalCurrentBizName = '';
 
   // ------------------------------------------------------------------------
   // 1. 캠페인 데이터 로드 및 UI 렌더링
@@ -213,11 +194,9 @@ async function initSurveyDetailPage() {
       if (firstDone) {
         btnPilot.disabled = true;
         btnPilot.textContent = '1번 쿼터 파일럿 검증 완료';
-        if (btnViewPilotCaptures) btnViewPilotCaptures.classList.remove('d-none');
       } else {
         btnPilot.disabled = false;
         btnPilot.textContent = '1번 쿼터 파일럿 검증 (Agree 대기)';
-        if (btnViewPilotCaptures) btnViewPilotCaptures.classList.add('d-none');
       }
 
       // 2) 2번부터 배치 자동화 가동 버튼 상태
@@ -273,7 +252,7 @@ async function initSurveyDetailPage() {
     if (total === 0) {
       quotaTableBody.innerHTML = `
         <tr>
-          <td colspan="10" class="empty-table-msg">
+          <td colspan="9" class="empty-table-msg">
             아직 구축된 사업자 DB가 없습니다.<br>
             상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.
           </td>
@@ -285,20 +264,15 @@ async function initSurveyDetailPage() {
     quotaTableBody.innerHTML = db.map((item, idx) => {
       const st = item.quotaStatus || 'ready';
       let statusHtml = '<span class="badge-status ready">대기</span>';
-      let actionBtnHtml = `<button type="button" class="btn-row-action test" data-idx="${item.index}">테스트</button>`;
 
       if (st === 'pilot_done') {
         statusHtml = '<span class="badge-status pilot">검증완료</span>';
-        actionBtnHtml = '<span class="text-dim">-</span>';
       } else if (st === 'completed') {
         statusHtml = '<span class="badge-status success">제출완료</span>';
-        actionBtnHtml = '<span class="text-dim">-</span>';
       } else if (st === 'running') {
         statusHtml = '<span class="badge-status running">실행 중</span>';
-        actionBtnHtml = '<span class="text-dim">-</span>';
       } else if (st === 'error') {
         statusHtml = '<span class="badge-status error">오류</span>';
-        actionBtnHtml = `<button type="button" class="btn-row-action test" data-idx="${item.index}">재시도</button>`;
       }
 
       let ceoVal = escapeHtml(item.ceoName || '-');
@@ -329,62 +303,9 @@ async function initSurveyDetailPage() {
           <td><span class="badge-quota-type b2b">${escapeHtml(itemVal)}</span></td>
           <td>${escapeHtml(addrVal)}</td>
           <td class="text-center">${statusHtml}</td>
-          <td class="text-center">${actionBtnHtml}</td>
         </tr>
       `;
     }).join('');
-
-    // 개별 액션 버튼 이벤트 연결
-    attachRowActionEvents();
-  }
-
-  // ------------------------------------------------------------------------
-  // 3. 개별 행 액션 이벤트 (단독 테스트 & 15단계 캡처 보기)
-  // ------------------------------------------------------------------------
-  function attachRowActionEvents() {
-    // [이 점포로 테스트 / 재시도]
-    document.querySelectorAll('.btn-row-action.test').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const idx = parseInt(e.currentTarget.dataset.idx, 10);
-        await runSingleQuotaTest(idx);
-      });
-    });
-
-    // [캡처 보기]
-    document.querySelectorAll('.btn-row-action.view').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const idx = parseInt(e.currentTarget.dataset.idx, 10);
-        await openCaptureModal(idx);
-      });
-    });
-  }
-
-  // 특정 점포 단독 테스트 실행
-  async function runSingleQuotaTest(idx) {
-    const surveyUrl = inputSurveyUrl.value.trim();
-    if (!surveyUrl) {
-      alert('설문조사 URL을 먼저 입력해 주세요.');
-      inputSurveyUrl.focus();
-      return;
-    }
-
-    try {
-      setRunningState(true);
-      appendLog('info', `[개별 테스트] 쿼터 #${idx}번 사업자 1건 시뮬레이션을 시작합니다...`);
-
-      const res = await fetch(`/api/campaigns/${campId}/run-single`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quotaIndex: idx })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '테스트 실패');
-      appendLog('success', data.message);
-    } catch (err) {
-      appendLog('error', `개별 테스트 실패: ${err.message}`);
-      setRunningState(false);
-    }
   }
 
   // ------------------------------------------------------------------------
@@ -512,7 +433,6 @@ async function initSurveyDetailPage() {
     try {
       setRunningState(true);
       resetTimelineChips();
-      clearGallery();
       appendLog('info', '🎯 [파일럿 검증 시작] 1번 쿼터 사업자로 Q1부터 Agree.asp까지 안전 완주를 진행합니다...');
 
       const res = await fetch(`/api/campaigns/${campId}/pilot-run`, {
@@ -582,14 +502,8 @@ async function initSurveyDetailPage() {
     appendLog('warn', '작업 중지 요청이 전송되었습니다.');
   });
 
-  if (btnViewPilotCaptures) {
-    btnViewPilotCaptures.addEventListener('click', async () => {
-      await openCaptureModal(1);
-    });
-  }
-
   // ------------------------------------------------------------------------
-  // 6. 실시간 타임라인 칩 & 캡처 갤러리 탭 제어
+  // 6. 실시간 타임라인 칩 제어
   // ------------------------------------------------------------------------
   function setTimelineStep(stepName) {
     if (!stepName) return;
@@ -617,26 +531,6 @@ async function initSurveyDetailPage() {
     currentStepLabel.textContent = '시작 대기';
   }
 
-  // 탭 전환 (콘솔 로그 vs 갤러리)
-  tabBtnLogs.addEventListener('click', () => {
-    tabBtnLogs.classList.add('active');
-    tabBtnGallery.classList.remove('active');
-    panelTabLogs.classList.remove('hidden');
-    panelTabGallery.classList.add('hidden');
-  });
-
-  tabBtnGallery.addEventListener('click', () => {
-    tabBtnGallery.classList.add('active');
-    tabBtnLogs.classList.remove('active');
-    panelTabGallery.classList.remove('hidden');
-    panelTabLogs.classList.add('hidden');
-  });
-
-  function clearGallery() {
-    galleryStrip.innerHTML = '<p class="empty-feed font-body-sm text-dim">설문 시뮬레이션이 진행되면 통과한 페이지의 스크린샷이 실시간으로 누적됩니다.</p>';
-    galleryCount.textContent = '0';
-  }
-
   const kstFormatter = new Intl.DateTimeFormat('ko-KR', {
     timeZone: 'Asia/Seoul',
     hour: '2-digit',
@@ -652,90 +546,6 @@ async function initSurveyDetailPage() {
       return new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul' });
     }
   }
-
-  function appendGalleryItem(step, url, title) {
-    const empty = galleryStrip.querySelector('.empty-feed');
-    if (empty) empty.remove();
-
-    const card = document.createElement('div');
-    card.className = 'gallery-item-card';
-    card.innerHTML = `
-      <div class="gallery-thumb-wrap">
-        <img src="${url}" alt="${step}" class="gallery-thumb-img" />
-      </div>
-      <div class="gallery-meta">
-        <span class="gallery-step-title">[${step}] ${escapeHtml(title || '단계 완료')}</span>
-        <span class="gallery-time">${getKstTime()} 완료</span>
-      </div>
-    `;
-    card.addEventListener('click', () => openCaptureModal());
-    galleryStrip.appendChild(card);
-
-    const count = galleryStrip.querySelectorAll('.gallery-item-card').length;
-    galleryCount.textContent = count;
-  }
-
-  // ------------------------------------------------------------------------
-  // 7. 15단계 스크린샷 원본 모달
-  // ------------------------------------------------------------------------
-  async function openCaptureModal(quotaIndex = null) {
-    try {
-      const url = quotaIndex
-        ? `/api/campaigns/${campId}/screenshots?quotaIndex=${quotaIndex}`
-        : `/api/campaigns/${campId}/screenshots`;
-      const res = await fetch(url);
-      const data = await res.json();
-      currentScreenshots = data.screenshots || [];
-      modalCurrentBizName = data.bizName || '';
-
-      if (currentScreenshots.length === 0) {
-        const targetDesc = modalCurrentBizName ? `"${modalCurrentBizName}" 점포의 ` : '';
-        alert(`${targetDesc}보관된 스크린샷이 없습니다. 먼저 시뮬레이션을 진행해 주세요.`);
-        return;
-      }
-
-      modalCurrentIndex = 0;
-      updateModalViewer();
-      captureModalOverlay.classList.add('is-open');
-    } catch (err) {
-      alert('스크린샷을 불러오지 못했습니다: ' + err.message);
-    }
-  }
-
-  function updateModalViewer() {
-    if (currentScreenshots.length === 0) return;
-    const item = currentScreenshots[modalCurrentIndex];
-    captureViewerImg.src = item.url;
-    const bizPrefix = modalCurrentBizName ? `[${modalCurrentBizName}] ` : '';
-    captureModalTitle.textContent = `${bizPrefix}[${item.step}] ${item.title || '단계 스크린샷'}`;
-    captureStepIndicator.textContent = `${modalCurrentIndex + 1} / ${currentScreenshots.length}`;
-    btnPrevCapture.disabled = modalCurrentIndex === 0;
-    btnNextCapture.disabled = modalCurrentIndex === currentScreenshots.length - 1;
-  }
-
-  btnPrevCapture.addEventListener('click', () => {
-    if (modalCurrentIndex > 0) {
-      modalCurrentIndex--;
-      updateModalViewer();
-    }
-  });
-
-  btnNextCapture.addEventListener('click', () => {
-    if (modalCurrentIndex < currentScreenshots.length - 1) {
-      modalCurrentIndex++;
-      updateModalViewer();
-    }
-  });
-
-  btnCloseCaptureModal.addEventListener('click', () => {
-    captureModalOverlay.classList.remove('is-open');
-  });
-
-  captureModalOverlay.addEventListener('click', (e) => {
-    if (e.target === captureModalOverlay) {
-      captureModalOverlay.classList.remove('is-open');
-    }
-  });
 
   // ------------------------------------------------------------------------
   // 8. SSE 실시간 스트림 구독 & 상태 업데이트
@@ -759,9 +569,6 @@ async function initSurveyDetailPage() {
         // 파일럿 진행
         else if (data.type === 'PILOT_PROGRESS') {
           setTimelineStep(data.step);
-          if (data.screenshotUrl) {
-            appendGalleryItem(data.step, data.screenshotUrl, data.message);
-          }
         }
 
         // 파일럿 완료 (화면 자동 새로고침 파이프라인)
@@ -779,9 +586,6 @@ async function initSurveyDetailPage() {
         // 배치 진행
         else if (data.type === 'BATCH_PROGRESS') {
           setTimelineStep(data.step);
-          if (data.screenshotUrl) {
-            appendGalleryItem(data.step, data.screenshotUrl, `[#${data.quotaIndex}] ${data.step}`);
-          }
           if (data.bizName && currentActiveStoreLabel) {
             currentActiveStoreLabel.textContent = `[#${data.quotaIndex}] ${data.bizName}`;
           }

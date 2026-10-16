@@ -179,12 +179,11 @@
                   <th class="th-items">취급품목</th>
                   <th class="th-address">사업장 주소 (도로명)</th>
                   <th class="th-status">진행 상태</th>
-                  <th class="th-actions">개별 액션</th>
                 </tr>
               </thead>
               <tbody id="quota-table-body">
                 <tr>
-                  <td colspan="10" class="empty-table-msg">
+                  <td colspan="9" class="empty-table-msg">
                     아직 구축된 사업자 DB가 없습니다.<br>
                     상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.
                   </td>
@@ -412,17 +411,7 @@
             </div>
           </div>
 
-          <!-- 모니터링 탭 바 (로그 vs 단계별 캡처 갤러리) -->
-          <div class="monitor-tab-bar mb-12">
-            <button type="button" class="monitor-tab-btn active" id="tab-btn-logs">
-              콘솔 로그
-            </button>
-            <button type="button" class="monitor-tab-btn" id="tab-btn-gallery">
-              단계별 캡처 갤러리 (<span id="gallery-count">0</span>)
-            </button>
-          </div>
-
-          <!-- 탭 1: 터미널 콘솔 로그 -->
+          <!-- 터미널 콘솔 로그 -->
           <div class="monitor-terminal" id="panel-tab-logs">
             <div class="terminal-bar">
               <span class="term-dot red"></span>
@@ -439,45 +428,9 @@
             </div>
           </div>
 
-          <!-- 탭 2: 실시간 단계별 캡처 갤러리 -->
-          <div class="monitor-gallery-panel hidden" id="panel-tab-gallery">
-            <div class="gallery-strip-container" id="gallery-strip">
-              <p class="empty-feed font-body-sm text-dim">설문 시뮬레이션이 진행되면 통과한 페이지의 스크린샷이 실시간으로 누적됩니다.</p>
-            </div>
-          </div>
-
-          </div>
         </div>
       </aside>
 
-    </div>
-  </div>
-
-  <!-- 15단계 스크린샷 원본 확대 모달 -->
-  <div class="modal-overlay" id="capture-modal-overlay">
-    <div class="modal-container capture-modal-container">
-      <div class="modal-header">
-        <h3 class="modal-title font-title" id="capture-modal-title">
-          단계별 실행 스크린샷 뷰어
-        </h3>
-        <button type="button" class="btn-pill-ghost" id="btn-close-capture-modal" aria-label="닫기">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="modal-body capture-modal-body">
-        <div class="capture-viewer-main">
-          <img id="capture-viewer-img" src="" alt="설문 캡처 원본" class="capture-large-img" />
-        </div>
-        <div class="capture-nav-bar flex-between mt-12">
-          <button type="button" id="btn-prev-capture" class="btn-pill btn-pill-secondary">
-            <i class="fa-solid fa-arrow-left"></i> 이전 단계
-          </button>
-          <span class="font-caption font-bold" id="capture-step-indicator">1 / 15</span>
-          <button type="button" id="btn-next-capture" class="btn-pill btn-pill-secondary">
-            다음 단계 <i class="fa-solid fa-arrow-right"></i>
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 

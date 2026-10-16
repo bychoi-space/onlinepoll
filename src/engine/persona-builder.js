@@ -115,11 +115,13 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
 
   // 7. 온누리상품권 현황 (P7)
   const rawOpenDate = bizData.openDate || bizData.openYear || '2020';
-  const openYearNum = parseInt(String(rawOpenDate).split(/[-.]/)[0], 10) || 2020;
+  const rawYear = parseInt(String(rawOpenDate).split(/[-.]/)[0], 10) || 2020;
+  // Kstat 유효성 상한선: A5 영업시작년도는 최대 2025 이하 필수!
+  const openYearNum = Math.min(2025, rawYear);
   // Kstat 유효성 검사: 온누리상품권 가맹 시작 년도는 A5(개업연도)보다 이전일 수 없음!
   let onnuriJoinYear;
   if (openYearNum >= 2025) {
-    onnuriJoinYear = openYearNum; // 2025/2026 개업 점포는 개업 당해연도 가입
+    onnuriJoinYear = 2025; // 2025년 개업 점포 및 2026 점포는 2025로 일치화
   } else {
     // 개업연도 이상, 2024 이하
     onnuriJoinYear = Math.max(openYearNum, Math.min(2024, openYearNum + randBetween(0, 1)));
