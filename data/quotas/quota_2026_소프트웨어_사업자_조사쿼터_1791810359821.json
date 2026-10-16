@@ -17,6 +17,14 @@
       "label": "대표자이름"
     },
     {
+      "key": "ceoGender",
+      "label": "성별"
+    },
+    {
+      "key": "ceoAge",
+      "label": "나이"
+    },
+    {
       "key": "phone",
       "label": "전화번호"
     },
@@ -35,7 +43,9 @@
       "ceoName": "대표자",
       "phone": "02-555-1234",
       "openingDate": "1990.01.01",
-      "address": "경기도 부천시 송내대로265번길 59"
+      "address": "경기도 부천시 송내대로265번길 59",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "category": "정보통신/서비스",
@@ -46,7 +56,9 @@
       "ceoName": "대표자",
       "phone": "02-555-1234",
       "openingDate": "1990.04.26",
-      "address": "경기도 부천시 송내대로265번길 59"
+      "address": "경기도 부천시 송내대로265번길 59",
+      "ceoGender": null,
+      "ceoAge": null
     }
   ]
 }

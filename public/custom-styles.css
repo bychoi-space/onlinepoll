@@ -2804,3 +2804,272 @@ input[type="range"]::-webkit-slider-thumb:hover {
   height: 26px !important;
 }
 
+/* ==========================================================================
+   10. 캠페인 쿼터 테이블 인라인 편집 스타일 (survey-detail.html)
+   ========================================================================== */
+.editable-quota-cell {
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+.editable-quota-cell:hover {
+  background-color: rgba(2, 132, 199, 0.08) !important;
+  outline: 1px dashed #0284c7;
+}
+.inline-cell-input {
+  width: 60px;
+  height: 26px;
+  padding: 2px 6px;
+  border: 1px solid #0284c7;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  text-align: center;
+  background: #ffffff;
+  color: #0f172a;
+}
+.inline-cell-select {
+  width: 55px;
+  height: 26px;
+  padding: 2px 4px;
+  border: 1px solid #0284c7;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+}
+.cell-placeholder {
+  color: #94a3b8;
+  font-size: 11px;
+  font-style: italic;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.badge-gender {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.badge-gender.male {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+.badge-gender.female {
+  background: #fce7f3;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+}
+.badge-age {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* ==========================================================================
+   11. 블루프린트 실행 배너 (survey-detail.html)
+   ========================================================================== */
+.execution-blueprint-banner {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.06) 0%, rgba(59, 130, 246, 0.04) 100%);
+  border: 1px solid rgba(2, 132, 199, 0.22);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+.badge-blueprint {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  font-weight: 700;
+  font-size: 12px;
+}
+.badge-blueprint.ready {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+/* ==========================================================================
+   12. 마스터 설문 블루프린트 전체 복제 화면 (survey-blueprint.html)
+   ========================================================================== */
+.blueprint-workspace {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 32px 80px;
+}
+.blueprint-sticky-header {
+  position: sticky;
+  top: 56px;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--colors-hairline, #e2e8f0);
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+.blueprint-preset-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.blueprint-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+@media (max-width: 1100px) {
+  .blueprint-stage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.blueprint-card {
+  background: #ffffff;
+  border: 1px solid var(--colors-hairline, #e2e8f0);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.blueprint-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+}
+.blueprint-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.blueprint-stage-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.blueprint-asp-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.badge-tag-fixed {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.badge-tag-bind {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.badge-tag-tunable {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.badge-tag-jitter {
+  background: #faf5ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.blueprint-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.blueprint-field-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.blueprint-field-label {
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.blueprint-field-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.baseline-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 180px;
+}
+.baseline-slider {
+  flex: 1;
+  accent-color: #0284c7;
+}
+.baseline-slider-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0284c7;
+  min-width: 40px;
+  text-align: right;
+}
+.blueprint-summary-kpi {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.blueprint-kpi-chip {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.blueprint-kpi-chip .label {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+}
+.blueprint-kpi-chip .value {
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+

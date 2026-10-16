@@ -22,6 +22,14 @@
       "label": "대표자명"
     },
     {
+      "key": "ceoGender",
+      "label": "성별"
+    },
+    {
+      "key": "ceoAge",
+      "label": "나이"
+    },
+    {
       "key": "phone",
       "label": "연락처"
     },
@@ -64,7 +72,9 @@
       "address": "서울특별시 송파구 풍납동   1층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "N"
+      "digitalAccepted": "N",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 2,
@@ -79,7 +89,9 @@
       "address": "서울특별시 송파구 풍납동 87-4 예작헤어라인",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 3,
@@ -94,7 +106,9 @@
       "address": "서울특별시 송파구 풍납동 2층 201호",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "N"
+      "digitalAccepted": "N",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 4,
@@ -109,7 +123,9 @@
       "address": "서울특별시 송파구 풍납동 1층 4호",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 5,
@@ -124,7 +140,9 @@
       "address": "서울특별시 송파구 풍납동 149-12 1층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 6,
@@ -139,7 +157,9 @@
       "address": "서울특별시 송파구 풍납동   1층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "N"
+      "digitalAccepted": "N",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 7,
@@ -154,7 +174,9 @@
       "address": "서울특별시 송파구 풍납동 1층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 8,
@@ -169,7 +191,9 @@
       "address": "서울특별시 송파구 풍납동   1층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 9,
@@ -184,7 +208,9 @@
       "address": "서울특별시 송파구 풍납동 477-3 1층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 10,
@@ -199,7 +225,9 @@
       "address": "서울특별시 송파구 풍납동 478 1층 독도쭈꾸미",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 11,
@@ -214,7 +242,9 @@
       "address": "서울특별시 송파구 풍납동 81-37 1층 103호",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 12,
@@ -229,7 +259,9 @@
       "address": "서울특별시 송파구 풍납동 78-83 1층 2호",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 13,
@@ -244,7 +276,9 @@
       "address": "서울특별시 송파구 풍납동 152-7 1층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 14,
@@ -259,7 +293,9 @@
       "address": "서울특별시 송파구 풍납동 81-37 1층 101호",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 15,
@@ -274,7 +310,9 @@
       "address": "서울특별시 송파구 풍납동 152-28 백원빌딩 백원빌딩 2층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 16,
@@ -289,7 +327,9 @@
       "address": "서울특별시 송파구 풍납동 475-9 1층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 17,
@@ -304,7 +344,9 @@
       "address": "서울특별시 송파구 풍납동 474-4 2층 리안헤어",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 18,
@@ -319,7 +361,9 @@
       "address": "서울특별시 송파구 풍납동",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "N"
+      "digitalAccepted": "N",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 19,
@@ -334,7 +378,9 @@
       "address": "서울특별시 송파구 풍납동   1층 2호",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 20,
@@ -349,7 +395,9 @@
       "address": "서울특별시 송파구 풍납동 149-12 -",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "N"
+      "digitalAccepted": "N",
+      "ceoGender": null,
+      "ceoAge": null
     }
   ]
 }

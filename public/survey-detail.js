@@ -76,6 +76,14 @@ async function initSurveyDetailPage() {
   const btnPilot = document.getElementById('btn-pilot-simulation');
   const btnBatch = document.getElementById('btn-batch-automation');
   const btnStop = document.getElementById('btn-stop-automation');
+  const linkOpenBlueprint = document.getElementById('link-open-blueprint');
+  const badgeBlueprintStatus = document.getElementById('badge-blueprint-status');
+  const btnSaveQuotaChanges = document.getElementById('btn-save-quota-changes');
+  const quotaSyncStatusMsg = document.getElementById('quota-sync-status-msg');
+
+  if (linkOpenBlueprint) {
+    linkOpenBlueprint.href = `survey-blueprint.html?campaignId=${encodeURIComponent(campId)}`;
+  }
 
   // 실시간 모니터링 & 프로그레스 바
   const progressSummaryLabel = document.getElementById('progress-summary-label');
@@ -190,37 +198,38 @@ async function initSurveyDetailPage() {
       if (checkSafetyGuard) checkSafetyGuard.disabled = false;
       if (currentStorePulse) currentStorePulse.classList.add('d-none');
 
-      // 1) 1번 쿼터 파일럿 검증 버튼 상태
-      if (firstDone) {
-        btnPilot.disabled = true;
-        btnPilot.textContent = '1번 쿼터 파일럿 검증 완료';
-      } else {
-        btnPilot.disabled = false;
-        btnPilot.textContent = '1번 쿼터 파일럿 검증 (Agree 대기)';
+      // 1) 블루프린트 상태 동기화
+      if (badgeBlueprintStatus) {
+        if (currentCampaign.masterBaseline) {
+          badgeBlueprintStatus.className = 'badge-status badge-blueprint ready';
+          badgeBlueprintStatus.innerHTML = '<i class="fa-solid fa-check-circle"></i> 마스터 기준점 설정 완료';
+        } else {
+          badgeBlueprintStatus.className = 'badge-status badge-blueprint';
+          badgeBlueprintStatus.innerHTML = '<i class="fa-solid fa-clock"></i> 블루프린트 기준점 대기';
+        }
       }
 
-      // 2) 2번부터 배치 자동화 가동 버튼 상태
-      if (allRemainingDone) {
-        const allCompleted = quotaDb.every(b => b.quotaStatus === 'completed');
-        if (allCompleted) {
-          btnBatch.disabled = true;
-          btnBatch.textContent = '배치 자동화 최종 마감 완료 (100%)';
-        } else {
-          // 모든 항목이 pilot_done 완료된 상태: 안전가드 체크박스 상태에 따라 초고속 직행 지원
-          if (!checkSafetyGuard.checked) {
-            btnBatch.disabled = false;
-            btnBatch.textContent = '⚡ 안전가드 해제: 최종 제출 일괄 마감 (초고속)';
-          } else {
-            btnBatch.disabled = false;
-            btnBatch.textContent = '배치 사전 검증 완료 (최종 제출 시 안전가드 체크 해제)';
-          }
-        }
-      } else if (firstDone) {
-        btnBatch.disabled = false;
-        btnBatch.textContent = '2번부터 배치 자동화 가동';
+      // 2) 1번 단일 검증 버튼 상태
+      if (firstDone) {
+        btnPilot.disabled = true;
+        btnPilot.textContent = '1번 쿼터 검증 완료';
       } else {
+        btnPilot.disabled = false;
+        btnPilot.textContent = '1번 단일 검증';
+      }
+
+      // 3) 전체 배치 자동화 가동 버튼 상태
+      const allCompleted = quotaDb.length > 0 && quotaDb.every(b => b.quotaStatus === 'completed');
+      if (allCompleted) {
         btnBatch.disabled = true;
-        btnBatch.textContent = '2번부터 배치 자동화 가동';
+        btnBatch.textContent = '전체 배치 자동화 최종 마감 완료 (100%)';
+      } else {
+        btnBatch.disabled = false;
+        if (firstDone) {
+          btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 잔여 쿼터 배치 자동화 가동 (2번~24번)';
+        } else {
+          btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 전체 쿼터 배치 자동화 가동 (1번~24번)';
+        }
       }
     }
   }
@@ -298,6 +307,12 @@ async function initSurveyDetailPage() {
           </td>
           <td><code>${escapeHtml(item.bizNumber || '-')}</code></td>
           <td>${ceoVal}</td>
+          <td class="text-center col-gender editable-quota-cell" data-idx="${item.index || idx + 1}" data-field="ceoGender" title="클릭하여 성별 수정">
+            ${item.ceoGender ? `<span class="badge-gender ${item.ceoGender === '남' ? 'male' : 'female'}">${escapeHtml(item.ceoGender)}</span>` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
+          </td>
+          <td class="text-center col-age editable-quota-cell" data-idx="${item.index || idx + 1}" data-field="ceoAge" title="클릭하여 나이 수정">
+            ${item.ceoAge ? `<span class="badge-age font-mono">${escapeHtml(item.ceoAge)}세</span>` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
+          </td>
           <td>${phoneVal}</td>
           <td>${escapeHtml(item.openDate || '-')}</td>
           <td><span class="badge-quota-type b2b">${escapeHtml(itemVal)}</span></td>
@@ -306,6 +321,101 @@ async function initSurveyDetailPage() {
         </tr>
       `;
     }).join('');
+  }
+
+  // ------------------------------------------------------------------------
+  // 3-1. 쿼터 테이블 인라인 편집 (성별, 나이) 및 실시간 동기화
+  // ------------------------------------------------------------------------
+  quotaTableBody.addEventListener('click', (e) => {
+    const cell = e.target.closest('.editable-quota-cell');
+    if (!cell || cell.querySelector('input, select')) return;
+
+    const rowIdx = parseInt(cell.dataset.idx, 10);
+    const field = cell.dataset.field;
+    if (!currentCampaign || !Array.isArray(currentCampaign.quotaDatabase)) return;
+
+    const item = currentCampaign.quotaDatabase.find(b => (b.index || b.seq) === rowIdx);
+    if (!item) return;
+
+    if (field === 'ceoGender') {
+      const currentVal = item.ceoGender || '';
+      cell.innerHTML = `
+        <select class="inline-cell-select">
+          <option value="남" ${currentVal === '남' ? 'selected' : ''}>남</option>
+          <option value="여" ${currentVal === '여' ? 'selected' : ''}>여</option>
+          <option value="" ${!currentVal ? 'selected' : ''}>-</option>
+        </select>
+      `;
+      const select = cell.querySelector('select');
+      select.focus();
+
+      let finished = false;
+      const finishEdit = async () => {
+        if (finished) return;
+        finished = true;
+        const newVal = select.value.trim() || null;
+        item.ceoGender = newVal;
+        renderQuotaTable(currentCampaign.quotaDatabase);
+        await autoSaveCampaignQuotas();
+      };
+
+      select.addEventListener('change', finishEdit);
+      select.addEventListener('blur', finishEdit);
+    } else if (field === 'ceoAge') {
+      const currentVal = item.ceoAge || '';
+      cell.innerHTML = `
+        <input type="number" min="20" max="95" class="inline-cell-input" value="${currentVal}" placeholder="나이" />
+      `;
+      const input = cell.querySelector('input');
+      input.focus();
+      input.select();
+
+      let finished = false;
+      const finishEdit = async () => {
+        if (finished) return;
+        finished = true;
+        const rawVal = input.value.trim();
+        const newVal = rawVal ? parseInt(rawVal, 10) : null;
+        item.ceoAge = newVal;
+        renderQuotaTable(currentCampaign.quotaDatabase);
+        await autoSaveCampaignQuotas();
+      };
+
+      input.addEventListener('keydown', (ke) => {
+        if (ke.key === 'Enter') finishEdit();
+      });
+      input.addEventListener('blur', finishEdit);
+    }
+  });
+
+  async function autoSaveCampaignQuotas() {
+    if (!currentCampaign) return;
+    try {
+      if (quotaSyncStatusMsg) {
+        quotaSyncStatusMsg.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 및 엑셀 동기화 중...';
+      }
+      const res = await fetch(`/api/campaigns/${campId}/quota`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quotaDatabase: currentCampaign.quotaDatabase })
+      });
+      if (res.ok) {
+        if (quotaSyncStatusMsg) {
+          quotaSyncStatusMsg.innerHTML = '<span class="text-success font-bold">✓ 저장 및 Excel 동기화 완료!</span>';
+          setTimeout(() => {
+            if (quotaSyncStatusMsg) quotaSyncStatusMsg.innerHTML = '';
+          }, 3000);
+        }
+      }
+    } catch (err) {
+      if (quotaSyncStatusMsg) {
+        quotaSyncStatusMsg.innerHTML = '<span class="text-error">저장 실패: ' + err.message + '</span>';
+      }
+    }
+  }
+
+  if (btnSaveQuotaChanges) {
+    btnSaveQuotaChanges.addEventListener('click', autoSaveCampaignQuotas);
   }
 
   // ------------------------------------------------------------------------
@@ -454,7 +564,7 @@ async function initSurveyDetailPage() {
     }
   });
 
-  // [버튼 2] 2번 쿼터부터 고속 배치 연속 가동
+  // [버튼 2] 전체 쿼터 (1번~24번) 배치 연속 가동
   btnBatch.addEventListener('click', async () => {
     let surveyUrl = inputSurveyUrl.value.trim();
     const hasSlotUrls = currentCampaign?.quotaDatabase?.some(b => b.slotUrl);
@@ -464,16 +574,22 @@ async function initSurveyDetailPage() {
       return;
     }
 
+    const firstQuota = currentCampaign?.quotaDatabase?.find(b => b.index === 1);
+    const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed');
+    const startIdx = firstDone ? 2 : 1;
+
     const safetyGuard = checkSafetyGuard.checked;
     const confirmMsg = safetyGuard
-      ? '2번 쿼터부터 연속 실행을 시작합니다. (최종 동의 단계에서 대기)'
+      ? (startIdx === 1
+          ? '1번부터 24번까지 전체 쿼터 연속 배치를 시작합니다. (최종 동의 단계에서 안전 대기)'
+          : '2번 쿼터부터 잔여 쿼터 연속 배치를 시작합니다. (최종 동의 단계에서 안전 대기)')
       : '⚠️ 주의: 최종 제출 안전가드가 해제되어 있습니다!\n설문이 실제로 최종 제출 마감됩니다. 계속하시겠습니까?';
 
     if (!confirm(confirmMsg)) return;
 
     try {
       setRunningState(true);
-      appendLog('info', `🚀 [배치 가동 시작] 2번 쿼터부터 고속 자동화 연속 실행을 시작합니다...`);
+      appendLog('info', `🚀 [배치 가동 시작] ${startIdx}번 쿼터부터 고속 자동화 연속 실행을 시작합니다...`);
 
       const res = await fetch(`/api/campaigns/${campId}/batch-run`, {
         method: 'POST',
@@ -481,7 +597,7 @@ async function initSurveyDetailPage() {
         body: JSON.stringify({
           surveyUrl,
           policy: getPolicyPayload(),
-          startIndex: 2,
+          startIndex: startIdx,
           safetyGuard
         })
       });
@@ -701,6 +817,16 @@ async function initSurveyDetailPage() {
     initEventSource();
   } catch (err) {
     console.error('초기 SSE 구독 실패:', err);
+  }
+
+  // URL 파라미터에 autobatch=1이 전달된 경우 (블루프린트에서 가동 시 자동 시작)
+  if (urlParams.get('autobatch') === '1') {
+    setTimeout(() => {
+      if (btnBatch && !btnBatch.disabled) {
+        appendLog('info', '🎯 [마스터 기준점 연계] 블루프린트에서 요청된 1~24번 전체 배치를 자동 시작합니다.');
+        btnBatch.click();
+      }
+    }, 600);
   }
 }
 

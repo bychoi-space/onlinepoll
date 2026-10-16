@@ -135,7 +135,7 @@ export async function fetchMarketBzBusinesses({ keyword = '소프트웨어', cou
           if (descM) res.subIndustry = descM[1].trim();
 
           const addrM = text.match(/((?:서울특별시|부산광역시|대구광역시|인천광역시|광주광역시|대전광역시|울산광역시|세종특별자치시|경기도|강원특별자치도|충청북도|충청남도|전라북도|전라남도|경상북도|경상남도|제주특별자치도)[가-힣0-9\s]+(?:구|시|군)[가-힣0-9\s]*)/);
-          if (addrM) res.address = addrM[1].trim().split('\n')[0].slice(0, 50);
+          if (addrM) res.address = addrM[1].replace(/주소정보\s*갱신/g, '').trim().split('\n')[0].slice(0, 50);
 
           // 업종 매칭
           const indM = text.match(/(소프트웨어개발|도소매업|제조업|정보통신업|건설업|숙박음식점업|서비스업)/);
@@ -177,6 +177,8 @@ export async function fetchMarketBzBusinesses({ keyword = '소프트웨어', cou
           subIndustry: detail.subIndustry || detail.industry || '서비스',
           bizNumber: detail.bizNumber || baseItem.bizNumber,
           ceoName: detail.ceoName || null,
+          ceoGender: null,
+          ceoAge: null,
           phone: detail.phone || null,
           openingDate: detail.openingDate || null,
           address: detail.address || null

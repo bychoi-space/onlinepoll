@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>마스터 설문 블루프린트 - AutoSurvey AI</title>
+  
+  <!-- Pretendard Font (Variable & Standard) -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Google Fonts: JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- CSS Stylesheets (Zero-Inline Style) -->
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="figma-base.css">
+  <link rel="stylesheet" href="campaign.css">
+  <link rel="stylesheet" href="custom-styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation (56px) -->
+  <nav class="figma-top-nav">
+    <div class="nav-inner">
+      <div class="nav-left flex-center-gap-14">
+        <a href="#" id="link-back-campaign" class="btn-pill btn-pill-secondary">
+          <i class="fa-solid fa-arrow-left"></i> 설문 상세 작업실
+        </a>
+        <div class="campaign-title-area">
+          <h1 class="font-card-title m-0">
+            <i class="fa-solid fa-clone text-primary-color"></i> 마스터 설문 블루프린트 & 기준점 에디터
+          </h1>
+        </div>
+      </div>
+      
+      <div class="header-status flex-center-gap-14">
+        <span class="badge-status badge-blueprint ready" id="badge-master-status">
+          <i class="fa-solid fa-check-circle"></i> 15단계 전수 복제 완료
+        </span>
+        <button type="button" class="btn-pill-logout" id="btn-global-logout">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> 로그아웃
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Workspace Container -->
+  <main class="blueprint-workspace">
+    
+    <!-- Sticky Control Header -->
+    <header class="blueprint-sticky-header flex-between">
+      <div class="flex-center-gap-16">
+        <div>
+          <h2 class="font-body-sm font-bold text-dim m-0" id="campaign-title-heading">
+            캠페인 로딩 중...
+          </h2>
+          <div class="font-caption text-secondary-color mt-4">
+            케이스탯 15단계(Q1 ~ P14, Agree) 전체 구조가 복제되었습니다. 기준점을 설정하고 1번부터 24번까지 일괄 가동하세요.
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Preset Buttons & Save Actions -->
+      <div class="flex-center-gap-12">
+        <div class="blueprint-preset-group">
+          <span class="font-caption font-bold text-dim mr-4">빠른 프리셋:</span>
+          <button type="button" id="btn-preset-standard" class="btn-chip active">표준 소상공인</button>
+          <button type="button" id="btn-preset-growth" class="btn-chip">고수익/성장형</button>
+          <button type="button" id="btn-preset-traditional" class="btn-chip">생계형 전통점포</button>
+        </div>
+
+        <button type="button" id="btn-save-baseline" class="btn-pill btn-pill-primary">
+          <i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 저장
+        </button>
+        <button type="button" id="btn-run-all-batch" class="btn-pill btn-pill-success">
+          <i class="fa-solid fa-rocket"></i> 1~24번 전체 배치 가동
+        </button>
+      </div>
+    </header>
+
+    <!-- Legend Bar (범례) -->
+    <div class="quota-clean-box p-12 mb-20 flex-between">
+      <div class="flex-center-gap-16">
+        <span class="font-caption font-bold text-dim">구조 속성 범례:</span>
+        <span class="badge-tag-bind"><i class="fa-solid fa-link"></i> 쿼터 맞춤 바인딩 (상호·대표자·성별·나이·업종·주소)</span>
+        <span class="badge-tag-fixed"><i class="fa-solid fa-shield-halved"></i> 규칙 고정 (12개월·카드취급·세금10%·동의)</span>
+        <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 기준점 조절 (신용카드 비중·매출·배달·부채)</span>
+        <span class="badge-tag-jitter"><i class="fa-solid fa-dice"></i> 점포별 가변 분산 (자연스러운 봇 탐지 방지)</span>
+      </div>
+      <div class="font-caption text-secondary-color">
+        <i class="fa-solid fa-circle-info"></i> 모든 쿼터는 이 기준점을 중심으로 고유 시드 기반 자연 분산 주입됩니다.
+      </div>
+    </div>
+
+    <!-- 16 Stage Cards Grid -->
+    <div class="blueprint-stage-grid" id="blueprint-stage-grid">
+      <!-- JS로 16단계 카드 동적 렌더링 -->
+      <div class="empty-table-msg">
+        <i class="fa-solid fa-spinner fa-spin"></i> 마스터 설문 블루프린트 구조를 복제하는 중...
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module" src="survey-blueprint.js"></script>
+  <script type="module" src="nav-auth.js"></script>
+</body>
+</html>

@@ -204,6 +204,108 @@ app.delete('/api/campaigns/:id', (req, res) => {
   res.json({ message: '캠페인이 삭제되었습니다.' });
 });
 
+// 캠페인 쿼터 DB 업데이트 (대표자 성별, 나이 등 인라인 수정 및 보관 파일 동기화)
+app.put('/api/campaigns/:id/quota', (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  const { quotaDatabase } = req.body;
+  if (!Array.isArray(quotaDatabase)) {
+    return res.status(400).json({ error: 'quotaDatabase는 배열이어야 합니다.' });
+  }
+
+  // 1. 캠페인 쿼터 DB 갱신
+  CampaignStore.updateCampaign(campaign.id, { quotaDatabase });
+
+  // 2. 연관된 쿼터 파일(JSON & XLSX) 동기화
+  try {
+    const quotaFiles = fs.readdirSync(quotasDir).filter(f => f.endsWith('.json'));
+    for (const qf of quotaFiles) {
+      const qPath = path.join(quotasDir, qf);
+      const qContent = JSON.parse(fs.readFileSync(qPath, 'utf-8'));
+      if (Array.isArray(qContent.data) && qContent.data.length > 0) {
+        let matched = false;
+        qContent.data.forEach(qItem => {
+          const matchedCampItem = quotaDatabase.find(c => 
+            (c.bizNumber && c.bizNumber === qItem.bizNumber) ||
+            (c.companyName && c.companyName === qItem.companyName)
+          );
+          if (matchedCampItem) {
+            if (matchedCampItem.ceoGender !== undefined) qItem.ceoGender = matchedCampItem.ceoGender;
+            if (matchedCampItem.ceoAge !== undefined) qItem.ceoAge = matchedCampItem.ceoAge;
+            if (matchedCampItem.ceoName !== undefined) qItem.ceoName = matchedCampItem.ceoName;
+            if (matchedCampItem.phone !== undefined) qItem.phone = matchedCampItem.phone;
+            matched = true;
+          }
+        });
+        if (matched) {
+          fs.writeFileSync(qPath, JSON.stringify(qContent, null, 2), 'utf-8');
+          const xlsxPath = path.join(quotasDir, qf.replace('.json', '.xlsx'));
+          exportBusinessesToExcel({
+            data: qContent.data,
+            columns: qContent.columns,
+            filePath: xlsxPath
+          });
+          logger.info(`[쿼터 동기화] "${qf}" 및 Excel 동기화 완료`);
+        }
+      }
+    }
+  } catch (syncErr) {
+    logger.warn('[쿼터 동기화 경고]', syncErr.message);
+  }
+
+  logger.success(`[캠페인 쿼터 갱신] "${campaign.title}" 쿼터 DB ${quotaDatabase.length}건 저장 완료!`);
+  res.json({ success: true, message: '쿼터 DB가 성공적으로 업데이트되었습니다.', count: quotaDatabase.length });
+});
+
+// 마스터 설문 블루프린트 조회 API
+app.get('/api/campaigns/:id/blueprint', (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  const blueprintPath = path.join(dataDir, 'kstat_survey_blueprint.json');
+  if (!fs.existsSync(blueprintPath)) {
+    return res.status(404).json({ error: '마스터 설문 블루프린트 파일이 존재하지 않습니다.' });
+  }
+
+  const blueprint = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
+  const baseline = campaign.masterBaseline || blueprint.defaultBaseline;
+
+  res.json({
+    blueprint,
+    baseline,
+    campaignId: campaign.id,
+    campaignTitle: campaign.title,
+    quotaCount: campaign.quotaDatabase?.length || 0,
+    hasCustomBaseline: !!campaign.masterBaseline
+  });
+});
+
+// 마스터 기준점(Baseline Template) 저장 API
+app.post('/api/campaigns/:id/baseline', (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  const baseline = req.body;
+  CampaignStore.updateCampaign(campaign.id, {
+    masterBaseline: baseline,
+    hasMasterBlueprint: true
+  });
+
+  logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 15단계 마스터 기준점이 저장되었습니다! 🎯`);
+  res.json({
+    success: true,
+    message: '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 1~24번 전체 배치 자동화를 가동할 수 있습니다.',
+    baseline
+  });
+});
+
 // ==========================================
 // [2] 1차 제반 작업: 조사 쿼터(Quota) DB 구축 API
 // ==========================================
@@ -613,7 +715,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
   }
 
-  const { surveyUrl, policy = {}, startIndex = 2, safetyGuard = false } = req.body;
+  const { surveyUrl, policy = {}, startIndex = 1, safetyGuard = false } = req.body;
   const defaultUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
   const quotaDb = campaign.quotaDatabase || [];
 
@@ -670,7 +772,10 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           surveyUrl: bizUrl,
           bizData: biz,
           quotaIndex: biz.index || (i + startIndex),
-          guidelineConfig: campaign.guidelineConfig || {},
+          guidelineConfig: {
+            ...campaign.guidelineConfig,
+            masterBaseline: campaign.masterBaseline
+          },
           policy,
           pilotMode: safetyGuard,
           safetyGuard,
@@ -932,6 +1037,8 @@ const BASE_FIELD_LABELS = {
   companyName: '상호',
   bizNumber: '사업자등록번호',
   ceoName: '대표자이름',
+  ceoGender: '성별',
+  ceoAge: '나이',
   address: '사업장주소',
   industry: '업종',
   subIndustry: '세부업종',
@@ -1189,6 +1296,8 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
       { key: 'companyName', label: '상호(가맹점명)' },
       { key: 'bizNumber', label: '사업자등록번호' },
       { key: 'ceoName', label: '대표자명' },
+      { key: 'ceoGender', label: '성별' },
+      { key: 'ceoAge', label: '나이' },
       { key: 'phone', label: '연락처' },
       { key: 'openDate', label: '개업연월' },
       { key: 'handledItems', label: '취급품목' },
@@ -1375,23 +1484,66 @@ app.put('/api/quota/:fileName', (req, res) => {
     // Excel 실시간 동기화 갱신
     const excelName = safeFilename.replace('.json', '.xlsx');
     const excelPath = path.join(quotasDir, excelName);
-    const columns = content.columns || [
-      { key: 'seq', label: '순번' },
-      { key: 'marketName', label: '시장명' },
-      { key: 'companyName', label: '상호' },
-      { key: 'bizNumber', label: '사업자등록번호' },
-      { key: 'ceoName', label: '대표자명' },
-      { key: 'phone', label: '연락처' },
-      { key: 'openDate', label: '개업연월' },
-      { key: 'handledItems', label: '취급품목' },
-      { key: 'address', label: '사업장주소' }
-    ];
+    let columns = content.columns;
+    if (!columns || !Array.isArray(columns) || columns.length === 0) {
+      columns = [
+        { key: 'seq', label: '순번' },
+        { key: 'marketName', label: '시장명' },
+        { key: 'companyName', label: '상호' },
+        { key: 'bizNumber', label: '사업자등록번호' },
+        { key: 'ceoName', label: '대표자명' },
+        { key: 'ceoGender', label: '성별' },
+        { key: 'ceoAge', label: '나이' },
+        { key: 'phone', label: '연락처' },
+        { key: 'openDate', label: '개업연월' },
+        { key: 'handledItems', label: '취급품목' },
+        { key: 'address', label: '사업장주소' }
+      ];
+    } else {
+      const hasGender = columns.some(c => c.key === 'ceoGender');
+      const hasAge = columns.some(c => c.key === 'ceoAge');
+      if (!hasGender || !hasAge) {
+        const ceoIdx = columns.findIndex(c => c.key === 'ceoName');
+        const insertIdx = ceoIdx !== -1 ? ceoIdx + 1 : columns.length;
+        const newCols = [];
+        if (!hasGender) newCols.push({ key: 'ceoGender', label: '성별' });
+        if (!hasAge) newCols.push({ key: 'ceoAge', label: '나이' });
+        columns.splice(insertIdx, 0, ...newCols);
+      }
+    }
+    content.columns = columns;
 
     exportBusinessesToExcel({
       data: content.data,
       columns,
       filePath: excelPath
     });
+
+    // 캠페인 DB에도 매칭되는 점포가 있다면 실시간 동기화
+    try {
+      const allCamps = CampaignStore.getAllCampaigns();
+      allCamps.forEach(camp => {
+        if (Array.isArray(camp.quotaDatabase)) {
+          let campChanged = false;
+          camp.quotaDatabase.forEach(cItem => {
+            const matched = content.data.find(d => 
+              (d.bizNumber && d.bizNumber === cItem.bizNumber) ||
+              (d.companyName && d.companyName === cItem.companyName)
+            );
+            if (matched) {
+              if (matched.ceoGender !== undefined) cItem.ceoGender = matched.ceoGender;
+              if (matched.ceoAge !== undefined) cItem.ceoAge = matched.ceoAge;
+              if (matched.ceoName !== undefined) cItem.ceoName = matched.ceoName;
+              if (matched.phone !== undefined) cItem.phone = matched.phone;
+              campChanged = true;
+            }
+          });
+          if (campChanged) {
+            CampaignStore.updateCampaign(camp.id, { quotaDatabase: camp.quotaDatabase });
+          }
+        }
+      });
+    } catch (_) {}
 
     logger.success(`[쿼터 수정 완료] "${content.title}" (${safeFilename}) ${content.count}건 갱신 및 Excel 동기화 성공!`);
 

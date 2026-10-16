@@ -22,6 +22,14 @@
       "label": "대표자명"
     },
     {
+      "key": "ceoGender",
+      "label": "성별"
+    },
+    {
+      "key": "ceoAge",
+      "label": "나이"
+    },
+    {
       "key": "address",
       "label": "주소"
     },
@@ -69,7 +77,9 @@
       "paperAccepted": "Y",
       "digitalAccepted": "N",
       "phone": "02-000-0000",
-      "status": "정상가맹"
+      "status": "정상가맹",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 2,
@@ -85,7 +95,9 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "phone": "02-000-0000",
-      "status": "정상가맹"
+      "status": "정상가맹",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 3,
@@ -101,7 +113,9 @@
       "paperAccepted": "Y",
       "digitalAccepted": "N",
       "phone": "02-000-0000",
-      "status": "정상가맹"
+      "status": "정상가맹",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 4,
@@ -117,7 +131,9 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "phone": "02-000-0000",
-      "status": "정상가맹"
+      "status": "정상가맹",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 5,
@@ -133,7 +149,9 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "phone": "02-000-0000",
-      "status": "정상가맹"
+      "status": "정상가맹",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 6,
@@ -149,7 +167,9 @@
       "paperAccepted": "Y",
       "digitalAccepted": "N",
       "phone": "02-000-0000",
-      "status": "정상가맹"
+      "status": "정상가맹",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 7,
@@ -165,7 +185,9 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "phone": "02-000-0000",
-      "status": "정상가맹"
+      "status": "정상가맹",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 8,
@@ -181,7 +203,9 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "phone": "02-000-0000",
-      "status": "정상가맹"
+      "status": "정상가맹",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 9,
@@ -197,7 +221,9 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "phone": "02-000-0000",
-      "status": "정상가맹"
+      "status": "정상가맹",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 10,
@@ -213,7 +239,9 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "phone": "02-000-0000",
-      "status": "정상가맹"
+      "status": "정상가맹",
+      "ceoGender": null,
+      "ceoAge": null
     }
   ]
 }

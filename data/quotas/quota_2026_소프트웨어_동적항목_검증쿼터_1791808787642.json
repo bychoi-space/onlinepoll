@@ -17,6 +17,14 @@
       "label": "대표자이름"
     },
     {
+      "key": "ceoGender",
+      "label": "성별"
+    },
+    {
+      "key": "ceoAge",
+      "label": "나이"
+    },
+    {
       "key": "address",
       "label": "사업장주소"
     },
@@ -49,7 +57,9 @@
       "openingDate": "1990.01.01",
       "address": "경기도 부천시 송내대로265번길 59",
       "종업원수": "변경추이",
-      "기업규모": "중견기업"
+      "기업규모": "중견기업",
+      "ceoGender": null,
+      "ceoAge": null
     }
   ]
 }

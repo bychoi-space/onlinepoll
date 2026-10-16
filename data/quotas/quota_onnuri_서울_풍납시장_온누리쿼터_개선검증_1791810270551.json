@@ -22,6 +22,14 @@
       "label": "대표자명"
     },
     {
+      "key": "ceoGender",
+      "label": "성별"
+    },
+    {
+      "key": "ceoAge",
+      "label": "나이"
+    },
+    {
       "key": "phone",
       "label": "연락처"
     },
@@ -56,7 +64,9 @@
       "address": "서울특별시 송파구 풍납동   1층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "N"
+      "digitalAccepted": "N",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 2,
@@ -71,7 +81,9 @@
       "address": "서울특별시 송파구 풍납동 87-4 예작헤어라인",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 3,
@@ -86,7 +98,9 @@
       "address": "서울특별시 송파구 풍납동 2층 201호",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "N"
+      "digitalAccepted": "N",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 4,
@@ -101,7 +115,9 @@
       "address": "서울특별시 송파구 풍납동 1층 4호",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 5,
@@ -116,7 +132,9 @@
       "address": "서울특별시 송파구 풍납동 149-12 1층",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     }
   ]
 }

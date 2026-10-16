@@ -22,6 +22,14 @@
       "label": "대표자명"
     },
     {
+      "key": "ceoGender",
+      "label": "성별"
+    },
+    {
+      "key": "ceoAge",
+      "label": "나이"
+    },
+    {
       "key": "address",
       "label": "주소"
     },
@@ -74,7 +82,9 @@
       "digitalAccepted": "N",
       "phone": "02-000-0000",
       "status": "정상가맹",
-      "기업규모": "소상공인"
+      "기업규모": "소상공인",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 2,
@@ -91,7 +101,9 @@
       "digitalAccepted": "Y",
       "phone": "02-000-0000",
       "status": "정상가맹",
-      "기업규모": "소상공인"
+      "기업규모": "소상공인",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 3,
@@ -108,7 +120,9 @@
       "digitalAccepted": "N",
       "phone": "02-000-0000",
       "status": "정상가맹",
-      "기업규모": "소상공인"
+      "기업규모": "소상공인",
+      "ceoGender": null,
+      "ceoAge": null
     }
   ]
 }

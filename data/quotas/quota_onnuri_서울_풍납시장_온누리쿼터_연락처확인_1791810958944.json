@@ -22,6 +22,14 @@
       "label": "대표자명"
     },
     {
+      "key": "ceoGender",
+      "label": "성별"
+    },
+    {
+      "key": "ceoAge",
+      "label": "나이"
+    },
+    {
       "key": "phone",
       "label": "연락처"
     },
@@ -56,7 +64,9 @@
       "address": "서울특별시 송파구 바람드리길 37-1 (풍납동)",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "N"
+      "digitalAccepted": "N",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 2,
@@ -68,10 +78,12 @@
       "phone": null,
       "openDate": "2012.03.13",
       "handledItems": "기타소매업 (두발 미용업)",
-      "address": "서울특별시 송파구 바람드리길 27-1 (풍납동)\n주소정보 갱신",
+      "address": "서울특별시 송파구 바람드리길 27-1 (풍납동)",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 3,
@@ -83,10 +95,12 @@
       "phone": "02-111-1113",
       "openDate": "2023.10.06",
       "handledItems": "기타소매업 (피부 미용업)",
-      "address": "서울특별시 송파구 풍성로25길 37 (풍납동)\n주소정보 갱신",
+      "address": "서울특별시 송파구 풍성로25길 37 (풍납동)",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "N"
+      "digitalAccepted": "N",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 4,
@@ -98,10 +112,12 @@
       "phone": null,
       "openDate": "2025.06.11",
       "handledItems": "농산물 (곡물)",
-      "address": "서울특별시 송파구 바람드리길 42 (풍납동)\n주소정보 갱신",
+      "address": "서울특별시 송파구 바람드리길 42 (풍납동)",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     },
     {
       "seq": 5,
@@ -113,10 +129,12 @@
       "phone": "02-1111-1111",
       "openDate": "2022.03.14",
       "handledItems": "수산물 (음ㆍ식료품 및 담배 도매업 외 1개)",
-      "address": "서울특별시 송파구 바람드리길 44 (풍납동)\n주소정보 갱신",
+      "address": "서울특별시 송파구 바람드리길 44 (풍납동)",
       "status": "정상가맹",
       "paperAccepted": "Y",
-      "digitalAccepted": "Y"
+      "digitalAccepted": "Y",
+      "ceoGender": null,
+      "ceoAge": null
     }
   ]
 }

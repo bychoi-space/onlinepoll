@@ -8,6 +8,7 @@ package-lock.json
 # Storage & Databases
 data/*
 !data/onnuri_master_db.json
+!data/kstat_survey_blueprint.json
 !data/quotas
 reports/*.json
 reports/*.png

@@ -294,6 +294,8 @@ export async function buildHybridOnnuriQuota({
         companyName: merchant.companyName,
         bizNumber: merchant.bizNumber || null,
         ceoName: finalCeoName,                       // 대표자명 (없으면 null)
+        ceoGender: null,                             // 대표자 성별 (사용자 입력용)
+        ceoAge: null,                                // 대표자 나이 (사용자 입력용)
         phone: finalPhone,                           // 연락처 (대표전화번호, 없으면 null)
         openDate: formattedOpenDate,                 // 개업연월 (없으면 null)
         handledItems: handledItems,                 // 취급품목 (없으면 null)

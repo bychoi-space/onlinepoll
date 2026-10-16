@@ -66,18 +66,32 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   // 1. 업종 분류
   const industryMeta = categorizeIndustry(bizData.handledItems, bizData.industry);
 
-  // 2. 대표자 연령 및 성별
+  // 2. 대표자 연령 및 성별 (사용자가 쿼터 테이블에 직접 입력한 값 우선 반영)
   const ceoName = bizData.ceoName || '점포주';
-  // 이름 기반 성별 추론 (끝글자가 은/숙/미/희/자/순/영 등 여성 선호, 그 외 남성 선호)
-  const isFemaleName = /[은숙미희자순영경혜진선애]/.test(ceoName.slice(-1));
-  const genderSelector = (quotaIndex % 2 === 0 ? !isFemaleName : isFemaleName) ? '#A1_2' : '#A1_1'; // A1_1: 남, A1_2: 여
-  const age = String(randBetween(42, 63)); // 40대~60대
+  let genderSelector;
+  if (bizData.ceoGender) {
+    const g = String(bizData.ceoGender).trim();
+    genderSelector = (g === '여' || g.toLowerCase() === 'female' || g === '여자') ? '#A1_2' : '#A1_1';
+  } else {
+    // 이름 기반 성별 추론 (끝글자가 은/숙/미/희/자/순/영 등 여성 선호, 그 외 남성 선호)
+    const isFemaleName = /[은숙미희자순영경혜진선애]/.test(ceoName.slice(-1));
+    genderSelector = (quotaIndex % 2 === 0 ? !isFemaleName : isFemaleName) ? '#A1_2' : '#A1_1'; // A1_1: 남, A1_2: 여
+  }
+
+  let age;
+  if (bizData.ceoAge && !isNaN(parseInt(bizData.ceoAge, 10))) {
+    age = String(parseInt(bizData.ceoAge, 10));
+  } else {
+    age = String(randBetween(42, 63)); // 40대~60대
+  }
 
   // 3. 매장 면적 및 종업원수 (P2)
   const areaPyeong = randBetween(7, 24); // 7평 ~ 24평
   const areaSquareMeter = Math.round(areaPyeong * 3.3058);
   const employeeFamily = randBetween(0, 1);
-  const employeeRegular = rng() > 0.7 ? 1 : 0; // 30% 확률로 상시 1명
+  // 상시 유급 종업원 설정 (약 35% 확률로 1~2명, 65%는 0명)
+  const hasEmployees = rng() > 0.65;
+  const employeeRegular = hasEmployees ? randBetween(1, 2) : 0;
 
   // 4. 매출액 및 영업이익 (P3, P4)
   const dailySales = randBetween(35, 120); // 일매출 35만 ~ 120만
@@ -89,29 +103,46 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const q3 = randBetween(22, 28);
   const q4 = 100 - (q1 + q2 + q3);
 
-  // 영업이익
-  const profitMargin = industryMeta.defaultMargin + (rng() * 0.08 - 0.04); // ±4% 변동
-  const annualProfit = Math.max(15, Math.round(annualSales * profitMargin)); // 연간 영업이익
+  // [규칙 4 수정] 영업이익률 및 영업이익 계산 (금액과 매출대비 %의 100% 수학적 일치 보장)
+  const defaultMarginPct = Math.round(industryMeta.defaultMargin * 100);
+  const profitMarginRateNum = Math.max(12, Math.min(40, defaultMarginPct + randBetween(-4, 4)));
+  const annualProfit = Math.max(10, Math.round((annualSales * profitMarginRateNum) / 100)); // 연간 영업이익 (백만 원)
+  // 실제 기재될 연매출 대비 연영업이익의 정확한 정수 마진율 (%)
+  const exactMarginRate = String(Math.round((annualProfit / annualSales) * 100));
   const monthlyProfit = Math.round(annualProfit / 12);
 
   // 일평균 고객 수 및 영업일수
   const dailyCustomers = randBetween(25, 75);
   const monthlyOpenDays = randBetween(24, 28);
 
-  // 5. 결제수단 비중 (P5 - 합계 100%)
-  // 신용카드: 60~75%, 온누리상품권: 15~25%, 현금: 나머지 (정확히 100%)
-  const payCard = randBetween(60, 75);
-  const payOnnuri = randBetween(15, 25);
-  const payCash = Math.max(5, 100 - (payCard + payOnnuri));
-  const payZero = 100 - (payCard + payOnnuri + payCash); // 잔여 0 조정
-  const payCardFinal = payCard + payZero;
+  // 마스터 블루프린트 기준점 설정 결합
+  const mb = guidelineConfig.masterBaseline || {};
 
-  // 6. 영업비용 구성비 (P6 - 합계 100%)
-  // 원가/재료비: 55~68%, 임차료: 12~18%, 관리비/공과금: 8~14%, 기타: 나머지
-  const costRaw = randBetween(55, 68);
-  const costRent = randBetween(12, 18);
-  const costUtility = randBetween(8, 14);
-  const costEtc = 100 - (costRaw + costRent + costUtility);
+  // 5. 결제수단 비중 (P5 - 합계 100% 필수)
+  // [규칙 2 & 3] 신용카드 취급 필수, 비중은 60~70% 랜덤, 온누리 10~20%, 현금 나머지 (합계 100%)
+  const cardBase = mb.creditCardRatio !== undefined ? parseInt(mb.creditCardRatio, 10) : 65;
+  const payCard = Math.max(60, Math.min(70, cardBase + randBetween(-2, 2)));
+  const remainingPay = 100 - payCard;
+  const onnuriBase = mb.onnuriRatio !== undefined ? parseInt(mb.onnuriRatio, 10) : 15;
+  const payOnnuri = Math.max(10, Math.min(Math.min(20, remainingPay - 5), onnuriBase + randBetween(-2, 2)));
+  const payCash = remainingPay - payOnnuri;
+
+  // 6. 영업비용 구성비 (P6 B4 - 합계 100% 필수)
+  // [규칙 4] '기타(세금 등)' 은 무조건 '세금' 10% 고정
+  // [규칙 5] 종업원이 없다고 설정한 경우 인건비 0원, 종업원이 있는 경우 인건비 정상 기재
+  const costEtc = mb.costTaxRatio !== undefined ? parseInt(mb.costTaxRatio, 10) : 10;
+  const costEtcText = '세금';
+  const remainingCost = 100 - costEtc; // 90%
+  let costLabor = 0;
+  let costRent = randBetween(15, 25);
+  let costRaw = remainingCost - costRent;
+
+  if (hasEmployees) {
+    const laborBase = mb.costLaborRatioWithEmp !== undefined ? parseInt(mb.costLaborRatioWithEmp, 10) : 25;
+    costLabor = Math.max(15, Math.min(35, laborBase + randBetween(-3, 3)));
+    costRent = randBetween(15, 25);
+    costRaw = remainingCost - (costLabor + costRent);
+  }
 
   // 7. 온누리상품권 현황 (P7)
   const rawOpenDate = bizData.openDate || bizData.openYear || '2020';
@@ -127,6 +158,10 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     onnuriJoinYear = Math.max(openYearNum, Math.min(2024, openYearNum + randBetween(0, 1)));
   }
   const onnuriSalesRatio = String(payOnnuri);
+  // [규칙 6] B5-3 온누리상품권 월평균 이용 고객 수: 2~10명 사이 랜덤
+  const custMin = (mb.onnuriCustomerRange && mb.onnuriCustomerRange[0]) || 2;
+  const custMax = (mb.onnuriCustomerRange && mb.onnuriCustomerRange[1]) || 10;
+  const onnuriMonthlyCustomers = String(randBetween(custMin, custMax));
 
   // 가중치 슬라이더(긍정/중립/부정)에 따른 온누리 만족도 선택자 (P7 - B5AA)
   // B5AA_1: 매우불만, B5AA_2: 약간불만, B5AA_3: 보통, B5AA_4: 약간만족, B5AA_5: 매우만족
@@ -166,12 +201,38 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const selectedIssuesF3 = poolF3.slice(0, 3); // 1~10 중 3개
 
   // 10. 부채 및 자금 현황 (P11)
-  const hasDebt = rng() < 0.4; // 40% 부채 있음, 60% 없음
-  const debtAmount = String(randBetween(1500, 4500));
+  // [규칙 수정] 소상공인의 약 45%는 사업 부채 보유, 55%는 부채 없음
+  const debtRate = mb.debtAdoptionRate !== undefined ? (mb.debtAdoptionRate / 100) : 0.45;
+  const hasDebt = rng() < debtRate;
+  const debtAvg = mb.debtAvgAmount !== undefined ? parseInt(mb.debtAvgAmount, 10) : 2500;
+  const debtAmount = String(Math.max(1000, debtAvg + randBetween(-500, 1000))); // 만 원 단위
 
   // 11. 향후 운영 계획 (P14)
-  const plannedYears = String(randBetween(5, 12));
+  // [규칙 수정] 점포 운영 지속 연수 분산 (단순 7년 편중 방지: 3, 5, 8, 10, 15년 등 고른 분산)
+  const yearsPool = (Array.isArray(mb.plannedYearsPool) && mb.plannedYearsPool.length > 0)
+    ? mb.plannedYearsPool
+    : [3, 4, 5, 5, 6, 7, 8, 10, 10, 12, 15, 20];
+  const plannedYears = String(yearsPool[randBetween(0, yearsPool.length - 1)]);
   const cashReceiptRatio = String(randBetween(40, 70));
+
+  // 12. 디지털화 및 배달/POS 서비스 (P8 C1)
+  // [규칙 신설] 음식점업은 배달서비스(75%) 대부분 실시, 비음식점은 15% 실시
+  const isFoodService = /음식점|식당|분식|주점|치킨|피자|카페|한식|중식|일식/.test(
+    industryMeta.categoryName + ' ' + (bizData.handledItems || '')
+  );
+  const foodDeliveryRate = mb.deliveryFoodAdoption !== undefined ? (mb.deliveryFoodAdoption / 100) : 0.75;
+  const nonFoodDeliveryRate = mb.deliveryNonFoodAdoption !== undefined ? (mb.deliveryNonFoodAdoption / 100) : 0.15;
+  const hasDelivery = isFoodService ? (rng() < foodDeliveryRate) : (rng() < nonFoodDeliveryRate);
+  const deliveryRatio = hasDelivery ? String(randBetween(15, 40)) : '0';
+  
+  // POS기기는 전체의 약 65% 보유 (1대)
+  const posRate = mb.posAdoptionRate !== undefined ? (mb.posAdoptionRate / 100) : 0.65;
+  const hasPos = rng() < posRate;
+  const posCount = hasPos ? '1' : '0';
+
+  // 스마트주문은 약 20% 운영, 80% 미운영
+  const hasSmartOrder = rng() < 0.20;
+  const smartOrderIntent = rng() < 0.5 ? '1' : '2';
 
   return {
     quotaIndex,
@@ -189,27 +250,29 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       daily: String(dailySales),
       annual: String(annualSales),
       quarters: { q1: String(q1), q2: String(q2), q3: String(q3), q4: String(q4) },
-      profitMarginRate: String(Math.round(profitMargin * 100)),
+      profitMarginRate: exactMarginRate,
       annualProfit: String(annualProfit),
       monthlyProfit: String(monthlyProfit),
       dailyCustomers: String(dailyCustomers),
       monthlyOpenDays: String(monthlyOpenDays)
     },
     paymentMethods: {
-      card: String(payCardFinal),
+      card: String(payCard),
       onnuri: String(payOnnuri),
       cash: String(payCash)
     },
     costs: {
+      labor: String(costLabor),
       raw: String(costRaw),
       rent: String(costRent),
-      utility: String(costUtility),
-      etc: String(costEtc)
+      etc: String(costEtc),
+      etcText: costEtcText
     },
     onnuri: {
       joinYear: String(onnuriJoinYear),
       salesRatio: onnuriSalesRatio,
-      satisfactionSelector: onnuriSatisfactionSelector
+      satisfactionSelector: onnuriSatisfactionSelector,
+      monthlyCustomers: onnuriMonthlyCustomers
     },
     lease: {
       isRent,
@@ -227,6 +290,14 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     future: {
       plannedYears,
       cashReceiptRatio
+    },
+    digital: {
+      hasDelivery,
+      deliveryRatio,
+      hasPos,
+      posCount,
+      hasSmartOrder,
+      smartOrderIntent
     }
   };
 }

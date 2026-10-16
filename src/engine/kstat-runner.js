@@ -94,7 +94,11 @@ export async function runKstatSurvey({
     openYear: bizData.openDate ? String(Math.min(2025, parseInt(String(bizData.openDate).split(/[-.]/)[0], 10) || 2020)) : '2020',
     openMonth: bizData.openDate ? (String(bizData.openDate).split(/[-.]/)[1] || '05') : '05',
     zipCode: bizData.zipCode || '05527',
-    address: bizData.address || '서울특별시 송파구 바람드리길',
+    address: String(bizData.address || '서울특별시 송파구 바람드리길')
+      .replace(/주소정보\s*갱신/g, '')
+      .replace(/[\r\n]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim(),
     addressDetail: bizData.addressDetail || '1층',
     handledItems: bizData.handledItems || bizData.industry || '소매업'
   };
@@ -171,7 +175,7 @@ export async function runKstatSurvey({
         const z = document.getElementById('Q1_4_1');
         const a = document.getElementById('Q1_4_2');
         if (z) z.value = zip;
-        if (a) a.value = addr;
+        if (a) a.value = (addr || '').replace(/주소정보\s*갱신/g, '').trim();
       }, { zip: biz.zipCode, addr: biz.address });
 
       await itemDelay();
@@ -325,7 +329,7 @@ export async function runKstatSurvey({
         const fB1BA = page.frame({ url: /B1BA\.asp/ });
         if (fB1BA) {
           await safeFill(fB1BA, 'input[name="B1BA"]', persona.sales.annualProfit);
-          await safeFill(fB1BA, 'input[name="B1BA_1"]', persona.sales.monthlyProfit);
+          await safeFill(fB1BA, 'input[name="B1BA_1"]', persona.sales.profitMarginRate);
         }
         await itemDelay();
 
@@ -344,25 +348,45 @@ export async function runKstatSurvey({
         if (fB1E) await safeFill(fB1E, 'input[name="B1E"]', persona.sales.monthlyOpenDays);
       }
 
-      // P5: 결제수단 비중 (합계 100% 필수)
+      // P5: 결제수단 비중 (B2 취급여부, B2A 비중 합계 100% 필수)
+      // B2 순서: 1:현금, 2:온누리상품권, 3:지역사랑상품권, 4:제로페이, 5:신용카드, 6:기타
+      // [규칙 2] 온누리 등록 사업자는 전원 신용카드 취급 (B2_5_1 필수)
       else if (stepName === 'P5') {
         const fB2 = page.frame({ url: /B2\.asp/ });
         if (fB2) {
-          await safeClick(fB2, '#B2_1_1'); // 현금 취급: 예
-          await safeClick(fB2, '#B2_2_1'); // 신용카드 취급: 예
-          await safeClick(fB2, '#B2_3_1'); // 온누리상품권 취급: 예
-          await safeClick(fB2, '#B2_4_2'); // 지역사랑상품권: 아니오
-          await safeClick(fB2, '#B2_5_2'); // 기타/모바일: 아니오
+          await fB2.evaluate(() => {
+            const selectRadio = (name, val) => {
+              const r = document.querySelector(`input[name="${name}"][value="${val}"]`);
+              if (r) { r.checked = true; r.click(); }
+              if (typeof setRadioMatrixValue === 'function') {
+                const map = { B2_1: '2', B2_2: '3', B2_3: '4', B2_4: '5', B2_5: '6', B2_6: '6' };
+                setRadioMatrixValue(name, val, map[name] || '6');
+              }
+            };
+            selectRadio('B2_1', '1'); // 1. 현금: 취급
+            selectRadio('B2_2', '1'); // 2. 온누리상품권: 취급
+            selectRadio('B2_3', '2'); // 3. 지역사랑상품권: 취급 안 함
+            selectRadio('B2_4', '2'); // 4. 제로페이: 취급 안 함
+            selectRadio('B2_5', '1'); // 5. 신용카드: 취급 (★모든 업체 필수 취급★)
+            selectRadio('B2_6', '2'); // 6. 기타: 취급 안 함
+          }).catch(async () => {
+            await safeClick(fB2, '#B2_1_1');
+            await safeClick(fB2, '#B2_2_1');
+            await safeClick(fB2, '#B2_3_2');
+            await safeClick(fB2, '#B2_4_2');
+            await safeClick(fB2, '#B2_5_1');
+            await safeClick(fB2, '#B2_6_2');
+          });
         }
         await itemDelay();
 
+        // B2A 순서: 1:현금, 2:온누리상품권, 3:지역사랑상품권, 4:제로페이, 5:신용카드, 6:기타
+        // [규칙 3] 신용카드 비중 60~70% 랜덤 할당 및 온누리/현금 포함 합계 100%
         const fB2A = page.frame({ url: /B2A\.asp/ });
         if (fB2A) {
           await safeFill(fB2A, 'input[name="B2A_1"]', persona.paymentMethods.cash);
-          await safeFill(fB2A, 'input[name="B2A_2"]', persona.paymentMethods.card);
-          await safeFill(fB2A, 'input[name="B2A_3"]', persona.paymentMethods.onnuri);
-          await safeFill(fB2A, 'input[name="B2A_4"]', '0');
-          await safeFill(fB2A, 'input[name="B2A_5"]', '0');
+          await safeFill(fB2A, 'input[name="B2A_2"]', persona.paymentMethods.onnuri);
+          await safeFill(fB2A, 'input[name="B2A_5"]', persona.paymentMethods.card);
         }
         await itemDelay();
 
@@ -373,15 +397,22 @@ export async function runKstatSurvey({
         }
       }
 
-      // P6: 영업비용 구성비 (합계 100% 필수)
+      // P6: 영업비용 구성비 (B4 - 합계 100% 필수)
+      // B4_1: 인건비(종업원)
+      // B4_2: 원재료비, 상품구입비
+      // B4_3: 임차료(관리비 포함)
+      // TB4_4: 기타 명칭 ('세금')
+      // B4_4: 기타 비중 ('10'%)
+      // [규칙 4] 기타(세금 등)은 무조건 '세금' 10%
+      // [규칙 5] 종업원이 없다고 설정한 경우 인건비 0원, 종업원이 있는 경우 인건비 정상 기재
       else if (stepName === 'P6') {
         const fB4 = page.frame({ url: /B4\.asp/ });
         if (fB4) {
-          await safeFill(fB4, '#B4_1', persona.costs.raw);
-          await safeFill(fB4, '#B4_2', persona.costs.rent);
-          await safeFill(fB4, '#B4_3', persona.costs.utility);
+          await safeFill(fB4, '#B4_1', persona.costs.labor);
+          await safeFill(fB4, '#B4_2', persona.costs.raw);
+          await safeFill(fB4, '#B4_3', persona.costs.rent);
+          await safeFill(fB4, '#TB4_4', persona.costs.etcText || '세금');
           await safeFill(fB4, '#B4_4', persona.costs.etc);
-          await safeFill(fB4, '#TB4_4', '관리비/공과금');
         }
       }
 
@@ -452,8 +483,9 @@ export async function runKstatSurvey({
 
         let fB5C1 = page.frame({ url: /B5C1\.asp/ });
         if (fB5C1) {
-          const salesRatioVal = String(persona.onnuri.salesRatio);
-          await fB5C1.fill('input[name="B5C_1"], input[type="tel"], input[type="text"]', salesRatioVal).catch(async () => {
+          // [규칙 6] B5-3 온누리상품권 월평균 이용 고객 수: 2~10명 사이 랜덤
+          const custVal = String(persona.onnuri.monthlyCustomers || '5');
+          await fB5C1.fill('input[name="B5C_1"], input[type="tel"], input[type="text"]', custVal).catch(async () => {
             await fB5C1.evaluate((val) => {
               const inp = document.querySelector('input[name="B5C_1"], input[type="tel"], input[type="text"]');
               if (inp) {
@@ -461,7 +493,7 @@ export async function runKstatSurvey({
                 inp.dispatchEvent(new Event('input'));
                 inp.dispatchEvent(new Event('change'));
               }
-            }, salesRatioVal);
+            }, custVal);
           });
         }
 
@@ -505,48 +537,77 @@ export async function runKstatSurvey({
         }
       }
 
-      // P8: 판로 및 마케팅 (동적 C1GA 확장 완벽 해결)
+      // P8: 판로 및 마케팅 (디지털화, 배달서비스 및 동적 서브프레임 완벽 대응)
+      // C1A: SNS, C1B: 온라인쇼핑몰, C1C: 쿠폰할인, C1D: 배달서비스, C1E: 택배서비스, C1F: POS, C1G: 스마트주문
       else if (stepName === 'P8') {
-        for (const letter of ['A', 'B', 'C', 'D', 'E', 'F', 'G']) {
+        const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+        for (const letter of letters) {
           const f = page.frame({ url: new RegExp('C1' + letter + '\\.asp') });
           if (f) {
-            await f.click(`#C1${letter}_2, input[value="2"]`).catch(async () => {
-              await f.evaluate((l) => {
-                const varName = 'C1' + l;
-                if (typeof setRadioValue === 'function') setRadioValue(varName, '2');
-                const r = document.querySelector(`#${varName}_2, input[value="2"]`);
-                if (r) { r.checked = true; r.click(); }
-                const td = document.querySelector(`#TD_${varName}_2`);
-                if (td && td.onclick) td.onclick();
-              }, letter);
-            });
-          }
-        }
+            let choice = '2'; // 기본 미실시/미운영/미보유
+            if (letter === 'D' && persona.digital.hasDelivery) choice = '1'; // [규칙] 배달서비스 실시
+            if (letter === 'F' && persona.digital.hasPos) choice = '1'; // [규칙] POS기기 보유
+            if (letter === 'G' && persona.digital.hasSmartOrder) choice = '1'; // 스마트주문 운영
 
-        // 1차 클릭 (C1GA Alert 트리거 및 동적 로드 - 기노출되지 않았을 때만)
-        let fGA = page.frame({ url: /C1GA\.asp/ });
-        if (!fGA) {
-          await page.evaluate(() => document.querySelector('#next')?.click());
-          await page.waitForTimeout(1500);
-
-          for (let w = 0; w < 10; w++) {
-            fGA = page.frame({ url: /C1GA\.asp/ });
-            if (fGA) break;
-            await page.waitForTimeout(500);
-          }
-        }
-
-        // 2단계: C1GA(미운영 사유) 프레임 주입
-        if (fGA) {
-          await fGA.click('#C1GA_1, input[value="1"]').catch(async () => {
-            await fGA.evaluate(() => {
-              if (typeof setRadioValue === 'function') setRadioValue('C1GA', '1');
-              const r = document.querySelector('#C1GA_1, input[value="1"]');
+            await f.evaluate((l, c) => {
+              const varName = 'C1' + l;
+              if (typeof setRadioValue === 'function') setRadioValue(varName, c);
+              const r = document.querySelector(`#${varName}_${c}, input[value="${c}"]`);
               if (r) { r.checked = true; r.click(); }
-              const td = document.querySelector('#TD_C1GA_1');
+              const td = document.querySelector(`#TD_${varName}_${c}`);
               if (td && td.onclick) td.onclick();
+            }, letter, choice).catch(async () => {
+              await safeClick(f, `#C1${letter}_${choice}`);
             });
-          });
+          }
+        }
+
+        // 1차 클릭 (C1DA, C1FA, C1GA 동적 로드 트리거 및 Alert 수락)
+        await page.evaluate(() => document.querySelector('#next')?.click());
+        await page.waitForTimeout(1500);
+
+        // 2단계: 동적 하위 프레임 주입
+        // 1) 배달서비스 실시한 경우: C1DA (매출 비중 %)
+        if (persona.digital.hasDelivery) {
+          const fDA = page.frame({ url: /C1DA\.asp/ });
+          if (fDA) {
+            await fDA.fill('input[name="C1DA"], input[type="tel"]', persona.digital.deliveryRatio).catch(async () => {
+              await fDA.evaluate((val) => {
+                const inp = document.querySelector('input[name="C1DA"]');
+                if (inp) { inp.value = val; inp.dispatchEvent(new Event('input')); inp.dispatchEvent(new Event('change')); }
+              }, persona.digital.deliveryRatio);
+            });
+          }
+        }
+
+        // 2) POS 보유한 경우: C1FA (보유 대수)
+        if (persona.digital.hasPos) {
+          const fFA = page.frame({ url: /C1FA\.asp/ });
+          if (fFA) {
+            await fFA.fill('input[name="C1FA"], input[type="tel"]', persona.digital.posCount).catch(async () => {
+              await fFA.evaluate((val) => {
+                const inp = document.querySelector('input[name="C1FA"]');
+                if (inp) { inp.value = val; inp.dispatchEvent(new Event('input')); inp.dispatchEvent(new Event('change')); }
+              }, persona.digital.posCount);
+            });
+          }
+        }
+
+        // 3) 스마트주문 미운영인 경우: C1GA (도입 의향)
+        if (!persona.digital.hasSmartOrder) {
+          const fGA = page.frame({ url: /C1GA\.asp/ });
+          if (fGA) {
+            const intentVal = persona.digital.smartOrderIntent || '2';
+            await fGA.click(`#C1GA_${intentVal}, input[value="${intentVal}"]`).catch(async () => {
+              await fGA.evaluate((v) => {
+                if (typeof setRadioValue === 'function') setRadioValue('C1GA', v);
+                const r = document.querySelector(`#C1GA_${v}, input[value="${v}"]`);
+                if (r) { r.checked = true; r.click(); }
+                const td = document.querySelector(`#TD_C1GA_${v}`);
+                if (td && td.onclick) td.onclick();
+              }, intentVal);
+            });
+          }
         }
       }
 
@@ -617,21 +678,42 @@ export async function runKstatSurvey({
         }
       }
 
-      // P11: 부채 현황 (부채 없음 선택)
+      // P11: 부채 현황 (소상공인의 약 45% 부채 있음, 55% 부채 없음 동적 분산)
       else if (stepName === 'P11') {
         const fE1 = page.frame({ url: /E1\.asp/ });
+        const val = persona.debt.hasDebt ? '1' : '2';
         if (fE1) {
-          const clicked = await fE1.click('#E1_2, input[value="2"]').then(() => true).catch(() => false);
-          if (!clicked) {
-            await safeClick(fE1, '#E1_2');
-          }
-          await fE1.evaluate(() => {
-            if (typeof setRadioValue === 'function') setRadioValue('E1', '2');
-            const r = document.querySelector('#E1_2, input[value="2"]');
+          await fE1.evaluate((v) => {
+            if (typeof setRadioValue === 'function') setRadioValue('E1', v);
+            const r = document.querySelector(`#E1_${v}, input[value="${v}"]`);
             if (r) { r.checked = true; r.click(); }
-            const td = document.querySelector('#TD_E1_2') || r?.closest('td');
+            const td = document.querySelector(`#TD_E1_${v}`) || r?.closest('td');
             if (td && td.onclick) td.onclick();
-          }).catch(() => {});
+          }, val).catch(async () => {
+            await safeClick(fE1, `#E1_${val}`);
+          });
+        }
+
+        // 부채가 있는 경우 E1A (부채 금액 만원 단위) 주입
+        if (persona.debt.hasDebt) {
+          let fE1A = page.frame({ url: /E1A\.asp/ });
+          if (!fE1A) {
+            await page.evaluate(() => document.querySelector('#next')?.click());
+            await page.waitForTimeout(1500);
+            for (let w = 0; w < 8; w++) {
+              fE1A = page.frame({ url: /E1A\.asp/ });
+              if (fE1A) break;
+              await page.waitForTimeout(400);
+            }
+          }
+          if (fE1A) {
+            await fE1A.fill('input[name="E1A"], input[type="tel"]', persona.debt.amount).catch(async () => {
+              await fE1A.evaluate((amt) => {
+                const inp = document.querySelector('input[name="E1A"], input[type="tel"]');
+                if (inp) { inp.value = amt; inp.dispatchEvent(new Event('input')); inp.dispatchEvent(new Event('change')); }
+              }, persona.debt.amount);
+            });
+          }
         }
       }
 

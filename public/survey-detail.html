@@ -112,6 +112,9 @@
           </div>
 
           <div class="quota-action-buttons">
+            <button type="button" id="btn-save-quota-changes" class="btn-pill btn-pill-primary d-none">
+              <i class="fa-solid fa-floppy-disk"></i> 쿼터 수정사항 저장
+            </button>
             <button type="button" id="btn-enrich-campaign-quota" class="btn-pill btn-pill-secondary">
               결측치 외부 보강
             </button>
@@ -174,6 +177,8 @@
                   <th class="th-company">상호 (기업명)</th>
                   <th class="th-biznum">사업자등록번호</th>
                   <th class="th-ceo">대표자</th>
+                  <th class="th-gender">성별</th>
+                  <th class="th-age">나이</th>
                   <th class="th-phone">연락처</th>
                   <th class="th-opendate">개업연월</th>
                   <th class="th-items">취급품목</th>
@@ -183,13 +188,17 @@
               </thead>
               <tbody id="quota-table-body">
                 <tr>
-                  <td colspan="9" class="empty-table-msg">
+                  <td colspan="11" class="empty-table-msg">
                     아직 구축된 사업자 DB가 없습니다.<br>
                     상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.
                   </td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="font-caption text-secondary-color mt-6 mb-8 flex-between">
+            <span><i class="fa-solid fa-pen-to-square text-primary-color"></i> <strong>대표자 성별</strong> 및 <strong>나이</strong> 셀을 클릭하여 직접 수정할 수 있습니다.</span>
+            <span class="text-dim font-caption" id="quota-sync-status-msg"></span>
           </div>
         </div>
 
@@ -344,15 +353,33 @@
               </div>
             </div>
 
+            <!-- 마스터 블루프린트 복제 배너 -->
+            <div class="execution-blueprint-banner mb-14">
+              <div class="flex-between">
+                <div>
+                  <div class="flex-center-gap-8 mb-4">
+                    <span class="badge-status badge-blueprint" id="badge-blueprint-status">블루프린트 기준점 대기</span>
+                    <span class="font-caption text-dim font-bold">15단계 마스터 복제 파이프라인</span>
+                  </div>
+                  <div class="font-caption text-secondary-color">
+                    설문조사 전체(15단계)를 한 화면으로 복제하여 기준점을 설정하고 1번부터 24번까지 일괄 가동합니다.
+                  </div>
+                </div>
+                <a href="#" id="link-open-blueprint" class="btn-pill btn-pill-primary">
+                  <i class="fa-solid fa-clone"></i> 설문조사 전체를 한 화면으로 복제하기
+                </a>
+              </div>
+            </div>
+
             <div class="execution-buttons-flex">
-              <button type="button" id="btn-pilot-simulation" class="btn-action-primary">
-                1번 쿼터 파일럿 검증 (Agree 대기)
+              <button type="button" id="btn-batch-automation" class="btn-action-success">
+                <i class="fa-solid fa-play"></i> 전체 쿼터 배치 자동화 가동 (1번~24번)
               </button>
-              <button type="button" id="btn-batch-automation" class="btn-action-success" disabled>
-                2번부터 배치 자동화 가동
+              <button type="button" id="btn-pilot-simulation" class="btn-pill btn-pill-secondary btn-pill-small">
+                1번 단일 검증
               </button>
               <button type="button" id="btn-stop-automation" class="btn-action-secondary" disabled>
-                중지
+                <i class="fa-solid fa-stop"></i> 중지
               </button>
             </div>
           </div>

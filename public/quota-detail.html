@@ -130,6 +130,8 @@
                 <th class="col-biz-name">상호 (가맹점명)</th>
                 <th class="col-biz-num">사업자등록번호</th>
                 <th class="col-ceo">대표자명</th>
+                <th class="col-gender">성별</th>
+                <th class="col-age">나이</th>
                 <th class="col-phone">연락처</th>
                 <th class="col-date">개업연월</th>
                 <th class="col-items">취급품목(업종)</th>
@@ -140,7 +142,7 @@
             <tbody id="quota-editor-tbody">
               <!-- JS 동적 렌더링 -->
               <tr>
-                <td colspan="10" class="empty-table-msg">점포 목록을 불러오는 중입니다...</td>
+                <td colspan="12" class="empty-table-msg">점포 목록을 불러오는 중입니다...</td>
               </tr>
             </tbody>
           </table>
@@ -170,15 +172,28 @@
           </div>
         </div>
 
-        <div class="grid-2col mb-12">
+        <div class="grid-3col mb-12">
           <div class="form-group">
             <label for="add-ceo-name" class="figma-label">대표자명</label>
             <input type="text" id="add-ceo-name" class="figma-input" placeholder="예: 홍길동" />
           </div>
           <div class="form-group">
-            <label for="add-phone" class="figma-label">연락처</label>
-            <input type="text" id="add-phone" class="figma-input" placeholder="예: 02-414-1234" />
+            <label for="add-ceo-gender" class="figma-label">성별</label>
+            <select id="add-ceo-gender" class="figma-input">
+              <option value="">- 미지정 -</option>
+              <option value="남">남</option>
+              <option value="여">여</option>
+            </select>
           </div>
+          <div class="form-group">
+            <label for="add-ceo-age" class="figma-label">나이</label>
+            <input type="number" id="add-ceo-age" class="figma-input" placeholder="예: 52" min="20" max="99" />
+          </div>
+        </div>
+
+        <div class="form-group mb-12">
+          <label for="add-phone" class="figma-label">연락처</label>
+          <input type="text" id="add-phone" class="figma-input" placeholder="예: 02-414-1234" />
         </div>
 
         <div class="grid-2col mb-12">

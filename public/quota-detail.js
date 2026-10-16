@@ -175,6 +175,12 @@ async function initQuotaDetailPage() {
           <td class="col-ceo editable-cell ${isMissingCeo ? 'text-dim' : ''}" data-field="ceoName" data-seq="${seq}">
             ${isMissingCeo ? '<span class="cell-missing">미확인 (클릭하여 입력)</span>' : escapeHtml(item.ceoName)}
           </td>
+          <td class="col-gender editable-cell text-center" data-field="ceoGender" data-seq="${seq}">
+            ${item.ceoGender ? escapeHtml(item.ceoGender) : '<span class="cell-missing">-</span>'}
+          </td>
+          <td class="col-age editable-cell text-center font-mono" data-field="ceoAge" data-seq="${seq}">
+            ${item.ceoAge ? escapeHtml(item.ceoAge) : '<span class="cell-missing">-</span>'}
+          </td>
           <td class="col-phone editable-cell font-mono ${isMissingPhone ? 'text-dim' : ''}" data-field="phone" data-seq="${seq}">
             ${isMissingPhone ? '<span class="cell-missing">미확인 (클릭하여 입력)</span>' : escapeHtml(item.phone)}
           </td>
