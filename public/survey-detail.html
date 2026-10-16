@@ -363,7 +363,7 @@
     <section class="clean-section-card blueprint-integrated-section" id="section-master-blueprint">
       
       <!-- Sticky Control Header -->
-      <div class="blueprint-sticky-header flex-between mb-16">
+      <div class="blueprint-sticky-header flex-between mb-20">
         <div>
           <div class="flex-center-gap-10 mb-6">
             <span class="step-num-badge step3">STEP 3</span>
@@ -372,8 +372,13 @@
               <i class="fa-solid fa-circle-check"></i> 15단계 복제 완료
             </span>
           </div>
-          <div class="font-caption text-secondary-color">
-            케이스탯 15단계(Q1 ~ P14, Agree) 전체 구조가 복제되었습니다. 각 문항의 기준점 슬라이더를 조절하고 [마스터 기준점 저장]을 누르면 모든 쿼터에 자연 분산 적용됩니다.
+          <div class="font-caption text-secondary-color flex-center-gap-12">
+            <span>케이스탯 15단계 전체 구조가 복제되었습니다. 각 문항의 기준점을 조절하여 전체 쿼터에 반영할 수 있습니다.</span>
+            <span class="blueprint-legend-inline">
+              <span class="badge-tag-bind"><i class="fa-solid fa-link"></i> 쿼터 바인딩</span>
+              <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 기준점 조절</span>
+              <span class="badge-tag-fixed"><i class="fa-solid fa-lock"></i> 규칙 고정</span>
+            </span>
           </div>
         </div>
 
@@ -397,20 +402,6 @@
         </div>
       </div>
 
-      <!-- Legend Bar (범례) -->
-      <div class="quota-clean-box p-12 mb-20 flex-between">
-        <div class="flex-center-gap-16">
-          <span class="font-caption font-bold text-dim">구조 속성 범례:</span>
-          <span class="badge-tag-bind"><i class="fa-solid fa-link"></i> 쿼터 맞춤 바인딩 (상호·대표자·성별·나이·업종·주소)</span>
-          <span class="badge-tag-fixed"><i class="fa-solid fa-shield-halved"></i> 규칙 고정 (12개월·카드취급·세금10%·동의)</span>
-          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 기준점 조절 (신용카드 비중·매출·배달·부채)</span>
-          <span class="badge-tag-jitter"><i class="fa-solid fa-dice"></i> 점포별 가변 분산 (자연스러운 봇 탐지 방지)</span>
-        </div>
-        <div class="font-caption text-secondary-color">
-          <i class="fa-solid fa-circle-info"></i> 모든 쿼터는 이 기준점을 중심으로 고유 시드 기반 자연 분산 주입됩니다.
-        </div>
-      </div>
-
       <!-- 16 Stage Cards Grid -->
       <div class="blueprint-stage-grid" id="blueprint-stage-grid">
         <div class="empty-table-msg">
@@ -422,7 +413,7 @@
 
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261016_6"></script>
+  <script type="module" src="survey-detail.js?v=20261016_7"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

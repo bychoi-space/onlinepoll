@@ -579,13 +579,13 @@ async function initSurveyDetailPage() {
       return `
         <section class="blueprint-card" id="stage-card-${stage.step}">
           <div class="blueprint-card-header">
-            <div>
-              <div class="flex-center-gap-8 mb-4">
-                <span class="step-num-badge step${stage.stepNum}">${stage.step}</span>
-                <span class="blueprint-asp-tag font-mono">${escapeHtml(stage.aspFile)}</span>
-                <span class="${getBadgeClass(stage.badge)}">${getBadgeLabel(stage.badge)}</span>
-              </div>
+            <div class="blueprint-card-title-group">
+              <span class="blueprint-step-pill">${escapeHtml(stage.step)}</span>
               <h3 class="blueprint-stage-title">${escapeHtml(stage.title)}</h3>
+            </div>
+            <div class="blueprint-card-badge-group">
+              <span class="blueprint-asp-tag font-mono">${escapeHtml(stage.aspFile)}</span>
+              <span class="${getBadgeClass(stage.badge)}">${getBadgeLabel(stage.badge)}</span>
             </div>
           </div>
           
@@ -614,9 +614,9 @@ async function initSurveyDetailPage() {
 
   function getBadgeLabel(badge) {
     switch (badge) {
-      case 'QUOTA_BINDING': return '쿼터 맞춤 1:1 바인딩';
-      case 'RULE_FIXED': return '유효성 규칙 필수 고정';
-      case 'TUNABLE_JITTER': return '기준점 설정 및 동적 분산';
+      case 'QUOTA_BINDING': return '쿼터 1:1 바인딩';
+      case 'RULE_FIXED': return '규칙 필수 고정';
+      case 'TUNABLE_JITTER': return '기준점 조절';
       default: return '가변 분산';
     }
   }
