@@ -57,11 +57,21 @@ async function initSurveyDetailPage() {
   const quotaSyncStatusMsg = document.getElementById('quota-sync-status-msg');
   const step2ConfigCard = document.getElementById('step2-execution-card');
 
+  // 3대 워크플로우 탭 & 뷰 모드
+  const workflowTabBtns = document.querySelectorAll('.workflow-tab-btn');
+  const workflowTabSections = document.querySelectorAll('.workflow-tab-section');
+  const btnToggleViewMode = document.getElementById('btn-toggle-view-mode');
+  const unifiedContainer = document.getElementById('unified-detail-container');
+  const linkGoToBlueprint = document.getElementById('link-go-to-blueprint');
+
   // STEP 3: 최하단 마스터 설문 블루프린트 (15단계 전수 복제)
+  const sectionMasterBlueprint = document.getElementById('section-master-blueprint');
+  const blueprintLockBanner = document.getElementById('blueprint-runtime-lock-banner');
   const badgeMasterStatus = document.getElementById('badge-master-status');
   const blueprintStageGrid = document.getElementById('blueprint-stage-grid');
   const btnSaveBaseline = document.getElementById('btn-save-baseline');
   const btnRunAllBatchBottom = document.getElementById('btn-run-all-batch-bottom');
+  const btnStopAllBatchBottom = document.getElementById('btn-stop-all-batch-bottom');
   const btnPresetStandard = document.getElementById('btn-preset-standard');
   const btnPresetGrowth = document.getElementById('btn-preset-growth');
   const btnPresetTraditional = document.getElementById('btn-preset-traditional');
@@ -155,15 +165,36 @@ async function initSurveyDetailPage() {
     if (isRunning) {
       btnPilot.disabled = true;
       btnBatch.disabled = true;
+      if (btnRunAllBatchBottom) btnRunAllBatchBottom.disabled = true;
       btnStop.disabled = false;
+      if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = false;
       if (step2ConfigCard) step2ConfigCard.classList.add('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = true;
       if (currentStorePulse) currentStorePulse.classList.remove('d-none');
+
+      // 마스터 기준점 런타임 락 (보호 모드)
+      if (sectionMasterBlueprint) sectionMasterBlueprint.classList.add('section-locked');
+      if (blueprintLockBanner) blueprintLockBanner.classList.remove('hidden');
+      if (btnSaveBaseline) btnSaveBaseline.disabled = true;
+      if (btnPresetStandard) btnPresetStandard.disabled = true;
+      if (btnPresetGrowth) btnPresetGrowth.disabled = true;
+      if (btnPresetTraditional) btnPresetTraditional.disabled = true;
+      if (btnPresetRotation) btnPresetRotation.disabled = true;
     } else {
       btnStop.disabled = true;
+      if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = true;
       if (step2ConfigCard) step2ConfigCard.classList.remove('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = false;
       if (currentStorePulse) currentStorePulse.classList.add('d-none');
+
+      // 마스터 기준점 런타임 락 해제
+      if (sectionMasterBlueprint) sectionMasterBlueprint.classList.remove('section-locked');
+      if (blueprintLockBanner) blueprintLockBanner.classList.add('hidden');
+      if (btnSaveBaseline) btnSaveBaseline.disabled = false;
+      if (btnPresetStandard) btnPresetStandard.disabled = false;
+      if (btnPresetGrowth) btnPresetGrowth.disabled = false;
+      if (btnPresetTraditional) btnPresetTraditional.disabled = false;
+      if (btnPresetRotation) btnPresetRotation.disabled = false;
 
       // 1) 블루프린트 상태 동기화
       if (badgeBlueprintStatus) {
@@ -190,8 +221,16 @@ async function initSurveyDetailPage() {
       if (allCompleted) {
         btnBatch.disabled = true;
         btnBatch.textContent = '전체 배치 자동화 최종 마감 완료 (100%)';
+        if (btnRunAllBatchBottom) {
+          btnRunAllBatchBottom.disabled = true;
+          btnRunAllBatchBottom.textContent = '전체 배치 마감 완료 (100%)';
+        }
       } else {
         btnBatch.disabled = false;
+        if (btnRunAllBatchBottom) {
+          btnRunAllBatchBottom.disabled = false;
+          btnRunAllBatchBottom.innerHTML = '<i class="fa-solid fa-rocket"></i> 이 기준점으로 전체 배치 가동';
+        }
         if (firstDone) {
           btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 잔여 쿼터 배치 자동화 가동 (2번~24번)';
         } else {
@@ -1910,12 +1949,20 @@ async function initSurveyDetailPage() {
     btnRunAllBatchBottom.addEventListener('click', triggerBatchRun);
   }
 
-  // 중지 버튼
-  btnStop.addEventListener('click', async () => {
-    await fetch('/api/survey/stop', { method: 'POST' });
-    setRunningState(false);
-    appendLog('warn', '작업 중지 요청이 전송되었습니다.');
-  });
+  // 중지 버튼 (상단 & 하단 동기화)
+  const handleStopSurvey = async () => {
+    try {
+      await fetch('/api/survey/stop', { method: 'POST' });
+      setRunningState(false);
+      appendLog('warn', '작업 중지 요청이 전송되었습니다.');
+    } catch (err) {
+      appendLog('error', `중지 요청 실패: ${err.message}`);
+    }
+  };
+  btnStop.addEventListener('click', handleStopSurvey);
+  if (btnStopAllBatchBottom) {
+    btnStopAllBatchBottom.addEventListener('click', handleStopSurvey);
+  }
 
   // ------------------------------------------------------------------------
   // 6. 실시간 타임라인 칩 제어
@@ -2060,18 +2107,109 @@ async function initSurveyDetailPage() {
       btnBatch.disabled = true;
       if (btnRunAllBatchBottom) btnRunAllBatchBottom.disabled = true;
       btnStop.disabled = false;
+      if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = false;
       if (step2ConfigCard) step2ConfigCard.classList.add('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = true;
       if (currentStorePulse) currentStorePulse.classList.remove('d-none');
+
+      // 마스터 기준점 런타임 락 (보호 모드)
+      if (sectionMasterBlueprint) sectionMasterBlueprint.classList.add('section-locked');
+      if (blueprintLockBanner) blueprintLockBanner.classList.remove('hidden');
+      if (btnSaveBaseline) btnSaveBaseline.disabled = true;
+      if (btnPresetStandard) btnPresetStandard.disabled = true;
+      if (btnPresetGrowth) btnPresetGrowth.disabled = true;
+      if (btnPresetTraditional) btnPresetTraditional.disabled = true;
+      if (btnPresetRotation) btnPresetRotation.disabled = true;
     } else {
       statusIndicator.classList.remove('running');
       statusText.textContent = '준비 완료 (대기 중)';
       btnStop.disabled = true;
-      if (btnRunAllBatchBottom) btnRunAllBatchBottom.disabled = false;
+      if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = true;
       if (step2ConfigCard) step2ConfigCard.classList.remove('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = false;
       if (currentStorePulse) currentStorePulse.classList.add('d-none');
+
+      // 마스터 기준점 런타임 락 해제
+      if (sectionMasterBlueprint) sectionMasterBlueprint.classList.remove('section-locked');
+      if (blueprintLockBanner) blueprintLockBanner.classList.add('hidden');
+      if (btnSaveBaseline) btnSaveBaseline.disabled = false;
+      if (btnPresetStandard) btnPresetStandard.disabled = false;
+      if (btnPresetGrowth) btnPresetGrowth.disabled = false;
+      if (btnPresetTraditional) btnPresetTraditional.disabled = false;
+      if (btnPresetRotation) btnPresetRotation.disabled = false;
+
       updateButtonStates();
+    }
+  }
+
+  // ------------------------------------------------------------------------
+  // 워크플로우 탭 전환 시스템 (1. 쿼터 DB / 2. 제어실&모니터링 / 3. 마스터 기준점)
+  // ------------------------------------------------------------------------
+  function switchWorkflowTab(targetTabId) {
+    if (!targetTabId) return;
+
+    if (unifiedContainer && unifiedContainer.classList.contains('mode-view-all')) {
+      unifiedContainer.classList.remove('mode-view-all');
+      if (btnToggleViewMode) {
+        btnToggleViewMode.classList.remove('active');
+        btnToggleViewMode.innerHTML = '<i class="fa-solid fa-arrows-up-down"></i> <span>전체 펼쳐보기</span>';
+      }
+    }
+
+    workflowTabBtns.forEach(btn => {
+      const match = btn.dataset.tab === targetTabId;
+      btn.classList.toggle('active', match);
+    });
+
+    workflowTabSections.forEach(sec => {
+      const match = sec.id === targetTabId;
+      sec.classList.toggle('active', match);
+    });
+  }
+
+  workflowTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      switchWorkflowTab(target);
+    });
+  });
+
+  if (btnToggleViewMode && unifiedContainer) {
+    btnToggleViewMode.addEventListener('click', () => {
+      const isViewAll = unifiedContainer.classList.toggle('mode-view-all');
+      btnToggleViewMode.classList.toggle('active', isViewAll);
+      if (isViewAll) {
+        btnToggleViewMode.innerHTML = '<i class="fa-solid fa-table-cells-large"></i> <span>탭 모드로 전환</span>';
+      } else {
+        btnToggleViewMode.innerHTML = '<i class="fa-solid fa-arrows-up-down"></i> <span>전체 펼쳐보기</span>';
+      }
+    });
+  }
+
+  if (linkGoToBlueprint) {
+    linkGoToBlueprint.addEventListener('click', (e) => {
+      e.preventDefault();
+      switchWorkflowTab('tab-section-blueprint');
+      const bpEl = document.getElementById('section-master-blueprint');
+      if (bpEl) bpEl.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
+  // ------------------------------------------------------------------------
+  // 서버 실행 상태 동기화 (새로고침/재진입 시 자동 복원)
+  // ------------------------------------------------------------------------
+  async function syncServerRunningState() {
+    try {
+      const res = await fetch('/api/survey/status');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.isRunning && data.campaignId === campId) {
+        setRunningState(true);
+        switchWorkflowTab('tab-section-execution');
+        appendLog('info', '📡 [상태 복원] 현재 원격 설문 배치가 가동 중입니다. (실시간 모니터링 연동)');
+      }
+    } catch (err) {
+      console.warn('서버 상태 조회 실패:', err);
     }
   }
 
@@ -2105,6 +2243,12 @@ async function initSurveyDetailPage() {
     await loadBlueprint();
   } catch (err) {
     console.error('초기 마스터 블루프린트 로드 실패:', err);
+  }
+
+  try {
+    await syncServerRunningState();
+  } catch (err) {
+    console.error('초기 실행 상태 동기화 실패:', err);
   }
 
   try {

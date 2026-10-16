@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
   <link rel="stylesheet" href="campaign.css">
-  <link rel="stylesheet" href="custom-styles.css?v=20261016_10">
+  <link rel="stylesheet" href="custom-styles.css?v=20261016_12">
 </head>
 <body>
 
@@ -54,10 +54,33 @@
   <!-- ======================================================== -->
   <!-- 통일된 와이드 레이아웃 컨테이너 (Unified Page Container) -->
   <!-- ======================================================== -->
-  <div class="unified-detail-container">
+  <div class="unified-detail-container" id="unified-detail-container">
+
+    <!-- 3대 워크플로우 탭 내비게이션 바 -->
+    <div class="workflow-nav-container">
+      <div class="workflow-tabs-group" role="tablist">
+        <button type="button" class="workflow-tab-btn" id="tab-btn-quota" data-tab="tab-section-quota">
+          <span class="tab-step-tag">STEP 1</span>
+          <span><i class="fa-solid fa-database"></i> 조사 쿼터 DB & 진행 현황</span>
+        </button>
+        <button type="button" class="workflow-tab-btn active" id="tab-btn-execution" data-tab="tab-section-execution">
+          <span class="tab-step-tag">STEP 2</span>
+          <span><i class="fa-solid fa-play"></i> 실시간 제어실 & 모니터링</span>
+        </button>
+        <button type="button" class="workflow-tab-btn" id="tab-btn-blueprint" data-tab="tab-section-blueprint">
+          <span class="tab-step-tag">STEP 3</span>
+          <span><i class="fa-solid fa-sliders"></i> 마스터 설문 기준점 에디터</span>
+        </button>
+      </div>
+      <div class="workflow-view-mode-group">
+        <button type="button" class="btn-view-mode-toggle" id="btn-toggle-view-mode" title="한 화면에서 스크롤하여 모든 섹션 보기">
+          <i class="fa-solid fa-arrows-up-down"></i> <span>전체 펼쳐보기</span>
+        </button>
+      </div>
+    </div>
 
     <!-- [STEP 1] 상단 전폭 조사 쿼터 DB & 실시간 진행 현황 -->
-    <section class="clean-section-card mb-36">
+    <section class="clean-section-card mb-36 workflow-tab-section" id="tab-section-quota">
       <div class="section-card-inner">
         
         <!-- 상단 헤더 & KPI 칩 바 -->
@@ -208,7 +231,7 @@
     </section>
 
     <!-- [STEP 2 & 3 / 실시간 모니터링] 2열 워크스페이스 -->
-    <div class="detail-split-grid">
+    <div class="detail-split-grid workflow-tab-section active" id="tab-section-execution">
       
       <!-- 좌측 열: STEP 2 방향성 & 실전 정책 + STEP 3 실행 제어 -->
       <section class="left-workspace-column">
@@ -266,8 +289,8 @@
                 </span>
                 <span class="font-caption text-dim">신용카드(60~70%), 세금(10%), 배달, 부채 등 모든 기준점은 하단 STEP 3에서 조절됩니다.</span>
               </div>
-              <a href="#section-master-blueprint" class="btn-pill btn-pill-secondary btn-pill-small">
-                <i class="fa-solid fa-arrow-down"></i> 하단 기준점 에디터로 이동
+              <a href="#section-master-blueprint" class="btn-pill btn-pill-secondary btn-pill-small" id="link-go-to-blueprint">
+                <i class="fa-solid fa-arrow-down"></i> 기준점 에디터로 이동
               </a>
             </div>
 
@@ -362,8 +385,17 @@
     </div>
 
     <!-- [STEP 3] 15단계 마스터 설문 블루프린트 & 기준점 에디터 (와이드 100% 통합) -->
-    <section class="clean-section-card blueprint-integrated-section" id="section-master-blueprint">
+    <section class="clean-section-card blueprint-integrated-section workflow-tab-section" id="section-master-blueprint">
       
+      <!-- 런타임 락 알림 배너 (배치 가동 중 마스터 기준점 조작 보호) -->
+      <div id="blueprint-runtime-lock-banner" class="blueprint-runtime-lock-banner hidden">
+        <div class="flex-center-gap-10">
+          <i class="fa-solid fa-lock text-danger"></i>
+          <span><strong>설문 배치 가동 중 (런타임 락)</strong> - 현재 원격 배치가 실행 중이므로 마스터 기준점 조작이 안전하게 보호됩니다.</span>
+        </div>
+        <span class="badge-status running">배치 진행 중</span>
+      </div>
+
       <!-- Sticky Control Header -->
       <div class="blueprint-sticky-header flex-between mb-20">
         <div class="blueprint-header-info">
@@ -400,6 +432,9 @@
             </button>
             <button type="button" id="btn-run-all-batch-bottom" class="btn-pill btn-pill-success">
               <i class="fa-solid fa-rocket"></i> 이 기준점으로 전체 배치 가동
+            </button>
+            <button type="button" id="btn-stop-all-batch-bottom" class="btn-pill btn-pill-danger" disabled>
+              <i class="fa-solid fa-circle-stop"></i> 배치 일시 정지
             </button>
           </div>
         </div>
@@ -469,7 +504,7 @@
 
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261016_11"></script>
+  <script type="module" src="survey-detail.js?v=20261016_12"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>
