@@ -70,8 +70,10 @@ async function initQuotaDetailPage() {
   }
 
   function renderHeaderInfo() {
-    titleEl.textContent = originalQuota.title || fileName;
-    displayName.textContent = originalQuota.title || fileName;
+    const rawTitle = originalQuota.title || fileName;
+    titleEl.textContent = rawTitle;
+    titleEl.title = rawTitle;
+    displayName.textContent = rawTitle;
     const marketName = originalQuota.marketName || '일반 사업자';
     badgeMarket.textContent = marketName;
     badgeCount.textContent = `${currentData.length}건`;

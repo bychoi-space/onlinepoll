@@ -19,17 +19,18 @@
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
   <link rel="stylesheet" href="campaign.css">
-  <link rel="stylesheet" href="custom-styles.css?v=20261016_9">
+  <link rel="stylesheet" href="custom-styles.css?v=20261016_10">
 </head>
 <body>
 
-  <!-- Top Navigation (56px) -->
+  <!-- Top Navigation (64px Unified Wide Nav) -->
   <nav class="figma-top-nav">
     <div class="nav-inner">
-      <div class="flex-center-gap-14">
+      <div class="nav-left flex-center-gap-14">
         <a href="index.html#quotas" class="btn-pill btn-pill-secondary">
-          <i class="fa-solid fa-arrow-left"></i> 쿼터 보관함으로
+          <i class="fa-solid fa-arrow-left"></i> 쿼터 보관함
         </a>
+        <div class="nav-divider"></div>
         <div class="campaign-title-area">
           <h1 id="quota-detail-title" class="font-card-title m-0">조사 쿼터 불러오는 중...</h1>
           <div class="header-badges">
@@ -40,9 +41,9 @@
         </div>
       </div>
       
-      <div class="header-status flex-center-gap-10">
+      <div class="header-status flex-center-gap-8">
         <button type="button" id="btn-save-quota" class="btn-pill btn-pill-primary">
-          <i class="fa-solid fa-floppy-disk"></i> 수정사항 저장 (Excel 동기화)
+          <i class="fa-solid fa-floppy-disk"></i> 수정사항 저장
         </button>
         <button type="button" id="btn-launch-campaign" class="btn-pill btn-pill-success">
           <i class="fa-solid fa-play"></i> 이 쿼터로 캠페인 생성

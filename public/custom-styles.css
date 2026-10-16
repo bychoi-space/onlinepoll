@@ -2340,10 +2340,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
   40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
-/* 상단 네비게이션용 로그아웃 버튼 */
+/* 상단 네비게이션용 로그아웃 버튼 (절대 찌그러짐 원천 차단) */
 .btn-pill-logout {
-  padding: 5px 12px;
-  font-size: 12px;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
   font-weight: 600;
   border-radius: 50px;
   border: 1px solid #cbd5e1;
@@ -2353,13 +2354,21 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transition: all 0.15s ease;
   display: inline-flex;
   align-items: center;
-  line-height: 1.4;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 86px;
+  box-sizing: border-box;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .btn-pill-logout:hover {
   border-color: #fca5a5;
   color: #ef4444;
   background: #fef2f2;
+  transform: translateY(-1px);
 }
 
 /* ==========================================================================
@@ -3464,4 +3473,179 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 .group-target-stores strong {
   color: #0f172a;
+}
+
+/* ==========================================================================
+   상단 탑 내비게이션 & 액션 버튼 레이아웃 최적화 (Top Navigation Overhaul)
+   ========================================================================== */
+
+/* 상단 탑 내비게이션 바 규격 통일 (64px 높이, 1540px 와이드 그리드 완벽 일치) */
+.figma-top-nav {
+  height: 64px !important;
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+.figma-top-nav .nav-inner {
+  width: 100% !important;
+  max-width: 1540px !important;
+  margin: 0 auto !important;
+  padding: 0 32px !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  box-sizing: border-box !important;
+}
+
+/* 네비게이션 좌측 그룹 */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.nav-divider {
+  width: 1px;
+  height: 20px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.campaign-title-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex-shrink: 1;
+  flex-wrap: nowrap;
+}
+
+#quota-detail-title {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+  line-height: 1.25 !important;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
+.header-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
+/* 상단 네비게이션 우측 액션 바 */
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
+.flex-center-gap-8 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 상단 네비게이션 전용 알약 버튼 (컴팩트 36px 높이, 절대 줄바꿈/찌그러짐 방지) */
+.figma-top-nav .btn-pill {
+  height: 36px !important;
+  padding: 0 14px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 50px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+  transition: all 0.15s ease !important;
+}
+
+.figma-top-nav .btn-pill i {
+  font-size: 13px !important;
+}
+
+.figma-top-nav .btn-pill-primary {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15) !important;
+}
+.figma-top-nav .btn-pill-primary:hover {
+  background-color: #1e293b !important;
+  border-color: #1e293b !important;
+  transform: translateY(-1px);
+}
+
+.figma-top-nav .btn-pill-success {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+  border: 1px solid #059669 !important;
+  box-shadow: 0 1px 3px rgba(5, 150, 105, 0.2) !important;
+}
+.figma-top-nav .btn-pill-success:hover {
+  background-color: #047857 !important;
+  border-color: #047857 !important;
+  transform: translateY(-1px);
+}
+
+.figma-top-nav .btn-pill-secondary {
+  background-color: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+.figma-top-nav .btn-pill-secondary:hover {
+  background-color: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+  transform: translateY(-1px);
+}
+
+/* 좁은 화면 대응 반응형 브레이크포인트 */
+@media (max-width: 1440px) {
+  #quota-detail-title {
+    max-width: 190px !important;
+  }
+  .figma-top-nav .btn-pill {
+    padding: 0 11px !important;
+    font-size: 12.5px !important;
+    gap: 5px !important;
+  }
+  .btn-pill-logout {
+    padding: 0 11px !important;
+    font-size: 12.5px !important;
+    min-width: 78px !important;
+  }
+}
+
+@media (max-width: 1280px) {
+  #quota-detail-title {
+    max-width: 140px !important;
+  }
+  .header-badges {
+    display: none !important;
+  }
+  .figma-top-nav .btn-pill {
+    padding: 0 9px !important;
+    font-size: 12px !important;
+  }
 }

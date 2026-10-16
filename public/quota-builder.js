@@ -312,22 +312,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let statusHtml = '<span class="badge-status-ok">● 충족 가능</span>';
       if (val === 0) {
-        statusHtml = '<span class="badge-status-warn">미배분</span>';
+        statusHtml = '<span class="badge-status-none">미배분</span>';
       } else if (stock < val && ind.hasSmartFallback && effectiveStock >= val) {
-        statusHtml = '<span class="badge-status-smart">🔵 스마트 매핑</span>';
+        statusHtml = '<span class="badge-status-smart">● 스마트 매핑</span>';
       } else if (stock < val) {
-        statusHtml = `<span class="badge-status-err">▲ 보유 초과 (${stock}개 보유)</span>`;
+        statusHtml = `<span class="badge-status-err">▲ 부족 (${stock}개)</span>`;
       } else if (stock === val) {
-        statusHtml = '<span class="badge-status-warn">🟡 전량 추출</span>';
+        statusHtml = '<span class="badge-status-warn">● 전량 추출</span>';
       }
 
       return `
         <div class="stratified-row" data-key="${ind.key}">
           <div class="stratified-col-label">
-            <i class="fa-solid ${ind.icon}"></i> ${escapeHtml(ind.label)}
+            <i class="fa-solid ${ind.icon}"></i> <span>${escapeHtml(ind.label)}</span>
           </div>
           <div class="stratified-col-stock">
-            보유 <strong>${stock}</strong>개${ind.hasSmartFallback && subCount > 0 ? ` <small>(+대체 ${subCount})</small>` : ''}
+            보유 <strong>${stock}</strong>개${ind.hasSmartFallback && subCount > 0 ? `<span class="sub-stock-tag">+대체${subCount}</span>` : ''}
           </div>
           <div class="stratified-col-input">
             <div class="stepper-control">
@@ -509,6 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 실시간 터미널 로그 출력 헬퍼
   function appendLog(level, message, time = null) {
     const entry = document.createElement('div');
+    entry.className = `log-entry ${level}`;
     const timestamp = time || new Intl.DateTimeFormat('ko-KR', {
       timeZone: 'Asia/Seoul',
       hour: '2-digit',
@@ -630,7 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (mode === 'onnuri') {
         btnGenerate.innerHTML = '<i class="fa-solid fa-store"></i> 온누리 ➔ 마켓비즈 연계 쿼터 만들기 (JSON & Excel)';
       } else {
-        btnGenerate.innerHTML = '<i class="fa-solid fa-bolt"></i> 조사 쿼터 만들기 (JSON & Excel 동시 생성)';
+        btnGenerate.innerHTML = '<i class="fa-solid fa-bolt"></i> 마켓비즈 조사 쿼터 만들기 (JSON & Excel)';
       }
     }
   });
@@ -639,12 +640,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderExcelGrid(res) {
     const { columns, data, title, count, jsonDownloadUrl, excelDownloadUrl } = res;
 
-    sheetTitleText.innerHTML = `<i class="fa-solid fa-file-excel icon-excel-green"></i> ${escapeHtml(title)} (생성 완료)`;
-    sheetRowCountBadge.className = 'badge-status completed';
+    sheetTitleText.innerHTML = `<span class="qb-sheet-ready-title">${escapeHtml(title)}</span> <span class="qb-sheet-ready-sub">(생성 완료)</span>`;
+    sheetRowCountBadge.className = 'badge-status success';
     sheetRowCountBadge.textContent = `${count}개 사업자 행`;
 
     // 헤더(THEAD) 렌더링
-    let theadHtml = '<tr><th>No</th>';
+    let theadHtml = '<tr><th class="th-no">번호</th>';
     columns.forEach(col => {
       theadHtml += `<th>${escapeHtml(col.label || col.key)}</th>`;
     });
@@ -654,18 +655,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // 본문(TBODY) 렌더링
     let tbodyHtml = '';
     data.forEach((row, idx) => {
-      tbodyHtml += `<tr><td>${idx + 1}</td>`;
+      tbodyHtml += `<tr><td class="th-no">${idx + 1}</td>`;
       columns.forEach(col => {
         const rawVal = row[col.key] !== undefined ? row[col.key] : row[col.label];
         if (rawVal === null || rawVal === undefined || rawVal === '') {
-          tbodyHtml += `<td><span class="null-val-text">null</span></td>`;
+          tbodyHtml += `<td><span class="null-val-text">미상</span></td>`;
         } else {
           let cellContent = escapeHtml(String(rawVal));
-          // 보강된 필드 태그 표시
           if (col.key === 'ceoName' && (row.isCeoEnriched || row.ceoSource)) {
             cellContent += ` <span class="badge-enriched" title="${escapeHtml(row.ceoSource || '외부 공인 정보 보강')}"><i class="fa-solid fa-sparkles"></i>보강</span>`;
           } else if (col.key === 'phone' && (row.isPhoneEnriched || row.phoneSource)) {
             cellContent += ` <span class="badge-enriched" title="${escapeHtml(row.phoneSource || '외부 검색 보강')}"><i class="fa-solid fa-sparkles"></i>보강</span>`;
+          } else if (col.key === 'ceoGender') {
+            const gClass = String(rawVal).includes('여') ? 'female' : 'male';
+            cellContent = `<span class="badge-gender ${gClass}">${escapeHtml(String(rawVal))}</span>`;
+          } else if (col.key === 'mainProducts') {
+            cellContent = `<span class="badge-main-product">${escapeHtml(String(rawVal))}</span>`;
           }
           tbodyHtml += `<td>${cellContent}</td>`;
         }
@@ -674,7 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     excelTbody.innerHTML = tbodyHtml;
 
-    // 다운로드 버튼 활성화 (Zero-Inline: CSS 클래스 제어)
+    // 다운로드 버튼 활성화
     linkExcelDownload.href = excelDownloadUrl;
     linkJsonDownload.href = jsonDownloadUrl;
     const linkViewDetail = document.getElementById('link-view-detail');
@@ -682,7 +687,6 @@ document.addEventListener('DOMContentLoaded', () => {
       linkViewDetail.href = `quota-detail.html?file=${encodeURIComponent(res.jsonFileName)}`;
     }
     downloadActions.classList.remove('hidden');
-    downloadActions.classList.add('is-flex');
 
     // 마지막 생성된 쿼터 정보 보관
     lastCreatedQuota = res;
