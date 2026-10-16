@@ -116,6 +116,29 @@ let currentTask = {
   startTime: null
 };
 
+// 서버 기동 시 비정상 중단된 running 상태 초기화
+try {
+  const allBootCamps = CampaignStore.getAllCampaigns();
+  allBootCamps.forEach(camp => {
+    let needSave = false;
+    if (camp.status === 'running') {
+      camp.status = 'ready';
+      needSave = true;
+    }
+    if (Array.isArray(camp.quotaDatabase)) {
+      camp.quotaDatabase.forEach(q => {
+        if (q.quotaStatus === 'running') {
+          q.quotaStatus = 'ready';
+          needSave = true;
+        }
+      });
+    }
+    if (needSave) {
+      CampaignStore.updateCampaign(camp.id, { status: camp.status, quotaDatabase: camp.quotaDatabase });
+    }
+  });
+} catch (_) {}
+
 // SSE 엔드포인트
 app.get('/api/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
@@ -761,7 +784,10 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
         surveyUrl: targetUrl,
         bizData: targetBiz,
         quotaIndex: targetBiz.index || quotaIndex,
-        guidelineConfig: campaign.guidelineConfig || {},
+        guidelineConfig: {
+          ...(campaign.guidelineConfig || {}),
+          masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
+        },
         policy,
         pilotMode: true,
         safetyGuard: true,
@@ -972,7 +998,10 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
         surveyUrl: targetUrl,
         bizData: targetBiz,
         quotaIndex: targetBiz.index || quotaIndex,
-        guidelineConfig: campaign.guidelineConfig || {},
+        guidelineConfig: {
+          ...(campaign.guidelineConfig || {}),
+          masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
+        },
         policy: campaign.guidelineConfig?.policy || {},
         pilotMode: true,
         safetyGuard: true,
@@ -1094,13 +1123,17 @@ app.get('/api/campaigns/:id/screenshots', (req, res) => {
 
 // 작업 중지 요청
 app.post('/api/survey/stop', (req, res) => {
-  if (!currentTask.isRunning) {
-    return res.status(400).json({ error: '현재 실행 중인 작업이 없습니다.' });
-  }
-
   currentTask.isRunning = false;
   if (currentTask.campaignId) {
-    CampaignStore.updateCampaign(currentTask.campaignId, { status: 'ready' });
+    const camp = CampaignStore.getCampaignById(currentTask.campaignId);
+    if (camp && Array.isArray(camp.quotaDatabase)) {
+      camp.quotaDatabase.forEach(q => {
+        if (q.quotaStatus === 'running') q.quotaStatus = 'ready';
+      });
+      CampaignStore.updateCampaign(currentTask.campaignId, { status: 'ready', quotaDatabase: camp.quotaDatabase });
+    } else {
+      CampaignStore.updateCampaign(currentTask.campaignId, { status: 'ready' });
+    }
   }
   logger.warn('설문 자동화 작업 중지 요청을 수신했습니다.');
   res.json({ message: '작업 중지 신호를 보냈습니다.' });

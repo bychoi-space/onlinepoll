@@ -195,8 +195,8 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
 
   const hasEmployees = employeeRegular > 0 || employeeTemp > 0;
   
-  // 회전 선택 헬퍼 (인덱스 기반 균등 분산)
-  const rotate = (arr, idx) => arr[(idx - 1) % arr.length];
+  // 회전 선택 헬퍼 (인덱스 기반 균등 분산, idx=0 방어 포함)
+  const rotate = (arr, idx) => arr[Math.max(0, (Number(idx) || 1) - 1) % arr.length];
 
   // 분기별 비중 (합계 100%)
   const qPattern = (mb.quarterPattern === 'rotation' || mb.rotationMode)
@@ -228,19 +228,21 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   }
 
   // [규칙 4 수정] 영업이익률 및 영업이익 계산 (금액과 매출대비 %의 100% 수학적 일치 보장)
-  const defaultMarginPct = Math.round(industryMeta.defaultMargin * 100);
-  const profitMarginRateNum = Math.max(12, Math.min(40, defaultMarginPct + randBetween(-4, 4)));
-  const annualProfit = Math.max(10, Math.round((annualSales * profitMarginRateNum) / 100)); // 연간 영업이익 (백만 원)
-  // 실제 기재될 연매출 대비 연영업이익의 정확한 정수 마진율 (%)
-  const exactMarginRate = String(Math.round((annualProfit / annualSales) * 100));
+  const defaultMarginPct = mb.profitMarginRate !== undefined && !isNaN(parseInt(mb.profitMarginRate, 10))
+    ? parseInt(mb.profitMarginRate, 10)
+    : Math.round(industryMeta.defaultMargin * 100);
+  const profitMarginRateNum = Math.max(12, Math.min(45, defaultMarginPct + randBetween(-3, 3)));
+  const annualProfit = Math.max(10, Math.min(annualSales - 5, Math.round((annualSales * profitMarginRateNum) / 100))); // 연간 영업이익 (백만 원)
+  // 실제 기재될 연매출 대비 연영업이익의 정확한 정수 마진율 (1~99%)
+  const exactMarginRate = String(Math.max(1, Math.min(99, Math.round((annualProfit / annualSales) * 100))));
   const monthlyProfit = Math.round(annualProfit / 12);
 
-  // 일평균 고객 수 및 영업일수
+  // 일평균 고객 수 및 영업일수 (B1E: 1~30 이하 필수)
   const baseCust = mb.dailyCustomers !== undefined ? parseInt(mb.dailyCustomers, 10) : 45;
   const dailyCustomers = Math.max(10, baseCust + randBetween(-5, 5));
   const baseDays = mb.monthlyBusinessDays !== undefined ? parseInt(mb.monthlyBusinessDays, 10) : 26;
-  const monthlyOpenDays = Math.max(15, Math.min(31, baseDays + randBetween(-1, 1)));
-  const dailyBusinessHours = String(mb.dailyBusinessHours || 11);
+  const monthlyOpenDays = Math.max(15, Math.min(30, baseDays + randBetween(-1, 1)));
+  const dailyBusinessHours = String(Math.max(1, Math.min(24, parseInt(mb.dailyBusinessHours, 10) || 11)));
 
   let salesChangeSelector = '#B1BB_3';
   if (mb.salesChange === 'rotation' || mb.rotationMode) {
@@ -251,14 +253,28 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     salesChangeSelector = '#B1BB_2';
   }
 
+  // P4 동적 하위 문항: B1BC(영업이익 증가 이유 1~8 중 3순위), B1BD(영업이익 감소 이유 1~7 중 3순위)
+  const profitIncreaseReasons = rotate([
+    [6, 1, 2],
+    [2, 6, 8],
+    [1, 5, 6],
+    [6, 3, 7]
+  ], quotaIndex);
+  const profitDecreaseReasons = rotate([
+    [4, 5, 2],
+    [5, 2, 7],
+    [2, 4, 1],
+    [5, 4, 3]
+  ], quotaIndex);
+
   // 5. 결제수단 비중 (P5 - 합계 100% 필수)
   // [규칙 2 & 3] 신용카드 취급 필수, 비중은 60~70% 랜덤, 온누리 10~20%, 현금 나머지 (합계 100%)
   const cardBase = mb.creditCardRatio !== undefined ? parseInt(mb.creditCardRatio, 10) : 65;
-  const payCard = Math.max(60, Math.min(70, cardBase + randBetween(-2, 2)));
+  const payCard = Math.max(55, Math.min(75, (isNaN(cardBase) ? 65 : cardBase) + randBetween(-2, 2)));
   const remainingPay = 100 - payCard;
   const onnuriBase = mb.onnuriRatio !== undefined ? parseInt(mb.onnuriRatio, 10) : 15;
-  const payOnnuri = Math.max(10, Math.min(Math.min(20, remainingPay - 5), onnuriBase + randBetween(-2, 2)));
-  const payCash = remainingPay - payOnnuri;
+  const payOnnuri = Math.max(5, Math.min(Math.max(5, remainingPay - 5), (isNaN(onnuriBase) ? 15 : onnuriBase) + randBetween(-2, 2)));
+  const payCash = Math.max(1, 100 - payCard - payOnnuri);
 
   // 6. 영업비용 구성비 (P6 B4 - 합계 100% 필수)
   // [B4_4] 기타(세금 등) 비중 조절 가능 (기본 10%, 로테이션 시 8~15% 자연순환)
@@ -268,18 +284,24 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   } else if (mb.rotationMode || mb.costTaxRatio === 'rotation') {
     costEtc = rotate([8, 10, 12, 10, 15, 7], quotaIndex);
   }
+  costEtc = Math.max(5, Math.min(20, isNaN(costEtc) ? 10 : costEtc));
   const costEtcText = '세금';
   const remainingCost = 100 - costEtc;
   let costLabor = 0;
   const rentBase = mb.costRentRatio !== undefined ? parseInt(mb.costRentRatio, 10) : 20;
-  let costRent = Math.max(10, Math.min(35, rentBase + randBetween(-2, 2)));
-  let costRaw = remainingCost - costRent;
+  let costRent = Math.max(10, Math.min(35, (isNaN(rentBase) ? 20 : rentBase) + randBetween(-2, 2)));
 
   if (hasEmployees) {
     const laborBase = mb.costLaborRatio !== undefined ? parseInt(mb.costLaborRatio, 10) : 25;
-    costLabor = Math.max(10, Math.min(45, laborBase + randBetween(-2, 2)));
-    costRaw = Math.max(10, remainingCost - (costLabor + costRent));
+    costLabor = Math.max(10, Math.min(40, (isNaN(laborBase) ? 25 : laborBase) + randBetween(-2, 2)));
+    // 합계 초과 원천 차단: costLabor + costRent가 remainingCost - 15를 넘지 않도록 자동 조정
+    if (costLabor + costRent > remainingCost - 15) {
+      const excess = (costLabor + costRent) - (remainingCost - 15);
+      costLabor = Math.max(5, costLabor - Math.ceil(excess / 2));
+      costRent = Math.max(5, (remainingCost - 15) - costLabor);
+    }
   }
+  let costRaw = remainingCost - (costLabor + costRent);
 
   // 7. 온누리상품권 현황 (P7)
   const rawOpenDate = bizData.openDate || bizData.openYear || '2020';
@@ -297,15 +319,12 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const onnuriSalesRatio = String(payOnnuri);
   // [규칙 6] B5-3 온누리상품권 월평균 이용 고객 수: 2~10명 사이 랜덤
   const onnuriBaseCust = mb.onnuriCustomerAvg !== undefined ? parseInt(mb.onnuriCustomerAvg, 10) : 5;
-  const onnuriMonthlyCustomers = String(Math.max(2, Math.min(10, onnuriBaseCust + randBetween(-1, 1))));
+  const onnuriMonthlyCustomers = String(Math.max(2, Math.min(20, (isNaN(onnuriBaseCust) ? 5 : onnuriBaseCust) + randBetween(-1, 1))));
 
-  let onnuriPaperSelector = '#B5A_1_1';
-  if (mb.onnuriPaperMember === 'rotation' || mb.rotationMode) {
-    onnuriPaperSelector = (quotaIndex % 5 === 0) ? '#B5A_1_2' : '#B5A_1_1';
-  } else if (mb.onnuriPaperMember === 'no') {
-    onnuriPaperSelector = '#B5A_1_2';
-  }
+  // [중요] P5 B3(온누리 디지털형 비중 >= 1%)와 충돌 방지를 위해 B5A_1(온누리상품권 가맹여부)은 항상 #B5A_1_1(가맹) 필수!
+  const onnuriPaperSelector = '#B5A_1_1';
 
+  // B5A_2(지역사랑상품권 가맹여부)
   let onnuriMobileSelector = '#B5A_2_2';
   if (mb.onnuriMobileMember === 'rotation' || mb.rotationMode) {
     onnuriMobileSelector = (quotaIndex % 2 === 0) ? '#B5A_2_1' : '#B5A_2_2';
@@ -313,16 +332,19 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     onnuriMobileSelector = '#B5A_2_1';
   }
 
-  let onnuriSatisfactionSelector = '#B5AA_4'; // 기본 만족
+  // B5D_1(온누리 매출 증가 기여도: 1~5, 4/5 선택 시 B5E 증가율 노출)
+  let onnuriHelpVal = '3';
   if (mb.onnuriSatisfaction === 'rotation' || mb.rotationMode) {
-    onnuriSatisfactionSelector = rotate(['#B5AA_4', '#B5AA_3', '#B5AA_5', '#B5AA_4', '#B5AA_2'], quotaIndex);
+    onnuriHelpVal = rotate(['3', '4', '3', '4', '3'], quotaIndex);
   } else if (mb.onnuriSatisfaction === 'very_good') {
-    onnuriSatisfactionSelector = '#B5AA_5';
-  } else if (mb.onnuriSatisfaction === 'normal') {
-    onnuriSatisfactionSelector = '#B5AA_3';
+    onnuriHelpVal = '5';
+  } else if (mb.onnuriSatisfaction === 'good') {
+    onnuriHelpVal = '4';
   } else if (mb.onnuriSatisfaction === 'bad') {
-    onnuriSatisfactionSelector = '#B5AA_2';
+    onnuriHelpVal = '2';
   }
+  const onnuriSatisfactionSelector = `#B5D_1_${onnuriHelpVal}`;
+  const onnuriIncreaseRate = String(randBetween(10, 20)); // B5E, B5G 증가율 (%)
 
   // 8. 사업장 임대차 (P10)
   const rentRate = mb.rentAdoptionRate !== undefined ? (mb.rentAdoptionRate / 100) : 0.8;
@@ -340,6 +362,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   } else if (mb.rentTrend === 'decrease') {
     rentTrendSelector = '#D1D_2';
   }
+  const rentChangeRate = String(randBetween(5, 10)); // D1DA 월세 증감 비율 (%)
 
   // 9. 애로사항 및 활성화 과제 (P13 - Kstat 선택지 유효 범위 엄수)
   let poolF1 = [1, 3, 5, 2, 4, 6, 7, 8];
@@ -365,6 +388,14 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     }
   }
   const selectedIssuesF1 = poolF1.slice(0, 3);
+
+  // F2: 청년상인 애로사항 (#A2 <= 39일 때 노출, 보기 1~8 중 3순위)
+  const selectedIssuesF2 = rotate([
+    [1, 2, 5],
+    [2, 3, 4],
+    [1, 4, 6],
+    [2, 5, 3]
+  ], quotaIndex);
 
   let poolF3 = [1, 3, 7, 2, 4, 5, 6, 8, 9, 10];
   if (mb.policyPriority === 'rotation' || mb.rotationMode) {
@@ -415,13 +446,26 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     futurePlanSelector = '#G1_4';
   }
 
-  let successionPlanSelector = '#G1A_2'; // 기본 없음
+  // G1A(승계계획 유무: 1=예, 2=아니오) & G1AA(승계 대상: 1=친인척, 2=타인)
+  let successionPlanSelector = '#G1A_2'; // 기본 아니오(없음)
+  let successionTargetVal = '1'; // G1AA 기본 친인척
   if (mb.successionPlan === 'rotation' || mb.rotationMode) {
-    successionPlanSelector = rotate(['#G1A_2', '#G1A_1', '#G1A_2', '#G1A_3'], quotaIndex);
+    const rotSucc = rotate(['none', 'child', 'none', 'transfer'], quotaIndex);
+    if (rotSucc === 'child') {
+      successionPlanSelector = '#G1A_1';
+      successionTargetVal = '1';
+    } else if (rotSucc === 'transfer') {
+      successionPlanSelector = '#G1A_1';
+      successionTargetVal = '2';
+    } else {
+      successionPlanSelector = '#G1A_2';
+    }
   } else if (mb.successionPlan === 'child') {
     successionPlanSelector = '#G1A_1';
+    successionTargetVal = '1';
   } else if (mb.successionPlan === 'transfer') {
-    successionPlanSelector = '#G1A_3';
+    successionPlanSelector = '#G1A_1';
+    successionTargetVal = '2';
   }
 
   // 12. 디지털화 및 배달/POS 서비스 (P8 C1)
@@ -443,13 +487,21 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const smartOrderIntent = rng() < 0.5 ? '1' : '2';
 
   // 13. 원산지 및 가격표시 (P9)
-  let originTargetSelector = '#C2A_2';
+  // C2A: 가격 표시 여부 (1: 표시, 2: 미표시)
+  const rawPriceTagComp = mb.priceTagCompliance !== undefined ? parseInt(mb.priceTagCompliance, 10) : 80;
+  const priceTagVal = rawPriceTagComp <= 0 ? '2' : '1';
+  const originTargetSelector = `#C2A_${priceTagVal}`;
+  const priceTagRate = String(Math.max(50, Math.min(100, (rawPriceTagComp || 80) + randBetween(-2, 2))));
+
+  // C2B: 원산지 표시 여부 (1: 표시, 2: 미표시, 3: 미해당)
+  let originMarkVal = '1';
   if (mb.originLabelTarget === 'rotation' || mb.rotationMode) {
-    originTargetSelector = (quotaIndex % 3 === 0) ? '#C2A_1' : '#C2A_2';
+    originMarkVal = (quotaIndex % 3 === 0) ? '2' : '1';
   } else if (mb.originLabelTarget === 'no') {
-    originTargetSelector = '#C2A_1';
+    originMarkVal = '2';
   }
-  const priceTagRate = String(Math.max(50, Math.min(100, (mb.priceTagCompliance || 80) + randBetween(-2, 2))));
+  const originMarkRate = '100';
+  const domesticRatio = String(randBetween(70, 90));
 
   // 14. 화재/배상책임 (P12)
   let fireSelector = '#E2A_1';
@@ -458,6 +510,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   } else if (mb.fireInsurance === 'no') {
     fireSelector = '#E2A_2';
   }
+  const fireReason = String(rotate([2, 3, 1], quotaIndex)); // E2AA 미가입 사유 (1~4)
 
   let liabilitySelector = '#E2B_1';
   if (mb.liabilityInsurance === 'rotation' || mb.rotationMode) {
@@ -465,6 +518,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   } else if (mb.liabilityInsurance === 'no') {
     liabilitySelector = '#E2B_2';
   }
+  const liabilityReason = String(rotate([3, 2, 1], quotaIndex)); // E2BA 미가입 사유 (1~4)
 
   return {
     quotaIndex,
@@ -488,7 +542,9 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       dailyCustomers: String(dailyCustomers),
       monthlyOpenDays: String(monthlyOpenDays),
       dailyBusinessHours,
-      salesChangeSelector
+      salesChangeSelector,
+      profitIncreaseReasons,
+      profitDecreaseReasons
     },
     paymentMethods: {
       card: String(payCard),
@@ -506,6 +562,8 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       joinYear: String(onnuriJoinYear),
       salesRatio: onnuriSalesRatio,
       satisfactionSelector: onnuriSatisfactionSelector,
+      helpVal: onnuriHelpVal,
+      increaseRate: onnuriIncreaseRate,
       monthlyCustomers: onnuriMonthlyCustomers,
       paperSelector: onnuriPaperSelector,
       mobileSelector: onnuriMobileSelector
@@ -514,10 +572,12 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       isRent,
       deposit,
       monthlyRent,
-      trendSelector: rentTrendSelector
+      trendSelector: rentTrendSelector,
+      rentChangeRate
     },
     issues: {
       f1: selectedIssuesF1,
+      f2: selectedIssuesF2,
       f3: selectedIssuesF3
     },
     debt: {
@@ -526,17 +586,24 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     },
     compliance: {
       originTargetSelector,
-      priceTagRate
+      priceTagVal,
+      priceTagRate,
+      originMarkVal,
+      originMarkRate,
+      domesticRatio
     },
     safety: {
       fireSelector,
-      liabilitySelector
+      fireReason,
+      liabilitySelector,
+      liabilityReason
     },
     future: {
       plannedYears,
       cashReceiptRatio,
       planSelector: futurePlanSelector,
-      successionSelector: successionPlanSelector
+      successionSelector: successionPlanSelector,
+      successionTargetVal
     },
     digital: {
       hasDelivery,
@@ -548,3 +615,4 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     }
   };
 }
+

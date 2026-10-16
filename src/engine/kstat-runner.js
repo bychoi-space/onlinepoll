@@ -10,19 +10,21 @@ import fs from 'fs';
 import path from 'path';
 import { generateQuotaPersona } from './persona-builder.js';
 
-// DOM 클릭 안전 유틸 (사람다운 지연 포함)
+// DOM 클릭 안전 유틸 (사람다운 지연 포함, hidden input 오매칭 원천 차단)
 async function safeClick(frame, selector) {
   try {
-    const el = await frame.$(selector);
+    // selector에 ', input[value="..."]'가 포함된 경우 hidden(PVALUE=1 등) 오매칭 방지를 위해 type="radio" 강제
+    const safeSelector = String(selector).replace(/input\[value=/g, 'input[type="radio"][value=');
+    const el = await frame.$(safeSelector);
     if (el) {
       await el.evaluate(e => {
         e.scrollIntoView({ block: 'center', inline: 'center' });
         e.checked = true;
-        e.click();
-        e.dispatchEvent(new Event('change', { bubbles: true }));
         if (typeof setRadioValue === 'function' && e.name && e.value) {
           try { setRadioValue(e.name, e.value); } catch (_) {}
         }
+        e.click();
+        e.dispatchEvent(new Event('change', { bubbles: true }));
         const parentTd = e.closest('td');
         if (parentTd && parentTd.onclick) {
           try { parentTd.onclick(); } catch (_) {}
@@ -34,8 +36,69 @@ async function safeClick(frame, selector) {
   return false;
 }
 
-// DOM 인풋 안전 주입 유틸
+// Kstat 전용 라디오 버튼 확실 선택 유틸 (setRadioValue + input.checked + TD onclick + 이벤트 발행)
+async function selectKstatRadio(frame, varName, val) {
+  if (!frame) return false;
+  const v = String(val).replace(/^#.*_/, '');
+  try {
+    const ok = await frame.evaluate(({ nm, value }) => {
+      if (typeof setRadioValue === 'function') {
+        try { setRadioValue(nm, value); } catch (_) {}
+      }
+      const r = document.querySelector(`#${nm}_${value}`) ||
+                document.querySelector(`input[type="radio"][name="${nm}"][value="${value}"]`);
+      if (r) {
+        r.checked = true;
+        r.click();
+        r.dispatchEvent(new Event('input', { bubbles: true }));
+        r.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      const td = document.querySelector(`#TD_${nm}_${value}`) || (r ? r.closest('td') : null);
+      if (td && typeof td.onclick === 'function') {
+        try { td.onclick(); } catch (_) {}
+      }
+      return !!r;
+    }, { nm: varName, value: v });
+    return ok;
+  } catch (e) {
+    return safeClick(frame, `#${varName}_${v}`);
+  }
+}
+
+// Kstat 3순위 체크박스(B1BC, B1BD, F1, F2, F3) 안전 선택 유틸 (재진입 시 토글 해제 방지)
+async function selectRankCheckboxes(frame, prefix, choices = [1, 2, 3]) {
+  if (!frame) return false;
+  try {
+    await frame.evaluate(({ pfx, arr }) => {
+      const r1 = document.querySelector(`#${pfx}_1`);
+      const r2 = document.querySelector(`#${pfx}_2`);
+      const r3 = document.querySelector(`#${pfx}_3`);
+      // 이미 1, 2, 3순위가 모두 채워져 있다면 재클릭으로 해제되지 않도록 유지
+      if (r1 && r2 && r3 && r1.value.trim() !== '' && r2.value.trim() !== '' && r3.value.trim() !== '') {
+        return;
+      }
+      // 일부만 선택된 상태라면 기존 체크박스를 먼저 해제하여 초기화
+      const checkedBoxes = document.querySelectorAll(`input[type="checkbox"][id^="V${pfx}_"]:checked`);
+      checkedBoxes.forEach(cb => {
+        try { cb.click(); } catch (_) {}
+      });
+      // 순서대로 1, 2, 3순위 클릭
+      for (const num of arr) {
+        const cb = document.querySelector(`#V${pfx}_${num}`);
+        if (cb && !cb.checked) {
+          cb.click();
+        }
+      }
+    }, { pfx: prefix, arr: choices });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// DOM 인풋 안전 주입 유틸 (hidden input 제외 보장)
 async function safeFill(frame, selector, val) {
+  if (!frame) return false;
   try {
     const el = await frame.$(selector);
     if (el) {
@@ -43,11 +106,167 @@ async function safeFill(frame, selector, val) {
         e.value = v;
         e.dispatchEvent(new Event('input', { bubbles: true }));
         e.dispatchEvent(new Event('change', { bubbles: true }));
+        e.dispatchEvent(new Event('keyup', { bubbles: true }));
+        e.dispatchEvent(new Event('blur', { bubbles: true }));
       }, String(val));
       return true;
     }
   } catch (e) {}
   return false;
+}
+
+// Kstat merge-template.js 동적 하위 프레임 즉시 활성화 및 로딩 완료 대기 유틸
+async function syncDynamicFrames(page) {
+  try {
+    await page.evaluate(() => {
+      if (typeof updateStepView === 'function') {
+        try { updateStepView(); } catch (_) {}
+      }
+      if (typeof getVisibleChildCodes === 'function' && typeof CHILDREN !== 'undefined' && typeof ensureFrameLoaded === 'function') {
+        const vis = getVisibleChildCodes();
+        for (let i = 0; i < CHILDREN.length; i++) {
+          if (vis[CHILDREN[i].code]) {
+            try { ensureFrameLoaded(CHILDREN[i].id); } catch (_) {}
+          }
+        }
+      }
+      if (typeof processFrameLoadQueue === 'function' && !window.IS_FRAME_QUEUE_RUNNING) {
+        try { processFrameLoadQueue(); } catch (_) {}
+      }
+    }).catch(() => {});
+
+    for (let w = 0; w < 20; w++) {
+      const allReady = await page.evaluate(() => {
+        if (typeof updateStepView === 'function') {
+          try { updateStepView(); } catch (_) {}
+        }
+        if (typeof getVisibleChildCodes !== 'function' || typeof CHILDREN === 'undefined') return true;
+        const vis = getVisibleChildCodes();
+        for (let i = 0; i < CHILDREN.length; i++) {
+          const c = CHILDREN[i];
+          if (vis[c.code]) {
+            const ifr = document.getElementById(c.id);
+            if (!ifr || ifr.getAttribute('data-merge-loaded') !== '1') return false;
+            try {
+              const doc = ifr.contentWindow?.document;
+              if (!doc || !doc.body || String(doc.location?.href || '').toLowerCase() === 'about:blank') return false;
+            } catch (_) {
+              return false;
+            }
+          }
+        }
+        return true;
+      }).catch(() => true);
+
+      if (allReady) break;
+      await page.waitForTimeout(250);
+    }
+  } catch (_) {}
+}
+
+// Kstat 현재 페이지 내 노출된 모든 하위 프레임 중 미응답 문항 자동 감지 및 폴백 채움 안전망
+async function autoFillUnansweredVisibleFrames(page, persona, biz) {
+  for (let pass = 0; pass < 3; pass++) {
+    await syncDynamicFrames(page);
+
+    const unansweredCodes = await page.evaluate(() => {
+      if (typeof getVisibleChildCodes !== 'function' || typeof CHILDREN === 'undefined') return [];
+      const vis = getVisibleChildCodes();
+      const list = [];
+      for (let i = 0; i < CHILDREN.length; i++) {
+        const c = CHILDREN[i];
+        if (!vis[c.code]) continue;
+        const answered = typeof isChildAnswered === 'function' ? isChildAnswered(c.id) : true;
+        if (!answered) {
+          list.push(c.code);
+        }
+      }
+      return list;
+    }).catch(() => []);
+
+    if (!unansweredCodes || unansweredCodes.length === 0) break;
+
+    for (const code of unansweredCodes) {
+      const f = page.frame({ url: new RegExp('/' + code + '\\.asp', 'i') });
+      if (!f) continue;
+
+      // 알려진 모든 동적 하위 프레임 코드별 정밀 폴백 처리
+      if (code === 'A3A') await selectKstatRadio(f, 'A3A', '1');
+      else if (code === 'A4A') await safeFill(f, '#A4A_1, input[name="A4A_1"]', biz.bizNumber);
+      else if (code === 'B1BB') await selectKstatRadio(f, 'B1BB', (persona.sales?.salesChangeSelector || '#B1BB_3').replace('#B1BB_', ''));
+      else if (code === 'B1BC') await selectRankCheckboxes(f, 'B1BC', persona.sales?.profitIncreaseReasons || [6, 1, 2]);
+      else if (code === 'B1BD') await selectRankCheckboxes(f, 'B1BD', persona.sales?.profitDecreaseReasons || [4, 5, 2]);
+      else if (code === 'B5A1') await selectKstatRadio(f, 'B5A_1', '1');
+      else if (code === 'B5AA') await selectKstatRadio(f, 'B5AA', '1');
+      else if (code === 'B5B1') await safeFill(f, '#B5B_1, input[name="B5B_1"]', persona.onnuri?.joinYear || '2020');
+      else if (code === 'B5C1') await safeFill(f, '#B5C_1, input[name="B5C_1"]', persona.onnuri?.monthlyCustomers || '5');
+      else if (code === 'B5D1') await selectKstatRadio(f, 'B5D_1', persona.onnuri?.helpVal || '3');
+      else if (code === 'B5E') await safeFill(f, '#B5E, input[name="B5E"]', persona.onnuri?.increaseRate || '15');
+      else if (code === 'B5F1') await selectKstatRadio(f, 'B5F_1', persona.onnuri?.helpVal || '3');
+      else if (code === 'B5G') await safeFill(f, '#B5G, input[name="B5G"]', persona.onnuri?.increaseRate || '15');
+      else if (code === 'B5A2') await selectKstatRadio(f, 'B5A_2', (persona.onnuri?.mobileSelector || '#B5A_2_2').replace('#B5A_2_', ''));
+      else if (code === 'B5AB') await selectKstatRadio(f, 'B5AB', '1');
+      else if (code === 'B5B2') await safeFill(f, '#B5B_2, input[name="B5B_2"]', persona.onnuri?.joinYear || '2020');
+      else if (code === 'B5C2') await safeFill(f, '#B5C_2, input[name="B5C_2"]', persona.onnuri?.monthlyCustomers || '5');
+      else if (code === 'B5D2') await selectKstatRadio(f, 'B5D_2', '3');
+      else if (code === 'B5F2') await selectKstatRadio(f, 'B5F_2', '3');
+      else if (code === 'C1BA') await safeFill(f, '#C1BA, input[name="C1BA"]', '15');
+      else if (code === 'C1DA') await safeFill(f, '#C1DA, input[name="C1DA"]', persona.digital?.deliveryRatio && persona.digital.deliveryRatio !== '0' ? persona.digital.deliveryRatio : '20');
+      else if (code === 'C1EA') await safeFill(f, '#C1EA, input[name="C1EA"]', '15');
+      else if (code === 'C1FA') await safeFill(f, '#C1FA, input[name="C1FA"]', persona.digital?.posCount && persona.digital.posCount !== '0' ? persona.digital.posCount : '1');
+      else if (code === 'C1GA') await selectKstatRadio(f, 'C1GA', persona.digital?.smartOrderIntent || '2');
+      else if (code === 'C2A') await selectKstatRadio(f, 'C2A', persona.compliance?.priceTagVal || '1');
+      else if (code === 'C2AA') await safeFill(f, '#C2AA, input[name="C2AA"]', persona.compliance?.priceTagRate || '80');
+      else if (code === 'C2B') await selectKstatRadio(f, 'C2B', persona.compliance?.originMarkVal || '1');
+      else if (code === 'C2BA') await safeFill(f, '#C2BA, input[name="C2BA"]', persona.compliance?.originMarkRate || '100');
+      else if (code === 'C2C') await selectKstatRadio(f, 'C2C', '2');
+      else if (code === 'C2CA') await safeFill(f, '#C2CA, input[name="C2CA"]', '50');
+      else if (code === 'C2D') await selectKstatRadio(f, 'C2D', '2');
+      else if (code === 'C2DA') await safeFill(f, '#C2DA, input[name="C2DA"]', '50');
+      else if (code === 'C2E') await safeFill(f, '#C2E, input[name="C2E"]', persona.compliance?.domesticRatio || '80');
+      else if (code === 'D1A') await selectKstatRadio(f, 'D1A', '2');
+      else if (code === 'D1B') await selectKstatRadio(f, 'D1B', '1');
+      else if (code === 'D1C') {
+        await safeFill(f, '#D1C_1, input[name="D1C_1"]', persona.lease?.deposit || '2000');
+        await safeFill(f, '#D1C_2, input[name="D1C_2"]', persona.lease?.monthlyRent || '110');
+      }
+      else if (code === 'D1D') await selectKstatRadio(f, 'D1D', (persona.lease?.trendSelector || '#D1D_3').replace('#D1D_', ''));
+      else if (code === 'D1DA') await safeFill(f, '#D1DA, input[name="D1DA"]', persona.lease?.rentChangeRate || '5');
+      else if (code === 'E1A') await safeFill(f, '#E1A, input[name="E1A"]', persona.debt?.amount || '2000');
+      else if (code === 'E2AA') await selectKstatRadio(f, 'E2AA', persona.safety?.fireReason || '2');
+      else if (code === 'E2BA') await selectKstatRadio(f, 'E2BA', persona.safety?.liabilityReason || '3');
+      else if (code === 'E2CA') await safeFill(f, '#E2CA, input[name="E2CA"]', '1');
+      else if (code === 'F1') await selectRankCheckboxes(f, 'F1', persona.issues?.f1 || [1, 3, 5]);
+      else if (code === 'F2') await selectRankCheckboxes(f, 'F2', persona.issues?.f2 || [1, 2, 5]);
+      else if (code === 'F3') await selectRankCheckboxes(f, 'F3', persona.issues?.f3 || [1, 3, 7]);
+      else if (code === 'G1') await selectKstatRadio(f, 'G1', (persona.future?.planSelector || '#G1_1').replace('#G1_', ''));
+      else if (code === 'G1A') await selectKstatRadio(f, 'G1A', (persona.future?.successionSelector || '#G1A_2').replace('#G1A_', ''));
+      else if (code === 'G1AA') await selectKstatRadio(f, 'G1AA', persona.future?.successionTargetVal || '1');
+      else if (code === 'G1B') await safeFill(f, '#G1B, input[name="G1B"]', persona.future?.plannedYears || '8');
+      else {
+        // 범용 폴백: 라디오가 있으면 첫 번째(또는 2번째) 선택, 숫자/텍스트 인풋이 비어 있으면 '10' 입력
+        await f.evaluate((c) => {
+          const radios = document.querySelectorAll('input[type="radio"]');
+          if (radios.length > 0) {
+            const r = radios[0];
+            if (typeof setRadioValue === 'function' && r.name && r.value) {
+              try { setRadioValue(r.name, r.value); } catch (_) {}
+            }
+            r.checked = true;
+            r.click();
+          }
+          const inputs = document.querySelectorAll('input[type="tel"], input[type="text"], input[type="number"]');
+          inputs.forEach(inp => {
+            if (!inp.disabled && !inp.readOnly && !inp.name.startsWith('T') && inp.value.trim() === '') {
+              inp.value = '10';
+              inp.dispatchEvent(new Event('input', { bubbles: true }));
+              inp.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          });
+        }, code).catch(() => {});
+      }
+    }
+  }
 }
 
 /**
@@ -84,10 +303,14 @@ export async function runKstatSurvey({
   const relFromReports = path.relative(rootReportsDir, absReportDir).replace(/\\/g, '/');
   const webBaseUrl = `/reports/${relFromReports}`;
 
+  // 사업자등록번호 12자리 하이픈 포맷(XXX-XX-XXXXX) 보장 (A4A.asp length===12 필수 검증 대응)
+  const rawBizDigits = String(bizData.bizNumber || '1234567890').replace(/\D/g, '').padEnd(10, '0').slice(0, 10);
+  const formattedBizNumber = `${rawBizDigits.slice(0, 3)}-${rawBizDigits.slice(3, 5)}-${rawBizDigits.slice(5, 10)}`;
+
   // 1. 사업자 팩트 데이터 정규화
   const biz = {
     companyName: bizData.companyName || '무명점포',
-    bizNumber: bizData.bizNumber || '123-45-67890',
+    bizNumber: formattedBizNumber,
     ceoName: bizData.ceoName || '점포주',
     phone: bizData.phone || '02-1234-5678',
     openDate: bizData.openDate || '2020-05-01',
@@ -104,7 +327,7 @@ export async function runKstatSurvey({
   };
 
   // 2. 쿼터별 동적 페르소나 생성 (업종분류, 연령, 매출, 결제비중 등 가변 데이터)
-  const persona = generateQuotaPersona(biz, quotaIndex, guidelineConfig);
+  const persona = generateQuotaPersona(bizData, quotaIndex, guidelineConfig);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -249,54 +472,53 @@ export async function runKstatSurvey({
         break;
       }
 
-      // 사람다운 문항 독해 시간 지연
+      // 사람다운 문항 독해 시간 지연 및 초기 노출 프레임 완전 로딩 보장
       await readingDelay();
+      await syncDynamicFrames(page);
 
-      // P1: 점포 현황
+      // P1: 점포 현황 (A1, A2, A3 -> A3A, A4 -> A4A, A5)
       if (stepName === 'P1') {
-        const fA1 = page.frame({ url: /A1\.asp/ });
-        if (fA1) await safeClick(fA1, persona.genderSelector);
+        const fA1 = page.frame({ url: /\/A1\.asp/i });
+        if (fA1) await selectKstatRadio(fA1, 'A1', (persona.genderSelector || '#A1_1').replace('#A1_', ''));
         await itemDelay();
 
-        const fA2 = page.frame({ url: /A2\.asp/ });
-        if (fA2) await safeFill(fA2, 'input[name="A2"]', persona.age);
+        const fA2 = page.frame({ url: /\/A2\.asp/i });
+        if (fA2) await safeFill(fA2, '#A2, input[name="A2"]', persona.age);
         await itemDelay();
 
-        const fA3 = page.frame({ url: /A3\.asp/ });
-        if (fA3) {
-          await fA3.click('#A3_2').catch(() => {});
-          await itemDelay();
-        }
-        const fA3A = page.frame({ url: /A3A\.asp/ });
-        if (fA3A) await safeClick(fA3A, '#A3A_1'); // 일반과세
+        const fA3 = page.frame({ url: /\/A3\.asp/i });
+        if (fA3) await selectKstatRadio(fA3, 'A3', '2'); // 개인사업자
+
+        const fA4 = page.frame({ url: /\/A4\.asp/i });
+        if (fA4) await selectKstatRadio(fA4, 'A4', '1'); // 사업자 등록
+
+        await syncDynamicFrames(page);
+
+        const fA3A = page.frame({ url: /\/A3A\.asp/i });
+        if (fA3A) await selectKstatRadio(fA3A, 'A3A', '1'); // 일반과세
         await itemDelay();
 
-        const fA4 = page.frame({ url: /A4\.asp/ });
-        if (fA4) {
-          await fA4.click('#A4_1').catch(() => {});
-          await itemDelay();
-        }
-        const fA4A = page.frame({ url: /A4A\.asp/ });
-        if (fA4A) await safeFill(fA4A, 'input[name="A4A_1"]', biz.bizNumber);
+        const fA4A = page.frame({ url: /\/A4A\.asp/i });
+        if (fA4A) await safeFill(fA4A, '#A4A_1, input[name="A4A_1"]', biz.bizNumber);
 
-        const fA5 = page.frame({ url: /A5\.asp/ });
+        const fA5 = page.frame({ url: /\/A5\.asp/i });
         if (fA5) {
-          await safeFill(fA5, 'input[name="A5_1"]', biz.openYear);
-          await safeFill(fA5, 'input[name="A5_2"]', biz.openMonth);
+          await safeFill(fA5, '#A5_1, input[name="A5_1"]', biz.openYear);
+          await safeFill(fA5, '#A5_2, input[name="A5_2"]', biz.openMonth);
         }
       }
 
-      // P2: 면적 및 종업원수
+      // P2: 면적 및 종업원수 (A9, A10)
       else if (stepName === 'P2') {
-        const fA9 = page.frame({ url: /A9\.asp/ });
+        const fA9 = page.frame({ url: /\/A9\.asp/i });
         if (fA9) {
-          await safeFill(fA9, 'input[name="A9_1"]', persona.areaSquareMeter);
+          await safeFill(fA9, '#A9_1, input[name="A9_1"]', persona.areaSquareMeter);
           await itemDelay();
-          await safeFill(fA9, 'input[name="A9_2"]', persona.areaPyeong); // 평수 정수
+          await safeFill(fA9, '#A9_2, input[name="A9_2"]', persona.areaPyeong);
         }
         await itemDelay();
 
-        const fA10 = page.frame({ url: /A10\.asp/ });
+        const fA10 = page.frame({ url: /\/A10\.asp/i });
         if (fA10) {
           await safeFill(fA10, 'input[name="A10_1"]', persona.employees.family);
           await safeFill(fA10, 'input[name="A10_2"]', persona.employees.regular);
@@ -304,19 +526,19 @@ export async function runKstatSurvey({
         }
       }
 
-      // P3: 매출액 및 영업개월수
+      // P3: 매출액 및 영업개월수 (B1AA, B1AB, B1AC)
       else if (stepName === 'P3') {
-        const fB1AA = page.frame({ url: /B1AA\.asp/ });
-        if (fB1AA) await safeFill(fB1AA, 'input[name="B1AA"]', persona.sales.daily);
+        const fB1AA = page.frame({ url: /\/B1AA\.asp/i });
+        if (fB1AA) await safeFill(fB1AA, '#B1AA, input[name="B1AA"]', persona.sales.daily);
         await itemDelay();
 
-        const fB1AB = page.frame({ url: /B1AB\.asp/ });
-        if (fB1AB) await safeFill(fB1AB, 'input[name="B1AB"]', persona.sales.annual);
+        const fB1AB = page.frame({ url: /\/B1AB\.asp/i });
+        if (fB1AB) await safeFill(fB1AB, '#B1AB, input[name="B1AB"]', persona.sales.annual);
         await itemDelay();
 
-        const fB1AC = page.frame({ url: /B1AC\.asp/ });
+        const fB1AC = page.frame({ url: /\/B1AC\.asp/i });
         if (fB1AC) {
-          await safeFill(fB1AC, 'input[name="B1AC"]', '12'); // 12개월 필수
+          await safeFill(fB1AC, '#B1AC, input[name="B1AC"]', '12');
           await safeFill(fB1AC, 'input[name="B1AC_1"]', persona.sales.quarters.q1);
           await safeFill(fB1AC, 'input[name="B1AC_2"]', persona.sales.quarters.q2);
           await safeFill(fB1AC, 'input[name="B1AC_3"]', persona.sales.quarters.q3);
@@ -324,39 +546,51 @@ export async function runKstatSurvey({
         }
       }
 
-      // P4: 영업이익, 고객수
+      // P4: 영업이익, 증감여부(B1BB -> B1BC/B1BD 동적 확장), 고객수, 영업시간, 영업일수
       else if (stepName === 'P4') {
-        const fB1BA = page.frame({ url: /B1BA\.asp/ });
+        const fB1BA = page.frame({ url: /\/B1BA\.asp/i });
         if (fB1BA) {
-          await safeFill(fB1BA, 'input[name="B1BA"]', persona.sales.annualProfit);
-          await safeFill(fB1BA, 'input[name="B1BA_1"]', persona.sales.profitMarginRate);
+          await safeFill(fB1BA, '#B1BA, input[name="B1BA"]', persona.sales.annualProfit);
+          await safeFill(fB1BA, '#B1BA_1, input[name="B1BA_1"]', persona.sales.profitMarginRate);
         }
         await itemDelay();
 
-        const fB1BB = page.frame({ url: /B1BB\.asp/ });
-        if (fB1BB) await safeClick(fB1BB, persona.sales?.salesChangeSelector || '#B1BB_3');
-        await itemDelay();
+        const fB1BB = page.frame({ url: /\/B1BB\.asp/i });
+        const b1bbVal = (persona.sales?.salesChangeSelector || '#B1BB_3').replace('#B1BB_', '');
+        if (fB1BB) {
+          await selectKstatRadio(fB1BB, 'B1BB', b1bbVal);
+        }
 
-        const fB1C = page.frame({ url: /B1C\.asp/ });
+        // B1BB=1(증가) 시 B1BC, B1BB=2(감소) 시 B1BD 동적 노출 동기화
+        await syncDynamicFrames(page);
+
+        const fB1BC = page.frame({ url: /\/B1BC\.asp/i });
+        if (fB1BC) {
+          await selectRankCheckboxes(fB1BC, 'B1BC', persona.sales?.profitIncreaseReasons || [6, 1, 2]);
+        }
+        const fB1BD = page.frame({ url: /\/B1BD\.asp/i });
+        if (fB1BD) {
+          await selectRankCheckboxes(fB1BD, 'B1BD', persona.sales?.profitDecreaseReasons || [4, 5, 2]);
+        }
+
+        const fB1C = page.frame({ url: /\/B1C\.asp/i });
         if (fB1C) {
-          await safeFill(fB1C, 'input[name="B1C"]', persona.sales.dailyCustomers);
-          await safeFill(fB1C, 'input[name="B1C_1"]', String(Math.round(parseInt(persona.sales.dailyCustomers, 10) * 0.6)));
+          await safeFill(fB1C, '#B1C, input[name="B1C"]', persona.sales.dailyCustomers);
+          await safeFill(fB1C, '#B1C_1, input[name="B1C_1"]', String(Math.max(1, Math.round(parseInt(persona.sales.dailyCustomers, 10) * 0.6))));
         }
-        const fB1D = page.frame({ url: /B1D\.asp/ });
-        if (fB1D) await safeFill(fB1D, 'input[name="B1D"]', persona.sales?.dailyBusinessHours || '11');
-        const fB1E = page.frame({ url: /B1E\.asp/ });
-        if (fB1E) await safeFill(fB1E, 'input[name="B1E"]', persona.sales.monthlyOpenDays);
+        const fB1D = page.frame({ url: /\/B1D\.asp/i });
+        if (fB1D) await safeFill(fB1D, '#B1D, input[name="B1D"]', persona.sales?.dailyBusinessHours || '11');
+        const fB1E = page.frame({ url: /\/B1E\.asp/i });
+        if (fB1E) await safeFill(fB1E, '#B1E, input[name="B1E"]', persona.sales.monthlyOpenDays);
       }
 
-      // P5: 결제수단 비중 (B2 취급여부, B2A 비중 합계 100% 필수)
-      // B2 순서: 1:현금, 2:온누리상품권, 3:지역사랑상품권, 4:제로페이, 5:신용카드, 6:기타
-      // [규칙 2] 온누리 등록 사업자는 전원 신용카드 취급 (B2_5_1 필수)
+      // P5: 결제수단 비중 (B2 취급여부, B2A 비중 합계 100% 필수, B3 온누리 형태별 비중)
       else if (stepName === 'P5') {
-        const fB2 = page.frame({ url: /B2\.asp/ });
+        const fB2 = page.frame({ url: /\/B2\.asp/i });
         if (fB2) {
           await fB2.evaluate(() => {
             const selectRadio = (name, val) => {
-              const r = document.querySelector(`input[name="${name}"][value="${val}"]`);
+              const r = document.querySelector(`input[type="radio"][name="${name}"][value="${val}"]`);
               if (r) { r.checked = true; r.click(); }
               if (typeof setRadioMatrixValue === 'function') {
                 const map = { B2_1: '2', B2_2: '3', B2_3: '4', B2_4: '5', B2_5: '6', B2_6: '6' };
@@ -367,8 +601,7 @@ export async function runKstatSurvey({
             selectRadio('B2_2', '1'); // 2. 온누리상품권: 취급
             selectRadio('B2_3', '2'); // 3. 지역사랑상품권: 취급 안 함
             selectRadio('B2_4', '2'); // 4. 제로페이: 취급 안 함
-            selectRadio('B2_5', '1'); // 5. 신용카드: 취급 (★모든 업체 필수 취급★)
-            // B2_6(기타)는 B2.asp 규칙상 기타가 없을 때 미선택(undefined) 상태여야 통과 (선택 시 TB2_6 필수)
+            selectRadio('B2_5', '1'); // 5. 신용카드: 취급 (필수)
             const r6_1 = document.querySelector('#B2_6_1');
             const r6_2 = document.querySelector('#B2_6_2');
             if (r6_1) r6_1.checked = false;
@@ -383,11 +616,10 @@ export async function runKstatSurvey({
             await safeClick(fB2, '#B2_5_1');
           });
         }
+        await syncDynamicFrames(page);
         await itemDelay();
 
-        // B2A 순서: 1:현금, 2:온누리상품권, 3:지역사랑상품권, 4:제로페이, 5:신용카드, 6:기타
-        // [규칙 3] 신용카드 비중 60~70% 랜덤 할당 및 온누리/현금 포함 합계 100%
-        const fB2A = page.frame({ url: /B2A\.asp/ });
+        const fB2A = page.frame({ url: /\/B2A\.asp/i });
         if (fB2A) {
           await safeFill(fB2A, 'input[name="B2A_1"]', persona.paymentMethods.cash);
           await safeFill(fB2A, 'input[name="B2A_2"]', persona.paymentMethods.onnuri);
@@ -395,432 +627,342 @@ export async function runKstatSurvey({
         }
         await itemDelay();
 
-        const fB3 = page.frame({ url: /B3\.asp/ });
+        const fB3 = page.frame({ url: /\/B3\.asp/i });
         if (fB3) {
           const rVal = persona.future?.cashReceiptRatio || '50';
-          await safeFill(fB3, '#B3_1', rVal);
-          await safeFill(fB3, '#B3_2', String(Math.max(0, 100 - parseInt(rVal, 10))));
+          await safeFill(fB3, '#B3_1, input[name="B3_1"]', rVal);
+          await safeFill(fB3, '#B3_2, input[name="B3_2"]', String(Math.max(0, 100 - parseInt(rVal, 10))));
         }
       }
 
       // P6: 영업비용 구성비 (B4 - 합계 100% 필수)
-      // B4_1: 인건비(종업원)
-      // B4_2: 원재료비, 상품구입비
-      // B4_3: 임차료(관리비 포함)
-      // TB4_4: 기타 명칭 ('세금')
-      // B4_4: 기타 비중 ('10'%)
-      // [규칙 4] 기타(세금 등)은 무조건 '세금' 10%
-      // [규칙 5] 종업원이 없다고 설정한 경우 인건비 0원, 종업원이 있는 경우 인건비 정상 기재
       else if (stepName === 'P6') {
-        const fB4 = page.frame({ url: /B4\.asp/ });
+        const fB4 = page.frame({ url: /\/B4\.asp/i });
         if (fB4) {
-          await safeFill(fB4, '#B4_1', persona.costs.labor);
-          await safeFill(fB4, '#B4_2', persona.costs.raw);
-          await safeFill(fB4, '#B4_3', persona.costs.rent);
-          await safeFill(fB4, '#TB4_4', persona.costs.etcText || '세금');
-          await safeFill(fB4, '#B4_4', persona.costs.etc);
+          await safeFill(fB4, '#B4_1, input[name="B4_1"]', persona.costs.labor);
+          await safeFill(fB4, '#B4_2, input[name="B4_2"]', persona.costs.raw);
+          await safeFill(fB4, '#B4_3, input[name="B4_3"]', persona.costs.rent);
+          await safeFill(fB4, '#TB4_4, input[name="TB4_4"]', persona.costs.etcText || '세금');
+          await safeFill(fB4, '#B4_4, input[name="B4_4"]', persona.costs.etc);
         }
       }
 
-      // P7: 온누리상품권 현황 (2단계 동적 확장 구조 완벽 해결)
+      // P7: 온누리상품권 및 지역사랑상품권 현황 (다단계 동적 확장 완벽 대응)
       else if (stepName === 'P7') {
-        const fB5A1 = page.frame({ url: /B5A1\.asp/ }) || page.frame({ url: /B5A\.asp/ });
+        const fB5A1 = page.frame({ url: /\/B5A1\.asp/i }) || page.frame({ url: /\/B5A\.asp/i });
         if (fB5A1) {
-          const paperSel = persona.onnuri?.paperSelector || '#B5A_1_1';
-          await fB5A1.click(paperSel).catch(async () => {
-            await safeClick(fB5A1, paperSel);
-          });
+          // B3_2 >= 1 검증 규칙과 충돌하지 않도록 B5A_1은 항상 '1'(가맹) 선택
+          await selectKstatRadio(fB5A1, 'B5A_1', '1');
         }
 
-        const fB5A2 = page.frame({ url: /B5A2\.asp/ });
+        const fB5A2 = page.frame({ url: /\/B5A2\.asp/i });
+        const b5a2Val = (persona.onnuri?.mobileSelector || '#B5A_2_2').replace('#B5A_2_', '');
         if (fB5A2) {
-          const mobileSel = persona.onnuri?.mobileSelector || '#B5A_2_2';
-          await fB5A2.click(mobileSel).catch(async () => {
-            await safeClick(fB5A2, mobileSel);
-          });
+          await selectKstatRadio(fB5A2, 'B5A_2', b5a2Val);
         }
 
-        // 1단계: 라디오 선택 후 동적 하위 iframe 로딩 대기
-        let hasSubFrames = page.frame({ url: /B5B1\.asp/ }) || page.frame({ url: /B5B2\.asp/ });
-        if (!hasSubFrames) {
-          for (let w = 0; w < 4; w++) {
-            await page.waitForTimeout(500);
-            hasSubFrames = page.frame({ url: /B5B1\.asp/ }) || page.frame({ url: /B5B2\.asp/ });
-            if (hasSubFrames) break;
-          }
-        }
-
-        // 여전히 미생성 시 1차 next 클릭으로 Alert 유발 및 동적 로드 트리거
-        if (!hasSubFrames) {
-          await page.evaluate(() => document.querySelector('#next')?.click());
-          await page.waitForTimeout(1500);
-
-          // 추가 문항 프레임 로딩 대기 (최대 5초)
-          for (let w = 0; w < 10; w++) {
-            hasSubFrames = page.frame({ url: /B5B1\.asp/ }) || page.frame({ url: /B5B2\.asp/ });
-            if (hasSubFrames) break;
-            await page.waitForTimeout(500);
-          }
-        }
+        // 1차 동적 프레임(B5B1, B5C1, B5D1, B5F1, B5AB/B5B2~B5F2) 활성화 및 로딩 대기
+        await syncDynamicFrames(page);
 
         const joinYearVal = String(persona.onnuri?.joinYear || 2020);
         const custVal = String(persona.onnuri?.monthlyCustomers || '5');
+        const helpVal = String(persona.onnuri?.helpVal || '3');
+        const incRateVal = String(persona.onnuri?.increaseRate || '15');
 
-        // [A] 온누리상품권 하위 프레임군 (가맹 시)
-        const fB5B1 = page.frame({ url: /B5B1\.asp/ });
-        if (fB5B1) {
-          await fB5B1.fill('input[name="B5B_1"], input[type="tel"], input[type="text"]', joinYearVal).catch(async () => {
-            await safeFill(fB5B1, 'input[name="B5B_1"], input[type="tel"], input[type="text"]', joinYearVal);
-          });
-        }
+        const fB5B1 = page.frame({ url: /\/B5B1\.asp/i });
+        if (fB5B1) await safeFill(fB5B1, '#B5B_1, input[name="B5B_1"]', joinYearVal);
 
-        const fB5C1 = page.frame({ url: /B5C1\.asp/ });
-        if (fB5C1) {
-          await fB5C1.fill('input[name="B5C_1"], input[type="tel"], input[type="text"]', custVal).catch(async () => {
-            await safeFill(fB5C1, 'input[name="B5C_1"], input[type="tel"], input[type="text"]', custVal);
-          });
-        }
+        const fB5C1 = page.frame({ url: /\/B5C1\.asp/i });
+        if (fB5C1) await safeFill(fB5C1, '#B5C_1, input[name="B5C_1"]', custVal);
 
-        const fB5D1 = page.frame({ url: /B5D1\.asp/ });
-        if (fB5D1) {
-          await fB5D1.click('#B5D_1_3, input[value="3"]').catch(async () => {
-            await safeClick(fB5D1, '#B5D_1_3, input[value="3"]');
-          });
-        }
+        const fB5D1 = page.frame({ url: /\/B5D1\.asp/i });
+        if (fB5D1) await selectKstatRadio(fB5D1, 'B5D_1', helpVal);
 
-        const fB5F1 = page.frame({ url: /B5F1\.asp/ });
-        if (fB5F1) {
-          await fB5F1.click('#B5F_1_3, input[value="3"]').catch(async () => {
-            await safeClick(fB5F1, '#B5F_1_3, input[value="3"]');
-          });
-        }
+        const fB5F1 = page.frame({ url: /\/B5F1\.asp/i });
+        if (fB5F1) await selectKstatRadio(fB5F1, 'B5F_1', helpVal);
 
-        // [온누리 미가맹 사유 (B5AA)]
-        const fB5AA = page.frame({ url: /B5AA\.asp/ });
-        if (fB5AA) {
-          await fB5AA.click('#B5AA_1, input[value="1"]').catch(async () => {
-            await safeClick(fB5AA, '#B5AA_1, input[value="1"]');
-          });
-        }
+        const fB5AA = page.frame({ url: /\/B5AA\.asp/i });
+        if (fB5AA) await selectKstatRadio(fB5AA, 'B5AA', '1');
 
-        // [B] 지역사랑상품권 하위 프레임군 (가맹 시 B5B2, B5C2, B5D2, B5F2)
-        const fB5B2 = page.frame({ url: /B5B2\.asp/ });
-        if (fB5B2) {
-          await fB5B2.fill('input[name="B5B_2"], input[type="tel"], input[type="text"]', joinYearVal).catch(async () => {
-            await safeFill(fB5B2, 'input[name="B5B_2"], input[type="tel"], input[type="text"]', joinYearVal);
-          });
-        }
+        const fB5B2 = page.frame({ url: /\/B5B2\.asp/i });
+        if (fB5B2) await safeFill(fB5B2, '#B5B_2, input[name="B5B_2"]', joinYearVal);
 
-        const fB5C2 = page.frame({ url: /B5C2\.asp/ });
-        if (fB5C2) {
-          await fB5C2.fill('input[name="B5C_2"], input[type="tel"], input[type="text"]', custVal).catch(async () => {
-            await safeFill(fB5C2, 'input[name="B5C_2"], input[type="tel"], input[type="text"]', custVal);
-          });
-        }
+        const fB5C2 = page.frame({ url: /\/B5C2\.asp/i });
+        if (fB5C2) await safeFill(fB5C2, '#B5C_2, input[name="B5C_2"]', custVal);
 
-        const fB5D2 = page.frame({ url: /B5D2\.asp/ });
-        if (fB5D2) {
-          await fB5D2.click('#B5D_2_3, input[value="3"]').catch(async () => {
-            await safeClick(fB5D2, '#B5D_2_3, input[value="3"]');
-          });
-        }
+        const fB5D2 = page.frame({ url: /\/B5D2\.asp/i });
+        if (fB5D2) await selectKstatRadio(fB5D2, 'B5D_2', '3');
 
-        const fB5F2 = page.frame({ url: /B5F2\.asp/ });
-        if (fB5F2) {
-          await fB5F2.click('#B5F_2_3, input[value="3"]').catch(async () => {
-            await safeClick(fB5F2, '#B5F_2_3, input[value="3"]');
-          });
-        }
+        const fB5F2 = page.frame({ url: /\/B5F2\.asp/i });
+        if (fB5F2) await selectKstatRadio(fB5F2, 'B5F_2', '3');
 
-        // [지역사랑 미가맹 사유 (B5AB)]
-        const fB5AB = page.frame({ url: /B5AB\.asp/ });
-        if (fB5AB) {
-          await fB5AB.click('#B5AB_1, input[value="1"]').catch(async () => {
-            await safeClick(fB5AB, '#B5AB_1, input[value="1"]');
-          });
-        }
+        const fB5AB = page.frame({ url: /\/B5AB\.asp/i });
+        if (fB5AB) await selectKstatRadio(fB5AB, 'B5AB', '1');
+
+        // B5D_1=4,5 또는 B5F_1=4,5 선택 시 2차 동적 확장되는 B5E, B5G 동기화 및 주입
+        await syncDynamicFrames(page);
+
+        const fB5E = page.frame({ url: /\/B5E\.asp/i });
+        if (fB5E) await safeFill(fB5E, '#B5E, input[name="B5E"]', incRateVal);
+
+        const fB5G = page.frame({ url: /\/B5G\.asp/i });
+        if (fB5G) await safeFill(fB5G, '#B5G, input[name="B5G"]', incRateVal);
       }
 
-      // P8: 판로 및 마케팅 (디지털화, 배달서비스 및 동적 서브프레임 완벽 대응)
-      // C1A: SNS, C1B: 온라인쇼핑몰, C1C: 쿠폰할인, C1D: 배달서비스, C1E: 택배서비스, C1F: POS, C1G: 스마트주문
+      // P8: 판로 및 마케팅 (C1A~C1G -> C1BA, C1DA, C1EA, C1FA, C1GA 동적 서브프레임 완벽 대응)
       else if (stepName === 'P8') {
         const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
         for (const letter of letters) {
-          const f = page.frame({ url: new RegExp('C1' + letter + '\\.asp') });
+          const f = page.frame({ url: new RegExp('/C1' + letter + '\\.asp', 'i') });
           if (f) {
             let choice = '2'; // 기본 미실시/미운영/미보유
-            if (letter === 'D' && persona.digital.hasDelivery) choice = '1'; // [규칙] 배달서비스 실시
-            if (letter === 'F' && persona.digital.hasPos) choice = '1'; // [규칙] POS기기 보유
-            if (letter === 'G' && persona.digital.hasSmartOrder) choice = '1'; // 스마트주문 운영
-
-            await f.evaluate((l, c) => {
-              const varName = 'C1' + l;
-              if (typeof setRadioValue === 'function') setRadioValue(varName, c);
-              const r = document.querySelector(`#${varName}_${c}, input[value="${c}"]`);
-              if (r) { r.checked = true; r.click(); }
-              const td = document.querySelector(`#TD_${varName}_${c}`);
-              if (td && td.onclick) td.onclick();
-            }, letter, choice).catch(async () => {
-              await safeClick(f, `#C1${letter}_${choice}`);
-            });
+            if (letter === 'D' && persona.digital.hasDelivery) choice = '1';
+            if (letter === 'F' && persona.digital.hasPos) choice = '1';
+            if (letter === 'G' && persona.digital.hasSmartOrder) choice = '1';
+            await selectKstatRadio(f, `C1${letter}`, choice);
           }
         }
 
-        // 1차 클릭 (C1DA, C1FA, C1GA 동적 로드 트리거 및 Alert 수락)
-        await page.evaluate(() => document.querySelector('#next')?.click());
-        await page.waitForTimeout(1500);
+        // merge-template.js 동적 서브프레임(C1BA, C1DA, C1EA, C1FA, C1GA) 활성화 대기 (조기 #next 클릭 제거!)
+        await syncDynamicFrames(page);
 
-        // 2단계: 동적 하위 프레임 주입
-        // 1) 배달서비스 실시한 경우: C1DA (매출 비중 %)
-        if (persona.digital.hasDelivery) {
-          const fDA = page.frame({ url: /C1DA\.asp/ });
-          if (fDA) {
-            await fDA.fill('input[name="C1DA"], input[type="tel"]', persona.digital.deliveryRatio).catch(async () => {
-              await fDA.evaluate((val) => {
-                const inp = document.querySelector('input[name="C1DA"]');
-                if (inp) { inp.value = val; inp.dispatchEvent(new Event('input')); inp.dispatchEvent(new Event('change')); }
-              }, persona.digital.deliveryRatio);
-            });
-          }
+        const fBA = page.frame({ url: /\/C1BA\.asp/i });
+        if (fBA) await safeFill(fBA, '#C1BA, input[name="C1BA"]', '15');
+
+        const fDA = page.frame({ url: /\/C1DA\.asp/i });
+        if (fDA) {
+          const delivVal = (persona.digital.deliveryRatio && persona.digital.deliveryRatio !== '0') ? persona.digital.deliveryRatio : '20';
+          await safeFill(fDA, '#C1DA, input[name="C1DA"]', delivVal);
         }
 
-        // 2) POS 보유한 경우: C1FA (보유 대수)
-        if (persona.digital.hasPos) {
-          const fFA = page.frame({ url: /C1FA\.asp/ });
-          if (fFA) {
-            await fFA.fill('input[name="C1FA"], input[type="tel"]', persona.digital.posCount).catch(async () => {
-              await fFA.evaluate((val) => {
-                const inp = document.querySelector('input[name="C1FA"]');
-                if (inp) { inp.value = val; inp.dispatchEvent(new Event('input')); inp.dispatchEvent(new Event('change')); }
-              }, persona.digital.posCount);
-            });
-          }
+        const fEA = page.frame({ url: /\/C1EA\.asp/i });
+        if (fEA) await safeFill(fEA, '#C1EA, input[name="C1EA"]', '15');
+
+        const fFA = page.frame({ url: /\/C1FA\.asp/i });
+        if (fFA) {
+          const posVal = (persona.digital.posCount && persona.digital.posCount !== '0') ? persona.digital.posCount : '1';
+          await safeFill(fFA, '#C1FA, input[name="C1FA"]', posVal);
         }
 
-        // 3) 스마트주문 미운영인 경우: C1GA (도입 의향)
-        if (!persona.digital.hasSmartOrder) {
-          const fGA = page.frame({ url: /C1GA\.asp/ });
-          if (fGA) {
-            const intentVal = persona.digital.smartOrderIntent || '2';
-            await fGA.click(`#C1GA_${intentVal}, input[value="${intentVal}"]`).catch(async () => {
-              await fGA.evaluate((v) => {
-                if (typeof setRadioValue === 'function') setRadioValue('C1GA', v);
-                const r = document.querySelector(`#C1GA_${v}, input[value="${v}"]`);
-                if (r) { r.checked = true; r.click(); }
-                const td = document.querySelector(`#TD_C1GA_${v}`);
-                if (td && td.onclick) td.onclick();
-              }, intentVal);
-            });
-          }
+        const fGA = page.frame({ url: /\/C1GA\.asp/i });
+        if (fGA) {
+          const intentVal = persona.digital.smartOrderIntent || '2';
+          await selectKstatRadio(fGA, 'C1GA', intentVal);
         }
       }
 
-      // P9: 원산지 및 가격표시
+      // P9: 원산지 및 가격표시 (C2A -> C2AA, C2B -> C2BA, C2C -> C2CA, C2D -> C2DA, C2E 완벽 대응)
       else if (stepName === 'P9') {
-        // P9: 원산지 및 가격표시 (C2-1 가격표시제 + C2-1-1 표시비율 동적 프레임 완벽 대응)
-        const fC2A = page.frame({ url: /C2A\.asp/ });
+        const fC2A = page.frame({ url: /\/C2A\.asp/i });
+        const c2aVal = persona.compliance?.priceTagVal || '1';
         if (fC2A) {
-          const origSel = persona.compliance?.originTargetSelector || '#C2A_1';
-          await safeClick(fC2A, origSel);
+          await selectKstatRadio(fC2A, 'C2A', c2aVal);
         }
 
-        // C2-1-1 전체 상품 수 대비 가격표시 비율 (C2AA.asp)
-        const fC2AA = page.frame({ url: /C2AA\.asp/ });
-        if (fC2AA) {
-          const tagRate = String(persona.compliance?.priceTagRate || '100');
-          await safeFill(fC2AA, 'input[name="C2AA"], input[type="tel"], input[type="text"]', tagRate);
-        }
-
-        const fC2B = page.frame({ url: /C2B\.asp/ });
+        const fC2B = page.frame({ url: /\/C2B\.asp/i });
+        const c2bVal = persona.compliance?.originMarkVal || '1';
         if (fC2B) {
-          await fC2B.evaluate(() => {
-            const r = document.querySelector('#C2B_1, input[value="1"]');
-            if (r) { r.checked = true; r.click(); }
-          }).catch(() => {});
+          await selectKstatRadio(fC2B, 'C2B', c2bVal);
         }
 
-        // C2-2-1 원산지 표시 비율 (C2BA.asp)
-        const fC2BA = page.frame({ url: /C2BA\.asp/ });
-        if (fC2BA) {
-          await safeFill(fC2BA, 'input[name="C2BA"], input[type="tel"], input[type="text"]', '100');
-        }
-
-        const fC2C = page.frame({ url: /C2C\.asp/ });
+        const fC2C = page.frame({ url: /\/C2C\.asp/i });
         if (fC2C) {
-          await fC2C.evaluate(() => {
-            const r = document.querySelector('#C2C_2, input[value="2"]'); // 미실시
-            if (r) { r.checked = true; r.click(); }
-          }).catch(() => {});
+          await selectKstatRadio(fC2C, 'C2C', '2'); // 취급 안 함
         }
 
-        const fC2D = page.frame({ url: /C2D\.asp/ });
+        const fC2D = page.frame({ url: /\/C2D\.asp/i });
         if (fC2D) {
-          await fC2D.evaluate(() => {
-            const r = document.querySelector('#C2D_2, input[value="2"]'); // 미실시
-            if (r) { r.checked = true; r.click(); }
-          }).catch(() => {});
+          await selectKstatRadio(fC2D, 'C2D', '2'); // 취급 안 함
         }
 
-        const fC2E = page.frame({ url: /C2E\.asp/ });
+        const fC2E = page.frame({ url: /\/C2E\.asp/i });
         if (fC2E) {
           const originRatio = String(persona.compliance?.domesticRatio || '80');
-          await safeFill(fC2E, 'input[name="C2E"], input[type="tel"], input[type="text"]', originRatio);
+          await safeFill(fC2E, '#C2E, input[name="C2E"]', originRatio);
         }
+
+        // C2A=1 -> C2AA.asp, C2B=1 -> C2BA.asp 동적 노출 즉시 동기화 및 로딩 대기
+        await syncDynamicFrames(page);
+
+        const fC2AA = page.frame({ url: /\/C2AA\.asp/i });
+        if (fC2AA) {
+          const tagRate = String(persona.compliance?.priceTagRate || '80');
+          await safeFill(fC2AA, '#C2AA, input[name="C2AA"]', tagRate);
+        }
+
+        const fC2BA = page.frame({ url: /\/C2BA\.asp/i });
+        if (fC2BA) {
+          const markRate = String(persona.compliance?.originMarkRate || '100');
+          await safeFill(fC2BA, '#C2BA, input[name="C2BA"]', markRate);
+        }
+
+        const fC2CA = page.frame({ url: /\/C2CA\.asp/i });
+        if (fC2CA) await safeFill(fC2CA, '#C2CA, input[name="C2CA"]', '50');
+
+        const fC2DA = page.frame({ url: /\/C2DA\.asp/i });
+        if (fC2DA) await safeFill(fC2DA, '#C2DA, input[name="C2DA"]', '50');
       }
 
-      // P10: 사업장 점유형태
+      // P10: 사업장 점유형태 (D1 -> D1A, D1B, D1C -> D1D -> D1DA 3단계 동적 확장 완벽 대응)
       else if (stepName === 'P10') {
-        const fD1 = page.frame({ url: /D1\.asp/ });
+        const fD1 = page.frame({ url: /\/D1\.asp/i });
         if (fD1) {
           if (persona.lease.isRent) {
-            await safeClick(fD1, '#D1_2'); // 임차
-            await itemDelay();
-            const fD1A = page.frame({ url: /D1A\.asp/ });
-            if (fD1A) await safeClick(fD1A, '#D1A_2'); // 보증부월세
-            const fD1B = page.frame({ url: /D1B\.asp/ });
-            if (fD1B) await safeClick(fD1B, '#D1B_1');
-            const fD1C = page.frame({ url: /D1C\.asp/ });
+            await selectKstatRadio(fD1, 'D1', '2'); // 임차
+            await syncDynamicFrames(page);
+
+            const fD1A = page.frame({ url: /\/D1A\.asp/i });
+            if (fD1A) await selectKstatRadio(fD1A, 'D1A', '2'); // 보증금 있는 월세
+
+            const fD1B = page.frame({ url: /\/D1B\.asp/i });
+            if (fD1B) await selectKstatRadio(fD1B, 'D1B', '1'); // 개인 상인 또는 민간 소유자
+
+            await syncDynamicFrames(page);
+
+            const fD1C = page.frame({ url: /\/D1C\.asp/i });
             if (fD1C) {
-              await safeFill(fD1C, 'input[name="D1C_1"]', persona.lease.deposit);
-              await safeFill(fD1C, 'input[name="D1C_2"]', persona.lease.monthlyRent);
+              await safeFill(fD1C, '#D1C_1, input[name="D1C_1"]', persona.lease.deposit);
+              await safeFill(fD1C, '#D1C_2, input[name="D1C_2"]', persona.lease.monthlyRent);
             }
-            const fD1D = page.frame({ url: /D1D\.asp/ });
-            if (fD1D) await safeClick(fD1D, persona.lease?.trendSelector || '#D1D_3');
+
+            const fD1D = page.frame({ url: /\/D1D\.asp/i });
+            const d1dVal = (persona.lease?.trendSelector || '#D1D_3').replace('#D1D_', '');
+            if (fD1D) {
+              await selectKstatRadio(fD1D, 'D1D', d1dVal);
+            }
+
+            // D1D=1(상승) 또는 2(하락) 선택 시 D1DA(월세 증감 비율 %) 동적 노출 동기화
+            await syncDynamicFrames(page);
+
+            const fD1DA = page.frame({ url: /\/D1DA\.asp/i });
+            if (fD1DA) {
+              await safeFill(fD1DA, '#D1DA, input[name="D1DA"]', persona.lease?.rentChangeRate || '5');
+            }
           } else {
-            await safeClick(fD1, '#D1_1'); // 자가 소유 (세부 임대차 스킵)
+            await selectKstatRadio(fD1, 'D1', '1'); // 자가 소유
           }
         }
       }
 
-      // P11: 부채 현황 (소상공인의 약 45% 부채 있음, 55% 부채 없음 동적 분산)
+      // P11: 부채 현황 (E1 -> E1A 동적 확장 완벽 대응)
       else if (stepName === 'P11') {
-        const fE1 = page.frame({ url: /E1\.asp/ });
+        const fE1 = page.frame({ url: /\/E1\.asp/i });
         const val = persona.debt.hasDebt ? '1' : '2';
         if (fE1) {
-          await fE1.evaluate((v) => {
-            if (typeof setRadioValue === 'function') setRadioValue('E1', v);
-            const r = document.querySelector(`#E1_${v}, input[value="${v}"]`);
-            if (r) { r.checked = true; r.click(); }
-            const td = document.querySelector(`#TD_E1_${v}`) || r?.closest('td');
-            if (td && td.onclick) td.onclick();
-          }, val).catch(async () => {
-            await safeClick(fE1, `#E1_${val}`);
-          });
+          await selectKstatRadio(fE1, 'E1', val);
         }
 
-        // 부채가 있는 경우 E1A (부채 금액 만원 단위) 주입
         if (persona.debt.hasDebt) {
-          let fE1A = page.frame({ url: /E1A\.asp/ });
-          if (!fE1A) {
-            await page.evaluate(() => document.querySelector('#next')?.click());
-            await page.waitForTimeout(1500);
-            for (let w = 0; w < 8; w++) {
-              fE1A = page.frame({ url: /E1A\.asp/ });
-              if (fE1A) break;
-              await page.waitForTimeout(400);
-            }
-          }
+          await syncDynamicFrames(page);
+          const fE1A = page.frame({ url: /\/E1A\.asp/i });
           if (fE1A) {
-            await fE1A.fill('input[name="E1A"], input[type="tel"]', persona.debt.amount).catch(async () => {
-              await fE1A.evaluate((amt) => {
-                const inp = document.querySelector('input[name="E1A"], input[type="tel"]');
-                if (inp) { inp.value = amt; inp.dispatchEvent(new Event('input')); inp.dispatchEvent(new Event('change')); }
-              }, persona.debt.amount);
-            });
+            await safeFill(fE1A, '#E1A, input[name="E1A"]', persona.debt.amount);
           }
         }
       }
 
-      // P12: 안전 및 보험 (동적 확장 없는 필수 가입 선택으로 깔끔한 원패스 통과)
+      // P12: 안전 및 보험 (E2A -> E2AA, E2B -> E2BA, E2C -> E2CA 동적 확장 완벽 대응)
       else if (stepName === 'P12') {
-        const fE2A = page.frame({ url: /E2A\.asp/ });
-        if (fE2A) {
-          const fireSel = persona.safety?.fireSelector || '#E2A_1';
-          await safeClick(fE2A, fireSel);
-        }
-        const fE2B = page.frame({ url: /E2B\.asp/ });
-        if (fE2B) {
-          const liabSel = persona.safety?.liabilitySelector || '#E2B_1';
-          await safeClick(fE2B, liabSel);
-        }
-        const fE2C = page.frame({ url: /E2C\.asp/ });
-        if (fE2C) {
-          await fE2C.click('#E2C_2, input[value="2"]', { timeout: 1500 }).catch(async () => {
-            await safeClick(fE2C, '#E2C_2');
-          });
-        }
+        const fE2A = page.frame({ url: /\/E2A\.asp/i });
+        const e2aVal = (persona.safety?.fireSelector || '#E2A_1').replace('#E2A_', '');
+        if (fE2A) await selectKstatRadio(fE2A, 'E2A', e2aVal);
+
+        const fE2B = page.frame({ url: /\/E2B\.asp/i });
+        const e2bVal = (persona.safety?.liabilitySelector || '#E2B_1').replace('#E2B_', '');
+        if (fE2B) await selectKstatRadio(fE2B, 'E2B', e2bVal);
+
+        const fE2C = page.frame({ url: /\/E2C\.asp/i });
+        if (fE2C) await selectKstatRadio(fE2C, 'E2C', '2'); // 소화기 미보유(또는 1 선택 시 E2CA 자동대응)
+
+        // E2A=2 -> E2AA, E2B=2 -> E2BA, E2C=1 -> E2CA 동적 확장 동기화
+        await syncDynamicFrames(page);
+
+        const fE2AA = page.frame({ url: /\/E2AA\.asp/i });
+        if (fE2AA) await selectKstatRadio(fE2AA, 'E2AA', persona.safety?.fireReason || '2');
+
+        const fE2BA = page.frame({ url: /\/E2BA\.asp/i });
+        if (fE2BA) await selectKstatRadio(fE2BA, 'E2BA', persona.safety?.liabilityReason || '3');
+
+        const fE2CA = page.frame({ url: /\/E2CA\.asp/i });
+        if (fE2CA) await safeFill(fE2CA, '#E2CA, input[name="E2CA"]', '1');
       }
 
-      // P13: 애로사항 및 활성화 과제 (사업자별 서로 다른 3종 선택 - 1~8 및 1~10 범위 엄수)
+      // P13: 애로사항(F1), 청년상인 애로사항(F2: #A2<=39 동적 노출), 활성화 과제(F3)
       else if (stepName === 'P13') {
-        const fF1 = page.frame({ url: /F1\.asp/ });
+        const fF1 = page.frame({ url: /\/F1\.asp/i });
         if (fF1) {
-          const [f1_a, f1_b, f1_c] = persona.issues.f1;
-          await fF1.evaluate(([a, b, c]) => {
-            document.querySelector(`#VF1_${a}`)?.click();
-            document.querySelector(`#VF1_${b}`)?.click();
-            document.querySelector(`#VF1_${c}`)?.click();
-          }, [f1_a, f1_b, f1_c]).catch(() => {});
+          await selectRankCheckboxes(fF1, 'F1', persona.issues.f1 || [1, 3, 5]);
         }
         await itemDelay();
 
-        const fF3 = page.frame({ url: /F3\.asp/ });
+        const fF2 = page.frame({ url: /\/F2\.asp/i });
+        if (fF2) {
+          await selectRankCheckboxes(fF2, 'F2', persona.issues.f2 || [1, 2, 5]);
+        }
+
+        const fF3 = page.frame({ url: /\/F3\.asp/i });
         if (fF3) {
-          const [f3_a, f3_b, f3_c] = persona.issues.f3;
-          await fF3.evaluate(([a, b, c]) => {
-            document.querySelector(`#VF3_${a}`)?.click();
-            document.querySelector(`#VF3_${b}`)?.click();
-            document.querySelector(`#VF3_${c}`)?.click();
-          }, [f3_a, f3_b, f3_c]).catch(() => {});
+          await selectRankCheckboxes(fF3, 'F3', persona.issues.f3 || [1, 3, 7]);
         }
       }
 
-      // P14: 향후 운영 계획 및 경영 관리 (2단계 동적 확장 구조 완벽 해결)
+      // P14: 향후 운영 계획 및 경영 관리 (G1 -> G1A -> G1AA, G1B, G2 3단계 동적 확장 완벽 대응)
       else if (stepName === 'P14') {
-        const fG1 = page.frame({ url: /G1\.asp/ });
+        const fG1 = page.frame({ url: /\/G1\.asp/i });
+        const g1Val = (persona.future?.planSelector || '#G1_1').replace('#G1_', '');
         if (fG1) {
-          const planSel = persona.future?.planSelector || '#G1_1';
-          await safeClick(fG1, planSel);
+          await selectKstatRadio(fG1, 'G1', g1Val);
         }
 
-        const fG2 = page.frame({ url: /G2\.asp/ });
+        const fG2 = page.frame({ url: /\/G2\.asp/i });
         if (fG2) {
-          await fG2.evaluate(() => {
+          const receiptVal = String(persona.future?.cashReceiptRatio || '50');
+          await fG2.evaluate((rPct) => {
+            if (typeof setRadioValue === 'function') {
+              try { setRadioValue('G2_1', '2'); } catch (_) {}
+              try { setRadioValue('G2_2', '1'); } catch (_) {}
+              try { setRadioValue('G2_3', '2'); } catch (_) {}
+            }
             const r1 = document.querySelector('#G2_1_2');
             if (r1) { r1.checked = true; r1.click(); }
             const r2 = document.querySelector('#G2_2_1');
             if (r2) { r2.checked = true; r2.click(); }
             const note = document.querySelector('#G2_2_NOTE');
-            if (note) note.value = '50';
+            if (note) {
+              note.value = rPct;
+              note.dispatchEvent(new Event('input', { bubbles: true }));
+              note.dispatchEvent(new Event('change', { bubbles: true }));
+            }
             const r3 = document.querySelector('#G2_3_2');
             if (r3) { r3.checked = true; r3.click(); }
-          }).catch(() => {});
+          }, receiptVal).catch(() => {});
         }
 
-        // 1차 클릭: G1A, G1B 동적 로드 트리거 및 Alert 수락
-        await page.evaluate(() => document.querySelector('#next')?.click());
-        await page.waitForTimeout(1500);
+        // G1=1 선택 시 G1A(승계계획 유무: 1=예, 2=아니오), G1B(향후 지속년수) 동적 로드 동기화
+        await syncDynamicFrames(page);
 
-        // 2단계: 화면에 동적으로 생성된 G1A(승계계획), G1B(지속년수) 주입
-        const fG1A = page.frame({ url: /G1A\.asp/ });
+        const fG1A = page.frame({ url: /\/G1A\.asp/i });
+        const g1aVal = (persona.future?.successionSelector || '#G1A_2').replace('#G1A_', '');
         if (fG1A) {
-          const succSel = persona.future?.successionSelector || '#G1A_2';
-          const succVal = succSel.replace('#G1A_', '');
-          await fG1A.evaluate(([sel, val]) => {
-            if (typeof setRadioValue === 'function') setRadioValue('G1A', val);
-            const r = document.querySelector(sel);
-            if (r) { r.checked = true; r.click(); }
-          }, [succSel, succVal]).catch(() => {});
+          await selectKstatRadio(fG1A, 'G1A', g1aVal === '1' ? '1' : '2');
         }
 
-        const fG1B = page.frame({ url: /G1B\.asp/ });
+        const fG1B = page.frame({ url: /\/G1B\.asp/i });
         if (fG1B) {
-          await fG1B.evaluate((val) => {
-            const inp = document.querySelector('input[name="G1B"], input[type="text"], input[type="tel"]');
-            if (inp) { inp.value = val; inp.dispatchEvent(new Event('input')); inp.dispatchEvent(new Event('change')); }
-          }, persona.future.plannedYears).catch(() => {});
+          await safeFill(fG1B, '#G1B, input[name="G1B"]', persona.future.plannedYears || '8');
+        }
+
+        // G1=1 & G1A=1 선택 시 G1AA(승계 대상: 1=친인척, 2=타인) 3차 동적 로드 동기화 및 주입
+        await syncDynamicFrames(page);
+
+        const fG1AA = page.frame({ url: /\/G1AA\.asp/i });
+        if (fG1AA) {
+          await selectKstatRadio(fG1AA, 'G1AA', persona.future?.successionTargetVal || '1');
         }
       }
+
+      // [최종 안전망] 현재 페이지의 모든 노출 프레임 동기화 및 미응답 문항 자동 점검/보완
+      await autoFillUnansweredVisibleFrames(page, persona, biz);
 
       const stepNum = parseInt(stepName.replace('P', ''), 10) || 0;
 
@@ -866,8 +1008,9 @@ export async function runKstatSurvey({
     // 최종 관문: Agree.asp 개인정보 동의
     // ---------------------------------------------------------
     await readingDelay();
-    if (page.url().includes('Agree.asp')) {
-      await page.click('#AGREE_1').catch(() => {});
+    const reachedAgree = page.url().includes('Agree.asp');
+    if (reachedAgree) {
+      await safeClick(page, '#AGREE_1');
       await preNextDelay();
 
       capturedSteps.push({
@@ -900,7 +1043,7 @@ export async function runKstatSurvey({
     }
 
     // 최종 관문인 Agree.asp에 도달하지 못했다면 모드와 무관하게 무조건 실패 처리! (거짓 완료 원천 차단)
-    if (!page.url().includes('Agree.asp')) {
+    if (!reachedAgree) {
       return {
         success: false,
         error: `최종 동의 단계(Agree.asp)에 도달하지 못했습니다. (현재 위치: ${page.url()})`,
