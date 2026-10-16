@@ -182,7 +182,18 @@ export async function runKstatSurvey({
       // 업종별 동적 분류 라디오 매핑 (수산, 농산, 축산, 이미용 등)
       await itemDelay();
       await safeClick(page, persona.industryMeta.selector);
-      await safeClick(page, '#Q1_8_2'); // 소매
+
+      // Kstat 공식 규칙: @Q1_7 = 7(개인서비스), 9(근린상권) -> Q1_8 보기 4(서비스업), 5(기타)만 허용
+      // 그 외 1~6, 8 -> Q1_8 보기 1(도매), 2(소매), 3(도소매), 5(기타) 허용
+      const isServiceCategory = persona.industryMeta.selector === '#Q1_7_7' || 
+                                persona.industryMeta.selector === '#Q1_7_9' || 
+                                persona.industryMeta.categoryName.includes('서비스') ||
+                                (persona.industryMeta.subType === '서비스' && persona.industryMeta.selector !== '#Q1_7_6');
+      if (isServiceCategory) {
+        await safeClick(page, '#Q1_8_4'); // 서비스업
+      } else {
+        await safeClick(page, '#Q1_8_2'); // 소매업
+      }
       await safeFill(page, '#Q1_9_1', biz.handledItems);
 
       await itemDelay();
@@ -606,13 +617,20 @@ export async function runKstatSurvey({
         }
       }
 
-      // P11: 부채 현황
+      // P11: 부채 현황 (부채 없음 선택)
       else if (stepName === 'P11') {
         const fE1 = page.frame({ url: /E1\.asp/ });
         if (fE1) {
+          const clicked = await fE1.click('#E1_2, input[value="2"]').then(() => true).catch(() => false);
+          if (!clicked) {
+            await safeClick(fE1, '#E1_2');
+          }
           await fE1.evaluate(() => {
-            const r = document.querySelector('#E1_2');
+            if (typeof setRadioValue === 'function') setRadioValue('E1', '2');
+            const r = document.querySelector('#E1_2, input[value="2"]');
             if (r) { r.checked = true; r.click(); }
+            const td = document.querySelector('#TD_E1_2') || r?.closest('td');
+            if (td && td.onclick) td.onclick();
           }).catch(() => {});
         }
       }
@@ -621,24 +639,21 @@ export async function runKstatSurvey({
       else if (stepName === 'P12') {
         const fE2A = page.frame({ url: /E2A\.asp/ });
         if (fE2A) {
-          await fE2A.evaluate(() => {
-            const r = document.querySelector('#E2A_1');
-            if (r) { r.checked = true; r.click(); }
-          }).catch(() => {});
+          await fE2A.click('#E2A_1, input[value="1"]').catch(async () => {
+            await safeClick(fE2A, '#E2A_1');
+          });
         }
         const fE2B = page.frame({ url: /E2B\.asp/ });
         if (fE2B) {
-          await fE2B.evaluate(() => {
-            const r = document.querySelector('#E2B_1');
-            if (r) { r.checked = true; r.click(); }
-          }).catch(() => {});
+          await fE2B.click('#E2B_1, input[value="1"]').catch(async () => {
+            await safeClick(fE2B, '#E2B_1');
+          });
         }
         const fE2C = page.frame({ url: /E2C\.asp/ });
         if (fE2C) {
-          await fE2C.evaluate(() => {
-            const r = document.querySelector('#E2C_2');
-            if (r) { r.checked = true; r.click(); }
-          }).catch(() => {});
+          await fE2C.click('#E2C_2, input[value="2"]').catch(async () => {
+            await safeClick(fE2C, '#E2C_2');
+          });
         }
       }
 
