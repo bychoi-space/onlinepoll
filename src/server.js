@@ -1153,7 +1153,7 @@ const BASE_FIELD_LABELS = {
   category: '분류'
 };
 
-// 조사 쿼터 생성 및 파일(JSON + XLSX) 내보내기
+// 조사 쿼터 생성 및 파일(JSON + XLSX) 내보내기 (실시간 체크포인트 저장 & 이어하기 지원)
 app.post('/api/quota/generate', async (req, res) => {
   const {
     title = '사업주_조사쿼터',
@@ -1162,15 +1162,96 @@ app.post('/api/quota/generate', async (req, res) => {
     baseFields = ['companyName', 'bizNumber', 'ceoName', 'address', 'industry'],
     customFields = [],
     autoEnrich = true,
-    maxOpenYear = 2025
+    maxOpenYear = 2025,
+    resumeFileName = null
   } = req.body;
 
   const count = Math.max(parseInt(targetCount, 10) || 1, 1);
   const parsedMaxYear = maxOpenYear === 'all' ? null : (parseInt(maxOpenYear, 10) || 2025);
-  logger.info(`[조사 쿼터 생성 시작] 명칭: "${title}" | 키워드: "${keyword}" | 목표 수량: ${count}개 | 개업기준: ${parsedMaxYear ? parsedMaxYear + '년 이하' : '전체'} | 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
-  if (customFields.length > 0) {
-    logger.info(`[추가 요청 항목] ${customFields.join(', ')}`);
+
+  const columns = [];
+  baseFields.forEach(f => {
+    if (BASE_FIELD_LABELS[f]) {
+      columns.push({ key: f, label: BASE_FIELD_LABELS[f] });
+    }
+  });
+  customFields.forEach(cf => {
+    columns.push({ key: cf, label: cf });
+  });
+
+  // 이어하기(Resume) 파일 확인 또는 신규 파일명 확정
+  let jsonFileName, excelFileName, jsonFilePath, excelFilePath;
+  let existingMeta = null;
+
+  if (resumeFileName) {
+    const safeResume = path.basename(resumeFileName);
+    const candidatePath = path.join(quotasDir, safeResume);
+    if (fs.existsSync(candidatePath)) {
+      jsonFileName = safeResume;
+      excelFileName = safeResume.replace(/\.json$/i, '.xlsx');
+      jsonFilePath = candidatePath;
+      excelFilePath = path.join(quotasDir, excelFileName);
+      try {
+        existingMeta = JSON.parse(fs.readFileSync(candidatePath, 'utf-8'));
+      } catch (_) {}
+    }
   }
+
+  if (!jsonFileName) {
+    const timestamp = Date.now();
+    const cleanTitle = title.replace(/[^가-힣a-zA-Z0-9_\-]/g, '_');
+    const filenameBase = `quota_${cleanTitle}_${timestamp}`;
+    jsonFileName = `${filenameBase}.json`;
+    excelFileName = `${filenameBase}.xlsx`;
+    jsonFilePath = path.join(quotasDir, jsonFileName);
+    excelFilePath = path.join(quotasDir, excelFileName);
+  }
+
+  const createdAt = existingMeta?.createdAt || new Date().toISOString();
+
+  function saveCheckpoint({ currentData, currentIndex, targetTotal, candidates, isComplete }) {
+    const mbzFailedCount = (currentData || []).filter(item => item.mbzStatus === 'failed').length;
+    const quotaMeta = {
+      title,
+      type: 'MARKETBZ_DIRECT',
+      keyword,
+      createdAt,
+      updatedAt: new Date().toISOString(),
+      targetTotal: targetTotal || count,
+      count: (currentData || []).length,
+      mbzFailedCount,
+      isComplete: Boolean(isComplete),
+      requestParams: { title, keyword, targetCount: count, baseFields, customFields, autoEnrich, maxOpenYear },
+      candidates: candidates || existingMeta?.candidates || [],
+      columns,
+      data: currentData || []
+    };
+    fs.writeFileSync(jsonFilePath, JSON.stringify(quotaMeta, null, 2), 'utf-8');
+    if (currentData && currentData.length > 0) {
+      exportBusinessesToExcel({
+        data: currentData,
+        columns,
+        filePath: excelFilePath
+      });
+    }
+    logger.broadcast({
+      type: 'QUOTA_CHECKPOINT',
+      title,
+      mode: 'marketbz',
+      count: (currentData || []).length,
+      targetTotal: targetTotal || count,
+      mbzFailedCount,
+      isComplete: Boolean(isComplete),
+      columns,
+      data: currentData || [],
+      jsonFileName,
+      excelFileName,
+      jsonDownloadUrl: `/api/quota/download/${jsonFileName}`,
+      excelDownloadUrl: `/api/quota/download/${excelFileName}`
+    });
+  }
+
+  logger.info(`[조사 쿼터 ${existingMeta ? '이어하기' : '생성'} 시작] 명칭: "${title}" | 파일: ${jsonFileName} | 목표: ${count}개`);
 
   try {
     const { fetchMarketBzBusinesses } = await import('./engine/marketbz.js');
@@ -1179,60 +1260,40 @@ app.post('/api/quota/generate', async (req, res) => {
       count,
       customFields,
       autoEnrich: autoEnrich !== false,
-      maxOpenYear: parsedMaxYear
+      maxOpenYear: parsedMaxYear,
+      existingData: existingMeta?.data || [],
+      savedCandidates: existingMeta?.candidates || null,
+      onProgress: saveCheckpoint
     });
 
     if (businesses.length === 0) {
       return res.status(404).json({ error: '조건에 일치하는 실존 사업자 데이터를 찾지 못했습니다.' });
     }
 
-    // 컬럼 정의 (Excel 및 화면 그리드 헤더용)
-    const columns = [];
-    // 1. 기본 필드 중 선택된 것
-    baseFields.forEach(f => {
-      if (BASE_FIELD_LABELS[f]) {
-        columns.push({ key: f, label: BASE_FIELD_LABELS[f] });
-      }
-    });
-    // 2. 사용자가 동적으로 추가한 커스텀 필드
-    customFields.forEach(cf => {
-      columns.push({ key: cf, label: cf });
+    const mbzFailedCount = businesses.filter(item => item.mbzStatus === 'failed').length;
+    const isComplete = businesses.length >= count && mbzFailedCount === 0;
+
+    saveCheckpoint({
+      currentData: businesses,
+      currentIndex: businesses.length,
+      targetTotal: count,
+      candidates: existingMeta?.candidates || [],
+      isComplete
     });
 
-    const timestamp = Date.now();
-    const cleanTitle = title.replace(/[^가-힣a-zA-Z0-9_\-]/g, '_');
-    const filenameBase = `quota_${cleanTitle}_${timestamp}`;
-
-    // 1. JSON 파일 저장
-    const jsonFileName = `${filenameBase}.json`;
-    const jsonFilePath = path.join(quotasDir, jsonFileName);
-    const quotaMeta = {
-      title,
-      keyword,
-      createdAt: new Date().toISOString(),
-      count: businesses.length,
-      columns,
-      data: businesses
-    };
-    fs.writeFileSync(jsonFilePath, JSON.stringify(quotaMeta, null, 2), 'utf-8');
-
-    // 2. Excel (.xlsx) 파일 생성 저장
-    const excelFileName = `${filenameBase}.xlsx`;
-    const excelFilePath = path.join(quotasDir, excelFileName);
-    exportBusinessesToExcel({
-      data: businesses,
-      columns,
-      filePath: excelFilePath
-    });
-
-    logger.success(`[조사 쿼터 완성] ${businesses.length}개 실존 사업자 데이터로 JSON 및 Excel 파일이 성공적으로 생성되었습니다! 🎉`);
+    logger.success(`[조사 쿼터 저장 완료] ${businesses.length}/${count}개 사업자 데이터 저장 완료 (마켓비즈 재시도 필요: ${mbzFailedCount}건)`);
 
     res.json({
       success: true,
-      message: '조사 쿼터가 성공적으로 생성되었습니다.',
+      message: isComplete
+        ? '조사 쿼터가 성공적으로 생성되었습니다.'
+        : `현재까지 ${businesses.length}/${count}건 저장됨 (마켓비즈 연결 지연 ${mbzFailedCount}건 - [실패 지점부터 이어하기]로 즉시 업데이트 가능)`,
       title,
       keyword,
       count: businesses.length,
+      targetTotal: count,
+      mbzFailedCount,
+      isComplete,
       columns,
       data: businesses,
       jsonFileName,
@@ -1241,7 +1302,29 @@ app.post('/api/quota/generate', async (req, res) => {
       excelDownloadUrl: `/api/quota/download/${excelFileName}`
     });
   } catch (err) {
-    logger.error('[조사 쿼터 생성 실패]', err);
+    logger.error('[조사 쿼터 생성 오류]', err);
+    if (fs.existsSync(jsonFilePath)) {
+      const saved = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
+      if (saved.data && saved.data.length > 0) {
+        return res.json({
+          success: true,
+          partial: true,
+          message: `중간 오류 발생으로 현재까지 수집된 ${saved.data.length}건을 안전하게 저장했습니다. [실패 지점부터 이어하기]를 눌러 완료하세요.`,
+          title: saved.title,
+          keyword: saved.keyword,
+          count: saved.data.length,
+          targetTotal: saved.targetTotal || count,
+          mbzFailedCount: saved.mbzFailedCount || 0,
+          isComplete: false,
+          columns: saved.columns || columns,
+          data: saved.data,
+          jsonFileName,
+          excelFileName,
+          jsonDownloadUrl: `/api/quota/download/${jsonFileName}`,
+          excelDownloadUrl: `/api/quota/download/${excelFileName}`
+        });
+      }
+    }
     res.status(500).json({ error: '조사 쿼터 생성 중 오류가 발생했습니다: ' + err.message });
   }
 });
@@ -1349,9 +1432,7 @@ app.post('/api/onnuri/sync-master', async (req, res) => {
   });
 });
 
-
-
-// 온누리상품권 + 마켓비즈 하이브리드 조사 쿼터 생성 API
+// 온누리상품권 + 마켓비즈 하이브리드 조사 쿼터 생성 API (실시간 체크포인트 저장 & 이어하기 지원)
 app.post('/api/quota/generate-onnuri', async (req, res) => {
   const {
     title = '온누리 전통시장 조사 쿼터',
@@ -1366,7 +1447,8 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
     enableSmartFallback = true,
     customFields = [],
     autoEnrich = true,
-    maxOpenYear = 2025
+    maxOpenYear = 2025,
+    resumeFileName = null
   } = req.body;
 
   if (!marketName || !marketName.trim()) {
@@ -1375,11 +1457,125 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
 
   const count = Math.max(1, Math.min(parseInt(targetCount) || 10, 100));
   const parsedMaxYear = maxOpenYear === 'all' ? null : (parseInt(maxOpenYear, 10) || 2025);
-  logger.info(`[온누리 쿼터 요청] "${title}" | 시장: "${marketName}" | 모드: ${samplingMode} | 개업연도 상한: ${parsedMaxYear ? parsedMaxYear + '년 이하' : '전체'} | 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+
+  // 온누리 하이브리드 표준 컬럼 정의: [상호] [업종] [사업자번호] [대표자이름] [성별] [나이] [연락처] [개업연월] [주소] [취급품목] [주요품목]
+  const baseColumnDefs = [
+    { key: 'companyName', label: '상호' },
+    { key: 'industry', label: '업종' },
+    { key: 'bizNumber', label: '사업자번호' },
+    { key: 'ceoName', label: '대표자이름' },
+    { key: 'ceoGender', label: '성별' },
+    { key: 'ceoAge', label: '나이' },
+    { key: 'phone', label: '연락처' },
+    { key: 'openDate', label: '개업연월' },
+    { key: 'address', label: '주소' },
+    { key: 'handledItems', label: '취급품목' },
+    { key: 'mainProducts', label: '주요품목' },
+    { key: 'marketName', label: '시장명' },
+    { key: 'status', label: '가맹상태' },
+    { key: 'paperAccepted', label: '온누리지류' },
+    { key: 'digitalAccepted', label: '온누리디지털' }
+  ];
+
+  const columns = [...baseColumnDefs];
+  if (customFields && Array.isArray(customFields)) {
+    customFields.forEach(cf => {
+      columns.push({ key: cf, label: cf });
+    });
+  }
+
+  // 이어하기(Resume) 파일 확인 또는 신규 파일명 확정
+  let jsonFileName, excelFileName, jsonFilePath, excelFilePath;
+  let existingMeta = null;
+
+  if (resumeFileName) {
+    const safeResume = path.basename(resumeFileName);
+    const candidatePath = path.join(quotasDir, safeResume);
+    if (fs.existsSync(candidatePath)) {
+      jsonFileName = safeResume;
+      excelFileName = safeResume.replace(/\.json$/i, '.xlsx');
+      jsonFilePath = candidatePath;
+      excelFilePath = path.join(quotasDir, excelFileName);
+      try {
+        existingMeta = JSON.parse(fs.readFileSync(candidatePath, 'utf-8'));
+      } catch (_) {}
+    }
+  }
+
+  if (!jsonFileName) {
+    const timestamp = Date.now();
+    const cleanTitle = title.replace(/[^가-힣a-zA-Z0-9_\-]/g, '_');
+    const filenameBase = `quota_onnuri_${cleanTitle}_${timestamp}`;
+    jsonFileName = `${filenameBase}.json`;
+    excelFileName = `${filenameBase}.xlsx`;
+    jsonFilePath = path.join(quotasDir, jsonFileName);
+    excelFilePath = path.join(quotasDir, excelFileName);
+  }
+
+  const createdAt = existingMeta?.createdAt || new Date().toISOString();
+
+  function saveOnnuriCheckpoint({ currentData, currentIndex, targetTotal, candidates, isComplete }) {
+    const mbzFailedCount = (currentData || []).filter(item => item.mbzStatus === 'failed').length;
+    const quotaMeta = {
+      title,
+      type: 'ONNURI_HYBRID',
+      marketName: marketName.trim(),
+      createdAt,
+      updatedAt: new Date().toISOString(),
+      targetTotal: targetTotal || count,
+      count: (currentData || []).length,
+      mbzFailedCount,
+      isComplete: Boolean(isComplete),
+      requestParams: {
+        title,
+        regionCode,
+        districtCode,
+        marketName: marketName.trim(),
+        statusFilter,
+        paymentFilter,
+        targetCount: count,
+        samplingMode,
+        industryQuotas,
+        enableSmartFallback,
+        customFields,
+        autoEnrich,
+        maxOpenYear
+      },
+      candidates: candidates || existingMeta?.candidates || [],
+      columns,
+      data: currentData || []
+    };
+    fs.writeFileSync(jsonFilePath, JSON.stringify(quotaMeta, null, 2), 'utf-8');
+    if (currentData && currentData.length > 0) {
+      exportBusinessesToExcel({
+        data: currentData,
+        columns,
+        filePath: excelFilePath
+      });
+    }
+    logger.broadcast({
+      type: 'QUOTA_CHECKPOINT',
+      title,
+      mode: 'onnuri',
+      marketName: marketName.trim(),
+      count: (currentData || []).length,
+      targetTotal: targetTotal || count,
+      mbzFailedCount,
+      isComplete: Boolean(isComplete),
+      columns,
+      data: currentData || [],
+      jsonFileName,
+      excelFileName,
+      jsonDownloadUrl: `/api/quota/download/${jsonFileName}`,
+      excelDownloadUrl: `/api/quota/download/${excelFileName}`
+    });
+  }
+
+  logger.info(`[온누리 쿼터 ${existingMeta ? '이어하기(Resume)' : '신규 생성'} 요청] "${title}" | 파일: ${jsonFileName} | 시장: "${marketName}" | 모드: ${samplingMode} | 기존 보존: ${(existingMeta?.data || []).length}건`);
 
   try {
     const { buildHybridOnnuriQuota } = await import('./engine/hybrid-quota.js');
-    const businesses = await buildHybridOnnuriQuota({
+    const buildResult = await buildHybridOnnuriQuota({
       regionCode,
       districtCode,
       marketName: marketName.trim(),
@@ -1391,77 +1587,47 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
       enableSmartFallback: enableSmartFallback !== false,
       customFields,
       autoEnrich: autoEnrich !== false,
-      maxOpenYear: parsedMaxYear
+      maxOpenYear: parsedMaxYear,
+      existingData: existingMeta?.data || [],
+      savedCandidates: existingMeta?.candidates || null,
+      onProgress: saveOnnuriCheckpoint
     });
+
+    const businesses = Array.isArray(buildResult) ? buildResult : (buildResult.data || []);
+    const targetTotal = (!Array.isArray(buildResult) && buildResult.targetTotal) ? buildResult.targetTotal : count;
+    const mbzFailedCount = (!Array.isArray(buildResult) && buildResult.mbzFailedCount !== undefined)
+      ? buildResult.mbzFailedCount
+      : businesses.filter(item => item.mbzStatus === 'failed').length;
+    const isComplete = (!Array.isArray(buildResult) && buildResult.isComplete !== undefined)
+      ? buildResult.isComplete
+      : (businesses.length >= targetTotal && mbzFailedCount === 0);
 
     if (businesses.length === 0) {
       return res.status(404).json({ error: `"${marketName}" 조건에 부합하는 온누리 가맹점을 찾지 못했습니다.` });
     }
 
-    // 온누리 하이브리드 표준 컬럼 정의: [상호] [업종] [사업자번호] [대표자이름] [성별] [나이] [연락처] [개업연월] [주소] [취급품목] [주요품목]
-    const baseColumnDefs = [
-      { key: 'companyName', label: '상호' },
-      { key: 'industry', label: '업종' },
-      { key: 'bizNumber', label: '사업자번호' },
-      { key: 'ceoName', label: '대표자이름' },
-      { key: 'ceoGender', label: '성별' },
-      { key: 'ceoAge', label: '나이' },
-      { key: 'phone', label: '연락처' },
-      { key: 'openDate', label: '개업연월' },
-      { key: 'address', label: '주소' },
-      { key: 'handledItems', label: '취급품목' },
-      { key: 'mainProducts', label: '주요품목' },
-      { key: 'marketName', label: '시장명' },
-      { key: 'status', label: '가맹상태' },
-      { key: 'paperAccepted', label: '온누리지류' },
-      { key: 'digitalAccepted', label: '온누리디지털' }
-    ];
-
-    let columns = [...baseColumnDefs];
-
-    // 커스텀 필드 추가
-    if (customFields && Array.isArray(customFields)) {
-      customFields.forEach(cf => {
-        columns.push({ key: cf, label: cf });
-      });
-    }
-
-    const timestamp = Date.now();
-    const cleanTitle = title.replace(/[^가-힣a-zA-Z0-9_\-]/g, '_');
-    const filenameBase = `quota_onnuri_${cleanTitle}_${timestamp}`;
-
-    // 1. JSON 파일 저장
-    const jsonFileName = `${filenameBase}.json`;
-    const jsonFilePath = path.join(quotasDir, jsonFileName);
-    const quotaMeta = {
-      title,
-      type: 'ONNURI_HYBRID',
-      marketName: marketName.trim(),
-      createdAt: new Date().toISOString(),
-      count: businesses.length,
-      columns,
-      data: businesses
-    };
-    fs.writeFileSync(jsonFilePath, JSON.stringify(quotaMeta, null, 2), 'utf-8');
-
-    // 2. Excel (.xlsx) 파일 생성 저장
-    const excelFileName = `${filenameBase}.xlsx`;
-    const excelFilePath = path.join(quotasDir, excelFileName);
-    exportBusinessesToExcel({
-      data: businesses,
-      columns,
-      filePath: excelFilePath
+    saveOnnuriCheckpoint({
+      currentData: businesses,
+      currentIndex: businesses.length,
+      targetTotal,
+      candidates: (!Array.isArray(buildResult) && buildResult.candidates) ? buildResult.candidates : (existingMeta?.candidates || []),
+      isComplete
     });
 
-    logger.success(`[온누리 쿼터 완성] ${businesses.length}개 실존 전통시장 사업자 데이터로 JSON 및 Excel 파일이 성공적으로 생성되었습니다! 🎉`);
+    logger.success(`[온누리 쿼터 저장 완료] ${businesses.length}/${targetTotal}개 전통시장 사업자 데이터 저장 완료 (마켓비즈 재시도 필요: ${mbzFailedCount}건)`);
 
     res.json({
       success: true,
-      message: '온누리 연계 조사 쿼터가 성공적으로 생성되었습니다.',
+      message: isComplete
+        ? '온누리 연계 조사 쿼터가 100% 성공적으로 생성되었습니다.'
+        : `현재까지 ${businesses.length}/${targetTotal}건 저장 완료 (마켓비즈 연결 지연 ${mbzFailedCount}건 - [실패 지점부터 이어하기]로 즉시 업데이트 가능)`,
       title,
       type: 'ONNURI_HYBRID',
       marketName: marketName.trim(),
       count: businesses.length,
+      targetTotal,
+      mbzFailedCount,
+      isComplete,
       columns,
       data: businesses,
       jsonFileName,
@@ -1471,7 +1637,30 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
     });
 
   } catch (err) {
-    logger.error('[온누리 쿼터 생성 실패]', err);
+    logger.error('[온누리 쿼터 생성 오류]', err);
+    if (fs.existsSync(jsonFilePath)) {
+      const saved = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
+      if (saved.data && saved.data.length > 0) {
+        return res.json({
+          success: true,
+          partial: true,
+          message: `중간 오류 발생으로 현재까지 수집된 ${saved.data.length}건을 안전하게 저장했습니다. [실패 지점부터 이어하기]를 눌러 완료하세요.`,
+          title: saved.title,
+          type: 'ONNURI_HYBRID',
+          marketName: saved.marketName,
+          count: saved.data.length,
+          targetTotal: saved.targetTotal || count,
+          mbzFailedCount: saved.mbzFailedCount || 0,
+          isComplete: false,
+          columns: saved.columns || columns,
+          data: saved.data,
+          jsonFileName,
+          excelFileName,
+          jsonDownloadUrl: `/api/quota/download/${jsonFileName}`,
+          excelDownloadUrl: `/api/quota/download/${excelFileName}`
+        });
+      }
+    }
     res.status(500).json({ error: '온누리 연계 쿼터 생성 중 오류가 발생했습니다: ' + err.message });
   }
 });
@@ -1507,6 +1696,12 @@ app.get('/api/quota/list', (req, res) => {
         industryDist[matched] = (industryDist[matched] || 0) + 1;
       });
 
+      const mbzFailedCount = data.filter(item => item.mbzStatus === 'failed').length;
+      const targetTotal = content.targetTotal || content.count || data.length;
+      const isComplete = content.isComplete !== undefined
+        ? content.isComplete
+        : (data.length >= targetTotal && mbzFailedCount === 0);
+
       return {
         fileName: f,
         title: content.title || f,
@@ -1514,6 +1709,10 @@ app.get('/api/quota/list', (req, res) => {
         marketName: content.marketName || null,
         keyword: content.keyword,
         count: content.count || data.length,
+        targetTotal,
+        mbzFailedCount,
+        isComplete,
+        requestParams: content.requestParams || null,
         createdAt: content.createdAt,
         updatedAt: content.updatedAt || content.createdAt,
         industryDistribution: Object.keys(industryDist).length > 0 ? industryDist : null,

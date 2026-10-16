@@ -75,6 +75,27 @@
 
         <form id="quota-builder-form">
           <input type="hidden" id="current-source-mode" value="onnuri" />
+          <input type="hidden" id="resume-file-name" value="" />
+
+          <!-- [신규] 기존/미완료 쿼터 불러와서 실패 지점부터 이어하기 패널 -->
+          <div class="qb-resume-banner" id="panel-resume-selector">
+            <div class="qb-sub-header mb-6">
+              <span class="qb-resume-title">
+                <i class="fa-solid fa-rotate-right"></i> 기존 쿼터 이어하기 (중단·실패 지점 복구)
+              </span>
+              <button type="button" id="btn-clear-resume" class="qb-btn-chip hidden">
+                <i class="fa-solid fa-xmark"></i> 신규 생성 모드로 전환
+              </button>
+            </div>
+            <div class="qb-inline-input-row">
+              <select id="select-resume-quota" class="figma-select qb-input">
+                <option value="">✨ 새로 쿼터 생성하기 (기존 파일 선택 시 이어서 업데이트)</option>
+              </select>
+            </div>
+            <p class="qb-helper-text" id="resume-status-hint">
+              생성 도중 마켓비즈 연결 지연으로 멈췄거나 일부 누락된 쿼터를 선택하면, 이미 수집된 행은 보존하고 실패한 지점부터 빠르게 업데이트합니다.
+            </p>
+          </div>
 
           <!-- [공통] 쿼터 기본 정보 -->
           <div class="qb-sub-panel">
@@ -331,6 +352,9 @@
           <!-- 생성 완료 시 나타나는 액션 툴바 -->
           <div id="download-actions" class="qb-action-toolbar hidden">
             <div class="qb-toolbar-left">
+              <button type="button" id="btn-resume-failed-quota" class="qb-action-btn resume hidden">
+                <i class="fa-solid fa-rotate-right"></i> 실패 지점부터 이어하기
+              </button>
               <a href="#" id="link-view-detail" class="qb-action-btn primary">
                 <i class="fa-solid fa-pen-to-square"></i> 점포 상세·수정
               </a>

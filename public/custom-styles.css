@@ -4394,3 +4394,56 @@ input[type="range"]::-webkit-slider-thumb:hover {
   scrollbar-color: #cbd5e1 #f8fafc;
 }
 
+/* 이어하기(Resume) 전용 배너 & 버튼 스타일 */
+.qb-resume-banner {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.qb-resume-banner.active-resume {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fcd34d;
+}
+
+.qb-resume-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0369a1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qb-resume-banner.active-resume .qb-resume-title {
+  color: #b45309;
+}
+
+.qb-action-btn.resume {
+  background: #d97706;
+  color: #ffffff;
+  border: 1px solid #d97706;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+}
+
+.qb-action-btn.resume:hover {
+  background: #b45309;
+  border-color: #b45309;
+}
+
+.badge-mbz-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  margin-left: 5px;
+}
+
+

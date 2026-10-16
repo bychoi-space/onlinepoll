@@ -59,14 +59,159 @@ document.addEventListener('DOMContentLoaded', () => {
   const excelTbody = document.getElementById('excel-grid-tbody');
   const terminalLogs = document.getElementById('quota-terminal-logs');
 
+  // [신규] 이어하기(Resume) 관련 엘리먼트
+  const inputResumeFileName = document.getElementById('resume-file-name');
+  const selectResumeQuota = document.getElementById('select-resume-quota');
+  const btnClearResume = document.getElementById('btn-clear-resume');
+  const panelResumeSelector = document.getElementById('panel-resume-selector');
+  const resumeStatusHint = document.getElementById('resume-status-hint');
+  const btnResumeFailedQuota = document.getElementById('btn-resume-failed-quota');
+
   const customFields = [];
   let lastCreatedQuota = null;
+  let savedQuotasList = [];
+
+  // ==========================================
+  // [0] 기존 쿼터 목록 로드 & 이어하기(Resume) 선택 제어
+  // ==========================================
+  async function loadSavedQuotasForResume(selectedFile = null) {
+    if (!selectResumeQuota) return;
+    try {
+      const res = await fetch('/api/quota/list');
+      const list = await res.json();
+      if (!Array.isArray(list)) return;
+      savedQuotasList = list;
+
+      let html = '<option value="">✨ 새로 쿼터 생성하기 (기존 파일 선택 시 이어서 업데이트)</option>';
+      list.forEach(q => {
+        const isPartial = !q.isComplete || (q.mbzFailedCount && q.mbzFailedCount > 0) || (q.targetTotal && q.count < q.targetTotal);
+        const statusTag = isPartial
+          ? `[⚠️ 이어하기 권장: ${q.count}/${q.targetTotal || q.count}건${q.mbzFailedCount ? `, 마켓비즈 미연결 ${q.mbzFailedCount}건` : ''}]`
+          : `[완료: ${q.count}건]`;
+        const sel = (selectedFile && q.fileName === selectedFile) ? 'selected' : '';
+        html += `<option value="${escapeHtml(q.fileName)}" ${sel}>${statusTag} ${escapeHtml(q.title)} (${escapeHtml(q.marketName || q.keyword || 'B2B')})</option>`;
+      });
+      selectResumeQuota.innerHTML = html;
+    } catch (_) {}
+  }
+
+  async function selectQuotaForResume(fileName) {
+    if (!fileName) {
+      if (inputResumeFileName) inputResumeFileName.value = '';
+      if (btnClearResume) btnClearResume.classList.add('hidden');
+      if (panelResumeSelector) panelResumeSelector.classList.remove('active-resume');
+      if (resumeStatusHint) {
+        resumeStatusHint.textContent = '생성 도중 마켓비즈 연결 지연으로 멈췄거나 일부 누락된 쿼터를 선택하면, 이미 수집된 행은 보존하고 실패한 지점부터 빠르게 업데이트합니다.';
+      }
+      updateSubmitButtonLabel();
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/quota/${encodeURIComponent(fileName)}`);
+      const json = await res.json();
+      if (!res.ok || !json.quota) throw new Error(json.error || '쿼터 파일 로드 실패');
+
+      const q = json.quota;
+      if (inputResumeFileName) inputResumeFileName.value = fileName;
+      if (btnClearResume) btnClearResume.classList.remove('hidden');
+      if (panelResumeSelector) panelResumeSelector.classList.add('active-resume');
+
+      // 수집 모드 및 폼 값 복원
+      const isOnnuri = q.type === 'ONNURI_HYBRID' || Boolean(q.marketName);
+      switchMode(isOnnuri ? 'onnuri' : 'marketbz', true);
+      inputTitle.value = q.title || inputTitle.value;
+
+      if (isOnnuri) {
+        if (q.marketName) inputOnnuriMarket.value = q.marketName;
+        if (q.requestParams) {
+          if (q.requestParams.industryQuotas && Object.keys(q.requestParams.industryQuotas).length > 0) {
+            Object.assign(industryCounts, q.requestParams.industryQuotas);
+            renderStratifiedTable();
+            updateStratifiedTotal();
+          }
+          if (q.requestParams.maxOpenYear && selectMaxOpenYearEl) {
+            selectMaxOpenYearEl.value = String(q.requestParams.maxOpenYear);
+          }
+        }
+        fetchMarketStats();
+      } else {
+        if (q.keyword) inputKeyword.value = q.keyword;
+        if (q.targetTotal) inputCount.value = q.targetTotal;
+      }
+
+      const mbzFailedCount = (q.data || []).filter(r => r.mbzStatus === 'failed').length;
+      const targetTotal = q.targetTotal || (isOnnuri ? getStratifiedTotal() : (q.count || 0));
+
+      if (resumeStatusHint) {
+        resumeStatusHint.innerHTML = `<strong>[이어하기 선택됨]</strong> 현재 <strong>${(q.data || []).length}/${targetTotal}건</strong> 저장됨${mbzFailedCount > 0 ? ` (마켓비즈 연결 지연 <strong>${mbzFailedCount}건</strong> 포함)` : ''} ➔ 이미 완료된 행은 건너뛰고 실패/미수집 지점부터 업데이트합니다.`;
+      }
+
+      // 우측 스프레드시트 뷰어에 현재까지 저장된 쿼터 즉시 미리보기 렌더링
+      renderExcelGrid({
+        title: q.title || fileName,
+        count: (q.data || []).length,
+        targetTotal,
+        mbzFailedCount,
+        isComplete: Boolean(q.isComplete && mbzFailedCount === 0 && (q.data || []).length >= targetTotal),
+        columns: q.columns || [],
+        data: q.data || [],
+        jsonFileName: fileName,
+        excelFileName: json.excelFileName || fileName.replace(/\.json$/i, '.xlsx'),
+        jsonDownloadUrl: `/api/quota/download/${fileName}`,
+        excelDownloadUrl: `/api/quota/download/${json.excelFileName || fileName.replace(/\.json$/i, '.xlsx')}`
+      });
+
+      updateSubmitButtonLabel();
+      appendLog('info', `[이어하기 로드] "${q.title}" (기수집 ${(q.data || []).length}건) 불러오기 완료. 하단 버튼을 누르면 실패/누락 지점부터 즉시 업데이트합니다.`);
+    } catch (err) {
+      appendLog('error', `기존 쿼터 로드 실패: ${err.message}`);
+    }
+  }
+
+  function updateSubmitButtonLabel() {
+    const resumeFile = inputResumeFileName ? inputResumeFileName.value.trim() : '';
+    const mode = inputCurrentMode.value;
+    if (resumeFile) {
+      btnGenerate.innerHTML = `<i class="fa-solid fa-rotate-right"></i> 실패/중단 지점부터 쿼터 이어하기 업데이트 (기존 데이터 보존)`;
+    } else if (mode === 'onnuri') {
+      btnGenerate.innerHTML = '<i class="fa-solid fa-store"></i> 온누리 ➔ 마켓비즈 연계 쿼터 만들기 (JSON & Excel)';
+    } else {
+      btnGenerate.innerHTML = '<i class="fa-solid fa-bolt"></i> 마켓비즈 조사 쿼터 만들기 (JSON & Excel)';
+    }
+  }
+
+  if (selectResumeQuota) {
+    selectResumeQuota.addEventListener('change', (e) => {
+      selectQuotaForResume(e.target.value);
+    });
+  }
+
+  if (btnClearResume) {
+    btnClearResume.addEventListener('click', () => {
+      if (selectResumeQuota) selectResumeQuota.value = '';
+      selectQuotaForResume('');
+    });
+  }
+
+  loadSavedQuotasForResume().then(() => {
+    const params = new URLSearchParams(window.location.search);
+    const resumeParam = params.get('resume');
+    if (resumeParam && selectResumeQuota) {
+      selectResumeQuota.value = resumeParam;
+      selectQuotaForResume(resumeParam);
+    }
+  });
 
   // ==========================================
   // [1] 수집 모드 탭 전환 로직
   // ==========================================
-  function switchMode(mode) {
+  function switchMode(mode, preserveResume = false) {
     inputCurrentMode.value = mode;
+    if (!preserveResume && inputResumeFileName && inputResumeFileName.value) {
+      if (selectResumeQuota) selectResumeQuota.value = '';
+      selectQuotaForResume('');
+    }
     if (mode === 'marketbz') {
       tabMarketBz.classList.add('active');
       tabOnnuri.classList.remove('active');
@@ -74,8 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
       sectionMarketBz.classList.remove('hidden');
       sectionOnnuri.classList.add('hidden');
 
-      inputTitle.value = '2026_소프트웨어_사업자_조사쿼터';
-      btnGenerate.innerHTML = '<i class="fa-solid fa-bolt"></i> 마켓비즈 조사 쿼터 만들기 (JSON & Excel)';
+      if (!preserveResume) inputTitle.value = '2026_소프트웨어_사업자_조사쿼터';
     } else {
       tabOnnuri.classList.add('active');
       tabMarketBz.classList.remove('active');
@@ -83,14 +227,15 @@ document.addEventListener('DOMContentLoaded', () => {
       sectionMarketBz.classList.add('hidden');
       sectionOnnuri.classList.remove('hidden');
 
-      inputTitle.value = `2026_${inputOnnuriMarket.value || '풍납시장'}_온누리가맹점_조사쿼터`;
-      btnGenerate.innerHTML = '<i class="fa-solid fa-store"></i> 온누리 ➔ 마켓비즈 연계 쿼터 만들기 (JSON & Excel)';
+      if (!preserveResume) {
+        updateQuotaTitle();
+      }
 
-      // 온누리 지역 목록이 아직 로드되지 않았으면 로드
       if (selectOnnuriRegion.options.length <= 1) {
         loadOnnuriRegions();
       }
     }
+    updateSubmitButtonLabel();
   }
 
   tabMarketBz.addEventListener('click', () => switchMode('marketbz'));
@@ -526,14 +671,34 @@ document.addEventListener('DOMContentLoaded', () => {
     terminalLogs.scrollTop = terminalLogs.scrollHeight;
   }
 
-  // SSE 연결
+  // SSE 연결 (실시간 로그 + QUOTA_CHECKPOINT 실시간 스프레드시트 행 추가)
   function initEventSource() {
     const sse = new EventSource('/api/events');
     sse.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'log') {
+          // [채널 필터링] 조사 쿼터 생성기 화면에서는 설문 자동화/배치 관련 로그를 엄격히 제외
+          if (data.channel === 'survey') return;
+          const msg = String(data.message || '');
+          if (
+            msg.includes('[배치') ||
+            msg.includes('[파일럿') ||
+            msg.includes('[ALERT]') ||
+            msg.includes('Agree.asp') ||
+            msg.includes('설문 알림') ||
+            msg.includes('[세션 접속]') ||
+            msg.includes('설문 자동화')
+          ) {
+            return;
+          }
           appendLog(data.level, data.message, data.timestamp);
+        } else if (data.type === 'QUOTA_CHECKPOINT') {
+          // 매 건 수집되어 파일에 체크포인트 저장될 때마다 즉시 화면 표 갱신 & 이어하기 파일명 자동 세팅
+          if (data.jsonFileName && inputResumeFileName) {
+            inputResumeFileName.value = data.jsonFileName;
+          }
+          renderExcelGrid(data, true);
         }
       } catch (_) {}
     };
@@ -541,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initEventSource();
 
   // ==========================================
-  // [4] 쿼터 만들기 실행
+  // [4] 쿼터 만들기 & 실패 지점 이어하기 실행
   // ==========================================
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -553,9 +718,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const autoEnrich = checkAutoEnrich ? checkAutoEnrich.checked : true;
     const selectMaxOpenYear = document.getElementById('max-open-year');
     const maxOpenYear = selectMaxOpenYear ? selectMaxOpenYear.value : '2025';
+    const resumeFileName = inputResumeFileName && inputResumeFileName.value ? inputResumeFileName.value.trim() : null;
 
     try {
       btnGenerate.disabled = true;
+      if (btnResumeFailedQuota) btnResumeFailedQuota.disabled = true;
 
       let res, endpoint, payload;
 
@@ -583,11 +750,12 @@ document.addEventListener('DOMContentLoaded', () => {
           baseFields,
           customFields,
           autoEnrich,
-          maxOpenYear
+          maxOpenYear,
+          resumeFileName
         };
 
-        btnGenerate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 온누리 1차 수집 & 마켓비즈 2차 결합 진행 중...';
-        appendLog('info', `[온누리 연계 쿼터 생성] 시장: "${marketName}", 모드: ${samplingMode}, 목표: ${totalCount}개 가맹점, 개업기준: ${maxOpenYear === 'all' ? '전체' : maxOpenYear + '년 이하'}, 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+        btnGenerate.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${resumeFileName ? '실패 지점부터 이어하기 업데이트 진행 중...' : '온누리 1차 수집 & 마켓비즈 2차 실시간 저장 진행 중...'}`;
+        appendLog('info', `[온누리 연계 쿼터 ${resumeFileName ? '이어하기' : '생성'}] 시장: "${marketName}", 모드: ${samplingMode}, 목표: ${totalCount}개 가맹점${resumeFileName ? `, 대상파일: ${resumeFileName}` : ''}`);
 
       } else {
         // 마켓비즈 단독
@@ -602,11 +770,12 @@ document.addEventListener('DOMContentLoaded', () => {
           baseFields,
           customFields,
           autoEnrich,
-          maxOpenYear
+          maxOpenYear,
+          resumeFileName
         };
 
-        btnGenerate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MarketBz 실존 사업자 데이터 수집 중...';
-        appendLog('info', `[마켓비즈 쿼터 생성 시작] 키워드: "${keyword}", 목표: ${targetCount}개 기업, 개업기준: ${maxOpenYear === 'all' ? '전체' : maxOpenYear + '년 이하'}, 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+        btnGenerate.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${resumeFileName ? '실패 지점부터 이어하기 업데이트 진행 중...' : 'MarketBz 실존 사업자 데이터 실시간 저장 중...'}`;
+        appendLog('info', `[마켓비즈 쿼터 ${resumeFileName ? '이어하기' : '생성'}] 키워드: "${keyword}", 목표: ${targetCount}개 기업${resumeFileName ? `, 대상파일: ${resumeFileName}` : ''}`);
       }
 
       res = await fetch(endpoint, {
@@ -621,36 +790,73 @@ document.addEventListener('DOMContentLoaded', () => {
       appendLog('success', result.message);
 
       // 엑셀 스프레드시트 테이블 렌더링
-      renderExcelGrid(result);
+      renderExcelGrid(result, false);
+      await loadSavedQuotasForResume(result.jsonFileName);
+
+      if (result.jsonFileName && inputResumeFileName) {
+        const hasPending = !result.isComplete || (result.mbzFailedCount && result.mbzFailedCount > 0) || (result.targetTotal && result.count < result.targetTotal);
+        if (hasPending) {
+          inputResumeFileName.value = result.jsonFileName;
+          if (selectResumeQuota) selectResumeQuota.value = result.jsonFileName;
+          if (btnClearResume) btnClearResume.classList.remove('hidden');
+          if (panelResumeSelector) panelResumeSelector.classList.add('active-resume');
+        } else {
+          inputResumeFileName.value = '';
+          if (btnClearResume) btnClearResume.classList.add('hidden');
+          if (panelResumeSelector) panelResumeSelector.classList.remove('active-resume');
+        }
+      }
 
     } catch (err) {
-      appendLog('error', `생성 오류: ${err.message}`);
-      alert('조사 쿼터 생성 실패: ' + err.message);
+      appendLog('error', `생성 중 연결 지연/중단: ${err.message} (현재까지 수집된 데이터는 파일에 자동 저장되었습니다. [실패 지점부터 이어하기]로 재개할 수 있습니다.)`);
+      await loadSavedQuotasForResume(inputResumeFileName ? inputResumeFileName.value : null);
+      alert(`쿼터 생성 중 연결 지연이 발생했습니다: ${err.message}\n\n현재까지 수집된 쿼터는 안전하게 저장되었습니다. [실패 지점부터 이어하기] 버튼을 눌러 중단된 지점부터 바로 이어서 완료하실 수 있습니다.`);
     } finally {
       btnGenerate.disabled = false;
-      if (mode === 'onnuri') {
-        btnGenerate.innerHTML = '<i class="fa-solid fa-store"></i> 온누리 ➔ 마켓비즈 연계 쿼터 만들기 (JSON & Excel)';
-      } else {
-        btnGenerate.innerHTML = '<i class="fa-solid fa-bolt"></i> 마켓비즈 조사 쿼터 만들기 (JSON & Excel)';
-      }
+      if (btnResumeFailedQuota) btnResumeFailedQuota.disabled = false;
+      updateSubmitButtonLabel();
     }
   });
 
-  // 엑셀 스프레드시트 렌더링 함수
-  function renderExcelGrid(res) {
-    const { columns, data, title, count, jsonDownloadUrl, excelDownloadUrl } = res;
+  // 엑셀 스프레드시트 렌더링 함수 (실시간 체크포인트 및 최종 완료 겸용)
+  function renderExcelGrid(res, isLiveCheckpoint = false) {
+    const {
+      columns = [],
+      data = [],
+      title = '조사쿼터',
+      count = 0,
+      targetTotal = count,
+      mbzFailedCount = 0,
+      isComplete = true,
+      jsonDownloadUrl,
+      excelDownloadUrl
+    } = res;
 
-    sheetTitleText.innerHTML = `<span class="qb-sheet-ready-title">${escapeHtml(title)}</span> <span class="qb-sheet-ready-sub">(생성 완료)</span>`;
-    sheetRowCountBadge.className = 'badge-status success';
-    sheetRowCountBadge.textContent = `${count}개 사업자 행`;
+    const hasPending = !isComplete || mbzFailedCount > 0 || (targetTotal && count < targetTotal);
+
+    if (isLiveCheckpoint && !isComplete) {
+      sheetTitleText.innerHTML = `<span class="qb-sheet-ready-title">${escapeHtml(title)}</span> <span class="qb-sheet-ready-sub">(실시간 저장 중: ${count}/${targetTotal}건${mbzFailedCount > 0 ? ` · 마켓비즈 재시도 대기 ${mbzFailedCount}건` : ''})</span>`;
+      sheetRowCountBadge.className = 'badge-status running';
+      sheetRowCountBadge.textContent = `${count} / ${targetTotal}건 저장됨`;
+    } else if (hasPending) {
+      sheetTitleText.innerHTML = `<span class="qb-sheet-ready-title">${escapeHtml(title)}</span> <span class="qb-sheet-ready-sub">(부분 저장됨: ${count}/${targetTotal}건 · 마켓비즈 재시도 대상 ${mbzFailedCount}건)</span>`;
+      sheetRowCountBadge.className = 'badge-status running';
+      sheetRowCountBadge.textContent = `${count} / ${targetTotal}건 (이어하기 가능)`;
+    } else {
+      sheetTitleText.innerHTML = `<span class="qb-sheet-ready-title">${escapeHtml(title)}</span> <span class="qb-sheet-ready-sub">(생성 완료)</span>`;
+      sheetRowCountBadge.className = 'badge-status success';
+      sheetRowCountBadge.textContent = `${count}개 사업자 행`;
+    }
 
     // 헤더(THEAD) 렌더링
-    let theadHtml = '<tr><th class="th-no">번호</th>';
-    columns.forEach(col => {
-      theadHtml += `<th>${escapeHtml(col.label || col.key)}</th>`;
-    });
-    theadHtml += '</tr>';
-    excelThead.innerHTML = theadHtml;
+    if (columns.length > 0) {
+      let theadHtml = '<tr><th class="th-no">번호</th>';
+      columns.forEach(col => {
+        theadHtml += `<th>${escapeHtml(col.label || col.key)}</th>`;
+      });
+      theadHtml += '</tr>';
+      excelThead.innerHTML = theadHtml;
+    }
 
     // 본문(TBODY) 렌더링
     let tbodyHtml = '';
@@ -662,7 +868,9 @@ document.addEventListener('DOMContentLoaded', () => {
           tbodyHtml += `<td><span class="null-val-text">미상</span></td>`;
         } else {
           let cellContent = escapeHtml(String(rawVal));
-          if (col.key === 'ceoName' && (row.isCeoEnriched || row.ceoSource)) {
+          if (col.key === 'companyName' && row.mbzStatus === 'failed') {
+            cellContent += ` <span class="badge-mbz-retry" title="마켓비즈 연결 지연 항목 (이어하기 실행 시 재조회)"><i class="fa-solid fa-rotate-right"></i>재시도대상</span>`;
+          } else if (col.key === 'ceoName' && (row.isCeoEnriched || row.ceoSource)) {
             cellContent += ` <span class="badge-enriched" title="${escapeHtml(row.ceoSource || '외부 공인 정보 보강')}"><i class="fa-solid fa-sparkles"></i>보강</span>`;
           } else if (col.key === 'phone' && (row.isPhoneEnriched || row.phoneSource)) {
             cellContent += ` <span class="badge-enriched" title="${escapeHtml(row.phoneSource || '외부 검색 보강')}"><i class="fa-solid fa-sparkles"></i>보강</span>`;
@@ -679,17 +887,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     excelTbody.innerHTML = tbodyHtml;
 
-    // 다운로드 버튼 활성화
-    linkExcelDownload.href = excelDownloadUrl;
-    linkJsonDownload.href = jsonDownloadUrl;
+    // 다운로드 및 액션 버튼 활성화
+    if (excelDownloadUrl) linkExcelDownload.href = excelDownloadUrl;
+    if (jsonDownloadUrl) linkJsonDownload.href = jsonDownloadUrl;
     const linkViewDetail = document.getElementById('link-view-detail');
     if (linkViewDetail && res.jsonFileName) {
       linkViewDetail.href = `quota-detail.html?file=${encodeURIComponent(res.jsonFileName)}`;
+    }
+    if (btnResumeFailedQuota) {
+      if (hasPending && res.jsonFileName) {
+        btnResumeFailedQuota.classList.remove('hidden');
+        btnResumeFailedQuota.innerHTML = `<i class="fa-solid fa-rotate-right"></i> 실패 지점부터 이어하기 (${mbzFailedCount > 0 ? `재시도 ${mbzFailedCount}건` : `잔여 ${Math.max(0, targetTotal - count)}건`})`;
+      } else {
+        btnResumeFailedQuota.classList.add('hidden');
+      }
     }
     downloadActions.classList.remove('hidden');
 
     // 마지막 생성된 쿼터 정보 보관
     lastCreatedQuota = res;
+  }
+
+  // [신규] 우측 툴바 '실패 지점부터 이어하기' 원클릭 실행 핸들러
+  if (btnResumeFailedQuota) {
+    btnResumeFailedQuota.addEventListener('click', () => {
+      if (!lastCreatedQuota || !lastCreatedQuota.jsonFileName) return;
+      if (inputResumeFileName) inputResumeFileName.value = lastCreatedQuota.jsonFileName;
+      if (selectResumeQuota) selectResumeQuota.value = lastCreatedQuota.jsonFileName;
+      form.requestSubmit();
+    });
   }
 
   // [신규] '결측치 외부 재보강' 버튼 이벤트 핸들러
