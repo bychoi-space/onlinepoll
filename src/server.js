@@ -372,6 +372,33 @@ app.post('/api/campaigns/:id/baseline', (req, res) => {
   });
 });
 
+// 다른 캠페인에서 마스터 기준점 복제해오기 API
+app.post('/api/campaigns/:id/import-baseline', (req, res) => {
+  const { sourceCampaignId } = req.body;
+  const targetCamp = CampaignStore.getCampaignById(req.params.id);
+  const sourceCamp = CampaignStore.getCampaignById(sourceCampaignId);
+
+  if (!targetCamp) return res.status(404).json({ error: '대상 캠페인을 찾을 수 없습니다.' });
+  if (!sourceCamp) return res.status(404).json({ error: '원본 캠페인을 찾을 수 없습니다.' });
+
+  if (!sourceCamp.masterBaseline) {
+    return res.status(400).json({ error: `"${sourceCamp.title}" 캠페인에 저장된 마스터 기준점이 없습니다.` });
+  }
+
+  const copiedBaseline = JSON.parse(JSON.stringify(sourceCamp.masterBaseline));
+  CampaignStore.updateCampaign(targetCamp.id, {
+    masterBaseline: copiedBaseline,
+    hasMasterBlueprint: true
+  });
+
+  logger.success(`[마스터 기준점 복제] "${sourceCamp.title}"의 기준점이 "${targetCamp.title}"로 복사되었습니다.`);
+  res.json({
+    success: true,
+    message: `"${sourceCamp.title}"의 1/2/3그룹 마스터 기준점이 성공적으로 복사되었습니다.`,
+    baseline: copiedBaseline
+  });
+});
+
 // ==========================================
 // [2] 1차 제반 작업: 조사 쿼터(Quota) DB 구축 API
 // ==========================================
@@ -524,6 +551,17 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
       usedAt: null
     }));
 
+    // 기존 캠페인 중 사용자가 커스텀 설정한 masterBaseline(1/2/3그룹 가이드라인)이 있으면 신규 캠페인에 자동 복제 장착
+    let inheritedBaseline = null;
+    const allCamps = CampaignStore.getAllCampaigns();
+    const sourceWithGroups = allCamps.find(c => c.masterBaseline && c.masterBaseline.groups);
+    const sourceWithBaseline = allCamps.find(c => c.masterBaseline);
+    const bestSource = sourceWithGroups || sourceWithBaseline;
+    if (bestSource && bestSource.masterBaseline) {
+      inheritedBaseline = JSON.parse(JSON.stringify(bestSource.masterBaseline));
+      logger.info(`[마스터 기준점 자동 계승] 기존 캠페인 "${bestSource.title}"의 1/2/3그룹 기준점 설정을 신규 캠페인에 자동 복제 장착했습니다.`);
+    }
+
     const updated = CampaignStore.updateCampaign(newCamp.id, {
       status: 'ready',
       quotaConfig: {
@@ -534,7 +572,9 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
         targetCount: quotaDb.length,
         selectedFields: (quotaMeta.columns || []).map(c => c.key)
       },
-      quotaDatabase: quotaDb
+      quotaDatabase: quotaDb,
+      masterBaseline: inheritedBaseline,
+      hasMasterBlueprint: !!inheritedBaseline
     });
 
     logger.success(`[새 설문 캠페인 생성] 쿼터 "${quotaMeta.title || safeFilename}" 기반으로 캠페인 "${campTitle}" (ID: ${newCamp.id})이 생성되었습니다!`);

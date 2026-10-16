@@ -1749,11 +1749,68 @@ async function initSurveyDetailPage() {
   const tabGroup2 = document.getElementById('tab-group2');
   const tabGroup3 = document.getElementById('tab-group3');
   const btnCopyToAll = document.getElementById('btn-copy-to-all-groups');
+  const btnImportCampBaseline = document.getElementById('btn-import-campaign-baseline');
 
   if (tabGroup1) tabGroup1.addEventListener('click', () => switchGroupTab('group1'));
   if (tabGroup2) tabGroup2.addEventListener('click', () => switchGroupTab('group2'));
   if (tabGroup3) tabGroup3.addEventListener('click', () => switchGroupTab('group3'));
   if (btnCopyToAll) btnCopyToAll.addEventListener('click', copyActiveGroupToAll);
+
+  if (btnImportCampBaseline) {
+    btnImportCampBaseline.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/campaigns');
+        if (!res.ok) throw new Error('캠페인 목록을 불러올 수 없습니다.');
+        const camps = await res.json();
+        const otherCamps = (camps || []).filter(c => c.id !== campId && (c.masterBaseline || c.hasMasterBlueprint));
+        if (otherCamps.length === 0) {
+          alert('가져올 수 있는 기준점이 설정된 다른 캠페인이 없습니다.');
+          return;
+        }
+
+        let msg = '1/2/3그룹 마스터 기준점을 가져올 원본 캠페인 번호를 입력하세요:\n\n';
+        otherCamps.forEach((c, idx) => {
+          msg += `[${idx + 1}] ${c.title} (점포 ${c.quotaDatabase?.length || 0}개)\n`;
+        });
+        const choice = prompt(msg, '1');
+        if (!choice) return;
+
+        const selIdx = parseInt(choice, 10) - 1;
+        if (isNaN(selIdx) || selIdx < 0 || selIdx >= otherCamps.length) {
+          alert('올바른 번호를 선택해 주세요.');
+          return;
+        }
+
+        const sourceCamp = otherCamps[selIdx];
+        if (!confirm(`"${sourceCamp.title}"의 1/2/3그룹 마스터 기준점을 이 캠페인에 복제 적용하시겠습니까?`)) {
+          return;
+        }
+
+        btnImportCampBaseline.disabled = true;
+        btnImportCampBaseline.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 복제 중...';
+
+        const importRes = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/import-baseline`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sourceCampaignId: sourceCamp.id })
+        });
+        const importData = await importRes.json();
+        if (!importRes.ok) throw new Error(importData.error || '복제 실패');
+
+        alert(`✓ "${sourceCamp.title}"의 1/2/3그룹 마스터 기준점이 성공적으로 적용되었습니다.`);
+        await loadBlueprint();
+
+        btnImportCampBaseline.disabled = false;
+        btnImportCampBaseline.innerHTML = '<i class="fa-solid fa-file-import text-primary-color"></i> 다른 캠페인 기준점 불러오기';
+      } catch (err) {
+        alert('기준점 불러오기 실패: ' + err.message);
+        if (btnImportCampBaseline) {
+          btnImportCampBaseline.disabled = false;
+          btnImportCampBaseline.innerHTML = '<i class="fa-solid fa-file-import text-primary-color"></i> 다른 캠페인 기준점 불러오기';
+        }
+      }
+    });
+  }
 
   // ------------------------------------------------------------------------
   // 6. 실행 제어 파이프라인 (단일 검증 & 전체 배치 연속 가동)
