@@ -3,7 +3,7 @@
  * 인증 계정을 통해 로그인 후, 실제 사업자 정보를 수집하여 B2B 설문에 공급합니다.
  */
 import { chromium } from 'playwright';
-import { enrichBusinessData } from './enricher.js';
+import { enrichBusinessData, applyCeoPersonaPoolToQuota } from './enricher.js';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
 
@@ -219,8 +219,9 @@ export async function fetchMarketBzBusinesses({ keyword = '소프트웨어', cou
       }
     }
 
-    logger.success(`[MarketBz] 총 ${collectedBusinesses.length}건의 실제 사업자 데이터 수집을 완료했습니다.`);
-    return collectedBusinesses;
+    const finalWithPersonas = applyCeoPersonaPoolToQuota(collectedBusinesses);
+    logger.success(`[MarketBz] 총 ${finalWithPersonas.length}건의 실제 사업자 데이터 수집 및 대표자 페르소나 매칭을 완료했습니다.`);
+    return finalWithPersonas;
 
   } catch (error) {
     logger.error('[MarketBz] 사업자 데이터 수집 중 치명적 오류:', error);

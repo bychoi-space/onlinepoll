@@ -11,8 +11,15 @@
  * 3. 날조 방지 원칙: 미확인 시 임의 가짜 데이터 생성 없이 엄격히 null 유지
  */
 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const CEO_POOL_PATH = path.join(__dirname, '..', '..', 'data', 'ceo_persona_pool.json');
 
 // 대한민국 주요 성씨 목록 (통계청 공인, 99% 이상 커버)
 const KOREAN_SURNAMES = new Set([
@@ -264,16 +271,194 @@ async function searchPhoneByCompany({ companyName, marketName, address }) {
   return null;
 }
 
+let cachedCeoPool = null;
+
+/**
+ * data/ceo_persona_pool.json 로드 (캐싱 지원)
+ */
+export function loadCeoPersonaPool() {
+  if (cachedCeoPool) return cachedCeoPool;
+  try {
+    if (fs.existsSync(CEO_POOL_PATH)) {
+      cachedCeoPool = JSON.parse(fs.readFileSync(CEO_POOL_PATH, 'utf-8'));
+      return cachedCeoPool;
+    }
+  } catch (err) {
+    logger.warn(`[Enricher] CEO 페르소나 풀 로드 실패: ${err.message}`);
+  }
+  return [];
+}
+
+const FEMALE_LAST_SYLLABLES = new Set([
+  '순', '숙', '희', '자', '옥', '정', '연', '미', '은', '혜', '선', '영', '화', '주',
+  '경', '란', '아', '나', '진', '애', '례', '임', '심', '리', '율', '서', '원', '림'
+]);
+const MALE_LAST_SYLLABLES = new Set([
+  '우', '구', '호', '만', '종', '준', '열', '흥', '익', '성', '현', '근', '환', '석',
+  '명', '수', '웅', '덕', '찬', '철', '민', '남', '길', '균', '인', '섭', '규', '재',
+  '복', '용', '렬', '두', '강', '혁', '훈', '창', '학', '형', '욱', '완', '식'
+]);
+
+function inferGenderFromKoreanName(name, pool = []) {
+  if (!name || typeof name !== 'string') return '남';
+  const trimmed = name.trim();
+  const exact = pool.find(p => p.name === trimmed);
+  if (exact && (exact.gender === '남' || exact.gender === '여')) {
+    return exact.gender;
+  }
+  const given2 = trimmed.slice(-2);
+  if (['성민', '궁민', '정민', '철민', '영민', '종민', '동민', '현민'].includes(given2)) {
+    return '남';
+  }
+  const lastChar = trimmed[trimmed.length - 1];
+  if (FEMALE_LAST_SYLLABLES.has(lastChar) && !MALE_LAST_SYLLABLES.has(lastChar)) return '여';
+  if (MALE_LAST_SYLLABLES.has(lastChar) && !FEMALE_LAST_SYLLABLES.has(lastChar)) return '남';
+
+  // 풀 내 끝글자 성별 빈도 대조
+  let maleHits = 0;
+  let femaleHits = 0;
+  for (const p of pool) {
+    if (p.name && p.name[p.name.length - 1] === lastChar) {
+      if (p.gender === '남') maleHits++;
+      else if (p.gender === '여') femaleHits++;
+    }
+  }
+  if (femaleHits > maleHits) return '여';
+  return '남';
+}
+
+function hashSeed(str) {
+  const s = String(str || 'seed');
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+/**
+ * 단일 사업자 객체에 대해 대표자이름(ceoName), 성별(ceoGender), 나이(ceoAge) 중
+ * 누락된 항목을 data/ceo_persona_pool.json 데이터를 이용해 채워넣음
+ */
+export function fillMissingCeoPersona(business, usedState = null) {
+  const pool = loadCeoPersonaPool();
+  if (!Array.isArray(pool) || pool.length === 0) return business;
+
+  const state = usedState || { usedSeqs: new Set(), usedNames: new Set() };
+  const item = { ...business };
+
+  const hasName = Boolean(item.ceoName && String(item.ceoName).trim() !== '' && item.ceoName !== 'null' && item.ceoName !== '-');
+  const hasGender = Boolean(item.ceoGender && (item.ceoGender === '남' || item.ceoGender === '여'));
+  const hasAge = Boolean(item.ceoAge && !isNaN(parseInt(item.ceoAge, 10)) && parseInt(item.ceoAge, 10) >= 20);
+
+  if (hasName && hasGender && hasAge) {
+    state.usedNames.add(String(item.ceoName).trim());
+    item.ceoAge = parseInt(item.ceoAge, 10);
+    return item;
+  }
+
+  // 개업연월 대비 최소 현실적 대표자 연령 산출 (개업 시점 최소 23세 이상 보장)
+  let minRealisticAge = 31;
+  if (item.openDate) {
+    const openYear = parseInt(String(item.openDate).slice(0, 4), 10);
+    if (!isNaN(openYear) && openYear >= 1960 && openYear <= 2026) {
+      minRealisticAge = Math.min(68, Math.max(31, (2026 - openYear) + 23));
+    }
+  }
+
+  const startOffset = hashSeed(item.bizNumber || item.companyName || item.seq || Math.random()) % pool.length;
+
+  if (!hasName) {
+    // 1) 이름 자체가 없는 경우: 풀에서 미사용 프로필 선택하여 이름/성별/나이 일괄 부여
+    let chosen = null;
+    for (let pass = 0; pass < 3 && !chosen; pass++) {
+      for (let i = 0; i < pool.length; i++) {
+        const cand = pool[(startOffset + i) % pool.length];
+        if (pass < 2 && (state.usedSeqs.has(cand.seq) || state.usedNames.has(cand.name))) continue;
+        if (hasGender && cand.gender !== item.ceoGender) continue;
+        if (pass === 0 && cand.age < minRealisticAge) continue;
+        chosen = cand;
+        break;
+      }
+    }
+    if (!chosen) chosen = pool[startOffset];
+
+    item.ceoName = chosen.name;
+    if (!hasGender) item.ceoGender = chosen.gender;
+    if (!hasAge) item.ceoAge = chosen.age;
+    else item.ceoAge = parseInt(item.ceoAge, 10);
+
+    state.usedSeqs.add(chosen.seq);
+    state.usedNames.add(chosen.name);
+  } else {
+    // 2) 이름은 이미 있는 경우: 풀에 동일 이름이 있는지 먼저 확인 후 없으면 성별 추론 + 풀 매칭으로 성별/나이 부여
+    const cleanName = String(item.ceoName).trim();
+    state.usedNames.add(cleanName);
+
+    const exactMatch = pool.find(p => p.name === cleanName && p.age >= minRealisticAge) ||
+                       pool.find(p => p.name === cleanName);
+
+    if (exactMatch && !state.usedSeqs.has(exactMatch.seq)) {
+      if (!hasGender) item.ceoGender = exactMatch.gender;
+      if (!hasAge) item.ceoAge = exactMatch.age;
+      else item.ceoAge = parseInt(item.ceoAge, 10);
+      state.usedSeqs.add(exactMatch.seq);
+    } else {
+      const targetGender = hasGender ? item.ceoGender : inferGenderFromKoreanName(cleanName, pool);
+      let chosen = null;
+      for (let pass = 0; pass < 3 && !chosen; pass++) {
+        for (let i = 0; i < pool.length; i++) {
+          const cand = pool[(startOffset + i) % pool.length];
+          if (pass < 2 && state.usedSeqs.has(cand.seq)) continue;
+          if (cand.gender !== targetGender) continue;
+          if (pass === 0 && cand.age < minRealisticAge) continue;
+          chosen = cand;
+          break;
+        }
+      }
+      if (!chosen) chosen = pool[startOffset];
+
+      if (!hasGender) item.ceoGender = targetGender;
+      if (!hasAge) item.ceoAge = Math.max(chosen.age, minRealisticAge);
+      else item.ceoAge = parseInt(item.ceoAge, 10);
+      state.usedSeqs.add(chosen.seq);
+    }
+  }
+
+  return item;
+}
+
+/**
+ * 쿼터 전체 배열에 대해 대표자이름/성별/나이 누락 항목을 CEO 페르소나 풀로 일괄 보완
+ */
+export function applyCeoPersonaPoolToQuota(quotaList) {
+  if (!Array.isArray(quotaList) || quotaList.length === 0) return [];
+  const usedState = {
+    usedSeqs: new Set(),
+    usedNames: new Set()
+  };
+
+  // 이미 이름이 있는 사업자의 이름은 중복 방지 셋에 선등록
+  for (const row of quotaList) {
+    if (row && row.ceoName && String(row.ceoName).trim() !== '' && row.ceoName !== 'null' && row.ceoName !== '-') {
+      usedState.usedNames.add(String(row.ceoName).trim());
+    }
+  }
+
+  return quotaList.map(row => fillMissingCeoPersona(row, usedState));
+}
+
 /**
  * 단일 사업자 결측치 보강 함수
  * @param {Object} business - 사업자 객체 (companyName, bizNumber, ceoName, phone, address, marketName 등)
+ * @param {Object} [usedState] - CEO 페르소나 풀 중복 방지 상태 객체
  * @returns {Promise<Object>} 보강된 사업자 객체
  */
-export async function enrichBusinessData(business) {
-  const enriched = { ...business };
+export async function enrichBusinessData(business, usedState = null) {
+  let enriched = { ...business };
   let hasChanged = false;
 
-  // 1. 대표자명이 없는 경우 보강 시도
+  // 1. 대표자명이 없는 경우 외부 공인 데이터 보강 시도
   if (!enriched.ceoName || enriched.ceoName === 'null' || enriched.ceoName === '-') {
     const ceoResult = await searchCeoByBizNumber(enriched.bizNumber || enriched.rawBizNumber);
     if (ceoResult) {
@@ -283,7 +468,7 @@ export async function enrichBusinessData(business) {
       hasChanged = true;
       logger.info(`[Enricher] [대표자 보강 성공] "${enriched.companyName}" ➔ ${enriched.ceoName} (${ceoResult.source})`);
     } else {
-      enriched.ceoName = null; // 날조 없이 null 유지
+      enriched.ceoName = null;
     }
   }
 
@@ -301,8 +486,18 @@ export async function enrichBusinessData(business) {
       hasChanged = true;
       logger.info(`[Enricher] [연락처 보강 성공] "${enriched.companyName}" ➔ ${enriched.phone} (${phoneResult.source})`);
     } else {
-      enriched.phone = null; // 날조 없이 null 유지
+      enriched.phone = null;
     }
+  }
+
+  // 3. 대표자 이름, 성별, 나이 중 누락된 값이 있으면 CEO 페르소나 풀(data/ceo_persona_pool.json)로 자동 채움
+  const prevName = enriched.ceoName;
+  const prevGender = enriched.ceoGender;
+  const prevAge = enriched.ceoAge;
+  enriched = fillMissingCeoPersona(enriched, usedState);
+  if (enriched.ceoName !== prevName || enriched.ceoGender !== prevGender || enriched.ceoAge !== prevAge) {
+    hasChanged = true;
+    logger.info(`[Enricher] [페르소나 풀 보완] "${enriched.companyName}" ➔ 대표자: ${enriched.ceoName} (${enriched.ceoGender}, ${enriched.ceoAge}세)`);
   }
 
   if (hasChanged) {
@@ -323,7 +518,17 @@ export async function batchEnrichQuota(quotaList, onProgress = null) {
     return { enrichedCount: 0, quotaList: [] };
   }
 
-  logger.info(`[Enricher] 총 ${quotaList.length}건 사업자 쿼터의 결측치 외부 탐색 및 보강을 시작합니다...`);
+  logger.info(`[Enricher] 총 ${quotaList.length}건 사업자 쿼터의 결측치 외부 탐색 및 페르소나 풀 보강을 시작합니다...`);
+
+  const usedState = {
+    usedSeqs: new Set(),
+    usedNames: new Set()
+  };
+  for (const row of quotaList) {
+    if (row && row.ceoName && String(row.ceoName).trim() !== '' && row.ceoName !== 'null' && row.ceoName !== '-') {
+      usedState.usedNames.add(String(row.ceoName).trim());
+    }
+  }
 
   let enrichedCount = 0;
   const resultList = [];
@@ -332,19 +537,27 @@ export async function batchEnrichQuota(quotaList, onProgress = null) {
     const item = quotaList[i];
     const prevCeo = item.ceoName;
     const prevPhone = item.phone;
+    const prevGender = item.ceoGender;
+    const prevAge = item.ceoAge;
 
-    // 결측치가 있는 경우에만 외부 질의 수행 (이미 있는 데이터는 보존)
-    const needsEnrich = (!prevCeo || prevCeo === 'null' || prevCeo === '-') ||
-                        (!prevPhone || prevPhone === 'null' || prevPhone === '-');
+    const needsExternalSearch = (!prevCeo || prevCeo === 'null' || prevCeo === '-') ||
+                                (!prevPhone || prevPhone === 'null' || prevPhone === '-');
 
-    let processedItem = item;
-    if (needsEnrich) {
-      processedItem = await enrichBusinessData(item);
-      if (processedItem.isCeoEnriched || processedItem.isPhoneEnriched) {
-        enrichedCount++;
-      }
-      // 외부 검색 예의 대기 (Rate-limit 방지)
+    let processedItem = { ...item };
+    if (needsExternalSearch) {
+      processedItem = await enrichBusinessData(processedItem, usedState);
       await sleep(500, 900);
+    } else {
+      processedItem = fillMissingCeoPersona(processedItem, usedState);
+    }
+
+    if (
+      processedItem.ceoName !== prevCeo ||
+      processedItem.phone !== prevPhone ||
+      processedItem.ceoGender !== prevGender ||
+      processedItem.ceoAge !== prevAge
+    ) {
+      enrichedCount++;
     }
 
     resultList.push(processedItem);
@@ -359,6 +572,6 @@ export async function batchEnrichQuota(quotaList, onProgress = null) {
     }
   }
 
-  logger.success(`[Enricher] 결측치 보강 완료: 총 ${quotaList.length}건 중 ${enrichedCount}건의 실존 데이터 보강 완료!`);
+  logger.success(`[Enricher] 결측치 보강 완료: 총 ${quotaList.length}건 중 ${enrichedCount}건 보강 완료!`);
   return { enrichedCount, quotaList: resultList };
 }

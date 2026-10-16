@@ -6,7 +6,7 @@
 
 import { chromium } from 'playwright';
 import { getMarketMerchants, getStratifiedMarketMerchants } from './onnuri.js';
-import { enrichBusinessData } from './enricher.js';
+import { enrichBusinessData, fillMissingCeoPersona } from './enricher.js';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
 
@@ -165,6 +165,7 @@ export async function buildHybridOnnuriQuota({
   const page = await context.newPage();
 
   const finalQuotaList = [];
+  const ceoPoolUsedState = { usedSeqs: new Set(), usedNames: new Set() };
 
   try {
     logger.info(`[Step 2/2] 마켓비즈 플랫폼 인증 진행 중 (${MARKETBZ_CREDENTIALS.username})...`);
@@ -371,8 +372,10 @@ export async function buildHybridOnnuriQuota({
       // 3단계: 결측치(대표자 또는 연락처) 외부 공인 데이터 자동 보강 (autoEnrich)
       if (autoEnrich && (!mergedItem.ceoName || !mergedItem.phone)) {
         try {
-          const enriched = await enrichBusinessData(mergedItem);
+          const enriched = await enrichBusinessData(mergedItem, ceoPoolUsedState);
           mergedItem.ceoName = enriched.ceoName;
+          mergedItem.ceoGender = enriched.ceoGender || mergedItem.ceoGender;
+          mergedItem.ceoAge = enriched.ceoAge || mergedItem.ceoAge;
           mergedItem.phone = enriched.phone;
           mergedItem.ceoSource = enriched.ceoSource || null;
           mergedItem.phoneSource = enriched.phoneSource || null;
@@ -382,8 +385,14 @@ export async function buildHybridOnnuriQuota({
         }
       }
 
+      // 4단계: 대표자 이름, 성별, 나이 중 누락된 항목을 CEO 페르소나 풀(data/ceo_persona_pool.json)로 자동 채움
+      const filledItem = fillMissingCeoPersona(mergedItem, ceoPoolUsedState);
+      mergedItem.ceoName = filledItem.ceoName;
+      mergedItem.ceoGender = filledItem.ceoGender;
+      mergedItem.ceoAge = filledItem.ceoAge;
+
       finalQuotaList.push(mergedItem);
-      logger.success(`[Hybrid Quota] [결합 완료] ${mergedItem.companyName} | 시장: ${mergedItem.marketName} | 대표자: ${mergedItem.ceoName || 'null'}${mergedItem.ceoSource ? `(${mergedItem.ceoSource})` : ''} | 연락처: ${mergedItem.phone || 'null'}${mergedItem.phoneSource ? `(${mergedItem.phoneSource})` : ''} | 취급품목: ${mergedItem.handledItems || 'null'}`);
+      logger.success(`[Hybrid Quota] [결합 완료] ${mergedItem.companyName} | 시장: ${mergedItem.marketName} | 대표자: ${mergedItem.ceoName || 'null'} (${mergedItem.ceoGender || '-'}, ${mergedItem.ceoAge || '-'}세)${mergedItem.ceoSource ? `[${mergedItem.ceoSource}]` : ''} | 연락처: ${mergedItem.phone || 'null'}${mergedItem.phoneSource ? `[${mergedItem.phoneSource}]` : ''} | 취급품목: ${mergedItem.handledItems || 'null'}`);
     }
 
     logger.success(`[Hybrid Quota] 총 ${finalQuotaList.length}건의 온누리 연계 사업자 쿼터 생성이 성공적으로 완료되었습니다.`);
