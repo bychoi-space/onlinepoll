@@ -948,11 +948,13 @@ app.post('/api/quota/generate', async (req, res) => {
     targetCount = 2,
     baseFields = ['companyName', 'bizNumber', 'ceoName', 'address', 'industry'],
     customFields = [],
-    autoEnrich = true
+    autoEnrich = true,
+    maxOpenYear = 2025
   } = req.body;
 
   const count = Math.max(parseInt(targetCount, 10) || 1, 1);
-  logger.info(`[조사 쿼터 생성 시작] 명칭: "${title}" | 키워드: "${keyword}" | 목표 수량: ${count}개 | 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+  const parsedMaxYear = maxOpenYear === 'all' ? null : (parseInt(maxOpenYear, 10) || 2025);
+  logger.info(`[조사 쿼터 생성 시작] 명칭: "${title}" | 키워드: "${keyword}" | 목표 수량: ${count}개 | 개업기준: ${parsedMaxYear ? parsedMaxYear + '년 이하' : '전체'} | 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
   if (customFields.length > 0) {
     logger.info(`[추가 요청 항목] ${customFields.join(', ')}`);
   }
@@ -963,7 +965,8 @@ app.post('/api/quota/generate', async (req, res) => {
       keyword,
       count,
       customFields,
-      autoEnrich: autoEnrich !== false
+      autoEnrich: autoEnrich !== false,
+      maxOpenYear: parsedMaxYear
     });
 
     if (businesses.length === 0) {
@@ -1105,7 +1108,8 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
     industryQuotas = {},
     enableSmartFallback = true,
     customFields = [],
-    autoEnrich = true
+    autoEnrich = true,
+    maxOpenYear = 2025
   } = req.body;
 
   if (!marketName || !marketName.trim()) {
@@ -1113,7 +1117,8 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
   }
 
   const count = Math.max(1, Math.min(parseInt(targetCount) || 10, 100));
-  logger.info(`[온누리 쿼터 요청] "${title}" | 시장: "${marketName}" | 모드: ${samplingMode} | 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+  const parsedMaxYear = maxOpenYear === 'all' ? null : (parseInt(maxOpenYear, 10) || 2025);
+  logger.info(`[온누리 쿼터 요청] "${title}" | 시장: "${marketName}" | 모드: ${samplingMode} | 개업연도 상한: ${parsedMaxYear ? parsedMaxYear + '년 이하' : '전체'} | 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
 
   try {
     const { buildHybridOnnuriQuota } = await import('./engine/hybrid-quota.js');
@@ -1128,7 +1133,8 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
       industryQuotas,
       enableSmartFallback: enableSmartFallback !== false,
       customFields,
-      autoEnrich: autoEnrich !== false
+      autoEnrich: autoEnrich !== false,
+      maxOpenYear: parsedMaxYear
     });
 
     if (businesses.length === 0) {

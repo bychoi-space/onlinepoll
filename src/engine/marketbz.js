@@ -20,10 +20,11 @@ const DEFAULT_ACCOUNT = {
  * @param {number} options.count 수집할 사업자 수 (설문 회차 수에 대응)
  * @param {Array<string>} options.customFields 사용자가 추가한 커스텀 항목명 목록 (예: ['종업원수', '기업규모', '홈페이지'])
  * @param {boolean} [options.autoEnrich=true] 결측치 외부 공인 데이터 자동 보강 여부
+ * @param {number|null} [options.maxOpenYear=2025] 개업연도 상한 기준 필터링
  * @returns {Promise<Array<Object>>} 9대 필드 및 동적 항목이 포함된 실존 사업자 정보 배열
  */
-export async function fetchMarketBzBusinesses({ keyword = '소프트웨어', count = 1, customFields = [], autoEnrich = true }) {
-  logger.info(`[MarketBz] 사업자 데이터 수집을 시작합니다. (키워드: "${keyword}", 필요 수량: ${count}개, 외부보강: ${autoEnrich ? 'ON' : 'OFF'})`);
+export async function fetchMarketBzBusinesses({ keyword = '소프트웨어', count = 1, customFields = [], autoEnrich = true, maxOpenYear = 2025 }) {
+  logger.info(`[MarketBz] 사업자 데이터 수집을 시작합니다. (키워드: "${keyword}", 필요 수량: ${count}개, 개업기준: ${maxOpenYear ? maxOpenYear + '년 이하' : '전체'}, 외부보강: ${autoEnrich ? 'ON' : 'OFF'})`);
 
   const browser = await chromium.launch({
     headless: true,
@@ -180,6 +181,15 @@ export async function fetchMarketBzBusinesses({ keyword = '소프트웨어', cou
           openingDate: detail.openingDate || null,
           address: detail.address || null
         };
+
+        // 개업연도 상한 기준 필터링
+        if (maxOpenYear && finalBiz.openingDate) {
+          const yr = parseInt(finalBiz.openingDate.slice(0, 4), 10);
+          if (!isNaN(yr) && yr > maxOpenYear) {
+            logger.warn(`[MarketBz] "${finalBiz.companyName}" 개업연도(${yr}년)가 상한 기준(${maxOpenYear}년 이하)을 초과하여 제외(Skip)합니다.`);
+            continue;
+          }
+        }
 
         // 결측치 외부 보강 (autoEnrich)
         if (autoEnrich && (!finalBiz.ceoName || !finalBiz.phone)) {

@@ -489,6 +489,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseFields = Array.from(document.querySelectorAll('input[name="base-fields"]:checked')).map(cb => cb.value);
     const checkAutoEnrich = document.getElementById('check-auto-enrich');
     const autoEnrich = checkAutoEnrich ? checkAutoEnrich.checked : true;
+    const selectMaxOpenYear = document.getElementById('max-open-year');
+    const maxOpenYear = selectMaxOpenYear ? selectMaxOpenYear.value : '2025';
 
     try {
       btnGenerate.disabled = true;
@@ -518,11 +520,12 @@ document.addEventListener('DOMContentLoaded', () => {
           enableSmartFallback: checkSmartFallback ? checkSmartFallback.checked : true,
           baseFields,
           customFields,
-          autoEnrich
+          autoEnrich,
+          maxOpenYear
         };
 
         btnGenerate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 온누리 1차 수집 & 마켓비즈 2차 결합 진행 중...';
-        appendLog('info', `[온누리 연계 쿼터 생성] 시장: "${marketName}", 모드: ${samplingMode}, 목표: ${totalCount}개 가맹점, 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+        appendLog('info', `[온누리 연계 쿼터 생성] 시장: "${marketName}", 모드: ${samplingMode}, 목표: ${totalCount}개 가맹점, 개업기준: ${maxOpenYear === 'all' ? '전체' : maxOpenYear + '년 이하'}, 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
 
       } else {
         // 마켓비즈 단독
@@ -536,11 +539,12 @@ document.addEventListener('DOMContentLoaded', () => {
           targetCount,
           baseFields,
           customFields,
-          autoEnrich
+          autoEnrich,
+          maxOpenYear
         };
 
         btnGenerate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MarketBz 실존 사업자 데이터 수집 중...';
-        appendLog('info', `[마켓비즈 쿼터 생성 시작] 키워드: "${keyword}", 목표: ${targetCount}개 기업, 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+        appendLog('info', `[마켓비즈 쿼터 생성 시작] 키워드: "${keyword}", 목표: ${targetCount}개 기업, 개업기준: ${maxOpenYear === 'all' ? '전체' : maxOpenYear + '년 이하'}, 외부보강: ${autoEnrich ? 'ON' : 'OFF'}`);
       }
 
       res = await fetch(endpoint, {

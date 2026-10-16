@@ -74,10 +74,11 @@ export async function buildHybridOnnuriQuota({
   industryQuotas = {},
   enableSmartFallback = true,
   customFields = [],
-  autoEnrich = true
+  autoEnrich = true,
+  maxOpenYear = 2025
 }) {
   logger.info(`[Hybrid Quota] === 온누리 연계 조사 쿼터 수집 시작 ===`);
-  logger.info(`[Hybrid Quota] 대상: "${marketName}" | 모드: ${samplingMode} | 커스텀 필드: ${customFields.join(', ') || '없음'} | 외부 보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+  logger.info(`[Hybrid Quota] 대상: "${marketName}" | 모드: ${samplingMode} | 개업연도 상한: ${maxOpenYear ? maxOpenYear + '년 이하' : '전체'} | 커스텀 필드: ${customFields.join(', ') || '없음'} | 외부 보강: ${autoEnrich ? 'ON' : 'OFF'}`);
 
   let onnuriList = [];
 
@@ -257,6 +258,15 @@ export async function buildHybridOnnuriQuota({
         formattedOpenDate = merchant.regDate;
       }
 
+      // [신규] 개업연도 상한 기준 필터링 (설문조사 유효성 검사 트랩 방지)
+      if (maxOpenYear && formattedOpenDate) {
+        const yr = parseInt(formattedOpenDate.slice(0, 4), 10);
+        if (!isNaN(yr) && yr > maxOpenYear) {
+          logger.warn(`[Hybrid Quota] ${seqStr} "${merchant.companyName}" 개업연도(${yr}년)가 상한 기준(${maxOpenYear}년 이하)을 초과하여 제외(Skip)합니다.`);
+          continue;
+        }
+      }
+
       // 취급품목 정제 (마켓비즈 등록산업분류 + 온누리 업종 결합)
       let handledItems = null;
       if (marketBzDetail.mbzIndustry && merchant.industry) {
@@ -278,7 +288,7 @@ export async function buildHybridOnnuriQuota({
 
       // 온누리 팩트 + 마켓비즈 팩트 1:1 병합
       const mergedItem = {
-        seq: i + 1,
+        seq: finalQuotaList.length + 1,
         source: 'ONNURI_MARKETBZ_HYBRID',
         marketName: merchant.marketName || '풍납시장',
         companyName: merchant.companyName,
