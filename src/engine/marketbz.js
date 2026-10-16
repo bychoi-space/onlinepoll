@@ -87,12 +87,10 @@ export async function fetchMarketBzBusinesses({ keyword = '소프트웨어', cou
 
     logger.info(`[MarketBz] 검색 결과에서 총 ${basicList.length}개의 사업자 링크를 발견했습니다. 상세 정보를 추출합니다.`);
 
-    // 4. 필요한 개수만큼 상세 페이지를 방문하여 9대 필드 + 사용자 추가 항목 정밀 수집
-    const targetCount = Math.min(count, basicList.length);
-
-    for (let i = 0; i < targetCount; i++) {
+    // 4. 필요한 개수만큼 상세 페이지를 방문하여 9대 필드 + 사용자 추가 항목 정밀 수집 (개업연도 초과 제외 시 다음 후보 자동 탐색)
+    for (let i = 0; i < basicList.length && collectedBusinesses.length < count; i++) {
       const baseItem = basicList[i];
-      logger.info(`[MarketBz] (${i + 1}/${targetCount}) "${baseItem.companyName}" 상세 정보 조회 중...`);
+      logger.info(`[MarketBz] (확보 ${collectedBusinesses.length}/${count} | 탐색 ${i + 1}/${basicList.length}) "${baseItem.companyName}" 상세 정보 조회 중...`);
 
       try {
         await page.goto(baseItem.detailUrl, { waitUntil: 'networkidle', timeout: 25000 });

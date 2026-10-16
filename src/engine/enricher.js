@@ -34,7 +34,7 @@ const STOPWORDS = new Set([
   '공고', '번호', '공고번호', '상호', '상호명', '법인', '법인명', '전화', '전화번호', '연락처', '팩스',
   '정상', '영업', '정상영업', '계속', '폐업', '휴업', '자명', '대표', '대표자', '대표자명', '성명',
   '서비스', '블로그', '전통', '시장', '가맹', '가맹점', '안내', '정보', '이용', '방법', '시간',
-  '메뉴', '위치', '리뷰', '포장', '배달', '예약', '문의', '종합몰', '통신판매', '신고', '관리'
+  '메뉴', '위치', '리뷰', '포장', '배달', '예약', '문의', '종합몰', '통신판매', '신고', '관리', '변경'
 ]);
 
 // 시/도별 유효 지역 전화번호 접두사
@@ -94,6 +94,8 @@ export function formatAndValidatePhone(raw, address = '') {
   const digits = cleaned.replace(/\D/g, '');
   if (digits.length < 8 || digits.length > 12) return null;
   if (digits.startsWith('00') || digits.startsWith('019') || digits.startsWith('011')) return null;
+  const tail = digits.slice(-7);
+  if (/^(\d)\1{6}$/.test(tail) || digits.endsWith('0000000') || digits.endsWith('1111111') || digits.endsWith('1234567')) return null;
 
   let formatted = null;
   let prefix = null;

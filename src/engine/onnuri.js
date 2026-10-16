@@ -230,6 +230,37 @@ export async function getOnnuriDistricts(regionCode) {
 }
 
 /**
+ * 개업/등록연도 상한 기준 충족 여부 판별 헬퍼
+ */
+export function isWithinMaxOpenYear(dateStr, maxOpenYear) {
+  if (!maxOpenYear || maxOpenYear === 'all') return true;
+  const maxYr = parseInt(maxOpenYear, 10);
+  if (isNaN(maxYr)) return true;
+  if (!dateStr) return true; // 등록일 미기재 시 2단계 마켓비즈에서 확인
+  const yr = parseInt(String(dateStr).trim().slice(0, 4), 10);
+  if (isNaN(yr)) return true;
+  return yr <= maxYr;
+}
+
+/**
+ * 기타소매업 내 실질 가정용품/생활잡화 대체 가능 점포 판별 헬퍼
+ */
+const HOUSEHOLD_SUBSTITUTE_KEYWORDS = [
+  '침구', '철물', '프라자', '디씨마트', '드림디포', '문구', '문고', '생활', '잡화',
+  '할인마트', '알파마트', '홈마트', '이불', '커튼', '주방', '그릇',
+  '기물', '도기', '가구', '인테리어', '조명', '전기', '전파', '열쇠',
+  '페인트', '지물', '벽지', '장판', '천막', '수예', '타올', '수건',
+  '유리', '표구', '액자', '양품', '만물', '다이소', '백화점'
+];
+
+export function isHouseholdSubstituteMerchant(companyName = '') {
+  const cName = String(companyName || '').trim();
+  if (!cName) return false;
+  if (/지에스25|GS25|씨유|CU|세븐일레븐|이마트24/i.test(cName)) return false;
+  return HOUSEHOLD_SUBSTITUTE_KEYWORDS.some(kw => cName.includes(kw));
+}
+
+/**
  * 3. 특정 시장의 온누리상품권 가맹점 목록 조회 (마스터 DB 우선 ➔ 외부 API 폴백)
  */
 export async function getMarketMerchants({
@@ -238,15 +269,17 @@ export async function getMarketMerchants({
   marketName = '',
   statusFilter = 'ACTIVE',
   paymentFilter = 'ALL',
-  limit = 10
+  limit = 10,
+  maxOpenYear = null,
+  includeReservePool = false
 }) {
-  logger.info(`[Onnuri] 온누리 가맹점 조회 - 시장: "${marketName}", 지역: "${regionCode}"/"${districtCode}"`);
+  logger.info(`[Onnuri] 온누리 가맹점 조회 - 시장: "${marketName}", 지역: "${regionCode}"/"${districtCode}", 개업상한: ${maxOpenYear || '전체'}`);
 
   // 마스터 DB 우선 확인
   const market = findMarketInMasterDB(marketName, regionCode, districtCode);
   if (market && Array.isArray(market.merchants) && market.merchants.length > 0) {
     logger.info(`[Onnuri Master DB] "${market.marketName}" 마스터 DB 캐시 적중 (${market.merchants.length}개 가맹점)`);
-    let list = market.merchants;
+    let list = market.merchants.map(m => ({ ...m }));
     if (statusFilter === 'ACTIVE') {
       list = list.filter(m => m.status === '정상가맹');
     }
@@ -255,7 +288,18 @@ export async function getMarketMerchants({
     } else if (paymentFilter === 'DIGITAL') {
       list = list.filter(m => m.digitalAccepted === 'Y');
     }
-    return list.slice(0, limit).map((m, idx) => ({ seq: idx + 1, ...m }));
+    if (maxOpenYear && maxOpenYear !== 'all') {
+      list = list.filter(m => isWithinMaxOpenYear(m.regDate, maxOpenYear));
+    }
+    const primary = list.slice(0, limit).map((m, idx) => ({ seq: idx + 1, ...m }));
+    if (includeReservePool) {
+      return {
+        primary,
+        reserveByCategory: {},
+        generalReserve: list.slice(limit).map(m => ({ ...m }))
+      };
+    }
+    return primary;
   }
 
   // 외부 API 폴백
@@ -285,10 +329,9 @@ export async function getMarketMerchants({
       if (statusFilter === 'ACTIVE' && item.AFFL_STTS_SE !== '정상가맹') return false;
       if (paymentFilter === 'PAPER' && item.KNPP_HNDL_YN !== 'Y') return false;
       if (paymentFilter === 'DIGITAL' && item.MOBL_HNDL_YN !== 'Y') return false;
+      if (maxOpenYear && maxOpenYear !== 'all' && !isWithinMaxOpenYear(item.FRCS_REG_YMD, maxOpenYear)) return false;
       return true;
-    });
-
-    return filtered.slice(0, limit).map((item, idx) => {
+    }).map((item, idx) => {
       const rawBizNo = item.FRCS_ENBRNO || '';
       return {
         seq: idx + 1,
@@ -308,6 +351,16 @@ export async function getMarketMerchants({
         digitalAccepted: item.MOBL_HNDL_YN === 'Y' ? 'Y' : 'N'
       };
     });
+
+    const primary = filtered.slice(0, limit).map((m, idx) => ({ ...m, seq: idx + 1 }));
+    if (includeReservePool) {
+      return {
+        primary,
+        reserveByCategory: {},
+        generalReserve: filtered.slice(limit)
+      };
+    }
+    return primary;
   } catch (err) {
     logger.error(`[Onnuri] 가맹점 조회 중 오류: ${err.message}`);
     throw err;
@@ -320,7 +373,8 @@ export async function getMarketMerchants({
 export async function getMarketIndustryStats({
   regionCode = '',
   districtCode = '',
-  marketName = ''
+  marketName = '',
+  maxOpenYear = null
 }) {
   const standardCategoriesTemplate = () => ({
     '농산물': { key: '농산물', label: '농산물', onnuriKey: '농산물', count: 0, active: 0, withBiz: 0 },
@@ -339,35 +393,42 @@ export async function getMarketIndustryStats({
   if (market && Array.isArray(market.merchants) && market.merchants.length > 0) {
     const standardCategories = standardCategoriesTemplate();
     let householdSubstitutes = 0;
+    let validYearCount = 0;
 
     for (const m of market.merchants) {
       const tp = (m.industry || '').trim();
       const isActive = m.status === '정상가맹';
       const hasBiz = (m.rawBizNumber || '').length === 10;
+      const withinYear = isWithinMaxOpenYear(m.regDate, maxOpenYear);
       const cName = m.companyName || '';
+
+      if (isActive && hasBiz && withinYear) {
+        validYearCount++;
+      }
 
       for (const cat of Object.values(standardCategories)) {
         if (cat.onnuriKey === tp) {
           cat.count++;
           if (isActive) cat.active++;
-          if (isActive && hasBiz) cat.withBiz++;
+          if (isActive && hasBiz && withinYear) cat.withBiz++;
         }
       }
 
-      if (isActive && hasBiz && tp === '기타소매업') {
-        if (cName.includes('침구') || cName.includes('철물') || cName.includes('프라자') || cName.includes('디씨마트')) {
+      if (isActive && hasBiz && withinYear && tp === '기타소매업') {
+        if (isHouseholdSubstituteMerchant(cName)) {
           householdSubstitutes++;
         }
       }
     }
 
-    logger.info(`[Onnuri Master DB] "${market.marketName}" 업종 통계 인메모리 반환 (총 ${market.merchants.length}건, 소요 0.001초)`);
+    logger.info(`[Onnuri Master DB] "${market.marketName}" 업종 통계 인메모리 반환 (전체 ${market.merchants.length}건 / 조건충족 ${validYearCount}건, 소요 0.001초)`);
     return {
       source: 'MASTER_DB',
       marketName: market.marketName,
       regionName: market.regionName || '',
       districtName: market.districtName || '',
       totalRawCount: market.merchants.length,
+      validYearCount,
       categories: standardCategories,
       householdSubstitutes
     };
@@ -398,6 +459,7 @@ export async function getMarketIndustryStats({
 
     const standardCategories = standardCategoriesTemplate();
     let householdSubstitutes = 0;
+    let validYearCount = 0;
 
     rawList.forEach(item => {
       if (marketName && item.MRKT_NM && !item.MRKT_NM.includes(marketName.trim()) && !marketName.trim().includes(item.MRKT_NM)) return;
@@ -406,18 +468,23 @@ export async function getMarketIndustryStats({
       const isActive = item.AFFL_STTS_SE === '정상가맹';
       const rawBiz = (item.FRCS_ENBRNO || '').replace(/\D/g, '');
       const hasBiz = rawBiz.length === 10;
+      const withinYear = isWithinMaxOpenYear(item.FRCS_REG_YMD, maxOpenYear);
       const cName = item.ACTL_FRCS_NM || '';
+
+      if (isActive && hasBiz && withinYear) {
+        validYearCount++;
+      }
 
       for (const cat of Object.values(standardCategories)) {
         if (cat.onnuriKey === tp) {
           cat.count++;
           if (isActive) cat.active++;
-          if (isActive && hasBiz) cat.withBiz++;
+          if (isActive && hasBiz && withinYear) cat.withBiz++;
         }
       }
 
-      if (isActive && hasBiz && tp === '기타소매업') {
-        if (cName.includes('침구') || cName.includes('철물') || cName.includes('프라자') || cName.includes('디씨마트')) {
+      if (isActive && hasBiz && withinYear && tp === '기타소매업') {
+        if (isHouseholdSubstituteMerchant(cName)) {
           householdSubstitutes++;
         }
       }
@@ -427,6 +494,7 @@ export async function getMarketIndustryStats({
       source: 'EXTERNAL_ONNURI',
       marketName: marketName.trim(),
       totalRawCount: rawList.length,
+      validYearCount,
       categories: standardCategories,
       householdSubstitutes
     };
@@ -438,23 +506,31 @@ export async function getMarketIndustryStats({
 
 /**
  * 5. 업종별 층화 표본 추출 (Stratified Sampler)
+ * - 1단계에서부터 maxOpenYear(예: 2025년 이하) 조건을 사전 필터링하여 2026년 신규 가맹점으로 인한 중도 탈락 방지
+ * - 가정용품 등 부족 업종에 대한 스마트 폴백(생활용품/문구/마트 등) 지원
+ * - 2단계 마켓비즈 조회 중 개업연도 초과 탈락 발생 시 즉시 충원할 수 있는 업종별/전체 예비 후보 풀(Reserve Pool) 함께 반환
  */
 export async function getStratifiedMarketMerchants({
   regionCode = '',
   districtCode = '',
   marketName = '',
   industryQuotas = {},
-  enableSmartFallback = true
+  enableSmartFallback = true,
+  maxOpenYear = null,
+  includeReservePool = false
 }) {
-  logger.info(`[Onnuri] 층화 표본 추출 - 대상 시장: "${marketName}", 업종별 할당: ${JSON.stringify(industryQuotas)}`);
+  logger.info(`[Onnuri] 층화 표본 추출 - 대상 시장: "${marketName}", 개업상한: ${maxOpenYear ? maxOpenYear + '년 이하' : '전체'}, 업종별 할당: ${JSON.stringify(industryQuotas)}`);
 
   let validMerchants = [];
 
   // 1. 마스터 DB 우선 확인
   const market = findMarketInMasterDB(marketName, regionCode, districtCode);
   if (market && Array.isArray(market.merchants) && market.merchants.length > 0) {
-    logger.info(`[Onnuri Master DB] "${market.marketName}" 층화 추출 가맹점 풀 로드 (${market.merchants.length}건)`);
-    validMerchants = market.merchants.filter(m => m.status === '정상가맹' && (m.rawBizNumber || '').length === 10);
+    const rawPool = market.merchants.filter(m => m.status === '정상가맹' && (m.rawBizNumber || '').length === 10);
+    validMerchants = rawPool
+      .filter(m => isWithinMaxOpenYear(m.regDate, maxOpenYear))
+      .map(m => ({ ...m }));
+    logger.info(`[Onnuri Master DB] "${market.marketName}" 층화 추출 가맹점 풀 로드 (전체 정상가맹 ${rawPool.length}건 중 개업기준 충족 ${validMerchants.length}건)`);
   } else {
     // 2. 외부 공인 플랫폼 폴백
     const body = new URLSearchParams({
@@ -481,6 +557,7 @@ export async function getStratifiedMarketMerchants({
     for (const item of rawList) {
       if (marketName && item.MRKT_NM && !item.MRKT_NM.includes(marketName.trim()) && !marketName.trim().includes(item.MRKT_NM)) continue;
       if (item.AFFL_STTS_SE !== '정상가맹') continue;
+      if (!isWithinMaxOpenYear(item.FRCS_REG_YMD, maxOpenYear)) continue;
 
       const rawBizNo = (item.FRCS_ENBRNO || '').replace(/\D/g, '');
       if (rawBizNo.length !== 10 || seenBiz.has(rawBizNo)) continue;
@@ -518,38 +595,104 @@ export async function getStratifiedMarketMerchants({
 
   const selectedResults = [];
   const usedBizNumbers = new Set();
+  const reserveByCategory = {};
 
+  // 1차: 정식 업종 코드 매칭 추출 (기타소매업이 가정용품 폴백보다 먼저 자기 몫을 확보할 수 있도록 정식 매칭 선행)
+  const shortages = [];
   for (const [catName, quotaCount] of Object.entries(industryQuotas)) {
     const targetCount = parseInt(quotaCount, 10) || 0;
     if (targetCount <= 0) continue;
 
     const onnuriCategory = standardKeyMap[catName] || catName;
-    let candidates = validMerchants.filter(m => m.industry === onnuriCategory && !usedBizNumbers.has(m.bizNumber));
-
-    // 스마트 폴백 (가정용품 침구/철물/잡화)
-    if (catName === '가정용품' && candidates.length < targetCount && enableSmartFallback) {
-      const needed = targetCount - candidates.length;
-      const substitutes = validMerchants.filter(m =>
-        m.industry === '기타소매업' &&
-        !usedBizNumbers.has(m.bizNumber) &&
-        (m.companyName.includes('침구') || m.companyName.includes('철물') || m.companyName.includes('프라자') || m.companyName.includes('디씨마트'))
-      ).slice(0, needed);
-
-      substitutes.forEach(sub => {
-        sub.industry = '가정용품';
-        sub.subIndustry = '침구/철물/생활잡화 (가정용품)';
-      });
-
-      candidates = [...candidates, ...substitutes];
-    }
+    const candidates = validMerchants
+      .filter(m => m.industry === onnuriCategory && !usedBizNumbers.has(m.bizNumber))
+      .map(m => ({ ...m, targetCategory: catName }));
 
     const picked = candidates.slice(0, targetCount);
     for (const p of picked) {
       usedBizNumbers.add(p.bizNumber);
       selectedResults.push(p);
     }
+
+    reserveByCategory[catName] = candidates.slice(targetCount);
+
+    if (picked.length < targetCount) {
+      shortages.push({ catName, needed: targetCount - picked.length });
+    }
   }
 
-  logger.info(`[Onnuri] 층화 표본 추출 완료: 총 ${selectedResults.length}건 선별`);
-  return selectedResults.map((item, idx) => ({ seq: idx + 1, ...item }));
+  // 2차: 부족분 스마트 폴백 충원 (가정용품 -> 기타소매업 내 생활용품/잡화/문구/마트 우선 매핑)
+  if (enableSmartFallback && shortages.length > 0) {
+    for (const item of shortages) {
+      if (item.needed <= 0) continue;
+
+      if (item.catName === '가정용품') {
+        const subPool = validMerchants
+          .filter(m => m.industry === '기타소매업' && !usedBizNumbers.has(m.bizNumber) && isHouseholdSubstituteMerchant(m.companyName))
+          .map(m => ({
+            ...m,
+            industry: '가정용품',
+            subIndustry: '침구/철물/생활잡화 (가정용품)',
+            targetCategory: '가정용품'
+          }));
+
+        const pickedSubs = subPool.slice(0, item.needed);
+        for (const p of pickedSubs) {
+          usedBizNumbers.add(p.bizNumber);
+          selectedResults.push(p);
+          item.needed--;
+        }
+
+        // 남은 가정용품 대체 후보도 예비 풀에 등록
+        reserveByCategory['가정용품'] = [
+          ...(reserveByCategory['가정용품'] || []),
+          ...subPool.slice(pickedSubs.length)
+        ];
+      }
+    }
+
+    // 그래도 특정 업종 재고 한계로 전체 목표 수량에 미달하는 경우 시장 내 잔여 우량 가맹점에서 충원
+    for (const item of shortages) {
+      if (item.needed <= 0) continue;
+      const fallbackPool = validMerchants
+        .filter(m => !usedBizNumbers.has(m.bizNumber))
+        .map(m => ({ ...m, targetCategory: item.catName }));
+
+      const pickedFallback = fallbackPool.slice(0, item.needed);
+      for (const p of pickedFallback) {
+        usedBizNumbers.add(p.bizNumber);
+        selectedResults.push(p);
+        item.needed--;
+      }
+    }
+  }
+
+  // 표준 업종 순서에 맞춰 정렬 유지
+  const catOrder = Object.keys(standardKeyMap);
+  selectedResults.sort((a, b) => {
+    const idxA = catOrder.indexOf(a.targetCategory || '');
+    const idxB = catOrder.indexOf(b.targetCategory || '');
+    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+  });
+
+  // 예비 후보 풀에서도 이미 사용된 사업자번호 제외 정리
+  for (const k of Object.keys(reserveByCategory)) {
+    reserveByCategory[k] = (reserveByCategory[k] || []).filter(m => !usedBizNumbers.has(m.bizNumber));
+  }
+  const generalReserve = validMerchants
+    .filter(m => !usedBizNumbers.has(m.bizNumber))
+    .map(m => ({ ...m }));
+
+  const numberedPrimary = selectedResults.map((item, idx) => ({ seq: idx + 1, ...item }));
+  logger.info(`[Onnuri] 층화 표본 추출 완료: 총 ${numberedPrimary.length}건 선별 (예비 후보 풀 ${generalReserve.length}건 대기)`);
+
+  if (includeReservePool) {
+    return {
+      primary: numberedPrimary,
+      reserveByCategory,
+      generalReserve
+    };
+  }
+  return numberedPrimary;
 }
+

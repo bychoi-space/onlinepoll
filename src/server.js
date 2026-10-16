@@ -1183,17 +1183,19 @@ app.get('/api/onnuri/districts', async (req, res) => {
 
 // 온누리상품권 전통시장 실시간 업종별 통계 API
 app.get('/api/onnuri/market-stats', async (req, res) => {
-  const { regionCode = '01', districtCode = '', marketName = '' } = req.query;
+  const { regionCode = '01', districtCode = '', marketName = '', maxOpenYear = '2025' } = req.query;
   if (!marketName || !marketName.trim()) {
     return res.status(400).json({ error: '시장명을 입력해 주세요.' });
   }
 
   try {
     const { getMarketIndustryStats } = await import('./engine/onnuri.js');
+    const parsedMaxYear = maxOpenYear === 'all' ? null : (parseInt(maxOpenYear, 10) || 2025);
     const stats = await getMarketIndustryStats({
       regionCode,
       districtCode,
-      marketName: marketName.trim()
+      marketName: marketName.trim(),
+      maxOpenYear: parsedMaxYear
     });
     res.json(stats);
   } catch (err) {

@@ -246,23 +246,35 @@ document.addEventListener('DOMContentLoaded', () => {
     updateQuotaTitle();
   }
 
-  // 실시간 시장 업종별 통계 조회
+  // 실시간 시장 업종별 통계 조회 (개업연도 상한 연동)
+  const selectMaxOpenYearEl = document.getElementById('max-open-year');
+  if (selectMaxOpenYearEl) {
+    selectMaxOpenYearEl.addEventListener('change', () => {
+      fetchMarketStats();
+    });
+  }
+
   async function fetchMarketStats() {
     const mName = inputOnnuriMarket.value.trim() || '풍납시장';
     const rCode = selectOnnuriRegion.value || '01';
     const dCode = selectOnnuriDistrict.value || '01018';
+    const maxOpenYear = selectMaxOpenYearEl ? selectMaxOpenYearEl.value : '2025';
 
     if (marketStatsStatus) marketStatsStatus.textContent = `${mName} 실시간 조회 중...`;
 
     try {
-      const res = await fetch(`/api/onnuri/market-stats?regionCode=${encodeURIComponent(rCode)}&districtCode=${encodeURIComponent(dCode)}&marketName=${encodeURIComponent(mName)}`);
+      const res = await fetch(`/api/onnuri/market-stats?regionCode=${encodeURIComponent(rCode)}&districtCode=${encodeURIComponent(dCode)}&marketName=${encodeURIComponent(mName)}&maxOpenYear=${encodeURIComponent(maxOpenYear)}`);
       if (!res.ok) throw new Error('조회 실패');
       const stats = await res.json();
       currentMarketStats = stats;
       renderMarketStats(stats);
       renderStratifiedTable();
       updateStratifiedTotal();
-      if (marketStatsStatus) marketStatsStatus.textContent = `${mName} (정상가맹 ${stats.totalRawCount || 0}건)`;
+      if (marketStatsStatus) {
+        const validCnt = stats.validYearCount !== undefined ? stats.validYearCount : (stats.totalRawCount || 0);
+        const yearLabel = maxOpenYear === 'all' ? '전체' : `${maxOpenYear}년 이하`;
+        marketStatsStatus.textContent = `${mName} (${yearLabel} 가용 ${validCnt}건 / 전체 ${stats.totalRawCount || 0}건)`;
+      }
     } catch (err) {
       if (marketStatsStatus) marketStatsStatus.textContent = '통계 조회 오류';
     }
@@ -276,11 +288,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const c = cats[ind.key] || { active: 0, withBiz: 0 };
       const isZero = (c.withBiz || 0) === 0;
       let extra = '';
-      if (isZero && ind.hasSmartFallback && stats.householdSubstitutes > 0) {
-        extra = `<span title="실질 대체 가능 점포"> (대체 ${stats.householdSubstitutes})</span>`;
+      if (ind.hasSmartFallback && stats.householdSubstitutes > 0) {
+        extra = `<span title="실질 대체 가능 점포"> (+대체 ${stats.householdSubstitutes})</span>`;
       }
       return `
-        <span class="market-stat-chip ${isZero ? 'zero' : ''}">
+        <span class="market-stat-chip ${isZero && (!ind.hasSmartFallback || !stats.householdSubstitutes) ? 'zero' : ''}">
           <i class="fa-solid ${ind.icon}"></i> ${escapeHtml(ind.label)}
           <span class="count">${c.withBiz || 0}</span>${extra}
         </span>
@@ -291,15 +303,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderStratifiedTable() {
     if (!stratifiedGridTable) return;
     const cats = currentMarketStats ? currentMarketStats.categories : null;
+    const subCount = currentMarketStats ? (currentMarketStats.householdSubstitutes || 0) : 0;
 
     stratifiedGridTable.innerHTML = STANDARD_INDUSTRIES.map(ind => {
       const val = industryCounts[ind.key] || 0;
       const stock = cats && cats[ind.key] ? (cats[ind.key].withBiz || 0) : 0;
-      
+      const effectiveStock = ind.hasSmartFallback ? stock + subCount : stock;
+
       let statusHtml = '<span class="badge-status-ok">● 충족 가능</span>';
       if (val === 0) {
         statusHtml = '<span class="badge-status-warn">미배분</span>';
-      } else if (stock === 0 && ind.hasSmartFallback) {
+      } else if (stock < val && ind.hasSmartFallback && effectiveStock >= val) {
         statusHtml = '<span class="badge-status-smart">🔵 스마트 매핑</span>';
       } else if (stock < val) {
         statusHtml = `<span class="badge-status-err">▲ 보유 초과 (${stock}개 보유)</span>`;
@@ -313,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa-solid ${ind.icon}"></i> ${escapeHtml(ind.label)}
           </div>
           <div class="stratified-col-stock">
-            보유 <strong>${stock}</strong>개
+            보유 <strong>${stock}</strong>개${ind.hasSmartFallback && subCount > 0 ? ` <small>(+대체 ${subCount})</small>` : ''}
           </div>
           <div class="stratified-col-input">
             <div class="stepper-control">

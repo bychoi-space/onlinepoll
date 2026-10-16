@@ -22,9 +22,19 @@ const MARKETBZ_CREDENTIALS = {
 function formatPhoneNumber(raw) {
   if (!raw) return null;
   const cleaned = String(raw).trim();
-  if (cleaned.includes('-')) return cleaned;
-  const digits = cleaned.replace(/\D/g, '');
+  let digits = cleaned.replace(/\D/g, '');
   if (!digits || digits.length < 7) return null;
+
+  // 마켓비즈 더미 번호(000-0000, 111-1111, 123-4567 등) 필터링 -> null 반환하여 외부 보강 유도
+  const tail = digits.slice(-7);
+  if (/^(\d)\1{6}$/.test(tail) || digits.endsWith('0000000') || digits.endsWith('1111111') || digits.endsWith('1234567')) {
+    return null;
+  }
+
+  // 02-0414-6823 처럼 서울 지역번호 뒤 불필요한 0이 붙은 10자리 교정
+  if (digits.startsWith('020') && digits.length === 10) {
+    digits = '02' + digits.slice(3);
+  }
 
   // 02 서울 지역번호
   if (digits.startsWith('02')) {
@@ -34,6 +44,8 @@ function formatPhoneNumber(raw) {
       return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`;
     }
   }
+
+  if (cleaned.includes('-')) return cleaned;
 
   // 010, 031, 032, 051 등
   if (digits.length === 11) {
@@ -81,27 +93,38 @@ export async function buildHybridOnnuriQuota({
   logger.info(`[Hybrid Quota] 대상: "${marketName}" | 모드: ${samplingMode} | 개업연도 상한: ${maxOpenYear ? maxOpenYear + '년 이하' : '전체'} | 커스텀 필드: ${customFields.join(', ') || '없음'} | 외부 보강: ${autoEnrich ? 'ON' : 'OFF'}`);
 
   let onnuriList = [];
+  let reserveByCategory = {};
+  let generalReserve = [];
 
-  // 1단계: 온누리 플랫폼에서 대상 가맹점 1차 팩트 수집
+  // 1단계: 온누리 플랫폼에서 대상 가맹점 1차 팩트 수집 (개업연도 상한 사전 필터링 + 예비 후보 풀 확보)
   if (samplingMode === 'stratified' && Object.keys(industryQuotas).length > 0) {
     logger.info(`[Step 1/2] [업종별 층화 할당] 온누리 플랫폼에서 업종별 맞춤 가맹점을 수집합니다: ${JSON.stringify(industryQuotas)}`);
-    onnuriList = await getStratifiedMarketMerchants({
+    const result = await getStratifiedMarketMerchants({
       regionCode,
       districtCode,
       marketName,
       industryQuotas,
-      enableSmartFallback
+      enableSmartFallback,
+      maxOpenYear,
+      includeReservePool: true
     });
+    onnuriList = Array.isArray(result) ? result : (result.primary || []);
+    reserveByCategory = (!Array.isArray(result) && result.reserveByCategory) ? result.reserveByCategory : {};
+    generalReserve = (!Array.isArray(result) && result.generalReserve) ? result.generalReserve : [];
   } else {
     logger.info(`[Step 1/2] [단순 총량 수집] 온누리 플랫폼에서 "${marketName}" 가맹점 목록을 상위 ${targetCount}건 조회합니다...`);
-    onnuriList = await getMarketMerchants({
+    const result = await getMarketMerchants({
       regionCode,
       districtCode,
       marketName,
       statusFilter,
       paymentFilter,
-      limit: targetCount
+      limit: targetCount,
+      maxOpenYear,
+      includeReservePool: true
     });
+    onnuriList = Array.isArray(result) ? result : (result.primary || []);
+    generalReserve = (!Array.isArray(result) && result.generalReserve) ? result.generalReserve : [];
   }
 
   if (onnuriList.length === 0) {
@@ -109,7 +132,30 @@ export async function buildHybridOnnuriQuota({
     return [];
   }
 
-  logger.success(`[Step 1/2 완료] 온누리 가맹점 ${onnuriList.length}건 1차 확보 완료. 마켓비즈 2차 정보 결합을 시작합니다.`);
+  const usedBizSet = new Set(onnuriList.map(m => m.bizNumber).filter(Boolean));
+
+  function pullReplacementMerchant(targetCat) {
+    if (targetCat && Array.isArray(reserveByCategory[targetCat])) {
+      while (reserveByCategory[targetCat].length > 0) {
+        const cand = reserveByCategory[targetCat].shift();
+        if (cand && cand.bizNumber && !usedBizSet.has(cand.bizNumber)) {
+          usedBizSet.add(cand.bizNumber);
+          return cand;
+        }
+      }
+    }
+    while (generalReserve.length > 0) {
+      const cand = generalReserve.shift();
+      if (cand && cand.bizNumber && !usedBizSet.has(cand.bizNumber)) {
+        usedBizSet.add(cand.bizNumber);
+        if (targetCat) cand.targetCategory = targetCat;
+        return cand;
+      }
+    }
+    return null;
+  }
+
+  logger.success(`[Step 1/2 완료] 온누리 가맹점 ${onnuriList.length}건 1차 확보 완료 (예비 후보 ${generalReserve.length}건 대기). 마켓비즈 2차 정보 결합을 시작합니다.`);
 
   // 2단계: 마켓비즈 플랫폼 로그인 및 1:1 결합(Enrichment)
   const browser = await chromium.launch({ headless: true });
@@ -138,7 +184,7 @@ export async function buildHybridOnnuriQuota({
 
     for (let i = 0; i < onnuriList.length; i++) {
       const merchant = onnuriList[i];
-      const seqStr = `(${i + 1}/${onnuriList.length})`;
+      const seqStr = `(${finalQuotaList.length + 1}번째 목표 / 진행 ${i + 1}/${onnuriList.length})`;
       logger.info(`[Hybrid Quota] ${seqStr} "${merchant.companyName}" (사업자: ${merchant.bizNumber || '미기재'}) 마켓비즈 상세 연동 중...`);
 
       let marketBzDetail = {};
@@ -258,11 +304,17 @@ export async function buildHybridOnnuriQuota({
         formattedOpenDate = merchant.regDate;
       }
 
-      // [신규] 개업연도 상한 기준 필터링 (설문조사 유효성 검사 트랩 방지)
+      // [고도화] 개업연도 상한 기준 필터링 및 예비 후보 자동 대체 충원
       if (maxOpenYear && formattedOpenDate) {
         const yr = parseInt(formattedOpenDate.slice(0, 4), 10);
         if (!isNaN(yr) && yr > maxOpenYear) {
-          logger.warn(`[Hybrid Quota] ${seqStr} "${merchant.companyName}" 개업연도(${yr}년)가 상한 기준(${maxOpenYear}년 이하)을 초과하여 제외(Skip)합니다.`);
+          const replacement = pullReplacementMerchant(merchant.targetCategory);
+          if (replacement) {
+            onnuriList.push(replacement);
+            logger.warn(`[Hybrid Quota] "${merchant.companyName}" 개업연도(${yr}년)가 상한(${maxOpenYear}년 이하) 초과로 제외 ➔ 예비 후보 "${replacement.companyName}" 자동 충원`);
+          } else {
+            logger.warn(`[Hybrid Quota] "${merchant.companyName}" 개업연도(${yr}년)가 상한(${maxOpenYear}년 이하) 초과로 제외 (추가 예비 후보 없음)`);
+          }
           continue;
         }
       }
