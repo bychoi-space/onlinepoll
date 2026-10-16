@@ -60,6 +60,90 @@ function formatPhoneNumber(raw) {
 }
 
 /**
+ * [취급품목] 표준 단일어 정제 함수
+ * - 명확한 1차 품목(농산물, 축산물, 수산물, 의류및신발)은 괄호 부연설명 없이 앞의 품목명만 기재
+ * - 부연설명이 필요한 업종(가공식품, 가정용품, 음식점업, 기타소매업, 근린상권서비스 등)은
+ *   괄호 안에 핵심 한 단어만 기재: 예) 가공식품 (신선식품), 가공식품 (떡류), 가공식품 (커피),
+ *   음식점업 (김밥), 음식점업 (서양식), 음식점업 (치킨)
+ */
+export function formatStandardHandledItems({ merchantIndustry = '', mbzIndustry = '', rawHandledItems = '', companyName = '' }) {
+  let baseCat = '';
+  let subRaw = '';
+
+  if (rawHandledItems && String(rawHandledItems).trim()) {
+    const str = String(rawHandledItems).trim();
+    const m = str.match(/^([^\(]+?)\s*\((.+)\)$/);
+    if (m) {
+      baseCat = m[1].trim();
+      subRaw = m[2].trim();
+    } else {
+      baseCat = str;
+    }
+  } else {
+    baseCat = String(merchantIndustry || '').trim();
+    subRaw = String(mbzIndustry || '').trim();
+  }
+
+  // 1) 명확한 품목(농산물, 축산물, 수산물, 의류및신발)은 앞 품목만 단독 표기
+  if (baseCat.includes('농산물')) return '농산물';
+  if (baseCat.includes('축산물')) return '축산물';
+  if (baseCat.includes('수산물')) return '수산물';
+  if (baseCat.includes('의류') || baseCat.includes('신발')) return '의류및신발';
+
+  // 표준 기본 카테고리명 정규화
+  if (baseCat.includes('가공식품')) baseCat = '가공식품';
+  else if (baseCat.includes('가정용품')) baseCat = '가정용품';
+  else if (baseCat.includes('음식점')) baseCat = '음식점업';
+  else if (baseCat.includes('기타소매')) baseCat = '기타소매업';
+  else if (baseCat.includes('근린상권')) baseCat = '근린상권서비스';
+
+  if (!subRaw) {
+    return baseCat || '기타소매업';
+  }
+
+  // 2) 부연설명(subRaw)에서 핵심 한 단어 추출
+  let cleanedSub = subRaw
+    .replace(/\s*외\s*\d+\s*개/g, '')
+    .replace(/\/.*$/, '')
+    .trim();
+
+  // 불분명한 포괄 산업분류("그 외 기타 분류 안된...", "종합 소매업", "남자용 겉옷 소매업" 등) 보정
+  const comp = String(companyName || '');
+  if (cleanedSub.includes('분류 안된') || cleanedSub.includes('종합 소매업')) {
+    if (comp.includes('뻥튀기') || comp.includes('과자')) return `${baseCat} (과자류)`;
+    if (comp.includes('반찬')) return `${baseCat} (반찬류)`;
+    if (comp.includes('떡')) return `${baseCat} (떡류)`;
+    return `${baseCat} (생활잡화)`;
+  }
+  if (baseCat === '가정용품' && cleanedSub.includes('겉옷')) {
+    if (comp.includes('침구') || comp.includes('이불')) return `${baseCat} (침구류)`;
+    return `${baseCat} (직물제품)`;
+  }
+  if (cleanedSub.includes('유지 및 낙농제품')) {
+    return `${baseCat} (유지류)`;
+  }
+
+  cleanedSub = cleanedSub
+    .replace(/두발\s*미용업/g, '미용업')
+    .replace(/피부\s*미용업/g, '피부미용');
+
+  // 불필요 수식어 및 접미어 제거 후 첫 핵심 단어 추출
+  cleanedSub = cleanedSub
+    .replace(/^(그 외 기타|기타|일반|가정용|조리|단순|동ㆍ식물성|남자용|여자용)\s+/g, '')
+    .replace(/\s+(전문점|음식점업|음식점|소매업|도매업|제조업|서비스업|교육기관|기관|소매|도매)$/g, '')
+    .trim();
+
+  // '및', ',', 'ㆍ', 공백 기준으로 첫 번째 핵심 단어 선택
+  const firstToken = cleanedSub
+    .split(/\s+및\s+|[,ㆍ·\/]|\s+/)[0]
+    .replace(/(전문점|음식점업|소매업|도매업|제조업|서비스업)$/g, '')
+    .trim();
+
+  const finalWord = firstToken || cleanedSub.split(/\s+/)[0] || '';
+  return finalWord ? `${baseCat} (${finalWord})` : baseCat;
+}
+
+/**
  * 온누리 + 마켓비즈 2단계 하이브리드 쿼터 생성 함수
  * @param {Object} options
  * @param {string} options.regionCode - 온누리 시도 코드 (예: '01')
@@ -320,15 +404,12 @@ export async function buildHybridOnnuriQuota({
         }
       }
 
-      // 취급품목 정제 (마켓비즈 등록산업분류 + 온누리 업종 결합)
-      let handledItems = null;
-      if (marketBzDetail.mbzIndustry && merchant.industry) {
-        handledItems = `${merchant.industry} (${marketBzDetail.mbzIndustry})`;
-      } else if (marketBzDetail.mbzIndustry) {
-        handledItems = marketBzDetail.mbzIndustry;
-      } else if (merchant.industry) {
-        handledItems = merchant.industry;
-      }
+      // 취급품목 정제 (표준 단일어 규칙 적용)
+      const handledItems = formatStandardHandledItems({
+        merchantIndustry: merchant.targetCategory || merchant.industry || '',
+        mbzIndustry: marketBzDetail.mbzIndustry || '',
+        companyName: merchant.companyName
+      });
 
       // 연락처 정제 (대표전화번호 포맷팅, 없으면 null)
       const finalPhone = formatPhoneNumber(marketBzDetail.mbzPhone);
