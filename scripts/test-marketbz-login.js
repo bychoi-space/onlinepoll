@@ -56,7 +56,7 @@ async function testLogin() {
         const text = document.body.innerText;
         return {
           hasLogout: text.includes('로그아웃') || text.includes('마이페이지'),
-          hasUser: text.includes('hyuk112') || text.includes('님'),
+          hasUser: text.includes('thedreamtowel') || text.includes('님'),
           title: document.title
         };
       });

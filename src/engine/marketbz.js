@@ -9,8 +9,8 @@ import { sleep } from '../utils/delays.js';
 
 const MARKETBZ_BASE_URL = 'https://marketbz.com';
 const DEFAULT_ACCOUNT = {
-  username: process.env.MARKETBZ_USER || 'hyuk112@naver.com',
-  password: process.env.MARKETBZ_PASSWORD || 'mini112!'
+  username: process.env.MARKETBZ_USER || 'thedreamtowel@naver.com',
+  password: process.env.MARKETBZ_PASSWORD || 'qw@@951753'
 };
 
 /**

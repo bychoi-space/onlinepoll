@@ -12,8 +12,8 @@ import { sleep } from '../utils/delays.js';
 
 const MARKETBZ_LOGIN_URL = 'https://marketbz.com/loginPage?redirectUrl=%2Findex';
 const MARKETBZ_CREDENTIALS = {
-  username: process.env.MARKETBZ_USER || 'hyuk112@naver.com',
-  password: process.env.MARKETBZ_PASSWORD || 'mini112!'
+  username: process.env.MARKETBZ_USER || 'thedreamtowel@naver.com',
+  password: process.env.MARKETBZ_PASSWORD || 'qw@@951753'
 };
 
 /**
@@ -204,7 +204,12 @@ export async function buildHybridOnnuriQuota({
               if (txt === '주소(도로명)' || txt.startsWith('주소(도로명)')) {
                 const next = el.nextElementSibling;
                 if (next && next.innerText.trim()) {
-                  res.mbzRoadAddress = next.innerText.trim();
+                  const spanEl = next.querySelector('span.pdt5');
+                  let addrText = spanEl ? spanEl.innerText : next.innerText;
+                  addrText = addrText.replace(/주소정보\s*갱신/g, '').replace(/\s+/g, ' ').trim();
+                  if (addrText) {
+                    res.mbzRoadAddress = addrText;
+                  }
                 }
               }
             }
