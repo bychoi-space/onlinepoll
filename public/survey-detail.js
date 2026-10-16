@@ -55,6 +55,7 @@ async function initSurveyDetailPage() {
   const badgeBlueprintStatus = document.getElementById('badge-blueprint-status');
   const btnSaveQuotaChanges = document.getElementById('btn-save-quota-changes');
   const quotaSyncStatusMsg = document.getElementById('quota-sync-status-msg');
+  const step2ConfigCard = document.getElementById('step2-execution-card');
 
   // STEP 3: 최하단 마스터 설문 블루프린트 (15단계 전수 복제)
   const badgeMasterStatus = document.getElementById('badge-master-status');
