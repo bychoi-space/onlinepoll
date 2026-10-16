@@ -378,7 +378,7 @@
         </div>
 
         <!-- Quick Preset Buttons & Save Actions -->
-        <div class="flex-center-gap-12">
+        <div class="blueprint-header-actions">
           <div class="blueprint-preset-group">
             <span class="font-caption font-bold text-dim mr-4">빠른 프리셋:</span>
             <button type="button" id="btn-preset-standard" class="btn-chip active">표준 소상공인</button>
@@ -386,12 +386,14 @@
             <button type="button" id="btn-preset-traditional" class="btn-chip">생계형 전통점포</button>
           </div>
 
-          <button type="button" id="btn-save-baseline" class="btn-pill btn-pill-primary">
-            <i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 저장
-          </button>
-          <button type="button" id="btn-run-all-batch-bottom" class="btn-pill btn-pill-success">
-            <i class="fa-solid fa-rocket"></i> 이 기준점으로 전체 배치 가동
-          </button>
+          <div class="blueprint-action-buttons">
+            <button type="button" id="btn-save-baseline" class="btn-pill btn-pill-primary">
+              <i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 저장
+            </button>
+            <button type="button" id="btn-run-all-batch-bottom" class="btn-pill btn-pill-success">
+              <i class="fa-solid fa-rocket"></i> 이 기준점으로 전체 배치 가동
+            </button>
+          </div>
         </div>
       </div>
 
@@ -420,7 +422,7 @@
 
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261016_4"></script>
+  <script type="module" src="survey-detail.js?v=20261016_5"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

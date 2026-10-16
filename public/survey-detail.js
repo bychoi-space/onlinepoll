@@ -495,6 +495,12 @@ async function initSurveyDetailPage() {
   // ------------------------------------------------------------------------
   let blueprintData = null;
   let currentBaseline = {
+    storePyeong: 14,
+    employeeFamily: 1,
+    employeeRegular: 0,
+    employeeTemp: 0,
+    dailySales: 65,
+    quarterPattern: 'even',
     creditCardRatio: 65,
     onnuriRatio: 15,
     cashRatio: 20,
@@ -562,7 +568,7 @@ async function initSurveyDetailPage() {
             </div>
           </div>
           
-          <div class="font-caption text-secondary-color mb-14">
+          <div class="blueprint-stage-desc">
             ${escapeHtml(stage.description)}
           </div>
 
@@ -603,6 +609,14 @@ async function initSurveyDetailPage() {
           <i class="fa-solid fa-link text-primary-color"></i> 쿼터 [${escapeHtml(field.source)}]
         </span>
       `;
+    } else if (field.type === 'linked_computed') {
+      const p = currentBaseline.storePyeong || 14;
+      const sqm = Math.round(p * 3.3058);
+      controlHtml = `
+        <span class="badge-status ready font-caption font-bold" id="val-sqm">
+          <i class="fa-solid fa-arrows-rotate"></i> ${sqm} m² (자동 연동)
+        </span>
+      `;
     } else if (field.type === 'fixed') {
       controlHtml = `
         <span class="badge-status ready font-caption font-bold">
@@ -640,6 +654,57 @@ async function initSurveyDetailPage() {
 
   function renderTunableControl(fieldId, field) {
     switch (fieldId) {
+      // P2: 매장 면적 (평수 조절)
+      case 'A9_2':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-pyeong" min="5" max="50" step="1" value="${currentBaseline.storePyeong || 14}" />
+            <span class="baseline-slider-val" id="val-pyeong">${currentBaseline.storePyeong || 14}평</span>
+          </div>
+        `;
+      // P2: 가족 종사자 수
+      case 'A10_1':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-family-emp" min="0" max="3" step="1" value="${currentBaseline.employeeFamily ?? 1}" />
+            <span class="baseline-slider-val" id="val-family-emp">${currentBaseline.employeeFamily ?? 1}명</span>
+          </div>
+        `;
+      // P2: 상시 유급 종업원 수 (인건비 연동)
+      case 'A10_2':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-paid-emp" min="0" max="5" step="1" value="${currentBaseline.employeeRegular ?? 0}" />
+            <span class="baseline-slider-val" id="val-paid-emp">${currentBaseline.employeeRegular ?? 0}명</span>
+          </div>
+        `;
+      // P2: 임시/일용 종업원 수
+      case 'A10_3':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-temp-emp" min="0" max="3" step="1" value="${currentBaseline.employeeTemp ?? 0}" />
+            <span class="baseline-slider-val" id="val-temp-emp">${currentBaseline.employeeTemp ?? 0}명</span>
+          </div>
+        `;
+      // P3: 일평균 매출액 (만 원)
+      case 'B1AA':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-daily-sales" min="20" max="200" step="5" value="${currentBaseline.dailySales || 65}" />
+            <span class="baseline-slider-val" id="val-daily-sales">${currentBaseline.dailySales || 65}만</span>
+          </div>
+        `;
+      // P3: 분기별 매출 비중 패턴
+      case 'B1AC_1~4':
+        const curPat = currentBaseline.quarterPattern || 'even';
+        return `
+          <select class="baseline-select" id="select-quarter-pattern">
+            <option value="even" ${curPat === 'even' ? 'selected' : ''}>균등형 (25/25/25/25%)</option>
+            <option value="h2" ${curPat === 'h2' ? 'selected' : ''}>하반기·명절 성수기 (20/20/30/30%)</option>
+            <option value="h1" ${curPat === 'h1' ? 'selected' : ''}>상반기 성수기 (30/30/20/20%)</option>
+            <option value="season" ${curPat === 'season' ? 'selected' : ''}>봄·가을 성수기 (30/20/30/20%)</option>
+          </select>
+        `;
       case 'B2A_5':
         return `
           <div class="baseline-slider-container">
@@ -726,6 +791,35 @@ async function initSurveyDetailPage() {
       }
     };
 
+    // P2: 매장 면적 (평수 조절 -> m² 자동 환산 연동)
+    const sliderPyeong = document.getElementById('slider-pyeong');
+    const valPyeong = document.getElementById('val-pyeong');
+    const valSqm = document.getElementById('val-sqm');
+    if (sliderPyeong) {
+      sliderPyeong.addEventListener('input', (e) => {
+        const p = parseInt(e.target.value, 10);
+        currentBaseline.storePyeong = p;
+        if (valPyeong) valPyeong.textContent = `${p}평`;
+        if (valSqm) valSqm.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i> ${Math.round(p * 3.3058)} m² (자동 연동)`;
+        markUnsaved();
+      });
+    }
+
+    // P2: 종업원 수 슬라이더 (가족, 유급, 일용)
+    bindSlider('slider-family-emp', 'val-family-emp', 'employeeFamily', '명');
+    bindSlider('slider-paid-emp', 'val-paid-emp', 'employeeRegular', '명');
+    bindSlider('slider-temp-emp', 'val-temp-emp', 'employeeTemp', '명');
+
+    // P3: 매출 슬라이더 및 분기 패턴
+    bindSlider('slider-daily-sales', 'val-daily-sales', 'dailySales', '만');
+    const selectQuarter = document.getElementById('select-quarter-pattern');
+    if (selectQuarter) {
+      selectQuarter.addEventListener('change', (e) => {
+        currentBaseline.quarterPattern = e.target.value;
+        markUnsaved();
+      });
+    }
+
     bindSlider('slider-credit-card', 'val-credit-card', 'creditCardRatio', '%');
     bindSlider('slider-onnuri', 'val-onnuri', 'onnuriRatio', '%');
     bindSlider('slider-margin', 'val-margin', 'profitMarginRate', '%');
@@ -756,6 +850,13 @@ async function initSurveyDetailPage() {
   if (btnPresetStandard) {
     btnPresetStandard.addEventListener('click', () => {
       applyPreset({
+        storePyeong: 14,
+        employeeFamily: 1,
+        employeeRegular: 0,
+        employeeTemp: 0,
+        dailySales: 65,
+        annualSales: 180,
+        quarterPattern: 'even',
         creditCardRatio: 65,
         onnuriRatio: 15,
         deliveryFoodAdoption: 75,
@@ -770,6 +871,13 @@ async function initSurveyDetailPage() {
   if (btnPresetGrowth) {
     btnPresetGrowth.addEventListener('click', () => {
       applyPreset({
+        storePyeong: 25,
+        employeeFamily: 1,
+        employeeRegular: 2,
+        employeeTemp: 1,
+        dailySales: 130,
+        annualSales: 280,
+        quarterPattern: 'h2',
         creditCardRatio: 70,
         onnuriRatio: 12,
         deliveryFoodAdoption: 85,
@@ -784,6 +892,13 @@ async function initSurveyDetailPage() {
   if (btnPresetTraditional) {
     btnPresetTraditional.addEventListener('click', () => {
       applyPreset({
+        storePyeong: 8,
+        employeeFamily: 1,
+        employeeRegular: 0,
+        employeeTemp: 0,
+        dailySales: 45,
+        annualSales: 120,
+        quarterPattern: 'even',
         creditCardRatio: 60,
         onnuriRatio: 20,
         deliveryFoodAdoption: 40,

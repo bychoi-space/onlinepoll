@@ -2906,15 +2906,26 @@ input[type="range"]::-webkit-slider-thumb:hover {
   position: sticky;
   top: 56px;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(12px);
   border: 1px solid var(--colors-hairline, #e2e8f0);
   border-radius: 12px;
   padding: 16px 24px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
+.blueprint-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
 .blueprint-preset-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.blueprint-action-buttons {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -2933,9 +2944,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
   background: #ffffff;
   border: 1px solid var(--colors-hairline, #e2e8f0);
   border-radius: 12px;
-  padding: 20px 24px;
+  padding: 22px 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  flex-direction: column;
 }
 .blueprint-card:hover {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
@@ -2944,8 +2957,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 14px;
-  padding-bottom: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #f1f5f9;
 }
 .blueprint-stage-title {
@@ -3002,16 +3015,24 @@ input[type="range"]::-webkit-slider-thumb:hover {
   padding: 2px 7px;
   border-radius: 4px;
 }
+.blueprint-stage-desc {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 12px;
+  min-height: 34px;
+  line-height: 1.45;
+}
 .blueprint-field-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .blueprint-field-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
+  min-height: 42px;
   background: #f8fafc;
   border: 1px solid #f1f5f9;
   border-radius: 6px;
@@ -3032,7 +3053,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .baseline-slider-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 180px;
 }
 .baseline-slider {
@@ -3044,7 +3065,25 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-size: 12px;
   font-weight: 700;
   color: #0284c7;
-  min-width: 40px;
+  min-width: 44px;
+  text-align: right;
+}
+.baseline-select {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0369a1;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  max-width: 210px;
+}
+.baseline-select:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
   text-align: right;
 }
 .blueprint-summary-kpi {

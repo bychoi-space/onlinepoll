@@ -85,23 +85,57 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     age = String(randBetween(42, 63)); // 40대~60대
   }
 
+  // 마스터 블루프린트 기준점 설정 결합
+  const mb = guidelineConfig.masterBaseline || {};
+
   // 3. 매장 면적 및 종업원수 (P2)
-  const areaPyeong = randBetween(7, 24); // 7평 ~ 24평
+  const basePyeong = mb.storePyeong !== undefined ? parseInt(mb.storePyeong, 10) : 14;
+  const areaPyeong = Math.max(5, Math.min(60, basePyeong + randBetween(-2, 2)));
   const areaSquareMeter = Math.round(areaPyeong * 3.3058);
-  const employeeFamily = randBetween(0, 1);
-  // 상시 유급 종업원 설정 (약 35% 확률로 1~2명, 65%는 0명)
-  const hasEmployees = rng() > 0.65;
-  const employeeRegular = hasEmployees ? randBetween(1, 2) : 0;
+
+  const baseFamily = mb.employeeFamily !== undefined ? parseInt(mb.employeeFamily, 10) : 1;
+  const employeeFamily = Math.max(0, baseFamily + (baseFamily > 0 ? randBetween(-1, 0) : 0));
+
+  const baseRegular = mb.employeeRegular !== undefined ? parseInt(mb.employeeRegular, 10) : (rng() > 0.65 ? randBetween(1, 2) : 0);
+  const employeeRegular = Math.max(0, baseRegular);
+
+  const baseTemp = mb.employeeTemp !== undefined ? parseInt(mb.employeeTemp, 10) : 0;
+  const employeeTemp = Math.max(0, baseTemp);
+
+  const hasEmployees = employeeRegular > 0 || employeeTemp > 0;
 
   // 4. 매출액 및 영업이익 (P3, P4)
-  const dailySales = randBetween(35, 120); // 일매출 35만 ~ 120만
-  const annualSales = Math.round((dailySales * randBetween(280, 310)) / 100); // 연매출 (단위: 백만 원, 약 1억~3.5억)
+  const baseDailySales = mb.dailySales !== undefined ? parseInt(mb.dailySales, 10) : 65;
+  const dailySales = Math.max(20, baseDailySales + randBetween(-8, 8));
+
+  const baseAnnualSales = mb.annualSales !== undefined ? parseInt(mb.annualSales, 10) : Math.round((dailySales * randBetween(280, 310)) / 100);
+  const annualSales = Math.max(40, baseAnnualSales + randBetween(-10, 10));
   
   // 분기별 비중 (합계 100%)
-  const q1 = randBetween(22, 28);
-  const q2 = randBetween(23, 27);
-  const q3 = randBetween(22, 28);
-  const q4 = 100 - (q1 + q2 + q3);
+  const qPattern = mb.quarterPattern || 'even';
+  let q1, q2, q3, q4;
+  if (qPattern === 'h2') {
+    q1 = randBetween(18, 22);
+    q2 = randBetween(18, 22);
+    q3 = randBetween(28, 32);
+    q4 = 100 - (q1 + q2 + q3);
+  } else if (qPattern === 'h1') {
+    q1 = randBetween(28, 32);
+    q2 = randBetween(28, 32);
+    q3 = randBetween(18, 22);
+    q4 = 100 - (q1 + q2 + q3);
+  } else if (qPattern === 'season') {
+    q1 = randBetween(28, 32);
+    q2 = randBetween(18, 22);
+    q3 = randBetween(28, 32);
+    q4 = 100 - (q1 + q2 + q3);
+  } else {
+    // even (25/25/25/25 균등 및 자연분산)
+    q1 = randBetween(23, 27);
+    q2 = randBetween(23, 27);
+    q3 = randBetween(23, 27);
+    q4 = 100 - (q1 + q2 + q3);
+  }
 
   // [규칙 4 수정] 영업이익률 및 영업이익 계산 (금액과 매출대비 %의 100% 수학적 일치 보장)
   const defaultMarginPct = Math.round(industryMeta.defaultMargin * 100);
@@ -114,9 +148,6 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   // 일평균 고객 수 및 영업일수
   const dailyCustomers = randBetween(25, 75);
   const monthlyOpenDays = randBetween(24, 28);
-
-  // 마스터 블루프린트 기준점 설정 결합
-  const mb = guidelineConfig.masterBaseline || {};
 
   // 5. 결제수단 비중 (P5 - 합계 100% 필수)
   // [규칙 2 & 3] 신용카드 취급 필수, 비중은 60~70% 랜덤, 온누리 10~20%, 현금 나머지 (합계 100%)
@@ -244,7 +275,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     employees: {
       family: String(employeeFamily),
       regular: String(employeeRegular),
-      temp: '0'
+      temp: String(employeeTemp)
     },
     sales: {
       daily: String(dailySales),

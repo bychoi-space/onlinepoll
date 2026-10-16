@@ -39,7 +39,14 @@
       2,
       10
     ],
-    "salesMarginAvg": 25
+    "salesMarginAvg": 25,
+    "storePyeong": 14,
+    "storeSqm": 46,
+    "employeeFamily": 1,
+    "employeeRegular": 0,
+    "employeeTemp": 0,
+    "dailySales": 65,
+    "quarterPattern": "even"
   },
   "stages": [
     {
@@ -174,41 +181,41 @@
         {
           "id": "A9_1",
           "label": "매장 면적 (m²)",
-          "type": "jitter",
-          "baseline": "45 m²",
-          "range": "23~79 m²",
-          "note": "평수와 연동"
+          "type": "linked_computed",
+          "baseline": "46 m²",
+          "note": "평수 연동 자동 환산"
         },
         {
           "id": "A9_2",
           "label": "매장 면적 (평수)",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "14 평",
-          "range": "7~24 평",
-          "note": "정수 평수"
+          "range": "5~50 평",
+          "note": "기준 평수 조절"
         },
         {
           "id": "A10_1",
           "label": "가족 종사자 수",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "1 명",
-          "range": "0~1 명",
-          "note": "무급 가족종사자"
+          "range": "0~3 명",
+          "note": "무급 가족종사자 기준"
         },
         {
           "id": "A10_2",
           "label": "상시 유급 종업원 수",
           "type": "tunable",
           "baseline": "0 명",
-          "range": "0~2 명",
-          "note": "종업원 유무에 따라 인건비 연동"
+          "range": "0~5 명",
+          "note": "유급 종업원 (인건비 연동)"
         },
         {
           "id": "A10_3",
           "label": "임시/일용 종업원 수",
-          "type": "fixed",
-          "value": "0 명",
-          "note": "표준 0명"
+          "type": "tunable",
+          "baseline": "0 명",
+          "range": "0~3 명",
+          "note": "임시/일용 종업원 기준"
         }
       ]
     },
@@ -218,24 +225,24 @@
       "aspFile": "P3.asp",
       "title": "매출액 및 영업기간",
       "category": "FINANCIAL",
-      "badge": "RULE_FIXED",
+      "badge": "TUNABLE_JITTER",
       "description": "연간 총매출액 및 분기별 매출 비중, 1년 영업개월수 12개월을 입력합니다.",
       "fields": [
         {
           "id": "B1AA",
           "label": "일평균 매출액 (만 원)",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "65 만 원",
-          "range": "35~120 만 원",
-          "note": "업종별 분포"
+          "range": "20~200 만 원",
+          "note": "일평균 매출액 기준점"
         },
         {
           "id": "B1AB",
           "label": "연간 총매출액 (백만 원)",
           "type": "tunable",
           "baseline": "180 백만 원",
-          "range": "90~350 백만 원",
-          "note": "점포 규모별"
+          "range": "50~350 백만 원",
+          "note": "점포 연간 총매출"
         },
         {
           "id": "B1AC",
@@ -247,9 +254,9 @@
         {
           "id": "B1AC_1~4",
           "label": "분기별 매출 비중",
-          "type": "jitter",
-          "baseline": "25% / 25% / 25% / 25%",
-          "note": "합계 100% 필수"
+          "type": "tunable",
+          "baseline": "균등형 (25/25/25/25%)",
+          "note": "분기별 매출 비중 패턴"
         }
       ]
     },
