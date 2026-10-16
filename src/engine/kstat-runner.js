@@ -90,6 +90,7 @@ export async function runKstatSurvey({
     bizNumber: bizData.bizNumber || '123-45-67890',
     ceoName: bizData.ceoName || '점포주',
     phone: bizData.phone || '02-1234-5678',
+    openDate: bizData.openDate || '2020-05-01',
     openYear: bizData.openDate ? String(bizData.openDate).split(/[-.]/)[0] : '2020',
     openMonth: bizData.openDate ? (String(bizData.openDate).split(/[-.]/)[1] || '05') : '05',
     zipCode: bizData.zipCode || '05527',
@@ -116,7 +117,17 @@ export async function runKstatSurvey({
   const preNextDelay = () => page.waitForTimeout(Math.floor(Math.random() * 300) + 600); // 600ms ~ 900ms 다음 클릭 전 텀
 
   page.on('dialog', async (dialog) => {
-    console.log(`🔔 [Kstat Alert] "${dialog.message()}"`);
+    const msg = dialog.message();
+    console.log(`🔔 [Kstat Alert] "${msg}"`);
+    try {
+      onProgress({
+        step: 'ALERT',
+        stepIndex: 0,
+        totalSteps: 15,
+        screenshotUrl: null,
+        message: `🔔 [설문 알림] "${msg.replace(/[\r\n]+/g, ' ')}"`
+      });
+    } catch (_) {}
     await dialog.accept();
   });
 
@@ -128,7 +139,7 @@ export async function runKstatSurvey({
       message: `[세션 접속] 쿼터 #${quotaIndex} "${biz.companyName}" (${biz.bizNumber}) 접속 시작...`
     });
 
-    await page.goto(surveyUrl, { waitUntil: 'networkidle', timeout: 35000 });
+    await page.goto(surveyUrl, { waitUntil: 'domcontentloaded', timeout: 35000 });
     await readingDelay();
 
     // 1) index.asp인 경우 [시작] 클릭
@@ -201,7 +212,7 @@ export async function runKstatSurvey({
 
     // 본조사 루프 (P1 ~ P14)
     let iteration = 0;
-    const maxIterations = 25;
+    const maxIterations = 10;
 
     while (iteration < maxIterations) {
       iteration++;
@@ -367,29 +378,46 @@ export async function runKstatSurvey({
       else if (stepName === 'P7') {
         const fB5A1 = page.frame({ url: /B5A1\.asp/ }) || page.frame({ url: /B5A\.asp/ });
         if (fB5A1) {
-          await fB5A1.evaluate(() => {
-            if (typeof setRadioValue === 'function') setRadioValue('B5A_1', '1');
-            const r = document.querySelector('#B5A_1_1, input[value="1"]');
-            if (r) r.checked = true;
-          }).catch(() => {});
+          await fB5A1.click('#B5A_1_1, input[value="1"]').catch(async () => {
+            await fB5A1.evaluate(() => {
+              if (typeof setRadioValue === 'function') setRadioValue('B5A_1', '1');
+              const r = document.querySelector('#B5A_1_1, input[value="1"]');
+              if (r) { r.checked = true; r.click(); }
+              const td = document.querySelector('#TD_B5A_1_1');
+              if (td && td.onclick) td.onclick();
+            });
+          });
         }
 
         const fB5A2 = page.frame({ url: /B5A2\.asp/ });
         if (fB5A2) {
-          await fB5A2.evaluate(() => {
-            if (typeof setRadioValue === 'function') setRadioValue('B5A_2', '2');
-            const r = document.querySelector('#B5A_2_2, input[value="2"]');
-            if (r) r.checked = true;
-          }).catch(() => {});
+          await fB5A2.click('#B5A_2_2, input[value="2"]').catch(async () => {
+            await fB5A2.evaluate(() => {
+              if (typeof setRadioValue === 'function') setRadioValue('B5A_2', '2');
+              const r = document.querySelector('#B5A_2_2, input[value="2"]');
+              if (r) { r.checked = true; r.click(); }
+              const td = document.querySelector('#TD_B5A_2_2');
+              if (td && td.onclick) td.onclick();
+            });
+          });
         }
 
-        // 1단계 선택 후 Alert 유발 및 추가 iframe 동적 로드 트리거 (하위 문항이 아직 없을 때만 1차 클릭)
+        // 1단계: 라디오 선택 후 동적 하위 iframe 로딩 대기 (최대 2초)
         let fB5B1 = page.frame({ url: /B5B1\.asp/ });
+        if (!fB5B1) {
+          for (let w = 0; w < 4; w++) {
+            await page.waitForTimeout(500);
+            fB5B1 = page.frame({ url: /B5B1\.asp/ });
+            if (fB5B1) break;
+          }
+        }
+
+        // 여전히 미생성 시 1차 next 클릭으로 Alert 유발 및 동적 로드 트리거
         if (!fB5B1) {
           await page.evaluate(() => document.querySelector('#next')?.click());
           await page.waitForTimeout(1500);
 
-          // 2단계: 화면에 동적으로 생성된 추가 문항 프레임 로딩 대기 (최대 5초)
+          // 추가 문항 프레임 로딩 대기 (최대 5초)
           for (let w = 0; w < 10; w++) {
             fB5B1 = page.frame({ url: /B5B1\.asp/ });
             if (fB5B1) break;
@@ -398,59 +426,71 @@ export async function runKstatSurvey({
         }
 
         if (fB5B1) {
-          await fB5B1.evaluate((val) => {
-            const inp = document.querySelector('input[name="B5B_1"], input[type="tel"], input[type="text"]');
-            if (inp) {
-              inp.value = val;
-              inp.dispatchEvent(new Event('input'));
-              inp.dispatchEvent(new Event('change'));
-            }
-          }, persona.onnuri.joinYear).catch(() => {});
+          const joinYearVal = String(persona.onnuri.joinYear);
+          await fB5B1.fill('input[name="B5B_1"], input[type="tel"], input[type="text"]', joinYearVal).catch(async () => {
+            await fB5B1.evaluate((val) => {
+              const inp = document.querySelector('input[name="B5B_1"], input[type="tel"], input[type="text"]');
+              if (inp) {
+                inp.value = val;
+                inp.dispatchEvent(new Event('input'));
+                inp.dispatchEvent(new Event('change'));
+              }
+            }, joinYearVal);
+          });
         }
 
         let fB5C1 = page.frame({ url: /B5C1\.asp/ });
         if (fB5C1) {
-          await fB5C1.evaluate((val) => {
-            const inp = document.querySelector('input[name="B5C_1"], input[type="tel"], input[type="text"]');
-            if (inp) {
-              inp.value = val;
-              inp.dispatchEvent(new Event('input'));
-              inp.dispatchEvent(new Event('change'));
-            }
-          }, persona.onnuri.salesRatio).catch(() => {});
+          const salesRatioVal = String(persona.onnuri.salesRatio);
+          await fB5C1.fill('input[name="B5C_1"], input[type="tel"], input[type="text"]', salesRatioVal).catch(async () => {
+            await fB5C1.evaluate((val) => {
+              const inp = document.querySelector('input[name="B5C_1"], input[type="tel"], input[type="text"]');
+              if (inp) {
+                inp.value = val;
+                inp.dispatchEvent(new Event('input'));
+                inp.dispatchEvent(new Event('change'));
+              }
+            }, salesRatioVal);
+          });
         }
 
         let fB5D1 = page.frame({ url: /B5D1\.asp/ });
         if (fB5D1) {
-          await fB5D1.evaluate(() => {
-            if (typeof setRadioValue === 'function') setRadioValue('B5D_1', '3');
-            const r = document.querySelector('#B5D_1_3, input[value="3"]');
-            if (r) { r.checked = true; r.click(); }
-            const td = document.querySelector('#TD_B5D_1_3');
-            if (td && td.onclick) td.onclick();
-          }).catch(() => {});
+          await fB5D1.click('#B5D_1_3, input[value="3"]').catch(async () => {
+            await fB5D1.evaluate(() => {
+              if (typeof setRadioValue === 'function') setRadioValue('B5D_1', '3');
+              const r = document.querySelector('#B5D_1_3, input[value="3"]');
+              if (r) { r.checked = true; r.click(); }
+              const td = document.querySelector('#TD_B5D_1_3');
+              if (td && td.onclick) td.onclick();
+            });
+          });
         }
 
         let fB5F1 = page.frame({ url: /B5F1\.asp/ });
         if (fB5F1) {
-          await fB5F1.evaluate(() => {
-            if (typeof setRadioValue === 'function') setRadioValue('B5F_1', '3');
-            const r = document.querySelector('#B5F_1_3, input[value="3"]');
-            if (r) { r.checked = true; r.click(); }
-            const td = document.querySelector('#TD_B5F_1_3');
-            if (td && td.onclick) td.onclick();
-          }).catch(() => {});
+          await fB5F1.click('#B5F_1_3, input[value="3"]').catch(async () => {
+            await fB5F1.evaluate(() => {
+              if (typeof setRadioValue === 'function') setRadioValue('B5F_1', '3');
+              const r = document.querySelector('#B5F_1_3, input[value="3"]');
+              if (r) { r.checked = true; r.click(); }
+              const td = document.querySelector('#TD_B5F_1_3');
+              if (td && td.onclick) td.onclick();
+            });
+          });
         }
 
         const fB5AB = page.frame({ url: /B5AB\.asp/ });
         if (fB5AB) {
-          await fB5AB.evaluate(() => {
-            if (typeof setRadioValue === 'function') setRadioValue('B5AB', '1');
-            const r = document.querySelector('#B5AB_1, input[value="1"]');
-            if (r) { r.checked = true; r.click(); }
-            const td = document.querySelector('#TD_B5AB_1');
-            if (td && td.onclick) td.onclick();
-          }).catch(() => {});
+          await fB5AB.click('#B5AB_1, input[value="1"]').catch(async () => {
+            await fB5AB.evaluate(() => {
+              if (typeof setRadioValue === 'function') setRadioValue('B5AB', '1');
+              const r = document.querySelector('#B5AB_1, input[value="1"]');
+              if (r) { r.checked = true; r.click(); }
+              const td = document.querySelector('#TD_B5AB_1');
+              if (td && td.onclick) td.onclick();
+            });
+          });
         }
       }
 
@@ -459,31 +499,43 @@ export async function runKstatSurvey({
         for (const letter of ['A', 'B', 'C', 'D', 'E', 'F', 'G']) {
           const f = page.frame({ url: new RegExp('C1' + letter + '\\.asp') });
           if (f) {
-            await f.evaluate((l) => {
-              const varName = 'C1' + l;
-              if (typeof setRadioValue === 'function') setRadioValue(varName, '2');
-              const r = document.querySelector(`#${varName}_2, input[value="2"]`);
-              if (r) { r.checked = true; r.click(); }
-              const td = document.querySelector(`#TD_${varName}_2`);
-              if (td && td.onclick) td.onclick();
-            }, letter).catch(() => {});
+            await f.click(`#C1${letter}_2, input[value="2"]`).catch(async () => {
+              await f.evaluate((l) => {
+                const varName = 'C1' + l;
+                if (typeof setRadioValue === 'function') setRadioValue(varName, '2');
+                const r = document.querySelector(`#${varName}_2, input[value="2"]`);
+                if (r) { r.checked = true; r.click(); }
+                const td = document.querySelector(`#TD_${varName}_2`);
+                if (td && td.onclick) td.onclick();
+              }, letter);
+            });
           }
         }
 
-        // 1차 클릭 (C1GA Alert 트리거 및 동적 로드)
-        await page.evaluate(() => document.querySelector('#next')?.click());
-        await page.waitForTimeout(1500);
+        // 1차 클릭 (C1GA Alert 트리거 및 동적 로드 - 기노출되지 않았을 때만)
+        let fGA = page.frame({ url: /C1GA\.asp/ });
+        if (!fGA) {
+          await page.evaluate(() => document.querySelector('#next')?.click());
+          await page.waitForTimeout(1500);
+
+          for (let w = 0; w < 10; w++) {
+            fGA = page.frame({ url: /C1GA\.asp/ });
+            if (fGA) break;
+            await page.waitForTimeout(500);
+          }
+        }
 
         // 2단계: C1GA(미운영 사유) 프레임 주입
-        const fGA = page.frame({ url: /C1GA\.asp/ });
         if (fGA) {
-          await fGA.evaluate(() => {
-            if (typeof setRadioValue === 'function') setRadioValue('C1GA', '1');
-            const r = document.querySelector('#C1GA_1, input[value="1"]');
-            if (r) { r.checked = true; r.click(); }
-            const td = document.querySelector('#TD_C1GA_1');
-            if (td && td.onclick) td.onclick();
-          }).catch(() => {});
+          await fGA.click('#C1GA_1, input[value="1"]').catch(async () => {
+            await fGA.evaluate(() => {
+              if (typeof setRadioValue === 'function') setRadioValue('C1GA', '1');
+              const r = document.querySelector('#C1GA_1, input[value="1"]');
+              if (r) { r.checked = true; r.click(); }
+              const td = document.querySelector('#TD_C1GA_1');
+              if (td && td.onclick) td.onclick();
+            });
+          });
         }
       }
 

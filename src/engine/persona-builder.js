@@ -114,13 +114,15 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const costEtc = 100 - (costRaw + costRent + costUtility);
 
   // 7. 온누리상품권 현황 (P7)
-  const openYearNum = parseInt(bizData.openDate ? String(bizData.openDate).split(/[-.]/)[0] : '2020', 10) || 2020;
+  const rawOpenDate = bizData.openDate || bizData.openYear || '2020';
+  const openYearNum = parseInt(String(rawOpenDate).split(/[-.]/)[0], 10) || 2020;
   // Kstat 유효성 검사: 온누리상품권 가맹 시작 년도는 A5(개업연도)보다 이전일 수 없음!
   let onnuriJoinYear;
   if (openYearNum >= 2025) {
     onnuriJoinYear = openYearNum; // 2025/2026 개업 점포는 개업 당해연도 가입
   } else {
-    onnuriJoinYear = Math.max(openYearNum, Math.min(2024, Math.max(2018, openYearNum + randBetween(0, 2))));
+    // 개업연도 이상, 2024 이하
+    onnuriJoinYear = Math.max(openYearNum, Math.min(2024, openYearNum + randBetween(0, 1)));
   }
   const onnuriSalesRatio = String(payOnnuri);
 
