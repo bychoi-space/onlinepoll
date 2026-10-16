@@ -146,8 +146,12 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const monthlyProfit = Math.round(annualProfit / 12);
 
   // 일평균 고객 수 및 영업일수
-  const dailyCustomers = randBetween(25, 75);
-  const monthlyOpenDays = randBetween(24, 28);
+  const baseCust = mb.dailyCustomers !== undefined ? parseInt(mb.dailyCustomers, 10) : 45;
+  const dailyCustomers = Math.max(10, baseCust + randBetween(-5, 5));
+  const baseDays = mb.monthlyBusinessDays !== undefined ? parseInt(mb.monthlyBusinessDays, 10) : 26;
+  const monthlyOpenDays = Math.max(15, Math.min(31, baseDays + randBetween(-1, 1)));
+  const dailyBusinessHours = String(mb.dailyBusinessHours || 11);
+  const salesChangeSelector = mb.salesChange === 'increase' ? '#B1BB_1' : (mb.salesChange === 'decrease' ? '#B1BB_2' : '#B1BB_3');
 
   // 5. 결제수단 비중 (P5 - 합계 100% 필수)
   // [규칙 2 & 3] 신용카드 취급 필수, 비중은 60~70% 랜덤, 온누리 10~20%, 현금 나머지 (합계 100%)
@@ -165,14 +169,14 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const costEtcText = '세금';
   const remainingCost = 100 - costEtc; // 90%
   let costLabor = 0;
-  let costRent = randBetween(15, 25);
+  const rentBase = mb.costRentRatio !== undefined ? parseInt(mb.costRentRatio, 10) : 20;
+  let costRent = Math.max(10, Math.min(35, rentBase + randBetween(-2, 2)));
   let costRaw = remainingCost - costRent;
 
   if (hasEmployees) {
-    const laborBase = mb.costLaborRatioWithEmp !== undefined ? parseInt(mb.costLaborRatioWithEmp, 10) : 25;
-    costLabor = Math.max(15, Math.min(35, laborBase + randBetween(-3, 3)));
-    costRent = randBetween(15, 25);
-    costRaw = remainingCost - (costLabor + costRent);
+    const laborBase = mb.costLaborRatio !== undefined ? parseInt(mb.costLaborRatio, 10) : 25;
+    costLabor = Math.max(10, Math.min(45, laborBase + randBetween(-2, 2)));
+    costRaw = Math.max(10, remainingCost - (costLabor + costRent));
   }
 
   // 7. 온누리상품권 현황 (P7)
@@ -190,80 +194,88 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   }
   const onnuriSalesRatio = String(payOnnuri);
   // [규칙 6] B5-3 온누리상품권 월평균 이용 고객 수: 2~10명 사이 랜덤
-  const custMin = (mb.onnuriCustomerRange && mb.onnuriCustomerRange[0]) || 2;
-  const custMax = (mb.onnuriCustomerRange && mb.onnuriCustomerRange[1]) || 10;
-  const onnuriMonthlyCustomers = String(randBetween(custMin, custMax));
+  const onnuriBaseCust = mb.onnuriCustomerAvg !== undefined ? parseInt(mb.onnuriCustomerAvg, 10) : 5;
+  const onnuriMonthlyCustomers = String(Math.max(2, Math.min(10, onnuriBaseCust + randBetween(-1, 1))));
 
-  // 가중치 슬라이더(긍정/중립/부정)에 따른 온누리 만족도 선택자 (P7 - B5AA)
-  // B5AA_1: 매우불만, B5AA_2: 약간불만, B5AA_3: 보통, B5AA_4: 약간만족, B5AA_5: 매우만족
-  const posRatio = guidelineConfig.positiveRatio ?? 70;
-  const neuRatio = guidelineConfig.neutralRatio ?? 20;
-  const roll = rng() * 100;
+  const onnuriPaperSelector = mb.onnuriPaperMember === 'no' ? '#B5A_1_2' : '#B5A_1_1';
+  const onnuriMobileSelector = mb.onnuriMobileMember === 'yes' ? '#B5A_2_1' : '#B5A_2_2';
   let onnuriSatisfactionSelector = '#B5AA_4'; // 기본 만족
-  if (roll < posRatio) {
-    onnuriSatisfactionSelector = rng() > 0.4 ? '#B5AA_4' : '#B5AA_5'; // 만족 or 매우만족
-  } else if (roll < posRatio + neuRatio) {
-    onnuriSatisfactionSelector = '#B5AA_3'; // 보통
-  } else {
-    onnuriSatisfactionSelector = '#B5AA_2'; // 약간불만
-  }
+  if (mb.onnuriSatisfaction === 'very_good') onnuriSatisfactionSelector = '#B5AA_5';
+  else if (mb.onnuriSatisfaction === 'normal') onnuriSatisfactionSelector = '#B5AA_3';
+  else if (mb.onnuriSatisfaction === 'bad') onnuriSatisfactionSelector = '#B5AA_2';
 
   // 8. 사업장 임대차 (P10)
-  // 80% 확률로 임차(보증부월세), 20% 확률로 자가 소유
-  const isRent = rng() < 0.8;
-  const deposit = String(randBetween(1000, 3500)); // 보증금 1000~3500만
-  const monthlyRent = String(randBetween(70, 160)); // 월세 70~160만
+  const rentRate = mb.rentAdoptionRate !== undefined ? (mb.rentAdoptionRate / 100) : 0.8;
+  const isRent = rng() < rentRate;
+  const baseDep = mb.depositAmount !== undefined ? parseInt(mb.depositAmount, 10) : 2000;
+  const deposit = String(Math.max(500, baseDep + randBetween(-150, 150)));
+  const baseRentAmt = mb.monthlyRentAmount !== undefined ? parseInt(mb.monthlyRentAmount, 10) : 110;
+  const monthlyRent = String(Math.max(40, baseRentAmt + randBetween(-10, 10)));
+  const rentTrendSelector = mb.rentTrend === 'increase' ? '#D1D_1' : (mb.rentTrend === 'decrease' ? '#D1D_2' : '#D1D_3');
 
   // 9. 애로사항 및 활성화 과제 (P13 - Kstat 선택지 유효 범위 엄수)
-  // F1 (애로사항): 1~8 (9: 기타-주관식 필수, 10: 없음) -> 1~8 중 서로 다른 3종 선택
-  const poolF1 = [1, 2, 3, 4, 5, 6, 7, 8];
-  for (let i = poolF1.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [poolF1[i], poolF1[j]] = [poolF1[j], poolF1[i]];
+  let poolF1 = [1, 3, 5, 2, 4, 6, 7, 8];
+  if (mb.issuePriority === 'customer') poolF1 = [2, 4, 1, 3, 5, 6, 7, 8];
+  else if (mb.issuePriority === 'labor') poolF1 = [6, 1, 3, 4, 2, 5, 7, 8];
+  else if (mb.issuePriority === 'random') {
+    poolF1 = [1, 2, 3, 4, 5, 6, 7, 8];
+    for (let i = poolF1.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [poolF1[i], poolF1[j]] = [poolF1[j], poolF1[i]];
+    }
   }
   const selectedIssuesF1 = poolF1.slice(0, 3); // 1~8 중 3개
 
-  // F3 (활성화 과제): 1~10 (11: 기타-주관식 필수) -> 1~10 중 서로 다른 3종 선택
-  const poolF3 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  for (let i = poolF3.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [poolF3[i], poolF3[j]] = [poolF3[j], poolF3[i]];
+  let poolF3 = [1, 3, 7, 2, 4, 5, 6, 8, 9, 10];
+  if (mb.policyPriority === 'digital') poolF3 = [2, 5, 8, 1, 3, 4, 6, 7, 9, 10];
+  else if (mb.policyPriority === 'marketing') poolF3 = [4, 6, 9, 1, 3, 2, 5, 7, 8, 10];
+  else if (mb.policyPriority === 'random') {
+    poolF3 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    for (let i = poolF3.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [poolF3[i], poolF3[j]] = [poolF3[j], poolF3[i]];
+    }
   }
   const selectedIssuesF3 = poolF3.slice(0, 3); // 1~10 중 3개
 
   // 10. 부채 및 자금 현황 (P11)
-  // [규칙 수정] 소상공인의 약 45%는 사업 부채 보유, 55%는 부채 없음
   const debtRate = mb.debtAdoptionRate !== undefined ? (mb.debtAdoptionRate / 100) : 0.45;
   const hasDebt = rng() < debtRate;
   const debtAvg = mb.debtAvgAmount !== undefined ? parseInt(mb.debtAvgAmount, 10) : 2500;
-  const debtAmount = String(Math.max(1000, debtAvg + randBetween(-500, 1000))); // 만 원 단위
+  const debtAmount = String(Math.max(500, debtAvg + randBetween(-300, 500)));
 
   // 11. 향후 운영 계획 (P14)
-  // [규칙 수정] 점포 운영 지속 연수 분산 (단순 7년 편중 방지: 3, 5, 8, 10, 15년 등 고른 분산)
-  const yearsPool = (Array.isArray(mb.plannedYearsPool) && mb.plannedYearsPool.length > 0)
-    ? mb.plannedYearsPool
-    : [3, 4, 5, 5, 6, 7, 8, 10, 10, 12, 15, 20];
-  const plannedYears = String(yearsPool[randBetween(0, yearsPool.length - 1)]);
-  const cashReceiptRatio = String(randBetween(40, 70));
+  const plannedYears = String(mb.plannedYears || 8);
+  const baseReceipt = mb.cashReceiptRatio !== undefined ? parseInt(mb.cashReceiptRatio, 10) : 50;
+  const cashReceiptRatio = String(Math.max(10, Math.min(90, baseReceipt + randBetween(-4, 4))));
+  const futurePlanSelector = mb.futurePlan === 'expand' ? '#G1_2' : (mb.futurePlan === 'change' ? '#G1_3' : (mb.futurePlan === 'close' ? '#G1_4' : '#G1_1'));
+  const successionPlanSelector = mb.successionPlan === 'child' ? '#G1A_1' : (mb.successionPlan === 'transfer' ? '#G1A_3' : '#G1A_2');
 
   // 12. 디지털화 및 배달/POS 서비스 (P8 C1)
-  // [규칙 신설] 음식점업은 배달서비스(75%) 대부분 실시, 비음식점은 15% 실시
   const isFoodService = /음식점|식당|분식|주점|치킨|피자|카페|한식|중식|일식/.test(
     industryMeta.categoryName + ' ' + (bizData.handledItems || '')
   );
   const foodDeliveryRate = mb.deliveryFoodAdoption !== undefined ? (mb.deliveryFoodAdoption / 100) : 0.75;
-  const nonFoodDeliveryRate = mb.deliveryNonFoodAdoption !== undefined ? (mb.deliveryNonFoodAdoption / 100) : 0.15;
+  const nonFoodDeliveryRate = 0.15;
   const hasDelivery = isFoodService ? (rng() < foodDeliveryRate) : (rng() < nonFoodDeliveryRate);
-  const deliveryRatio = hasDelivery ? String(randBetween(15, 40)) : '0';
+  const baseDelivRatio = mb.deliverySalesRatio !== undefined ? parseInt(mb.deliverySalesRatio, 10) : 25;
+  const deliveryRatio = hasDelivery ? String(Math.max(10, Math.min(60, baseDelivRatio + randBetween(-3, 3)))) : '0';
   
-  // POS기기는 전체의 약 65% 보유 (1대)
   const posRate = mb.posAdoptionRate !== undefined ? (mb.posAdoptionRate / 100) : 0.65;
   const hasPos = rng() < posRate;
-  const posCount = hasPos ? '1' : '0';
+  const posCount = hasPos ? String(mb.posCount || 1) : '0';
 
-  // 스마트주문은 약 20% 운영, 80% 미운영
-  const hasSmartOrder = rng() < 0.20;
+  const smartOrderRate = mb.smartOrderAdoption !== undefined ? (mb.smartOrderAdoption / 100) : 0.20;
+  const hasSmartOrder = rng() < smartOrderRate;
   const smartOrderIntent = rng() < 0.5 ? '1' : '2';
+
+  // 13. 원산지 및 가격표시 (P9)
+  const originTargetSelector = mb.originLabelTarget === 'no' ? '#C2A_1' : '#C2A_2';
+  const priceTagRate = String(Math.max(50, Math.min(100, (mb.priceTagCompliance || 80) + randBetween(-2, 2))));
+
+  // 14. 화재/배상책임 (P12)
+  const fireSelector = mb.fireInsurance === 'no' ? '#E2A_2' : '#E2A_1';
+  const liabilitySelector = mb.liabilityInsurance === 'no' ? '#E2B_2' : '#E2B_1';
 
   return {
     quotaIndex,
@@ -285,7 +297,9 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       annualProfit: String(annualProfit),
       monthlyProfit: String(monthlyProfit),
       dailyCustomers: String(dailyCustomers),
-      monthlyOpenDays: String(monthlyOpenDays)
+      monthlyOpenDays: String(monthlyOpenDays),
+      dailyBusinessHours,
+      salesChangeSelector
     },
     paymentMethods: {
       card: String(payCard),
@@ -303,12 +317,15 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       joinYear: String(onnuriJoinYear),
       salesRatio: onnuriSalesRatio,
       satisfactionSelector: onnuriSatisfactionSelector,
-      monthlyCustomers: onnuriMonthlyCustomers
+      monthlyCustomers: onnuriMonthlyCustomers,
+      paperSelector: onnuriPaperSelector,
+      mobileSelector: onnuriMobileSelector
     },
     lease: {
       isRent,
       deposit,
-      monthlyRent
+      monthlyRent,
+      trendSelector: rentTrendSelector
     },
     issues: {
       f1: selectedIssuesF1,
@@ -318,9 +335,19 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       hasDebt,
       amount: debtAmount
     },
+    compliance: {
+      originTargetSelector,
+      priceTagRate
+    },
+    safety: {
+      fireSelector,
+      liabilitySelector
+    },
     future: {
       plannedYears,
-      cashReceiptRatio
+      cashReceiptRatio,
+      planSelector: futurePlanSelector,
+      successionSelector: successionPlanSelector
     },
     digital: {
       hasDelivery,

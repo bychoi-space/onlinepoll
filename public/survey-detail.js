@@ -500,22 +500,43 @@ async function initSurveyDetailPage() {
     employeeRegular: 0,
     employeeTemp: 0,
     dailySales: 65,
+    annualSales: 180,
     quarterPattern: 'even',
+    profitMarginRate: 25,
+    salesChange: 'similar',
+    dailyCustomers: 45,
+    dailyBusinessHours: 11,
+    monthlyBusinessDays: 26,
     creditCardRatio: 65,
     onnuriRatio: 15,
-    cashRatio: 20,
+    cashReceiptRatio: 50,
     costTaxRatio: 10,
-    costLaborRatioWithEmp: 25,
+    costLaborRatio: 25,
+    costRentRatio: 20,
+    onnuriPaperMember: 'yes',
+    onnuriMobileMember: 'no',
+    onnuriCustomerAvg: 5,
+    onnuriSatisfaction: 'good',
     deliveryFoodAdoption: 75,
-    deliveryNonFoodAdoption: 15,
     deliverySalesRatio: 25,
     posAdoptionRate: 65,
+    posCount: 1,
+    smartOrderAdoption: 20,
+    originLabelTarget: 'yes',
+    priceTagCompliance: 80,
+    rentAdoptionRate: 80,
+    depositAmount: 2000,
+    monthlyRentAmount: 110,
+    rentTrend: 'freeze',
     debtAdoptionRate: 45,
     debtAvgAmount: 2500,
-    plannedYears: 8,
-    onnuriCustomerAvg: 5,
-    annualSales: 180,
-    profitMarginRate: 25
+    fireInsurance: 'yes',
+    liabilityInsurance: 'yes',
+    issuePriority: 'standard',
+    policyPriority: 'standard',
+    futurePlan: 'maintain',
+    successionPlan: 'none',
+    plannedYears: 8
   };
 
   async function loadBlueprint() {
@@ -610,13 +631,49 @@ async function initSurveyDetailPage() {
         </span>
       `;
     } else if (field.type === 'linked_computed') {
-      const p = currentBaseline.storePyeong || 14;
-      const sqm = Math.round(p * 3.3058);
-      controlHtml = `
-        <span class="badge-status ready font-caption font-bold" id="val-sqm">
-          <i class="fa-solid fa-arrows-rotate"></i> ${sqm} m² (자동 연동)
-        </span>
-      `;
+      if (field.id === 'A9_1') {
+        const p = currentBaseline.storePyeong || 14;
+        const sqm = Math.round(p * 3.3058);
+        controlHtml = `
+          <span class="badge-status ready font-caption font-bold" id="val-sqm">
+            <i class="fa-solid fa-arrows-rotate"></i> ${sqm} m² (자동 연동)
+          </span>
+        `;
+      } else if (field.id === 'B1BA') {
+        const s = currentBaseline.annualSales || 180;
+        const m = currentBaseline.profitMarginRate || 25;
+        const profit = Math.round((s * m) / 100);
+        controlHtml = `
+          <span class="badge-status ready font-caption font-bold" id="val-profit">
+            <i class="fa-solid fa-calculator"></i> ${profit} 백만 원 (자동 연동)
+          </span>
+        `;
+      } else if (field.id === 'B2A_1') {
+        const card = currentBaseline.creditCardRatio || 65;
+        const onnuri = currentBaseline.onnuriRatio || 15;
+        const cash = Math.max(0, 100 - card - onnuri);
+        controlHtml = `
+          <span class="badge-status ready font-caption font-bold" id="val-cash-ratio">
+            <i class="fa-solid fa-calculator"></i> ${cash}% (자동 잔여)
+          </span>
+        `;
+      } else if (field.id === 'B4_2') {
+        const tax = currentBaseline.costTaxRatio || 10;
+        const labor = (currentBaseline.employeeRegular > 0 ? (currentBaseline.costLaborRatio || 25) : 0);
+        const rent = currentBaseline.costRentRatio || 20;
+        const raw = Math.max(10, 100 - tax - labor - rent);
+        controlHtml = `
+          <span class="badge-status ready font-caption font-bold" id="val-cost-raw">
+            <i class="fa-solid fa-calculator"></i> ${raw}% (자동 잔여)
+          </span>
+        `;
+      } else {
+        controlHtml = `
+          <span class="badge-status ready font-caption font-bold">
+            <i class="fa-solid fa-arrows-rotate"></i> ${escapeHtml(field.baseline || '자동 연동')}
+          </span>
+        `;
+      }
     } else if (field.type === 'fixed') {
       controlHtml = `
         <span class="badge-status ready font-caption font-bold">
@@ -694,8 +751,16 @@ async function initSurveyDetailPage() {
             <span class="baseline-slider-val" id="val-daily-sales">${currentBaseline.dailySales || 65}만</span>
           </div>
         `;
+      // P3: 연간 총매출액 (백만 원)
+      case 'B1AB':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-annual-sales" min="50" max="350" step="10" value="${currentBaseline.annualSales || 180}" />
+            <span class="baseline-slider-val" id="val-annual-sales">${currentBaseline.annualSales || 180}M</span>
+          </div>
+        `;
       // P3: 분기별 매출 비중 패턴
-      case 'B1AC_1~4':
+      case 'B1AC_1~4': {
         const curPat = currentBaseline.quarterPattern || 'even';
         return `
           <select class="baseline-select" id="select-quarter-pattern">
@@ -705,67 +770,312 @@ async function initSurveyDetailPage() {
             <option value="season" ${curPat === 'season' ? 'selected' : ''}>봄·가을 성수기 (30/20/30/20%)</option>
           </select>
         `;
-      case 'B2A_5':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-credit-card" min="60" max="70" value="${currentBaseline.creditCardRatio || 65}" />
-            <span class="baseline-slider-val" id="val-credit-card">${currentBaseline.creditCardRatio || 65}%</span>
-          </div>
-        `;
-      case 'B2A_2':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-onnuri" min="10" max="20" value="${currentBaseline.onnuriRatio || 15}" />
-            <span class="baseline-slider-val" id="val-onnuri">${currentBaseline.onnuriRatio || 15}%</span>
-          </div>
-        `;
+      }
+      // P4: 영업이익률 (%)
       case 'B1BA_1':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-margin" min="15" max="35" value="${currentBaseline.profitMarginRate || 25}" />
+            <input type="range" class="baseline-slider" id="slider-margin" min="15" max="35" step="1" value="${currentBaseline.profitMarginRate || 25}" />
             <span class="baseline-slider-val" id="val-margin">${currentBaseline.profitMarginRate || 25}%</span>
           </div>
         `;
-      case 'C1D':
+      // P4: 전년 대비 매출 변화
+      case 'B1BB': {
+        const curChange = currentBaseline.salesChange || 'similar';
+        return `
+          <select class="baseline-select" id="select-sales-change">
+            <option value="similar" ${curChange === 'similar' ? 'selected' : ''}>전년과 비슷함 (3)</option>
+            <option value="increase" ${curChange === 'increase' ? 'selected' : ''}>전년 대비 증가 (1~2)</option>
+            <option value="decrease" ${curChange === 'decrease' ? 'selected' : ''}>전년 대비 감소 (4~5)</option>
+          </select>
+        `;
+      }
+      // P4: 일평균 방문 고객 수
+      case 'B1C':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-delivery" min="30" max="95" value="${currentBaseline.deliveryFoodAdoption || 75}" />
-            <span class="baseline-slider-val" id="val-delivery">외식 ${currentBaseline.deliveryFoodAdoption || 75}%</span>
+            <input type="range" class="baseline-slider" id="slider-daily-cust" min="15" max="150" step="5" value="${currentBaseline.dailyCustomers || 45}" />
+            <span class="baseline-slider-val" id="val-daily-cust">${currentBaseline.dailyCustomers || 45}명</span>
           </div>
         `;
-      case 'C1F':
+      // P4: 일평균 영업 시간
+      case 'B1D':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-pos" min="30" max="95" value="${currentBaseline.posAdoptionRate || 65}" />
-            <span class="baseline-slider-val" id="val-pos">${currentBaseline.posAdoptionRate || 65}%</span>
+            <input type="range" class="baseline-slider" id="slider-biz-hours" min="8" max="16" step="1" value="${currentBaseline.dailyBusinessHours || 11}" />
+            <span class="baseline-slider-val" id="val-biz-hours">${currentBaseline.dailyBusinessHours || 11}시간</span>
           </div>
         `;
-      case 'E1':
+      // P4: 월평균 영업 일수
+      case 'B1E':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-debt" min="20" max="70" value="${currentBaseline.debtAdoptionRate || 45}" />
-            <span class="baseline-slider-val" id="val-debt">${currentBaseline.debtAdoptionRate || 45}%</span>
+            <input type="range" class="baseline-slider" id="slider-biz-days" min="20" max="31" step="1" value="${currentBaseline.monthlyBusinessDays || 26}" />
+            <span class="baseline-slider-val" id="val-biz-days">${currentBaseline.monthlyBusinessDays || 26}일</span>
           </div>
         `;
+      // P5: 신용카드 결제 비중
+      case 'B2A_5':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-credit-card" min="60" max="70" step="1" value="${currentBaseline.creditCardRatio || 65}" />
+            <span class="baseline-slider-val" id="val-credit-card">${currentBaseline.creditCardRatio || 65}%</span>
+          </div>
+        `;
+      // P5: 온누리상품권 결제 비중
+      case 'B2A_2':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-onnuri" min="10" max="20" step="1" value="${currentBaseline.onnuriRatio || 15}" />
+            <span class="baseline-slider-val" id="val-onnuri">${currentBaseline.onnuriRatio || 15}%</span>
+          </div>
+        `;
+      // P5: 현금영수증 발급 비중
+      case 'B3_1':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-cash-receipt" min="20" max="80" step="5" value="${currentBaseline.cashReceiptRatio || 50}" />
+            <span class="baseline-slider-val" id="val-cash-receipt">${currentBaseline.cashReceiptRatio || 50}%</span>
+          </div>
+        `;
+      // P6: 인건비 지출 비중
+      case 'B4_1':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-cost-labor" min="10" max="40" step="1" value="${currentBaseline.costLaborRatio || 25}" />
+            <span class="baseline-slider-val" id="val-cost-labor">${currentBaseline.costLaborRatio || 25}%</span>
+          </div>
+        `;
+      // P6: 임차료/관리비 지출 비중
+      case 'B4_3':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-cost-rent" min="10" max="35" step="1" value="${currentBaseline.costRentRatio || 20}" />
+            <span class="baseline-slider-val" id="val-cost-rent">${currentBaseline.costRentRatio || 20}%</span>
+          </div>
+        `;
+      // P7: 일평균 온누리 이용 고객 수
       case 'B5C_1':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-onnuri-cust" min="2" max="10" value="${currentBaseline.onnuriCustomerAvg || 5}" />
+            <input type="range" class="baseline-slider" id="slider-onnuri-cust" min="2" max="10" step="1" value="${currentBaseline.onnuriCustomerAvg || 5}" />
             <span class="baseline-slider-val" id="val-onnuri-cust">${currentBaseline.onnuriCustomerAvg || 5}명</span>
           </div>
         `;
+      // P7: 지류상품권 가맹 여부
+      case 'B5A_1': {
+        const curPaper = currentBaseline.onnuriPaperMember || 'yes';
+        return `
+          <select class="baseline-select" id="select-onnuri-paper">
+            <option value="yes" ${curPaper === 'yes' ? 'selected' : ''}>지류 가맹 (1)</option>
+            <option value="no" ${curPaper === 'no' ? 'selected' : ''}>지류 미가맹 (2)</option>
+          </select>
+        `;
+      }
+      // P7: 모바일/카드형 가맹 여부
+      case 'B5A_2': {
+        const curMobile = currentBaseline.onnuriMobileMember || 'no';
+        return `
+          <select class="baseline-select" id="select-onnuri-mobile">
+            <option value="no" ${curMobile === 'no' ? 'selected' : ''}>모바일 미가맹 (2)</option>
+            <option value="yes" ${curMobile === 'yes' ? 'selected' : ''}>모바일 가맹 (1)</option>
+          </select>
+        `;
+      }
+      // P7: 온누리상품권 종합 만족도
+      case 'B5AA': {
+        const curSat = currentBaseline.onnuriSatisfaction || 'good';
+        return `
+          <select class="baseline-select" id="select-onnuri-satisfaction">
+            <option value="good" ${curSat === 'good' ? 'selected' : ''}>약간 만족 (4)</option>
+            <option value="very_good" ${curSat === 'very_good' ? 'selected' : ''}>매우 만족 (5)</option>
+            <option value="normal" ${curSat === 'normal' ? 'selected' : ''}>보통 (3)</option>
+            <option value="bad" ${curSat === 'bad' ? 'selected' : ''}>약간 불만 (2)</option>
+          </select>
+        `;
+      }
+      // P8: 배달서비스 실시 여부 (외식업 기준)
+      case 'C1D':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-delivery" min="30" max="95" step="5" value="${currentBaseline.deliveryFoodAdoption || 75}" />
+            <span class="baseline-slider-val" id="val-delivery">외식 ${currentBaseline.deliveryFoodAdoption || 75}%</span>
+          </div>
+        `;
+      // P8: 배달 매출 비중 (%)
+      case 'C1DA':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-delivery-sales" min="10" max="50" step="5" value="${currentBaseline.deliverySalesRatio || 25}" />
+            <span class="baseline-slider-val" id="val-delivery-sales">${currentBaseline.deliverySalesRatio || 25}%</span>
+          </div>
+        `;
+      // P8: POS 기기 보유 여부
+      case 'C1F':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-pos" min="30" max="95" step="5" value="${currentBaseline.posAdoptionRate || 65}" />
+            <span class="baseline-slider-val" id="val-pos">${currentBaseline.posAdoptionRate || 65}%</span>
+          </div>
+        `;
+      // P8: POS 보유 대수
+      case 'C1FA':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-pos-count" min="1" max="3" step="1" value="${currentBaseline.posCount || 1}" />
+            <span class="baseline-slider-val" id="val-pos-count">${currentBaseline.posCount || 1}대</span>
+          </div>
+        `;
+      // P8: 스마트 주문 이용 여부
+      case 'C1G':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-smart-order" min="0" max="50" step="5" value="${currentBaseline.smartOrderAdoption || 20}" />
+            <span class="baseline-slider-val" id="val-smart-order">${currentBaseline.smartOrderAdoption || 20}%</span>
+          </div>
+        `;
+      // P9: 원산지 표시 대상 여부
+      case 'C2A': {
+        const curOrig = currentBaseline.originLabelTarget || 'yes';
+        return `
+          <select class="baseline-select" id="select-origin-target">
+            <option value="yes" ${curOrig === 'yes' ? 'selected' : ''}>원산지 표시 대상 (2)</option>
+            <option value="no" ${curOrig === 'no' ? 'selected' : ''}>표시 비대상 (1)</option>
+          </select>
+        `;
+      }
+      // P9: 가격표시제 준수율
+      case 'C2E':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-price-tag" min="50" max="100" step="5" value="${currentBaseline.priceTagCompliance || 80}" />
+            <span class="baseline-slider-val" id="val-price-tag">${currentBaseline.priceTagCompliance || 80}%</span>
+          </div>
+        `;
+      // P10: 사업장 소유 형태 (임차 점유율)
+      case 'D1':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-rent-rate" min="50" max="100" step="5" value="${currentBaseline.rentAdoptionRate || 80}" />
+            <span class="baseline-slider-val" id="val-rent-rate">임차 ${currentBaseline.rentAdoptionRate || 80}%</span>
+          </div>
+        `;
+      // P10: 임차 보증금 (만 원)
+      case 'D1C_1':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-deposit" min="500" max="5000" step="100" value="${currentBaseline.depositAmount || 2000}" />
+            <span class="baseline-slider-val" id="val-deposit">${currentBaseline.depositAmount || 2000}만</span>
+          </div>
+        `;
+      // P10: 월 임차료 (만 원)
+      case 'D1C_2':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-monthly-rent" min="40" max="300" step="5" value="${currentBaseline.monthlyRentAmount || 110}" />
+            <span class="baseline-slider-val" id="val-monthly-rent">${currentBaseline.monthlyRentAmount || 110}만</span>
+          </div>
+        `;
+      // P10: 임대료 증감 추이
+      case 'D1D': {
+        const curTrend = currentBaseline.rentTrend || 'freeze';
+        return `
+          <select class="baseline-select" id="select-rent-trend">
+            <option value="freeze" ${curTrend === 'freeze' ? 'selected' : ''}>동결 / 변동 없음 (3)</option>
+            <option value="increase" ${curTrend === 'increase' ? 'selected' : ''}>임대료 인상 (1~2)</option>
+            <option value="decrease" ${curTrend === 'decrease' ? 'selected' : ''}>임대료 인하 (4~5)</option>
+          </select>
+        `;
+      }
+      // P11: 사업상 부채 보유 여부
+      case 'E1':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-debt" min="20" max="70" step="5" value="${currentBaseline.debtAdoptionRate || 45}" />
+            <span class="baseline-slider-val" id="val-debt">${currentBaseline.debtAdoptionRate || 45}%</span>
+          </div>
+        `;
+      // P11: 부채 보유 금액 (만 원)
+      case 'E1A':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-debt-amount" min="500" max="8000" step="100" value="${currentBaseline.debtAvgAmount || 2500}" />
+            <span class="baseline-slider-val" id="val-debt-amount">${currentBaseline.debtAvgAmount || 2500}만</span>
+          </div>
+        `;
+      // P12: 화재보험/공제 가입
+      case 'E2A': {
+        const curFire = currentBaseline.fireInsurance || 'yes';
+        return `
+          <select class="baseline-select" id="select-fire-insurance">
+            <option value="yes" ${curFire === 'yes' ? 'selected' : ''}>화재보험 가입 (1)</option>
+            <option value="no" ${curFire === 'no' ? 'selected' : ''}>화재보험 미가입 (2)</option>
+          </select>
+        `;
+      }
+      // P12: 영업배상책임보험
+      case 'E2B': {
+        const curLiab = currentBaseline.liabilityInsurance || 'yes';
+        return `
+          <select class="baseline-select" id="select-liability-insurance">
+            <option value="yes" ${curLiab === 'yes' ? 'selected' : ''}>영업배상 가입 (1)</option>
+            <option value="no" ${curLiab === 'no' ? 'selected' : ''}>영업배상 미가입 (2)</option>
+          </select>
+        `;
+      }
+      // P13: 경영 애로사항 우선순위
+      case 'F1': {
+        const curIssue = currentBaseline.issuePriority || 'standard';
+        return `
+          <select class="baseline-select" id="select-issue-priority">
+            <option value="standard" ${curIssue === 'standard' ? 'selected' : ''}>원재료비·임차료 중심 표준 분산</option>
+            <option value="customer" ${curIssue === 'customer' ? 'selected' : ''}>고객감소·상권침체 중심 분산</option>
+            <option value="labor" ${curIssue === 'labor' ? 'selected' : ''}>인건비·구인난 중심 분산</option>
+            <option value="random" ${curIssue === 'random' ? 'selected' : ''}>사업자별 완전 무작위 3종</option>
+          </select>
+        `;
+      }
+      // P13: 정책 건의과제 우선순위
+      case 'F3': {
+        const curPol = currentBaseline.policyPriority || 'standard';
+        return `
+          <select class="baseline-select" id="select-policy-priority">
+            <option value="standard" ${curPol === 'standard' ? 'selected' : ''}>온누리확대·주차환경 표준 분산</option>
+            <option value="digital" ${curPol === 'digital' ? 'selected' : ''}>온라인·스마트화 지원 중심</option>
+            <option value="marketing" ${curPol === 'marketing' ? 'selected' : ''}>홍보마케팅·축제 활성화 중심</option>
+            <option value="random" ${curPol === 'random' ? 'selected' : ''}>정책과제 완전 무작위 3종</option>
+          </select>
+        `;
+      }
+      // P14: 향후 점포 운영 계획
+      case 'G1': {
+        const curPlan = currentBaseline.futurePlan || 'maintain';
+        return `
+          <select class="baseline-select" id="select-future-plan">
+            <option value="maintain" ${curPlan === 'maintain' ? 'selected' : ''}>현재 상태 유지 (1)</option>
+            <option value="expand" ${curPlan === 'expand' ? 'selected' : ''}>사업 확대 / 성장 (2)</option>
+            <option value="change" ${curPlan === 'change' ? 'selected' : ''}>업종 전환 (3)</option>
+            <option value="close" ${curPlan === 'close' ? 'selected' : ''}>폐업 고려 (4)</option>
+          </select>
+        `;
+      }
+      // P14: 사업 승계 여부
+      case 'G1A': {
+        const curSucc = currentBaseline.successionPlan || 'none';
+        return `
+          <select class="baseline-select" id="select-succession-plan">
+            <option value="none" ${curSucc === 'none' ? 'selected' : ''}>승계 계획 없음 (2)</option>
+            <option value="child" ${curSucc === 'child' ? 'selected' : ''}>자녀 승계 예정 (1)</option>
+            <option value="transfer" ${curSucc === 'transfer' ? 'selected' : ''}>제3자 양도 (3)</option>
+          </select>
+        `;
+      }
+      // P14: 점포 지속 예정 기간 (연수)
       case 'G1B':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-years" min="3" max="20" value="${currentBaseline.plannedYears || 8}" />
+            <input type="range" class="baseline-slider" id="slider-years" min="3" max="20" step="1" value="${currentBaseline.plannedYears || 8}" />
             <span class="baseline-slider-val" id="val-years">${currentBaseline.plannedYears || 8}년</span>
-          </div>
-        `;
-      case 'B1AB':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-sales" min="100" max="300" step="10" value="${currentBaseline.annualSales || 180}" />
-            <span class="baseline-slider-val" id="val-sales">${currentBaseline.annualSales || 180}M</span>
           </div>
         `;
       default:
@@ -778,7 +1088,7 @@ async function initSurveyDetailPage() {
   }
 
   function bindSliderEvents() {
-    const bindSlider = (id, valId, key, suffix = '%') => {
+    const bindSlider = (id, valId, key, suffix = '%', onUpdate) => {
       const slider = document.getElementById(id);
       const valEl = document.getElementById(valId);
       if (slider && valEl) {
@@ -786,49 +1096,126 @@ async function initSurveyDetailPage() {
           const val = parseInt(e.target.value, 10);
           currentBaseline[key] = val;
           valEl.textContent = `${val}${suffix}`;
+          if (typeof onUpdate === 'function') onUpdate(val);
           markUnsaved();
         });
       }
     };
 
-    // P2: 매장 면적 (평수 조절 -> m² 자동 환산 연동)
-    const sliderPyeong = document.getElementById('slider-pyeong');
-    const valPyeong = document.getElementById('val-pyeong');
-    const valSqm = document.getElementById('val-sqm');
-    if (sliderPyeong) {
-      sliderPyeong.addEventListener('input', (e) => {
-        const p = parseInt(e.target.value, 10);
-        currentBaseline.storePyeong = p;
-        if (valPyeong) valPyeong.textContent = `${p}평`;
-        if (valSqm) valSqm.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i> ${Math.round(p * 3.3058)} m² (자동 연동)`;
-        markUnsaved();
-      });
-    }
+    const bindSelect = (id, key) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('change', (e) => {
+          currentBaseline[key] = e.target.value;
+          markUnsaved();
+        });
+      }
+    };
 
-    // P2: 종업원 수 슬라이더 (가족, 유급, 일용)
+    const updateSqm = () => {
+      const valSqm = document.getElementById('val-sqm');
+      if (valSqm) {
+        const p = currentBaseline.storePyeong || 14;
+        valSqm.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i> ${Math.round(p * 3.3058)} m² (자동 연동)`;
+      }
+    };
+
+    const updateProfit = () => {
+      const valProfit = document.getElementById('val-profit');
+      if (valProfit) {
+        const s = currentBaseline.annualSales || 180;
+        const m = currentBaseline.profitMarginRate || 25;
+        valProfit.innerHTML = `<i class="fa-solid fa-calculator"></i> ${Math.round((s * m) / 100)} 백만 원 (자동 연동)`;
+      }
+    };
+
+    const updateCashRatio = () => {
+      const valCash = document.getElementById('val-cash-ratio');
+      if (valCash) {
+        const card = currentBaseline.creditCardRatio || 65;
+        const onnuri = currentBaseline.onnuriRatio || 15;
+        const cash = Math.max(0, 100 - card - onnuri);
+        valCash.innerHTML = `<i class="fa-solid fa-calculator"></i> ${cash}% (자동 잔여)`;
+      }
+    };
+
+    const updateRawCost = () => {
+      const valRaw = document.getElementById('val-cost-raw');
+      if (valRaw) {
+        const tax = currentBaseline.costTaxRatio || 10;
+        const labor = (currentBaseline.employeeRegular > 0 ? (currentBaseline.costLaborRatio || 25) : 0);
+        const rent = currentBaseline.costRentRatio || 20;
+        const raw = Math.max(10, 100 - tax - labor - rent);
+        valRaw.innerHTML = `<i class="fa-solid fa-calculator"></i> ${raw}% (자동 잔여)`;
+      }
+    };
+
+    // P2: 매장 면적 & 종업원 수
+    bindSlider('slider-pyeong', 'val-pyeong', 'storePyeong', '평', updateSqm);
     bindSlider('slider-family-emp', 'val-family-emp', 'employeeFamily', '명');
-    bindSlider('slider-paid-emp', 'val-paid-emp', 'employeeRegular', '명');
+    bindSlider('slider-paid-emp', 'val-paid-emp', 'employeeRegular', '명', updateRawCost);
     bindSlider('slider-temp-emp', 'val-temp-emp', 'employeeTemp', '명');
 
-    // P3: 매출 슬라이더 및 분기 패턴
+    // P3: 매출 & 분기 패턴
     bindSlider('slider-daily-sales', 'val-daily-sales', 'dailySales', '만');
-    const selectQuarter = document.getElementById('select-quarter-pattern');
-    if (selectQuarter) {
-      selectQuarter.addEventListener('change', (e) => {
-        currentBaseline.quarterPattern = e.target.value;
-        markUnsaved();
-      });
-    }
+    bindSlider('slider-annual-sales', 'val-annual-sales', 'annualSales', 'M', updateProfit);
+    bindSelect('select-quarter-pattern', 'quarterPattern');
 
-    bindSlider('slider-credit-card', 'val-credit-card', 'creditCardRatio', '%');
-    bindSlider('slider-onnuri', 'val-onnuri', 'onnuriRatio', '%');
-    bindSlider('slider-margin', 'val-margin', 'profitMarginRate', '%');
-    bindSlider('slider-delivery', 'val-delivery', 'deliveryFoodAdoption', '%');
-    bindSlider('slider-pos', 'val-pos', 'posAdoptionRate', '%');
-    bindSlider('slider-debt', 'val-debt', 'debtAdoptionRate', '%');
+    // P4: 마진율 & 매출변화 & 고객수 & 시간 & 일수
+    bindSlider('slider-margin', 'val-margin', 'profitMarginRate', '%', updateProfit);
+    bindSelect('select-sales-change', 'salesChange');
+    bindSlider('slider-daily-cust', 'val-daily-cust', 'dailyCustomers', '명');
+    bindSlider('slider-biz-hours', 'val-biz-hours', 'dailyBusinessHours', '시간');
+    bindSlider('slider-biz-days', 'val-biz-days', 'monthlyBusinessDays', '일');
+
+    // P5: 신용카드 & 온누리 & 현금영수증
+    bindSlider('slider-credit-card', 'val-credit-card', 'creditCardRatio', '%', updateCashRatio);
+    bindSlider('slider-onnuri', 'val-onnuri', 'onnuriRatio', '%', updateCashRatio);
+    bindSlider('slider-cash-receipt', 'val-cash-receipt', 'cashReceiptRatio', '%');
+
+    // P6: 인건비 & 임차료
+    bindSlider('slider-cost-labor', 'val-cost-labor', 'costLaborRatio', '%', updateRawCost);
+    bindSlider('slider-cost-rent', 'val-cost-rent', 'costRentRatio', '%', updateRawCost);
+
+    // P7: 온누리 고객수 & 지류 & 모바일 & 만족도
     bindSlider('slider-onnuri-cust', 'val-onnuri-cust', 'onnuriCustomerAvg', '명');
+    bindSelect('select-onnuri-paper', 'onnuriPaperMember');
+    bindSelect('select-onnuri-mobile', 'onnuriMobileMember');
+    bindSelect('select-onnuri-satisfaction', 'onnuriSatisfaction');
+
+    // P8: 배달도입 & 배달매출 & POS & POS대수 & 스마트주문
+    bindSlider('slider-delivery', 'val-delivery', 'deliveryFoodAdoption', '%');
+    bindSlider('slider-delivery-sales', 'val-delivery-sales', 'deliverySalesRatio', '%');
+    bindSlider('slider-pos', 'val-pos', 'posAdoptionRate', '%');
+    bindSlider('slider-pos-count', 'val-pos-count', 'posCount', '대');
+    bindSlider('slider-smart-order', 'val-smart-order', 'smartOrderAdoption', '%');
+
+    // P9: 원산지 표시 & 가격표시 준수율
+    bindSelect('select-origin-target', 'originLabelTarget');
+    bindSlider('slider-price-tag', 'val-price-tag', 'priceTagCompliance', '%');
+
+    // P10: 임차율 & 보증금 & 월세 & 임대료 추이
+    bindSlider('slider-rent-rate', 'val-rent-rate', 'rentAdoptionRate', '%');
+    bindSlider('slider-deposit', 'val-deposit', 'depositAmount', '만');
+    bindSlider('slider-monthly-rent', 'val-monthly-rent', 'monthlyRentAmount', '만');
+    bindSelect('select-rent-trend', 'rentTrend');
+
+    // P11: 부채 비율 & 부채 금액
+    bindSlider('slider-debt', 'val-debt', 'debtAdoptionRate', '%');
+    bindSlider('slider-debt-amount', 'val-debt-amount', 'debtAvgAmount', '만');
+
+    // P12: 화재보험 & 영업배상
+    bindSelect('select-fire-insurance', 'fireInsurance');
+    bindSelect('select-liability-insurance', 'liabilityInsurance');
+
+    // P13: 애로사항 & 정책과제
+    bindSelect('select-issue-priority', 'issuePriority');
+    bindSelect('select-policy-priority', 'policyPriority');
+
+    // P14: 향후계획 & 승계계획 & 예정기간
+    bindSelect('select-future-plan', 'futurePlan');
+    bindSelect('select-succession-plan', 'successionPlan');
     bindSlider('slider-years', 'val-years', 'plannedYears', '년');
-    bindSlider('slider-sales', 'val-sales', 'annualSales', 'M');
   }
 
   function markUnsaved() {
@@ -857,12 +1244,40 @@ async function initSurveyDetailPage() {
         dailySales: 65,
         annualSales: 180,
         quarterPattern: 'even',
+        profitMarginRate: 25,
+        salesChange: 'similar',
+        dailyCustomers: 45,
+        dailyBusinessHours: 11,
+        monthlyBusinessDays: 26,
         creditCardRatio: 65,
         onnuriRatio: 15,
+        cashReceiptRatio: 50,
+        costTaxRatio: 10,
+        costLaborRatio: 25,
+        costRentRatio: 20,
+        onnuriPaperMember: 'yes',
+        onnuriMobileMember: 'no',
+        onnuriCustomerAvg: 5,
+        onnuriSatisfaction: 'good',
         deliveryFoodAdoption: 75,
+        deliverySalesRatio: 25,
         posAdoptionRate: 65,
+        posCount: 1,
+        smartOrderAdoption: 20,
+        originLabelTarget: 'yes',
+        priceTagCompliance: 80,
+        rentAdoptionRate: 80,
+        depositAmount: 2000,
+        monthlyRentAmount: 110,
+        rentTrend: 'freeze',
         debtAdoptionRate: 45,
-        profitMarginRate: 25,
+        debtAvgAmount: 2500,
+        fireInsurance: 'yes',
+        liabilityInsurance: 'yes',
+        issuePriority: 'standard',
+        policyPriority: 'standard',
+        futurePlan: 'maintain',
+        successionPlan: 'none',
         plannedYears: 8
       }, btnPresetStandard);
     });
@@ -878,12 +1293,40 @@ async function initSurveyDetailPage() {
         dailySales: 130,
         annualSales: 280,
         quarterPattern: 'h2',
+        profitMarginRate: 32,
+        salesChange: 'increase',
+        dailyCustomers: 90,
+        dailyBusinessHours: 13,
+        monthlyBusinessDays: 28,
         creditCardRatio: 70,
         onnuriRatio: 12,
+        cashReceiptRatio: 65,
+        costTaxRatio: 10,
+        costLaborRatio: 30,
+        costRentRatio: 22,
+        onnuriPaperMember: 'yes',
+        onnuriMobileMember: 'yes',
+        onnuriCustomerAvg: 8,
+        onnuriSatisfaction: 'very_good',
         deliveryFoodAdoption: 85,
-        posAdoptionRate: 80,
+        deliverySalesRatio: 35,
+        posAdoptionRate: 85,
+        posCount: 2,
+        smartOrderAdoption: 35,
+        originLabelTarget: 'yes',
+        priceTagCompliance: 90,
+        rentAdoptionRate: 85,
+        depositAmount: 3500,
+        monthlyRentAmount: 180,
+        rentTrend: 'increase',
         debtAdoptionRate: 60,
-        profitMarginRate: 32,
+        debtAvgAmount: 4000,
+        fireInsurance: 'yes',
+        liabilityInsurance: 'yes',
+        issuePriority: 'labor',
+        policyPriority: 'digital',
+        futurePlan: 'expand',
+        successionPlan: 'child',
         plannedYears: 12
       }, btnPresetGrowth);
     });
@@ -899,12 +1342,40 @@ async function initSurveyDetailPage() {
         dailySales: 45,
         annualSales: 120,
         quarterPattern: 'even',
+        profitMarginRate: 20,
+        salesChange: 'decrease',
+        dailyCustomers: 30,
+        dailyBusinessHours: 10,
+        monthlyBusinessDays: 25,
         creditCardRatio: 60,
         onnuriRatio: 20,
+        cashReceiptRatio: 35,
+        costTaxRatio: 10,
+        costLaborRatio: 20,
+        costRentRatio: 18,
+        onnuriPaperMember: 'yes',
+        onnuriMobileMember: 'no',
+        onnuriCustomerAvg: 4,
+        onnuriSatisfaction: 'normal',
         deliveryFoodAdoption: 40,
+        deliverySalesRatio: 15,
         posAdoptionRate: 50,
+        posCount: 1,
+        smartOrderAdoption: 10,
+        originLabelTarget: 'yes',
+        priceTagCompliance: 75,
+        rentAdoptionRate: 75,
+        depositAmount: 1200,
+        monthlyRentAmount: 70,
+        rentTrend: 'freeze',
         debtAdoptionRate: 30,
-        profitMarginRate: 20,
+        debtAvgAmount: 1500,
+        fireInsurance: 'yes',
+        liabilityInsurance: 'yes',
+        issuePriority: 'customer',
+        policyPriority: 'marketing',
+        futurePlan: 'maintain',
+        successionPlan: 'none',
         plannedYears: 5
       }, btnPresetTraditional);
     });

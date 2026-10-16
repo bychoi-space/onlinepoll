@@ -1,52 +1,52 @@
 {
   "surveyId": "kstat_tapi_trad_market_2026",
   "title": "2026 전통시장 및 점포경영 실태조사 (Kstat TAPI 15단계 마스터 블루프린트)",
-  "description": "케이스탯 TAPI 전문 플랫폼의 모든 설문 구조(Q1~P14, Agree)를 100% 동일하게 복제한 단일 통합 마스터 템플릿입니다.",
-  "version": "2.0.0",
+  "description": "케이스탯 TAPI 전문 플랫폼의 모든 설문 구조(Q1~P14, Agree)를 100% 동일하게 복제한 단일 통합 마스터 템플릿입니다. 각 문항의 기준점을 직접 설정하여 전체 쿼터에 자연 분산 적용할 수 있습니다.",
+  "version": "2.1.0",
   "defaultBaseline": {
-    "creditCardRatio": 65,
-    "creditCardRange": [
-      60,
-      70
-    ],
-    "onnuriRatio": 15,
-    "onnuriRange": [
-      10,
-      20
-    ],
-    "cashRatio": 20,
-    "costTaxRatio": 10,
-    "costLaborRatioWithEmp": 25,
-    "deliveryFoodAdoption": 75,
-    "deliveryNonFoodAdoption": 15,
-    "deliverySalesRatio": 25,
-    "posAdoptionRate": 65,
-    "debtAdoptionRate": 45,
-    "debtAvgAmount": 2500,
-    "plannedYearsPool": [
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      10,
-      12,
-      15,
-      20
-    ],
-    "onnuriCustomerRange": [
-      2,
-      10
-    ],
-    "salesMarginAvg": 25,
     "storePyeong": 14,
     "storeSqm": 46,
     "employeeFamily": 1,
     "employeeRegular": 0,
     "employeeTemp": 0,
     "dailySales": 65,
-    "quarterPattern": "even"
+    "annualSales": 180,
+    "quarterPattern": "even",
+    "profitMarginRate": 25,
+    "salesChange": "similar",
+    "dailyCustomers": 45,
+    "dailyBusinessHours": 11,
+    "monthlyBusinessDays": 26,
+    "creditCardRatio": 65,
+    "onnuriRatio": 15,
+    "cashReceiptRatio": 50,
+    "costTaxRatio": 10,
+    "costLaborRatio": 25,
+    "costRentRatio": 20,
+    "onnuriPaperMember": "yes",
+    "onnuriMobileMember": "no",
+    "onnuriCustomerAvg": 5,
+    "onnuriSatisfaction": "good",
+    "deliveryFoodAdoption": 75,
+    "deliverySalesRatio": 25,
+    "posAdoptionRate": 65,
+    "posCount": 1,
+    "smartOrderAdoption": 20,
+    "originLabelTarget": "yes",
+    "priceTagCompliance": 80,
+    "rentAdoptionRate": 80,
+    "depositAmount": 2000,
+    "monthlyRentAmount": 110,
+    "rentTrend": "freeze",
+    "debtAdoptionRate": 45,
+    "debtAvgAmount": 2500,
+    "fireInsurance": "yes",
+    "liabilityInsurance": "yes",
+    "issuePriority": "standard",
+    "policyPriority": "standard",
+    "futurePlan": "maintain",
+    "successionPlan": "none",
+    "plannedYears": 8
   },
   "stages": [
     {
@@ -266,16 +266,9 @@
       "aspFile": "P4.asp",
       "title": "영업이익 및 고객 수",
       "category": "FINANCIAL",
-      "badge": "RULE_FIXED",
+      "badge": "TUNABLE_JITTER",
       "description": "연간 영업이익 및 이익률 %, 일평균 고객 수 (수학적 정합 100% 일치 보장).",
       "fields": [
-        {
-          "id": "B1BA",
-          "label": "연간 영업이익 (백만 원)",
-          "type": "tunable",
-          "baseline": "45 백만 원",
-          "note": "연매출 * 이익률%"
-        },
         {
           "id": "B1BA_1",
           "label": "매출액 대비 영업이익률 (%)",
@@ -285,34 +278,42 @@
           "note": "★영업이익/매출액 수학적 일치 필수★"
         },
         {
+          "id": "B1BA",
+          "label": "연간 영업이익 (백만 원)",
+          "type": "linked_computed",
+          "baseline": "45 백만 원",
+          "note": "연매출 * 이익률% 자동 연동"
+        },
+        {
           "id": "B1BB",
           "label": "전년 대비 매출 변화",
-          "type": "fixed",
-          "value": "비슷함 (B1BB_3)",
-          "note": "추가 세부문항 안전 스킵"
+          "type": "tunable",
+          "baseline": "비슷함 (3)",
+          "note": "매출 증감 선택"
         },
         {
           "id": "B1C",
           "label": "일평균 방문 고객 수",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "45 명",
-          "range": "25~75 명",
-          "note": "업종별 분산"
+          "range": "15~150 명",
+          "note": "일일 방문 고객 기준"
         },
         {
           "id": "B1D",
           "label": "일평균 영업 시간",
-          "type": "fixed",
-          "value": "11 시간",
-          "note": "오전 9시~오후 8시"
+          "type": "tunable",
+          "baseline": "11 시간",
+          "range": "8~16 시간",
+          "note": "하루 운영 시간"
         },
         {
           "id": "B1E",
           "label": "월평균 영업 일수",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "26 일",
-          "range": "24~28 일",
-          "note": "주 6일 근무"
+          "range": "20~31 일",
+          "note": "월간 운영 일수"
         }
       ]
     },
@@ -322,7 +323,7 @@
       "aspFile": "P5.asp",
       "title": "결제수단별 취급 및 매출 비중",
       "category": "PAYMENT",
-      "badge": "RULE_FIXED",
+      "badge": "TUNABLE_JITTER",
       "description": "신용카드 필수 취급(60~70%), 온누리상품권(10~20%), 현금(잔여 비중) 합계 100% 검증.",
       "fields": [
         {
@@ -351,16 +352,16 @@
         {
           "id": "B2A_1",
           "label": "현금 결제 비중",
-          "type": "jitter",
+          "type": "linked_computed",
           "baseline": "20 %",
-          "note": "100% - (카드+온누리) 잔여 비중"
+          "note": "100% - (카드+온누리) 잔여 비중 자동"
         },
         {
           "id": "B3_1",
           "label": "현금영수증 발급 비중",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "50 %",
-          "range": "40~70 %",
+          "range": "20~80 %",
           "note": "현금 매출 대비"
         }
       ]
@@ -371,7 +372,7 @@
       "aspFile": "P6.asp",
       "title": "영업비용 구성비 (지출 내역)",
       "category": "COSTS",
-      "badge": "RULE_FIXED",
+      "badge": "TUNABLE_JITTER",
       "description": "인건비(종업원 유무 연동), 원재료비, 임차료, 기타 명칭 세금 10% (합계 100% 필수).",
       "fields": [
         {
@@ -392,23 +393,24 @@
           "id": "B4_1",
           "label": "인건비 지출 비중",
           "type": "tunable",
-          "baseline": "종업원 0명시 0% / 유급종업원시 20~30%",
-          "note": "★종업원 유무 자동 연동★"
+          "baseline": "25 %",
+          "range": "10~40 %",
+          "note": "★유급종업원 있을 시 적용★"
         },
         {
           "id": "B4_3",
           "label": "임차료/관리비 비중",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "20 %",
-          "range": "15~25 %",
+          "range": "10~35 %",
           "note": "사업장 임대료"
         },
         {
           "id": "B4_2",
           "label": "원재료/상품매입비 비중",
-          "type": "jitter",
-          "baseline": "50~70 %",
-          "note": "잔여 지출액 (합계 100%)"
+          "type": "linked_computed",
+          "baseline": "45 %",
+          "note": "잔여 지출액 (합계 100% 자동)"
         }
       ]
     },
@@ -418,7 +420,7 @@
       "aspFile": "P7.asp",
       "title": "온누리상품권 가맹 현황",
       "category": "ONNURI",
-      "badge": "RULE_FIXED",
+      "badge": "TUNABLE_JITTER",
       "description": "온누리 가맹연도(개업연도 이상 동기화), 일평균 이용 고객 수(2~10명 자연 분산).",
       "fields": [
         {
@@ -439,23 +441,23 @@
         {
           "id": "B5A_1",
           "label": "지류상품권 가맹 여부",
-          "type": "fixed",
-          "value": "가맹 (1)",
-          "note": "온누리 기본 가맹"
+          "type": "tunable",
+          "baseline": "가맹 (1)",
+          "note": "온누리 지류 가맹 여부"
         },
         {
           "id": "B5A_2",
           "label": "모바일/카드형 가맹 여부",
-          "type": "fixed",
-          "value": "가맹 안 함 (2)",
-          "note": "미가맹 기본"
+          "type": "tunable",
+          "baseline": "가맹 안 함 (2)",
+          "note": "모바일 온누리 여부"
         },
         {
           "id": "B5AA",
           "label": "온누리상품권 종합 만족도",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "약간 만족 (4)",
-          "note": "가중치 슬라이더 연동"
+          "note": "만족도 평가"
         }
       ]
     },
@@ -472,37 +474,41 @@
           "id": "C1D",
           "label": "배달서비스 실시 여부",
           "type": "tunable",
-          "baseline": "음식점업 75% 실시 / 비음식점 15%",
+          "baseline": "외식 75%",
+          "range": "30~95 %",
           "note": "★외식업종 현실 반영★"
         },
         {
           "id": "C1DA",
           "label": "배달 매출 비중 (%)",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "25 %",
-          "range": "15~40 %",
+          "range": "10~50 %",
           "note": "배달 실시 점포"
         },
         {
           "id": "C1F",
           "label": "POS 기기 보유 여부",
           "type": "tunable",
-          "baseline": "65 % 보유",
-          "note": "단말기 보유"
+          "baseline": "65 %",
+          "range": "30~95 %",
+          "note": "단말기 보유율"
         },
         {
           "id": "C1FA",
           "label": "POS 보유 대수",
-          "type": "fixed",
-          "value": "1 대",
-          "note": "소상공인 1대"
+          "type": "tunable",
+          "baseline": "1 대",
+          "range": "1~3 대",
+          "note": "소상공인 1~3대"
         },
         {
           "id": "C1G",
           "label": "스마트 주문 이용 여부",
-          "type": "jitter",
-          "baseline": "20% 이용 / 80% 미이용",
-          "note": "테이블오더/QR"
+          "type": "tunable",
+          "baseline": "20 %",
+          "range": "0~50 %",
+          "note": "테이블오더/QR 도입율"
         }
       ]
     },
@@ -512,22 +518,23 @@
       "aspFile": "P9.asp",
       "title": "원산지 및 가격표시제 준수",
       "category": "COMPLIANCE",
-      "badge": "RULE_FIXED",
+      "badge": "TUNABLE_JITTER",
       "description": "원산지 표시율 및 가격표시제 준수율 80% 이상 규격 통과.",
       "fields": [
         {
           "id": "C2A",
           "label": "원산지 표시 대상 여부",
-          "type": "fixed",
-          "value": "대상 (2)",
-          "note": "표시 규격"
+          "type": "tunable",
+          "baseline": "대상 (2)",
+          "note": "표시 대상 여부"
         },
         {
           "id": "C2E",
           "label": "가격표시제 준수율 (%)",
-          "type": "fixed",
-          "value": "80 %",
-          "note": "모범 상인"
+          "type": "tunable",
+          "baseline": "80 %",
+          "range": "50~100 %",
+          "note": "모범 상인 준수율"
         }
       ]
     },
@@ -544,31 +551,32 @@
           "id": "D1",
           "label": "사업장 소유 형태",
           "type": "tunable",
-          "baseline": "임차 80% / 자가 20%",
-          "note": "점유 형태"
+          "baseline": "임차 80%",
+          "range": "50~100 %",
+          "note": "임차 점유율"
         },
         {
           "id": "D1C_1",
           "label": "임차 보증금 (만 원)",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "2,000 만 원",
-          "range": "1,000~3,500 만 원",
-          "note": "시장 상가 보증금"
+          "range": "500~5,000 만 원",
+          "note": "상가 보증금"
         },
         {
           "id": "D1C_2",
           "label": "월 임차료 (만 원)",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "110 만 원",
-          "range": "70~160 만 원",
-          "note": "월세 지출"
+          "range": "40~300 만 원",
+          "note": "월세 지출액"
         },
         {
           "id": "D1D",
           "label": "임대료 증감 추이",
-          "type": "fixed",
-          "value": "동결 / 변동없음 (D1D_3)",
-          "note": "안전 스킵"
+          "type": "tunable",
+          "baseline": "동결 / 변동없음 (3)",
+          "note": "임대료 변동 추이"
         }
       ]
     },
@@ -585,15 +593,16 @@
           "id": "E1",
           "label": "사업상 부채 보유 여부",
           "type": "tunable",
-          "baseline": "부채 있음 45% / 없음 55%",
+          "baseline": "45 %",
+          "range": "20~70 %",
           "note": "★현실적 부채 비율 반영★"
         },
         {
           "id": "E1A",
           "label": "부채 보유 금액 (만 원)",
-          "type": "jitter",
+          "type": "tunable",
           "baseline": "2,500 만 원",
-          "range": "1,500~4,500 만 원",
+          "range": "500~8,000 만 원",
           "note": "소상공인 정책/신용대출"
         }
       ]
@@ -604,22 +613,22 @@
       "aspFile": "P12.asp",
       "title": "안전 관리 및 화재보험 가입",
       "category": "SAFETY",
-      "badge": "RULE_FIXED",
+      "badge": "TUNABLE_JITTER",
       "description": "전통시장 화재공제 및 시설 안전 관리 준수 현황.",
       "fields": [
         {
           "id": "E2A",
           "label": "화재보험/공제 가입",
-          "type": "fixed",
-          "value": "가입 (1)",
-          "note": "필수 안전"
+          "type": "tunable",
+          "baseline": "가입 (1)",
+          "note": "화재보험 가입 여부"
         },
         {
           "id": "E2B",
           "label": "영업배상책임보험",
-          "type": "fixed",
-          "value": "가입 (1)",
-          "note": "안전 규격"
+          "type": "tunable",
+          "baseline": "가입 (1)",
+          "note": "배상책임 가입 여부"
         }
       ]
     },
@@ -634,19 +643,17 @@
       "fields": [
         {
           "id": "F1",
-          "label": "경영 애로사항 (1~3순위)",
-          "type": "jitter",
-          "baseline": "원재료비 상승, 임차료 부담, 상권 쇠퇴 등",
-          "range": "1~8번 중 점포마다 서로 다른 3개",
-          "note": "★Alert 원천 차단 범위 준수★"
+          "label": "경영 애로사항 우선순위",
+          "type": "tunable",
+          "baseline": "원재료·임차료 표준",
+          "note": "애로사항 분산 패턴"
         },
         {
           "id": "F3",
-          "label": "정책 건의과제 (1~3순위)",
-          "type": "jitter",
-          "baseline": "온누리 사용처 확대, 주차장 확충, 세제 지원 등",
-          "range": "1~10번 중 점포마다 서로 다른 3개",
-          "note": "★Alert 원천 차단 범위 준수★"
+          "label": "정책 건의과제 우선순위",
+          "type": "tunable",
+          "baseline": "온누리·주차장 표준",
+          "note": "정책과제 분산 패턴"
         }
       ]
     },
@@ -662,23 +669,23 @@
         {
           "id": "G1",
           "label": "향후 점포 운영 계획",
-          "type": "fixed",
-          "value": "현재 상태 유지 (1)",
-          "note": "소상공인 70% 이상 유지"
+          "type": "tunable",
+          "baseline": "현재 상태 유지 (1)",
+          "note": "운영 계획 선택"
         },
         {
           "id": "G1A",
           "label": "사업 승계 여부",
-          "type": "fixed",
-          "value": "승계 계획 없음/미정 (2)",
-          "note": "안전 스킵"
+          "type": "tunable",
+          "baseline": "승계 계획 없음 (2)",
+          "note": "승계 계획 선택"
         },
         {
           "id": "G1B",
           "label": "점포 지속 예정 기간 (연수)",
           "type": "tunable",
           "baseline": "8 년",
-          "range": "3, 4, 5, 7, 8, 10, 12, 15, 20년",
+          "range": "3~20 년",
           "note": "★7년 편중 없는 다양한 연수★"
         }
       ]

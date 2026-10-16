@@ -3084,8 +3084,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
   border-color: #0284c7;
   box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
 }
-  text-align: right;
-}
 .blueprint-summary-kpi {
   display: flex;
   gap: 16px;

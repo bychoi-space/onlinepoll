@@ -334,7 +334,7 @@ export async function runKstatSurvey({
         await itemDelay();
 
         const fB1BB = page.frame({ url: /B1BB\.asp/ });
-        if (fB1BB) await safeClick(fB1BB, '#B1BB_3'); // 비슷함 (안전 스킵)
+        if (fB1BB) await safeClick(fB1BB, persona.sales?.salesChangeSelector || '#B1BB_3');
         await itemDelay();
 
         const fB1C = page.frame({ url: /B1C\.asp/ });
@@ -343,7 +343,7 @@ export async function runKstatSurvey({
           await safeFill(fB1C, 'input[name="B1C_1"]', String(Math.round(parseInt(persona.sales.dailyCustomers, 10) * 0.6)));
         }
         const fB1D = page.frame({ url: /B1D\.asp/ });
-        if (fB1D) await safeFill(fB1D, 'input[name="B1D"]', '11');
+        if (fB1D) await safeFill(fB1D, 'input[name="B1D"]', persona.sales?.dailyBusinessHours || '11');
         const fB1E = page.frame({ url: /B1E\.asp/ });
         if (fB1E) await safeFill(fB1E, 'input[name="B1E"]', persona.sales.monthlyOpenDays);
       }
@@ -392,8 +392,9 @@ export async function runKstatSurvey({
 
         const fB3 = page.frame({ url: /B3\.asp/ });
         if (fB3) {
-          await safeFill(fB3, '#B3_1', '100');
-          await safeFill(fB3, '#B3_2', '0');
+          const rVal = persona.future?.cashReceiptRatio || '50';
+          await safeFill(fB3, '#B3_1', rVal);
+          await safeFill(fB3, '#B3_2', String(Math.max(0, 100 - parseInt(rVal, 10))));
         }
       }
 
@@ -420,27 +421,17 @@ export async function runKstatSurvey({
       else if (stepName === 'P7') {
         const fB5A1 = page.frame({ url: /B5A1\.asp/ }) || page.frame({ url: /B5A\.asp/ });
         if (fB5A1) {
-          await fB5A1.click('#B5A_1_1, input[value="1"]').catch(async () => {
-            await fB5A1.evaluate(() => {
-              if (typeof setRadioValue === 'function') setRadioValue('B5A_1', '1');
-              const r = document.querySelector('#B5A_1_1, input[value="1"]');
-              if (r) { r.checked = true; r.click(); }
-              const td = document.querySelector('#TD_B5A_1_1');
-              if (td && td.onclick) td.onclick();
-            });
+          const paperSel = persona.onnuri?.paperSelector || '#B5A_1_1';
+          await fB5A1.click(paperSel).catch(async () => {
+            await safeClick(fB5A1, paperSel);
           });
         }
 
         const fB5A2 = page.frame({ url: /B5A2\.asp/ });
         if (fB5A2) {
-          await fB5A2.click('#B5A_2_2, input[value="2"]').catch(async () => {
-            await fB5A2.evaluate(() => {
-              if (typeof setRadioValue === 'function') setRadioValue('B5A_2', '2');
-              const r = document.querySelector('#B5A_2_2, input[value="2"]');
-              if (r) { r.checked = true; r.click(); }
-              const td = document.querySelector('#TD_B5A_2_2');
-              if (td && td.onclick) td.onclick();
-            });
+          const mobileSel = persona.onnuri?.mobileSelector || '#B5A_2_2';
+          await fB5A2.click(mobileSel).catch(async () => {
+            await safeClick(fB5A2, mobileSel);
           });
         }
 
@@ -615,10 +606,8 @@ export async function runKstatSurvey({
       else if (stepName === 'P9') {
         const fC2A = page.frame({ url: /C2A\.asp/ });
         if (fC2A) {
-          await fC2A.evaluate(() => {
-            const r = document.querySelector('#C2A_2, input[value="2"]');
-            if (r) { r.checked = true; r.click(); }
-          }).catch(() => {});
+          const origSel = persona.compliance?.originTargetSelector || '#C2A_2';
+          await safeClick(fC2A, origSel);
         }
         const fC2B = page.frame({ url: /C2B\.asp/ });
         if (fC2B) {
@@ -643,14 +632,15 @@ export async function runKstatSurvey({
         }
         const fC2E = page.frame({ url: /C2E\.asp/ });
         if (fC2E) {
-          await fC2E.evaluate(() => {
+          const tagRate = persona.compliance?.priceTagRate || '80';
+          await fC2E.evaluate((v) => {
             const inp = document.querySelector('input[name="C2E"], input[type="tel"], input[type="text"]');
             if (inp) {
-              inp.value = '80';
+              inp.value = v;
               inp.dispatchEvent(new Event('input'));
               inp.dispatchEvent(new Event('change'));
             }
-          }).catch(() => {});
+          }, tagRate).catch(() => {});
         }
       }
 
@@ -671,7 +661,7 @@ export async function runKstatSurvey({
               await safeFill(fD1C, 'input[name="D1C_2"]', persona.lease.monthlyRent);
             }
             const fD1D = page.frame({ url: /D1D\.asp/ });
-            if (fD1D) await safeClick(fD1D, '#D1D_3'); // 동결 스킵
+            if (fD1D) await safeClick(fD1D, persona.lease?.trendSelector || '#D1D_3');
           } else {
             await safeClick(fD1, '#D1_1'); // 자가 소유 (세부 임대차 스킵)
           }
@@ -721,15 +711,13 @@ export async function runKstatSurvey({
       else if (stepName === 'P12') {
         const fE2A = page.frame({ url: /E2A\.asp/ });
         if (fE2A) {
-          await fE2A.click('#E2A_1, input[value="1"]', { timeout: 1500 }).catch(async () => {
-            await safeClick(fE2A, '#E2A_1');
-          });
+          const fireSel = persona.safety?.fireSelector || '#E2A_1';
+          await safeClick(fE2A, fireSel);
         }
         const fE2B = page.frame({ url: /E2B\.asp/ });
         if (fE2B) {
-          await fE2B.click('#E2B_1, input[value="1"]', { timeout: 1500 }).catch(async () => {
-            await safeClick(fE2B, '#E2B_1');
-          });
+          const liabSel = persona.safety?.liabilitySelector || '#E2B_1';
+          await safeClick(fE2B, liabSel);
         }
         const fE2C = page.frame({ url: /E2C\.asp/ });
         if (fE2C) {
@@ -767,11 +755,8 @@ export async function runKstatSurvey({
       else if (stepName === 'P14') {
         const fG1 = page.frame({ url: /G1\.asp/ });
         if (fG1) {
-          await fG1.evaluate(() => {
-            if (typeof setRadioValue === 'function') setRadioValue('G1', '1');
-            const r = document.querySelector('#G1_1');
-            if (r) { r.checked = true; r.click(); }
-          }).catch(() => {});
+          const planSel = persona.future?.planSelector || '#G1_1';
+          await safeClick(fG1, planSel);
         }
 
         const fG2 = page.frame({ url: /G2\.asp/ });
@@ -795,11 +780,13 @@ export async function runKstatSurvey({
         // 2단계: 화면에 동적으로 생성된 G1A(승계계획), G1B(지속년수) 주입
         const fG1A = page.frame({ url: /G1A\.asp/ });
         if (fG1A) {
-          await fG1A.evaluate(() => {
-            if (typeof setRadioValue === 'function') setRadioValue('G1A', '2');
-            const r = document.querySelector('#G1A_2');
+          const succSel = persona.future?.successionSelector || '#G1A_2';
+          const succVal = succSel.replace('#G1A_', '');
+          await fG1A.evaluate(([sel, val]) => {
+            if (typeof setRadioValue === 'function') setRadioValue('G1A', val);
+            const r = document.querySelector(sel);
             if (r) { r.checked = true; r.click(); }
-          }).catch(() => {});
+          }, [succSel, succVal]).catch(() => {});
         }
 
         const fG1B = page.frame({ url: /G1B\.asp/ });
