@@ -617,43 +617,54 @@ export async function runKstatSurvey({
 
       // P9: 원산지 및 가격표시
       else if (stepName === 'P9') {
+        // P9: 원산지 및 가격표시 (C2-1 가격표시제 + C2-1-1 표시비율 동적 프레임 완벽 대응)
         const fC2A = page.frame({ url: /C2A\.asp/ });
         if (fC2A) {
-          const origSel = persona.compliance?.originTargetSelector || '#C2A_2';
+          const origSel = persona.compliance?.originTargetSelector || '#C2A_1';
           await safeClick(fC2A, origSel);
         }
+
+        // C2-1-1 전체 상품 수 대비 가격표시 비율 (C2AA.asp)
+        const fC2AA = page.frame({ url: /C2AA\.asp/ });
+        if (fC2AA) {
+          const tagRate = String(persona.compliance?.priceTagRate || '100');
+          await safeFill(fC2AA, 'input[name="C2AA"], input[type="tel"], input[type="text"]', tagRate);
+        }
+
         const fC2B = page.frame({ url: /C2B\.asp/ });
         if (fC2B) {
           await fC2B.evaluate(() => {
-            const r = document.querySelector('#C2B_2, input[value="2"]');
+            const r = document.querySelector('#C2B_1, input[value="1"]');
             if (r) { r.checked = true; r.click(); }
           }).catch(() => {});
         }
+
+        // C2-2-1 원산지 표시 비율 (C2BA.asp)
+        const fC2BA = page.frame({ url: /C2BA\.asp/ });
+        if (fC2BA) {
+          await safeFill(fC2BA, 'input[name="C2BA"], input[type="tel"], input[type="text"]', '100');
+        }
+
         const fC2C = page.frame({ url: /C2C\.asp/ });
         if (fC2C) {
           await fC2C.evaluate(() => {
-            const r = document.querySelector('#C2C_3, #C2C_2, input[value="3"], input[value="2"]');
+            const r = document.querySelector('#C2C_2, input[value="2"]'); // 미실시
             if (r) { r.checked = true; r.click(); }
           }).catch(() => {});
         }
+
         const fC2D = page.frame({ url: /C2D\.asp/ });
         if (fC2D) {
           await fC2D.evaluate(() => {
-            const r = document.querySelector('#C2D_3, #C2D_2, input[value="3"], input[value="2"]');
+            const r = document.querySelector('#C2D_2, input[value="2"]'); // 미실시
             if (r) { r.checked = true; r.click(); }
           }).catch(() => {});
         }
+
         const fC2E = page.frame({ url: /C2E\.asp/ });
         if (fC2E) {
-          const tagRate = persona.compliance?.priceTagRate || '80';
-          await fC2E.evaluate((v) => {
-            const inp = document.querySelector('input[name="C2E"], input[type="tel"], input[type="text"]');
-            if (inp) {
-              inp.value = v;
-              inp.dispatchEvent(new Event('input'));
-              inp.dispatchEvent(new Event('change'));
-            }
-          }, tagRate).catch(() => {});
+          const originRatio = String(persona.compliance?.domesticRatio || '80');
+          await safeFill(fC2E, 'input[name="C2E"], input[type="tel"], input[type="text"]', originRatio);
         }
       }
 
