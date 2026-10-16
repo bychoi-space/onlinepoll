@@ -43,47 +43,27 @@ async function initSurveyDetailPage() {
   const b2bCheckboxes = document.querySelectorAll('input[name="b2b-fields"]');
   const btnBuildQuotaDb = document.getElementById('btn-build-quota-db');
 
-  // STEP 2: 설문 가이드 & 실전 규칙
+  // STEP 2: 실행 제어 & 설문 URL/엔진
   const inputSurveyUrl = document.getElementById('input-survey-url');
   const btnFillSample = document.getElementById('btn-fill-sample-url');
   const selectSurveyEngine = document.getElementById('select-survey-engine');
   const inputSurveyTopic = document.getElementById('input-survey-topic');
-  const inputTextGuidelines = document.getElementById('input-text-guidelines');
-  const inputIterations = document.getElementById('input-iterations');
-  const inputHeadless = document.getElementById('input-headless');
-
-  // 공란 정책 옵션들
-  const policyEmptyNotes = document.getElementById('policy-empty-notes');
-  const policyProfitChange = document.getElementById('policy-profit-change');
-  const policyDebtStatus = document.getElementById('policy-debt-status');
-  const policyDeliveryStatus = document.getElementById('policy-delivery-status');
-
-  // 객관식 슬라이더
-  const sliderPos = document.getElementById('slider-pos');
-  const sliderNeu = document.getElementById('slider-neu');
-  const sliderNeg = document.getElementById('slider-neg');
-  const valPos = document.getElementById('val-pos');
-  const valNeu = document.getElementById('val-neu');
-  const valNeg = document.getElementById('val-neg');
-  const barPos = document.getElementById('bar-pos');
-  const barNeu = document.getElementById('bar-neu');
-  const barNeg = document.getElementById('bar-neg');
-  const valRatioBadge = document.getElementById('val-ratio-badge');
-
-  // STEP 2 & 3 제어기 및 딤드 타깃
-  const step2ConfigCard = document.getElementById('step2-config-card');
   const checkSafetyGuard = document.getElementById('check-safety-guard');
   const btnPilot = document.getElementById('btn-pilot-simulation');
   const btnBatch = document.getElementById('btn-batch-automation');
   const btnStop = document.getElementById('btn-stop-automation');
-  const linkOpenBlueprint = document.getElementById('link-open-blueprint');
   const badgeBlueprintStatus = document.getElementById('badge-blueprint-status');
   const btnSaveQuotaChanges = document.getElementById('btn-save-quota-changes');
   const quotaSyncStatusMsg = document.getElementById('quota-sync-status-msg');
 
-  if (linkOpenBlueprint) {
-    linkOpenBlueprint.href = `survey-blueprint.html?campaignId=${encodeURIComponent(campId)}`;
-  }
+  // STEP 3: 최하단 마스터 설문 블루프린트 (15단계 전수 복제)
+  const badgeMasterStatus = document.getElementById('badge-master-status');
+  const blueprintStageGrid = document.getElementById('blueprint-stage-grid');
+  const btnSaveBaseline = document.getElementById('btn-save-baseline');
+  const btnRunAllBatchBottom = document.getElementById('btn-run-all-batch-bottom');
+  const btnPresetStandard = document.getElementById('btn-preset-standard');
+  const btnPresetGrowth = document.getElementById('btn-preset-growth');
+  const btnPresetTraditional = document.getElementById('btn-preset-traditional');
 
   // 실시간 모니터링 & 프로그레스 바
   const progressSummaryLabel = document.getElementById('progress-summary-label');
@@ -125,28 +105,12 @@ async function initSurveyDetailPage() {
     // 쿼터 DB 테이블 렌더링
     renderQuotaTable(camp.quotaDatabase || []);
 
-    // 2차 방향성 가이드 설정 바인딩
+    // 설문 URL 및 기본 정보 바인딩
     if (camp.guidelineConfig) {
       const firstSlotUrl = camp.quotaDatabase?.[0]?.slotUrl;
-      inputSurveyUrl.value = camp.guidelineConfig.surveyUrl || firstSlotUrl || '';
-      inputSurveyTopic.value = camp.guidelineConfig.topic || '';
-      inputTextGuidelines.value = camp.guidelineConfig.textGuidelines || '';
-      if (inputIterations) inputIterations.value = camp.guidelineConfig.iterations || 10;
-      if (inputHeadless) inputHeadless.value = String(camp.guidelineConfig.headless !== false);
-
-      sliderPos.value = camp.guidelineConfig.positiveRatio ?? 70;
-      sliderNeu.value = camp.guidelineConfig.neutralRatio ?? 20;
-      sliderNeg.value = camp.guidelineConfig.negativeRatio ?? 10;
-      updateRatios();
-
-      // 공란 정책 바인딩
-      if (camp.guidelineConfig.policy) {
-        const p = camp.guidelineConfig.policy;
-        if (p.emptyNotes) policyEmptyNotes.value = p.emptyNotes;
-        if (p.profitChange) policyProfitChange.value = p.profitChange;
-        if (p.debtStatus) policyDebtStatus.value = p.debtStatus;
-        if (p.deliveryStatus) policyDeliveryStatus.value = p.deliveryStatus;
-      }
+      if (inputSurveyUrl) inputSurveyUrl.value = camp.guidelineConfig.surveyUrl || firstSlotUrl || '';
+      if (inputSurveyTopic) inputSurveyTopic.value = camp.guidelineConfig.topic || '';
+      if (selectSurveyEngine) selectSurveyEngine.value = camp.guidelineConfig.engine || 'kstat_tapi';
     }
 
     // 버튼 상태 머신 갱신 (1번 검증 완료 및 배치 완료 제어)
@@ -525,6 +489,365 @@ async function initSurveyDetailPage() {
     };
   }
 
+  // ------------------------------------------------------------------------
+  // 5. STEP 3: 15단계 마스터 설문 블루프린트 & 기준점 에디터 (통합)
+  // ------------------------------------------------------------------------
+  let blueprintData = null;
+  let currentBaseline = {
+    creditCardRatio: 65,
+    onnuriRatio: 15,
+    cashRatio: 20,
+    costTaxRatio: 10,
+    costLaborRatioWithEmp: 25,
+    deliveryFoodAdoption: 75,
+    deliveryNonFoodAdoption: 15,
+    deliverySalesRatio: 25,
+    posAdoptionRate: 65,
+    debtAdoptionRate: 45,
+    debtAvgAmount: 2500,
+    plannedYears: 8,
+    onnuriCustomerAvg: 5,
+    annualSales: 180,
+    profitMarginRate: 25
+  };
+
+  async function loadBlueprint() {
+    try {
+      const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/blueprint`);
+      if (!res.ok) throw new Error('블루프린트를 불러올 수 없습니다.');
+      const data = await res.json();
+      blueprintData = data.blueprint;
+
+      if (data.baseline) {
+        currentBaseline = { ...currentBaseline, ...data.baseline };
+      }
+
+      if (badgeMasterStatus) {
+        if (data.hasCustomBaseline) {
+          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 사용자 마스터 기준점 활성';
+          badgeMasterStatus.className = 'badge-status badge-blueprint ready';
+        } else {
+          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> 15단계 표준 기준점 적용 중';
+        }
+      }
+
+      renderStages();
+    } catch (err) {
+      console.error(err);
+      if (blueprintStageGrid) {
+        blueprintStageGrid.innerHTML = `
+          <div class="empty-table-msg">
+            <i class="fa-solid fa-triangle-exclamation text-error"></i> 블루프린트를 불러오지 못했습니다: ${err.message}
+          </div>
+        `;
+      }
+    }
+  }
+
+  function renderStages() {
+    if (!blueprintStageGrid || !blueprintData || !Array.isArray(blueprintData.stages)) return;
+
+    blueprintStageGrid.innerHTML = blueprintData.stages.map((stage) => {
+      return `
+        <section class="blueprint-card" id="stage-card-${stage.step}">
+          <div class="blueprint-card-header">
+            <div>
+              <div class="flex-center-gap-8 mb-4">
+                <span class="step-num-badge step${stage.stepNum}">${stage.step}</span>
+                <span class="blueprint-asp-tag font-mono">${escapeHtml(stage.aspFile)}</span>
+                <span class="${getBadgeClass(stage.badge)}">${getBadgeLabel(stage.badge)}</span>
+              </div>
+              <h3 class="blueprint-stage-title">${escapeHtml(stage.title)}</h3>
+            </div>
+          </div>
+          
+          <div class="font-caption text-secondary-color mb-14">
+            ${escapeHtml(stage.description)}
+          </div>
+
+          <div class="blueprint-field-list">
+            ${stage.fields.map(field => renderFieldItem(field, stage)).join('')}
+          </div>
+        </section>
+      `;
+    }).join('');
+
+    bindSliderEvents();
+  }
+
+  function getBadgeClass(badge) {
+    switch (badge) {
+      case 'QUOTA_BINDING': return 'badge-tag-bind';
+      case 'RULE_FIXED': return 'badge-tag-fixed';
+      case 'TUNABLE_JITTER': return 'badge-tag-tunable';
+      default: return 'badge-tag-jitter';
+    }
+  }
+
+  function getBadgeLabel(badge) {
+    switch (badge) {
+      case 'QUOTA_BINDING': return '쿼터 맞춤 1:1 바인딩';
+      case 'RULE_FIXED': return '유효성 규칙 필수 고정';
+      case 'TUNABLE_JITTER': return '기준점 설정 및 동적 분산';
+      default: return '가변 분산';
+    }
+  }
+
+  function renderFieldItem(field, stage) {
+    let controlHtml = '';
+
+    if (field.type === 'bind') {
+      controlHtml = `
+        <span class="font-caption font-mono text-dim font-bold">
+          <i class="fa-solid fa-link text-primary-color"></i> 쿼터 [${escapeHtml(field.source)}]
+        </span>
+      `;
+    } else if (field.type === 'fixed') {
+      controlHtml = `
+        <span class="badge-status ready font-caption font-bold">
+          <i class="fa-solid fa-lock"></i> ${escapeHtml(field.value)}
+        </span>
+      `;
+    } else if (field.type === 'action') {
+      controlHtml = `
+        <span class="badge-status completed font-caption font-bold">
+          <i class="fa-solid fa-check"></i> ${escapeHtml(field.value)}
+        </span>
+      `;
+    } else if (field.type === 'tunable') {
+      controlHtml = renderTunableControl(field.id, field);
+    } else if (field.type === 'jitter') {
+      controlHtml = `
+        <span class="badge-tag-jitter font-caption">
+          <i class="fa-solid fa-dice"></i> ${escapeHtml(field.baseline || '')} (${escapeHtml(field.range || '자연 분산')})
+        </span>
+      `;
+    }
+
+    return `
+      <div class="blueprint-field-item">
+        <div class="blueprint-field-label">
+          <span class="font-mono text-dim font-caption">[${field.id}]</span>
+          <span>${escapeHtml(field.label)}</span>
+        </div>
+        <div class="blueprint-field-control">
+          ${controlHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderTunableControl(fieldId, field) {
+    switch (fieldId) {
+      case 'B2A_5':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-credit-card" min="60" max="70" value="${currentBaseline.creditCardRatio || 65}" />
+            <span class="baseline-slider-val" id="val-credit-card">${currentBaseline.creditCardRatio || 65}%</span>
+          </div>
+        `;
+      case 'B2A_2':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-onnuri" min="10" max="20" value="${currentBaseline.onnuriRatio || 15}" />
+            <span class="baseline-slider-val" id="val-onnuri">${currentBaseline.onnuriRatio || 15}%</span>
+          </div>
+        `;
+      case 'B1BA_1':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-margin" min="15" max="35" value="${currentBaseline.profitMarginRate || 25}" />
+            <span class="baseline-slider-val" id="val-margin">${currentBaseline.profitMarginRate || 25}%</span>
+          </div>
+        `;
+      case 'C1D':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-delivery" min="30" max="95" value="${currentBaseline.deliveryFoodAdoption || 75}" />
+            <span class="baseline-slider-val" id="val-delivery">외식 ${currentBaseline.deliveryFoodAdoption || 75}%</span>
+          </div>
+        `;
+      case 'C1F':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-pos" min="30" max="95" value="${currentBaseline.posAdoptionRate || 65}" />
+            <span class="baseline-slider-val" id="val-pos">${currentBaseline.posAdoptionRate || 65}%</span>
+          </div>
+        `;
+      case 'E1':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-debt" min="20" max="70" value="${currentBaseline.debtAdoptionRate || 45}" />
+            <span class="baseline-slider-val" id="val-debt">${currentBaseline.debtAdoptionRate || 45}%</span>
+          </div>
+        `;
+      case 'B5C_1':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-onnuri-cust" min="2" max="10" value="${currentBaseline.onnuriCustomerAvg || 5}" />
+            <span class="baseline-slider-val" id="val-onnuri-cust">${currentBaseline.onnuriCustomerAvg || 5}명</span>
+          </div>
+        `;
+      case 'G1B':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-years" min="3" max="20" value="${currentBaseline.plannedYears || 8}" />
+            <span class="baseline-slider-val" id="val-years">${currentBaseline.plannedYears || 8}년</span>
+          </div>
+        `;
+      case 'B1AB':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-sales" min="100" max="300" step="10" value="${currentBaseline.annualSales || 180}" />
+            <span class="baseline-slider-val" id="val-sales">${currentBaseline.annualSales || 180}M</span>
+          </div>
+        `;
+      default:
+        return `
+          <span class="badge-tag-tunable font-caption">
+            <i class="fa-solid fa-sliders"></i> ${escapeHtml(field.baseline || '기준점')}
+          </span>
+        `;
+    }
+  }
+
+  function bindSliderEvents() {
+    const bindSlider = (id, valId, key, suffix = '%') => {
+      const slider = document.getElementById(id);
+      const valEl = document.getElementById(valId);
+      if (slider && valEl) {
+        slider.addEventListener('input', (e) => {
+          const val = parseInt(e.target.value, 10);
+          currentBaseline[key] = val;
+          valEl.textContent = `${val}${suffix}`;
+          markUnsaved();
+        });
+      }
+    };
+
+    bindSlider('slider-credit-card', 'val-credit-card', 'creditCardRatio', '%');
+    bindSlider('slider-onnuri', 'val-onnuri', 'onnuriRatio', '%');
+    bindSlider('slider-margin', 'val-margin', 'profitMarginRate', '%');
+    bindSlider('slider-delivery', 'val-delivery', 'deliveryFoodAdoption', '%');
+    bindSlider('slider-pos', 'val-pos', 'posAdoptionRate', '%');
+    bindSlider('slider-debt', 'val-debt', 'debtAdoptionRate', '%');
+    bindSlider('slider-onnuri-cust', 'val-onnuri-cust', 'onnuriCustomerAvg', '명');
+    bindSlider('slider-years', 'val-years', 'plannedYears', '년');
+    bindSlider('slider-sales', 'val-sales', 'annualSales', 'M');
+  }
+
+  function markUnsaved() {
+    if (btnSaveBaseline) {
+      btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 저장 (미저장)';
+      btnSaveBaseline.className = 'btn-pill btn-pill-primary btn-pulse';
+    }
+  }
+
+  function applyPreset(presetValues, activeBtn) {
+    document.querySelectorAll('.blueprint-preset-group .btn-chip').forEach(b => b.classList.remove('active'));
+    if (activeBtn) activeBtn.classList.add('active');
+
+    currentBaseline = { ...currentBaseline, ...presetValues };
+    renderStages();
+    markUnsaved();
+  }
+
+  if (btnPresetStandard) {
+    btnPresetStandard.addEventListener('click', () => {
+      applyPreset({
+        creditCardRatio: 65,
+        onnuriRatio: 15,
+        deliveryFoodAdoption: 75,
+        posAdoptionRate: 65,
+        debtAdoptionRate: 45,
+        profitMarginRate: 25,
+        plannedYears: 8
+      }, btnPresetStandard);
+    });
+  }
+
+  if (btnPresetGrowth) {
+    btnPresetGrowth.addEventListener('click', () => {
+      applyPreset({
+        creditCardRatio: 70,
+        onnuriRatio: 12,
+        deliveryFoodAdoption: 85,
+        posAdoptionRate: 80,
+        debtAdoptionRate: 60,
+        profitMarginRate: 32,
+        plannedYears: 12
+      }, btnPresetGrowth);
+    });
+  }
+
+  if (btnPresetTraditional) {
+    btnPresetTraditional.addEventListener('click', () => {
+      applyPreset({
+        creditCardRatio: 60,
+        onnuriRatio: 20,
+        deliveryFoodAdoption: 40,
+        posAdoptionRate: 50,
+        debtAdoptionRate: 30,
+        profitMarginRate: 20,
+        plannedYears: 5
+      }, btnPresetTraditional);
+    });
+  }
+
+  async function saveBaseline(showNotification = true) {
+    try {
+      if (btnSaveBaseline) {
+        btnSaveBaseline.disabled = true;
+        btnSaveBaseline.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
+      }
+
+      const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/baseline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentBaseline)
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || '저장 실패');
+
+      if (btnSaveBaseline) {
+        btnSaveBaseline.disabled = false;
+        btnSaveBaseline.innerHTML = '<i class="fa-solid fa-circle-check"></i> 마스터 기준점 저장 완료!';
+        btnSaveBaseline.className = 'btn-pill btn-pill-success';
+      }
+
+      if (badgeMasterStatus) {
+        badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 사용자 마스터 기준점 활성';
+        badgeMasterStatus.className = 'badge-status badge-blueprint ready';
+      }
+
+      if (showNotification) {
+        appendLog('success', '✓ 마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.');
+      }
+
+      setTimeout(() => {
+        if (btnSaveBaseline) {
+          btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 저장';
+          btnSaveBaseline.className = 'btn-pill btn-pill-primary';
+        }
+      }, 2500);
+
+      return true;
+    } catch (err) {
+      if (btnSaveBaseline) btnSaveBaseline.disabled = false;
+      if (showNotification) alert('기준점 저장 실패: ' + err.message);
+      appendLog('error', `기준점 저장 실패: ${err.message}`);
+      return false;
+    }
+  }
+
+  if (btnSaveBaseline) {
+    btnSaveBaseline.addEventListener('click', () => saveBaseline(true));
+  }
+
+  // ------------------------------------------------------------------------
+  // 6. 실행 제어 파이프라인 (단일 검증 & 전체 배치 연속 가동)
+  // ------------------------------------------------------------------------
   // [버튼 1] 1번 쿼터 파일럿 검증 (Agree 직전 안전 대기)
   btnPilot.addEventListener('click', async () => {
     let surveyUrl = inputSurveyUrl.value.trim();
@@ -543,14 +866,16 @@ async function initSurveyDetailPage() {
     try {
       setRunningState(true);
       resetTimelineChips();
-      appendLog('info', '🎯 [파일럿 검증 시작] 1번 쿼터 사업자로 Q1부터 Agree.asp까지 안전 완주를 진행합니다...');
+      appendLog('info', '🎯 [1번 단일 검증 시작] 1번 쿼터 사업자로 Q1부터 Agree.asp까지 안전 완주를 진행합니다...');
+
+      // 기준점 자동 저장
+      await saveBaseline(false);
 
       const res = await fetch(`/api/campaigns/${campId}/pilot-run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           surveyUrl,
-          policy: getPolicyPayload(),
           quotaIndex: 1
         })
       });
@@ -565,7 +890,7 @@ async function initSurveyDetailPage() {
   });
 
   // [버튼 2] 전체 쿼터 (1번~24번) 배치 연속 가동
-  btnBatch.addEventListener('click', async () => {
+  const triggerBatchRun = async () => {
     let surveyUrl = inputSurveyUrl.value.trim();
     const hasSlotUrls = currentCampaign?.quotaDatabase?.some(b => b.slotUrl);
     if (!surveyUrl && !hasSlotUrls) {
@@ -591,12 +916,14 @@ async function initSurveyDetailPage() {
       setRunningState(true);
       appendLog('info', `🚀 [배치 가동 시작] ${startIdx}번 쿼터부터 고속 자동화 연속 실행을 시작합니다...`);
 
+      // 1. 기준점 저장 보장
+      await saveBaseline(false);
+
       const res = await fetch(`/api/campaigns/${campId}/batch-run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           surveyUrl,
-          policy: getPolicyPayload(),
           startIndex: startIdx,
           safetyGuard
         })
@@ -609,7 +936,12 @@ async function initSurveyDetailPage() {
       appendLog('error', `배치 실행 실패: ${err.message}`);
       setRunningState(false);
     }
-  });
+  };
+
+  btnBatch.addEventListener('click', triggerBatchRun);
+  if (btnRunAllBatchBottom) {
+    btnRunAllBatchBottom.addEventListener('click', triggerBatchRun);
+  }
 
   // 중지 버튼
   btnStop.addEventListener('click', async () => {
@@ -766,31 +1098,6 @@ async function initSurveyDetailPage() {
     checkSafetyGuard.addEventListener('change', updateButtonStates);
   }
 
-  function updateRatios() {
-    let p = parseInt(sliderPos.value, 10);
-    let n = parseInt(sliderNeu.value, 10);
-    let g = parseInt(sliderNeg.value, 10);
-    const total = p + n + g || 100;
-
-    const normP = Math.round((p / total) * 100);
-    const normN = Math.round((n / total) * 100);
-    const normG = 100 - normP - normN;
-
-    valPos.textContent = `${p}%`;
-    valNeu.textContent = `${n}%`;
-    valNeg.textContent = `${g}%`;
-
-    barPos.style.width = `${normP}%`; barPos.textContent = `긍정 ${normP}%`;
-    barNeu.style.width = `${normN}%`; barNeu.textContent = `중립 ${normN}%`;
-    barNeg.style.width = `${normG}%`; barNeg.textContent = `부정 ${normG}%`;
-
-    valRatioBadge.textContent = `가중합: ${total}% (정규화)`;
-  }
-
-  sliderPos.addEventListener('input', updateRatios);
-  sliderNeu.addEventListener('input', updateRatios);
-  sliderNeg.addEventListener('input', updateRatios);
-
   btnClearLogs.addEventListener('click', () => {
     terminalLogs.innerHTML = '';
     appendLog('info', '콘솔 로그가 비워졌습니다.');
@@ -811,6 +1118,12 @@ async function initSurveyDetailPage() {
     await loadCampaign();
   } catch (err) {
     console.error('초기 캠페인 로드 실패:', err);
+  }
+
+  try {
+    await loadBlueprint();
+  } catch (err) {
+    console.error('초기 마스터 블루프린트 로드 실패:', err);
   }
 
   try {

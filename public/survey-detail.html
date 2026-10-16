@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
   <link rel="stylesheet" href="campaign.css">
-  <link rel="stylesheet" href="custom-styles.css?v=20261016_2">
+  <link rel="stylesheet" href="custom-styles.css?v=20261016_3">
 </head>
 <body>
 
@@ -212,135 +212,12 @@
       <section class="left-workspace-column">
         <form id="campaign-config-form">
 
-          <!-- STEP 2: 설문조사 방향성 및 실전 규칙 가이드 -->
-          <div class="clean-section-card" id="step2-config-card">
-            <div class="step-header-area">
-              <div class="step-title-group">
-                <span class="step-num-badge step2">STEP 2</span>
-                <h2 class="step-card-title">설문조사 방향성 및 실전 규칙 설정</h2>
-              </div>
-              <span class="badge-status ready" id="val-ratio-badge">가중합: 100%</span>
-            </div>
-            
-            <!-- 설문 URL 및 엔진 프로파일 -->
-            <div class="form-group mb-16">
-              <div class="label-with-action flex-between mb-8">
-                <label for="input-survey-url" class="figma-label font-bold m-0">설문조사 URL <span class="required">*</span></label>
-                <button type="button" id="btn-fill-sample-url" class="btn-pill btn-pill-secondary">
-                  전통시장 실태조사 URL 채우기
-                </button>
-              </div>
-              <input type="url" id="input-survey-url" class="figma-input font-mono" required placeholder="https://kstat.surveys.kr/..." />
-            </div>
-
-            <!-- 설문 플랫폼 엔진 프로파일 선택 -->
-            <div class="grid-2col mb-16">
-              <div class="form-group">
-                <label for="select-survey-engine" class="figma-label font-bold">설문 엔진 프로파일</label>
-                <select id="select-survey-engine" class="figma-select">
-                  <option value="kstat_tapi" selected>케이스탯 / TAPI 전문 리서치 (다중 iframe + 세션 엔진)</option>
-                  <option value="standard_dom">구글 폼 / 네이버 폼 (표준 단일 DOM 엔진)</option>
-                  <option value="auto_detect">지능형 자동 감지 (Auto-Detect)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="input-survey-topic" class="figma-label font-bold">설문 주제 및 목적</label>
-                <input type="text" id="input-survey-topic" class="figma-input" placeholder="예: 2026 전통시장 및 점포경영 실태조사" />
-              </div>
-            </div>
-
-            <!-- 공란 및 스마트 스킵 정책 (Empty / Fallback Policy) -->
-            <div class="policy-group-card mb-16">
-              <div class="policy-header mb-12">
-                <h4 class="font-bold font-body-sm m-0 text-primary-color">
-                  공란 및 스마트 스킵 정책
-                </h4>
-                <span class="font-caption text-dim">도무지 채울 수 없거나 불필요한 선택 항목의 안전 처리 원칙</span>
-              </div>
-              <div class="policy-options-grid">
-                <div class="policy-item">
-                  <label class="figma-label font-caption mb-4">선택적 주관식 / NOTE란</label>
-                  <select id="policy-empty-notes" class="figma-select figma-select-sm">
-                    <option value="keep_empty" selected>공란 유지 (미해당/스킵 우선 - 권장)</option>
-                    <option value="ai_generated">AI 자동 문장 생성</option>
-                  </select>
-                </div>
-                <div class="policy-item">
-                  <label class="figma-label font-caption mb-4">매출 / 영업이익 체감</label>
-                  <select id="policy-profit-change" class="figma-select figma-select-sm">
-                    <option value="similar" selected>비슷함/변화없음 (하위 iframe 안전 스킵)</option>
-                    <option value="decrease">감소 (사유 1~3순위 추가 작성)</option>
-                  </select>
-                </div>
-                <div class="policy-item">
-                  <label class="figma-label font-caption mb-4">사업자 부채 성향</label>
-                  <select id="policy-debt-status" class="figma-select figma-select-sm">
-                    <option value="no_debt" selected>부채 없음 (세부 대출금액 전면 공란)</option>
-                    <option value="has_debt">부채 있음 (추정치 기재)</option>
-                  </select>
-                </div>
-                <div class="policy-item">
-                  <label class="figma-label font-caption mb-4">소상공인 맞춤 판로</label>
-                  <select id="policy-delivery-status" class="figma-select figma-select-sm">
-                    <option value="skip_delivery" selected>택배/배달/SNS 미운영 (공란 처리)</option>
-                    <option value="use_delivery">택배 운영 (매출비중 기재)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <!-- 객관식 비중 인터랙티브 슬라이더 -->
-            <div class="form-group mb-16">
-              <label class="figma-label font-bold mb-8">객관식 응답 비중 (%)</label>
-              <div class="ratio-bars-container">
-                <div class="ratio-bar-segment pos" id="bar-pos">긍정 70%</div>
-                <div class="ratio-bar-segment neu" id="bar-neu">중립 20%</div>
-                <div class="ratio-bar-segment neg" id="bar-neg">부정 10%</div>
-              </div>
-              <div class="slider-row mt-12">
-                <div class="slider-group pos-group">
-                  <div class="slider-label"><span class="label-dot dot-pos"></span><span>긍정/만족</span><span class="slider-val" id="val-pos">70%</span></div>
-                  <input type="range" id="slider-pos" min="0" max="100" value="70" />
-                </div>
-                <div class="slider-group neu-group">
-                  <div class="slider-label"><span class="label-dot dot-neu"></span><span>중립/보통</span><span class="slider-val" id="val-neu">20%</span></div>
-                  <input type="range" id="slider-neu" min="0" max="100" value="20" />
-                </div>
-                <div class="slider-group neg-group">
-                  <div class="slider-label"><span class="label-dot dot-neg"></span><span>부정/개선</span><span class="slider-val" id="val-neg">10%</span></div>
-                  <input type="range" id="slider-neg" min="0" max="100" value="10" />
-                </div>
-              </div>
-            </div>
-
-            <!-- 주관식 중점 가이드 -->
-            <div class="form-group mb-16">
-              <label for="input-text-guidelines" class="figma-label font-bold">주관식 서술 중점 방향</label>
-              <textarea id="input-text-guidelines" class="figma-textarea" rows="2" placeholder="예: 전통시장 온누리상품권 가맹 혜택 및 디지털 온누리 환급 지원 강화 의견"></textarea>
-            </div>
-
-            <!-- 실행 제어 옵션 -->
-            <div class="grid-2col">
-              <div class="form-group mb-8">
-                <label for="input-iterations" class="figma-label">연속 실행 목표 건수</label>
-                <input type="number" id="input-iterations" class="figma-input" min="1" max="50" value="10" />
-              </div>
-              <div class="form-group mb-8">
-                <label for="input-headless" class="figma-label">브라우저 표시 모드</label>
-                <select id="input-headless" class="figma-select">
-                  <option value="true" selected>백그라운드 숨김 (Headless - 권장)</option>
-                  <option value="false">직접 브라우저 창 보기</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- STEP 3: 자동화 실행 제어 카드 (완벽한 Spacing & 무결점 정렬) -->
-          <div class="clean-section-card execution-master-card">
+          <!-- STEP 2: 자동화 실행 제어 파이프라인 카드 -->
+          <div class="clean-section-card execution-master-card" id="step2-execution-card">
             <div class="execution-card-header flex-between mb-16">
               <div class="flex-center-gap-10">
-                <span class="step-num-badge step3">STEP 3</span>
-                <h3 class="execution-card-title m-0">실행 제어 파이프라인</h3>
+                <span class="step-num-badge step2">STEP 2</span>
+                <h3 class="execution-card-title m-0">자동화 실행 제어 파이프라인</h3>
               </div>
               <div class="flex-center-gap-12">
                 <button type="button" id="btn-view-pilot-captures" class="btn-pill btn-pill-secondary btn-pill-small d-none">
@@ -353,24 +230,46 @@
               </div>
             </div>
 
-            <!-- 마스터 블루프린트 복제 배너 -->
-            <div class="execution-blueprint-banner mb-14">
-              <div class="flex-between">
-                <div>
-                  <div class="flex-center-gap-8 mb-4">
-                    <span class="badge-status badge-blueprint" id="badge-blueprint-status">블루프린트 기준점 대기</span>
-                    <span class="font-caption text-dim font-bold">15단계 마스터 복제 파이프라인</span>
-                  </div>
-                  <div class="font-caption text-secondary-color">
-                    설문조사 전체(15단계)를 한 화면으로 복제하여 기준점을 설정하고 1번부터 24번까지 일괄 가동합니다.
-                  </div>
-                </div>
-                <a href="#" id="link-open-blueprint" class="btn-pill btn-pill-primary">
-                  <i class="fa-solid fa-clone"></i> 설문조사 전체를 한 화면으로 복제하기
-                </a>
+            <!-- 대상 설문 URL 및 엔진 요약 -->
+            <div class="form-group mb-16">
+              <div class="label-with-action flex-between mb-8">
+                <label for="input-survey-url" class="figma-label font-bold m-0">대상 설문조사 URL</label>
+                <button type="button" id="btn-fill-sample-url" class="btn-pill btn-pill-secondary">
+                  전통시장 실태조사 URL 채우기
+                </button>
+              </div>
+              <input type="url" id="input-survey-url" class="figma-input font-mono" required placeholder="https://kstat.surveys.kr/..." />
+            </div>
+
+            <div class="grid-2col mb-16">
+              <div class="form-group">
+                <label for="select-survey-engine" class="figma-label font-bold">설문 플랫폼 엔진</label>
+                <select id="select-survey-engine" class="figma-select">
+                  <option value="kstat_tapi" selected>케이스탯 / TAPI 전문 리서치 (15단계 다중 iframe)</option>
+                  <option value="standard_dom">구글 폼 / 네이버 폼 (표준 단일 DOM)</option>
+                  <option value="auto_detect">지능형 자동 감지 (Auto-Detect)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="input-survey-topic" class="figma-label font-bold">설문 주제 및 목적</label>
+                <input type="text" id="input-survey-topic" class="figma-input" placeholder="예: 2026 전통시장 및 점포경영 실태조사" />
               </div>
             </div>
 
+            <!-- 하단 마스터 블루프린트 연동 안내 -->
+            <div class="blueprint-quick-banner mb-16 flex-between">
+              <div class="flex-center-gap-8">
+                <span class="badge-status badge-blueprint ready" id="badge-blueprint-status">
+                  <i class="fa-solid fa-check-double"></i> 15단계 블루프린트 연동
+                </span>
+                <span class="font-caption text-dim">신용카드(60~70%), 세금(10%), 배달, 부채 등 모든 기준점은 하단 STEP 3에서 조절됩니다.</span>
+              </div>
+              <a href="#section-master-blueprint" class="btn-pill btn-pill-secondary btn-pill-small">
+                <i class="fa-solid fa-arrow-down"></i> 하단 기준점 에디터로 이동
+              </a>
+            </div>
+
+            <!-- 실행 제어 버튼 그룹 -->
             <div class="execution-buttons-flex">
               <button type="button" id="btn-batch-automation" class="btn-action-success">
                 <i class="fa-solid fa-play"></i> 전체 쿼터 배치 자동화 가동 (1번~24번)
@@ -459,9 +358,69 @@
       </aside>
 
     </div>
+
+    <!-- [STEP 3] 15단계 마스터 설문 블루프린트 & 기준점 에디터 (와이드 100% 통합) -->
+    <section class="clean-section-card blueprint-integrated-section" id="section-master-blueprint">
+      
+      <!-- Sticky Control Header -->
+      <div class="blueprint-sticky-header flex-between mb-16">
+        <div>
+          <div class="flex-center-gap-10 mb-6">
+            <span class="step-num-badge step3">STEP 3</span>
+            <h2 class="step-card-title m-0">마스터 설문 블루프린트 & 기준점 에디터 (15단계 전수 복제)</h2>
+            <span class="badge-status badge-blueprint ready" id="badge-master-status">
+              <i class="fa-solid fa-circle-check"></i> 15단계 복제 완료
+            </span>
+          </div>
+          <div class="font-caption text-secondary-color">
+            케이스탯 15단계(Q1 ~ P14, Agree) 전체 구조가 복제되었습니다. 각 문항의 기준점 슬라이더를 조절하고 [마스터 기준점 저장]을 누르면 모든 쿼터에 자연 분산 적용됩니다.
+          </div>
+        </div>
+
+        <!-- Quick Preset Buttons & Save Actions -->
+        <div class="flex-center-gap-12">
+          <div class="blueprint-preset-group">
+            <span class="font-caption font-bold text-dim mr-4">빠른 프리셋:</span>
+            <button type="button" id="btn-preset-standard" class="btn-chip active">표준 소상공인</button>
+            <button type="button" id="btn-preset-growth" class="btn-chip">고수익/성장형</button>
+            <button type="button" id="btn-preset-traditional" class="btn-chip">생계형 전통점포</button>
+          </div>
+
+          <button type="button" id="btn-save-baseline" class="btn-pill btn-pill-primary">
+            <i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 저장
+          </button>
+          <button type="button" id="btn-run-all-batch-bottom" class="btn-pill btn-pill-success">
+            <i class="fa-solid fa-rocket"></i> 이 기준점으로 전체 배치 가동
+          </button>
+        </div>
+      </div>
+
+      <!-- Legend Bar (범례) -->
+      <div class="quota-clean-box p-12 mb-20 flex-between">
+        <div class="flex-center-gap-16">
+          <span class="font-caption font-bold text-dim">구조 속성 범례:</span>
+          <span class="badge-tag-bind"><i class="fa-solid fa-link"></i> 쿼터 맞춤 바인딩 (상호·대표자·성별·나이·업종·주소)</span>
+          <span class="badge-tag-fixed"><i class="fa-solid fa-shield-halved"></i> 규칙 고정 (12개월·카드취급·세금10%·동의)</span>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 기준점 조절 (신용카드 비중·매출·배달·부채)</span>
+          <span class="badge-tag-jitter"><i class="fa-solid fa-dice"></i> 점포별 가변 분산 (자연스러운 봇 탐지 방지)</span>
+        </div>
+        <div class="font-caption text-secondary-color">
+          <i class="fa-solid fa-circle-info"></i> 모든 쿼터는 이 기준점을 중심으로 고유 시드 기반 자연 분산 주입됩니다.
+        </div>
+      </div>
+
+      <!-- 16 Stage Cards Grid -->
+      <div class="blueprint-stage-grid" id="blueprint-stage-grid">
+        <div class="empty-table-msg">
+          <i class="fa-solid fa-spinner fa-spin"></i> 마스터 설문 블루프린트 구조를 복제하는 중...
+        </div>
+      </div>
+
+    </section>
+
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261016_2"></script>
+  <script type="module" src="survey-detail.js?v=20261016_3"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

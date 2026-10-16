@@ -3071,5 +3071,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
 }
-
-
+.blueprint-integrated-section {
+  margin-top: 24px;
+}
+.blueprint-quick-banner {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
