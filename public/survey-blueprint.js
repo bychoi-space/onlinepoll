@@ -27,6 +27,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   let blueprintData = null;
+  let activeGroup = 'group1';
+  let groupBaselines = {};
+  let groupStats = null;
+
+  const GROUP_METAS = {
+    group1: {
+      name: '1번 그룹 [식품군]',
+      badgeClass: 'group1-badge',
+      desc: '농산물, 축산물, 수산물, 가공식품 점포에 특화된 기준점 (원산지 100%, 온누리상품권 우대, 대면 판매 중심)'
+    },
+    group2: {
+      name: '2번 그룹 [공산·생활·서비스군]',
+      badgeClass: 'group2-badge',
+      desc: '의류신발, 가정용품, 기타소매, 근린상권 점포에 특화된 기준점 (원산지 비대상, 배달 미실시(0%), 소매/생활/미용)'
+    },
+    group3: {
+      name: '3번 그룹 [외식·음식점업군]',
+      badgeClass: 'group3-badge',
+      desc: '일반음식점, 휴게음식점, 분식, 주점 점포에 특화된 기준점 (배달앱 85%, 배달매출 35%, 식재료비/원산지 필수)'
+    }
+  };
+
   let currentBaseline = {
     storePyeong: 14,
     employeeFamily: 1,
@@ -73,6 +95,83 @@ document.addEventListener('DOMContentLoaded', async () => {
     rotationMode: false
   };
 
+  function updateGroupStatsUI() {
+    if (groupStats) {
+      const c1 = document.getElementById('count-group1');
+      const c2 = document.getElementById('count-group2');
+      const c3 = document.getElementById('count-group3');
+      if (c1 && groupStats.group1) c1.textContent = `${groupStats.group1.count}개소`;
+      if (c2 && groupStats.group2) c2.textContent = `${groupStats.group2.count}개소`;
+      if (c3 && groupStats.group3) c3.textContent = `${groupStats.group3.count}개소`;
+    }
+
+    const tagEl = document.getElementById('active-group-tag');
+    const descEl = document.getElementById('active-group-desc');
+    const countEl = document.getElementById('active-group-count');
+    const storesEl = document.getElementById('active-group-stores');
+
+    const meta = GROUP_METAS[activeGroup] || GROUP_METAS.group1;
+    if (tagEl) {
+      tagEl.textContent = meta.name;
+      tagEl.className = `active-group-tag ${meta.badgeClass}`;
+    }
+    if (descEl) descEl.textContent = meta.desc;
+
+    if (groupStats && groupStats[activeGroup]) {
+      const st = groupStats[activeGroup];
+      if (countEl) countEl.textContent = st.count;
+      if (storesEl) {
+        if (st.stores && st.stores.length > 0) {
+          const preview = st.stores.slice(0, 6).join(', ') + (st.stores.length > 6 ? ` 외 ${st.stores.length - 6}개소` : '');
+          storesEl.textContent = preview;
+        } else {
+          storesEl.textContent = '해당 업종 점포 없음';
+        }
+      }
+    }
+  }
+
+  function switchGroupTab(targetGroup) {
+    if (activeGroup === targetGroup) return;
+
+    // 1. 현재 편집 중인 기준점을 활성 그룹 캐시에 저장
+    groupBaselines[activeGroup] = { ...currentBaseline };
+
+    // 2. 활성 그룹 변경
+    activeGroup = targetGroup;
+
+    // 3. 탭 버튼 스타일 갱신
+    document.querySelectorAll('.blueprint-group-tabs .group-tab-btn').forEach(btn => {
+      if (btn.getAttribute('data-group') === targetGroup) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // 4. 대상 그룹의 기준점을 currentBaseline에 로드
+    if (!groupBaselines[activeGroup]) {
+      groupBaselines[activeGroup] = { ...currentBaseline };
+    }
+    currentBaseline = { ...groupBaselines[activeGroup] };
+
+    // 5. 배너 및 15단계 문항 그리드 재렌더링
+    updateGroupStatsUI();
+    renderStages();
+  }
+
+  function copyActiveGroupToAll() {
+    groupBaselines[activeGroup] = { ...currentBaseline };
+    const sourceMeta = GROUP_METAS[activeGroup] || { name: activeGroup };
+
+    groupBaselines.group1 = JSON.parse(JSON.stringify(currentBaseline));
+    groupBaselines.group2 = JSON.parse(JSON.stringify(currentBaseline));
+    groupBaselines.group3 = JSON.parse(JSON.stringify(currentBaseline));
+
+    markUnsaved();
+    alert(`[${sourceMeta.name}]의 기준점 설정이 1번, 2번, 3번 그룹 전체에 일괄 복사되었습니다.\n우측 상단의 [마스터 기준점 저장]을 눌러 서버에 최종 반영해 주세요.`);
+  }
+
   // 1. 블루프린트 스키마 및 캠페인 기준점 로드
   async function loadBlueprint() {
     try {
@@ -81,7 +180,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await res.json();
       blueprintData = data.blueprint;
 
-      if (data.baseline) {
+      if (data.groupBaselines) {
+        groupBaselines = data.groupBaselines;
+      } else {
+        groupBaselines = {
+          group1: { ...currentBaseline, ...(data.baseline?.groups?.group1 || data.baseline || {}) },
+          group2: { ...currentBaseline, ...(data.baseline?.groups?.group2 || data.baseline || {}) },
+          group3: { ...currentBaseline, ...(data.baseline?.groups?.group3 || data.baseline || {}) }
+        };
+      }
+      groupStats = data.groupStats || null;
+
+      if (groupBaselines[activeGroup]) {
+        currentBaseline = { ...groupBaselines[activeGroup] };
+      } else if (data.baseline) {
         currentBaseline = { ...currentBaseline, ...data.baseline };
       }
 
@@ -89,12 +201,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         campaignTitleHeading.textContent = `캠페인: ${data.campaignTitle} (총 ${data.quotaCount}개 사업자 쿼터 장착됨)`;
       }
 
+      updateGroupStatsUI();
+
       if (badgeMasterStatus) {
         if (data.hasCustomBaseline) {
-          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 사용자 마스터 기준점 활성';
+          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 활성';
           badgeMasterStatus.className = 'badge-status badge-blueprint ready';
         } else {
-          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> 15단계 표준 기준점 적용 중';
+          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> 15단계 업종별 표준 기준점 적용 중';
         }
       }
 
@@ -658,6 +772,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         slider.addEventListener('input', (e) => {
           const val = parseInt(e.target.value, 10);
           currentBaseline[key] = val;
+          if (groupBaselines[activeGroup]) {
+            groupBaselines[activeGroup][key] = val;
+          }
           valEl.textContent = `${val}${suffix}`;
           if (typeof onUpdate === 'function') onUpdate(val);
           markUnsaved();
@@ -670,6 +787,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (el) {
         el.addEventListener('change', (e) => {
           currentBaseline[key] = e.target.value;
+          if (groupBaselines[activeGroup]) {
+            groupBaselines[activeGroup][key] = e.target.value;
+          }
           markUnsaved();
         });
       }
@@ -966,6 +1086,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (activeBtn) activeBtn.classList.add('active');
 
     currentBaseline = { ...currentBaseline, ...presetValues };
+    if (groupBaselines[activeGroup]) {
+      groupBaselines[activeGroup] = { ...currentBaseline };
+    }
     renderStages();
     markUnsaved();
   }
@@ -977,10 +1100,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnSaveBaseline.disabled = true;
         btnSaveBaseline.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
 
+        groupBaselines[activeGroup] = { ...currentBaseline };
+
         const res = await fetch(`/api/campaigns/${encodeURIComponent(campaignId)}/baseline`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentBaseline)
+          body: JSON.stringify({
+            ...currentBaseline,
+            groups: groupBaselines
+          })
         });
 
         const result = await res.json();
@@ -991,7 +1119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnSaveBaseline.className = 'btn-pill btn-pill-success';
 
         if (badgeMasterStatus) {
-          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 사용자 마스터 기준점 활성';
+          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 활성';
           badgeMasterStatus.className = 'badge-status badge-blueprint ready';
         }
 
@@ -1010,18 +1138,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 6. 전체 배치 즉시 가동 (1~24번)
   if (btnRunAllBatch) {
     btnRunAllBatch.addEventListener('click', async () => {
-      const ok = confirm('설정한 마스터 기준점으로 1번부터 24번까지 전체 쿼터 배치 자동화를 시작하시겠습니까?');
+      const ok = confirm('설정한 3개 업종 그룹별 마스터 기준점으로 1번부터 24번까지 전체 쿼터 배치 자동화를 시작하시겠습니까?');
       if (!ok) return;
 
       try {
         btnRunAllBatch.disabled = true;
         btnRunAllBatch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 기준점 저장 및 배치 준비 중...';
 
+        groupBaselines[activeGroup] = { ...currentBaseline };
+
         // 1. 기준점 저장 보장
         await fetch(`/api/campaigns/${encodeURIComponent(campaignId)}/baseline`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentBaseline)
+          body: JSON.stringify({
+            ...currentBaseline,
+            groups: groupBaselines
+          })
         });
 
         // 2. 상세 작업실로 이동하여 즉시 배치 실행 & 실시간 스트림 관전
@@ -1033,6 +1166,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
+
+  // 3개 업종 그룹 네비게이션 탭 및 일괄 복사 버튼 바인딩
+  const tabGroup1 = document.getElementById('tab-group1');
+  const tabGroup2 = document.getElementById('tab-group2');
+  const tabGroup3 = document.getElementById('tab-group3');
+  const btnCopyToAll = document.getElementById('btn-copy-to-all-groups');
+
+  if (tabGroup1) tabGroup1.addEventListener('click', () => switchGroupTab('group1'));
+  if (tabGroup2) tabGroup2.addEventListener('click', () => switchGroupTab('group2'));
+  if (tabGroup3) tabGroup3.addEventListener('click', () => switchGroupTab('group3'));
+  if (btnCopyToAll) btnCopyToAll.addEventListener('click', copyActiveGroupToAll);
 
   function escapeHtml(str) {
     if (!str) return '';
