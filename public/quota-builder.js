@@ -141,7 +141,54 @@ document.addEventListener('DOMContentLoaded', () => {
     loadOnnuriDistricts(e.target.value);
   });
 
-  // 초기 온누리 지역 미리 로드
+  // ==========================================
+  // [2-0] 온누리 전국 마스터 DB 상태 및 수동 최신화
+  // ==========================================
+  const badgeMasterStatus = document.getElementById('badge-master-db-status');
+  const btnSyncMaster = document.getElementById('btn-sync-master-db');
+
+  async function loadMasterDBStatus() {
+    if (!badgeMasterStatus) return;
+    try {
+      const res = await fetch('/api/onnuri/master-status');
+      const data = await res.json();
+      if (data && data.loaded) {
+        badgeMasterStatus.innerHTML = `<i class="fa-solid fa-circle-check text-success-color"></i> 전국 온누리 마스터 DB 정상 탑재 (${data.totalMarkets.toLocaleString()}개 시장 / ${data.totalMerchants.toLocaleString()}개 실존 가맹점)`;
+      } else {
+        badgeMasterStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-warn-color"></i> 마스터 DB 미탑재 (외부 실시간 API 연결 모드)`;
+      }
+    } catch (_) {
+      badgeMasterStatus.innerHTML = `<i class="fa-solid fa-circle-check text-success-color"></i> 전국 온누리 마스터 DB 연동 중`;
+    }
+  }
+
+  if (btnSyncMaster) {
+    btnSyncMaster.addEventListener('click', async () => {
+      const ok = confirm('전국 16개 시·도 온누리 가맹점 마스터 DB를 최신 상태로 백그라운드 동기화하시겠습니까?\n(약 1분 소요되며, 완료 시 자동으로 캐시가 갱신됩니다.)');
+      if (!ok) return;
+
+      btnSyncMaster.disabled = true;
+      btnSyncMaster.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 동기화 요청 중...';
+      try {
+        const res = await fetch('/api/onnuri/sync-master', { method: 'POST' });
+        const result = await res.json();
+        appendLog('info', result.message || '마스터 DB 최신화가 백그라운드에서 시작되었습니다.');
+        alert(result.message || '마스터 DB 최신화가 시작되었습니다.');
+      } catch (err) {
+        appendLog('error', `동기화 요청 실패: ${err.message}`);
+        alert('동기화 요청에 실패했습니다: ' + err.message);
+      } finally {
+        setTimeout(() => {
+          btnSyncMaster.disabled = false;
+          btnSyncMaster.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> DB 최신화';
+          loadMasterDBStatus();
+        }, 3000);
+      }
+    });
+  }
+
+  // 초기 온누리 지역 및 마스터 DB 상태 로드
+  loadMasterDBStatus();
   loadOnnuriRegions().then(() => {
     fetchMarketStats();
   });

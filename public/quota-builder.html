@@ -100,6 +100,15 @@
           <!-- [모드 2] 온누리상품권 연계 설정 영역 -->
           <div id="section-onnuri-mode" class="quota-import-box mb-16 hidden">
             <h4 class="font-body-sm font-bold mb-10"><i class="fa-solid fa-store"></i> 대상 전통시장 지정</h4>
+            <!-- 전국 온누리 마스터 DB 상태 바 -->
+            <div class="master-db-status-bar mb-12">
+              <span class="master-db-status-badge" id="badge-master-db-status">
+                <i class="fa-solid fa-database"></i> 전국 온누리 마스터 DB 연동 확인 중...
+              </span>
+              <button type="button" id="btn-sync-master-db" class="btn-pill btn-pill-secondary btn-xs" title="전국 온누리 최신 가맹점 DB로 즉시 동기화합니다">
+                <i class="fa-solid fa-arrows-rotate"></i> DB 최신화
+              </button>
+            </div>
             <div class="grid-2col mb-10">
               <div class="form-group">
                 <label for="onnuri-region" class="figma-label">시/도 선택 <span class="required">*</span></label>

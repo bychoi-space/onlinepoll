@@ -1094,6 +1094,48 @@ app.get('/api/onnuri/market-stats', async (req, res) => {
   }
 });
 
+// 온누리 전국 마스터 DB 상태 조회 API
+app.get('/api/onnuri/master-status', async (req, res) => {
+  try {
+    const { getMasterDBStatus } = await import('./engine/onnuri.js');
+    const status = getMasterDBStatus();
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ error: '마스터 DB 상태 조회 실패: ' + err.message });
+  }
+});
+
+let isSyncingMasterDB = false;
+// 온누리 전국 마스터 DB 수동 동기화(최신화) API
+app.post('/api/onnuri/sync-master', async (req, res) => {
+  if (isSyncingMasterDB) {
+    return res.status(409).json({ error: '이미 마스터 DB 최신화 작업이 진행 중입니다.' });
+  }
+
+  isSyncingMasterDB = true;
+  logger.info('[Onnuri Master DB] 전국 마스터 DB 수동 동기화 요청 수신');
+
+  // 백그라운드 비동기 실행
+  (async () => {
+    try {
+      const { buildMasterDB } = await import('../scripts/build-onnuri-master-db.js');
+      await buildMasterDB();
+      logger.success('[Onnuri Master DB] 전국 마스터 DB 동기화 완료!');
+    } catch (err) {
+      logger.error(`[Onnuri Master DB] 전국 마스터 DB 동기화 실패: ${err.message}`);
+    } finally {
+      isSyncingMasterDB = false;
+    }
+  })();
+
+  res.json({
+    success: true,
+    message: '전국 온누리 마스터 DB 최신화가 백그라운드에서 시작되었습니다. 완료 시 자동 반영됩니다.'
+  });
+});
+
+
+
 // 온누리상품권 + 마켓비즈 하이브리드 조사 쿼터 생성 API
 app.post('/api/quota/generate-onnuri', async (req, res) => {
   const {

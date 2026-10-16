@@ -6,7 +6,9 @@ package-lock.json
 # .env (included as requested)
 
 # Storage & Databases
-data/
+data/*
+!data/onnuri_master_db.json
+!data/quotas
 reports/*.json
 reports/*.png
 reports/*.log
