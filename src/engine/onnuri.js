@@ -6,10 +6,26 @@
 
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { logger } from '../utils/logger.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const ONNURI_BASE_URL = 'https://ongift.or.kr';
-const MASTER_DB_PATH = path.resolve('data/onnuri_master_db.json');
+
+function getMasterDBPath() {
+  const candidates = [
+    path.resolve(__dirname, '../../data/onnuri_master_db.json'),
+    path.resolve(process.cwd(), 'data/onnuri_master_db.json'),
+    path.resolve(__dirname, '../data/onnuri_master_db.json'),
+    path.resolve('/home/choiby01/onlinepoll/data/onnuri_master_db.json')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return candidates[0];
+}
 
 const DEFAULT_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -29,15 +45,16 @@ let cachedMtime = 0;
  */
 export function getMasterDB() {
   try {
-    if (!fs.existsSync(MASTER_DB_PATH)) {
+    const dbPath = getMasterDBPath();
+    if (!fs.existsSync(dbPath)) {
       return null;
     }
-    const stat = fs.statSync(MASTER_DB_PATH);
+    const stat = fs.statSync(dbPath);
     if (!cachedMasterDB || cachedMtime !== stat.mtimeMs) {
-      const raw = fs.readFileSync(MASTER_DB_PATH, 'utf8');
+      const raw = fs.readFileSync(dbPath, 'utf8');
       cachedMasterDB = JSON.parse(raw);
       cachedMtime = stat.mtimeMs;
-      logger.info(`[Onnuri Master DB] 인메모리 로드 완료: ${cachedMasterDB.totalMarkets}개 시장, ${cachedMasterDB.totalMerchants}개 가맹점 (갱신: ${cachedMasterDB.updatedAt})`);
+      logger.info(`[Onnuri Master DB] 인메모리 로드 완료: ${cachedMasterDB.totalMarkets}개 시장, ${cachedMasterDB.totalMerchants}개 가맹점 (경로: ${dbPath})`);
     }
     return cachedMasterDB;
   } catch (err) {
@@ -50,10 +67,15 @@ export function getMasterDB() {
  * 마스터 DB 상태 메타데이터 조회
  */
 export function getMasterDBStatus() {
+  const dbPath = getMasterDBPath();
+  const fileExists = fs.existsSync(dbPath);
   const db = getMasterDB();
   if (!db) {
     return {
       loaded: false,
+      resolvedPath: dbPath,
+      fileExists,
+      cwd: process.cwd(),
       totalMarkets: 0,
       totalMerchants: 0,
       updatedAt: null,
@@ -63,11 +85,12 @@ export function getMasterDBStatus() {
 
   let fileSizeMB = 0;
   try {
-    fileSizeMB = (fs.statSync(MASTER_DB_PATH).size / (1024 * 1024)).toFixed(2);
+    fileSizeMB = (fs.statSync(dbPath).size / (1024 * 1024)).toFixed(2);
   } catch (_) {}
 
   return {
     loaded: true,
+    resolvedPath: dbPath,
     totalMarkets: db.totalMarkets || Object.keys(db.markets || {}).length,
     totalMerchants: db.totalMerchants || 0,
     updatedAt: db.updatedAt || null,
