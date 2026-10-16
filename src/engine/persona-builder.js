@@ -111,8 +111,14 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const baseAnnualSales = mb.annualSales !== undefined ? parseInt(mb.annualSales, 10) : Math.round((dailySales * randBetween(280, 310)) / 100);
   const annualSales = Math.max(40, baseAnnualSales + randBetween(-10, 10));
   
+  // 회전 선택 헬퍼 (인덱스 기반 균등 분산)
+  const rotate = (arr, idx) => arr[(idx - 1) % arr.length];
+
   // 분기별 비중 (합계 100%)
-  const qPattern = mb.quarterPattern || 'even';
+  const qPattern = (mb.quarterPattern === 'rotation' || mb.rotationMode)
+    ? rotate(['even', 'h2', 'even', 'season'], quotaIndex)
+    : (mb.quarterPattern || 'even');
+
   let q1, q2, q3, q4;
   if (qPattern === 'h2') {
     q1 = randBetween(18, 22);
@@ -151,7 +157,15 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const baseDays = mb.monthlyBusinessDays !== undefined ? parseInt(mb.monthlyBusinessDays, 10) : 26;
   const monthlyOpenDays = Math.max(15, Math.min(31, baseDays + randBetween(-1, 1)));
   const dailyBusinessHours = String(mb.dailyBusinessHours || 11);
-  const salesChangeSelector = mb.salesChange === 'increase' ? '#B1BB_1' : (mb.salesChange === 'decrease' ? '#B1BB_2' : '#B1BB_3');
+
+  let salesChangeSelector = '#B1BB_3';
+  if (mb.salesChange === 'rotation' || mb.rotationMode) {
+    salesChangeSelector = rotate(['#B1BB_3', '#B1BB_1', '#B1BB_3', '#B1BB_2'], quotaIndex);
+  } else if (mb.salesChange === 'increase') {
+    salesChangeSelector = '#B1BB_1';
+  } else if (mb.salesChange === 'decrease') {
+    salesChangeSelector = '#B1BB_2';
+  }
 
   // 5. 결제수단 비중 (P5 - 합계 100% 필수)
   // [규칙 2 & 3] 신용카드 취급 필수, 비중은 60~70% 랜덤, 온누리 10~20%, 현금 나머지 (합계 100%)
@@ -163,11 +177,15 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const payCash = remainingPay - payOnnuri;
 
   // 6. 영업비용 구성비 (P6 B4 - 합계 100% 필수)
-  // [규칙 4] '기타(세금 등)' 은 무조건 '세금' 10% 고정
-  // [규칙 5] 종업원이 없다고 설정한 경우 인건비 0원, 종업원이 있는 경우 인건비 정상 기재
-  const costEtc = mb.costTaxRatio !== undefined ? parseInt(mb.costTaxRatio, 10) : 10;
+  // [B4_4] 기타(세금 등) 비중 조절 가능 (기본 10%, 로테이션 시 8~15% 자연순환)
+  let costEtc = 10;
+  if (mb.costTaxRatio !== undefined && mb.costTaxRatio !== 'rotation') {
+    costEtc = parseInt(mb.costTaxRatio, 10);
+  } else if (mb.rotationMode || mb.costTaxRatio === 'rotation') {
+    costEtc = rotate([8, 10, 12, 10, 15, 7], quotaIndex);
+  }
   const costEtcText = '세금';
-  const remainingCost = 100 - costEtc; // 90%
+  const remainingCost = 100 - costEtc;
   let costLabor = 0;
   const rentBase = mb.costRentRatio !== undefined ? parseInt(mb.costRentRatio, 10) : 20;
   let costRent = Math.max(10, Math.min(35, rentBase + randBetween(-2, 2)));
@@ -197,12 +215,30 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const onnuriBaseCust = mb.onnuriCustomerAvg !== undefined ? parseInt(mb.onnuriCustomerAvg, 10) : 5;
   const onnuriMonthlyCustomers = String(Math.max(2, Math.min(10, onnuriBaseCust + randBetween(-1, 1))));
 
-  const onnuriPaperSelector = mb.onnuriPaperMember === 'no' ? '#B5A_1_2' : '#B5A_1_1';
-  const onnuriMobileSelector = mb.onnuriMobileMember === 'yes' ? '#B5A_2_1' : '#B5A_2_2';
+  let onnuriPaperSelector = '#B5A_1_1';
+  if (mb.onnuriPaperMember === 'rotation' || mb.rotationMode) {
+    onnuriPaperSelector = (quotaIndex % 5 === 0) ? '#B5A_1_2' : '#B5A_1_1';
+  } else if (mb.onnuriPaperMember === 'no') {
+    onnuriPaperSelector = '#B5A_1_2';
+  }
+
+  let onnuriMobileSelector = '#B5A_2_2';
+  if (mb.onnuriMobileMember === 'rotation' || mb.rotationMode) {
+    onnuriMobileSelector = (quotaIndex % 2 === 0) ? '#B5A_2_1' : '#B5A_2_2';
+  } else if (mb.onnuriMobileMember === 'yes') {
+    onnuriMobileSelector = '#B5A_2_1';
+  }
+
   let onnuriSatisfactionSelector = '#B5AA_4'; // 기본 만족
-  if (mb.onnuriSatisfaction === 'very_good') onnuriSatisfactionSelector = '#B5AA_5';
-  else if (mb.onnuriSatisfaction === 'normal') onnuriSatisfactionSelector = '#B5AA_3';
-  else if (mb.onnuriSatisfaction === 'bad') onnuriSatisfactionSelector = '#B5AA_2';
+  if (mb.onnuriSatisfaction === 'rotation' || mb.rotationMode) {
+    onnuriSatisfactionSelector = rotate(['#B5AA_4', '#B5AA_3', '#B5AA_5', '#B5AA_4', '#B5AA_2'], quotaIndex);
+  } else if (mb.onnuriSatisfaction === 'very_good') {
+    onnuriSatisfactionSelector = '#B5AA_5';
+  } else if (mb.onnuriSatisfaction === 'normal') {
+    onnuriSatisfactionSelector = '#B5AA_3';
+  } else if (mb.onnuriSatisfaction === 'bad') {
+    onnuriSatisfactionSelector = '#B5AA_2';
+  }
 
   // 8. 사업장 임대차 (P10)
   const rentRate = mb.rentAdoptionRate !== undefined ? (mb.rentAdoptionRate / 100) : 0.8;
@@ -211,11 +247,31 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const deposit = String(Math.max(500, baseDep + randBetween(-150, 150)));
   const baseRentAmt = mb.monthlyRentAmount !== undefined ? parseInt(mb.monthlyRentAmount, 10) : 110;
   const monthlyRent = String(Math.max(40, baseRentAmt + randBetween(-10, 10)));
-  const rentTrendSelector = mb.rentTrend === 'increase' ? '#D1D_1' : (mb.rentTrend === 'decrease' ? '#D1D_2' : '#D1D_3');
+
+  let rentTrendSelector = '#D1D_3';
+  if (mb.rentTrend === 'rotation' || mb.rotationMode) {
+    rentTrendSelector = rotate(['#D1D_3', '#D1D_1', '#D1D_3', '#D1D_2'], quotaIndex);
+  } else if (mb.rentTrend === 'increase') {
+    rentTrendSelector = '#D1D_1';
+  } else if (mb.rentTrend === 'decrease') {
+    rentTrendSelector = '#D1D_2';
+  }
 
   // 9. 애로사항 및 활성화 과제 (P13 - Kstat 선택지 유효 범위 엄수)
   let poolF1 = [1, 3, 5, 2, 4, 6, 7, 8];
-  if (mb.issuePriority === 'customer') poolF1 = [2, 4, 1, 3, 5, 6, 7, 8];
+  if (mb.issuePriority === 'rotation' || mb.rotationMode) {
+    const rotType = rotate(['customer', 'cost', 'labor', 'random'], quotaIndex);
+    if (rotType === 'customer') poolF1 = [2, 4, 1, 3, 5, 6, 7, 8];
+    else if (rotType === 'cost') poolF1 = [1, 3, 5, 2, 4, 6, 7, 8];
+    else if (rotType === 'labor') poolF1 = [6, 1, 3, 4, 2, 5, 7, 8];
+    else {
+      poolF1 = [1, 2, 3, 4, 5, 6, 7, 8];
+      for (let i = poolF1.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [poolF1[i], poolF1[j]] = [poolF1[j], poolF1[i]];
+      }
+    }
+  } else if (mb.issuePriority === 'customer') poolF1 = [2, 4, 1, 3, 5, 6, 7, 8];
   else if (mb.issuePriority === 'labor') poolF1 = [6, 1, 3, 4, 2, 5, 7, 8];
   else if (mb.issuePriority === 'random') {
     poolF1 = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -224,10 +280,22 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       [poolF1[i], poolF1[j]] = [poolF1[j], poolF1[i]];
     }
   }
-  const selectedIssuesF1 = poolF1.slice(0, 3); // 1~8 중 3개
+  const selectedIssuesF1 = poolF1.slice(0, 3);
 
   let poolF3 = [1, 3, 7, 2, 4, 5, 6, 8, 9, 10];
-  if (mb.policyPriority === 'digital') poolF3 = [2, 5, 8, 1, 3, 4, 6, 7, 9, 10];
+  if (mb.policyPriority === 'rotation' || mb.rotationMode) {
+    const rotPol = rotate(['marketing', 'digital', 'tax', 'random'], quotaIndex);
+    if (rotPol === 'digital') poolF3 = [2, 5, 8, 1, 3, 4, 6, 7, 9, 10];
+    else if (rotPol === 'marketing') poolF3 = [4, 6, 9, 1, 3, 2, 5, 7, 8, 10];
+    else if (rotPol === 'tax') poolF3 = [1, 3, 7, 2, 4, 5, 6, 8, 9, 10];
+    else {
+      poolF3 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      for (let i = poolF3.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [poolF3[i], poolF3[j]] = [poolF3[j], poolF3[i]];
+      }
+    }
+  } else if (mb.policyPriority === 'digital') poolF3 = [2, 5, 8, 1, 3, 4, 6, 7, 9, 10];
   else if (mb.policyPriority === 'marketing') poolF3 = [4, 6, 9, 1, 3, 2, 5, 7, 8, 10];
   else if (mb.policyPriority === 'random') {
     poolF3 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -236,7 +304,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       [poolF3[i], poolF3[j]] = [poolF3[j], poolF3[i]];
     }
   }
-  const selectedIssuesF3 = poolF3.slice(0, 3); // 1~10 중 3개
+  const selectedIssuesF3 = poolF3.slice(0, 3);
 
   // 10. 부채 및 자금 현황 (P11)
   const debtRate = mb.debtAdoptionRate !== undefined ? (mb.debtAdoptionRate / 100) : 0.45;
@@ -245,11 +313,32 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const debtAmount = String(Math.max(500, debtAvg + randBetween(-300, 500)));
 
   // 11. 향후 운영 계획 (P14)
-  const plannedYears = String(mb.plannedYears || 8);
+  let plannedYears = String(mb.plannedYears || 8);
+  if (mb.plannedYears === 'rotation' || mb.rotationMode) {
+    plannedYears = String(rotate([5, 8, 10, 7, 12, 6], quotaIndex));
+  }
   const baseReceipt = mb.cashReceiptRatio !== undefined ? parseInt(mb.cashReceiptRatio, 10) : 50;
   const cashReceiptRatio = String(Math.max(10, Math.min(90, baseReceipt + randBetween(-4, 4))));
-  const futurePlanSelector = mb.futurePlan === 'expand' ? '#G1_2' : (mb.futurePlan === 'change' ? '#G1_3' : (mb.futurePlan === 'close' ? '#G1_4' : '#G1_1'));
-  const successionPlanSelector = mb.successionPlan === 'child' ? '#G1A_1' : (mb.successionPlan === 'transfer' ? '#G1A_3' : '#G1A_2');
+
+  let futurePlanSelector = '#G1_1';
+  if (mb.futurePlan === 'rotation' || mb.rotationMode) {
+    futurePlanSelector = rotate(['#G1_1', '#G1_2', '#G1_1', '#G1_3'], quotaIndex);
+  } else if (mb.futurePlan === 'expand') {
+    futurePlanSelector = '#G1_2';
+  } else if (mb.futurePlan === 'change') {
+    futurePlanSelector = '#G1_3';
+  } else if (mb.futurePlan === 'close') {
+    futurePlanSelector = '#G1_4';
+  }
+
+  let successionPlanSelector = '#G1A_2'; // 기본 없음
+  if (mb.successionPlan === 'rotation' || mb.rotationMode) {
+    successionPlanSelector = rotate(['#G1A_2', '#G1A_1', '#G1A_2', '#G1A_3'], quotaIndex);
+  } else if (mb.successionPlan === 'child') {
+    successionPlanSelector = '#G1A_1';
+  } else if (mb.successionPlan === 'transfer') {
+    successionPlanSelector = '#G1A_3';
+  }
 
   // 12. 디지털화 및 배달/POS 서비스 (P8 C1)
   const isFoodService = /음식점|식당|분식|주점|치킨|피자|카페|한식|중식|일식/.test(
@@ -270,12 +359,28 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const smartOrderIntent = rng() < 0.5 ? '1' : '2';
 
   // 13. 원산지 및 가격표시 (P9)
-  const originTargetSelector = mb.originLabelTarget === 'no' ? '#C2A_1' : '#C2A_2';
+  let originTargetSelector = '#C2A_2';
+  if (mb.originLabelTarget === 'rotation' || mb.rotationMode) {
+    originTargetSelector = (quotaIndex % 3 === 0) ? '#C2A_1' : '#C2A_2';
+  } else if (mb.originLabelTarget === 'no') {
+    originTargetSelector = '#C2A_1';
+  }
   const priceTagRate = String(Math.max(50, Math.min(100, (mb.priceTagCompliance || 80) + randBetween(-2, 2))));
 
   // 14. 화재/배상책임 (P12)
-  const fireSelector = mb.fireInsurance === 'no' ? '#E2A_2' : '#E2A_1';
-  const liabilitySelector = mb.liabilityInsurance === 'no' ? '#E2B_2' : '#E2B_1';
+  let fireSelector = '#E2A_1';
+  if (mb.fireInsurance === 'rotation' || mb.rotationMode) {
+    fireSelector = (quotaIndex % 4 === 0) ? '#E2A_2' : '#E2A_1';
+  } else if (mb.fireInsurance === 'no') {
+    fireSelector = '#E2A_2';
+  }
+
+  let liabilitySelector = '#E2B_1';
+  if (mb.liabilityInsurance === 'rotation' || mb.rotationMode) {
+    liabilitySelector = (quotaIndex % 3 === 0) ? '#E2B_2' : '#E2B_1';
+  } else if (mb.liabilityInsurance === 'no') {
+    liabilitySelector = '#E2B_2';
+  }
 
   return {
     quotaIndex,

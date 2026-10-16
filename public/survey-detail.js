@@ -65,6 +65,7 @@ async function initSurveyDetailPage() {
   const btnPresetStandard = document.getElementById('btn-preset-standard');
   const btnPresetGrowth = document.getElementById('btn-preset-growth');
   const btnPresetTraditional = document.getElementById('btn-preset-traditional');
+  const btnPresetRotation = document.getElementById('btn-preset-rotation');
 
   // 실시간 모니터링 & 프로그레스 바
   const progressSummaryLabel = document.getElementById('progress-summary-label');
@@ -536,7 +537,8 @@ async function initSurveyDetailPage() {
     policyPriority: 'standard',
     futurePlan: 'maintain',
     successionPlan: 'none',
-    plannedYears: 8
+    plannedYears: 8,
+    rotationMode: false
   };
 
   async function loadBlueprint() {
@@ -768,6 +770,7 @@ async function initSurveyDetailPage() {
             <option value="h2" ${curPat === 'h2' ? 'selected' : ''}>하반기·명절 성수기 (20/20/30/30%)</option>
             <option value="h1" ${curPat === 'h1' ? 'selected' : ''}>상반기 성수기 (30/30/20/20%)</option>
             <option value="season" ${curPat === 'season' ? 'selected' : ''}>봄·가을 성수기 (30/20/30/20%)</option>
+            <option value="rotation" ${curPat === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -787,6 +790,7 @@ async function initSurveyDetailPage() {
             <option value="similar" ${curChange === 'similar' ? 'selected' : ''}>전년과 비슷함 (3)</option>
             <option value="increase" ${curChange === 'increase' ? 'selected' : ''}>전년 대비 증가 (1~2)</option>
             <option value="decrease" ${curChange === 'decrease' ? 'selected' : ''}>전년 대비 감소 (4~5)</option>
+            <option value="rotation" ${curChange === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -854,6 +858,14 @@ async function initSurveyDetailPage() {
             <span class="baseline-slider-val" id="val-cost-rent">${currentBaseline.costRentRatio || 20}%</span>
           </div>
         `;
+      // P6: 기타(세금) 지출 비중
+      case 'B4_4':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-cost-tax" min="0" max="30" step="1" value="${currentBaseline.costTaxRatio ?? 10}" />
+            <span class="baseline-slider-val" id="val-cost-tax">${currentBaseline.costTaxRatio ?? 10}%</span>
+          </div>
+        `;
       // P7: 일평균 온누리 이용 고객 수
       case 'B5C_1':
         return `
@@ -869,6 +881,7 @@ async function initSurveyDetailPage() {
           <select class="baseline-select" id="select-onnuri-paper">
             <option value="yes" ${curPaper === 'yes' ? 'selected' : ''}>지류 가맹 (1)</option>
             <option value="no" ${curPaper === 'no' ? 'selected' : ''}>지류 미가맹 (2)</option>
+            <option value="rotation" ${curPaper === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -879,6 +892,7 @@ async function initSurveyDetailPage() {
           <select class="baseline-select" id="select-onnuri-mobile">
             <option value="no" ${curMobile === 'no' ? 'selected' : ''}>모바일 미가맹 (2)</option>
             <option value="yes" ${curMobile === 'yes' ? 'selected' : ''}>모바일 가맹 (1)</option>
+            <option value="rotation" ${curMobile === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -891,6 +905,7 @@ async function initSurveyDetailPage() {
             <option value="very_good" ${curSat === 'very_good' ? 'selected' : ''}>매우 만족 (5)</option>
             <option value="normal" ${curSat === 'normal' ? 'selected' : ''}>보통 (3)</option>
             <option value="bad" ${curSat === 'bad' ? 'selected' : ''}>약간 불만 (2)</option>
+            <option value="rotation" ${curSat === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -941,6 +956,7 @@ async function initSurveyDetailPage() {
           <select class="baseline-select" id="select-origin-target">
             <option value="yes" ${curOrig === 'yes' ? 'selected' : ''}>원산지 표시 대상 (2)</option>
             <option value="no" ${curOrig === 'no' ? 'selected' : ''}>표시 비대상 (1)</option>
+            <option value="rotation" ${curOrig === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -984,6 +1000,7 @@ async function initSurveyDetailPage() {
             <option value="freeze" ${curTrend === 'freeze' ? 'selected' : ''}>동결 / 변동 없음 (3)</option>
             <option value="increase" ${curTrend === 'increase' ? 'selected' : ''}>임대료 인상 (1~2)</option>
             <option value="decrease" ${curTrend === 'decrease' ? 'selected' : ''}>임대료 인하 (4~5)</option>
+            <option value="rotation" ${curTrend === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -1010,6 +1027,7 @@ async function initSurveyDetailPage() {
           <select class="baseline-select" id="select-fire-insurance">
             <option value="yes" ${curFire === 'yes' ? 'selected' : ''}>화재보험 가입 (1)</option>
             <option value="no" ${curFire === 'no' ? 'selected' : ''}>화재보험 미가입 (2)</option>
+            <option value="rotation" ${curFire === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -1020,6 +1038,7 @@ async function initSurveyDetailPage() {
           <select class="baseline-select" id="select-liability-insurance">
             <option value="yes" ${curLiab === 'yes' ? 'selected' : ''}>영업배상 가입 (1)</option>
             <option value="no" ${curLiab === 'no' ? 'selected' : ''}>영업배상 미가입 (2)</option>
+            <option value="rotation" ${curLiab === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -1032,6 +1051,7 @@ async function initSurveyDetailPage() {
             <option value="customer" ${curIssue === 'customer' ? 'selected' : ''}>고객감소·상권침체 중심 분산</option>
             <option value="labor" ${curIssue === 'labor' ? 'selected' : ''}>인건비·구인난 중심 분산</option>
             <option value="random" ${curIssue === 'random' ? 'selected' : ''}>사업자별 완전 무작위 3종</option>
+            <option value="rotation" ${curIssue === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -1044,6 +1064,7 @@ async function initSurveyDetailPage() {
             <option value="digital" ${curPol === 'digital' ? 'selected' : ''}>온라인·스마트화 지원 중심</option>
             <option value="marketing" ${curPol === 'marketing' ? 'selected' : ''}>홍보마케팅·축제 활성화 중심</option>
             <option value="random" ${curPol === 'random' ? 'selected' : ''}>정책과제 완전 무작위 3종</option>
+            <option value="rotation" ${curPol === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -1056,6 +1077,7 @@ async function initSurveyDetailPage() {
             <option value="expand" ${curPlan === 'expand' ? 'selected' : ''}>사업 확대 / 성장 (2)</option>
             <option value="change" ${curPlan === 'change' ? 'selected' : ''}>업종 전환 (3)</option>
             <option value="close" ${curPlan === 'close' ? 'selected' : ''}>폐업 고려 (4)</option>
+            <option value="rotation" ${curPlan === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -1067,6 +1089,7 @@ async function initSurveyDetailPage() {
             <option value="none" ${curSucc === 'none' ? 'selected' : ''}>승계 계획 없음 (2)</option>
             <option value="child" ${curSucc === 'child' ? 'selected' : ''}>자녀 승계 예정 (1)</option>
             <option value="transfer" ${curSucc === 'transfer' ? 'selected' : ''}>제3자 양도 (3)</option>
+            <option value="rotation" ${curSucc === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
         `;
       }
@@ -1173,9 +1196,10 @@ async function initSurveyDetailPage() {
     bindSlider('slider-onnuri', 'val-onnuri', 'onnuriRatio', '%', updateCashRatio);
     bindSlider('slider-cash-receipt', 'val-cash-receipt', 'cashReceiptRatio', '%');
 
-    // P6: 인건비 & 임차료
+    // P6: 인건비 & 임차료 & 기타(세금)
     bindSlider('slider-cost-labor', 'val-cost-labor', 'costLaborRatio', '%', updateRawCost);
     bindSlider('slider-cost-rent', 'val-cost-rent', 'costRentRatio', '%', updateRawCost);
+    bindSlider('slider-cost-tax', 'val-cost-tax', 'costTaxRatio', '%', updateRawCost);
 
     // P7: 온누리 고객수 & 지류 & 모바일 & 만족도
     bindSlider('slider-onnuri-cust', 'val-onnuri-cust', 'onnuriCustomerAvg', '명');
@@ -1278,7 +1302,8 @@ async function initSurveyDetailPage() {
         policyPriority: 'standard',
         futurePlan: 'maintain',
         successionPlan: 'none',
-        plannedYears: 8
+        plannedYears: 8,
+        rotationMode: false
       }, btnPresetStandard);
     });
   }
@@ -1327,7 +1352,8 @@ async function initSurveyDetailPage() {
         policyPriority: 'digital',
         futurePlan: 'expand',
         successionPlan: 'child',
-        plannedYears: 12
+        plannedYears: 12,
+        rotationMode: false
       }, btnPresetGrowth);
     });
   }
@@ -1376,8 +1402,32 @@ async function initSurveyDetailPage() {
         policyPriority: 'marketing',
         futurePlan: 'maintain',
         successionPlan: 'none',
-        plannedYears: 5
+        plannedYears: 5,
+        rotationMode: false
       }, btnPresetTraditional);
+    });
+  }
+
+  if (btnPresetRotation) {
+    btnPresetRotation.addEventListener('click', () => {
+      applyPreset({
+        rotationMode: true,
+        quarterPattern: 'rotation',
+        salesChange: 'rotation',
+        costTaxRatio: 10,
+        onnuriPaperMember: 'rotation',
+        onnuriMobileMember: 'rotation',
+        onnuriSatisfaction: 'rotation',
+        rentTrend: 'rotation',
+        originLabelTarget: 'rotation',
+        fireInsurance: 'rotation',
+        liabilityInsurance: 'rotation',
+        issuePriority: 'rotation',
+        policyPriority: 'rotation',
+        futurePlan: 'rotation',
+        successionPlan: 'rotation',
+        plannedYears: 8
+      }, btnPresetRotation);
     });
   }
 
@@ -1666,6 +1716,7 @@ async function initSurveyDetailPage() {
       statusText.textContent = '자동화 실행 중 (로봇 작동)';
       btnPilot.disabled = true;
       btnBatch.disabled = true;
+      if (btnRunAllBatchBottom) btnRunAllBatchBottom.disabled = true;
       btnStop.disabled = false;
       if (step2ConfigCard) step2ConfigCard.classList.add('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = true;
@@ -1674,6 +1725,7 @@ async function initSurveyDetailPage() {
       statusIndicator.classList.remove('running');
       statusText.textContent = '준비 완료 (대기 중)';
       btnStop.disabled = true;
+      if (btnRunAllBatchBottom) btnRunAllBatchBottom.disabled = false;
       if (step2ConfigCard) step2ConfigCard.classList.remove('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = false;
       if (currentStorePulse) currentStorePulse.classList.add('d-none');

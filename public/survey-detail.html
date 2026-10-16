@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
   <link rel="stylesheet" href="campaign.css">
-  <link rel="stylesheet" href="custom-styles.css?v=20261016_3">
+  <link rel="stylesheet" href="custom-styles.css?v=20261016_4">
 </head>
 <body>
 
@@ -364,16 +364,16 @@
       
       <!-- Sticky Control Header -->
       <div class="blueprint-sticky-header flex-between mb-20">
-        <div>
-          <div class="flex-center-gap-10 mb-6">
+        <div class="blueprint-header-info">
+          <div class="blueprint-header-title-row">
             <span class="step-num-badge step3">STEP 3</span>
             <h2 class="step-card-title m-0">마스터 설문 블루프린트 & 기준점 에디터 (15단계 전수 복제)</h2>
             <span class="badge-status badge-blueprint ready" id="badge-master-status">
               <i class="fa-solid fa-circle-check"></i> 15단계 복제 완료
             </span>
           </div>
-          <div class="font-caption text-secondary-color flex-center-gap-12">
-            <span>케이스탯 15단계 전체 구조가 복제되었습니다. 각 문항의 기준점을 조절하여 전체 쿼터에 반영할 수 있습니다.</span>
+          <div class="blueprint-subtitle-row">
+            <span class="blueprint-header-subtitle">케이스탯 15단계 전체 구조가 복제되었습니다. 각 문항의 기준점을 조절하여 전체 쿼터에 반영할 수 있습니다.</span>
             <span class="blueprint-legend-inline">
               <span class="badge-tag-bind"><i class="fa-solid fa-link"></i> 쿼터 바인딩</span>
               <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 기준점 조절</span>
@@ -389,6 +389,7 @@
             <button type="button" id="btn-preset-standard" class="btn-chip active">표준 소상공인</button>
             <button type="button" id="btn-preset-growth" class="btn-chip">고수익/성장형</button>
             <button type="button" id="btn-preset-traditional" class="btn-chip">생계형 전통점포</button>
+            <button type="button" id="btn-preset-rotation" class="btn-chip"><i class="fa-solid fa-arrows-rotate"></i> 자유 로테이션 분산</button>
           </div>
 
           <div class="blueprint-action-buttons">
@@ -413,7 +414,7 @@
 
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261016_7"></script>
+  <script type="module" src="survey-detail.js?v=20261016_8"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

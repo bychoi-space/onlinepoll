@@ -368,14 +368,19 @@ export async function runKstatSurvey({
             selectRadio('B2_3', '2'); // 3. 지역사랑상품권: 취급 안 함
             selectRadio('B2_4', '2'); // 4. 제로페이: 취급 안 함
             selectRadio('B2_5', '1'); // 5. 신용카드: 취급 (★모든 업체 필수 취급★)
-            selectRadio('B2_6', '2'); // 6. 기타: 취급 안 함
+            // B2_6(기타)는 B2.asp 규칙상 기타가 없을 때 미선택(undefined) 상태여야 통과 (선택 시 TB2_6 필수)
+            const r6_1 = document.querySelector('#B2_6_1');
+            const r6_2 = document.querySelector('#B2_6_2');
+            if (r6_1) r6_1.checked = false;
+            if (r6_2) r6_2.checked = false;
+            const tb6 = document.querySelector('#TB2_6');
+            if (tb6) tb6.value = '';
           }).catch(async () => {
             await safeClick(fB2, '#B2_1_1');
             await safeClick(fB2, '#B2_2_1');
             await safeClick(fB2, '#B2_3_2');
             await safeClick(fB2, '#B2_4_2');
             await safeClick(fB2, '#B2_5_1');
-            await safeClick(fB2, '#B2_6_2');
           });
         }
         await itemDelay();
