@@ -1,0 +1,145 @@
+[
+  {
+    "group": "food",
+    "companyName": "보성각",
+    "bizNumber": "219-01-03724",
+    "openDate": "1988.09.05",
+    "openYear": 1988,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 바람드리길 53 (풍납동)",
+    "phone": "024713634",
+    "industry": "중식 음식점업"
+  },
+  {
+    "group": "food",
+    "companyName": "하얼빈양꼬치",
+    "bizNumber": "859-77-00364",
+    "openDate": "2022.01.05",
+    "openYear": 2022,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 풍성로25길 39 (풍납동)",
+    "phone": null,
+    "industry": "음식점업"
+  },
+  {
+    "group": "food",
+    "companyName": "다도해수산",
+    "bizNumber": "215-20-50395",
+    "openDate": "2009.01.14",
+    "openYear": 2009,
+    "ceoName": null,
+    "roadAddress": "서울특별시 강동구 양재대로87길 15 (성내동)",
+    "phone": "024884232",
+    "industry": "한식 해산물 요리 전문점 외 1개"
+  },
+  {
+    "group": "food",
+    "companyName": "피자나인",
+    "bizNumber": "219-36-01048",
+    "openDate": "2021.11.19",
+    "openYear": 2021,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 바람드리길 12 (풍납동)",
+    "phone": "024725999",
+    "industry": "피자 외 1개"
+  },
+  {
+    "group": "food",
+    "companyName": "마주보며",
+    "bizNumber": "582-58-00027",
+    "openDate": "2015.03.16",
+    "openYear": 2015,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 천호대로152길 17 (풍납동)",
+    "phone": "07047164492",
+    "industry": "한식 해산물 요리 전문점"
+  },
+  {
+    "group": "retail",
+    "companyName": "안심축산물전문점풍납시장점(토성안심한우",
+    "bizNumber": "169-05-00702",
+    "openDate": "2016.12.15",
+    "openYear": 2016,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 풍성로25길 40 (풍납동)",
+    "phone": "024717451",
+    "industry": "음ㆍ식료품 및 담배 도매업 외 1개"
+  },
+  {
+    "group": "retail",
+    "companyName": "플라워화장품",
+    "bizNumber": "639-12-02702",
+    "openDate": "2025.08.25",
+    "openYear": 2025,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 바람드리길 48 (풍납동)",
+    "phone": null,
+    "industry": "화장품"
+  },
+  {
+    "group": "retail",
+    "companyName": "시장온누리약국",
+    "bizNumber": "605-19-18554",
+    "openDate": "2013.01.29",
+    "openYear": 2013,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 바람드리길 52 (풍납동)",
+    "phone": "024786665",
+    "industry": "의약품 및 의료용품 소매업"
+  },
+  {
+    "group": "retail",
+    "companyName": "행복한우리약국",
+    "bizNumber": "215-17-53301",
+    "openDate": "2005.12.28",
+    "openYear": 2005,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 풍성로25길 41 (풍납동, 백원빌딩)",
+    "phone": "024835139",
+    "industry": "의약품 및 의료용품 소매업"
+  },
+  {
+    "group": "service",
+    "companyName": "토성노래연습장",
+    "bizNumber": "183-35-01650",
+    "openDate": "2024.11.08",
+    "openYear": 2024,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 바람드리길 51 (풍납동)",
+    "phone": "0200001111",
+    "industry": "노래 연습장 운영업"
+  },
+  {
+    "group": "service",
+    "companyName": "수현머리이야기",
+    "bizNumber": "212-35-40422",
+    "openDate": "1995.08.25",
+    "openYear": 1995,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 바람드리길 35 (풍납동)",
+    "phone": "024297449",
+    "industry": "두발 미용업"
+  },
+  {
+    "group": "service",
+    "companyName": "빛의샤워",
+    "bizNumber": "204-17-31326",
+    "openDate": "2011.07.12",
+    "openYear": 2011,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 바람드리길 56 (풍납동)",
+    "phone": "024720365",
+    "industry": "의료용 기구 소매업 외 1개"
+  },
+  {
+    "group": "service",
+    "companyName": "행복한경희한의원",
+    "bizNumber": "215-92-51692",
+    "openDate": "2009.09.18",
+    "openYear": 2009,
+    "ceoName": null,
+    "roadAddress": "서울특별시 송파구 풍성로25길 42 (풍납동)",
+    "phone": "024868300",
+    "industry": "한의원"
+  }
+]

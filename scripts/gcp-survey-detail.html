@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>설문조사 작업실 - AutoSurvey AI</title>
+  
+  <!-- Pretendard Font (Variable & Standard) -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Google Fonts: JetBrains Mono (Terminal/Code only) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="figma-base.css">
+  <link rel="stylesheet" href="campaign.css">
+  <link rel="stylesheet" href="custom-styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation (56px) -->
+  <nav class="figma-top-nav">
+    <div class="nav-inner">
+      <div class="nav-left flex-center-gap-14">
+        <a href="index.html" class="btn-pill btn-pill-secondary">
+          <i class="fa-solid fa-arrow-left"></i> 목록으로
+        </a>
+        <div class="campaign-title-area">
+          <h1 id="detail-campaign-title" class="font-card-title m-0">설문조사 불러오는 중...</h1>
+          <div class="header-badges">
+            <span class="badge-quota-type b2b" id="detail-quota-badge">사업주 대상 (B2B)</span>
+            <span class="badge-status ready" id="detail-status-badge">대기 중</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-status flex-center-gap-14">
+        <div class="status-indicator" id="system-status-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text font-caption" id="system-status-text">준비 완료 (대기 중)</span>
+        </div>
+        <button type="button" class="btn-pill-logout" id="btn-global-logout">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> 로그아웃
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ======================================================== -->
+  <!-- 통일된 와이드 레이아웃 컨테이너 (Unified Page Container) -->
+  <!-- ======================================================== -->
+  <div class="unified-detail-container">
+
+    <!-- [STEP 1] 상단 전폭 조사 쿼터 DB & 실시간 진행 현황 -->
+    <section class="clean-section-card mb-24">
+      <div class="section-card-inner">
+        
+        <!-- 상단 헤더 & KPI 칩 바 -->
+        <div class="quota-section-header">
+          <div class="flex-center-gap-12">
+            <span class="step-num-badge">STEP 1</span>
+            <div class="quota-title-wrap">
+              <h2 class="step-card-title m-0">조사 쿼터 DB 및 실시간 진행 현황</h2>
+              <p class="font-caption text-dim m-0">설문에 주입될 사업자 데이터 목록과 항목별 실행 상태를 실시간으로 관리합니다.</p>
+            </div>
+          </div>
+
+          <!-- 실시간 쿼터 KPI 칩 바 (아이콘 군더더기 제거) -->
+          <div class="quota-kpi-bar" id="quota-kpi-bar">
+            <div class="kpi-chip kpi-total">
+              <span class="kpi-label">전체 표본</span>
+              <span class="kpi-val" id="kpi-total-count">0</span>
+            </div>
+            <div class="kpi-chip kpi-ready">
+              <span class="kpi-label">대기</span>
+              <span class="kpi-val" id="kpi-ready-count">0</span>
+            </div>
+            <div class="kpi-chip kpi-pilot">
+              <span class="kpi-label">검증완료</span>
+              <span class="kpi-val" id="kpi-pilot-count">0</span>
+            </div>
+            <div class="kpi-chip kpi-completed">
+              <span class="kpi-label">제출완료</span>
+              <span class="kpi-val" id="kpi-completed-count">0</span>
+            </div>
+            <div class="kpi-chip kpi-rate">
+              <span class="kpi-label">진행률</span>
+              <span class="kpi-val text-primary-color" id="kpi-progress-rate">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 컨트롤 바: 기존 쿼터 불러오기 / 생성기 / 보강 -->
+        <div class="quota-action-bar">
+          <div class="quota-import-group">
+            <label class="figma-label font-bold m-0 text-nowrap">
+              기존 쿼터 불러오기
+            </label>
+            <div class="quota-import-inputs">
+              <select id="select-saved-quota" class="figma-select select-saved-quota">
+                <option value="">보관된 쿼터 목록을 불러오는 중...</option>
+              </select>
+              <button type="button" id="btn-import-quota" class="btn-pill btn-pill-primary">
+                쿼터 장착
+              </button>
+            </div>
+          </div>
+
+          <div class="quota-action-buttons">
+            <button type="button" id="btn-enrich-campaign-quota" class="btn-pill btn-pill-secondary">
+              결측치 외부 보강
+            </button>
+            <a href="quota-builder.html" class="btn-pill btn-pill-secondary">
+              새 쿼터 생성기
+            </a>
+          </div>
+        </div>
+
+        <!-- 마켓비즈 직접 검색 토글 (접이식) -->
+        <details class="marketbz-direct-details mb-16">
+          <summary class="marketbz-direct-summary">
+            마켓비즈에서 직접 새로 검색하여 쿼터 구축하기
+          </summary>
+          
+          <div class="grid-2col mt-14">
+            <div class="form-group mb-12">
+              <label for="input-b2b-keyword" class="figma-label">타겟 업종 / 검색어</label>
+              <input type="text" id="input-b2b-keyword" class="figma-input" value="소프트웨어" placeholder="예: 소프트웨어, 외식업 등" />
+            </div>
+            <div class="form-group mb-12">
+              <label for="input-target-count" class="figma-label">목표 표본 수</label>
+              <input type="number" id="input-target-count" class="figma-input" min="1" max="50" value="2" />
+            </div>
+          </div>
+
+          <div class="form-group mb-12">
+            <div class="label-with-action flex-between mb-8">
+              <label class="figma-label">설문에 필요한 사업자 항목 선택</label>
+              <div class="preset-buttons">
+                <button type="button" id="btn-fields-all" class="btn-chip">전체</button>
+                <button type="button" id="btn-fields-core" class="btn-chip">핵심 5종</button>
+              </div>
+            </div>
+            <div class="checkbox-grid">
+              <label class="custom-cb-label"><input type="checkbox" name="b2b-fields" value="companyName" checked /><span>상호 (회사명)</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="b2b-fields" value="bizNumber" checked /><span>사업자번호</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="b2b-fields" value="ceoName" checked /><span>대표자이름</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="b2b-fields" value="phone" checked /><span>연락처</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="b2b-fields" value="openDate" checked /><span>개업연월</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="b2b-fields" value="handledItems" checked /><span>취급품목</span></label>
+              <label class="custom-cb-label"><input type="checkbox" name="b2b-fields" value="address" checked /><span>사업장 주소</span></label>
+            </div>
+          </div>
+
+          <div class="marketbz-btn-wrapper">
+            <button type="button" id="btn-build-quota-db" class="btn-pill btn-pill-secondary w-full">
+              마켓비즈 새로 검색하여 제반 DB 구축하기
+            </button>
+          </div>
+        </details>
+
+        <!-- 와이드 쿼터 진행 테이블 (10개 컬럼) -->
+        <div class="quota-clean-box wide-box">
+          <div class="table-scroll-container wide-table-container">
+            <table class="quota-clean-table wide-table">
+              <thead>
+                <tr>
+                  <th class="th-no">No</th>
+                  <th class="th-company">상호 (기업명)</th>
+                  <th class="th-biznum">사업자등록번호</th>
+                  <th class="th-ceo">대표자</th>
+                  <th class="th-phone">연락처</th>
+                  <th class="th-opendate">개업연월</th>
+                  <th class="th-items">취급품목</th>
+                  <th class="th-address">사업장 주소 (도로명)</th>
+                  <th class="th-status">진행 상태</th>
+                  <th class="th-actions">개별 액션</th>
+                </tr>
+              </thead>
+              <tbody id="quota-table-body">
+                <tr>
+                  <td colspan="10" class="empty-table-msg">
+                    아직 구축된 사업자 DB가 없습니다.<br>
+                    상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- [STEP 2 & 3 / 실시간 모니터링] 2열 워크스페이스 -->
+    <div class="detail-split-grid">
+      
+      <!-- 좌측 열: STEP 2 방향성 & 실전 정책 + STEP 3 실행 제어 -->
+      <section class="left-workspace-column">
+        <form id="campaign-config-form">
+
+          <!-- STEP 2: 설문조사 방향성 및 실전 규칙 가이드 -->
+          <div class="clean-section-card">
+            <div class="step-header-area">
+              <div class="step-title-group">
+                <span class="step-num-badge step2">STEP 2</span>
+                <h2 class="step-card-title">설문조사 방향성 및 실전 규칙 설정</h2>
+              </div>
+              <span class="badge-status ready" id="val-ratio-badge">가중합: 100%</span>
+            </div>
+            
+            <!-- 설문 URL 및 엔진 프로파일 -->
+            <div class="form-group mb-16">
+              <div class="label-with-action flex-between mb-8">
+                <label for="input-survey-url" class="figma-label font-bold m-0">설문조사 URL <span class="required">*</span></label>
+                <button type="button" id="btn-fill-sample-url" class="btn-pill btn-pill-secondary">
+                  전통시장 실태조사 URL 채우기
+                </button>
+              </div>
+              <input type="url" id="input-survey-url" class="figma-input font-mono" required placeholder="https://kstat.surveys.kr/..." />
+            </div>
+
+            <!-- 설문 플랫폼 엔진 프로파일 선택 -->
+            <div class="grid-2col mb-16">
+              <div class="form-group">
+                <label for="select-survey-engine" class="figma-label font-bold">설문 엔진 프로파일</label>
+                <select id="select-survey-engine" class="figma-select">
+                  <option value="kstat_tapi" selected>케이스탯 / TAPI 전문 리서치 (다중 iframe + 세션 엔진)</option>
+                  <option value="standard_dom">구글 폼 / 네이버 폼 (표준 단일 DOM 엔진)</option>
+                  <option value="auto_detect">지능형 자동 감지 (Auto-Detect)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="input-survey-topic" class="figma-label font-bold">설문 주제 및 목적</label>
+                <input type="text" id="input-survey-topic" class="figma-input" placeholder="예: 2026 전통시장 및 점포경영 실태조사" />
+              </div>
+            </div>
+
+            <!-- 공란 및 스마트 스킵 정책 (Empty / Fallback Policy) -->
+            <div class="policy-group-card mb-16">
+              <div class="policy-header mb-12">
+                <h4 class="font-bold font-body-sm m-0 text-primary-color">
+                  공란 및 스마트 스킵 정책
+                </h4>
+                <span class="font-caption text-dim">도무지 채울 수 없거나 불필요한 선택 항목의 안전 처리 원칙</span>
+              </div>
+              <div class="policy-options-grid">
+                <div class="policy-item">
+                  <label class="figma-label font-caption mb-4">선택적 주관식 / NOTE란</label>
+                  <select id="policy-empty-notes" class="figma-select figma-select-sm">
+                    <option value="keep_empty" selected>공란 유지 (미해당/스킵 우선 - 권장)</option>
+                    <option value="ai_generated">AI 자동 문장 생성</option>
+                  </select>
+                </div>
+                <div class="policy-item">
+                  <label class="figma-label font-caption mb-4">매출 / 영업이익 체감</label>
+                  <select id="policy-profit-change" class="figma-select figma-select-sm">
+                    <option value="similar" selected>비슷함/변화없음 (하위 iframe 안전 스킵)</option>
+                    <option value="decrease">감소 (사유 1~3순위 추가 작성)</option>
+                  </select>
+                </div>
+                <div class="policy-item">
+                  <label class="figma-label font-caption mb-4">사업자 부채 성향</label>
+                  <select id="policy-debt-status" class="figma-select figma-select-sm">
+                    <option value="no_debt" selected>부채 없음 (세부 대출금액 전면 공란)</option>
+                    <option value="has_debt">부채 있음 (추정치 기재)</option>
+                  </select>
+                </div>
+                <div class="policy-item">
+                  <label class="figma-label font-caption mb-4">소상공인 맞춤 판로</label>
+                  <select id="policy-delivery-status" class="figma-select figma-select-sm">
+                    <option value="skip_delivery" selected>택배/배달/SNS 미운영 (공란 처리)</option>
+                    <option value="use_delivery">택배 운영 (매출비중 기재)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- 객관식 비중 인터랙티브 슬라이더 -->
+            <div class="form-group mb-16">
+              <label class="figma-label font-bold mb-8">객관식 응답 비중 (%)</label>
+              <div class="ratio-bars-container">
+                <div class="ratio-bar-segment pos" id="bar-pos">긍정 70%</div>
+                <div class="ratio-bar-segment neu" id="bar-neu">중립 20%</div>
+                <div class="ratio-bar-segment neg" id="bar-neg">부정 10%</div>
+              </div>
+              <div class="slider-row mt-12">
+                <div class="slider-group pos-group">
+                  <div class="slider-label"><span class="label-dot dot-pos"></span><span>긍정/만족</span><span class="slider-val" id="val-pos">70%</span></div>
+                  <input type="range" id="slider-pos" min="0" max="100" value="70" />
+                </div>
+                <div class="slider-group neu-group">
+                  <div class="slider-label"><span class="label-dot dot-neu"></span><span>중립/보통</span><span class="slider-val" id="val-neu">20%</span></div>
+                  <input type="range" id="slider-neu" min="0" max="100" value="20" />
+                </div>
+                <div class="slider-group neg-group">
+                  <div class="slider-label"><span class="label-dot dot-neg"></span><span>부정/개선</span><span class="slider-val" id="val-neg">10%</span></div>
+                  <input type="range" id="slider-neg" min="0" max="100" value="10" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 주관식 중점 가이드 -->
+            <div class="form-group mb-16">
+              <label for="input-text-guidelines" class="figma-label font-bold">주관식 서술 중점 방향</label>
+              <textarea id="input-text-guidelines" class="figma-textarea" rows="2" placeholder="예: 전통시장 온누리상품권 가맹 혜택 및 디지털 온누리 환급 지원 강화 의견"></textarea>
+            </div>
+
+            <!-- 실행 제어 옵션 -->
+            <div class="grid-2col">
+              <div class="form-group mb-8">
+                <label for="input-iterations" class="figma-label">연속 실행 목표 건수</label>
+                <input type="number" id="input-iterations" class="figma-input" min="1" max="50" value="10" />
+              </div>
+              <div class="form-group mb-8">
+                <label for="input-headless" class="figma-label">브라우저 표시 모드</label>
+                <select id="input-headless" class="figma-select">
+                  <option value="true" selected>백그라운드 숨김 (Headless - 권장)</option>
+                  <option value="false">직접 브라우저 창 보기</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 3: 자동화 실행 제어 카드 (완벽한 Spacing & 무결점 정렬) -->
+          <div class="clean-section-card execution-master-card">
+            <div class="execution-card-header flex-between mb-16">
+              <div class="flex-center-gap-10">
+                <span class="step-num-badge step3">STEP 3</span>
+                <h3 class="execution-card-title m-0">실행 제어 파이프라인</h3>
+              </div>
+              <label class="safety-guard-toggle">
+                <input type="checkbox" id="check-safety-guard" checked />
+                <span>최종 제출 안전 가드 (동의 단계에서 대기)</span>
+              </label>
+            </div>
+
+            <div class="execution-buttons-flex">
+              <button type="button" id="btn-pilot-simulation" class="btn-action-primary">
+                1번 쿼터 파일럿 검증 (Agree 대기)
+              </button>
+              <button type="button" id="btn-batch-automation" class="btn-action-success" disabled>
+                2번부터 배치 자동화 가동
+              </button>
+              <button type="button" id="btn-stop-automation" class="btn-action-secondary" disabled>
+                중지
+              </button>
+            </div>
+          </div>
+
+        </form>
+      </section>
+
+      <!-- 우측 열: 실시간 모니터링 (타임라인 칩 + 듀얼 탭 + 갤러리) -->
+      <aside class="right-monitor-column">
+        <div class="clean-section-card monitor-master-card">
+          <div class="monitor-card-header flex-between mb-16">
+            <h3 class="monitor-card-title m-0">실시간 실행 모니터링</h3>
+            <button id="btn-clear-logs" class="btn-pill-ghost font-caption">
+              비우기
+            </button>
+          </div>
+
+          <!-- 15단계 진행 타임라인 칩 (Breadcrumb Chips) -->
+          <div class="timeline-stepper-box mb-16">
+            <div class="timeline-header flex-between mb-8">
+              <span class="font-caption font-bold text-dim">15단계 실태조사 타임라인</span>
+              <span class="font-caption text-primary-color font-mono font-bold" id="current-step-label">대기 중</span>
+            </div>
+            <div class="timeline-chips-strip" id="timeline-chips-strip">
+              <span class="step-chip" data-step="Q1">Q1</span>
+              <span class="step-chip" data-step="P1">P1</span>
+              <span class="step-chip" data-step="P2">P2</span>
+              <span class="step-chip" data-step="P3">P3</span>
+              <span class="step-chip" data-step="P4">P4</span>
+              <span class="step-chip" data-step="P5">P5</span>
+              <span class="step-chip" data-step="P6">P6</span>
+              <span class="step-chip" data-step="P7">P7</span>
+              <span class="step-chip" data-step="P8">P8</span>
+              <span class="step-chip" data-step="P9">P9</span>
+              <span class="step-chip" data-step="P10">P10</span>
+              <span class="step-chip" data-step="P11">P11</span>
+              <span class="step-chip" data-step="P12">P12</span>
+              <span class="step-chip" data-step="P13">P13</span>
+              <span class="step-chip" data-step="P14">P14</span>
+              <span class="step-chip step-chip-final" data-step="Agree">Agree</span>
+            </div>
+          </div>
+
+          <!-- 모니터링 탭 바 (로그 vs 단계별 캡처 갤러리) -->
+          <div class="monitor-tab-bar mb-12">
+            <button type="button" class="monitor-tab-btn active" id="tab-btn-logs">
+              콘솔 로그
+            </button>
+            <button type="button" class="monitor-tab-btn" id="tab-btn-gallery">
+              단계별 캡처 갤러리 (<span id="gallery-count">0</span>)
+            </button>
+          </div>
+
+          <!-- 탭 1: 터미널 콘솔 로그 -->
+          <div class="monitor-terminal" id="panel-tab-logs">
+            <div class="terminal-bar">
+              <span class="term-dot red"></span>
+              <span class="term-dot yellow"></span>
+              <span class="term-dot green"></span>
+              <span class="term-title">AutoSurvey Execution Logs</span>
+            </div>
+            <div class="terminal-body" id="terminal-logs">
+              <div class="log-entry info">
+                <span class="log-time">[시스템]</span>
+                <span class="log-badge info">READY</span>
+                <span class="log-msg">설문조사 작업실에 입장했습니다. 1번 쿼터 파일럿 검증을 시작할 수 있습니다.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 탭 2: 실시간 단계별 캡처 갤러리 -->
+          <div class="monitor-gallery-panel hidden" id="panel-tab-gallery">
+            <div class="gallery-strip-container" id="gallery-strip">
+              <p class="empty-feed font-body-sm text-dim">설문 시뮬레이션이 진행되면 통과한 페이지의 스크린샷이 실시간으로 누적됩니다.</p>
+            </div>
+          </div>
+
+          <!-- 검증 완료 시 액션 카드 (동적 노출) -->
+          <div class="pilot-action-card hidden" id="pilot-success-card">
+            <div class="pilot-card-header mb-8">
+              <strong>1번 쿼터 파일럿 검증 완료</strong>
+            </div>
+            <p class="font-caption text-dim mb-12">
+              최종 개인정보 동의(Agree.asp) 단계까지 무결점으로 도달했습니다. 캡처를 확인하고 2번 쿼터부터 연속 자동화를 시작하세요.
+            </p>
+            <div class="pilot-card-actions flex-row-gap-8">
+              <button type="button" id="btn-card-view-captures" class="btn-pill btn-pill-secondary btn-pill-small">
+                15단계 캡처 전체보기
+              </button>
+              <button type="button" id="btn-card-start-batch" class="btn-pill btn-pill-success btn-pill-small">
+                2번부터 연속 실행
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- 15단계 스크린샷 원본 확대 모달 -->
+  <div class="modal-overlay" id="capture-modal-overlay">
+    <div class="modal-container capture-modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title font-title" id="capture-modal-title">
+          단계별 실행 스크린샷 뷰어
+        </h3>
+        <button type="button" class="btn-pill-ghost" id="btn-close-capture-modal" aria-label="닫기">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body capture-modal-body">
+        <div class="capture-viewer-main">
+          <img id="capture-viewer-img" src="" alt="설문 캡처 원본" class="capture-large-img" />
+        </div>
+        <div class="capture-nav-bar flex-between mt-12">
+          <button type="button" id="btn-prev-capture" class="btn-pill btn-pill-secondary">
+            <i class="fa-solid fa-arrow-left"></i> 이전 단계
+          </button>
+          <span class="font-caption font-bold" id="capture-step-indicator">1 / 15</span>
+          <button type="button" id="btn-next-capture" class="btn-pill btn-pill-secondary">
+            다음 단계 <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="survey-detail.js"></script>
+  <script type="module" src="nav-auth.js"></script>
+</body>
+</html>

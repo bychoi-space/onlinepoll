@@ -1,0 +1,300 @@
+<!DOCTYPE html><html lang="kr"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>통합조사 솔루션</title>
+    <link rel="stylesheet" type="text/css" href="https://survey.kstat.co.kr/kstat_survey/frmwrk/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Malgun Gothic','맑은 고딕',dotum,'돋움',sans-serif;
+            font-size: 0.9rem;
+        }
+        .navbar-top-space {
+            margin-top:3.2rem;
+        }
+        .container {
+            width: 97%;
+            max-width: 97%; /* v5.0 */
+        }
+        .bg-purple { background-color: #6f42c1; }
+
+        /*
+        .navbar-top-space {
+            margin-top:1.8rem;
+        }
+        .navbar {
+            padding-top: 0.2rem;
+            padding-bottom: 0.2rem;
+        }
+        .navbar-brand {
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .feather-16 {
+            width: 16px;
+            height: 16px;
+        } */
+    </style>
+
+    <script type="text/javascript" src="https://survey.kstat.co.kr/kstat_survey/frmwrk/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="https://survey.kstat.co.kr/kstat_survey/frmwrk/feather.min.js"></script>
+    <script type="text/javascript" src="https://survey.kstat.co.kr/kstat_survey/inc/js/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript" src="https://survey.kstat.co.kr/kstat_survey/inc/lib/util.js"></script>
+    <script type="text/javascript" src="https://survey.kstat.co.kr/kstat_survey/inc/lib/site.js"></script>
+
+    <script type="text/javascript">
+        function goPage(arg1, arg2, arg3) {
+            switch(arg1)
+            {
+                case 0:
+                    frm.action = "https://survey.kstat.co.kr/kstat_survey/1_project/tapi_project.php";
+                    return frm.submit();
+                break;
+
+                case 1:
+                    frm.action = "https://survey.kstat.co.kr/kstat_survey/1_project/tapi_project_proc.php?proc=" + arg2;
+                    return frm.submit();
+                break;
+
+                case 2:
+                    if(arg2.indexOf('/')!==-1) {
+                        frm.action = "https://survey.kstat.co.kr/kstat_survey/" + arg2 + ".php";
+                    } else {
+                        frm.action = arg2 + ".php";
+                    }
+                    return frm.submit();
+                break;
+
+                case 3:
+                    if(arg2.indexOf('/')!==-1) {
+                        frm.action = "https://survey.kstat.co.kr/kstat_survey/" + arg2 + ".php" + arg3;
+                    } else {
+                        frm.action = arg2 + ".php" + arg3;
+                    }
+                    return frm.submit();
+                break;
+
+                case 4:
+                    frm.action = arg2 + ".php" + arg3;
+                    return frm.submit();
+                break;
+
+                default:
+                    frm.action="";
+                break;
+            }
+        }
+    </script>
+
+
+</head>
+
+
+
+<body>
+    <header class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <!-- <img src="https://survey.kstat.co.kr/kstat_survey/img/kstat_logo가로.png" height='40px'> -->
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav me-auto mb-2 mb-md-0">
+
+<li class="nav-item"><a class="nav-link " aria-current="page" href="https://survey.kstat.co.kr/kstat_survey/8_man/notice.php">공지사항</a></li><li class="nav-item"><a class="nav-link active" aria-current="page" href="https://survey.kstat.co.kr/kstat_survey/1_project/tapi_project.php">프로젝트</a></li><li class="nav-item"><a class="nav-link " aria-current="page" href="https://survey.kstat.co.kr/kstat_survey/pds.php?menuSel=pcsi_project">PDS(내부용)</a></li>                </ul>
+                <ul class="navbar-nav px-3">
+                    <li class="nav-item text-nowrap">
+                    <a class="nav-link" href="https://survey.kstat.co.kr/kstat_survey/inc/logout.php"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-log-out feather-16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>가온김영옥 Sign out</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+
+
+<div class="navbar-top-space">&nbsp;</div>
+<main class="container">
+<form name="frm" method="post" action="">
+<!-- start ************************************************************************************************* -->
+    <input type="hidden" name="is_survey" value="0">
+    <input type="hidden" name="curPage" value="">
+    <input type="hidden" name="pridSel" value="">
+
+
+    <!-- <div style="margin-top:0.1rem;">&nbsp;</div> -->
+
+
+
+
+
+<div class="row">
+<div class="card card-warning " style="width:18rem;margin:5px;cursor:pointer;">    <div class="card-body" onclick="tapi_move('contact','2026070801','2026070801','survey/2026070801/list');">        <h5 class="card-title">contact : 2026070801</h5>        <p class="card-text">2025년 기준 전통시장, 상점가 및 점포경영 실태조사 - B.상인회조사</p>    </div></div><div class="card card-primary " style="width:18rem;margin:5px;cursor:pointer;">    <div class="card-body" onclick="tapi_move('tapi','2026070801','2026070801','survey/2026070801/list');">        <h5 class="card-title">tapi : 2026070801</h5>        <p class="card-text">2025년 기준 전통시장, 상점가 및 점포경영 실태조사 - B.상인회조사</p>    </div></div><div class="card card-primary " style="width:18rem;margin:5px;cursor:pointer;">    <div class="card-body" onclick="tapi_move('tapi','2026070802','2026070802','survey/2026070802/list');">        <h5 class="card-title">tapi : 2026070802</h5>        <p class="card-text">2025년 기준 전통시장, 상점가 및 점포경영 실태조사 - C.점포주조사</p>    </div></div></div>
+
+
+<style>
+.card-primary:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 100%;
+    background-color: #0d6efd; /* 원하는 색상을 여기에 설정하세요 */
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+.card-primary:hover {
+    background-color: #0d6efd;
+    color: #fff;
+}
+.card-success:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 100%;
+    background-color: #198754; /* 원하는 색상을 여기에 설정하세요 */
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+.card-success:hover {
+    background-color: #198754;
+    color: #fff;
+}
+.card-danger:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 100%;
+    background-color: #dc3545; /* 원하는 색상을 여기에 설정하세요 */
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+.card-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+.card-warning:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 100%;
+    background-color: #ffc107; /* 원하는 색상을 여기에 설정하세요 */
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+.card-warning:hover {
+    background-color: #ffc107;
+    color: #fff;
+}
+.card-info:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 100%;
+    background-color: #0dcaf0; /* 원하는 색상을 여기에 설정하세요 */
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+.card-info:hover {
+    background-color: #0dcaf0;
+    color: #fff;
+}
+.card-secondary:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 100%;
+    background-color: #6c757d; /* 원하는 색상을 여기에 설정하세요 */
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+.card-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+}
+.card-dark:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 100%;
+    background-color: #212529; /* 원하는 색상을 여기에 설정하세요 */
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+.card-dark:hover {
+    background-color: #212529;
+    color: #fff;
+}
+</style>
+
+
+
+<div class="row my-1">
+    <div class="col-sm-12">
+        <font color="blue">
+        </font>
+    </div>
+</div>
+
+
+
+<!-- end ************************************************************************************************* -->
+</form>
+</main>
+<!-- <footer class="footer mt-auto py-2 bg-light text-center fixed-bottom">
+    <span class="text-muted">&copy; Kstat Company</span>
+</footer> -->
+
+
+
+<script>
+  feather.replace();
+</script>
+<script type="text/javascript">
+if(''!=getLocal('_noticeDat')) {
+    var navItems = document.querySelectorAll('.nav-item');
+    var noticeItem = Array.from(navItems).find(item => item.textContent.trim() === '공지사항');
+
+    if (noticeItem) {
+        console.log(noticeItem.querySelector('a').textContent);
+        var newSpan = document.createElement('span');
+        newSpan.classList.add('badge');
+        newSpan.classList.add('bg-warning');
+        newSpan.textContent = 'New';
+
+        // noticeItem.parentNode.insertBefore(newSpan, noticeItem);
+        // noticeItem.childNodes[0].appendChild(newSpan);
+        noticeItem.childNodes[0].innerHTML="<span class='badge bg-info'>New</span>공지사항";
+    }
+}
+</script>
+
+<script type="text/javascript">
+function tapi_move(josa, prid, opt1, page) {
+    setLocal('tapi_josa',josa);
+    setLocal('tapi_prid',prid);
+    setLocal('tapi_opt1',opt1);
+
+    frm.pridSel.value=prid;
+
+    // 갈 화면은 getListPage(inc/lib/site.php)에서 정함
+    var url="https://survey.kstat.co.kr/kstat_survey/" + page + ".php?pridSel=" + prid;
+    if(page.substr(0,7)=="survey/") url+="&josa=tapi";
+    location.href=url;
+}
+</script>
+</body></html>

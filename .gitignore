@@ -10,9 +10,11 @@ data/*
 !data/onnuri_master_db.json
 !data/kstat_survey_blueprint.json
 !data/ceo_persona_pool.json
-!data/quotas/quota_onnuri_2026_풍납시장_업종별24개_조사쿼터_1792039611646.json
-!data/quotas/quota_onnuri_2026_풍납시장_업종별24개_조사쿼터_1792039611646.xlsx
+!data/campaigns.json
+!data/quotas/
+!data/quotas/*
 reports/*.json
+!reports/kstat_survey_spec.json
 reports/*.png
 reports/*.log
 

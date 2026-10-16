@@ -1,0 +1,118 @@
+<!DOCTYPE html><html lang="kr"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>통합조사 솔루션</title>
+    <link rel="stylesheet" type="text/css" href="https://survey.kstat.co.kr/kstat_survey/frmwrk/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Malgun Gothic','맑은 고딕',dotum,'돋움',sans-serif;
+            font-size: 0.9rem;
+        }
+        .navbar-top-space {
+            margin-top:3.2rem;
+        }
+        .container {
+            width: 97%;
+            max-width: 97%; /* v5.0 */
+        }
+        .bg-purple { background-color: #6f42c1; }
+
+        /*
+        .navbar-top-space {
+            margin-top:1.8rem;
+        }
+        .navbar {
+            padding-top: 0.2rem;
+            padding-bottom: 0.2rem;
+        }
+        .navbar-brand {
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .feather-16 {
+            width: 16px;
+            height: 16px;
+        } */
+    </style>
+
+    <script type="text/javascript" src="https://survey.kstat.co.kr/kstat_survey/frmwrk/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="https://survey.kstat.co.kr/kstat_survey/frmwrk/feather.min.js"></script>
+    <script type="text/javascript" src="https://survey.kstat.co.kr/kstat_survey/inc/js/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript" src="https://survey.kstat.co.kr/kstat_survey/inc/lib/util.js"></script>
+    <script type="text/javascript" src="https://survey.kstat.co.kr/kstat_survey/inc/lib/site.js"></script>
+
+    <script type="text/javascript">
+        function goPage(arg1, arg2, arg3) {
+            switch(arg1)
+            {
+                case 0:
+                    frm.action = "https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php";
+                    return frm.submit();
+                break;
+
+                case 1:
+                    frm.action = "https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list_proc.php?proc=" + arg2;
+                    return frm.submit();
+                break;
+
+                case 2:
+                    if(arg2.indexOf('/')!==-1) {
+                        frm.action = "https://survey.kstat.co.kr/kstat_survey/survey/" + arg2 + ".php";
+                    } else {
+                        frm.action = arg2 + ".php";
+                    }
+                    return frm.submit();
+                break;
+
+                case 3:
+                    if(arg2.indexOf('/')!==-1) {
+                        frm.action = "https://survey.kstat.co.kr/kstat_survey/survey/" + arg2 + ".php" + arg3;
+                    } else {
+                        frm.action = arg2 + ".php" + arg3;
+                    }
+                    return frm.submit();
+                break;
+
+                case 4:
+                    frm.action = arg2 + ".php" + arg3;
+                    return frm.submit();
+                break;
+
+                default:
+                    frm.action="";
+                break;
+            }
+        }
+    </script>
+
+
+</head>
+
+
+
+<body>
+    <header class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <!-- <img src="https://survey.kstat.co.kr/kstat_survey/img/kstat_logo가로.png" height='40px'> -->
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav me-auto mb-2 mb-md-0">
+
+<li class="nav-item"><a class="nav-link " aria-current="page" href="https://survey.kstat.co.kr/kstat_survey/1_project/tapi_project.php?is_survey=1">프로젝트</a></li><li class="nav-item"><a class="nav-link " aria-current="page" href="https://survey.kstat.co.kr/kstat_survey/survey/2026070802/notice.php">공지사항</a></li><li class="nav-item"><a class="nav-link active" aria-current="page" href="https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php">TAPI리스트</a></li>                </ul>
+                <ul class="navbar-nav px-3">
+                    <li class="nav-item text-nowrap">
+                    <a class="nav-link" href="https://survey.kstat.co.kr/kstat_survey/inc/logout.php"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-log-out feather-16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>가온김영옥 Sign out</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+
+
+<div class="navbar-top-space">&nbsp;</div>
+<div style="position:absolute;width:100%;height:80vh;margin:auto;font-size:20px;text-align:center;vertical-align:middle;">프로젝트 선택해 주세요</div><script>feather.replace();parent.parent.projectChange();</script>	</body></html>

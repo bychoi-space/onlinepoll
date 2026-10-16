@@ -1,0 +1,1509 @@
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+<meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width">
+<meta name="robots" content="ALL">
+<meta name="description" content="APMALL">
+<meta name="keywords" content="APMALL">
+
+
+<link rel="stylesheet" href="CSS/bootstrap.min.css?v=202607031041">
+<link rel="stylesheet" href="CSS/users.css?v=202608271114">
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-kopubworld@1.0">
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.alphanum/1.0.24/jquery.alphanum.min.js" integrity="sha512-gXwhwYG+MXc3CTdrUQpBDqW+VY4Gpo8dLZsHC5s4X9hitmSZcztF2YPbbeNcFxOiNx6/QeyTCoOw7b+xnm3DwA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script type="text/javascript" src="js/survey.js?v=202609141311"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+
+<title>2025년 기준 전통시장·상점가 및 점포경영 실태조사(점포주 조사)</title>
+<script>
+	$(document).ready(function(){
+	});
+</script><script>
+	$(document).ready(function(){
+	});
+</script><script>
+	$(document).ready(function(){
+	});
+</script><script>
+	$(document).ready(function(){
+	});
+</script><script>
+	$(document).ready(function(){
+	});
+</script><script languge="javascript">
+	$(document).ready(function(){
+	});
+</script><script>
+	$(document).ready(function(){
+	});
+</script><script>
+	$(document).ready(function(){
+	});
+</script><script>
+	$(document).ready(function(){
+  $('#Q1_11').on('keyup', function(){
+    var v = $(this).val().replace(/[^0-9]/g, '').substring(0, 12);
+
+    if (v.indexOf('0507') === 0) {
+      if (v.length === 11) {
+        v = v.substring(0, 11).replace(/^(0507)(\d{0,3})(\d{0,4}).*$/, function(_, a, b, c) {
+			if (c) return a + '-' + b + '-' + c;
+			if (b) return a + '-' + b;
+			return a;
+		});
+	   $(this).val(v);
+	   return;
+	 }
+      if (v.length >= 12) {
+        v = v.substring(0, 12).replace(/^(0507)(\d{0,4})(\d{0,4}).*$/, function(_, a, b, c) {
+			if (c) return a + '-' + b + '-' + c;
+			if (b) return a + '-' + b;
+			return a;
+		});
+	   $(this).val(v);
+	   return;
+	 }
+      $(this).val(v);
+      return;
+    }
+    if (v.indexOf('02') === 0) {
+      if (v.length === 9) {
+		  v = v.substring(0, 9).replace(/^(02)(\d{0,3})(\d{0,4}).*$/, function(_, a, b, c) {
+		    if (c) return a + '-' + b + '-' + c;
+		    if (b) return a + '-' + b;
+		    return a;
+		  });
+		  $(this).val(v);
+		  return;
+		}
+      if (v.length >= 10) {
+		  v = v.substring(0, 10).replace(/^(02)(\d{0,4})(\d{0,4}).*$/, function(_, a, b, c) {
+		    if (c) return a + '-' + b + '-' + c;
+		    if (b) return a + '-' + b;
+		    return a;
+		  });
+		  $(this).val(v);
+		  return;
+		}
+	 }
+    if (/^1\d{3}/.test(v)) {
+      v = v.substring(0, 8).replace(/^(1\d{3})(\d{0,4}).*$/, function(_, a, b) {
+        if (b) return a + '-' + b;
+        return a;
+      });
+      $(this).val(v);
+      return;
+    }
+
+    if (/^(0\d{2})/.test(v)) {
+      if (v.length === 10) {
+        v = v.replace(/^(0\d{2})(\d{3})(\d{4}).*$/, '$1-$2-$3');
+        $(this).val(v);
+        return;
+      }
+      if (v.length >= 11) {
+        v = v.substring(0, 11).replace(/^(0\d{2})(\d{4})(\d{4}).*$/, '$1-$2-$3');
+        $(this).val(v);
+        return;
+      }
+      v = v.replace(/^(0\d{2})(\d{0,4})(\d{0,4}).*$/, function(_, a, b, c) {
+        if (c) return a + '-' + b + '-' + c;
+        if (b) return a + '-' + b;
+        return a;
+      });
+      $(this).val(v);
+      return;
+    }
+
+    $(this).val(v);
+  });
+	});
+</script><script languge="javascript">
+	$(document).ready(function(){
+	});
+</script><script languge="javascript">
+	$(document).ready(function(){
+	});
+</script><script>
+	$(document).ready(function(){
+	});
+</script><script type="text/javascript" language="javascript">
+</script><style>
+  .qm-popover{--bs-popover-bg:#fff3cd;--bs-popover-border-color:#ffe69c;--bs-popover-body-color:#212529;--bs-popover-max-width:240px;}
+  .qm-popover .popover-body{padding:.35rem .5rem;font-size:.85rem;line-height:1.2;}
+  .qm-pop-body{display:flex;align-items:flex-start;gap:.4rem;}
+  .qm-warn-icon{display:inline-flex;align-items:center;justify-content:center;width:1.1rem;height:1.1rem;font-size:.8rem;font-weight:700;background:#ffe69c;color:#212529;border-radius:50%;flex:0 0 auto;border:1px solid rgba(0,0,0,.12);}
+  .qm-warn-text{word-break:keep-all;}
+</style><style>
+	#survey-container{display:none;}
+
+/* 버튼 그룹을 화면 하단에 강제 고정 */
+#btnC {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	width: 100%;
+	z-index: 2000;
+	margin: 0;
+	border-radius: 0;
+}
+
+/* 버튼이 가리는 만큼 본문에 여백 추가 */
+body {
+	padding-bottom: 80px;
+}
+
+/* 보기별 열 너비를 행마다 다르게(내용 길이에 따라 자동조정) 잡던 것을 고정폭으로 통일 */
+#Q1_table table[id$="_inner"] {
+	table-layout: fixed;
+	width: 100%;
+}
+
+/* [2026-08-04 신규] 등록번호/실태조사 코드/조사원 명은 조사원이 임의로 수정하지 못하도록 잠금.
+   disabled만으로는 브라우저 기본 커서가 not-allowed로 보이지 않는 경우가 있어 명시적으로 지정. */
+#Q1_1[readonly], #Q1_2[readonly], #Q1_14[readonly] {
+	cursor: not-allowed !important;
+}
+</style><script type="text/javascript" language="javascript">
+<!--
+function next()
+{
+	// [2026-08-04 신규] 등록번호/실태조사 코드/조사원 명은 잠금(disabled)되어 조사원이 직접 입력할
+	// 수 없으므로, 값이 비어 있어도 아래 필수응답 검증에서 걸리지 않도록 검증 직전에만 빈 값을 임시로
+	// 채워두고, 검증이 끝나면(통과하든 중간에 걸려 return 되든) finally에서 항상 원래 값(빈 값 포함)으로
+	// 되돌린다.
+	var lockedIds = ["Q1_1", "Q1_2", "Q1_14"];
+	var lockedOrig = {};
+	var li;
+	for (li = 0; li < lockedIds.length; li++) {
+		lockedOrig[lockedIds[li]] = $("#" + lockedIds[li]).val();
+		if ($.trim(lockedOrig[lockedIds[li]]) === "") {
+			$("#" + lockedIds[li]).val("-");
+		}
+	}
+
+	try {
+	var xx;
+	xx = $("#Q1_1").val().trim();
+	if ($("#Q1_1").val().trim()=="")
+	{
+  var el=document.getElementById("LQ1_1"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_1").text()+"] 질문에 응답해 주십시오.");
+		$("#Q1_1").focus();
+		return;
+	}
+	if (xx.length<1)
+	{
+		alert("["+$("#LQ1_1").text()+"] 내용을 좀 더 자세히 응답해 주십시오.");
+		$("#Q1_1").focus();
+		return;
+	}
+
+	if (containsChars(xx,"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+	{
+		alert("["+$("#LQ1_1").text()+"] 특수문자는 입력하실 수 없습니다.");
+		$("#Q1_1").focus();
+		return;
+	}
+
+	var xx;
+	xx = $("#Q1_2").val().trim();
+	if ($("#Q1_2").val().trim()=="")
+	{
+  var el=document.getElementById("LQ1_2"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_2").text()+"] 질문에 응답해 주십시오.");
+		$("#Q1_2").focus();
+		return;
+	}
+	if (xx.length<1)
+	{
+		alert("["+$("#LQ1_2").text()+"] 내용을 좀 더 자세히 응답해 주십시오.");
+		$("#Q1_2").focus();
+		return;
+	}
+
+	if (containsChars(xx,"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+	{
+		alert("["+$("#LQ1_2").text()+"] 특수문자는 입력하실 수 없습니다.");
+		$("#Q1_2").focus();
+		return;
+	}
+
+	var xx;
+	xx = $("#Q1_3").val().trim();
+	if ($("#Q1_3").val().trim()=="")
+	{
+  var el=document.getElementById("LQ1_3"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_3").text()+"] 질문에 응답해 주십시오.");
+		$("#Q1_3").focus();
+		return;
+	}
+	if (xx.length<1)
+	{
+		alert("["+$("#LQ1_3").text()+"] 내용을 좀 더 자세히 응답해 주십시오.");
+		$("#Q1_3").focus();
+		return;
+	}
+
+	if (containsChars(xx,"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+	{
+		alert("["+$("#LQ1_3").text()+"] 특수문자는 입력하실 수 없습니다.");
+		$("#Q1_3").focus();
+		return;
+	}
+
+	if ($("#Q1_4_1").val()=="")
+	{
+  var el=document.getElementById("LQ1_4"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_4").text()+"] 우편번호 찾기를 클릭하시어, 주소를 입력하여 선택해 주십시오.");
+		$("#Q1_4_1").focus();
+		return;
+	}
+	if ($("#Q1_4_3").val()=="")
+	{
+  var el=document.getElementById("LQ1_4"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_4").text()+"] 상세주소를 입력해 주십시오.");
+		$("#Q1_4_3").focus();
+		return;
+	}
+	if (containsChars($("#Q1_4_3").val().trim(),"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+	{
+		alert("["+$("#LQ1_4").text()+"] 특수문자는 입력하실 수 없습니다.");
+		$("#Q1_4_3").focus();
+		return;
+	}
+
+	var xx;
+	xx = $("#Q1_5").val().trim();
+	if ($("#Q1_5").val().trim()=="")
+	{
+  var el=document.getElementById("LQ1_5"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_5").text()+"] 질문에 응답해 주십시오.");
+		$("#Q1_5").focus();
+		return;
+	}
+	if (xx.length<1)
+	{
+		alert("["+$("#LQ1_5").text()+"] 내용을 좀 더 자세히 응답해 주십시오.");
+		$("#Q1_5").focus();
+		return;
+	}
+
+	if (containsChars(xx,"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+	{
+		alert("["+$("#LQ1_5").text()+"] 특수문자는 입력하실 수 없습니다.");
+		$("#Q1_5").focus();
+		return;
+	}
+
+if (getRadioValue("Q1_6")==undefined) {
+  var el=document.getElementById("LQ1_6"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+  alert("["+$("#LQ1_6").text()+"] 질문에 응답해 주십시오.");
+  return;
+}
+
+if (getRadioValue("Q1_7")==undefined) {
+  var el=document.getElementById("LQ1_7"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+  alert("["+$("#LQ1_7").text()+"] 질문에 응답해 주십시오.");
+  return;
+}
+
+if (getRadioValue("Q1_8")==undefined) {
+  var el=document.getElementById("LQ1_8"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+  alert("["+$("#LQ1_8").text()+"] 질문에 응답해 주십시오.");
+  return;
+}
+
+	if ((getRadioValue("Q1_8")=="5")	&& ($('input[name=TQ1_8_5]').val().trim()==""))
+	{
+		alert("["+$("#LQ1_8").text()+"] 기타에 응답해 주십시오.")
+		$('input[name=TQ1_8_5]').focus();
+		return;
+	}
+	if ((getRadioValue("Q1_8")!="5")	&& ($('input[name=TQ1_8_5]').val().trim()!=""))
+	{
+		alert("["+$("#LQ1_8").text()+"] 기타에 응답해 주십시오.")
+		$('input[name=TQ1_8_5]').focus();
+		return;
+	}
+	if ($('input[name=TQ1_8_5]').val().trim()!="")
+	{
+		if (containsChars($('input[name=TQ1_8_5]').val().trim(),"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+		{
+			alert("["+$("#LQ1_8").text()+"] 특수문자는 입력하실 수 없습니다.");
+			$('input[name=TQ1_8_5]').focus();
+			return;
+		}
+	}
+	if (getRadioValue("Q1_8")=="5")
+	{
+		if (openValueCode($('input[name=TQ1_8_5]').val().trim(),"TB^1^20|TB^1^20|TB^1^20|DAUM^2|TB^1^50|S^4^1∮점포∑2∮노점|S^4^1∮농산물∑2∮축산물∑3∮수산물∑4∮가공식품∑5∮의류 및 신발∑6∮가정용품∑7∮음식점업∑8∮기타소매업∑9∮근린생활서비스|S^4^1∮도매∑2∮소매∑3∮도소매∑4∮용역업∑5∮기타*OTHER|TBM^3^2^255|TB^1^50|TEL|S^4^1∮점포주∑2∮기타*OTHER|S^4^1∮예*OTHER∑2∮아니오|TB^1^255")==true)
+		{
+			alert("["+$('input[name=TQ1_8_5]').val().trim()+"] 의 값은 보기와 중복됩니다.");
+			$('input[name=TQ1_8_5]').focus();
+			return;
+		}
+	}
+	if ($("#Q1_9_1").val().trim().length<2)
+	{
+  var el=document.getElementById("LQ1_9_1"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_9_1").text()+"] 내용을 좀 더 자세히 응답해 주십시오.");
+		$("#Q1_9_1").focus();
+		return;
+	}
+
+	if (containsChars($("#Q1_9_1").val().trim(),"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+	{
+		alert("["+$("#LQ1_9_1").text()+"] 특수문자는 입력하실 수 없습니다.");
+		$("#Q1_9_1").focus();
+		return;
+	}
+
+	if (!TextOverlap("Q1_9_1", $("#Q1_9_1").val().trim()))
+	{
+		alert("["+$("#LQ1_9_1").text()+"] 응답값이 중복입니다\n다시 응답해 주십시오.");
+		$("#Q1_9_1").focus();
+		return;
+	}
+
+	if ($("#Q1_9_2").val().trim() != "") {
+	if ($("#Q1_9_2").val().trim().length<2)
+	{
+  var el=document.getElementById("LQ1_9_2"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_9_2").text()+"] 내용을 좀 더 자세히 응답해 주십시오.");
+		$("#Q1_9_2").focus();
+		return;
+	}
+
+	if (containsChars($("#Q1_9_2").val().trim(),"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+	{
+		alert("["+$("#LQ1_9_2").text()+"] 특수문자는 입력하실 수 없습니다.");
+		$("#Q1_9_2").focus();
+		return;
+	}
+
+	if (!TextOverlap("Q1_9_2", $("#Q1_9_2").val().trim()))
+	{
+		alert("["+$("#LQ1_9_2").text()+"] 응답값이 중복입니다\n다시 응답해 주십시오.");
+		$("#Q1_9_2").focus();
+		return;
+	}
+
+	}
+
+	if ($("#Q1_9_3").val().trim() != "") {
+	if ($("#Q1_9_3").val().trim().length<2)
+	{
+  var el=document.getElementById("LQ1_9_3"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_9_3").text()+"] 내용을 좀 더 자세히 응답해 주십시오.");
+		$("#Q1_9_3").focus();
+		return;
+	}
+
+	if (containsChars($("#Q1_9_3").val().trim(),"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+	{
+		alert("["+$("#LQ1_9_3").text()+"] 특수문자는 입력하실 수 없습니다.");
+		$("#Q1_9_3").focus();
+		return;
+	}
+
+	if (!TextOverlap("Q1_9_3", $("#Q1_9_3").val().trim()))
+	{
+		alert("["+$("#LQ1_9_3").text()+"] 응답값이 중복입니다\n다시 응답해 주십시오.");
+		$("#Q1_9_3").focus();
+		return;
+	}
+
+	}
+
+	var xx;
+	xx = $("#Q1_10").val().trim();
+	if ($("#Q1_10").val().trim()=="")
+	{
+  var el=document.getElementById("LQ1_10"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_10").text()+"] 질문에 응답해 주십시오.");
+		$("#Q1_10").focus();
+		return;
+	}
+	if (xx.length<1)
+	{
+		alert("["+$("#LQ1_10").text()+"] 내용을 좀 더 자세히 응답해 주십시오.");
+		$("#Q1_10").focus();
+		return;
+	}
+
+	if (containsChars(xx,"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+	{
+		alert("["+$("#LQ1_10").text()+"] 특수문자는 입력하실 수 없습니다.");
+		$("#Q1_10").focus();
+		return;
+	}
+
+	if ($("#Q1_11").val().trim()=="")
+	{
+  var el=document.getElementById("LQ1_11"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_11").text()+"] 입력해 주십시오.");
+		$("#Q1_11").focus();
+		return;
+	}
+	if (!/^\d{4}-\d{4}$/.test($("#Q1_11").val().trim())
+	&& !/^\d{2}-\d{3}-\d{4}$/.test($("#Q1_11").val().trim())
+	&& !/^\d{2}-\d{4}-\d{4}$/.test($("#Q1_11").val().trim())
+	&& !/^\d{3}-\d{3}-\d{4}$/.test($("#Q1_11").val().trim())
+	&& !/^\d{3}-\d{4}-\d{4}$/.test($("#Q1_11").val().trim())
+	&& !/^\d{4}-\d{3}-\d{4}$/.test($("#Q1_11").val().trim())
+	&& !/^\d{4}-\d{4}-\d{4}$/.test($("#Q1_11").val().trim()))
+	{
+		alert("["+$("#LQ1_11").text()+"] 올바르지 않습니다.");
+		$("#Q1_11").focus();
+		return;
+	}
+if (getRadioValue("Q1_12")==undefined) {
+  var el=document.getElementById("LQ1_12"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+  alert("["+$("#LQ1_12").text()+"] 질문에 응답해 주십시오.");
+  return;
+}
+
+	if ((getRadioValue("Q1_12")=="2")	&& ($('input[name=TQ1_12_2]').val().trim()==""))
+	{
+		alert("["+$("#LQ1_12").text()+"] 기타에 응답해 주십시오.")
+		$('input[name=TQ1_12_2]').focus();
+		return;
+	}
+	if ((getRadioValue("Q1_12")!="2")	&& ($('input[name=TQ1_12_2]').val().trim()!=""))
+	{
+		alert("["+$("#LQ1_12").text()+"] 기타에 응답해 주십시오.")
+		$('input[name=TQ1_12_2]').focus();
+		return;
+	}
+	if ($('input[name=TQ1_12_2]').val().trim()!="")
+	{
+		if (containsChars($('input[name=TQ1_12_2]').val().trim(),"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+		{
+			alert("["+$("#LQ1_12").text()+"] 특수문자는 입력하실 수 없습니다.");
+			$('input[name=TQ1_12_2]').focus();
+			return;
+		}
+	}
+	if (getRadioValue("Q1_12")=="2")
+	{
+		if (openValueCode($('input[name=TQ1_12_2]').val().trim(),"TB^1^20|TB^1^20|TB^1^20|DAUM^2|TB^1^50|S^4^1∮점포∑2∮노점|S^4^1∮농산물∑2∮축산물∑3∮수산물∑4∮가공식품∑5∮의류 및 신발∑6∮가정용품∑7∮음식점업∑8∮기타소매업∑9∮근린생활서비스|S^4^1∮도매∑2∮소매∑3∮도소매∑4∮용역업∑5∮기타*OTHER|TBM^3^2^255|TB^1^50|TEL|S^4^1∮점포주∑2∮기타*OTHER|S^4^1∮예*OTHER∑2∮아니오|TB^1^255")==true)
+		{
+			alert("["+$('input[name=TQ1_12_2]').val().trim()+"] 의 값은 보기와 중복됩니다.");
+			$('input[name=TQ1_12_2]').focus();
+			return;
+		}
+	}
+if (getRadioValue("Q1_13")==undefined) {
+  var el=document.getElementById("LQ1_13"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+  alert("["+$("#LQ1_13").text()+"] 질문에 응답해 주십시오.");
+  return;
+}
+
+	if ((getRadioValue("Q1_13")=="1")	&& ($('input[name=TQ1_13_1]').val().trim()==""))
+	{
+		alert("["+$("#LQ1_13").text()+"] 기타에 응답해 주십시오.")
+		$('input[name=TQ1_13_1]').focus();
+		return;
+	}
+	if ((getRadioValue("Q1_13")!="1")	&& ($('input[name=TQ1_13_1]').val().trim()!=""))
+	{
+		alert("["+$("#LQ1_13").text()+"] 기타에 응답해 주십시오.")
+		$('input[name=TQ1_13_1]').focus();
+		return;
+	}
+	if ($('input[name=TQ1_13_1]').val().trim()!="")
+	{
+		if (containsChars($('input[name=TQ1_13_1]').val().trim(),"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+		{
+			alert("["+$("#LQ1_13").text()+"] 특수문자는 입력하실 수 없습니다.");
+			$('input[name=TQ1_13_1]').focus();
+			return;
+		}
+	}
+	if (getRadioValue("Q1_13")=="1")
+	{
+		if (openValueCode($('input[name=TQ1_13_1]').val().trim(),"TB^1^20|TB^1^20|TB^1^20|DAUM^2|TB^1^50|S^4^1∮점포∑2∮노점|S^4^1∮농산물∑2∮축산물∑3∮수산물∑4∮가공식품∑5∮의류 및 신발∑6∮가정용품∑7∮음식점업∑8∮기타소매업∑9∮근린생활서비스|S^4^1∮도매∑2∮소매∑3∮도소매∑4∮용역업∑5∮기타*OTHER|TBM^3^2^255|TB^1^50|TEL|S^4^1∮점포주∑2∮기타*OTHER|S^4^1∮예*OTHER∑2∮아니오|TB^1^255")==true)
+		{
+			alert("["+$('input[name=TQ1_13_1]').val().trim()+"] 의 값은 보기와 중복됩니다.");
+			$('input[name=TQ1_13_1]').focus();
+			return;
+		}
+	}
+	var xx;
+	xx = $("#Q1_14").val().trim();
+	if ($("#Q1_14").val().trim()=="")
+	{
+  var el=document.getElementById("LQ1_14"),msg="응답해주세요.";
+  try{var prev=bootstrap.Popover.getInstance(el);if(prev)prev.dispose();}catch(e){}
+  var pop=new bootstrap.Popover(el,{
+    container:'body',trigger:'manual',placement:'bottom',html:true,customClass:'qm-popover',
+    content:'<div class="qm-pop-body"><span class="qm-warn-icon">⚠</span><span class="qm-warn-text">'+msg+'</span></div>',
+    popperConfig:function(cfg){
+      cfg=cfg||{};cfg.placement='bottom';cfg.modifiers=(cfg.modifiers||[]).concat([{name:'flip',enabled:false}]);return cfg;
+    }
+  });
+  pop.show();el.scrollIntoView({block:'center',behavior:'smooth'});$(el).focus();
+  $(document).off('mousedown.qmPop').on('mousedown.qmPop',function(e){if(!el.contains(e.target)){$(document).off('mousedown.qmPop');try{pop.hide();}catch(ex){}}});
+		alert("["+$("#LQ1_14").text()+"] 질문에 응답해 주십시오.");
+		$("#Q1_14").focus();
+		return;
+	}
+	if (xx.length<1)
+	{
+		alert("["+$("#LQ1_14").text()+"] 내용을 좀 더 자세히 응답해 주십시오.");
+		$("#Q1_14").focus();
+		return;
+	}
+
+	if (containsChars(xx,"ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍㅛㅕㅑㅐㅔㅗㅓㅏㅣㅠㅜㅡ"))
+	{
+		alert("["+$("#LQ1_14").text()+"] 특수문자는 입력하실 수 없습니다.");
+		$("#Q1_14").focus();
+		return;
+	}
+
+
+
+		// 업종(Q1_7)-사업형태(Q1_8) 조합 최종 검증: 화면 필터가 우회되더라도(셀 빈 공간 클릭 등) 제출 단계에서 차단
+		var q17Val = getRadioValue("Q1_7");
+		var q18Val = getRadioValue("Q1_8");
+		if (q17Val && q18Val) {
+			var q18Allowed = (q17Val == "7" || q17Val == "9") ? ["4", "5"] : ["1", "2", "3", "5"];
+			if ($.inArray(q18Val, q18Allowed) === -1) {
+				alert("선택하신 업종에 해당하지 않는 사업형태입니다. 사업형태를 다시 선택해 주십시오.");
+				updateQ1_8Options();
+				return false;
+			}
+		}
+
+		if (getRadioValue("Q1_13") == "1") {
+			if ($("#TQ1_13_1").val() == "") {
+				alert("이메일을 입력해 주십시오.");
+				$("#TQ1_13_1").focus();
+				return false;
+			}
+
+			if (emailCheck($("#TQ1_13_1").val()) == false) {
+				alert("이메일 형식을 확인해 주십시오.");
+				$("#TQ1_13_1").focus();
+				return false;
+			}
+		}
+	} finally {
+		for (li = 0; li < lockedIds.length; li++) {
+			$("#" + lockedIds[li]).val(lockedOrig[lockedIds[li]]);
+		}
+	}
+
+	// 등록번호/실태조사 코드/조사원 명은 disabled 상태로 두면 폼 제출 시 값이 빠지므로 제출 직전에만 풀어준다.
+//	$("#Q1_1, #Q1_2, #Q1_14").prop("readonly", false);
+
+	var obj;
+
+	document.Survey.action="Survey.asp";
+	document.Survey.submit();
+
+	LoadingWithMask();
+}
+
+ 
+
+$(document).ready(function(){
+	document.getElementById('survey-container').style.display = 'block';
+	
+	//마우스 오른쪽 선택 금지
+		$(document).bind("contextmenu", function(e){
+			alert("오른쪽 마우스는 선택하실 수 없습니다.");
+			return false;
+		});
+		$(document).on("keydown", function(e) {
+		  if (e.keyCode == 123) {
+			return false;
+		  }
+		});
+	
+
+//	
+		$("#Q1_1").val("MK0000000122"); // 등록번호
+		$("#Q1_2").val("a02240004"); // 실태조사 코드
+		$("#Q1_3").val("풍납시장");
+		$("#Q1_5").val("칠칠수산");
+		$("input[name='Q1_7'][value='3']").prop("checked", true);
+		$("#Q1_11").val("0507-1332-3533").trigger("keyup");
+		$("#Q1_4_2").val("1층");
+//	
+
+	// 업종(Q1_7) 자동입력 값에 맞춰 사업형태(Q1_8) 보기 필터링도 최신 상태로 갱신
+	// 사업형태(Q1_8, 구 A7)의 보기는 업종(Q1_7, 구 A6) 응답에 따라 필터링된다 (구 A6/A7 OPTION_VIEW_RULES 이식)
+	updateQ1_8Options();
+	$("input[name='Q1_7']").on("change click", updateQ1_8Options);
+	// 보기 셀(TD)의 빈 공간을 누르면 인라인 onclick의 setRadioValue()가 prop("checked")로만 체크를 바꿔
+	// input의 change/click 이벤트가 발생하지 않으므로, TD 클릭에도 필터 갱신을 연결한다.
+	// (인라인 onclick으로 체크가 반영된 뒤 실행되도록 setTimeout 사용)
+	$("td[id^='TD_Q1_7_']").on("click", function () { setTimeout(updateQ1_8Options, 0); });
+
+	// [2026-08-04 신규] 등록번호/실태조사 코드/조사원 명은 수정 불가 처리 (next()에서 제출 직전에만 잠깐 해제됨)
+	$("#Q1_1, #Q1_2, #Q1_14").prop("readonly", true);
+});
+
+// 업종(Q1_7) 응답에 따라 사업형태(Q1_8)에서 보여줄 보기를 결정한다.
+// 원래 A6/A7 문항이었을 때: @A6=1~6,8 -> A7 보기 1,2,3,5 노출 / @A6=7,9 -> A7 보기 4,5 노출
+function updateQ1_8Options() {
+	var v = getRadioValue("Q1_7");
+	var showSet;
+
+	if (v === undefined || v === "") {
+		showSet = ["1", "2", "3", "4", "5"]; // 업종 미응답 시 전체 노출
+	} else if (v == "7" || v == "9") {
+		showSet = ["4", "5"];
+	} else {
+		showSet = ["1", "2", "3", "5"];
+	}
+
+	for (var i = 1; i <= 5; i++) {
+		var show = ($.inArray(String(i), showSet) !== -1);
+		$("#TD_Q1_8_" + i).toggle(show);
+		if (!show) {
+			$("#Q1_8_" + i).prop("checked", false);
+		}
+	}
+}
+
+
+
+//-->
+</script></head>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<body class="member_con" onload="noBack();">
+
+<div id="survey-container" style="display: block;">
+<form name="Survey" method="post" action="" class="form-inline">
+<input type="hidden" name="Var" value="Q1_1,Q1_2,Q1_3,Q1_4_1,Q1_4_2,Q1_4_3,Q1_5,Q1_6,Q1_7,Q1_8,TQ1_8_5,Q1_9_1,Q1_9_2,Q1_9_3,Q1_10,Q1_11,Q1_12,TQ1_12_2,Q1_13,TQ1_13_1,Q1_14">
+<input type="hidden" name="PageName" value="Q1">
+<input type="hidden" name="NextPage" value="P1">
+<input type="hidden" name="IDKey" value="76376_517_2">
+<input type="hidden" name="ResType" value="TAPI">
+<input type="hidden" name="VC_ID" value="76376_517_2">
+<input type="hidden" name="PVALUE" value="1">
+<input type="hidden" name="ECODE" value="">
+<input type="hidden" name="ENUMBER" value="">
+<input type="hidden" name="IDS" value="">
+
+<script type="text/javascript">
+window.isDevViewModeTOC = false;
+</script>
+
+<style>
+/* 하단 고정 버튼(#btnC)에 목차보기 마지막 항목이 가려지지 않도록 여백 추가 */
+#offcanvasExample .offcanvas-body {
+    padding-bottom: 90px;
+}
+
+/* [2026-08-27 신규] '조사원 평가' 이동 모달이 하단 고정 버튼바(#btnC, z-index:2000)에
+   가려지지 않도록 그보다 높은 z-index를 지정. .modal-backdrop 자체에는 전역 z-index를
+   주지 않는다 - 이 프로젝트가 쓰는 Bootstrap 5.0.2에서는 목차(offcanvas)의 어두운 배경도
+   별도 .offcanvas-backdrop이 아니라 .modal-backdrop 클래스를 그대로 재사용하기 때문에,
+   전역으로 올리면 목차 패널(z-index 1045)이 그 배경에 가려져 클릭이 막히는 문제가 있었다.
+   버튼바는 모달을 띄우는 시점에 JS(#btnC 숨김, survey.js의 showEvalModal())로 처리한다. */
+#evalModal {
+    z-index: 2100;
+}
+</style>
+
+<!-- [2026-08-27 신규] 설문(P1~P15) 및 Agree까지 모두 완료된 경우, 완료 처리를 백그라운드로
+     마친 뒤 이 모달을 띄워 '조사원 평가' 사이트 이동을 안내한다. -->
+<div class="modal fade" id="evalModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="evalModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-body text-center p-4">
+				<p id="evalModalLabel" class="mb-4">설문에 참여해 주셔서 감사합니다.<br>이어서 조사원 평가를 진행해 주십시오.</p>
+				<a id="btnGoEval" class="btn btn-primary btn-lg" href="https://kstat.surveys.kr/2026/P26042401BA/?KID=OseLErRyW&amp;type=tapi&amp;prid=2026070802&amp;mnid=900001346&amp;srt=2">조사원 평가 항목으로 이동</a>
+				<!-- [2026-09-01 신규] 조사원이 리스트(목록) 창에서 팝업으로 이 설문 창을 띄운 경우,
+				     평가로 넘어가지 않고 바로 이 창을 닫아 리스트 창으로 돌아갈 수 있게 하는 버튼.
+				     self.close()는 "스크립트로 열린 창"이거나 "이 창의 방문 기록이 1개뿐인 창"일 때만
+				     동작하며, 그 외에는 브라우저가 조용히 무시한다. 이 경우 사용자가 직접 닫을 수
+				     있도록 안내 alert을 띄운다(closeSurveyWindow 참고). -->
+				<div class="mt-2">
+					<button type="button" id="btnGoList" class="btn btn-outline-secondary btn-lg" onclick="closeSurveyWindow();">리스트로 이동</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+<!--
+// [2026-09-01 신규] self.close()는 "스크립트로 열린 창(window.open 등으로 띄운 팝업)"이거나
+// "이 창의 방문 기록이 1개뿐인 창"일 때만 실제로 창을 닫는다. 그 외의 경우(예: 조사시작 버튼을
+// 거치지 않고 주소를 직접 입력했거나, 여러 페이지를 이동해온 일반 탭인 경우)에는 브라우저가
+// 요청을 조용히 무시해 창이 그대로 남는다. close()는 호출 즉시 창을 닫는 게 아니라 "닫기 요청"만
+// 예약하고 스크립트는 계속 실행되므로(동기적으로 멈추지 않음), close() 바로 다음 줄에서 alert을
+// 띄우면 실제로는 닫히는 창에서도 alert이 항상 먼저 보이게 된다. 그래서 약간의 지연을 두고
+// window.closed로 실제로 닫혔는지 확인한 뒤, 안 닫힌 경우에만 안내 alert을 띄운다.
+function closeSurveyWindow() {
+	self.close();
+	setTimeout(function() {
+		if (!window.closed) {
+			alert("조사시작 버튼 등으로 참여하지 않은 경우, 창이 자동으로 닫히지 않습니다. 본 창을 닫아주세요.");
+		}
+	}, 300);
+}
+//-->
+</script>
+<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="offcanvasExampleLabel">목차보기</h5>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+
+  <div class="offcanvas-body">   
+    <div class="left-menu">
+       <ul class="menu-list">
+        
+            <li>
+                <a href="javascript:move_page('Q1');" class="menu-item checked">1. Q1</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P1');" class="menu-item checked">2. P1</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P2');" class="menu-item checked">3. P2</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P3');" class="menu-item checked">4. P3</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P4');" class="menu-item checked">5. P4</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P5');" class="menu-item checked">6. P5</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P6');" class="menu-item checked">7. P6</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P7');" class="menu-item checked">8. P7</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P8');" class="menu-item checked">9. P8</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P9');" class="menu-item checked">10. P9</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P10');" class="menu-item checked">11. P10</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P11');" class="menu-item checked">12. P11</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P12');" class="menu-item checked">13. P12</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P13');" class="menu-item">14. P13</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('P14');" class="menu-item">15. P14</a>
+            </li>
+        
+            <li>
+                <a href="javascript:move_page('Agree');" class="menu-item">16. Agree</a>
+            </li>
+        
+        </ul>
+    </div> <div class="mt-2 mb-2">
+        
+        <button type="button" class="btn btn-danger col-12" onclick="javascript:end_survey();">최종완료</button>
+        
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid" id="container_area">
+
+	<div class="row justify-content-center">
+		<div class="col" style="margin-top:40px;">
+	
+			<div class="shadow p-3 bg-body rounded border-top border-secondary">				
+				<div class="row justify-content-between align-items-center">
+					 <div class="col-6 col-md-6">
+					
+					</div>
+
+					<div class="col-6 col-md-3">
+						<div class="progress">
+						
+						  <div class="progress-bar bg-danger" role="progressbar" style="width: 1%; font-size:10px !important;" aria-valuenow="1" aria-valuemin="0" aria-valuemax="100">1%</div>
+						</div>
+					</div> <!--col-2-->
+				</div><!--justify-end-->
+				
+				<div class="mt-1">
+					<table class="table table-bordered" id="Q1_table">
+	<colgroup>
+		<col width="25%">
+		<col width="90%">
+	</colgroup>
+	<tbody>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_1" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">등록번호</span></th>
+		<td class="align-middle text-center">
+		<div class="input-group"><input name="Q1_1" id="Q1_1" type="text" maxlength="20" class="form-control input-lg" readonly=""></div>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_2" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">실태조사 코드</span></th>
+		<td class="align-middle text-center">
+		<div class="input-group"><input name="Q1_2" id="Q1_2" type="text" maxlength="20" class="form-control input-lg" readonly=""></div>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_3" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">시장·상점가 명</span></th>
+		<td class="align-middle text-center">
+		<div class="input-group"><input name="Q1_3" id="Q1_3" type="text" maxlength="20" class="form-control input-lg"></div>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_4" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">점포 주소</span></th>
+		<td class="align-middle text-center">
+		<div class="input-group">
+			<input type="text" class="form-control input-lg" name="Q1_4_1" id="Q1_4_1" placeholder="우편번호" readonly="">
+			<input type="button" class="btn btn-secondary" onclick="DaumPostcode()" value="우편번호 찾기">
+		</div>
+		<input type="text" class="form-control input-lg" name="Q1_4_2" id="Q1_4_2" placeholder="주소" readonly="">
+		<input type="text" class="form-control input-lg" name="Q1_4_3" id="Q1_4_3" placeholder="상세주소">
+		<div id="wrap" style="display:none;border:1px solid;width:100%;height:300px;margin:5px 0;position:relative">
+			<img src="//t1.daumcdn.net/postcode/resource/images/close.png" id="btnFoldWrap" style="cursor:pointer;position:absolute;right:0px;top:-1px;z-index:1" onclick="foldDaumPostcode()" alt="접기 버튼">
+		</div>
+		 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+		 <script>
+		 var element_wrap = document.getElementById('wrap');
+		 function foldDaumPostcode() {
+		 element_wrap.style.display = 'none';
+		 }
+		 function DaumPostcode() {
+		 var currentScroll = Math.max(document.body.scrollTop, document.documentElement.scrollTop);
+		 new daum.Postcode({
+		 oncomplete: function(data) {
+		 var addr = '';
+		 var extraAddr = '';
+		 if (data.userSelectedType === 'R') {
+		 addr = data.roadAddress;
+		 } else {
+		 addr = data.jibunAddress;
+		 }
+		 if(data.userSelectedType === 'R'){
+		 if(data.bname !== '' && /[동|로|가]$/g.test(data.bname)){
+		 extraAddr += data.bname;
+		 }
+		 if(data.buildingName !== '' && data.apartment === 'Y'){
+		 extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+		 }
+		 if(extraAddr !== ''){
+		 extraAddr = ' (' + extraAddr + ')';
+		 }
+		 } else {
+		 }
+		 document.getElementById('Q1_4_1').value = data.zonecode;
+		 document.getElementById('Q1_4_2').value = addr;
+		 document.getElementById('Q1_4_3').focus();
+		 element_wrap.style.display = 'none';
+		 document.body.scrollTop = currentScroll;
+		 },
+		 onresize : function(size) {
+		 element_wrap.style.height = size.height+'px';
+		 },
+		 width : '100%',
+		 height : '100%'
+		 }).embed(element_wrap);
+		 element_wrap.style.display = 'block';
+		 }
+		 </script>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_5" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">점포명</span></th>
+		<td class="align-middle text-center">
+		<div class="input-group"><input name="Q1_5" id="Q1_5" type="text" maxlength="50" class="form-control input-lg"></div>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_6" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">노점 여부</span></th>
+		<td>
+<table class="table mb-0" id="Q1_6_inner" data-rv="Q1_6" style="border-bottom:1px solid #FFFFFF;margin-bottom:0rem;">
+	<colgroup>
+						<col width="40%">
+						<col width="40%">
+						<col width="40%">
+						<col width="40%">
+	</colgroup>
+	<tbody>
+					<tr>
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_6_1" onclick="javascript:setRadioValue('Q1_6','1');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_6" id="Q1_6_1" value="1" onclick="javascript:setRadioValue('Q1_6','1');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_6_1" id="LQ1_6_1">점포</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_6_2" onclick="javascript:setRadioValue('Q1_6','2');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_6" id="Q1_6_2" value="2" onclick="javascript:setRadioValue('Q1_6','2');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_6_2" id="LQ1_6_2">노점</label>
+		</div>
+</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+
+				</tr></tbody></table>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_7" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">업종</span></th>
+		<td>
+<table class="table mb-0" id="Q1_7_inner" data-rv="Q1_7" style="border-bottom:1px solid #FFFFFF;margin-bottom:0rem;">
+	<colgroup>
+						<col width="40%">
+						<col width="40%">
+						<col width="40%">
+						<col width="40%">
+	</colgroup>
+	<tbody>
+					<tr>
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_7_1" onclick="javascript:setRadioValue('Q1_7','1');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_7" id="Q1_7_1" value="1" onclick="javascript:setRadioValue('Q1_7','1');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_7_1" id="LQ1_7_1">농산물</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_7_2" onclick="javascript:setRadioValue('Q1_7','2');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_7" id="Q1_7_2" value="2" onclick="javascript:setRadioValue('Q1_7','2');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_7_2" id="LQ1_7_2">축산물</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_7_3" onclick="javascript:setRadioValue('Q1_7','3');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_7" id="Q1_7_3" value="3" onclick="javascript:setRadioValue('Q1_7','3');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_7_3" id="LQ1_7_3">수산물</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_7_4" onclick="javascript:setRadioValue('Q1_7','4');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_7" id="Q1_7_4" value="4" onclick="javascript:setRadioValue('Q1_7','4');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_7_4" id="LQ1_7_4">가공식품</label>
+		</div>
+</td>
+
+					</tr>
+					<tr>
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_7_5" onclick="javascript:setRadioValue('Q1_7','5');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_7" id="Q1_7_5" value="5" onclick="javascript:setRadioValue('Q1_7','5');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_7_5" id="LQ1_7_5">의류 및 신발</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_7_6" onclick="javascript:setRadioValue('Q1_7','6');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_7" id="Q1_7_6" value="6" onclick="javascript:setRadioValue('Q1_7','6');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_7_6" id="LQ1_7_6">가정용품</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_7_7" onclick="javascript:setRadioValue('Q1_7','7');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_7" id="Q1_7_7" value="7" onclick="javascript:setRadioValue('Q1_7','7');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_7_7" id="LQ1_7_7">음식점업</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_7_8" onclick="javascript:setRadioValue('Q1_7','8');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_7" id="Q1_7_8" value="8" onclick="javascript:setRadioValue('Q1_7','8');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_7_8" id="LQ1_7_8">기타소매업</label>
+		</div>
+</td>
+
+					</tr>
+					<tr>
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_7_9" onclick="javascript:setRadioValue('Q1_7','9');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_7" id="Q1_7_9" value="9" onclick="javascript:setRadioValue('Q1_7','9');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_7_9" id="LQ1_7_9">근린생활서비스</label>
+		</div>
+</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+
+				</tr></tbody></table>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_8" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">사업형태</span></th>
+		<td>
+<table class="table mb-0" id="Q1_8_inner" data-rv="Q1_8" style="border-bottom:1px solid #FFFFFF;margin-bottom:0rem;">
+	<colgroup>
+						<col width="40%">
+						<col width="40%">
+						<col width="40%">
+						<col width="40%">
+	</colgroup>
+	<tbody>
+					<tr>
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_8_1" onclick="javascript:setRadioValue('Q1_8','1');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_8" id="Q1_8_1" value="1" onclick="javascript:setRadioValue('Q1_8','1');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_8_1" id="LQ1_8_1">도매</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_8_2" onclick="javascript:setRadioValue('Q1_8','2');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_8" id="Q1_8_2" value="2" onclick="javascript:setRadioValue('Q1_8','2');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_8_2" id="LQ1_8_2">소매</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_8_3" onclick="javascript:setRadioValue('Q1_8','3');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_8" id="Q1_8_3" value="3" onclick="javascript:setRadioValue('Q1_8','3');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_8_3" id="LQ1_8_3">도소매</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor: pointer; display: none;" id="TD_Q1_8_4" onclick="javascript:setRadioValue('Q1_8','4');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_8" id="Q1_8_4" value="4" onclick="javascript:setRadioValue('Q1_8','4');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_8_4" id="LQ1_8_4">용역업</label>
+		</div>
+</td>
+
+					</tr>
+					<tr>
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_8_5" onclick="javascript:setRadioValue('Q1_8','5');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_8" id="Q1_8_5" value="5" onclick="javascript:setRadioValue('Q1_8','5');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_8_5" id="LQ1_8_5">기타
+			<input type="text" class="form-control d-inline-block text-start" id="TQ1_8_5" name="TQ1_8_5" onclick="event.stopPropagation();" maxlength="255">
+			</label>
+		</div>
+</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+
+				</tr></tbody></table>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_9" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">주요판매품목</span></th>
+		<td class="align-middle text-center">
+		<table class="table table-bordered mb-0" id="Q1_9_inner">
+			<colgroup><col width="20%"><col width="*"></colgroup>
+			<tbody>
+				<tr>
+					<td class="text-center align-middle"><label id="LQ1_9_1">1순위</label></td>
+					<td><input type="text" class="form-control input-lg" name="Q1_9_1" id="Q1_9_1" maxlength="255"></td>
+				</tr>
+				<tr>
+					<td class="text-center align-middle"><label id="LQ1_9_2">2순위</label></td>
+					<td><input type="text" class="form-control input-lg" name="Q1_9_2" id="Q1_9_2" maxlength="255"></td>
+				</tr>
+				<tr>
+					<td class="text-center align-middle"><label id="LQ1_9_3">3순위</label></td>
+					<td><input type="text" class="form-control input-lg" name="Q1_9_3" id="Q1_9_3" maxlength="255"></td>
+				</tr>
+			</tbody>
+		</table>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_10" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">응답자 명</span></th>
+		<td class="align-middle text-center">
+		<div class="input-group"><input name="Q1_10" id="Q1_10" type="text" maxlength="50" class="form-control input-lg"></div>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_11" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">연락처</span></th>
+		<td class="align-middle text-center">
+		<div class="input-group"><input name="Q1_11" id="Q1_11" type="tel" inputmode="numeric" class="form-control input-lg" maxlength="14"></div>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_12" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">직위</span></th>
+		<td>
+<table class="table mb-0" id="Q1_12_inner" data-rv="Q1_12" style="border-bottom:1px solid #FFFFFF;margin-bottom:0rem;">
+	<colgroup>
+						<col width="40%">
+						<col width="40%">
+						<col width="40%">
+						<col width="40%">
+	</colgroup>
+	<tbody>
+					<tr>
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_12_1" onclick="javascript:setRadioValue('Q1_12','1');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_12" id="Q1_12_1" value="1" onclick="javascript:setRadioValue('Q1_12','1');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_12_1" id="LQ1_12_1">점포주</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_12_2" onclick="javascript:setRadioValue('Q1_12','2');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_12" id="Q1_12_2" value="2" onclick="javascript:setRadioValue('Q1_12','2');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_12_2" id="LQ1_12_2">기타
+			<input type="text" class="form-control d-inline-block text-start" id="TQ1_12_2" name="TQ1_12_2" onclick="event.stopPropagation();" maxlength="255">
+			</label>
+		</div>
+</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+
+				</tr></tbody></table>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_13" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">공단에서 지원하는 각종 사업 관련 정보를 받아보시겠습니까?</span></th>
+		<td>
+<table class="table mb-0" id="Q1_13_inner" data-rv="Q1_13" style="border-bottom:1px solid #FFFFFF;margin-bottom:0rem;">
+	<colgroup>
+						<col width="40%">
+						<col width="40%">
+						<col width="40%">
+						<col width="40%">
+	</colgroup>
+	<tbody>
+					<tr>
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_13_1" onclick="javascript:setRadioValue('Q1_13','1');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_13" id="Q1_13_1" value="1" onclick="javascript:setRadioValue('Q1_13','1');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_13_1" id="LQ1_13_1">예
+			<input type="text" class="form-control d-inline-block text-center" id="TQ1_13_1" name="TQ1_13_1" onclick="event.stopPropagation();" maxlength="255" placeholder="메일주소">
+			</label>
+		</div>
+</td>
+
+					<td class="text-left" style="cursor:pointer;" id="TD_Q1_13_2" onclick="javascript:setRadioValue('Q1_13','2');">
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Q1_13" id="Q1_13_2" value="2" onclick="javascript:setRadioValue('Q1_13','2');">
+			<label class="form-check-label" style="cursor:pointer;" for="Q1_13_2" id="LQ1_13_2">아니오</label>
+		</div>
+</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+
+				</tr></tbody></table>
+
+		</td>
+	</tr>
+	<tr>
+		<th class="text-left align-middle bg-light"><span id="LQ1_14" tabindex="-1" data-bs-toggle="popover" data-bs-trigger="manual">조사원 명</span></th>
+		<td class="align-middle text-center">
+		<div class="input-group"><input name="Q1_14" id="Q1_14" type="text" maxlength="255" class="form-control input-lg" readonly=""></div>
+
+		</td>
+	</tr>
+	</tbody>
+</table>
+					 
+				</div>				
+				
+			</div> <!--shadow-sm end-->
+
+				
+			
+			 
+			
+<div id="imageModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+     background-color:rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:9999;" onclick="closeModal()">
+  <img id="modalImage" src="" style="max-width:90%; max-height:90%; border:4px solid white; box-shadow:0 0 10px #000;">
+</div>
+
+<div id="timerLabel"></div>
+
+
+<div class="col-12" id="tempSaveReasonWrap" style="margin:14px 4px 18px 4px; padding:10px 12px; background:#fff8e1; border:1px solid #ffe082; border-radius:6px;">
+	<label for="tempSaveReason" class="d-block mb-1" style="font-size:13px; color:#795548; font-weight:bold;">임시저장 사유 <span style="color:#e53935;">(필수)</span></label>
+	<textarea id="tempSaveReason" name="tempSaveReason" class="form-control form-control-sm" rows="2" placeholder="임시저장하는 사유를 입력해 주세요"></textarea>
+</div>
+
+<div class="btn-group col-12 shadow" id="btnC">
+
+    <button type="button" id="survey_list" class="btn btn-success btn-lg col-2 btn-bottom" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample">목차</button>
+    <button type="button" id="prev" class="btn btn-default btn-lg col-3 btn-bottom">이전</button>
+	<input type="hidden" name="tempFlag" id="tempFlag" value="F">
+	
+	<button type="button" id="tempSave" class="btn btn-warning btn-lg col-3 btn-bottom">임시저장(다음)</button>
+    <button type="button" id="next" class="btn btn-secondary btn-lg col-4 btn-bottom">저장(다음)</button>
+	
+</div>
+
+<!--마우스 오버시 보이는 보기값 출력-->
+
+
+<script language="javascript">
+
+$(document).ready(function(){
+	load_data("Q1_1,Q1_2,Q1_3,Q1_4_1,Q1_4_2,Q1_4_3,Q1_5,Q1_6,Q1_7,Q1_8,TQ1_8_5,Q1_9_1,Q1_9_2,Q1_9_3,Q1_10,Q1_11,Q1_12,TQ1_12_2,Q1_13,TQ1_13_1,Q1_14","76376_517_2"); //응답데이터 가져오기
+});
+
+// 이 페이지 전용 임시저장 사유 컬럼(Q1_TempSaveLog) 값을 불러와 textarea에 채워준다.
+$(document).ready(function () {
+	$.ajax({
+		url: "DataLoad.asp",
+		type: "POST",
+		dataType: "html",
+		data: { "VARS": "Q1_TempSaveLog", "IDKEY": "76376_517_2" },
+		success: function (response) {
+			var parts = String(response || "").split("⇔");
+			for (var i = 0; i < parts.length; i++) {
+				var kv = parts[i].split("∏");
+				if (kv[0] === "Q1_TempSaveLog" && kv[1]) {
+					$("#tempSaveReason").val(kv[1]);
+				}
+			}
+		},
+		error: function () {
+			// 컬럼 미생성 등으로 실패해도 조용히 무시 (textarea는 빈 채로 유지)
+		}
+	});
+});
+
+</script>
+			
+		</div> <!--mobile-body or col-8 end-->
+	</div> <!--row or nothing div end-->
+			
+</div> <!--containter end-->
+</form>
+</div>
+
+<noscript>
+    <div style="background:red; color:white; padding:20px; text-align:center;">
+        <strong>경고:</strong> 이 설문조사는 JavaScript가 활성화되어야 진행할 수 있습니다. 
+        브라우저 설정에서 JavaScript를 허용해 주세요.
+    </div>
+</noscript>
+
+
+</body></html>
