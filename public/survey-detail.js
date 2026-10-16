@@ -571,16 +571,12 @@ async function initSurveyDetailPage() {
           setTimelineStep(data.step);
         }
 
-        // 파일럿 완료 (화면 자동 새로고침 파이프라인)
+        // 파일럿 완료 (화면 자동 동기화)
         else if (data.type === 'PILOT_COMPLETED') {
           setTimelineStep('Agree');
           setRunningState(false);
           await loadCampaign();
           appendLog('success', `🎉 1번 쿼터 "${data.bizName || ''}" 파일럿 검증 완료! Agree.asp 안전 대기 중.`);
-          appendLog('info', '🔄 3초 후 검증 결과 및 버튼 상태를 완벽 동기화하기 위해 화면을 자동으로 새로고침합니다...');
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
         }
 
         // 배치 진행
@@ -599,16 +595,12 @@ async function initSurveyDetailPage() {
           }
         }
 
-        // 배치 완료 (화면 자동 리프레시 파이프라인)
+        // 배치 완료 (화면 자동 동기화)
         else if (data.type === 'BATCH_COMPLETED') {
           setTimelineStep('Agree');
           setRunningState(false);
           await loadCampaign();
           appendLog('success', '🎉 모든 쿼터의 배치 자동화가 성공적으로 완료되었습니다!');
-          appendLog('info', '🔄 3초 후 최신 실행 결과를 완벽 동기화하기 위해 화면을 자동으로 새로고침합니다...');
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
         }
 
         // 쿼터 업데이트
