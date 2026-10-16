@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
   <link rel="stylesheet" href="campaign.css">
-  <link rel="stylesheet" href="custom-styles.css?v=20261016_4">
+  <link rel="stylesheet" href="custom-styles.css?v=20261016_5">
 </head>
 <body>
 
@@ -97,6 +97,56 @@
       </div>
     </div>
 
+    <!-- Industry Group Selection Bar (3대 업종 그룹별 기준점 선택 네비게이션) -->
+    <div class="blueprint-group-nav-container mb-24">
+      <div class="blueprint-group-tabs" role="tablist">
+        <button type="button" class="group-tab-btn active" data-group="group1" id="tab-group1">
+          <div class="group-tab-header">
+            <div class="group-tab-title-wrap">
+              <span class="group-tab-icon">🌾</span>
+              <span class="group-tab-title">1번 그룹 [식품군]</span>
+            </div>
+            <span class="group-tab-count-badge" id="badge-count-group1">9개 점포</span>
+          </div>
+          <div class="group-tab-desc">농산물 · 축산물 · 수산물 · 가공식품</div>
+        </button>
+
+        <button type="button" class="group-tab-btn" data-group="group2" id="tab-group2">
+          <div class="group-tab-header">
+            <div class="group-tab-title-wrap">
+              <span class="group-tab-icon">👗</span>
+              <span class="group-tab-title">2번 그룹 [공산·생활·서비스군]</span>
+            </div>
+            <span class="group-tab-count-badge" id="badge-count-group2">11개 점포</span>
+          </div>
+          <div class="group-tab-desc">의류신발 · 가정용품 · 기타소매 · 근린상권</div>
+        </button>
+
+        <button type="button" class="group-tab-btn" data-group="group3" id="tab-group3">
+          <div class="group-tab-header">
+            <div class="group-tab-title-wrap">
+              <span class="group-tab-icon">🍽️</span>
+              <span class="group-tab-title">3번 그룹 [외식·음식점업군]</span>
+            </div>
+            <span class="group-tab-count-badge" id="badge-count-group3">4개 점포</span>
+          </div>
+          <div class="group-tab-desc">음식점업 (한식/중식/피자/카페)</div>
+        </button>
+      </div>
+
+      <div class="blueprint-group-info-bar mt-12 flex-between">
+        <div class="group-target-stores font-caption text-secondary-color" id="group-target-stores-list">
+          <i class="fa-solid fa-store text-primary-color"></i> <strong id="label-active-group-name">1번 그룹 [식품군]</strong> 적용 대상 점포:
+          <span class="text-white" id="list-active-group-stores">더덕상회, 정주상회, 세일축산, 한우마을, 칠칠수산, 물고기, 뻥튀기가 맛있는 집, 양지기름, 백군떡방</span>
+        </div>
+        <div class="group-copy-actions flex-center-gap-8">
+          <button type="button" class="btn-chip" id="btn-copy-to-all-groups" title="현재 선택된 그룹의 설정을 다른 2개 그룹에 일괄 복사">
+            <i class="fa-solid fa-copy"></i> 현재 그룹 설정을 모든 그룹에 일괄 복사
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 16 Stage Cards Grid -->
     <div class="blueprint-stage-grid" id="blueprint-stage-grid">
       <!-- JS로 16단계 카드 동적 렌더링 -->
@@ -107,7 +157,7 @@
 
   </main>
 
-  <script type="module" src="survey-blueprint.js?v=20261016_8"></script>
+  <script type="module" src="survey-blueprint.js?v=20261016_9"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

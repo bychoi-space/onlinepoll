@@ -49,6 +49,31 @@ export function categorizeIndustry(handledItems = '', industry = '') {
 }
 
 /**
+ * 3대 업종 그룹 분류기 (사용자 정의 기준)
+ * 1번 그룹: [농산물] [축산물] [수산물] [가공식품]
+ * 2번 그룹: [의류신발] [가정용품] [기타소매] [근린상권]
+ * 3번 그룹: [음식점업]
+ */
+export function getIndustryGroupKey(industryText = '', handledItems = '') {
+  const ind = String(industryText || '');
+  const items = String(handledItems || '');
+  const combined = (ind + ' ' + items).trim();
+
+  // 1순위: 농산물, 축산물, 수산물, 가공식품
+  if (/^농산|^축산|^수산|^가공식품/.test(ind) || /^농산|^축산|^수산|^가공식품/.test(items) || /농산물|축산물|수산물|가공식품/.test(ind)) {
+    return 'group1';
+  }
+
+  // 3번 그룹: 음식점업
+  if (/^음식점|^식당|^분식|^주점|^카페|^치킨|^피자/.test(ind) || /음식점업|일반 음식점|휴게음식점|피자전문점/.test(combined)) {
+    return 'group3';
+  }
+
+  // 2번 그룹: 의류신발, 가정용품, 기타소매, 근린상권
+  return 'group2';
+}
+
+/**
  * 쿼터별 동적 페르소나 및 가변 응답 데이터셋 생성
  * @param {Object} bizData 사업자 실존 데이터
  * @param {number} quotaIndex 쿼터 순번 (1, 2, 3...)
@@ -63,8 +88,9 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
 
   const randBetween = (min, max) => Math.floor(rng() * (max - min + 1)) + min;
 
-  // 1. 업종 분류
+  // 1. 업종 분류 및 3대 업종 그룹 판별
   const industryMeta = categorizeIndustry(bizData.handledItems, bizData.industry);
+  const groupKey = getIndustryGroupKey(bizData.industry, bizData.handledItems);
 
   // 2. 대표자 연령 및 성별 (사용자가 쿼터 테이블에 직접 입력한 값 우선 반영)
   const ceoName = bizData.ceoName || '점포주';
@@ -85,8 +111,10 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     age = String(randBetween(42, 63)); // 40대~60대
   }
 
-  // 마스터 블루프린트 기준점 설정 결합
-  const mb = guidelineConfig.masterBaseline || {};
+  // 마스터 블루프린트 기준점 설정 결합 (업종 그룹별 전용 가이드 우선 적용)
+  const baseCfg = guidelineConfig.masterBaseline || {};
+  const groupBaseline = baseCfg.groups?.[groupKey] || {};
+  const mb = { ...baseCfg, ...groupBaseline };
 
   // 3. 매장 면적 및 종업원수 (P2)
   const basePyeong = mb.storePyeong !== undefined ? parseInt(mb.storePyeong, 10) : 14;
@@ -341,7 +369,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   }
 
   // 12. 디지털화 및 배달/POS 서비스 (P8 C1)
-  const isFoodService = /음식점|식당|분식|주점|치킨|피자|카페|한식|중식|일식/.test(
+  const isFoodService = groupKey === 'group3' || /음식점|식당|분식|주점|치킨|피자|카페|한식|중식|일식/.test(
     industryMeta.categoryName + ' ' + (bizData.handledItems || '')
   );
   const foodDeliveryRate = mb.deliveryFoodAdoption !== undefined ? (mb.deliveryFoodAdoption / 100) : 0.75;
