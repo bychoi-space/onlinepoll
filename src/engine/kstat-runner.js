@@ -223,7 +223,7 @@ export async function runKstatSurvey({
 
     // 본조사 루프 (P1 ~ P14)
     let iteration = 0;
-    const maxIterations = 10;
+    const maxIterations = 35;
 
     while (iteration < maxIterations) {
       iteration++;
@@ -639,19 +639,19 @@ export async function runKstatSurvey({
       else if (stepName === 'P12') {
         const fE2A = page.frame({ url: /E2A\.asp/ });
         if (fE2A) {
-          await fE2A.click('#E2A_1, input[value="1"]').catch(async () => {
+          await fE2A.click('#E2A_1, input[value="1"]', { timeout: 1500 }).catch(async () => {
             await safeClick(fE2A, '#E2A_1');
           });
         }
         const fE2B = page.frame({ url: /E2B\.asp/ });
         if (fE2B) {
-          await fE2B.click('#E2B_1, input[value="1"]').catch(async () => {
+          await fE2B.click('#E2B_1, input[value="1"]', { timeout: 1500 }).catch(async () => {
             await safeClick(fE2B, '#E2B_1');
           });
         }
         const fE2C = page.frame({ url: /E2C\.asp/ });
         if (fE2C) {
-          await fE2C.click('#E2C_2, input[value="2"]').catch(async () => {
+          await fE2C.click('#E2C_2, input[value="2"]', { timeout: 1500 }).catch(async () => {
             await safeClick(fE2C, '#E2C_2');
           });
         }
