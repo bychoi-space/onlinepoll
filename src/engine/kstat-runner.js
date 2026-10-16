@@ -440,95 +440,103 @@ export async function runKstatSurvey({
           });
         }
 
-        // 1단계: 라디오 선택 후 동적 하위 iframe 로딩 대기 (최대 2초)
-        let fB5B1 = page.frame({ url: /B5B1\.asp/ });
-        if (!fB5B1) {
+        // 1단계: 라디오 선택 후 동적 하위 iframe 로딩 대기
+        let hasSubFrames = page.frame({ url: /B5B1\.asp/ }) || page.frame({ url: /B5B2\.asp/ });
+        if (!hasSubFrames) {
           for (let w = 0; w < 4; w++) {
             await page.waitForTimeout(500);
-            fB5B1 = page.frame({ url: /B5B1\.asp/ });
-            if (fB5B1) break;
+            hasSubFrames = page.frame({ url: /B5B1\.asp/ }) || page.frame({ url: /B5B2\.asp/ });
+            if (hasSubFrames) break;
           }
         }
 
         // 여전히 미생성 시 1차 next 클릭으로 Alert 유발 및 동적 로드 트리거
-        if (!fB5B1) {
+        if (!hasSubFrames) {
           await page.evaluate(() => document.querySelector('#next')?.click());
           await page.waitForTimeout(1500);
 
           // 추가 문항 프레임 로딩 대기 (최대 5초)
           for (let w = 0; w < 10; w++) {
-            fB5B1 = page.frame({ url: /B5B1\.asp/ });
-            if (fB5B1) break;
+            hasSubFrames = page.frame({ url: /B5B1\.asp/ }) || page.frame({ url: /B5B2\.asp/ });
+            if (hasSubFrames) break;
             await page.waitForTimeout(500);
           }
         }
 
+        const joinYearVal = String(persona.onnuri?.joinYear || 2020);
+        const custVal = String(persona.onnuri?.monthlyCustomers || '5');
+
+        // [A] 온누리상품권 하위 프레임군 (가맹 시)
+        const fB5B1 = page.frame({ url: /B5B1\.asp/ });
         if (fB5B1) {
-          const joinYearVal = String(persona.onnuri.joinYear);
           await fB5B1.fill('input[name="B5B_1"], input[type="tel"], input[type="text"]', joinYearVal).catch(async () => {
-            await fB5B1.evaluate((val) => {
-              const inp = document.querySelector('input[name="B5B_1"], input[type="tel"], input[type="text"]');
-              if (inp) {
-                inp.value = val;
-                inp.dispatchEvent(new Event('input'));
-                inp.dispatchEvent(new Event('change'));
-              }
-            }, joinYearVal);
+            await safeFill(fB5B1, 'input[name="B5B_1"], input[type="tel"], input[type="text"]', joinYearVal);
           });
         }
 
-        let fB5C1 = page.frame({ url: /B5C1\.asp/ });
+        const fB5C1 = page.frame({ url: /B5C1\.asp/ });
         if (fB5C1) {
-          // [규칙 6] B5-3 온누리상품권 월평균 이용 고객 수: 2~10명 사이 랜덤
-          const custVal = String(persona.onnuri.monthlyCustomers || '5');
           await fB5C1.fill('input[name="B5C_1"], input[type="tel"], input[type="text"]', custVal).catch(async () => {
-            await fB5C1.evaluate((val) => {
-              const inp = document.querySelector('input[name="B5C_1"], input[type="tel"], input[type="text"]');
-              if (inp) {
-                inp.value = val;
-                inp.dispatchEvent(new Event('input'));
-                inp.dispatchEvent(new Event('change'));
-              }
-            }, custVal);
+            await safeFill(fB5C1, 'input[name="B5C_1"], input[type="tel"], input[type="text"]', custVal);
           });
         }
 
-        let fB5D1 = page.frame({ url: /B5D1\.asp/ });
+        const fB5D1 = page.frame({ url: /B5D1\.asp/ });
         if (fB5D1) {
           await fB5D1.click('#B5D_1_3, input[value="3"]').catch(async () => {
-            await fB5D1.evaluate(() => {
-              if (typeof setRadioValue === 'function') setRadioValue('B5D_1', '3');
-              const r = document.querySelector('#B5D_1_3, input[value="3"]');
-              if (r) { r.checked = true; r.click(); }
-              const td = document.querySelector('#TD_B5D_1_3');
-              if (td && td.onclick) td.onclick();
-            });
+            await safeClick(fB5D1, '#B5D_1_3, input[value="3"]');
           });
         }
 
-        let fB5F1 = page.frame({ url: /B5F1\.asp/ });
+        const fB5F1 = page.frame({ url: /B5F1\.asp/ });
         if (fB5F1) {
           await fB5F1.click('#B5F_1_3, input[value="3"]').catch(async () => {
-            await fB5F1.evaluate(() => {
-              if (typeof setRadioValue === 'function') setRadioValue('B5F_1', '3');
-              const r = document.querySelector('#B5F_1_3, input[value="3"]');
-              if (r) { r.checked = true; r.click(); }
-              const td = document.querySelector('#TD_B5F_1_3');
-              if (td && td.onclick) td.onclick();
-            });
+            await safeClick(fB5F1, '#B5F_1_3, input[value="3"]');
           });
         }
 
+        // [온누리 미가맹 사유 (B5AA)]
+        const fB5AA = page.frame({ url: /B5AA\.asp/ });
+        if (fB5AA) {
+          await fB5AA.click('#B5AA_1, input[value="1"]').catch(async () => {
+            await safeClick(fB5AA, '#B5AA_1, input[value="1"]');
+          });
+        }
+
+        // [B] 지역사랑상품권 하위 프레임군 (가맹 시 B5B2, B5C2, B5D2, B5F2)
+        const fB5B2 = page.frame({ url: /B5B2\.asp/ });
+        if (fB5B2) {
+          await fB5B2.fill('input[name="B5B_2"], input[type="tel"], input[type="text"]', joinYearVal).catch(async () => {
+            await safeFill(fB5B2, 'input[name="B5B_2"], input[type="tel"], input[type="text"]', joinYearVal);
+          });
+        }
+
+        const fB5C2 = page.frame({ url: /B5C2\.asp/ });
+        if (fB5C2) {
+          await fB5C2.fill('input[name="B5C_2"], input[type="tel"], input[type="text"]', custVal).catch(async () => {
+            await safeFill(fB5C2, 'input[name="B5C_2"], input[type="tel"], input[type="text"]', custVal);
+          });
+        }
+
+        const fB5D2 = page.frame({ url: /B5D2\.asp/ });
+        if (fB5D2) {
+          await fB5D2.click('#B5D_2_3, input[value="3"]').catch(async () => {
+            await safeClick(fB5D2, '#B5D_2_3, input[value="3"]');
+          });
+        }
+
+        const fB5F2 = page.frame({ url: /B5F2\.asp/ });
+        if (fB5F2) {
+          await fB5F2.click('#B5F_2_3, input[value="3"]').catch(async () => {
+            await safeClick(fB5F2, '#B5F_2_3, input[value="3"]');
+          });
+        }
+
+        // [지역사랑 미가맹 사유 (B5AB)]
         const fB5AB = page.frame({ url: /B5AB\.asp/ });
         if (fB5AB) {
           await fB5AB.click('#B5AB_1, input[value="1"]').catch(async () => {
-            await fB5AB.evaluate(() => {
-              if (typeof setRadioValue === 'function') setRadioValue('B5AB', '1');
-              const r = document.querySelector('#B5AB_1, input[value="1"]');
-              if (r) { r.checked = true; r.click(); }
-              const td = document.querySelector('#TD_B5AB_1');
-              if (td && td.onclick) td.onclick();
-            });
+            await safeClick(fB5AB, '#B5AB_1, input[value="1"]');
           });
         }
       }

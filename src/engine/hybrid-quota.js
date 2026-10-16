@@ -225,7 +225,42 @@ export function formatStandardHandledItems(opts) {
 }
 
 /**
- * 온누리 + 마켓비즈 2단계 하이브리드 쿼터 생성 함수
+ * /**
+ * 마켓비즈 안전 로그인 헬퍼 (최대 3회 자동 재시도)
+ */
+async function ensureMarketBzLogin(page, maxRetries = 3) {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      logger.info(`[Step 2/2] 마켓비즈 플랫폼 인증 진행 중 (${MARKETBZ_CREDENTIALS.username}, 시도 ${attempt}/${maxRetries})...`);
+      await page.goto(MARKETBZ_LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await page.waitForSelector('#username', { timeout: 10000 });
+      await page.fill('#username', MARKETBZ_CREDENTIALS.username);
+      await page.fill('#password', MARKETBZ_CREDENTIALS.password);
+      await page.click('button.btn-login');
+      await page.waitForTimeout(1500);
+
+      const okBtn = page.locator('#successButton, button:has-text("확인")').first();
+      try {
+        await okBtn.waitFor({ state: 'visible', timeout: 5000 });
+        await okBtn.click();
+        await page.waitForTimeout(800);
+      } catch (_) {}
+
+      logger.success(`[Step 2/2] 마켓비즈 인증 완료 (시도 ${attempt}회).`);
+      return true;
+    } catch (err) {
+      lastErr = err;
+      logger.warn(`[Step 2/2] 마켓비즈 로그인 시도 ${attempt}/${maxRetries} 지연/실패: ${err.message}`);
+      await sleep(1500, 2500);
+    }
+  }
+  logger.warn(`[Step 2/2] 마켓비즈 초기 로그인 연결이 불안정합니다 (${lastErr?.message}). 개별 점포 조회 및 폴백 모드로 계속 진행합니다.`);
+  return false;
+}
+
+/**
+ * 온누리 + 마켓비즈 2단계 하이브리드 쿼터 생성 및 이어하기(Resume) 함수
  * @param {Object} options
  * @param {string} options.regionCode - 온누리 시도 코드 (예: '01')
  * @param {string} options.districtCode - 온누리 시군구 코드 (예: '01018')
@@ -238,7 +273,11 @@ export function formatStandardHandledItems(opts) {
  * @param {boolean} [options.enableSmartFallback=true] - 결손 업종(가정용품 등) 스마트 매핑 허용 여부
  * @param {Array<string>} [options.customFields=[]] - 추가 결합할 커스텀 항목 목록
  * @param {boolean} [options.autoEnrich=true] - 결측치(대표자/연락처) 외부 공인 데이터 자동 보강 여부
- * @returns {Promise<Array<Object>>} 실존 데이터로 결합된 쿼터 목록
+ * @param {number|null} [options.maxOpenYear=2025] - 개업연도 상한 기준
+ * @param {Array<Object>} [options.existingData=[]] - 이어하기(Resume) 시 기존에 이미 수집된 쿼터 배열
+ * @param {Array<Object>} [options.savedCandidates=null] - 이어하기 시 이전에 저장해둔 전체 1차 온누리 대상 후보 목록
+ * @param {Function} [options.onProgress=null] - 매 건 처리 시 즉시 파일 체크포인트 저장 및 SSE 브로드캐스트를 수행할 콜백
+ * @returns {Promise<Object>} { data, targetTotal, completedCount, mbzFailedCount, isComplete, candidates }
  */
 export async function buildHybridOnnuriQuota({
   regionCode,
@@ -252,16 +291,20 @@ export async function buildHybridOnnuriQuota({
   enableSmartFallback = true,
   customFields = [],
   autoEnrich = true,
-  maxOpenYear = 2025
+  maxOpenYear = 2025,
+  existingData = [],
+  savedCandidates = null,
+  onProgress = null
 }) {
-  logger.info(`[Hybrid Quota] === 온누리 연계 조사 쿼터 수집 시작 ===`);
-  logger.info(`[Hybrid Quota] 대상: "${marketName}" | 모드: ${samplingMode} | 개업연도 상한: ${maxOpenYear ? maxOpenYear + '년 이하' : '전체'} | 커스텀 필드: ${customFields.join(', ') || '없음'} | 외부 보강: ${autoEnrich ? 'ON' : 'OFF'}`);
+  const isResumeMode = Array.isArray(existingData) && existingData.length > 0;
+  logger.info(`[Hybrid Quota] === 온누리 연계 조사 쿼터 ${isResumeMode ? '이어하기(Resume) 업데이트' : '수집'} 시작 ===`);
+  logger.info(`[Hybrid Quota] 대상: "${marketName}" | 모드: ${samplingMode} | 개업연도 상한: ${maxOpenYear ? maxOpenYear + '년 이하' : '전체'} | 기존 데이터: ${existingData.length}건`);
 
   let onnuriList = [];
   let reserveByCategory = {};
   let generalReserve = [];
 
-  // 1단계: 온누리 플랫폼에서 대상 가맹점 1차 팩트 수집 (개업연도 상한 사전 필터링 + 예비 후보 풀 확보)
+  // 1단계: 온누리 플랫폼에서 대상 가맹점 1차 팩트 수집 (또는 저장된 후보 목록 복원)
   if (samplingMode === 'stratified' && Object.keys(industryQuotas).length > 0) {
     logger.info(`[Step 1/2] [업종별 층화 할당] 온누리 플랫폼에서 업종별 맞춤 가맹점을 수집합니다: ${JSON.stringify(industryQuotas)}`);
     const result = await getStratifiedMarketMerchants({
@@ -292,12 +335,33 @@ export async function buildHybridOnnuriQuota({
     generalReserve = (!Array.isArray(result) && result.generalReserve) ? result.generalReserve : [];
   }
 
-  if (onnuriList.length === 0) {
+  // 만약 이어하기 시 기존 저장된 후보 목록(savedCandidates)이 있으면 누락된 후보를 병합
+  if (Array.isArray(savedCandidates) && savedCandidates.length > 0) {
+    const currentBizNums = new Set(onnuriList.map(m => m.bizNumber).filter(Boolean));
+    for (const savedCand of savedCandidates) {
+      if (savedCand && savedCand.bizNumber && !currentBizNums.has(savedCand.bizNumber)) {
+        onnuriList.push(savedCand);
+        currentBizNums.add(savedCand.bizNumber);
+      }
+    }
+  }
+
+  if (onnuriList.length === 0 && existingData.length === 0) {
     logger.warn(`[Hybrid Quota] "${marketName}" 조건에 부합하는 온누리 가맹점을 찾지 못했습니다.`);
-    return [];
+    return {
+      data: [],
+      targetTotal: 0,
+      completedCount: 0,
+      mbzFailedCount: 0,
+      isComplete: false,
+      candidates: []
+    };
   }
 
   const usedBizSet = new Set(onnuriList.map(m => m.bizNumber).filter(Boolean));
+  existingData.forEach(item => {
+    if (item && item.bizNumber) usedBizSet.add(item.bizNumber);
+  });
 
   function pullReplacementMerchant(targetCat) {
     if (targetCat && Array.isArray(reserveByCategory[targetCat])) {
@@ -320,149 +384,223 @@ export async function buildHybridOnnuriQuota({
     return null;
   }
 
-  logger.success(`[Step 1/2 완료] 온누리 가맹점 ${onnuriList.length}건 1차 확보 완료 (예비 후보 ${generalReserve.length}건 대기). 마켓비즈 2차 정보 결합을 시작합니다.`);
+  // 기존 데이터 중 이미 정상적으로 마켓비즈 결합까지 완료된 항목 보존 & CEO 풀 중복 방지 등록
+  const ceoPoolUsedState = { usedSeqs: new Set(), usedNames: new Set() };
+  const finalQuotaList = [];
+  const completedMap = new Map();
+
+  for (const prevItem of existingData) {
+    if (!prevItem) continue;
+    if (prevItem.ceoName) ceoPoolUsedState.usedNames.add(prevItem.ceoName);
+    const key = prevItem.bizNumber || prevItem.companyName;
+    // mbzStatus === 'failed' 가 아니고 필수 필드가 채워진 항목은 이미 성공한 것으로 간주하여 스킵 대상에 등록
+    const isCompletedItem = prevItem.mbzStatus !== 'failed' && Boolean(prevItem.ceoName && prevItem.openDate && prevItem.handledItems && prevItem.mainProducts);
+    if (isCompletedItem && key) {
+      completedMap.set(key, { ...prevItem, mbzStatus: 'ok' });
+    }
+  }
+
+  // 이어하기 시: 기존에 이미 완료된 항목들을 먼저 finalQuotaList에 담고,
+  // 아직 처리되지 않았거나 이전에 마켓비즈 실패(mbzStatus === 'failed')했던 항목들만 마켓비즈 조회 대상으로 분류
+  const pendingMerchants = [];
+  for (const m of onnuriList) {
+    const key = m.bizNumber || m.companyName;
+    if (key && completedMap.has(key)) {
+      const doneItem = completedMap.get(key);
+      doneItem.seq = finalQuotaList.length + 1;
+      finalQuotaList.push(doneItem);
+      completedMap.delete(key);
+    } else {
+      pendingMerchants.push(m);
+    }
+  }
+  // 혹시 onnuriList 외에 completedMap에 남아있는 기존 완료 건들도 보존
+  for (const [, doneItem] of completedMap.entries()) {
+    doneItem.seq = finalQuotaList.length + 1;
+    finalQuotaList.push(doneItem);
+  }
+
+  const targetTotal = finalQuotaList.length + pendingMerchants.length;
+
+  if (pendingMerchants.length === 0) {
+    logger.success(`[Hybrid Quota] 모든 대상 가맹점(${finalQuotaList.length}건)이 이미 완벽하게 수집되어 있습니다.`);
+    return {
+      data: finalQuotaList,
+      targetTotal: finalQuotaList.length,
+      completedCount: finalQuotaList.length,
+      mbzFailedCount: 0,
+      isComplete: true,
+      candidates: onnuriList
+    };
+  }
+
+  logger.success(`[Step 1/2 완료] 총 목표 ${targetTotal}건 중 기완료 ${finalQuotaList.length}건 보존 ➔ 잔여/재시도 대상 ${pendingMerchants.length}건 마켓비즈 2차 결합을 시작합니다.`);
+
+  // 초기 체크포인트 콜백 호출 (1차 후보 목록과 현재까지 보존된 리스트를 파일에 즉시 저장)
+  if (typeof onProgress === 'function') {
+    try {
+      await onProgress({
+        currentData: finalQuotaList,
+        currentIndex: finalQuotaList.length,
+        targetTotal,
+        candidates: onnuriList,
+        lastItem: null,
+        isComplete: false
+      });
+    } catch (_) {}
+  }
 
   // 2단계: 마켓비즈 플랫폼 로그인 및 1:1 결합(Enrichment)
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
   const context = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
   });
   const page = await context.newPage();
 
-  const finalQuotaList = [];
-  const ceoPoolUsedState = { usedSeqs: new Set(), usedNames: new Set() };
+  let mbzLoggedIn = false;
+  let consecutiveMbzFailures = 0;
 
   try {
-    logger.info(`[Step 2/2] 마켓비즈 플랫폼 인증 진행 중 (${MARKETBZ_CREDENTIALS.username})...`);
-    await page.goto(MARKETBZ_LOGIN_URL, { waitUntil: 'networkidle', timeout: 30000 });
-    await page.fill('#username', MARKETBZ_CREDENTIALS.username);
-    await page.fill('#password', MARKETBZ_CREDENTIALS.password);
-    await page.click('button.btn-login');
-    await page.waitForTimeout(1500);
+    mbzLoggedIn = await ensureMarketBzLogin(page, 3);
 
-    const okBtn = page.locator('#successButton, button:has-text("확인")').first();
-    try {
-      await okBtn.waitFor({ state: 'visible', timeout: 5000 });
-      await okBtn.click();
-      await page.waitForTimeout(1000);
-    } catch (_) {}
-    logger.success(`[Step 2/2] 마켓비즈 인증 완료. 가맹점별 1:1 상세 크로스체크를 진행합니다.`);
-
-    for (let i = 0; i < onnuriList.length; i++) {
-      const merchant = onnuriList[i];
-      const seqStr = `(${finalQuotaList.length + 1}번째 목표 / 진행 ${i + 1}/${onnuriList.length})`;
+    for (let i = 0; i < pendingMerchants.length; i++) {
+      const merchant = pendingMerchants[i];
+      const currentSeq = finalQuotaList.length + 1;
+      const totalPlanned = finalQuotaList.length + (pendingMerchants.length - i);
+      const seqStr = `(${currentSeq}번째 목표 / 전체 ${totalPlanned}건)`;
       logger.info(`[Hybrid Quota] ${seqStr} "${merchant.companyName}" (사업자: ${merchant.bizNumber || '미기재'}) 마켓비즈 상세 연동 중...`);
 
       let marketBzDetail = {};
+      let mbzFetchStatus = 'ok';
 
       if (merchant.rawBizNumber && merchant.rawBizNumber.length === 10) {
-        try {
-          const detailUrl = `https://marketbz.com/companyDetail/${merchant.rawBizNumber}`;
-          await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 20000 });
-          await sleep(800, 1500);
-
-          marketBzDetail = await page.evaluate((dynamicFields) => {
-            const bodyText = document.body.innerText;
-            const res = {
-              mbzIndustry: null,
-              mbzOpenDate: null,
-              mbzCeoName: null,
-              mbzAddress: null,
-              mbzRoadAddress: null,
-              mbzPhone: null
-            };
-
-            // 1. '기업 핵심정보' 블록에서 기본 속성 추출
-            const coreIdx = bodyText.indexOf('기업 핵심정보');
-            const coreText = coreIdx !== -1 ? bodyText.slice(coreIdx, coreIdx + 1200) : bodyText;
-
-            // 등록 산업분류 (취급품목)
-            const indM = coreText.match(/등록 산업분류\s*[:\n\|]?\s*([^\n\|]+)/) ||
-                         coreText.match(/영위하는\s*([^\n,]+?)개인사업자/) ||
-                         coreText.match(/영위하는\s*([^\n,]+?)법인사업자/);
-            if (indM) {
-              const val = indM[1].trim();
-              if (val && !val.includes('메뉴') && !val.includes('로그아웃')) {
-                res.mbzIndustry = val;
-              }
+        let fetchedOk = false;
+        // 개별 사업자 조회 최대 2회 시도 (연속 실패 시 재로그인 시도)
+        for (let retry = 1; retry <= 2; retry++) {
+          try {
+            if (!mbzLoggedIn || consecutiveMbzFailures >= 2) {
+              logger.info(`[Hybrid Quota] 마켓비즈 세션 재연결 시도 중...`);
+              mbzLoggedIn = await ensureMarketBzLogin(page, 2);
+              if (mbzLoggedIn) consecutiveMbzFailures = 0;
             }
 
-            // 설립일 (개업연월)
-            const dateM = coreText.match(/설립일[^\d]*(\d{4}[\.\-\s/]\d{1,2}[\.\-\s/]\d{1,2})/);
-            if (dateM) {
-              res.mbzOpenDate = dateM[1].trim();
+            const detailUrl = `https://marketbz.com/companyDetail/${merchant.rawBizNumber}`;
+            await page.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 18000 });
+            await sleep(700, 1200);
+
+            // 만약 로그인 페이지로 리다이렉트되었다면 재로그인 후 다시 이동
+            if (page.url().includes('loginPage')) {
+              mbzLoggedIn = await ensureMarketBzLogin(page, 2);
+              await page.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 18000 });
+              await sleep(700, 1200);
             }
 
-            // 대표자 (핵심정보 영역 내에서 탐색, 마스킹(***) 또는 메뉴 오염 배제)
-            const ceoM = coreText.match(/대표자\s*[:\n\|]?\s*([가-힣A-Za-z]{2,10})(?=\s*\||\n|$)/);
-            if (ceoM) {
-              const val = ceoM[1].trim();
-              if (!['연락처', '대표자', '서비스', '소재지', '사업자', '설립일', '등록', '기업', '기본', '핵심'].includes(val)) {
-                res.mbzCeoName = val;
-              }
-            }
+            marketBzDetail = await page.evaluate((dynamicFields) => {
+              const bodyText = document.body ? document.body.innerText : '';
+              const res = {
+                mbzIndustry: null,
+                mbzOpenDate: null,
+                mbzCeoName: null,
+                mbzAddress: null,
+                mbzRoadAddress: null,
+                mbzPhone: null
+              };
 
-            // 2. [사용자 지정 핵심 위치] '연락처·주소·사업장 정보' 테이블 내 대표전화번호 및 주소(도로명) 추출
-            const ths = Array.from(document.querySelectorAll('th, td, dt, dd'));
-            for (let el of ths) {
-              const txt = el.innerText.trim();
-              // 대표전화번호
-              if (txt === '대표전화번호' || txt.startsWith('대표전화번호')) {
-                const next = el.nextElementSibling;
-                if (next && next.innerText.trim()) {
-                  res.mbzPhone = next.innerText.trim();
+              const coreIdx = bodyText.indexOf('기업 핵심정보');
+              const coreText = coreIdx !== -1 ? bodyText.slice(coreIdx, coreIdx + 1200) : bodyText;
+
+              const indM = coreText.match(/등록 산업분류\s*[:\n\|]?\s*([^\n\|]+)/) ||
+                           coreText.match(/영위하는\s*([^\n,]+?)개인사업자/) ||
+                           coreText.match(/영위하는\s*([^\n,]+?)법인사업자/);
+              if (indM) {
+                const val = indM[1].trim();
+                if (val && !val.includes('메뉴') && !val.includes('로그아웃')) {
+                  res.mbzIndustry = val;
                 }
               }
-              // 주소(도로명)
-              if (txt === '주소(도로명)' || txt.startsWith('주소(도로명)')) {
-                const next = el.nextElementSibling;
-                if (next && next.innerText.trim()) {
-                  const spanEl = next.querySelector('span.pdt5');
-                  let addrText = spanEl ? spanEl.innerText : next.innerText;
-                  addrText = addrText.replace(/주소정보\s*갱신/g, '').replace(/\s+/g, ' ').trim();
-                  if (addrText) {
-                    res.mbzRoadAddress = addrText;
+
+              const dateM = coreText.match(/설립일[^\d]*(\d{4}[\.\-\s/]\d{1,2}[\.\-\s/]\d{1,2})/);
+              if (dateM) {
+                res.mbzOpenDate = dateM[1].trim();
+              }
+
+              const ceoM = coreText.match(/대표자\s*[:\n\|]?\s*([가-힣A-Za-z]{2,10})(?=\s*\||\n|$)/);
+              if (ceoM) {
+                const val = ceoM[1].trim();
+                if (!['연락처', '대표자', '서비스', '소재지', '사업자', '설립일', '등록', '기업', '기본', '핵심'].includes(val)) {
+                  res.mbzCeoName = val;
+                }
+              }
+
+              const ths = Array.from(document.querySelectorAll('th, td, dt, dd'));
+              for (let el of ths) {
+                const txt = el.innerText.trim();
+                if (txt === '대표전화번호' || txt.startsWith('대표전화번호')) {
+                  const next = el.nextElementSibling;
+                  if (next && next.innerText.trim()) {
+                    res.mbzPhone = next.innerText.trim();
+                  }
+                }
+                if (txt === '주소(도로명)' || txt.startsWith('주소(도로명)')) {
+                  const next = el.nextElementSibling;
+                  if (next && next.innerText.trim()) {
+                    const spanEl = next.querySelector('span.pdt5');
+                    let addrText = spanEl ? spanEl.innerText : next.innerText;
+                    addrText = addrText.replace(/주소정보\s*갱신/g, '').replace(/\s+/g, ' ').trim();
+                    if (addrText) {
+                      res.mbzRoadAddress = addrText;
+                    }
                   }
                 }
               }
-            }
 
-            // 만약 DOM에서 놓쳤을 경우 정규식 백업 탐색
-            if (!res.mbzPhone) {
-              const pMatch = bodyText.match(/대표전화번호\s*[\t\:\n]?\s*([\d-]{8,14})/);
-              if (pMatch) res.mbzPhone = pMatch[1].trim();
-            }
+              if (!res.mbzPhone) {
+                const pMatch = bodyText.match(/대표전화번호\s*[\t\:\n]?\s*([\d-]{8,14})/);
+                if (pMatch) res.mbzPhone = pMatch[1].trim();
+              }
 
-            // 소재지 (기본 주소)
-            const addrM = coreText.match(/소재지\s*[:\n\|]?\s*([^\n]+)/);
-            if (addrM) {
-              const val = addrM[1].trim();
-              if (val && !val.includes('메뉴')) res.mbzAddress = val;
-            }
+              const addrM = coreText.match(/소재지\s*[:\n\|]?\s*([^\n]+)/);
+              if (addrM) {
+                const val = addrM[1].trim();
+                if (val && !val.includes('메뉴')) res.mbzAddress = val;
+              }
 
-            // 3. 동적 커스텀 필드 탐색 (없으면 null 처리)
-            if (dynamicFields && Array.isArray(dynamicFields)) {
-              dynamicFields.forEach(fieldName => {
-                const safeField = fieldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(`${safeField}\\s*[:\\|]?\\s*([^\\n\\|]+)`);
-                const match = bodyText.match(regex);
-                if (match) {
-                  res[fieldName] = match[1].trim().slice(0, 50);
-                } else {
-                  res[fieldName] = null;
-                }
-              });
-            }
+              if (dynamicFields && Array.isArray(dynamicFields)) {
+                dynamicFields.forEach(fieldName => {
+                  const safeField = fieldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                  const regex = new RegExp(`${safeField}\\s*[:\\|]?\\s*([^\\n\\|]+)`);
+                  const match = bodyText.match(regex);
+                  if (match) {
+                    res[fieldName] = match[1].trim().slice(0, 50);
+                  } else {
+                    res[fieldName] = null;
+                  }
+                });
+              }
 
-            return res;
-          }, customFields);
+              return res;
+            }, customFields);
 
-        } catch (subErr) {
-          logger.warn(`[Hybrid Quota] 마켓비즈 상세 조회 실패/미등록 (${subErr.message}) - 온누리 공인 데이터 유지`);
+            fetchedOk = true;
+            consecutiveMbzFailures = 0;
+            break;
+          } catch (subErr) {
+            consecutiveMbzFailures++;
+            logger.warn(`[Hybrid Quota] "${merchant.companyName}" 마켓비즈 조회 지연/실패 (시도 ${retry}/2): ${subErr.message}`);
+            await sleep(1000, 1800);
+          }
+        }
+
+        if (!fetchedOk) {
+          mbzFetchStatus = 'failed';
+          logger.warn(`[Hybrid Quota] "${merchant.companyName}" 마켓비즈 연결 실패 ➔ 온누리 공인 데이터로 우선 저장하며 [이어하기 재시도 대상]으로 마킹합니다.`);
         }
       }
 
-      // 개업연월 정제 (마켓비즈 설립일 우선 -> 온누리 가맹등록일 -> 없으면 null)
+      // 개업연월 정제
       let formattedOpenDate = null;
       if (marketBzDetail.mbzOpenDate) {
         formattedOpenDate = marketBzDetail.mbzOpenDate;
@@ -470,12 +608,13 @@ export async function buildHybridOnnuriQuota({
         formattedOpenDate = merchant.regDate;
       }
 
-      // [고도화] 개업연도 상한 기준 필터링 및 예비 후보 자동 대체 충원
+      // 개업연도 상한 기준 필터링 및 예비 후보 자동 대체 충원
       if (maxOpenYear && formattedOpenDate) {
         const yr = parseInt(formattedOpenDate.slice(0, 4), 10);
         if (!isNaN(yr) && yr > maxOpenYear) {
           const replacement = pullReplacementMerchant(merchant.targetCategory);
           if (replacement) {
+            pendingMerchants.push(replacement);
             onnuriList.push(replacement);
             logger.warn(`[Hybrid Quota] "${merchant.companyName}" 개업연도(${yr}년)가 상한(${maxOpenYear}년 이하) 초과로 제외 ➔ 예비 후보 "${replacement.companyName}" 자동 충원`);
           } else {
@@ -485,45 +624,40 @@ export async function buildHybridOnnuriQuota({
         }
       }
 
-      // 취급품목 및 주요품목 분리 정제 (취급품목: 표준 카테고리, 주요품목: 괄호 내 핵심 한 단어 또는 상호/업종 유추)
+      // 취급품목 및 주요품목 분리 정제
       const { handledItems, mainProducts } = splitHandledAndMainProducts({
         merchantIndustry: merchant.targetCategory || merchant.industry || '',
         mbzIndustry: marketBzDetail.mbzIndustry || '',
         companyName: merchant.companyName
       });
 
-      // 연락처 정제 (대표전화번호 포맷팅, 없으면 null)
       const finalPhone = formatPhoneNumber(marketBzDetail.mbzPhone);
-
-      // 대표자명 정제 (실제 데이터 없으면 null)
       const finalCeoName = marketBzDetail.mbzCeoName || null;
-
-      // 주소 (마켓비즈 도로명주소 우선 -> 온누리 주소 -> 마켓비즈 소재지 -> 없으면 null)
       const finalAddress = marketBzDetail.mbzRoadAddress || merchant.address || marketBzDetail.mbzAddress || null;
 
-      // 온누리 팩트 + 마켓비즈 팩트 1:1 병합
       const mergedItem = {
         seq: finalQuotaList.length + 1,
         source: 'ONNURI_MARKETBZ_HYBRID',
-        marketName: merchant.marketName || '풍납시장',
+        mbzStatus: mbzFetchStatus, // 'ok' | 'failed' (마켓비즈 연결 실패 시 이어하기에서 재조회)
+        marketName: merchant.marketName || marketName || '풍납시장',
         companyName: merchant.companyName,
-        industry: merchant.targetCategory || merchant.industry || null, // 업종 분류
+        industry: merchant.targetCategory || merchant.industry || null,
         bizNumber: merchant.bizNumber || null,
-        ceoName: finalCeoName,                       // 대표자이름 (없으면 null)
-        ceoGender: null,                             // 대표자 성별 (사용자 입력용)
-        ceoAge: null,                                // 대표자 나이 (사용자 입력용)
-        phone: finalPhone,                           // 연락처 (대표전화번호, 없으면 null)
-        openDate: formattedOpenDate,                 // 개업연월 (없으면 null)
-        address: finalAddress,                       // 사업장 주소 (도로명 우선, 없으면 null)
-        handledItems: handledItems,                  // 취급품목 (예: 농산물, 가공식품, 음식점업)
-        mainProducts: mainProducts,                  // 주요품목 (예: 과일, 커피, 떡류, 김밥, 치킨)
-        status: merchant.status || '정상가맹',       // 가맹상태
-        paperAccepted: merchant.paperAccepted,       // 온누리지류
-        digitalAccepted: merchant.digitalAccepted,   // 온누리디지털
+        rawBizNumber: merchant.rawBizNumber || (merchant.bizNumber ? merchant.bizNumber.replace(/\D/g, '') : null),
+        ceoName: finalCeoName,
+        ceoGender: null,
+        ceoAge: null,
+        phone: finalPhone,
+        openDate: formattedOpenDate,
+        address: finalAddress,
+        handledItems: handledItems,
+        mainProducts: mainProducts,
+        status: merchant.status || '정상가맹',
+        paperAccepted: merchant.paperAccepted,
+        digitalAccepted: merchant.digitalAccepted,
         ...marketBzDetail
       };
 
-      // 불필요한 내부 임시 키 정리
       delete mergedItem.mbzCeoName;
       delete mergedItem.mbzIndustry;
       delete mergedItem.mbzOpenDate;
@@ -531,7 +665,7 @@ export async function buildHybridOnnuriQuota({
       delete mergedItem.mbzRoadAddress;
       delete mergedItem.mbzPhone;
 
-      // 3단계: 결측치(대표자 또는 연락처) 외부 공인 데이터 자동 보강 (autoEnrich)
+      // 3단계: 결측치 외부 공인 데이터 자동 보강
       if (autoEnrich && (!mergedItem.ceoName || !mergedItem.phone)) {
         try {
           const enriched = await enrichBusinessData(mergedItem, ceoPoolUsedState);
@@ -547,23 +681,62 @@ export async function buildHybridOnnuriQuota({
         }
       }
 
-      // 4단계: 대표자 이름, 성별, 나이 중 누락된 항목을 CEO 페르소나 풀(data/ceo_persona_pool.json)로 자동 채움
+      // 4단계: 대표자 이름, 성별, 나이 누락 항목 CEO 페르소나 풀 자동 채움
       const filledItem = fillMissingCeoPersona(mergedItem, ceoPoolUsedState);
       mergedItem.ceoName = filledItem.ceoName;
       mergedItem.ceoGender = filledItem.ceoGender;
       mergedItem.ceoAge = filledItem.ceoAge;
 
       finalQuotaList.push(mergedItem);
-      logger.success(`[Hybrid Quota] [결합 완료] ${mergedItem.companyName} | 시장: ${mergedItem.marketName} | 대표자: ${mergedItem.ceoName || 'null'} (${mergedItem.ceoGender || '-'}, ${mergedItem.ceoAge || '-'}세)${mergedItem.ceoSource ? `[${mergedItem.ceoSource}]` : ''} | 연락처: ${mergedItem.phone || 'null'}${mergedItem.phoneSource ? `[${mergedItem.phoneSource}]` : ''} | 취급품목: ${mergedItem.handledItems || 'null'}`);
+      logger.success(`[Hybrid Quota] [저장 완료 ${finalQuotaList.length}/${totalPlanned}] ${mergedItem.companyName} | 대표자: ${mergedItem.ceoName} (${mergedItem.ceoGender}, ${mergedItem.ceoAge}세) | 연락처: ${mergedItem.phone || '미상'} | 취급품목: ${mergedItem.handledItems} / 주요품목: ${mergedItem.mainProducts}${mergedItem.mbzStatus === 'failed' ? ' [마켓비즈 재시도 필요]' : ''}`);
+
+      // [핵심] 매 1건 완료될 때마다 즉시 체크포인트 콜백 호출 (파일 저장 & 프론트 실시간 표 갱신)
+      if (typeof onProgress === 'function') {
+        try {
+          await onProgress({
+            currentData: finalQuotaList,
+            currentIndex: finalQuotaList.length,
+            targetTotal: totalPlanned,
+            candidates: onnuriList,
+            lastItem: mergedItem,
+            isComplete: false
+          });
+        } catch (cbErr) {
+          logger.warn(`[Hybrid Quota] 체크포인트 저장 경고: ${cbErr.message}`);
+        }
+      }
     }
 
-    logger.success(`[Hybrid Quota] 총 ${finalQuotaList.length}건의 온누리 연계 사업자 쿼터 생성이 성공적으로 완료되었습니다.`);
-    return finalQuotaList;
-
   } catch (error) {
-    logger.error('[Hybrid Quota] 하이브리드 쿼터 생성 중 오류 발생:', error);
-    throw error;
+    logger.error(`[Hybrid Quota] 수집 도중 예외 발생 (현재까지 확보된 ${finalQuotaList.length}건 안전 보존):`, error.message);
   } finally {
     await browser.close().catch(() => {});
   }
+
+  const mbzFailedCount = finalQuotaList.filter(item => item.mbzStatus === 'failed').length;
+  const isComplete = finalQuotaList.length >= targetTotal && mbzFailedCount === 0;
+
+  if (typeof onProgress === 'function') {
+    try {
+      await onProgress({
+        currentData: finalQuotaList,
+        currentIndex: finalQuotaList.length,
+        targetTotal,
+        candidates: onnuriList,
+        lastItem: null,
+        isComplete
+      });
+    } catch (_) {}
+  }
+
+  logger.success(`[Hybrid Quota] 작업 종료: 총 ${finalQuotaList.length}/${targetTotal}건 저장 완료 (마켓비즈 미연결 재시도 대상: ${mbzFailedCount}건).`);
+  return {
+    data: finalQuotaList,
+    targetTotal,
+    completedCount: finalQuotaList.length,
+    mbzFailedCount,
+    isComplete,
+    candidates: onnuriList
+  };
 }
+
