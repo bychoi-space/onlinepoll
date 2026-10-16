@@ -100,7 +100,8 @@ if (!fs.existsSync(reportsDir)) {
 }
 app.use('/reports', express.static(reportsDir));
 
-const quotasDir = path.join(rootDir, 'data', 'quotas');
+const dataDir = path.join(rootDir, 'data');
+const quotasDir = path.join(dataDir, 'quotas');
 if (!fs.existsSync(quotasDir)) {
   fs.mkdirSync(quotasDir, { recursive: true });
 }
