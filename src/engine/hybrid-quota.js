@@ -60,13 +60,18 @@ function formatPhoneNumber(raw) {
 }
 
 /**
- * [취급품목] 표준 단일어 정제 함수
- * - 명확한 1차 품목(농산물, 축산물, 수산물, 의류및신발)은 괄호 부연설명 없이 앞의 품목명만 기재
- * - 부연설명이 필요한 업종(가공식품, 가정용품, 음식점업, 기타소매업, 근린상권서비스 등)은
- *   괄호 안에 핵심 한 단어만 기재: 예) 가공식품 (신선식품), 가공식품 (떡류), 가공식품 (커피),
- *   음식점업 (김밥), 음식점업 (서양식), 음식점업 (치킨)
+ * [취급품목] 및 [주요품목] 분리 정제 함수
+ * - [취급품목] (handledItems): 농산물, 축산물, 수산물, 의류및신발, 가공식품, 가정용품, 음식점업, 기타소매업, 근린상권서비스
+ * - [주요품목] (mainProducts): 괄호 안 부연설명이 있으면 핵심 한 단어로 추출하고,
+ *   괄호가 없거나 포괄적이면 상호(companyName) 및 업종을 바탕으로 핵심 한 단어를 유추하여 생성
  */
-export function formatStandardHandledItems({ merchantIndustry = '', mbzIndustry = '', rawHandledItems = '', companyName = '' }) {
+export function splitHandledAndMainProducts({
+  merchantIndustry = '',
+  mbzIndustry = '',
+  rawHandledItems = '',
+  rawMainProducts = '',
+  companyName = ''
+}) {
   let baseCat = '';
   let subRaw = '';
 
@@ -81,66 +86,142 @@ export function formatStandardHandledItems({ merchantIndustry = '', mbzIndustry 
     }
   } else {
     baseCat = String(merchantIndustry || '').trim();
-    subRaw = String(mbzIndustry || '').trim();
+    const m = baseCat.match(/^([^\(]+?)\s*\((.+)\)$/);
+    if (m) {
+      baseCat = m[1].trim();
+      subRaw = m[2].trim();
+    }
   }
 
-  // 1) 명확한 품목(농산물, 축산물, 수산물, 의류및신발)은 앞 품목만 단독 표기
-  if (baseCat.includes('농산물')) return '농산물';
-  if (baseCat.includes('축산물')) return '축산물';
-  if (baseCat.includes('수산물')) return '수산물';
-  if (baseCat.includes('의류') || baseCat.includes('신발')) return '의류및신발';
+  if (!subRaw && mbzIndustry && String(mbzIndustry).trim()) {
+    subRaw = String(mbzIndustry).trim();
+  }
 
-  // 표준 기본 카테고리명 정규화
-  if (baseCat.includes('가공식품')) baseCat = '가공식품';
-  else if (baseCat.includes('가정용품')) baseCat = '가정용품';
-  else if (baseCat.includes('음식점')) baseCat = '음식점업';
-  else if (baseCat.includes('기타소매')) baseCat = '기타소매업';
-  else if (baseCat.includes('근린상권')) baseCat = '근린상권서비스';
+  // 1) [취급품목] 표준 카테고리명 정규화
+  let handledItems = '기타소매업';
+  if (baseCat.includes('농산물')) handledItems = '농산물';
+  else if (baseCat.includes('축산물')) handledItems = '축산물';
+  else if (baseCat.includes('수산물')) handledItems = '수산물';
+  else if (baseCat.includes('의류') || baseCat.includes('신발')) handledItems = '의류및신발';
+  else if (baseCat.includes('가공식품')) handledItems = '가공식품';
+  else if (baseCat.includes('가정용품')) handledItems = '가정용품';
+  else if (baseCat.includes('음식점')) handledItems = '음식점업';
+  else if (baseCat.includes('기타소매')) handledItems = '기타소매업';
+  else if (baseCat.includes('근린상권')) handledItems = '근린상권서비스';
+  else if (baseCat) handledItems = baseCat;
+
+  // 이미 유효한 단일어 주요품목이 있고 괄호 부연설명이 따로 없는 경우 보존
+  if (!subRaw && rawMainProducts && String(rawMainProducts).trim() && rawMainProducts !== 'null') {
+    return {
+      handledItems,
+      mainProducts: String(rawMainProducts).trim().split(/\s+/)[0]
+    };
+  }
+
+  const comp = String(companyName || '').trim();
+
+  // 상호 + 업종 기반 단일어 주요품목 유추 헬퍼
+  function inferMainProductFromStore() {
+    if (comp.includes('과일') || comp.includes('청과')) return '과일';
+    if (comp.includes('더덕') || comp.includes('인삼') || comp.includes('약초')) return '더덕';
+    if (comp.includes('야채') || comp.includes('채소')) return '채소';
+    if (comp.includes('농산') || comp.includes('쌀') || comp.includes('곡물')) return '곡물';
+    if (comp.includes('한우')) return '한우';
+    if (comp.includes('정육') || comp.includes('식육') || comp.includes('갈비')) return '정육';
+    if (comp.includes('닭') || comp.includes('계육')) return '계육';
+    if (comp.includes('수산') || comp.includes('횟집') || comp.includes('활어')) return '활어';
+    if (comp.includes('물고기') || comp.includes('생선')) return '생선';
+    if (comp.includes('건어물') || comp.includes('굴비') || comp.includes('멸치')) return '건어물';
+    if (comp.includes('신발') || comp.includes('구두') || comp.includes('올스타')) return '신발';
+    if (comp.includes('속옷') || comp.includes('란제리') || comp.includes('옥산')) return '속옷';
+    if (comp.includes('한복') || comp.includes('주단')) return '한복';
+    if (comp.includes('패션') || comp.includes('의류') || comp.includes('오뜨레') || comp.includes('옷')) return '의류';
+    if (comp.includes('떡')) return '떡류';
+    if (comp.includes('선식') || comp.includes('생식')) return '신선식품';
+    if (comp.includes('기름') || comp.includes('참기름')) return '유지류';
+    if (comp.includes('뻥튀기') || comp.includes('과자') || comp.includes('제과')) return '과자류';
+    if (comp.includes('반찬') || comp.includes('김치')) return '반찬류';
+    if (comp.includes('커피') || comp.includes('카페') || comp.includes('마주보며')) return '커피';
+    if (comp.includes('침구') || comp.includes('이불') || comp.includes('커튼')) return '침구류';
+    if (comp.includes('철물') || comp.includes('공구')) return '철물';
+    if (comp.includes('꽃') || comp.includes('꽃샘') || comp.includes('화원')) return '직물제품';
+    if (comp.includes('마트') || comp.includes('슈퍼')) return '슈퍼마켓';
+    if (comp.includes('김밥') || comp.includes('분식') || comp.includes('호떡')) return '김밥';
+    if (comp.includes('치킨') || comp.includes('맥시칸') || comp.includes('통닭')) return '치킨';
+    if (comp.includes('피자')) return '피자';
+    if (comp.includes('보성각') || comp.includes('반점') || comp.includes('중식')) return '중식';
+    if (comp.includes('룽고') || comp.includes('파스타') || comp.includes('양식')) return '서양식';
+    if (comp.includes('쭈꾸미') || comp.includes('식당') || comp.includes('한식')) return '한식';
+    if (comp.includes('약국')) return '의약품';
+    if (comp.includes('영어') || comp.includes('수학') || comp.includes('교습')) return '교습학원';
+    if (comp.includes('음악') || comp.includes('미술') || comp.includes('학원')) return '교과학원';
+    if (comp.includes('태권도') || comp.includes('합기도') || comp.includes('체육')) return '태권도';
+    if (comp.includes('한의원') || comp.includes('의원')) return '한의원';
+    if (comp.includes('이발') || comp.includes('발소') || comp.includes('이용')) return '이용업';
+    if (comp.includes('네일')) return '네일미용';
+    if (comp.includes('헤어') || comp.includes('미용') || comp.includes('예작')) return '미용업';
+    if (comp.includes('건강')) return '피부미용';
+
+    // 업종별 기본 핵심 단일어 폴백
+    if (handledItems === '농산물') return '채소';
+    if (handledItems === '축산물') return '육류';
+    if (handledItems === '수산물') return '해산물';
+    if (handledItems === '의류및신발') return '의류';
+    if (handledItems === '가공식품') return '신선식품';
+    if (handledItems === '가정용품') return '생활잡화';
+    if (handledItems === '음식점업') return '한식';
+    if (handledItems === '기타소매업') return '생활잡화';
+    if (handledItems === '근린상권서비스') return '미용업';
+    return '잡화';
+  }
+
+  // 농산물, 축산물, 수산물은 괄호 유무와 무관하게 상호/품목 맥락으로 명확한 한 단어 추출
+  if (['농산물', '축산물', '수산물', '의류및신발'].includes(handledItems)) {
+    if (subRaw && (subRaw.includes('속옷') || subRaw.includes('잠옷'))) return { handledItems, mainProducts: '속옷' };
+    if (subRaw && subRaw.includes('곡물')) return { handledItems, mainProducts: '곡물' };
+    return { handledItems, mainProducts: inferMainProductFromStore() };
+  }
 
   if (!subRaw) {
-    return baseCat || '기타소매업';
+    return { handledItems, mainProducts: inferMainProductFromStore() };
   }
 
-  // 2) 부연설명(subRaw)에서 핵심 한 단어 추출
+  // 2) 괄호 안 부연설명(subRaw)에서 핵심 한 단어 추출
   let cleanedSub = subRaw
     .replace(/\s*외\s*\d+\s*개/g, '')
     .replace(/\/.*$/, '')
     .trim();
 
-  // 불분명한 포괄 산업분류("그 외 기타 분류 안된...", "종합 소매업", "남자용 겉옷 소매업" 등) 보정
-  const comp = String(companyName || '');
-  if (cleanedSub.includes('분류 안된') || cleanedSub.includes('종합 소매업')) {
-    if (comp.includes('뻥튀기') || comp.includes('과자')) return `${baseCat} (과자류)`;
-    if (comp.includes('반찬')) return `${baseCat} (반찬류)`;
-    if (comp.includes('떡')) return `${baseCat} (떡류)`;
-    return `${baseCat} (생활잡화)`;
-  }
-  if (baseCat === '가정용품' && cleanedSub.includes('겉옷')) {
-    if (comp.includes('침구') || comp.includes('이불')) return `${baseCat} (침구류)`;
-    return `${baseCat} (직물제품)`;
+  if (
+    cleanedSub.includes('분류 안된') ||
+    cleanedSub.includes('종합 소매업') ||
+    cleanedSub.includes('음ㆍ식료품') ||
+    (handledItems === '가정용품' && cleanedSub.includes('겉옷'))
+  ) {
+    return { handledItems, mainProducts: inferMainProductFromStore() };
   }
   if (cleanedSub.includes('유지 및 낙농제품')) {
-    return `${baseCat} (유지류)`;
+    return { handledItems, mainProducts: '유지류' };
   }
 
   cleanedSub = cleanedSub
     .replace(/두발\s*미용업/g, '미용업')
-    .replace(/피부\s*미용업/g, '피부미용');
-
-  // 불필요 수식어 및 접미어 제거 후 첫 핵심 단어 추출
-  cleanedSub = cleanedSub
+    .replace(/피부\s*미용업/g, '피부미용')
     .replace(/^(그 외 기타|기타|일반|가정용|조리|단순|동ㆍ식물성|남자용|여자용)\s+/g, '')
     .replace(/\s+(전문점|음식점업|음식점|소매업|도매업|제조업|서비스업|교육기관|기관|소매|도매)$/g, '')
     .trim();
 
-  // '및', ',', 'ㆍ', 공백 기준으로 첫 번째 핵심 단어 선택
   const firstToken = cleanedSub
     .split(/\s+및\s+|[,ㆍ·\/]|\s+/)[0]
     .replace(/(전문점|음식점업|소매업|도매업|제조업|서비스업)$/g, '')
     .trim();
 
-  const finalWord = firstToken || cleanedSub.split(/\s+/)[0] || '';
-  return finalWord ? `${baseCat} (${finalWord})` : baseCat;
+  const finalWord = firstToken || cleanedSub.split(/\s+/)[0] || inferMainProductFromStore();
+  return { handledItems, mainProducts: finalWord };
+}
+
+export function formatStandardHandledItems(opts) {
+  return splitHandledAndMainProducts(opts).handledItems;
 }
 
 /**
@@ -404,8 +485,8 @@ export async function buildHybridOnnuriQuota({
         }
       }
 
-      // 취급품목 정제 (표준 단일어 규칙 적용)
-      const handledItems = formatStandardHandledItems({
+      // 취급품목 및 주요품목 분리 정제 (취급품목: 표준 카테고리, 주요품목: 괄호 내 핵심 한 단어 또는 상호/업종 유추)
+      const { handledItems, mainProducts } = splitHandledAndMainProducts({
         merchantIndustry: merchant.targetCategory || merchant.industry || '',
         mbzIndustry: marketBzDetail.mbzIndustry || '',
         companyName: merchant.companyName
@@ -434,8 +515,8 @@ export async function buildHybridOnnuriQuota({
         phone: finalPhone,                           // 연락처 (대표전화번호, 없으면 null)
         openDate: formattedOpenDate,                 // 개업연월 (없으면 null)
         address: finalAddress,                       // 사업장 주소 (도로명 우선, 없으면 null)
-        handledItems: handledItems,                  // 취급품목 (없으면 null)
-        mainProducts: null,                          // 주요품목 (신규, 사용자 입력용)
+        handledItems: handledItems,                  // 취급품목 (예: 농산물, 가공식품, 음식점업)
+        mainProducts: mainProducts,                  // 주요품목 (예: 과일, 커피, 떡류, 김밥, 치킨)
         status: merchant.status || '정상가맹',       // 가맹상태
         paperAccepted: merchant.paperAccepted,       // 온누리지류
         digitalAccepted: merchant.digitalAccepted,   // 온누리디지털
