@@ -1559,17 +1559,21 @@ input[type="range"]::-webkit-slider-thumb:hover {
   background: #f8fafc;
 }
 
-/* 컬럼별 너비 배분 */
+/* 컬럼별 너비 배분 (통일된 12개 표준 컬럼) */
 .th-no { width: 50px; text-align: center; }
-.th-company { width: 140px; font-weight: 700; }
-.th-biznum { width: 130px; font-family: var(--font-mono); }
-.th-ceo { width: 95px; }
-.th-phone { width: 130px; }
+.th-company { width: 145px; font-weight: 700; }
+.th-ind { width: 105px; }
+.th-biznum { width: 125px; font-family: var(--font-mono); }
+.th-ceo { width: 100px; }
+.th-gender { width: 65px; text-align: center; }
+.th-age { width: 70px; text-align: center; }
+.th-phone { width: 125px; }
 .th-opendate { width: 100px; }
-.th-items { width: 140px; }
-.th-address { min-width: 250px; }
-.th-status { width: 110px; text-align: center; }
-.th-actions { width: 120px; text-align: center; }
+.th-address { min-width: 220px; }
+.th-items { width: 150px; }
+.th-main-products { width: 130px; }
+.th-status { width: 100px; text-align: center; }
+.th-actions { width: 75px; text-align: center; }
 
 /* 쿼터 상태 배지 */
 .badge-status {
@@ -2852,6 +2856,31 @@ input[type="range"]::-webkit-slider-thumb:hover {
   color: #0f172a;
   cursor: pointer;
 }
+.inline-cell-input-md {
+  width: 100%;
+  min-width: 90px;
+  height: 28px;
+  padding: 3px 8px;
+  border: 1.5px solid #0284c7;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+}
+.inline-cell-select-md {
+  width: 95px;
+  height: 28px;
+  padding: 2px 6px;
+  border: 1.5px solid #0284c7;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+}
 .cell-placeholder {
   color: #94a3b8;
   font-size: 11px;
@@ -2859,6 +2888,24 @@ input[type="range"]::-webkit-slider-thumb:hover {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+.ceo-name-text {
+  font-weight: 600;
+  color: #0f172a;
+}
+.badge-main-product {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.px-14 {
+  padding-left: 14px;
+  padding-right: 14px;
 }
 .badge-gender {
   display: inline-block;
@@ -3261,4 +3308,160 @@ input[type="range"]::-webkit-slider-thumb:hover {
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
   padding: 10px 14px;
+}
+
+/* -------------------------------------------------------------
+ * 업종 그룹별 마스터 설문 블루프린트 탭 네비게이션
+ * 1번: 식품군 (농산물, 축산물, 수산물, 가공식품)
+ * 2번: 공산·생활·서비스군 (의류신발, 가정용품, 기타소매, 근린상권)
+ * 3번: 외식·음식점업군 (음식점업)
+ * ------------------------------------------------------------- */
+.blueprint-group-nav-container {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.blueprint-group-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 992px) {
+  .blueprint-group-tabs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.group-tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 14px 18px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: left;
+  outline: none;
+}
+
+.group-tab-btn:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.group-tab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.group-tab-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.group-tab-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.group-tab-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.group-tab-desc {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.group-tab-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* 1번 그룹 [식품군] 액티브 (에메랄드) */
+.group-tab-btn[data-group="group1"].active {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15);
+}
+.group-tab-btn[data-group="group1"].active .group-tab-title {
+  color: #047857;
+}
+.group-tab-btn[data-group="group1"].active .group-tab-count-badge {
+  background: #059669;
+  color: #ffffff;
+}
+
+/* 2번 그룹 [공산·생활·서비스군] 액티브 (인디고) */
+.group-tab-btn[data-group="group2"].active {
+  border-color: #6366f1;
+  background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.15);
+}
+.group-tab-btn[data-group="group2"].active .group-tab-title {
+  color: #4338ca;
+}
+.group-tab-btn[data-group="group2"].active .group-tab-count-badge {
+  background: #6366f1;
+  color: #ffffff;
+}
+
+/* 3번 그룹 [외식·음식점업군] 액티브 (오렌지) */
+.group-tab-btn[data-group="group3"].active {
+  border-color: #f97316;
+  background: linear-gradient(135deg, #ffffff 0%, #fff7ed 100%);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.15);
+}
+.group-tab-btn[data-group="group3"].active .group-tab-title {
+  color: #c2410c;
+}
+.group-tab-btn[data-group="group3"].active .group-tab-count-badge {
+  background: #ea580c;
+  color: #ffffff;
+}
+
+.blueprint-group-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+}
+
+.group-target-stores {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 72%;
+}
+
+.group-target-stores strong {
+  color: #0f172a;
 }

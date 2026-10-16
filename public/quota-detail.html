@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
   <link rel="stylesheet" href="campaign.css">
-  <link rel="stylesheet" href="custom-styles.css">
+  <link rel="stylesheet" href="custom-styles.css?v=20261016_9">
 </head>
 <body>
 
@@ -89,8 +89,7 @@
             <div>
               <strong class="guide-title">스프레드시트형 실시간 인라인 점포 편집기</strong>
               <p class="guide-desc">
-                표의 <strong>대표자명, 연락처, 취급품목, 사업장 주소</strong> 셀을 클릭하면 즉시 수정할 수 있습니다. 
-                수정 완료 후 상단의 <strong>[수정사항 저장]</strong>을 누르면 JSON 파일과 Excel(.xlsx)이 동시에 100% 동기화 갱신됩니다.
+                표의 <strong>대표자이름, 성별, 나이, 연락처, 주소, 취급품목, 주요품목</strong> 등 모든 셀을 클릭하면 즉시 수정 및 자동 동기화됩니다.
               </p>
             </div>
           </div>
@@ -101,7 +100,7 @@
       </div>
     </section>
 
-    <!-- 2. 점포 목록 스프레드시트형 편집 그리드 -->
+    <!-- 2. 점포 목록 스프레드시트형 편집 그리드 (설문조사 상세 화면과 동일 구조로 통일) -->
     <section class="clean-section-card">
       <div class="section-card-inner">
         
@@ -109,7 +108,7 @@
         <div class="quota-grid-toolbar">
           <div class="grid-toolbar-search">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="input-search-merchant" class="figma-input search-input" placeholder="상호, 대표자명, 취급품목, 전화번호 또는 주소로 실시간 검색..." />
+            <input type="text" id="input-search-merchant" class="figma-input search-input" placeholder="상호, 대표자이름, 업종, 취급품목, 주요품목, 전화번호, 주소 검색..." />
           </div>
 
           <div class="grid-toolbar-actions">
@@ -120,32 +119,39 @@
           </div>
         </div>
 
-        <!-- 와이드 가로 스크롤 테이블 -->
-        <div class="table-scroll-container quota-editor-table-wrap">
-          <table class="quota-table quota-editor-table" id="quota-editor-table">
-            <thead>
-              <tr>
-                <th class="col-seq">No</th>
-                <th class="col-ind">업종 분류</th>
-                <th class="col-biz-name">상호 (가맹점명)</th>
-                <th class="col-biz-num">사업자등록번호</th>
-                <th class="col-ceo">대표자명</th>
-                <th class="col-gender">성별</th>
-                <th class="col-age">나이</th>
-                <th class="col-phone">연락처</th>
-                <th class="col-date">개업연월</th>
-                <th class="col-items">취급품목(업종)</th>
-                <th class="col-addr">사업장 주소</th>
-                <th class="col-actions">관리</th>
-              </tr>
-            </thead>
-            <tbody id="quota-editor-tbody">
-              <!-- JS 동적 렌더링 -->
-              <tr>
-                <td colspan="12" class="empty-table-msg">점포 목록을 불러오는 중입니다...</td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- 통일된 와이드 쿼터 테이블 (12개 표준 컬럼 + 관리) -->
+        <div class="quota-clean-box wide-box">
+          <div class="table-scroll-container wide-table-container quota-editor-table-wrap">
+            <table class="quota-clean-table wide-table" id="quota-editor-table">
+              <thead>
+                <tr>
+                  <th class="th-no">번호</th>
+                  <th class="th-company">상호</th>
+                  <th class="th-ind">업종</th>
+                  <th class="th-biznum">사업자번호</th>
+                  <th class="th-ceo">대표자이름</th>
+                  <th class="th-gender">성별</th>
+                  <th class="th-age">나이</th>
+                  <th class="th-phone">연락처</th>
+                  <th class="th-opendate">개업연월</th>
+                  <th class="th-address">주소</th>
+                  <th class="th-items">취급품목</th>
+                  <th class="th-main-products">주요품목</th>
+                  <th class="th-actions">관리</th>
+                </tr>
+              </thead>
+              <tbody id="quota-editor-tbody">
+                <!-- JS 동적 렌더링 -->
+                <tr>
+                  <td colspan="13" class="empty-table-msg">점포 목록을 불러오는 중입니다...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="font-caption text-secondary-color mt-6 mb-8 flex-between px-14">
+            <span><i class="fa-solid fa-pen-to-square text-primary-color"></i> <strong>대표자이름, 성별, 나이, 주요품목</strong> 등 각 셀을 클릭하여 직접 수정할 수 있습니다.</span>
+            <span class="text-dim font-caption" id="quota-sync-status-msg"></span>
+          </div>
         </div>
 
       </div>
@@ -161,20 +167,34 @@
         <button type="button" class="btn-close" id="btn-close-add-modal">&times;</button>
       </div>
       <form id="form-add-merchant">
-        <div class="grid-2col mb-12">
+        <div class="grid-3col mb-12">
           <div class="form-group">
-            <label for="add-company-name" class="figma-label">상호(가맹점명) <span class="required">*</span></label>
+            <label for="add-company-name" class="figma-label">상호 <span class="required">*</span></label>
             <input type="text" id="add-company-name" class="figma-input" required placeholder="예: 풍납수산" />
           </div>
           <div class="form-group">
-            <label for="add-biz-number" class="figma-label">사업자등록번호(10자리) <span class="required">*</span></label>
+            <label for="add-industry" class="figma-label">업종 <span class="required">*</span></label>
+            <select id="add-industry" class="figma-input">
+              <option value="농산물">🌾 농산물</option>
+              <option value="축산물">🥩 축산물</option>
+              <option value="수산물">🐟 수산물</option>
+              <option value="가공식품">🍱 가공식품</option>
+              <option value="의류신발">👗 의류신발</option>
+              <option value="가정용품">🏠 가정용품</option>
+              <option value="음식점업">🍽️ 음식점업</option>
+              <option value="기타소매">🛒 기타소매</option>
+              <option value="근린상권">💈 근린상권</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="add-biz-number" class="figma-label">사업자번호(10자리) <span class="required">*</span></label>
             <input type="text" id="add-biz-number" class="figma-input" required placeholder="000-00-00000" />
           </div>
         </div>
 
         <div class="grid-3col mb-12">
           <div class="form-group">
-            <label for="add-ceo-name" class="figma-label">대표자명</label>
+            <label for="add-ceo-name" class="figma-label">대표자이름</label>
             <input type="text" id="add-ceo-name" class="figma-input" placeholder="예: 홍길동" />
           </div>
           <div class="form-group">
@@ -191,25 +211,31 @@
           </div>
         </div>
 
-        <div class="form-group mb-12">
-          <label for="add-phone" class="figma-label">연락처</label>
-          <input type="text" id="add-phone" class="figma-input" placeholder="예: 02-414-1234" />
-        </div>
-
         <div class="grid-2col mb-12">
           <div class="form-group">
-            <label for="add-open-date" class="figma-label">개업연월</label>
-            <input type="date" id="add-open-date" class="figma-input" />
+            <label for="add-phone" class="figma-label">연락처</label>
+            <input type="text" id="add-phone" class="figma-input" placeholder="예: 02-414-1234" />
           </div>
           <div class="form-group">
-            <label for="add-handled-items" class="figma-label">취급품목(업종) <span class="required">*</span></label>
-            <input type="text" id="add-handled-items" class="figma-input" required placeholder="예: 수산물 (활어회 외 1개)" />
+            <label for="add-open-date" class="figma-label">개업연월</label>
+            <input type="text" id="add-open-date" class="figma-input" placeholder="예: 2018.05.12" />
           </div>
         </div>
 
-        <div class="form-group mb-20">
-          <label for="add-address" class="figma-label">사업장 도로명 주소</label>
+        <div class="form-group mb-12">
+          <label for="add-address" class="figma-label">주소</label>
           <input type="text" id="add-address" class="figma-input" placeholder="예: 서울특별시 송파구 바람드리길 22" />
+        </div>
+
+        <div class="grid-2col mb-20">
+          <div class="form-group">
+            <label for="add-handled-items" class="figma-label">취급품목 <span class="required">*</span></label>
+            <input type="text" id="add-handled-items" class="figma-input" required placeholder="예: 수산물 (활어회 외 1개)" />
+          </div>
+          <div class="form-group">
+            <label for="add-main-products" class="figma-label">주요품목</label>
+            <input type="text" id="add-main-products" class="figma-input" placeholder="예: 활어회, 매운탕" />
+          </div>
         </div>
 
         <div class="modal-actions flex-end gap-10">
@@ -222,7 +248,7 @@
     </div>
   </div>
 
-  <script type="module" src="quota-detail.js"></script>
+  <script type="module" src="quota-detail.js?v=20261016_9"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

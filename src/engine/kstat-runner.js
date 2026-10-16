@@ -100,7 +100,7 @@ export async function runKstatSurvey({
       .replace(/\s+/g, ' ')
       .trim(),
     addressDetail: bizData.addressDetail || '1층',
-    handledItems: bizData.handledItems || bizData.industry || '소매업'
+    handledItems: bizData.mainProducts || bizData.handledItems || bizData.industry || '소매업'
   };
 
   // 2. 쿼터별 동적 페르소나 생성 (업종분류, 연령, 매출, 결제비중 등 가변 데이터)

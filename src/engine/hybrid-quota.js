@@ -344,14 +344,16 @@ export async function buildHybridOnnuriQuota({
         source: 'ONNURI_MARKETBZ_HYBRID',
         marketName: merchant.marketName || '풍납시장',
         companyName: merchant.companyName,
+        industry: merchant.targetCategory || merchant.industry || null, // 업종 분류
         bizNumber: merchant.bizNumber || null,
-        ceoName: finalCeoName,                       // 대표자명 (없으면 null)
+        ceoName: finalCeoName,                       // 대표자이름 (없으면 null)
         ceoGender: null,                             // 대표자 성별 (사용자 입력용)
         ceoAge: null,                                // 대표자 나이 (사용자 입력용)
         phone: finalPhone,                           // 연락처 (대표전화번호, 없으면 null)
         openDate: formattedOpenDate,                 // 개업연월 (없으면 null)
-        handledItems: handledItems,                 // 취급품목 (없으면 null)
         address: finalAddress,                       // 사업장 주소 (도로명 우선, 없으면 null)
+        handledItems: handledItems,                  // 취급품목 (없으면 null)
+        mainProducts: null,                          // 주요품목 (신규, 사용자 입력용)
         status: merchant.status || '정상가맹',       // 가맹상태
         paperAccepted: merchant.paperAccepted,       // 온누리지류
         digitalAccepted: merchant.digitalAccepted,   // 온누리디지털

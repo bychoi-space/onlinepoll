@@ -11,15 +11,19 @@
     },
     {
       "key": "companyName",
-      "label": "상호(가맹점명)"
+      "label": "상호"
+    },
+    {
+      "key": "industry",
+      "label": "업종"
     },
     {
       "key": "bizNumber",
-      "label": "사업자등록번호"
+      "label": "사업자번호"
     },
     {
       "key": "ceoName",
-      "label": "대표자명"
+      "label": "대표자이름"
     },
     {
       "key": "ceoGender",
@@ -38,12 +42,16 @@
       "label": "개업연월"
     },
     {
-      "key": "handledItems",
-      "label": "취급품목(업종)"
-    },
-    {
       "key": "address",
       "label": "주소"
+    },
+    {
+      "key": "handledItems",
+      "label": "취급품목"
+    },
+    {
+      "key": "mainProducts",
+      "label": "주요품목"
     },
     {
       "key": "status",
@@ -81,7 +89,9 @@
       "ranId": "EZQPGx4L8",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "농산물",
+      "mainProducts": null
     },
     {
       "seq": 2,
@@ -105,7 +115,9 @@
       "ranId": "VCnUfCY6K",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=VCnUfCY6K&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "농산물",
+      "mainProducts": null
     },
     {
       "seq": 3,
@@ -129,7 +141,9 @@
       "ranId": "05anItSeU",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=05anItSeU&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "축산물",
+      "mainProducts": null
     },
     {
       "seq": 4,
@@ -153,7 +167,9 @@
       "ranId": "0E6G9JX98",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=0E6G9JX98&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "축산물",
+      "mainProducts": null
     },
     {
       "seq": 5,
@@ -177,7 +193,9 @@
       "ranId": "OseLErRyW",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=OseLErRyW&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "수산물",
+      "mainProducts": null
     },
     {
       "seq": 6,
@@ -201,7 +219,9 @@
       "ranId": "9VS1l8O1Y",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=9VS1l8O1Y&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "수산물",
+      "mainProducts": null
     },
     {
       "seq": 7,
@@ -225,7 +245,9 @@
       "ranId": "yJOWyMMVe",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=yJOWyMMVe&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "가공식품",
+      "mainProducts": null
     },
     {
       "seq": 8,
@@ -249,7 +271,9 @@
       "ranId": "l72YcIVMm",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=l72YcIVMm&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "가공식품",
+      "mainProducts": null
     },
     {
       "seq": 9,
@@ -273,7 +297,9 @@
       "ranId": "BtQ09ixb5",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=BtQ09ixb5&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "가공식품",
+      "mainProducts": null
     },
     {
       "seq": 10,
@@ -297,7 +323,9 @@
       "ranId": "Nn9f36TCG",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=Nn9f36TCG&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "의류신발",
+      "mainProducts": null
     },
     {
       "seq": 11,
@@ -321,7 +349,9 @@
       "ranId": "GmWo8WUiG",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=GmWo8WUiG&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "의류신발",
+      "mainProducts": null
     },
     {
       "seq": 12,
@@ -345,7 +375,9 @@
       "ranId": "7SyhrpGqg",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=7SyhrpGqg&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "가정용품",
+      "mainProducts": null
     },
     {
       "seq": 13,
@@ -369,7 +401,9 @@
       "ranId": "ngTrpE4bJ",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=ngTrpE4bJ&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "가정용품",
+      "mainProducts": null
     },
     {
       "seq": 14,
@@ -393,7 +427,9 @@
       "ranId": "a6l94Y3gX",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=a6l94Y3gX&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "가정용품",
+      "mainProducts": null
     },
     {
       "seq": 15,
@@ -417,7 +453,9 @@
       "ranId": "jfXJSXy5E",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=jfXJSXy5E&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "음식점업",
+      "mainProducts": null
     },
     {
       "seq": 16,
@@ -443,7 +481,8 @@
       "rawBizNumber": "2190103724",
       "industry": "음식점업 (중식/일반음식점)",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "mainProducts": null
     },
     {
       "seq": 17,
@@ -469,7 +508,8 @@
       "rawBizNumber": "2193601048",
       "industry": "음식점업 (피자전문점/일반음식점)",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "mainProducts": null
     },
     {
       "seq": 18,
@@ -495,7 +535,8 @@
       "rawBizNumber": "5825800027",
       "industry": "음식점업 (커피/음료/휴게음식점)",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "mainProducts": null
     },
     {
       "seq": 19,
@@ -519,7 +560,9 @@
       "ranId": "oJJjNC5No",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=oJJjNC5No&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "기타소매",
+      "mainProducts": null
     },
     {
       "seq": 20,
@@ -543,7 +586,9 @@
       "ranId": "4cwi7xkAU",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=4cwi7xkAU&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "기타소매",
+      "mainProducts": null
     },
     {
       "seq": 21,
@@ -569,7 +614,8 @@
       "rawBizNumber": "6051918554",
       "industry": "기타소매 (의약품/약국 소매업)",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "mainProducts": null
     },
     {
       "seq": 22,
@@ -595,7 +641,8 @@
       "rawBizNumber": "2159251692",
       "industry": "근린상권 (한의원/의료서비스업)",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "mainProducts": null
     },
     {
       "seq": 23,
@@ -619,7 +666,9 @@
       "ranId": "OH7Lypweo",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=OH7Lypweo&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "근린상권",
+      "mainProducts": null
     },
     {
       "seq": 24,
@@ -643,7 +692,9 @@
       "ranId": "GycZZf28Z",
       "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=GycZZf28Z&type=tapi&prid=2026070802&mnid=900001346&srt=1",
       "ceoGender": null,
-      "ceoAge": null
+      "ceoAge": null,
+      "industry": "근린상권",
+      "mainProducts": null
     }
   ],
   "updatedAt": "2026-10-16T01:54:00.649Z"

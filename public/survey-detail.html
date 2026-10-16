@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
   <link rel="stylesheet" href="campaign.css">
-  <link rel="stylesheet" href="custom-styles.css?v=20261016_4">
+  <link rel="stylesheet" href="custom-styles.css?v=20261016_9">
 </head>
 <body>
 
@@ -167,28 +167,30 @@
           </div>
         </details>
 
-        <!-- 와이드 쿼터 진행 테이블 (10개 컬럼) -->
+        <!-- 통일된 와이드 쿼터 진행 테이블 (12개 표준 컬럼 + 진행 상태) -->
         <div class="quota-clean-box wide-box">
           <div class="table-scroll-container wide-table-container">
             <table class="quota-clean-table wide-table">
               <thead>
                 <tr>
-                  <th class="th-no">No</th>
-                  <th class="th-company">상호 (기업명)</th>
-                  <th class="th-biznum">사업자등록번호</th>
-                  <th class="th-ceo">대표자</th>
+                  <th class="th-no">번호</th>
+                  <th class="th-company">상호</th>
+                  <th class="th-ind">업종</th>
+                  <th class="th-biznum">사업자번호</th>
+                  <th class="th-ceo">대표자이름</th>
                   <th class="th-gender">성별</th>
                   <th class="th-age">나이</th>
                   <th class="th-phone">연락처</th>
                   <th class="th-opendate">개업연월</th>
+                  <th class="th-address">주소</th>
                   <th class="th-items">취급품목</th>
-                  <th class="th-address">사업장 주소 (도로명)</th>
+                  <th class="th-main-products">주요품목</th>
                   <th class="th-status">진행 상태</th>
                 </tr>
               </thead>
               <tbody id="quota-table-body">
                 <tr>
-                  <td colspan="11" class="empty-table-msg">
+                  <td colspan="13" class="empty-table-msg">
                     아직 구축된 사업자 DB가 없습니다.<br>
                     상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.
                   </td>
@@ -196,8 +198,8 @@
               </tbody>
             </table>
           </div>
-          <div class="font-caption text-secondary-color mt-6 mb-8 flex-between">
-            <span><i class="fa-solid fa-pen-to-square text-primary-color"></i> <strong>대표자 성별</strong> 및 <strong>나이</strong> 셀을 클릭하여 직접 수정할 수 있습니다.</span>
+          <div class="font-caption text-secondary-color mt-6 mb-8 flex-between px-14">
+            <span><i class="fa-solid fa-pen-to-square text-primary-color"></i> <strong>대표자이름, 성별, 나이, 주요품목</strong> 등 각 셀을 클릭하여 직접 수정할 수 있습니다.</span>
             <span class="text-dim font-caption" id="quota-sync-status-msg"></span>
           </div>
         </div>
@@ -403,6 +405,56 @@
         </div>
       </div>
 
+      <!-- Industry Group Selection Bar (3대 업종 그룹별 기준점 선택 네비게이션) -->
+      <div class="blueprint-group-nav-container mb-24">
+        <div class="blueprint-group-tabs" role="tablist">
+          <button type="button" class="group-tab-btn active" data-group="group1" id="tab-group1">
+            <div class="group-tab-header">
+              <div class="group-tab-title-wrap">
+                <span class="group-tab-icon">🌾</span>
+                <span class="group-tab-title">1번 그룹 [식품군]</span>
+              </div>
+              <span class="group-tab-count-badge" id="badge-count-group1">9개 점포</span>
+            </div>
+            <div class="group-tab-desc">농산물 · 축산물 · 수산물 · 가공식품</div>
+          </button>
+
+          <button type="button" class="group-tab-btn" data-group="group2" id="tab-group2">
+            <div class="group-tab-header">
+              <div class="group-tab-title-wrap">
+                <span class="group-tab-icon">👗</span>
+                <span class="group-tab-title">2번 그룹 [공산·생활·서비스군]</span>
+              </div>
+              <span class="group-tab-count-badge" id="badge-count-group2">11개 점포</span>
+            </div>
+            <div class="group-tab-desc">의류신발 · 가정용품 · 기타소매 · 근린상권</div>
+          </button>
+
+          <button type="button" class="group-tab-btn" data-group="group3" id="tab-group3">
+            <div class="group-tab-header">
+              <div class="group-tab-title-wrap">
+                <span class="group-tab-icon">🍽️</span>
+                <span class="group-tab-title">3번 그룹 [외식·음식점업군]</span>
+              </div>
+              <span class="group-tab-count-badge" id="badge-count-group3">4개 점포</span>
+            </div>
+            <div class="group-tab-desc">음식점업 (한식/중식/피자/카페)</div>
+          </button>
+        </div>
+
+        <div class="blueprint-group-info-bar mt-12 flex-between">
+          <div class="group-target-stores font-caption text-secondary-color" id="group-target-stores-list">
+            <i class="fa-solid fa-store text-primary-color"></i> <strong id="label-active-group-name">1번 그룹 [식품군]</strong> 적용 대상 점포:
+            <span class="text-white" id="list-active-group-stores">더덕상회, 정주상회, 세일축산, 한우마을, 칠칠수산, 물고기, 뻥튀기가 맛있는 집, 양지기름, 백군떡방</span>
+          </div>
+          <div class="group-copy-actions flex-center-gap-8">
+            <button type="button" class="btn-chip" id="btn-copy-to-all-groups" title="현재 선택된 그룹의 설정을 다른 2개 그룹에 일괄 복사">
+              <i class="fa-solid fa-copy"></i> 현재 그룹 설정을 모든 그룹에 일괄 복사
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- 16 Stage Cards Grid -->
       <div class="blueprint-stage-grid" id="blueprint-stage-grid">
         <div class="empty-table-msg">
@@ -414,7 +466,7 @@
 
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261016_8"></script>
+  <script type="module" src="survey-detail.js?v=20261016_9"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

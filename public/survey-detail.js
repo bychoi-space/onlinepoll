@@ -117,6 +117,7 @@ async function initSurveyDetailPage() {
 
     // 버튼 상태 머신 갱신 (1번 검증 완료 및 배치 완료 제어)
     updateButtonStates();
+    updateGroupStatsUI();
   }
 
   // -------------------------------------------------------------
@@ -227,7 +228,7 @@ async function initSurveyDetailPage() {
     if (total === 0) {
       quotaTableBody.innerHTML = `
         <tr>
-          <td colspan="9" class="empty-table-msg">
+          <td colspan="13" class="empty-table-msg">
             아직 구축된 사업자 DB가 없습니다.<br>
             상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.
           </td>
@@ -237,6 +238,7 @@ async function initSurveyDetailPage() {
     }
 
     quotaTableBody.innerHTML = db.map((item, idx) => {
+      const seq = item.index || item.seq || (idx + 1);
       const st = item.quotaStatus || 'ready';
       let statusHtml = '<span class="badge-status ready">대기</span>';
 
@@ -250,13 +252,10 @@ async function initSurveyDetailPage() {
         statusHtml = '<span class="badge-status error">오류</span>';
       }
 
-      let ceoVal = escapeHtml(item.ceoName || '-');
-      if (item.isCeoEnriched) ceoVal += ` <span class="badge-enriched">보강</span>`;
-
-      let phoneVal = escapeHtml(item.phone || '-');
-      if (item.isPhoneEnriched) phoneVal += ` <span class="badge-enriched">보강</span>`;
-
-      const itemVal = item.handledItems || item.industry || '-';
+      const indLabel = getIndustryBadgeText(item.industry || item.handledItems);
+      const hasCeo = item.ceoName && String(item.ceoName).trim() !== '' && item.ceoName !== 'null';
+      const hasPhone = item.phone && String(item.phone).trim() !== '' && item.phone !== 'null';
+      const hasMainProducts = item.mainProducts && String(item.mainProducts).trim() !== '' && item.mainProducts !== 'null';
       const addrVal = item.address ? (item.address.length > 28 ? item.address.slice(0, 28) + '...' : item.address) : '-';
 
       let slotTag = '';
@@ -265,32 +264,80 @@ async function initSurveyDetailPage() {
       }
 
       return `
-        <tr data-row-idx="${item.index}">
-          <td class="text-center font-mono font-bold">${item.index || idx + 1}</td>
-          <td>
-            <strong>${escapeHtml(item.companyName)}</strong>
+        <tr data-row-idx="${seq}">
+          <td class="text-center font-mono font-bold">${seq}</td>
+          <td class="editable-quota-cell" data-idx="${seq}" data-field="companyName" title="클릭하여 상호 수정">
+            <strong>${escapeHtml(item.companyName || '-')}</strong>
             ${slotTag}
           </td>
-          <td><code>${escapeHtml(item.bizNumber || '-')}</code></td>
-          <td>${ceoVal}</td>
-          <td class="text-center col-gender editable-quota-cell" data-idx="${item.index || idx + 1}" data-field="ceoGender" title="클릭하여 성별 수정">
+          <td class="editable-quota-cell" data-idx="${seq}" data-field="industry" title="클릭하여 업종 수정">
+            <span class="quota-ind-badge">${escapeHtml(indLabel)}</span>
+          </td>
+          <td class="editable-quota-cell font-mono" data-idx="${seq}" data-field="bizNumber" title="클릭하여 사업자번호 수정">
+            <code>${escapeHtml(item.bizNumber || '-')}</code>
+          </td>
+          <td class="editable-quota-cell" data-idx="${seq}" data-field="ceoName" title="클릭하여 대표자이름 수정">
+            ${hasCeo ? `<span class="ceo-name-text">${escapeHtml(item.ceoName)}</span>${item.isCeoEnriched ? ' <span class="badge-enriched">보강</span>' : ''}` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
+          </td>
+          <td class="text-center col-gender editable-quota-cell" data-idx="${seq}" data-field="ceoGender" title="클릭하여 성별 수정">
             ${item.ceoGender ? `<span class="badge-gender ${item.ceoGender === '남' ? 'male' : 'female'}">${escapeHtml(item.ceoGender)}</span>` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
           </td>
-          <td class="text-center col-age editable-quota-cell" data-idx="${item.index || idx + 1}" data-field="ceoAge" title="클릭하여 나이 수정">
-            ${item.ceoAge ? `<span class="badge-age font-mono">${escapeHtml(item.ceoAge)}세</span>` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
+          <td class="text-center col-age editable-quota-cell" data-idx="${seq}" data-field="ceoAge" title="클릭하여 나이 수정">
+            ${item.ceoAge ? `<span class="badge-age font-mono">${escapeHtml(String(item.ceoAge).replace(/세$/, ''))}세</span>` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
           </td>
-          <td>${phoneVal}</td>
-          <td>${escapeHtml(item.openDate || '-')}</td>
-          <td><span class="badge-quota-type b2b">${escapeHtml(itemVal)}</span></td>
-          <td>${escapeHtml(addrVal)}</td>
+          <td class="editable-quota-cell font-mono" data-idx="${seq}" data-field="phone" title="클릭하여 연락처 수정">
+            ${hasPhone ? `${escapeHtml(item.phone)}${item.isPhoneEnriched ? ' <span class="badge-enriched">보강</span>' : ''}` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
+          </td>
+          <td class="editable-quota-cell font-mono" data-idx="${seq}" data-field="openDate" title="클릭하여 개업연월 수정">
+            ${escapeHtml(item.openDate || '-')}
+          </td>
+          <td class="editable-quota-cell" data-idx="${seq}" data-field="address" title="${escapeHtml(item.address || '클릭하여 주소 수정')}">
+            ${escapeHtml(addrVal)}
+          </td>
+          <td class="editable-quota-cell" data-idx="${seq}" data-field="handledItems" title="클릭하여 취급품목 수정">
+            <span class="badge-quota-type b2b">${escapeHtml(item.handledItems || '-')}</span>
+          </td>
+          <td class="editable-quota-cell" data-idx="${seq}" data-field="mainProducts" title="클릭하여 주요품목 입력/수정">
+            ${hasMainProducts ? `<span class="badge-main-product">${escapeHtml(item.mainProducts)}</span>` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
+          </td>
           <td class="text-center">${statusHtml}</td>
         </tr>
       `;
     }).join('');
   }
 
+  function extractStandardIndustry(raw) {
+    if (!raw) return '기타소매';
+    const s = String(raw);
+    if (s.includes('농산물')) return '농산물';
+    if (s.includes('축산물')) return '축산물';
+    if (s.includes('수산물')) return '수산물';
+    if (s.includes('가공식품')) return '가공식품';
+    if (s.includes('의류')) return '의류신발';
+    if (s.includes('가정용품')) return '가정용품';
+    if (s.includes('음식점')) return '음식점업';
+    if (s.includes('기타소매')) return '기타소매';
+    if (s.includes('근린상권')) return '근린상권';
+    return s.split(' ')[0] || '기타소매';
+  }
+
+  function getIndustryBadgeText(raw) {
+    if (!raw) return '기타';
+    const s = String(raw);
+    if (s.includes('농산물')) return '🌾 농산물';
+    if (s.includes('축산물')) return '🥩 축산물';
+    if (s.includes('수산물')) return '🐟 수산물';
+    if (s.includes('가공식품')) return '🍱 가공식품';
+    if (s.includes('의류')) return '👗 의류신발';
+    if (s.includes('가정용품')) return '🏠 가정용품';
+    if (s.includes('음식점')) return '🍽️ 음식점업';
+    if (s.includes('기타소매')) return '🛒 기타소매';
+    if (s.includes('근린상권')) return '💈 근린상권';
+    return '🏷️ ' + s.split(' ')[0];
+  }
+
   // ------------------------------------------------------------------------
-  // 3-1. 쿼터 테이블 인라인 편집 (성별, 나이) 및 실시간 동기화
+  // 3-1. 쿼터 테이블 인라인 편집 (대표자이름, 성별, 나이, 주요품목 등 전체 지원) 및 실시간 동기화
   // ------------------------------------------------------------------------
   quotaTableBody.addEventListener('click', (e) => {
     const cell = e.target.closest('.editable-quota-cell');
@@ -320,9 +367,40 @@ async function initSurveyDetailPage() {
         if (finished) return;
         finished = true;
         const newVal = select.value.trim() || null;
-        item.ceoGender = newVal;
-        renderQuotaTable(currentCampaign.quotaDatabase);
-        await autoSaveCampaignQuotas();
+        if (item.ceoGender !== newVal) {
+          item.ceoGender = newVal;
+          renderQuotaTable(currentCampaign.quotaDatabase);
+          await autoSaveCampaignQuotas();
+        } else {
+          renderQuotaTable(currentCampaign.quotaDatabase);
+        }
+      };
+
+      select.addEventListener('change', finishEdit);
+      select.addEventListener('blur', finishEdit);
+    } else if (field === 'industry') {
+      const currentVal = extractStandardIndustry(item.industry || item.handledItems);
+      const indOptions = ['농산물', '축산물', '수산물', '가공식품', '의류신발', '가정용품', '음식점업', '기타소매', '근린상권'];
+      cell.innerHTML = `
+        <select class="inline-cell-select-md">
+          ${indOptions.map(opt => `<option value="${opt}" ${currentVal === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+        </select>
+      `;
+      const select = cell.querySelector('select');
+      select.focus();
+
+      let finished = false;
+      const finishEdit = async () => {
+        if (finished) return;
+        finished = true;
+        const newVal = select.value.trim() || null;
+        if (item.industry !== newVal) {
+          item.industry = newVal;
+          renderQuotaTable(currentCampaign.quotaDatabase);
+          await autoSaveCampaignQuotas();
+        } else {
+          renderQuotaTable(currentCampaign.quotaDatabase);
+        }
       };
 
       select.addEventListener('change', finishEdit);
@@ -342,13 +420,56 @@ async function initSurveyDetailPage() {
         finished = true;
         const rawVal = input.value.trim();
         const newVal = rawVal ? parseInt(rawVal, 10) : null;
-        item.ceoAge = newVal;
-        renderQuotaTable(currentCampaign.quotaDatabase);
-        await autoSaveCampaignQuotas();
+        if (item.ceoAge !== newVal) {
+          item.ceoAge = newVal;
+          renderQuotaTable(currentCampaign.quotaDatabase);
+          await autoSaveCampaignQuotas();
+        } else {
+          renderQuotaTable(currentCampaign.quotaDatabase);
+        }
       };
 
       input.addEventListener('keydown', (ke) => {
         if (ke.key === 'Enter') finishEdit();
+        else if (ke.key === 'Escape') { finished = true; renderQuotaTable(currentCampaign.quotaDatabase); }
+      });
+      input.addEventListener('blur', finishEdit);
+    } else {
+      const currentVal = (item[field] && item[field] !== 'null') ? String(item[field]) : '';
+      const placeholders = {
+        ceoName: '대표자이름',
+        mainProducts: '주요품목 입력',
+        handledItems: '취급품목 입력',
+        phone: '연락처 입력',
+        openDate: 'YYYY.MM.DD',
+        address: '주소 입력',
+        companyName: '상호 입력',
+        bizNumber: '사업자번호'
+      };
+      cell.innerHTML = `
+        <input type="text" class="inline-cell-input-md" value="${escapeHtml(currentVal)}" placeholder="${placeholders[field] || '입력'}" />
+      `;
+      const input = cell.querySelector('input');
+      input.focus();
+      input.select();
+
+      let finished = false;
+      const finishEdit = async () => {
+        if (finished) return;
+        finished = true;
+        const newVal = input.value.trim() || null;
+        if (item[field] !== newVal) {
+          item[field] = newVal;
+          renderQuotaTable(currentCampaign.quotaDatabase);
+          await autoSaveCampaignQuotas();
+        } else {
+          renderQuotaTable(currentCampaign.quotaDatabase);
+        }
+      };
+
+      input.addEventListener('keydown', (ke) => {
+        if (ke.key === 'Enter') finishEdit();
+        else if (ke.key === 'Escape') { finished = true; renderQuotaTable(currentCampaign.quotaDatabase); }
       });
       input.addEventListener('blur', finishEdit);
     }
@@ -492,9 +613,31 @@ async function initSurveyDetailPage() {
   }
 
   // ------------------------------------------------------------------------
-  // 5. STEP 3: 15단계 마스터 설문 블루프린트 & 기준점 에디터 (통합)
+  // 5. STEP 3: 15단계 마스터 설문 블루프린트 & 기준점 에디터 (3개 업종 그룹별 분리 지원)
   // ------------------------------------------------------------------------
   let blueprintData = null;
+  let activeGroup = 'group1';
+  let groupBaselines = {};
+  let groupStats = null;
+
+  const GROUP_METAS = {
+    group1: {
+      name: '1번 그룹 [식품군]',
+      badgeClass: 'group1-badge',
+      desc: '농산물, 축산물, 수산물, 가공식품 점포에 특화된 기준점 (원산지 100%, 온누리상품권 우대, 대면 판매 중심)'
+    },
+    group2: {
+      name: '2번 그룹 [공산·생활·서비스군]',
+      badgeClass: 'group2-badge',
+      desc: '의류신발, 가정용품, 기타소매, 근린상권 점포에 특화된 기준점 (원산지 비대상, 배달 미실시(0%), 소매/생활/미용)'
+    },
+    group3: {
+      name: '3번 그룹 [외식·음식점업군]',
+      badgeClass: 'group3-badge',
+      desc: '일반음식점, 휴게음식점, 분식, 주점 점포에 특화된 기준점 (배달앱 85%, 배달매출 35%, 식재료비/원산지 필수)'
+    }
+  };
+
   let currentBaseline = {
     storePyeong: 14,
     employeeFamily: 1,
@@ -541,6 +684,83 @@ async function initSurveyDetailPage() {
     rotationMode: false
   };
 
+  function updateGroupStatsUI() {
+    if (groupStats) {
+      const c1 = document.getElementById('count-group1');
+      const c2 = document.getElementById('count-group2');
+      const c3 = document.getElementById('count-group3');
+      if (c1 && groupStats.group1) c1.textContent = `${groupStats.group1.count}개소`;
+      if (c2 && groupStats.group2) c2.textContent = `${groupStats.group2.count}개소`;
+      if (c3 && groupStats.group3) c3.textContent = `${groupStats.group3.count}개소`;
+    }
+
+    const tagEl = document.getElementById('active-group-tag');
+    const descEl = document.getElementById('active-group-desc');
+    const countEl = document.getElementById('active-group-count');
+    const storesEl = document.getElementById('active-group-stores');
+
+    const meta = GROUP_METAS[activeGroup] || GROUP_METAS.group1;
+    if (tagEl) {
+      tagEl.textContent = meta.name;
+      tagEl.className = `active-group-tag ${meta.badgeClass}`;
+    }
+    if (descEl) descEl.textContent = meta.desc;
+
+    if (groupStats && groupStats[activeGroup]) {
+      const st = groupStats[activeGroup];
+      if (countEl) countEl.textContent = st.count;
+      if (storesEl) {
+        if (st.stores && st.stores.length > 0) {
+          const preview = st.stores.slice(0, 6).join(', ') + (st.stores.length > 6 ? ` 외 ${st.stores.length - 6}개소` : '');
+          storesEl.textContent = preview;
+        } else {
+          storesEl.textContent = '해당 업종 점포 없음';
+        }
+      }
+    }
+  }
+
+  function switchGroupTab(targetGroup) {
+    if (activeGroup === targetGroup) return;
+
+    // 1. 현재 편집 중인 기준점을 활성 그룹 캐시에 저장
+    groupBaselines[activeGroup] = { ...currentBaseline };
+
+    // 2. 활성 그룹 변경
+    activeGroup = targetGroup;
+
+    // 3. 탭 버튼 스타일 갱신
+    document.querySelectorAll('.blueprint-group-tabs .group-tab-btn').forEach(btn => {
+      if (btn.getAttribute('data-group') === targetGroup) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // 4. 대상 그룹의 기준점을 currentBaseline에 로드
+    if (!groupBaselines[activeGroup]) {
+      groupBaselines[activeGroup] = { ...currentBaseline };
+    }
+    currentBaseline = { ...groupBaselines[activeGroup] };
+
+    // 5. 배너 및 15단계 문항 그리드 재렌더링
+    updateGroupStatsUI();
+    renderStages();
+  }
+
+  function copyActiveGroupToAll() {
+    groupBaselines[activeGroup] = { ...currentBaseline };
+    const sourceMeta = GROUP_METAS[activeGroup] || { name: activeGroup };
+
+    groupBaselines.group1 = JSON.parse(JSON.stringify(currentBaseline));
+    groupBaselines.group2 = JSON.parse(JSON.stringify(currentBaseline));
+    groupBaselines.group3 = JSON.parse(JSON.stringify(currentBaseline));
+
+    markUnsaved();
+    alert(`[${sourceMeta.name}]의 기준점 설정이 1번, 2번, 3번 그룹 전체에 일괄 복사되었습니다.\n우측의 [마스터 기준점 저장]을 눌러 서버에 최종 반영해 주세요.`);
+  }
+
   async function loadBlueprint() {
     try {
       const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/blueprint`);
@@ -548,16 +768,31 @@ async function initSurveyDetailPage() {
       const data = await res.json();
       blueprintData = data.blueprint;
 
-      if (data.baseline) {
+      if (data.groupBaselines) {
+        groupBaselines = data.groupBaselines;
+      } else {
+        groupBaselines = {
+          group1: { ...currentBaseline, ...(data.baseline?.groups?.group1 || data.baseline || {}) },
+          group2: { ...currentBaseline, ...(data.baseline?.groups?.group2 || data.baseline || {}) },
+          group3: { ...currentBaseline, ...(data.baseline?.groups?.group3 || data.baseline || {}) }
+        };
+      }
+      groupStats = data.groupStats || null;
+
+      if (groupBaselines[activeGroup]) {
+        currentBaseline = { ...groupBaselines[activeGroup] };
+      } else if (data.baseline) {
         currentBaseline = { ...currentBaseline, ...data.baseline };
       }
 
+      updateGroupStatsUI();
+
       if (badgeMasterStatus) {
         if (data.hasCustomBaseline) {
-          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 사용자 마스터 기준점 활성';
+          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 활성';
           badgeMasterStatus.className = 'badge-status badge-blueprint ready';
         } else {
-          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> 15단계 표준 기준점 적용 중';
+          badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> 15단계 업종별 표준 기준점 적용 중';
         }
       }
 
@@ -1118,6 +1353,9 @@ async function initSurveyDetailPage() {
         slider.addEventListener('input', (e) => {
           const val = parseInt(e.target.value, 10);
           currentBaseline[key] = val;
+          if (groupBaselines[activeGroup]) {
+            groupBaselines[activeGroup][key] = val;
+          }
           valEl.textContent = `${val}${suffix}`;
           if (typeof onUpdate === 'function') onUpdate(val);
           markUnsaved();
@@ -1130,6 +1368,9 @@ async function initSurveyDetailPage() {
       if (el) {
         el.addEventListener('change', (e) => {
           currentBaseline[key] = e.target.value;
+          if (groupBaselines[activeGroup]) {
+            groupBaselines[activeGroup][key] = e.target.value;
+          }
           markUnsaved();
         });
       }
@@ -1254,6 +1495,9 @@ async function initSurveyDetailPage() {
     if (activeBtn) activeBtn.classList.add('active');
 
     currentBaseline = { ...currentBaseline, ...presetValues };
+    if (groupBaselines[activeGroup]) {
+      groupBaselines[activeGroup] = { ...currentBaseline };
+    }
     renderStages();
     markUnsaved();
   }
@@ -1438,10 +1682,16 @@ async function initSurveyDetailPage() {
         btnSaveBaseline.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
       }
 
+      // 현재 편집 중인 기준점을 활성 그룹에 동기화
+      groupBaselines[activeGroup] = { ...currentBaseline };
+
       const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/baseline`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(currentBaseline)
+        body: JSON.stringify({
+          ...currentBaseline,
+          groups: groupBaselines
+        })
       });
 
       const result = await res.json();
@@ -1454,12 +1704,12 @@ async function initSurveyDetailPage() {
       }
 
       if (badgeMasterStatus) {
-        badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 사용자 마스터 기준점 활성';
+        badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 활성';
         badgeMasterStatus.className = 'badge-status badge-blueprint ready';
       }
 
       if (showNotification) {
-        appendLog('success', '✓ 마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.');
+        appendLog('success', '✓ 3개 업종 그룹별 마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.');
       }
 
       setTimeout(() => {
@@ -1481,6 +1731,17 @@ async function initSurveyDetailPage() {
   if (btnSaveBaseline) {
     btnSaveBaseline.addEventListener('click', () => saveBaseline(true));
   }
+
+  // 3개 업종 그룹 네비게이션 탭 및 일괄 복사 버튼 바인딩
+  const tabGroup1 = document.getElementById('tab-group1');
+  const tabGroup2 = document.getElementById('tab-group2');
+  const tabGroup3 = document.getElementById('tab-group3');
+  const btnCopyToAll = document.getElementById('btn-copy-to-all-groups');
+
+  if (tabGroup1) tabGroup1.addEventListener('click', () => switchGroupTab('group1'));
+  if (tabGroup2) tabGroup2.addEventListener('click', () => switchGroupTab('group2'));
+  if (tabGroup3) tabGroup3.addEventListener('click', () => switchGroupTab('group3'));
+  if (btnCopyToAll) btnCopyToAll.addEventListener('click', copyActiveGroupToAll);
 
   // ------------------------------------------------------------------------
   // 6. 실행 제어 파이프라인 (단일 검증 & 전체 배치 연속 가동)

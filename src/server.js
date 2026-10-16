@@ -20,6 +20,7 @@ import { logger } from './utils/logger.js';
 import * as CampaignStore from './models/campaign.js';
 import { exportBusinessesToExcel } from './utils/excel.js';
 import { runKstatSurvey } from './engine/kstat-runner.js';
+import { getIndustryGroupKey } from './engine/persona-builder.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -234,10 +235,10 @@ app.put('/api/campaigns/:id/quota', (req, res) => {
             (c.companyName && c.companyName === qItem.companyName)
           );
           if (matchedCampItem) {
-            if (matchedCampItem.ceoGender !== undefined) qItem.ceoGender = matchedCampItem.ceoGender;
-            if (matchedCampItem.ceoAge !== undefined) qItem.ceoAge = matchedCampItem.ceoAge;
-            if (matchedCampItem.ceoName !== undefined) qItem.ceoName = matchedCampItem.ceoName;
-            if (matchedCampItem.phone !== undefined) qItem.phone = matchedCampItem.phone;
+            const syncKeys = ['companyName', 'industry', 'bizNumber', 'ceoName', 'ceoGender', 'ceoAge', 'phone', 'openDate', 'address', 'handledItems', 'mainProducts'];
+            syncKeys.forEach(k => {
+              if (matchedCampItem[k] !== undefined) qItem[k] = matchedCampItem[k];
+            });
             matched = true;
           }
         });
@@ -276,9 +277,70 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
   const blueprint = JSON.parse(fs.readFileSync(blueprintPath, 'utf-8'));
   const baseline = campaign.masterBaseline || blueprint.defaultBaseline;
 
+  // 3대 업종 그룹별 대상 점포 통계 및 목록 계산
+  const groupStats = {
+    group1: { name: '1번 그룹 [식품군]', subtext: '농산물 · 축산물 · 수산물 · 가공식품', count: 0, stores: [] },
+    group2: { name: '2번 그룹 [공산·생활·서비스군]', subtext: '의류신발 · 가정용품 · 기타소매 · 근린상권', count: 0, stores: [] },
+    group3: { name: '3번 그룹 [외식·음식점업군]', subtext: '음식점업 (한식/중식/피자/카페)', count: 0, stores: [] }
+  };
+  (campaign.quotaDatabase || []).forEach(q => {
+    const k = getIndustryGroupKey(q.industry, q.handledItems);
+    if (groupStats[k]) {
+      groupStats[k].count++;
+      groupStats[k].stores.push(q.companyName);
+    }
+  });
+
+  const defaultGroupBaselines = {
+    group1: {
+      ...baseline,
+      originLabelTarget: 'yes',
+      deliveryFoodAdoption: 15,
+      deliverySalesRatio: 10,
+      onnuriRatio: 18,
+      onnuriCustomerAvg: 7,
+      onnuriPaperMember: 'yes',
+      costRentRatio: 18,
+      costLaborRatio: 22,
+      costTaxRatio: 10,
+      profitMarginRate: 22
+    },
+    group2: {
+      ...baseline,
+      originLabelTarget: 'no',
+      deliveryFoodAdoption: 5,
+      deliverySalesRatio: 5,
+      creditCardRatio: 72,
+      onnuriRatio: 12,
+      costRentRatio: 24,
+      costLaborRatio: 20,
+      costTaxRatio: 10,
+      profitMarginRate: 28
+    },
+    group3: {
+      ...baseline,
+      originLabelTarget: 'yes',
+      deliveryFoodAdoption: 85,
+      deliverySalesRatio: 35,
+      posAdoptionRate: 90,
+      smartOrderAdoption: 45,
+      costLaborRatio: 32,
+      costRentRatio: 22,
+      costTaxRatio: 10,
+      profitMarginRate: 30,
+      fireInsurance: 'yes',
+      liabilityInsurance: 'yes',
+      dailyBusinessHours: 13
+    }
+  };
+
+  const groupBaselines = campaign.masterBaseline?.groups || defaultGroupBaselines;
+
   res.json({
     blueprint,
     baseline,
+    groupBaselines,
+    groupStats,
     campaignId: campaign.id,
     campaignTitle: campaign.title,
     quotaCount: campaign.quotaDatabase?.length || 0,
@@ -1293,37 +1355,26 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
       return res.status(404).json({ error: `"${marketName}" 조건에 부합하는 온누리 가맹점을 찾지 못했습니다.` });
     }
 
-    // 온누리 하이브리드 컬럼 정의 (사용자 요청: [시장명] [상호] [사업자등록번호] [대표자명] [연락처] [개업연월] [취급품목] [주소] 등)
+    // 온누리 하이브리드 표준 컬럼 정의: [상호] [업종] [사업자번호] [대표자이름] [성별] [나이] [연락처] [개업연월] [주소] [취급품목] [주요품목]
     const baseColumnDefs = [
-      { key: 'marketName', label: '시장명' },
-      { key: 'companyName', label: '상호(가맹점명)' },
-      { key: 'bizNumber', label: '사업자등록번호' },
-      { key: 'ceoName', label: '대표자명' },
+      { key: 'companyName', label: '상호' },
+      { key: 'industry', label: '업종' },
+      { key: 'bizNumber', label: '사업자번호' },
+      { key: 'ceoName', label: '대표자이름' },
       { key: 'ceoGender', label: '성별' },
       { key: 'ceoAge', label: '나이' },
       { key: 'phone', label: '연락처' },
       { key: 'openDate', label: '개업연월' },
-      { key: 'handledItems', label: '취급품목' },
       { key: 'address', label: '주소' },
+      { key: 'handledItems', label: '취급품목' },
+      { key: 'mainProducts', label: '주요품목' },
+      { key: 'marketName', label: '시장명' },
       { key: 'status', label: '가맹상태' },
       { key: 'paperAccepted', label: '온누리지류' },
       { key: 'digitalAccepted', label: '온누리디지털' }
     ];
 
-    let columns = [];
-    const selectedFields = req.body.baseFields || req.body.selectedFields;
-
-    if (selectedFields && Array.isArray(selectedFields) && selectedFields.length > 0) {
-      // 시장명은 기본 항상 유지
-      columns.push({ key: 'marketName', label: '시장명' });
-      baseColumnDefs.forEach(col => {
-        if (col.key !== 'marketName' && selectedFields.includes(col.key)) {
-          columns.push(col);
-        }
-      });
-    } else {
-      columns = [...baseColumnDefs];
-    }
+    let columns = [...baseColumnDefs];
 
     // 커스텀 필드 추가
     if (customFields && Array.isArray(customFields)) {
@@ -1481,41 +1532,32 @@ app.put('/api/quota/:fileName', (req, res) => {
     content.count = content.data.length;
     content.updatedAt = new Date().toISOString();
 
+    // 표준 컬럼 순서 보장: [상호] [업종] [사업자번호] [대표자이름] [성별] [나이] [연락처] [개업연월] [주소] [취급품목] [주요품목]
+    const columns = [
+      { key: 'companyName', label: '상호' },
+      { key: 'industry', label: '업종' },
+      { key: 'bizNumber', label: '사업자번호' },
+      { key: 'ceoName', label: '대표자이름' },
+      { key: 'ceoGender', label: '성별' },
+      { key: 'ceoAge', label: '나이' },
+      { key: 'phone', label: '연락처' },
+      { key: 'openDate', label: '개업연월' },
+      { key: 'address', label: '주소' },
+      { key: 'handledItems', label: '취급품목' },
+      { key: 'mainProducts', label: '주요품목' },
+      { key: 'marketName', label: '시장명' },
+      { key: 'status', label: '가맹상태' },
+      { key: 'paperAccepted', label: '온누리지류' },
+      { key: 'digitalAccepted', label: '온누리디지털' }
+    ];
+    content.columns = columns;
+
     // JSON 영구 갱신
     fs.writeFileSync(jsonPath, JSON.stringify(content, null, 2), 'utf-8');
 
     // Excel 실시간 동기화 갱신
     const excelName = safeFilename.replace('.json', '.xlsx');
     const excelPath = path.join(quotasDir, excelName);
-    let columns = content.columns;
-    if (!columns || !Array.isArray(columns) || columns.length === 0) {
-      columns = [
-        { key: 'seq', label: '순번' },
-        { key: 'marketName', label: '시장명' },
-        { key: 'companyName', label: '상호' },
-        { key: 'bizNumber', label: '사업자등록번호' },
-        { key: 'ceoName', label: '대표자명' },
-        { key: 'ceoGender', label: '성별' },
-        { key: 'ceoAge', label: '나이' },
-        { key: 'phone', label: '연락처' },
-        { key: 'openDate', label: '개업연월' },
-        { key: 'handledItems', label: '취급품목' },
-        { key: 'address', label: '사업장주소' }
-      ];
-    } else {
-      const hasGender = columns.some(c => c.key === 'ceoGender');
-      const hasAge = columns.some(c => c.key === 'ceoAge');
-      if (!hasGender || !hasAge) {
-        const ceoIdx = columns.findIndex(c => c.key === 'ceoName');
-        const insertIdx = ceoIdx !== -1 ? ceoIdx + 1 : columns.length;
-        const newCols = [];
-        if (!hasGender) newCols.push({ key: 'ceoGender', label: '성별' });
-        if (!hasAge) newCols.push({ key: 'ceoAge', label: '나이' });
-        columns.splice(insertIdx, 0, ...newCols);
-      }
-    }
-    content.columns = columns;
-
     exportBusinessesToExcel({
       data: content.data,
       columns,
@@ -1534,10 +1576,10 @@ app.put('/api/quota/:fileName', (req, res) => {
               (d.companyName && d.companyName === cItem.companyName)
             );
             if (matched) {
-              if (matched.ceoGender !== undefined) cItem.ceoGender = matched.ceoGender;
-              if (matched.ceoAge !== undefined) cItem.ceoAge = matched.ceoAge;
-              if (matched.ceoName !== undefined) cItem.ceoName = matched.ceoName;
-              if (matched.phone !== undefined) cItem.phone = matched.phone;
+              const syncKeys = ['companyName', 'industry', 'bizNumber', 'ceoName', 'ceoGender', 'ceoAge', 'phone', 'openDate', 'address', 'handledItems', 'mainProducts'];
+              syncKeys.forEach(k => {
+                if (matched[k] !== undefined) cItem[k] = matched[k];
+              });
               campChanged = true;
             }
           });
