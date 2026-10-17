@@ -14,38 +14,74 @@ function createSeededRandom(seed) {
 }
 
 /**
- * 사업자 업종/취급품목 텍스트 기반 Kstat 점포 분류 매핑
+ * 사업자 업종/취급품목 텍스트 기반 Kstat 점포 분류 매핑 (Kstat 공식 Q1_7 9개 문항 1:1 완벽 정합)
+ * 1: 농산물, 2: 축산물, 3: 수산물, 4: 가공식품, 5: 의류 및 신발, 6: 가정용품, 7: 음식점업, 8: 기타소매업, 9: 근린생활서비스
  * @param {string} handledItems 취급품목 텍스트
  * @param {string} industry 업종 텍스트
- * @returns {Object} { selector: string, categoryName: string, subType: string }
+ * @returns {Object} { selector: string, categoryName: string, subType: string, q1_7_val: string, q1_8_val: string }
  */
 export function categorizeIndustry(handledItems = '', industry = '') {
-  const text = `${handledItems} ${industry}`.toLowerCase();
+  const ind = String(industry || '').trim();
+  const items = String(handledItems || '').trim();
+  const text = `${items} ${ind}`.toLowerCase();
 
-  if (/수산|생선|활어|해산물|조개|건어물/.test(text)) {
-    return { selector: '#Q1_7_3', categoryName: '수산물/식료품', subType: '소매', defaultMargin: 0.22 };
+  // 1단계: 쿼터 데이터의 표준 9대 업종명 우선 1:1 직결 매핑
+  if (/^수산|^수산물/.test(ind) || /^수산|^수산물/.test(items) || ind === '수산물') {
+    return { selector: '#Q1_7_3', categoryName: '수산물', subType: '소매', defaultMargin: 0.22, q1_7_val: '3', q1_8_val: '2' };
+  }
+  if (/^농산|^농산물/.test(ind) || /^농산|^농산물/.test(items) || ind === '농산물') {
+    return { selector: '#Q1_7_1', categoryName: '농산물', subType: '소매', defaultMargin: 0.20, q1_7_val: '1', q1_8_val: '2' };
+  }
+  if (/^축산|^축산물/.test(ind) || /^축산|^축산물/.test(items) || ind === '축산물') {
+    return { selector: '#Q1_7_2', categoryName: '축산물', subType: '소매', defaultMargin: 0.18, q1_7_val: '2', q1_8_val: '2' };
+  }
+  if (/^가공식품|^가공/.test(ind) || /^가공식품|^가공/.test(items) || ind === '가공식품') {
+    return { selector: '#Q1_7_4', categoryName: '가공식품', subType: '소매', defaultMargin: 0.25, q1_7_val: '4', q1_8_val: '2' };
+  }
+  if (/^의류|^신발|^의류및신발|^의류신발/.test(ind) || /^의류|^신발|^의류및신발|^의류신발/.test(items) || ind.includes('의류')) {
+    return { selector: '#Q1_7_5', categoryName: '의류 및 신발', subType: '소매', defaultMargin: 0.30, q1_7_val: '5', q1_8_val: '2' };
+  }
+  if (/^가정용품|^가정/.test(ind) || /^가정용품|^가정/.test(items) || ind === '가정용품') {
+    return { selector: '#Q1_7_6', categoryName: '가정용품', subType: '소매', defaultMargin: 0.25, q1_7_val: '6', q1_8_val: '2' };
+  }
+  if (/^음식점|^음식점업|^식당|^분식|^카페|^외식/.test(ind) || /^음식점|^음식점업|^식당|^분식|^카페|^외식/.test(items) || ind === '음식점업') {
+    return { selector: '#Q1_7_7', categoryName: '음식점업', subType: '서비스', defaultMargin: 0.28, q1_7_val: '7', q1_8_val: '4' };
+  }
+  if (/^기타소매|^기타소매업/.test(ind) || /^기타소매|^기타소매업/.test(items) || ind === '기타소매업') {
+    return { selector: '#Q1_7_8', categoryName: '기타소매업', subType: '소매', defaultMargin: 0.24, q1_7_val: '8', q1_8_val: '2' };
+  }
+  if (/^근린|^근린상권|^근린생활|^개인서비스|^서비스/.test(ind) || /^근린|^근린상권|^근린생활|^개인서비스|^서비스/.test(items) || ind.includes('근린')) {
+    return { selector: '#Q1_7_9', categoryName: '근린생활서비스', subType: '서비스', defaultMargin: 0.35, q1_7_val: '9', q1_8_val: '4' };
+  }
+
+  // 2단계: 품목 키워드 기반 상세 매핑
+  if (/수산|생선|활어|해산물|조개|건어물|어물|조개구이/.test(text)) {
+    return { selector: '#Q1_7_3', categoryName: '수산물', subType: '소매', defaultMargin: 0.22, q1_7_val: '3', q1_8_val: '2' };
   }
   if (/농산|채소|야채|과일|청과|곡물|쌀|잡곡/.test(text)) {
-    return { selector: '#Q1_7_1', categoryName: '농산물', subType: '소매', defaultMargin: 0.20 };
+    return { selector: '#Q1_7_1', categoryName: '농산물', subType: '소매', defaultMargin: 0.20, q1_7_val: '1', q1_8_val: '2' };
   }
   if (/축산|정육|고기|식육|한우|돈육|삼겹/.test(text)) {
-    return { selector: '#Q1_7_2', categoryName: '축산물', subType: '소매', defaultMargin: 0.18 };
+    return { selector: '#Q1_7_2', categoryName: '축산물', subType: '소매', defaultMargin: 0.18, q1_7_val: '2', q1_8_val: '2' };
   }
   if (/가공|반찬|떡|두부|김치|식료품|제과|베이커리/.test(text)) {
-    return { selector: '#Q1_7_4', categoryName: '가공식품', subType: '소매', defaultMargin: 0.25 };
+    return { selector: '#Q1_7_4', categoryName: '가공식품', subType: '소매', defaultMargin: 0.25, q1_7_val: '4', q1_8_val: '2' };
   }
-  if (/음식|식당|분식|주점|카페|치킨|중식|한식|일식/.test(text)) {
-    return { selector: '#Q1_7_6', categoryName: '음식점업', subType: '서비스', defaultMargin: 0.28 };
+  if (/음식|식당|분식|주점|카페|치킨|중식|한식|일식|호프|피자|버거|도시락/.test(text)) {
+    return { selector: '#Q1_7_7', categoryName: '음식점업', subType: '서비스', defaultMargin: 0.28, q1_7_val: '7', q1_8_val: '4' };
   }
-  if (/미용|이용|헤어|뷰티|네일|피부|세탁|수선/.test(text)) {
-    return { selector: '#Q1_7_7', categoryName: '개인서비스(미용/세탁 등)', subType: '서비스', defaultMargin: 0.35 };
+  if (/미용|이용|헤어|뷰티|네일|피부|세탁|수선|안경|당구|독서실|목욕|사우나|헬스/.test(text)) {
+    return { selector: '#Q1_7_9', categoryName: '근린생활서비스', subType: '서비스', defaultMargin: 0.35, q1_7_val: '9', q1_8_val: '4' };
   }
-  if (/의류|신발|패션|잡화|가방|모자|이불|침구|한복/.test(text)) {
-    return { selector: '#Q1_7_5', categoryName: '의류/신발/잡화', subType: '소매', defaultMargin: 0.30 };
+  if (/가정용품|철물|조명|가구|주방|그릇|도기|인테리어|침구|이불|커튼|생활잡화/.test(text)) {
+    return { selector: '#Q1_7_6', categoryName: '가정용품', subType: '소매', defaultMargin: 0.25, q1_7_val: '6', q1_8_val: '2' };
+  }
+  if (/의류|신발|패션|잡화|가방|모자|한복|양말|속옷/.test(text)) {
+    return { selector: '#Q1_7_5', categoryName: '의류 및 신발', subType: '소매', defaultMargin: 0.30, q1_7_val: '5', q1_8_val: '2' };
   }
 
-  // 기본 기타 소매
-  return { selector: '#Q1_7_5', categoryName: '기타 소매/공산품', subType: '소매', defaultMargin: 0.24 };
+  // 기본값: 8번 기타소매업
+  return { selector: '#Q1_7_8', categoryName: '기타소매업', subType: '소매', defaultMargin: 0.24, q1_7_val: '8', q1_8_val: '2' };
 }
 
 /**
@@ -92,21 +128,23 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const industryMeta = categorizeIndustry(bizData.handledItems, bizData.industry);
   const groupKey = getIndustryGroupKey(bizData.industry, bizData.handledItems);
 
-  // 2. 대표자 연령 및 성별 (사용자가 쿼터 테이블에 직접 입력한 값 우선 반영)
-  const ceoName = bizData.ceoName || '점포주';
+  // 2. 대표자 연령 및 성별 (사용자가 쿼터 테이블에 직접 입력한 값 무조건 100% 우선 반영)
+  const ceoName = String(bizData.ceoName || bizData.representativeName || bizData.ceo || bizData.ownerName || '점포주').trim();
   let genderSelector;
-  if (bizData.ceoGender) {
-    const g = String(bizData.ceoGender).trim();
-    genderSelector = (g === '여' || g.toLowerCase() === 'female' || g === '여자') ? '#A1_2' : '#A1_1';
+  const rawGender = String(bizData.ceoGender || bizData.gender || bizData.ceo_gender || '').trim();
+  if (rawGender) {
+    const isFemale = (rawGender === '여' || rawGender.toLowerCase() === 'female' || rawGender === '여자' || rawGender === '여성');
+    genderSelector = isFemale ? '#A1_2' : '#A1_1';
   } else {
     // 이름 기반 성별 추론 (끝글자가 은/숙/미/희/자/순/영 등 여성 선호, 그 외 남성 선호)
     const isFemaleName = /[은숙미희자순영경혜진선애]/.test(ceoName.slice(-1));
     genderSelector = (quotaIndex % 2 === 0 ? !isFemaleName : isFemaleName) ? '#A1_2' : '#A1_1'; // A1_1: 남, A1_2: 여
   }
 
+  const rawAge = bizData.ceoAge || bizData.age || bizData.ceo_age;
   let age;
-  if (bizData.ceoAge && !isNaN(parseInt(bizData.ceoAge, 10))) {
-    age = String(parseInt(bizData.ceoAge, 10));
+  if (rawAge !== undefined && rawAge !== null && !isNaN(parseInt(rawAge, 10)) && parseInt(rawAge, 10) > 0) {
+    age = String(parseInt(rawAge, 10));
   } else {
     age = String(randBetween(42, 63)); // 40대~60대
   }
@@ -129,6 +167,21 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const baseDailySales = mb.dailySales !== undefined ? parseInt(mb.dailySales, 10) : 65;
   const scaledDaily = Math.round(baseDailySales * sizeFactor + randBetween(-4, 4));
   const dailySales = Math.max(20, Math.min(220, scaledDaily));
+
+  // [규칙 5] 일평균 매출액 라디오 구간 매핑 (B1AA_1_1 ~ B1AA_1_11)
+  // 1: 5만원 미만, 2: 5~10, 3: 10~15, 4: 15~20, 5: 20~25, 6: 25~30, 7: 30~50, 8: 50~70, 9: 70~100, 10: 100~150, 11: 150만원 이상
+  let dailyRadioVal = '7';
+  if (dailySales < 5) dailyRadioVal = '1';
+  else if (dailySales < 10) dailyRadioVal = '2';
+  else if (dailySales < 15) dailyRadioVal = '3';
+  else if (dailySales < 20) dailyRadioVal = '4';
+  else if (dailySales < 25) dailyRadioVal = '5';
+  else if (dailySales < 30) dailyRadioVal = '6';
+  else if (dailySales < 50) dailyRadioVal = '7';
+  else if (dailySales < 70) dailyRadioVal = '8';
+  else if (dailySales < 100) dailyRadioVal = '9';
+  else if (dailySales < 150) dailyRadioVal = '10';
+  else dailyRadioVal = '11';
 
   const baseAnnualSales = mb.annualSales !== undefined ? parseInt(mb.annualSales, 10) : Math.round((dailySales * 290) / 100);
   const scaledAnnual = Math.round(baseAnnualSales * sizeFactor + randBetween(-6, 6));
@@ -349,10 +402,22 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   // 8. 사업장 임대차 (P10)
   const rentRate = mb.rentAdoptionRate !== undefined ? (mb.rentAdoptionRate / 100) : 0.8;
   const isRent = rng() < rentRate;
+
+  // [규칙 3] 보증금: 무조건 천만원 단위 (1000, 2000, 3000, 4000, 5000 등 1000의 배수)
   const baseDep = mb.depositAmount !== undefined ? parseInt(mb.depositAmount, 10) : 2000;
-  const deposit = String(Math.max(500, baseDep + randBetween(-150, 150)));
+  let depNum = Math.round(baseDep / 1000) * 1000;
+  if (depNum < 1000) depNum = 1000;
+  const depStep = rotate([-1000, 0, 1000, 0, 2000, -1000, 0, 1000], quotaIndex);
+  depNum = Math.max(1000, depNum + depStep);
+  const deposit = String(depNum);
+
+  // [규칙 4] 월세: 무조건 5만원 단위 (50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110 등 5의 배수)
   const baseRentAmt = mb.monthlyRentAmount !== undefined ? parseInt(mb.monthlyRentAmount, 10) : 110;
-  const monthlyRent = String(Math.max(40, baseRentAmt + randBetween(-10, 10)));
+  let rentNum = Math.round(baseRentAmt / 5) * 5;
+  const rentStep = rotate([-10, -5, 0, 5, 10, -5, 0, 15, -10, 5], quotaIndex);
+  rentNum = Math.round((rentNum + rentStep) / 5) * 5;
+  rentNum = Math.max(30, rentNum); // 최소 30만원
+  const monthlyRent = String(rentNum);
 
   let rentTrendSelector = '#D1D_3';
   if (mb.rentTrend === 'rotation' || mb.rotationMode) {
@@ -534,6 +599,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     },
     sales: {
       daily: String(dailySales),
+      dailyRadioVal,
       annual: String(annualSales),
       quarters: { q1: String(q1), q2: String(q2), q3: String(q3), q4: String(q4) },
       profitMarginRate: exactMarginRate,

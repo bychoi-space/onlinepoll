@@ -10,6 +10,7 @@ description: Comprehensive technical reference and operational guide for the Aut
 2. **Zero Fabricated Results**: Never fabricate execution results or fake business registrations.
 3. **No Local Daemons/Tunnels**: Never run background servers or tunnels on the user's local PC; production runs on GCP (`http://34.64.233.77:3000`).
 4. **No Deploy During Active Batch**: Always check `GET /api/survey/status` (`isRunning === false`) before running `git push origin main`.
+5. **No Runtime Overwrite & Untracked Campaigns DB**: `data/campaigns.json` is a runtime user state database and must NEVER be tracked by Git or overwritten during `git pull`. Always keep it excluded in `.gitignore` and untracked (`git rm --cached`). Before any `git pull`, verify no runtime data overwrite occurs.
 
 ---
 

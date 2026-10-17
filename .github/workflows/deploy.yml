@@ -20,6 +20,5 @@ jobs:
           echo "" >> ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
 
-          echo "🚀 [Deploy] Connecting to GCP VM (34.64.233.77)..."
-          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 "cd ~/onlinepoll && git fetch origin main && git checkout origin/main -- src/ public/ data/ scripts/ package.json .gitignore && npm install --production=false && pm2 restart onlinepoll"
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -i ~/.ssh/id_deploy choiby01@34.64.233.77 "cd ~/onlinepoll && git fetch origin main && git checkout origin/main -- src/ public/ data/onnuri_master_db.json data/kstat_survey_blueprint.json data/ceo_persona_pool.json data/quotas/ scripts/ package.json .gitignore && npm install --production=false && pm2 restart onlinepoll"
           echo "✅ [Deploy] Deployment completed successfully!"

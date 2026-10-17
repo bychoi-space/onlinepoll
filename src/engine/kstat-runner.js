@@ -193,9 +193,23 @@ async function autoFillUnansweredVisibleFrames(page, persona, biz) {
       // 알려진 모든 동적 하위 프레임 코드별 정밀 폴백 처리
       if (code === 'A3A') await selectKstatRadio(f, 'A3A', '1');
       else if (code === 'A4A') await safeFill(f, '#A4A_1, input[name="A4A_1"]', biz.bizNumber);
+      else if (code === 'B1AA') {
+        // [규칙 5] 일평균 매출액 숫자는 비우고 하단 라디오 선택
+        await f.evaluate(() => {
+          const numInput = document.getElementById('B1AA') || document.querySelector('input[name="B1AA"]');
+          if (numInput) { numInput.value = ''; numInput.dispatchEvent(new Event('change', { bubbles: true })); }
+        }).catch(() => {});
+        await selectKstatRadio(f, 'B1AA_1', persona.sales?.dailyRadioVal || '7');
+      }
       else if (code === 'B1BB') await selectKstatRadio(f, 'B1BB', (persona.sales?.salesChangeSelector || '#B1BB_3').replace('#B1BB_', ''));
       else if (code === 'B1BC') await selectRankCheckboxes(f, 'B1BC', persona.sales?.profitIncreaseReasons || [6, 1, 2]);
       else if (code === 'B1BD') await selectRankCheckboxes(f, 'B1BD', persona.sales?.profitDecreaseReasons || [4, 5, 2]);
+      else if (code === 'B2A') {
+        // [규칙 6] B2A 현금(세금계산서 등), 온누리, 신용카드 비중 주입 보장
+        await safeFill(f, '#B2A_1, input[name="B2A_1"]', persona.paymentMethods?.cash || '20');
+        await safeFill(f, '#B2A_2, input[name="B2A_2"]', persona.paymentMethods?.onnuri || '15');
+        await safeFill(f, '#B2A_5, input[name="B2A_5"]', persona.paymentMethods?.card || '65');
+      }
       else if (code === 'B5A1') await selectKstatRadio(f, 'B5A_1', '1');
       else if (code === 'B5AA') await selectKstatRadio(f, 'B5AA', '1');
       else if (code === 'B5B1') await safeFill(f, '#B5B_1, input[name="B5B_1"]', persona.onnuri?.joinYear || '2020');
@@ -307,11 +321,11 @@ export async function runKstatSurvey({
   const rawBizDigits = String(bizData.bizNumber || '1234567890').replace(/\D/g, '').padEnd(10, '0').slice(0, 10);
   const formattedBizNumber = `${rawBizDigits.slice(0, 3)}-${rawBizDigits.slice(3, 5)}-${rawBizDigits.slice(5, 10)}`;
 
-  // 1. 사업자 팩트 데이터 정규화
+  // 1. 사업자 팩트 데이터 정규화 (대표자 이름, 성별, 나이, 업종 등 쿼터 데이터 100% 보존)
   const biz = {
     companyName: bizData.companyName || '무명점포',
     bizNumber: formattedBizNumber,
-    ceoName: bizData.ceoName || '점포주',
+    ceoName: String(bizData.ceoName || bizData.representativeName || bizData.ceo || bizData.ownerName || '점포주').trim(),
     phone: bizData.phone || '02-1234-5678',
     openDate: bizData.openDate || '2020-05-01',
     openYear: bizData.openDate ? String(Math.min(2025, parseInt(String(bizData.openDate).split(/[-.]/)[0], 10) || 2020)) : '2020',
@@ -323,7 +337,8 @@ export async function runKstatSurvey({
       .replace(/\s+/g, ' ')
       .trim(),
     addressDetail: bizData.addressDetail || '1층',
-    handledItems: bizData.mainProducts || bizData.handledItems || bizData.industry || '소매업'
+    handledItems: bizData.mainProducts || bizData.handledItems || bizData.industry || '소매업',
+    industry: bizData.industry || bizData.handledItems || '소매업'
   };
 
   // 2. 쿼터별 동적 페르소나 생성 (업종분류, 연령, 매출, 결제비중 등 가변 데이터)
@@ -406,21 +421,14 @@ export async function runKstatSurvey({
       await safeFill(page, '#Q1_5', biz.companyName);
       await safeClick(page, '#Q1_6_1'); // 점포 형태: 점포
 
-      // 업종별 동적 분류 라디오 매핑 (수산, 농산, 축산, 이미용 등)
+      // 업종별 동적 분류 라디오 매핑 (1: 농산물, 2: 축산물, 3: 수산물, 4: 가공식품, 5: 의류신발, 6: 가정용품, 7: 음식점업, 8: 기타소매업, 9: 근린생활서비스)
       await itemDelay();
-      await safeClick(page, persona.industryMeta.selector);
+      const q17Val = persona.industryMeta.q1_7_val || '8';
+      await selectKstatRadio(page, 'Q1_7', q17Val);
 
-      // Kstat 공식 규칙: @Q1_7 = 7(개인서비스), 9(근린상권) -> Q1_8 보기 4(서비스업), 5(기타)만 허용
-      // 그 외 1~6, 8 -> Q1_8 보기 1(도매), 2(소매), 3(도소매), 5(기타) 허용
-      const isServiceCategory = persona.industryMeta.selector === '#Q1_7_7' || 
-                                persona.industryMeta.selector === '#Q1_7_9' || 
-                                persona.industryMeta.categoryName.includes('서비스') ||
-                                (persona.industryMeta.subType === '서비스' && persona.industryMeta.selector !== '#Q1_7_6');
-      if (isServiceCategory) {
-        await safeClick(page, '#Q1_8_4'); // 서비스업
-      } else {
-        await safeClick(page, '#Q1_8_2'); // 소매업
-      }
+      // Kstat 공식 규칙: @Q1_7 = 7(음식점업), 9(근린생활서비스) -> Q1_8 보기 4(서비스업) / 그 외 1~6, 8 -> Q1_8 보기 2(소매업)
+      const q18Val = persona.industryMeta.q1_8_val || (q17Val === '7' || q17Val === '9' ? '4' : '2');
+      await safeClick(page, `#Q1_8_${q18Val}`);
       await safeFill(page, '#Q1_9_1', biz.handledItems);
 
       await itemDelay();
@@ -529,7 +537,18 @@ export async function runKstatSurvey({
       // P3: 매출액 및 영업개월수 (B1AA, B1AB, B1AC)
       else if (stepName === 'P3') {
         const fB1AA = page.frame({ url: /\/B1AA\.asp/i });
-        if (fB1AA) await safeFill(fB1AA, '#B1AA, input[name="B1AA"]', persona.sales.daily);
+        if (fB1AA) {
+          // [규칙 5] 일평균 매출액은 숫자를 입력하지 않고, 하단의 구간 라디오(B1AA_1)를 선택
+          await fB1AA.evaluate(() => {
+            const numInput = document.getElementById('B1AA') || document.querySelector('input[name="B1AA"]');
+            if (numInput) {
+              numInput.value = '';
+              numInput.dispatchEvent(new Event('input', { bubbles: true }));
+              numInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }).catch(() => {});
+          await selectKstatRadio(fB1AA, 'B1AA_1', persona.sales?.dailyRadioVal || '7');
+        }
         await itemDelay();
 
         const fB1AB = page.frame({ url: /\/B1AB\.asp/i });
@@ -621,9 +640,36 @@ export async function runKstatSurvey({
 
         const fB2A = page.frame({ url: /\/B2A\.asp/i });
         if (fB2A) {
-          await safeFill(fB2A, 'input[name="B2A_1"]', persona.paymentMethods.cash);
-          await safeFill(fB2A, 'input[name="B2A_2"]', persona.paymentMethods.onnuri);
-          await safeFill(fB2A, 'input[name="B2A_5"]', persona.paymentMethods.card);
+          // [규칙 6] B2A 항목에서 '현금(세금계산서 등)' 항목에 값을 누락하지 않고 정확하게 입력
+          const cashVal = String(persona.paymentMethods.cash);
+          const onnuriVal = String(persona.paymentMethods.onnuri);
+          const cardVal = String(persona.paymentMethods.card);
+
+          await fB2A.evaluate(({ cash, onnuri, card }) => {
+            const setVal = (id, val) => {
+              const el = document.getElementById(id) || document.querySelector(`input[name="${id}"]`);
+              if (el) {
+                el.value = val;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+                el.dispatchEvent(new Event('keyup', { bubbles: true }));
+                el.dispatchEvent(new Event('blur', { bubbles: true }));
+              }
+            };
+            setVal('B2A_1', cash);
+            setVal('B2A_2', onnuri);
+            setVal('B2A_5', card);
+          }, { cash: cashVal, onnuri: onnuriVal, card: cardVal }).catch(() => {});
+
+          await safeFill(fB2A, '#B2A_1, input[name="B2A_1"]', cashVal);
+          await safeFill(fB2A, '#B2A_2, input[name="B2A_2"]', onnuriVal);
+          await safeFill(fB2A, '#B2A_5, input[name="B2A_5"]', cardVal);
+
+          // B2A_1 누락 방지 재확인
+          const actualCash = await fB2A.evaluate(() => document.getElementById('B2A_1')?.value || '').catch(() => '');
+          if (!actualCash || actualCash.trim() === '') {
+            await safeFill(fB2A, '#B2A_1, input[name="B2A_1"]', cashVal);
+          }
         }
         await itemDelay();
 
