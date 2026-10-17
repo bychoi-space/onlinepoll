@@ -738,6 +738,126 @@ app.post('/api/campaigns/:id/start', async (req, res) => {
 });
 
 // ==========================================
+// [1-7] 캠페인 쿼터와 케이스탯 1:1 슬롯 매핑 바인딩
+// ==========================================
+app.post('/api/campaigns/:id/bind-slots', async (req, res) => {
+  try {
+    const campaign = CampaignStore.getCampaignById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+    }
+
+    const { slots = [], resetStatus = true } = req.body;
+    if (!Array.isArray(slots) || slots.length === 0) {
+      return res.status(400).json({ error: '매핑할 슬롯 데이터 목록이 없습니다.' });
+    }
+
+    const quotaDb = campaign.quotaDatabase || [];
+    if (quotaDb.length === 0) {
+      return res.status(400).json({ error: '캠페인에 등록된 쿼터 데이터가 없습니다.' });
+    }
+
+    let mappedCount = 0;
+    quotaDb.forEach((biz, idx) => {
+      const slot = slots.find(s => (s.index === (biz.index || biz.seq || idx + 1)) || (s.seq === (biz.index || biz.seq || idx + 1))) || slots[idx];
+      if (slot && slot.slotUrl) {
+        biz.slotUrl = String(slot.slotUrl).trim();
+        biz.slotIndex = slot.slotIndex || (idx + 1);
+        biz.slotExtra = slot.slotExtra || (slot.extraLabel || `(${idx})추가`);
+        biz.ranId = slot.ranId || (slot.ran_id || (biz.slotUrl.match(/[?&]KID=([^&]+)/i)?.[1] || null));
+        mappedCount++;
+
+        if (resetStatus) {
+          biz.quotaStatus = 'ready';
+          biz.pilotAt = null;
+          biz.completedAt = null;
+          biz.usedAt = null;
+          biz.capturedSteps = [];
+        }
+      }
+    });
+
+    const firstSlot = quotaDb[0]?.slotUrl;
+    const guidelineConfig = {
+      ...(campaign.guidelineConfig || {}),
+      ...(firstSlot ? { surveyUrl: firstSlot } : {})
+    };
+
+    const updated = CampaignStore.updateCampaign(campaign.id, {
+      quotaDatabase: quotaDb,
+      guidelineConfig,
+      ...(resetStatus ? { status: 'ready' } : {})
+    });
+
+    // 원본 쿼터 JSON/XLSX 동기화
+    try {
+      const quotaFiles = fs.readdirSync(quotasDir).filter(f => f.endsWith('.json'));
+      const marketName = quotaDb[0]?.marketName;
+      const matchedFile = quotaFiles.find(f => {
+        if (campaign.quotaFileName && f === campaign.quotaFileName) return true;
+        if (marketName && f.includes(marketName)) return true;
+        return false;
+      });
+
+      if (matchedFile) {
+        const fullJsonPath = path.join(quotasDir, matchedFile);
+        const quotaJson = JSON.parse(fs.readFileSync(fullJsonPath, 'utf8'));
+        const qList = quotaJson.data || quotaJson.merchants || [];
+        qList.forEach((qm, qIdx) => {
+          const matchedBiz = quotaDb.find(b => (b.bizNumber && b.bizNumber === qm.bizNumber) || ((b.index || b.seq) === (qm.seq || qm.index || qIdx + 1)));
+          if (matchedBiz && matchedBiz.slotUrl) {
+            qm.slotUrl = matchedBiz.slotUrl;
+            qm.slotIndex = matchedBiz.slotIndex;
+            qm.slotExtra = matchedBiz.slotExtra;
+            qm.ranId = matchedBiz.ranId;
+          }
+        });
+        fs.writeFileSync(fullJsonPath, JSON.stringify(quotaJson, null, 2), 'utf8');
+
+        const xlsxPath = fullJsonPath.replace(/\.json$/, '.xlsx');
+        if (qList.length > 0) {
+          const rows = qList.map(m => ({
+            '순번': m.seq || m.index,
+            'Kstat슬롯': m.slotIndex ? `슬롯 #${m.slotIndex} ${m.slotExtra || ''}` : '-',
+            'Kstat설문URL': m.slotUrl || '-',
+            '시장명': m.marketName || '-',
+            '상호': m.companyName || '-',
+            '사업자번호': m.bizNumber || '-',
+            '대표자명': m.ceoName || '-',
+            '연락처': m.phone || '-',
+            '개업일': m.openDate || '-',
+            '업종/품목': m.handledItems || m.industry || '-',
+            '사업장주소': m.address || '-',
+            '가맹상태': m.status || '정상가맹',
+            '지류': m.paperAccepted || 'Y',
+            '디지털': m.digitalAccepted || 'Y'
+          }));
+          const wb = xlsx.utils.book_new();
+          const ws = xlsx.utils.json_to_sheet(rows);
+          xlsx.utils.book_append_sheet(wb, ws, '조사쿼터_Kstat슬롯매핑');
+          xlsx.writeFile(wb, xlsxPath);
+        }
+      }
+    } catch (syncErr) {
+      logger.warn('[슬롯 매핑 쿼터파일 동기화 주의]', syncErr.message);
+    }
+
+    logger.success(`[슬롯 1:1 매핑 완료] 캠페인 "${campaign.title}": 총 ${quotaDb.length}개 중 ${mappedCount}개 슬롯 바인딩 완료!`);
+
+    res.json({
+      success: true,
+      message: `총 ${quotaDb.length}개 쿼터 중 ${mappedCount}개 점포에 케이스탯 슬롯이 1:1 매칭되었습니다.${resetStatus ? ' (상태가 대기로 초기화되었습니다)' : ''}`,
+      mappedCount,
+      totalCount: quotaDb.length,
+      quotaDatabase: updated.quotaDatabase
+    });
+  } catch (err) {
+    logger.error('[슬롯 매핑 실패]', err);
+    res.status(500).json({ error: '슬롯 매핑 중 오류가 발생했습니다: ' + err.message });
+  }
+});
+
+// ==========================================
 // [3-1] 2-Phase 실행: 1번 쿼터 파일럿 시뮬레이션 (Agree 안전 대기)
 // ==========================================
 app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
@@ -753,9 +873,16 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
   }
 
   const targetBiz = quotaDb[Math.max(0, quotaIndex - 1)];
-  const targetUrl = targetBiz?.slotUrl || targetBiz?.surveyUrl || surveyUrl || campaign.guidelineConfig?.surveyUrl;
+  if (!targetBiz) {
+    return res.status(400).json({ error: '1번 쿼터 사업자를 찾을 수 없습니다.' });
+  }
+
+  // 1:1 슬롯 매핑 엄격 검증: slotUrl이 없으면 차단
+  const targetUrl = targetBiz.slotUrl || targetBiz.surveyUrl;
   if (!targetUrl) {
-    return res.status(400).json({ error: '설문조사 URL이 필요합니다.' });
+    return res.status(400).json({
+      error: `[${targetBiz.companyName}] 1번 쿼터에 케이스탯 전용 설문 슬롯 URL(slotUrl)이 매핑되지 않았습니다. 상단의 [슬롯 1:1 매핑]을 먼저 완료해 주세요.`
+    });
   }
 
   // 가이드라인 설정 보존
@@ -767,7 +894,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
     }
   });
 
-  logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상 사업자: "${targetBiz.companyName}" (${targetBiz.bizNumber})`);
+  logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상 사업자: "${targetBiz.companyName}" (${targetBiz.bizNumber}) (슬롯: ${targetBiz.slotIndex ? '#' + targetBiz.slotIndex : '단독'})`);
   targetBiz.quotaStatus = 'running';
   CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'running' });
 
@@ -862,6 +989,14 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다.' });
   }
 
+  // 1:1 슬롯 매핑 엄격 검증: 대상 중 슬롯이 없는 항목이 단 하나라도 있으면 가동 차단!
+  const unmapped = targets.filter(b => !b.slotUrl && !b.surveyUrl);
+  if (unmapped.length > 0) {
+    return res.status(400).json({
+      error: `실행 대상 쿼터 ${targets.length}건 중 ${unmapped.length}건에 케이스탯 슬롯 URL(slotUrl)이 매핑되지 않았습니다. 상단의 [슬롯 1:1 매핑]을 통해 모든 쿼터에 슬롯을 매칭한 후 가동해 주세요.`
+    });
+  }
+
   logger.info(`[배치 자동화 가동] 캠페인 "${campaign.title}" 대상 ${targets.length}건 연속 실행 시작 (안전가드: ${safetyGuard ? 'ON' : 'OFF'})`);
   currentTask.isRunning = true;
   currentTask.campaignId = campaign.id;
@@ -882,9 +1017,9 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         }
 
         const biz = targets[i];
-        const bizUrl = biz.slotUrl || biz.surveyUrl || defaultUrl;
+        const bizUrl = biz.slotUrl || biz.surveyUrl;
         if (!bizUrl) {
-          logger.error(`[배치 ${i + 1}/${targets.length}] "${biz.companyName}"에 할당된 설문 URL(슬롯)이 없습니다.`);
+          logger.error(`[배치 ${i + 1}/${targets.length}] "${biz.companyName}"에 할당된 케이스탯 고유 슬롯 URL이 없습니다.`);
           biz.quotaStatus = 'error';
           CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
           continue;
@@ -975,9 +1110,11 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
     return res.status(404).json({ error: '해당 순번의 쿼터 사업자를 찾을 수 없습니다.' });
   }
 
-  const targetUrl = targetBiz.slotUrl || targetBiz.surveyUrl || campaign.guidelineConfig?.surveyUrl;
+  const targetUrl = targetBiz.slotUrl || targetBiz.surveyUrl;
   if (!targetUrl) {
-    return res.status(400).json({ error: '설문조사 URL이 지정되지 않았습니다.' });
+    return res.status(400).json({
+      error: `[${targetBiz.companyName}] 쿼터에 케이스탯 슬롯 URL(slotUrl)이 매핑되지 않았습니다. 상단의 [슬롯 1:1 매핑]을 먼저 완료해 주세요.`
+    });
   }
 
   targetBiz.quotaStatus = 'running';

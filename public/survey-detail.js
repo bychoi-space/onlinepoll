@@ -249,12 +249,15 @@ async function initSurveyDetailPage() {
     let ready = 0;
     let pilot = 0;
     let completed = 0;
+    let mappedSlots = 0;
 
     db.forEach(item => {
       const st = item.quotaStatus || 'ready';
       if (st === 'pilot_done') pilot++;
       else if (st === 'completed') completed++;
       else ready++;
+
+      if (item.slotUrl || item.surveyUrl) mappedSlots++;
     });
 
     kpiTotal.textContent = total;
@@ -263,6 +266,16 @@ async function initSurveyDetailPage() {
     kpiCompleted.textContent = completed;
     const rate = total > 0 ? Math.round(((pilot + completed) / total) * 100) : 0;
     kpiRate.textContent = `${rate}%`;
+
+    const kpiSlotCount = document.getElementById('kpi-slot-count');
+    if (kpiSlotCount) {
+      kpiSlotCount.textContent = `${mappedSlots}/${total}`;
+      if (total > 0 && mappedSlots === total) {
+        kpiSlotCount.className = 'kpi-val text-success font-bold';
+      } else {
+        kpiSlotCount.className = 'kpi-val text-warning font-bold';
+      }
+    }
 
     if (total === 0) {
       quotaTableBody.innerHTML = `
@@ -298,8 +311,11 @@ async function initSurveyDetailPage() {
       const addrVal = item.address ? (item.address.length > 28 ? item.address.slice(0, 28) + '...' : item.address) : '-';
 
       let slotTag = '';
-      if (item.slotIndex) {
-        slotTag = `<div class="quota-slot-badge font-mono" title="${escapeHtml(item.slotUrl || '')}">슬롯 #${item.slotIndex} ${escapeHtml(item.slotExtra || '')}</div>`;
+      if (item.slotUrl) {
+        const slotLabel = item.slotIndex ? `슬롯 #${item.slotIndex} ${escapeHtml(item.slotExtra || '')}` : '슬롯 매핑됨';
+        slotTag = `<div class="quota-slot-badge font-mono" title="${escapeHtml(item.slotUrl)}"><i class="fa-solid fa-link"></i> ${slotLabel}</div>`;
+      } else {
+        slotTag = `<div class="quota-slot-badge unmapped font-mono cursor-pointer" onclick="window.openSlotModal()" title="케이스탯 슬롯 미매핑 (클릭하여 1:1 매핑)"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 미매핑</div>`;
       }
 
       return `
@@ -1856,23 +1872,29 @@ async function initSurveyDetailPage() {
   // ------------------------------------------------------------------------
   // [버튼 1] 1번 쿼터 파일럿 검증 (Agree 직전 안전 대기)
   btnPilot.addEventListener('click', async () => {
-    let surveyUrl = inputSurveyUrl.value.trim();
-    if (!surveyUrl) {
-      const firstSlot = currentCampaign?.quotaDatabase?.[0]?.slotUrl;
-      if (firstSlot) {
-        surveyUrl = firstSlot;
-        inputSurveyUrl.value = firstSlot;
-      } else {
-        alert('설문조사 URL을 입력해 주세요.');
-        inputSurveyUrl.focus();
-        return;
-      }
+    const quotaDb = currentCampaign?.quotaDatabase || [];
+    if (quotaDb.length === 0) {
+      alert('캠페인에 등록된 쿼터가 없습니다. 먼저 쿼터를 불러와 주세요.');
+      return;
     }
+
+    const firstBiz = quotaDb[0];
+    const firstSlot = firstBiz?.slotUrl || firstBiz?.surveyUrl;
+
+    // 1번 쿼터 슬롯 1:1 매핑 엄격 검증
+    if (!firstSlot) {
+      alert(`⚠️ 1번 쿼터 [${firstBiz?.companyName || '1번 점포'}]에 케이스탯 전용 설문 슬롯 URL이 매핑되지 않았습니다.\n\n중복 설문 방지를 위해 모든 쿼터에 고유 슬롯이 매핑되어야 합니다.\n상단의 [🔗 케이스탯 슬롯 1:1 매핑] 버튼을 눌러 슬롯을 매칭한 후 파일럿 검증을 진행해 주세요.`);
+      if (typeof window.openSlotModal === 'function') window.openSlotModal();
+      return;
+    }
+
+    let surveyUrl = firstSlot;
+    if (inputSurveyUrl) inputSurveyUrl.value = firstSlot;
 
     try {
       setRunningState(true);
       resetTimelineChips();
-      appendLog('info', '🎯 [1번 단일 검증 시작] 1번 쿼터 사업자로 Q1부터 Agree.asp까지 안전 완주를 진행합니다...');
+      appendLog('info', `🎯 [1번 단일 검증 시작] "${firstBiz.companyName}" 점포로 Q1부터 Agree.asp까지 안전 완주를 진행합니다... (슬롯: #${firstBiz.slotIndex || 1})`);
 
       // 기준점 자동 저장
       await saveBaseline(false);
@@ -1897,30 +1919,38 @@ async function initSurveyDetailPage() {
 
   // [버튼 2] 전체 쿼터 (1번~24번) 배치 연속 가동
   const triggerBatchRun = async () => {
-    let surveyUrl = inputSurveyUrl.value.trim();
-    const hasSlotUrls = currentCampaign?.quotaDatabase?.some(b => b.slotUrl);
-    if (!surveyUrl && !hasSlotUrls) {
-      alert('설문조사 URL을 입력해 주세요.');
-      inputSurveyUrl.focus();
+    const quotaDb = currentCampaign?.quotaDatabase || [];
+    if (quotaDb.length === 0) {
+      alert('캠페인에 등록된 쿼터가 없습니다. 먼저 쿼터를 불러와 주세요.');
       return;
     }
 
-    const firstQuota = currentCampaign?.quotaDatabase?.find(b => b.index === 1);
+    const firstQuota = quotaDb.find(b => b.index === 1);
     const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed');
     const startIdx = firstDone ? 2 : 1;
 
+    // 1:1 슬롯 매핑 전수 엄격 검증: 대상 중 슬롯이 없는 항목이 단 하나라도 있으면 가동 차단!
+    const targets = quotaDb.filter(b => (b.index || b.seq) >= startIdx);
+    const unmappedTargets = targets.filter(b => !b.slotUrl && !b.surveyUrl);
+    if (unmappedTargets.length > 0) {
+      alert(`⚠️ 쿼터와 케이스탯 슬롯이 1:1로 매핑되지 않았습니다!\n(실행 대상 ${targets.length}개 점포 중 ${unmappedTargets.length}개 슬롯 누락)\n\n슬롯이 매핑되지 않은 상태로 실행하면 동일한 설문지에 중복 제출되는 치명적인 오류가 발생합니다.\n상단의 [🔗 케이스탯 슬롯 1:1 매핑] 버튼을 눌러 모든 쿼터에 1:1 슬롯을 매칭한 후 배치를 가동해 주세요.`);
+      if (typeof window.openSlotModal === 'function') window.openSlotModal();
+      return;
+    }
+
+    let surveyUrl = targets[0]?.slotUrl || inputSurveyUrl.value.trim();
     const safetyGuard = checkSafetyGuard.checked;
     const confirmMsg = safetyGuard
       ? (startIdx === 1
-          ? '1번부터 24번까지 전체 쿼터 연속 배치를 시작합니다. (최종 동의 단계에서 안전 대기)'
-          : '2번 쿼터부터 잔여 쿼터 연속 배치를 시작합니다. (최종 동의 단계에서 안전 대기)')
-      : '⚠️ 주의: 최종 제출 안전가드가 해제되어 있습니다!\n설문이 실제로 최종 제출 마감됩니다. 계속하시겠습니까?';
+          ? `1번부터 ${quotaDb.length}번까지 전체 쿼터 연속 배치를 시작합니다. (각 점포별 1:1 고유 슬롯으로 실행, 최종 동의 단계 안전 대기)`
+          : `2번 쿼터부터 잔여 ${targets.length}건 연속 배치를 시작합니다. (각 점포별 1:1 고유 슬롯으로 실행, 최종 동의 단계 안전 대기)`)
+      : `⚠️ 주의: 최종 제출 안전가드가 해제되어 있습니다!\n${targets.length}건의 설문이 각 점포별 1:1 슬롯으로 실제 최종 제출 마감됩니다. 계속하시겠습니까?`;
 
     if (!confirm(confirmMsg)) return;
 
     try {
       setRunningState(true);
-      appendLog('info', `🚀 [배치 가동 시작] ${startIdx}번 쿼터부터 고속 자동화 연속 실행을 시작합니다...`);
+      appendLog('info', `🚀 [배치 가동 시작] ${startIdx}번 쿼터부터 ${targets.length}건 1:1 슬롯 고속 자동화 연속 실행을 시작합니다...`);
 
       // 1. 기준점 저장 보장
       await saveBaseline(false);
@@ -1962,6 +1992,263 @@ async function initSurveyDetailPage() {
   btnStop.addEventListener('click', handleStopSurvey);
   if (btnStopAllBatchBottom) {
     btnStopAllBatchBottom.addEventListener('click', handleStopSurvey);
+  }
+
+  // ------------------------------------------------------------------------
+  // 6-1. 케이스탯 슬롯 1:1 매칭 모달 및 스마트 파서 (Modal Slot Controller)
+  // ------------------------------------------------------------------------
+  const modalSlotMapping = document.getElementById('modal-slot-mapping');
+  const btnOpenSlotModal = document.getElementById('btn-open-slot-modal');
+  const btnCloseSlotModal = document.getElementById('btn-close-slot-modal');
+  const btnCancelSlotModal = document.getElementById('btn-cancel-slot-modal');
+  const textareaBulkSlots = document.getElementById('textarea-bulk-slots');
+  const btnParseSlots = document.getElementById('btn-parse-slots');
+  const btnClearSlots = document.getElementById('btn-clear-slots');
+  const slotParseStatusMsg = document.getElementById('slot-parse-status-msg');
+  const slotMatchSummaryBadge = document.getElementById('slot-match-summary-badge');
+  const slotPreviewTbody = document.getElementById('slot-preview-tbody');
+  const checkResetQuotaStatus = document.getElementById('check-reset-quota-status');
+  const btnSubmitSlotMapping = document.getElementById('btn-submit-slot-mapping');
+
+  let parsedSlotsState = [];
+
+  // 스마트 슬롯 URL 파서
+  function parseBulkSlotInput(rawText) {
+    if (!rawText || !rawText.trim()) return [];
+
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const slots = [];
+
+    // 정규식 1: 케이스탯 index.asp URL 패턴
+    const urlRegex = /(https?:\/\/[^\s"'<>]+index\.asp\?[^\s"'<>]+)/gi;
+    const kidRegex = /[?&]KID=([A-Za-z0-9_-]+)/i;
+    const extraRegex = /\(([0-9]+)\)추가/i;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const matches = line.match(urlRegex);
+      if (matches) {
+        matches.forEach(url => {
+          const kidMatch = url.match(kidRegex);
+          const extraMatch = line.match(extraRegex);
+          slots.push({
+            slotUrl: url,
+            ranId: kidMatch ? kidMatch[1] : null,
+            slotExtra: extraMatch ? extraMatch[0] : `(${slots.length})추가`,
+            slotIndex: slots.length + 1
+          });
+        });
+      }
+    }
+
+    // fallback: URL 직접 줄바꿈 입력
+    if (slots.length === 0) {
+      lines.forEach((line, idx) => {
+        if (line.startsWith('http://') || line.startsWith('https://')) {
+          const kidMatch = line.match(kidRegex);
+          slots.push({
+            slotUrl: line,
+            ranId: kidMatch ? kidMatch[1] : null,
+            slotExtra: `(${idx})추가`,
+            slotIndex: idx + 1
+          });
+        }
+      });
+    }
+
+    return slots;
+  }
+
+  function renderSlotPreviewTable() {
+    const quotaDb = currentCampaign?.quotaDatabase || [];
+    const total = quotaDb.length;
+    let matchedCount = 0;
+
+    if (total === 0) {
+      if (slotPreviewTbody) slotPreviewTbody.innerHTML = '<tr><td colspan="6" class="empty-table-msg">쿼터 점포가 없습니다.</td></tr>';
+      if (slotMatchSummaryBadge) slotMatchSummaryBadge.textContent = '매칭: 0 / 0 점포';
+      return;
+    }
+
+    if (slotPreviewTbody) {
+      slotPreviewTbody.innerHTML = quotaDb.map((item, idx) => {
+        const seq = item.index || item.seq || (idx + 1);
+        const parsedSlot = parsedSlotsState[idx] || {};
+        const url = parsedSlot.slotUrl || item.slotUrl || '';
+        const slotExtra = parsedSlot.slotExtra || item.slotExtra || (url ? `(${idx})추가` : '-');
+        const isMatched = !!url;
+        if (isMatched) matchedCount++;
+
+        return `
+          <tr>
+            <td class="text-center font-mono font-bold">${seq}</td>
+            <td><strong>${escapeHtml(item.companyName || '-')}</strong></td>
+            <td><span class="quota-ind-badge">${escapeHtml(getIndustryBadgeText(item.industry || item.handledItems))}</span></td>
+            <td>${escapeHtml(item.ceoName || '-')}</td>
+            <td class="text-center font-mono">
+              ${isMatched ? `<span class="badge-status ready font-mono">슬롯 #${idx + 1} ${escapeHtml(slotExtra)}</span>` : '<span class="text-dim">-</span>'}
+            </td>
+            <td class="font-mono">
+              ${isMatched 
+                ? `<div class="font-mono text-primary-color break-all font-size-12" title="${escapeHtml(url)}">${escapeHtml(url)}</div>` 
+                : '<span class="text-warning font-caption"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 URL 미지정</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    if (slotMatchSummaryBadge) {
+      slotMatchSummaryBadge.textContent = `매칭: ${matchedCount} / ${total} 점포`;
+      if (matchedCount === total && total > 0) {
+        slotMatchSummaryBadge.className = 'text-success font-bold';
+        if (slotParseStatusMsg) slotParseStatusMsg.textContent = `✅ 전체 ${total}개 점포에 슬롯 URL이 1:1로 매칭되었습니다.`;
+      } else {
+        slotMatchSummaryBadge.className = 'text-warning font-bold';
+        if (slotParseStatusMsg) slotParseStatusMsg.textContent = `⚠️ 총 ${total}개 점포 중 ${matchedCount}개만 슬롯이 매칭되었습니다. (${total - matchedCount}개 누락)`;
+      }
+    }
+  }
+
+  function openSlotModal() {
+    if (!currentCampaign) return;
+    const quotaDb = currentCampaign.quotaDatabase || [];
+    if (quotaDb.length === 0) {
+      alert('캠페인에 등록된 쿼터가 없습니다. 먼저 쿼터를 불러와 주세요.');
+      return;
+    }
+
+    parsedSlotsState = quotaDb.map((item, idx) => ({
+      index: item.index || item.seq || (idx + 1),
+      seq: item.seq || item.index || (idx + 1),
+      companyName: item.companyName,
+      industry: item.industry || item.handledItems,
+      ceoName: item.ceoName,
+      slotUrl: item.slotUrl || '',
+      slotIndex: item.slotIndex || (idx + 1),
+      slotExtra: item.slotExtra || '',
+      ranId: item.ranId || ''
+    }));
+
+    const existingUrls = parsedSlotsState.filter(s => s.slotUrl).map(s => s.slotUrl);
+    if (existingUrls.length > 0 && textareaBulkSlots && !textareaBulkSlots.value.trim()) {
+      textareaBulkSlots.value = existingUrls.join('\n');
+    }
+
+    renderSlotPreviewTable();
+    if (modalSlotMapping) modalSlotMapping.classList.add('is-open');
+  }
+
+  window.openSlotModal = openSlotModal;
+
+  function closeSlotModal() {
+    if (modalSlotMapping) modalSlotMapping.classList.remove('is-open');
+  }
+
+  if (btnOpenSlotModal) btnOpenSlotModal.addEventListener('click', openSlotModal);
+  if (btnCloseSlotModal) btnCloseSlotModal.addEventListener('click', closeSlotModal);
+  if (btnCancelSlotModal) btnCancelSlotModal.addEventListener('click', closeSlotModal);
+
+  if (btnParseSlots) {
+    btnParseSlots.addEventListener('click', () => {
+      const text = textareaBulkSlots ? textareaBulkSlots.value.trim() : '';
+      if (!text) {
+        alert('슬롯 URL을 입력해주세요.');
+        if (textareaBulkSlots) textareaBulkSlots.focus();
+        return;
+      }
+
+      const extracted = parseBulkSlotInput(text);
+      if (extracted.length === 0) {
+        alert('입력된 텍스트에서 케이스탯 설문 URL을 찾을 수 없습니다.\n올바른 index.asp?KID=... 형태의 URL인지 확인해주세요.');
+        return;
+      }
+
+      const quotaDb = currentCampaign?.quotaDatabase || [];
+      parsedSlotsState = quotaDb.map((item, idx) => {
+        const slot = extracted[idx];
+        return {
+          index: item.index || item.seq || (idx + 1),
+          seq: item.seq || item.index || (idx + 1),
+          companyName: item.companyName,
+          industry: item.industry || item.handledItems,
+          ceoName: item.ceoName,
+          slotUrl: slot ? slot.slotUrl : '',
+          slotIndex: slot ? slot.slotIndex : (idx + 1),
+          slotExtra: slot ? slot.slotExtra : `(${idx})추가`,
+          ranId: slot ? slot.ranId : null
+        };
+      });
+
+      renderSlotPreviewTable();
+    });
+  }
+
+  if (btnClearSlots) {
+    btnClearSlots.addEventListener('click', () => {
+      if (textareaBulkSlots) textareaBulkSlots.value = '';
+      const quotaDb = currentCampaign?.quotaDatabase || [];
+      parsedSlotsState = quotaDb.map((item, idx) => ({
+        index: item.index || item.seq || (idx + 1),
+        seq: item.seq || item.index || (idx + 1),
+        companyName: item.companyName,
+        industry: item.industry || item.handledItems,
+        ceoName: item.ceoName,
+        slotUrl: '',
+        slotIndex: idx + 1,
+        slotExtra: '',
+        ranId: null
+      }));
+      renderSlotPreviewTable();
+    });
+  }
+
+  if (btnSubmitSlotMapping) {
+    btnSubmitSlotMapping.addEventListener('click', async () => {
+      const quotaDb = currentCampaign?.quotaDatabase || [];
+      const total = quotaDb.length;
+      const validSlots = parsedSlotsState.filter(s => s.slotUrl && s.slotUrl.trim() !== '');
+
+      if (validSlots.length === 0) {
+        alert('매핑할 슬롯 URL이 없습니다. 대량 입력창에 슬롯 URL을 입력하고 [자동 파싱]을 먼저 진행해주세요.');
+        return;
+      }
+
+      if (validSlots.length < total) {
+        if (!confirm(`⚠️ 전체 ${total}개 점포 중 ${validSlots.length}개 점포만 슬롯이 지정되어 있습니다.\n일부 점포의 슬롯이 누락되면 배치 자동화가 차단될 수 있습니다. 이대로 저장하시겠습니까?`)) {
+          return;
+        }
+      }
+
+      const resetStatus = checkResetQuotaStatus ? checkResetQuotaStatus.checked : true;
+
+      try {
+        btnSubmitSlotMapping.disabled = true;
+        btnSubmitSlotMapping.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
+
+        const res = await fetch(`/api/campaigns/${campId}/bind-slots`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slots: parsedSlotsState,
+            resetStatus
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '슬롯 매핑 저장 실패');
+
+        alert(data.message || '케이스탯 슬롯 1:1 매핑이 성공적으로 저장되었습니다!');
+        closeSlotModal();
+
+        await loadCampaign();
+      } catch (err) {
+        alert('슬롯 매핑 저장 실패: ' + err.message);
+      } finally {
+        btnSubmitSlotMapping.disabled = false;
+        btnSubmitSlotMapping.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 1:1 슬롯 매핑 적용 및 저장';
+      }
+    });
   }
 
   // ------------------------------------------------------------------------
