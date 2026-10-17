@@ -2080,18 +2080,18 @@ async function initSurveyDetailPage() {
         if (isMatched) matchedCount++;
 
         return `
-          <tr>
-            <td class="text-center font-mono font-bold">${seq}</td>
-            <td><strong>${escapeHtml(item.companyName || '-')}</strong></td>
-            <td><span class="quota-ind-badge">${escapeHtml(getIndustryBadgeText(item.industry || item.handledItems))}</span></td>
-            <td>${escapeHtml(item.ceoName || '-')}</td>
-            <td class="text-center font-mono">
-              ${isMatched ? `<span class="badge-status ready font-mono">슬롯 #${idx + 1} ${escapeHtml(slotExtra)}</span>` : '<span class="text-dim">-</span>'}
+          <tr class="slot-preview-row ${isMatched ? 'row-matched' : 'row-unmatched'}">
+            <td class="text-center font-mono font-bold col-seq">${seq}</td>
+            <td class="col-company"><strong class="company-name-highlight">${escapeHtml(item.companyName || '-')}</strong></td>
+            <td class="text-center col-ind"><span class="quota-ind-badge">${escapeHtml(getIndustryBadgeText(item.industry || item.handledItems))}</span></td>
+            <td class="col-ceo"><span class="ceo-name-highlight">${escapeHtml(item.ceoName || '-')}</span></td>
+            <td class="text-center font-mono col-slot-label">
+              ${isMatched ? `<span class="badge-slot-matched font-mono font-bold">슬롯 #${idx + 1} ${escapeHtml(slotExtra)}</span>` : '<span class="badge-slot-empty">-</span>'}
             </td>
-            <td class="font-mono">
+            <td class="font-mono col-slot-url">
               ${isMatched 
-                ? `<div class="font-mono text-primary-color break-all font-size-12" title="${escapeHtml(url)}">${escapeHtml(url)}</div>` 
-                : '<span class="text-warning font-caption"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 URL 미지정</span>'}
+                ? `<div class="slot-url-text font-mono break-all" title="${escapeHtml(url)}">${escapeHtml(url)}</div>` 
+                : '<span class="badge-slot-unmapped"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 URL 미지정</span>'}
             </td>
           </tr>
         `;
@@ -2099,13 +2099,19 @@ async function initSurveyDetailPage() {
     }
 
     if (slotMatchSummaryBadge) {
-      slotMatchSummaryBadge.textContent = `매칭: ${matchedCount} / ${total} 점포`;
+      slotMatchSummaryBadge.textContent = `매칭 완료: ${matchedCount} / ${total} 점포`;
       if (matchedCount === total && total > 0) {
-        slotMatchSummaryBadge.className = 'text-success font-bold';
-        if (slotParseStatusMsg) slotParseStatusMsg.textContent = `✅ 전체 ${total}개 점포에 슬롯 URL이 1:1로 매칭되었습니다.`;
+        slotMatchSummaryBadge.className = 'slot-summary-badge success';
+        if (slotParseStatusMsg) {
+          slotParseStatusMsg.className = 'slot-parse-msg success';
+          slotParseStatusMsg.innerHTML = `<i class="fa-solid fa-circle-check"></i> 전체 <strong>${total}개 점포</strong>에 슬롯 URL이 1:1로 매칭되었습니다. 저장을 진행해 주세요.`;
+        }
       } else {
-        slotMatchSummaryBadge.className = 'text-warning font-bold';
-        if (slotParseStatusMsg) slotParseStatusMsg.textContent = `⚠️ 총 ${total}개 점포 중 ${matchedCount}개만 슬롯이 매칭되었습니다. (${total - matchedCount}개 누락)`;
+        slotMatchSummaryBadge.className = 'slot-summary-badge warning';
+        if (slotParseStatusMsg) {
+          slotParseStatusMsg.className = 'slot-parse-msg warning';
+          slotParseStatusMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> 전체 <strong>${total}개 점포</strong> 중 <strong>${matchedCount}개</strong>만 매칭되었습니다. (<strong>${total - matchedCount}개</strong> 누락)`;
+        }
       }
     }
   }

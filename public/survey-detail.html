@@ -516,7 +516,7 @@
   <!-- ======================================================== -->
   <div class="modal-overlay figma-modal-backdrop" id="modal-slot-mapping">
     <div class="modal-card figma-modal-dialog slot-mapping-modal-dialog">
-      <div class="modal-header flex-between mb-16">
+      <div class="modal-header slot-mapping-modal-header flex-between mb-16">
         <div class="flex-center-gap-8">
           <i class="fa-solid fa-link text-primary-color font-size-18"></i>
           <h3 class="m-0 font-bold font-size-16">케이스탯(Kstat) 설문 슬롯 1:1 매핑 설정</h3>
@@ -526,7 +526,7 @@
 
       <div class="modal-body slot-mapping-modal-body">
         <div class="slot-mapping-alert mb-16">
-          <i class="fa-solid fa-circle-info text-primary-color"></i>
+          <i class="fa-solid fa-circle-info"></i>
           <div>
             조사 쿼터의 각 점포와 케이스탯 TAPI 전용 고유 설문 URL을 1:1로 매칭합니다.<br>
             <strong>슬롯이 매핑되지 않은 상태에서는 중복 설문 방지를 위해 파일럿 및 배치 실행이 차단됩니다.</strong>
@@ -535,31 +535,31 @@
 
         <!-- 1단계: 대량 URL 입력 영역 -->
         <div class="form-group mb-16">
-          <div class="flex-between mb-6">
-            <label class="figma-label font-bold m-0">
+          <div class="flex-between mb-8">
+            <label class="slot-mapping-label m-0">
               케이스탯 슬롯 URL 대량 입력 (1줄에 1개씩 또는 관리자 목록 붙여넣기)
             </label>
             <div class="flex-center-gap-8">
-              <button type="button" id="btn-parse-slots" class="btn-chip active">
+              <button type="button" id="btn-parse-slots" class="btn-parse-sparkle">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> 자동 파싱 & 매칭 미리보기
               </button>
-              <button type="button" id="btn-clear-slots" class="btn-chip">
+              <button type="button" id="btn-clear-slots" class="btn-clear-trash">
                 <i class="fa-solid fa-trash"></i> 비우기
               </button>
             </div>
           </div>
-          <textarea id="textarea-bulk-slots" class="figma-input font-mono slot-bulk-textarea" rows="6" placeholder="예시:&#10;https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=1&#10;https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=VCnUfCY6K&type=tapi&prid=2026070802&mnid=900001346&srt=1&#10;(케이스탯 list.php 소스 또는 텍스트를 그대로 붙여넣어도 자동으로 추출됩니다)"></textarea>
-          <div class="flex-between mt-4 font-caption">
-            <span class="text-dim" id="slot-parse-status-msg">슬롯 URL을 입력하거나 붙여넣어 주세요.</span>
-            <span class="text-primary-color font-bold" id="slot-match-summary-badge">매칭: 0 / 0 점포</span>
+          <textarea id="textarea-bulk-slots" class="slot-bulk-textarea" rows="6" placeholder="예시:&#10;https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=1&#10;https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=VCnUfCY6K&type=tapi&prid=2026070802&mnid=900001346&srt=1&#10;(케이스탯 list.php 소스 또는 텍스트를 그대로 붙여넣어도 자동으로 추출됩니다)"></textarea>
+          <div class="slot-status-bar">
+            <span class="slot-parse-msg warning" id="slot-parse-status-msg"><i class="fa-solid fa-circle-info"></i> 슬롯 URL을 입력하거나 붙여넣어 주세요.</span>
+            <span class="slot-summary-badge warning" id="slot-match-summary-badge">매칭: 0 / 0 점포</span>
           </div>
         </div>
 
         <!-- 2단계: 1:1 매칭 미리보기 테이블 -->
         <div class="form-group mb-16">
-          <label class="figma-label font-bold mb-6">1:1 매칭 미리보기 (쿼터 순번 ➔ 슬롯 매칭 결과)</label>
+          <label class="slot-mapping-label mb-8">1:1 매칭 미리보기 (쿼터 순번 ➔ 슬롯 매칭 결과)</label>
           <div class="table-scroll-container slot-preview-table-container">
-            <table class="quota-clean-table slot-preview-table">
+            <table class="slot-preview-table">
               <thead>
                 <tr>
                   <th class="th-no">순번</th>
@@ -572,7 +572,7 @@
               </thead>
               <tbody id="slot-preview-tbody">
                 <tr>
-                  <td colspan="6" class="empty-table-msg">대량 입력창에 슬롯 URL을 넣고 [자동 파싱]을 눌러주세요.</td>
+                  <td colspan="6" class="empty-table-msg">대량 입력창에 슬롯 URL을 넣고 [자동 파싱 & 매칭 미리보기]를 눌러주세요.</td>
                 </tr>
               </tbody>
             </table>
@@ -590,16 +590,16 @@
 
       </div>
 
-      <div class="modal-actions flex-between pt-16 border-top-line">
-        <button type="button" class="btn-pill btn-pill-secondary" id="btn-cancel-slot-modal">취소</button>
-        <button type="button" class="btn-pill btn-pill-primary" id="btn-submit-slot-mapping">
+      <div class="slot-mapping-actions">
+        <button type="button" class="btn-slot-cancel" id="btn-cancel-slot-modal">취소</button>
+        <button type="button" class="btn-slot-submit" id="btn-submit-slot-mapping">
           <i class="fa-solid fa-floppy-disk"></i> 1:1 슬롯 매핑 적용 및 저장
         </button>
       </div>
     </div>
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261017_2"></script>
+  <script type="module" src="survey-detail.js?v=20261017_3"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>
