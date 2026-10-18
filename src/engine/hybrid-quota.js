@@ -502,6 +502,8 @@ export async function buildHybridOnnuriQuota({
     if (key && completedMap.has(key)) {
       const doneItem = completedMap.get(key);
       doneItem.seq = finalQuotaList.length + 1;
+      // [상세주소 자동 복원] 기존 데이터의 주소가 번지 없는 광역 주소인 경우 온누리 상세 주소로 자동 복구
+      doneItem.address = pickBestAddress(null, m.address, doneItem.address);
       finalQuotaList.push(doneItem);
       completedMap.delete(key);
     } else {
