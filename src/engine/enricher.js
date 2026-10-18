@@ -33,7 +33,7 @@ const KOREAN_SURNAMES = new Set([
 // 2글자 복합 성씨
 const COMPOUND_SURNAMES = ['남궁', '황보', '선우', '독고', '제갈', '사공'];
 
-// 일반 명사 및 테이블 헤더 오인 방지 불용어 목록
+// 일반 명사, 시설/위치명 및 테이블 헤더 오인 방지 불용어 목록
 const STOPWORDS = new Set([
   '운영', '상태', '운영상태', '업종', '업종명', '업태', '종목', '사업', '사업자', '사업장', '소재지',
   '주소', '도로명', '지번', '설립', '설립일', '개업', '개업일', '등록', '등록일', '인허가', '인허가일',
@@ -41,7 +41,15 @@ const STOPWORDS = new Set([
   '공고', '번호', '공고번호', '상호', '상호명', '법인', '법인명', '전화', '전화번호', '연락처', '팩스',
   '정상', '영업', '정상영업', '계속', '폐업', '휴업', '자명', '대표', '대표자', '대표자명', '성명',
   '서비스', '블로그', '전통', '시장', '가맹', '가맹점', '안내', '정보', '이용', '방법', '시간',
-  '메뉴', '위치', '리뷰', '포장', '배달', '예약', '문의', '종합몰', '통신판매', '신고', '관리', '변경'
+  '메뉴', '위치', '리뷰', '포장', '배달', '예약', '문의', '종합몰', '통신판매', '신고', '관리', '변경',
+  // 시설, 단지, 상가, 지명 관련 불용어 (오인 탐색 원천 방지)
+  '선수촌', '올림픽', '아파트', '오피스텔', '빌딩', '타워', '단지', '상가', '마을', '센터',
+  '플라자', '골목', '거리', '지점', '본점', '지사', '매장', '점포', '공동', '조합',
+  '협회', '연합', '주민', '상인', '상인회', '관리사무소', '관리소', '지원', '재단', '공단',
+  '공사', '공원', '광장', '역전', '역사', '지하상가', '쇼핑몰', '백화점', '마트', '슈퍼',
+  '초등학교', '중학교', '고등학교', '대학교', '학원', '어린이집', '유치원', '경로당', '노인정',
+  '문화센터', '복지관', '체육관', '수영장', '보건소', '파출소', '소방서', '우체국', '동주민센터',
+  '구청', '시청', '도청', '경찰서', '세무서', '법원', '등기소'
 ]);
 
 // 시/도별 유효 지역 전화번호 접두사
@@ -66,12 +74,18 @@ const REGION_PREFIXES = {
 };
 
 /**
- * 한국인 실명 검증 함수 (불용어 차단 + 공인 성씨 일치)
+ * 한국인 실명 검증 함수 (불용어 차단 + 공인 성씨 일치 + 시설명 어미 차단)
  */
 export function isValidKoreanPersonName(name) {
   if (!name || typeof name !== 'string') return false;
   const trimmed = name.trim();
   if (STOPWORDS.has(trimmed)) return false;
+
+  // 시설, 단지, 상가 등 일반 명사 어미 차단
+  const FORBIDDEN_ENDINGS = ['촌', '단지', '상가', '타워', '빌딩', '센터', '파트', '지점', '본점', '조합', '협회', '마트', '시장', '점포', '원'];
+  for (const fe of FORBIDDEN_ENDINGS) {
+    if (trimmed.endsWith(fe)) return false;
+  }
 
   // 2~3글자 이름
   if (trimmed.length === 2 || trimmed.length === 3) {
@@ -93,7 +107,7 @@ export function isValidKoreanPersonName(name) {
 }
 
 /**
- * 전화번호 포맷팅 및 지역 검증
+ * 전화번호 포맷팅 및 지역 검증 (유효 국번 규칙 강제)
  */
 export function formatAndValidatePhone(raw, address = '') {
   if (!raw) return null;
@@ -101,25 +115,48 @@ export function formatAndValidatePhone(raw, address = '') {
   const digits = cleaned.replace(/\D/g, '');
   if (digits.length < 8 || digits.length > 12) return null;
   if (digits.startsWith('00') || digits.startsWith('019') || digits.startsWith('011')) return null;
+  
+  // 반복 더미 패턴 및 끝자리 더미 차단
   const tail = digits.slice(-7);
   if (/^(\d)\1{6}$/.test(tail) || digits.endsWith('0000000') || digits.endsWith('1111111') || digits.endsWith('1234567')) return null;
+  const last4 = digits.slice(-4);
+  if (['0000', '0001', '1111', '1234', '2222', '3333'].includes(last4) && digits.startsWith('010')) return null;
 
   let formatted = null;
   let prefix = null;
 
+  // 1. 서울 번호 (02)
   if (digits.startsWith('02')) {
     prefix = '02';
-    if (digits.length === 9) formatted = `${digits.slice(0, 2)}-${digits.slice(2, 5)}-${digits.slice(5)}`;
-    if (digits.length === 10) formatted = `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`;
-  } else if (digits.startsWith('0507') && digits.length === 12) {
+    // 서울 국번(중간자리)은 반드시 3자리 또는 4자리이며, [2-9]로 시작해야 함 (0, 1로 시작하는 비정상 국번 차단)
+    if (digits.length === 9) {
+      const mid = digits.slice(2, 5);
+      if (/^[2-9]\d{2}$/.test(mid)) formatted = `02-${mid}-${digits.slice(5)}`;
+    } else if (digits.length === 10) {
+      const mid = digits.slice(2, 6);
+      if (/^[2-9]\d{3}$/.test(mid)) formatted = `02-${mid}-${digits.slice(6)}`;
+    }
+  } 
+  // 2. 스마트콜 (0507)
+  else if (digits.startsWith('0507') && digits.length === 12) {
     prefix = '0507';
     formatted = `${digits.slice(0, 4)}-${digits.slice(4, 8)}-${digits.slice(8)}`;
-  } else if (digits.length === 11) {
+  } 
+  // 3. 모바일 휴대전화 (010)
+  else if (digits.startsWith('010') && digits.length === 11) {
+    prefix = '010';
+    const mid = digits.slice(3, 7);
+    if (/^[2-9]\d{3}$/.test(mid)) formatted = `010-${mid}-${digits.slice(7)}`;
+  } 
+  // 4. 일반 전국 시도 국번 (031, 051 등)
+  else if (digits.length === 11) {
     prefix = digits.slice(0, 3);
-    formatted = `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-  } else if (digits.length === 10) {
+    const mid = digits.slice(3, 7);
+    if (/^[2-9]\d{3}$/.test(mid)) formatted = `${prefix}-${mid}-${digits.slice(7)}`;
+  } else if (digits.length === 10 && !digits.startsWith('02')) {
     prefix = digits.slice(0, 3);
-    formatted = `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    const mid = digits.slice(3, 6);
+    if (/^[2-9]\d{2}$/.test(mid)) formatted = `${prefix}-${mid}-${digits.slice(6)}`;
   }
 
   if (!formatted) return null;
@@ -129,7 +166,6 @@ export function formatAndValidatePhone(raw, address = '') {
     for (const [regionName, allowedPrefixes] of Object.entries(REGION_PREFIXES)) {
       if (address.includes(regionName)) {
         if (!allowedPrefixes.includes(prefix)) {
-          // 지역번호 불일치 (예: 서울 사업장에 055 경남 번호 매칭 방지)
           return null;
         }
         break;
@@ -232,7 +268,10 @@ async function searchPhoneByCompany({ companyName, marketName, address }) {
       const phoneRegex = /(?:0\d{1,2}|0507)-\d{3,4}-\d{4}/g;
       let match;
       const candidates = [];
-      const PORTAL_SUPPORT_NUMBERS = new Set(['02-2181-0332', '02-1588-3820', '1588-3820', '1588-3830']);
+      const PORTAL_SUPPORT_NUMBERS = new Set([
+        '02-2181-0332', '02-1588-3820', '1588-3820', '1588-3830',
+        '02-209-6500', '02-2147-2000', '02-2147-3000'
+      ]);
 
       while ((match = phoneRegex.exec(html)) !== null) {
         const rawPhone = match[0];

@@ -293,7 +293,33 @@ export function formatStandardHandledItems(opts) {
 }
 
 /**
- * /**
+ * 주소 신뢰도 기반 최적 주소 선별 헬퍼
+ * - 시/도 + 시/군/구만 있는 광역 주소(예: "서울특별시 송파구")로 상세 온누리 주소(동, 번지, 호수 등)를 덮어쓰는 사고 방지
+ * - 상세 번지/건물번호가 있는 구체적인 주소를 최우선 보존
+ */
+export function pickBestAddress(mbzRoad, onnuriAddr, mbzLot) {
+  const hasDetail = (addr) => {
+    if (!addr || typeof addr !== 'string') return false;
+    const trimmed = addr.trim();
+    // 상세 번지/건물번호/호수 등 숫자 정보가 포함되어 있고 8글자 이상인 경우 유효 상세주소로 판단
+    return /\d/.test(trimmed) && trimmed.length >= 8;
+  };
+
+  // 1순위: 마켓비즈 도로명 주소 (상세 건물번호/도로명이 있는 경우)
+  if (hasDetail(mbzRoad)) return mbzRoad.trim();
+  // 2순위: 온누리 공인 주소 (동, 번지, 호수 등 상세 점포 위치가 있는 경우)
+  if (hasDetail(onnuriAddr)) return onnuriAddr.trim();
+  // 3순위: 마켓비즈 지번 소재지 (상세 번지가 있는 경우)
+  if (hasDetail(mbzLot)) return mbzLot.trim();
+
+  // 상세 번호가 없는 광역 주소만 남은 경우, 더 구체적이고 긴 주소를 우선 선택
+  const candidates = [mbzRoad, onnuriAddr, mbzLot].filter(Boolean).map(s => s.trim());
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => b.length - a.length);
+  return candidates[0];
+}
+
+/**
  * 마켓비즈 안전 로그인 헬퍼 (최대 3회 자동 재시도)
  */
 async function ensureMarketBzLogin(page, maxRetries = 3) {
@@ -701,7 +727,7 @@ export async function buildHybridOnnuriQuota({
 
       const finalPhone = formatPhoneNumber(marketBzDetail.mbzPhone);
       const finalCeoName = marketBzDetail.mbzCeoName || null;
-      const finalAddress = marketBzDetail.mbzRoadAddress || merchant.address || marketBzDetail.mbzAddress || null;
+      const finalAddress = pickBestAddress(marketBzDetail.mbzRoadAddress, merchant.address, marketBzDetail.mbzAddress);
 
       const mergedItem = {
         seq: finalQuotaList.length + 1,
