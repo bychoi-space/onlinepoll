@@ -60,10 +60,9 @@ function formatPhoneNumber(raw) {
 }
 
 /**
- * [취급품목] 및 [주요품목] 분리 정제 함수
+ * [취급품목] 및 [주요품목] 고도화 분리 정제 함수
  * - [취급품목] (handledItems): 농산물, 축산물, 수산물, 의류및신발, 가공식품, 가정용품, 음식점업, 기타소매업, 근린상권서비스
- * - [주요품목] (mainProducts): 괄호 안 부연설명이 있으면 핵심 한 단어로 추출하고,
- *   괄호가 없거나 포괄적이면 상호(companyName) 및 업종을 바탕으로 핵심 한 단어를 유추하여 생성
+ * - [주요품목] (mainProducts): 상호(companyName) 및 마켓비즈/온누리 세부 정보를 결합하여 가장 정확하고 직관적인 핵심 단어 1개 추출
  */
 export function splitHandledAndMainProducts({
   merchantIndustry = '',
@@ -110,7 +109,101 @@ export function splitHandledAndMainProducts({
   else if (baseCat.includes('근린상권')) handledItems = '근린상권서비스';
   else if (baseCat) handledItems = baseCat;
 
-  // 이미 유효한 단일어 주요품목이 있고 괄호 부연설명이 따로 없는 경우 보존
+  const comp = String(companyName || '').trim();
+
+  // 상호(점포명) 기반 강력한 1차 고정밀 유추 (마켓비즈의 모호한 행정용어보다 우선순위 적용)
+  function inferExactFromStore() {
+    // 1. 농수축산물
+    if (comp.includes('과일') || comp.includes('청과')) return '과일';
+    if (comp.includes('더덕') || comp.includes('인삼') || comp.includes('약초')) return '더덕';
+    if (comp.includes('야채') || comp.includes('채소')) return '채소';
+    if (comp.includes('농산') || comp.includes('쌀') || comp.includes('곡물') || comp.includes('방앗간') || comp.includes('정미소')) return '곡물';
+    if (comp.includes('한우')) return '한우';
+    if (comp.includes('정육') || comp.includes('식육') || comp.includes('축산')) return '정육';
+    if (comp.includes('생닭') || comp.includes('계육') || comp.includes('닭고기')) return '계육';
+    if (comp.includes('수산') || comp.includes('횟집') || comp.includes('활어')) return '활어';
+    if (comp.includes('물고기') || comp.includes('생선')) return '생선';
+    if (comp.includes('건어물') || comp.includes('굴비') || comp.includes('멸치')) return '건어물';
+
+    // 2. 패션 / 의류 / 신발
+    if (comp.includes('신발') || comp.includes('구두') || comp.includes('올스타') || comp.includes('스니커즈')) return '신발';
+    if (comp.includes('속옷') || comp.includes('란제리') || comp.includes('메리야스') || comp.includes('메리야쓰') || comp.includes('언더웨어') || comp.includes('옥산')) return '속옷';
+    if (comp.includes('한복') || comp.includes('주단')) return '한복';
+    if (comp.includes('패션') || comp.includes('의류') || comp.includes('오뜨레') || comp.includes('옷') || comp.includes('부띠끄') || comp.includes('부티크')) return '의류';
+
+    // 3. 뷰티 / 화장품 / 잡화 (온누리/마켓비즈에서 가정용품이나 기타상품으로 오분류되는 대표 사례)
+    if (comp.includes('이니스프리') || comp.includes('올리브영') || comp.includes('미샤') || comp.includes('에뛰드') || comp.includes('토니모리') || comp.includes('더페이스샵') || comp.includes('스킨푸드') || comp.includes('아리따움') || comp.includes('화장품') || comp.includes('코스메틱') || comp.includes('뷰티') || comp.includes('향수')) {
+      return '화장품';
+    }
+    if (comp.includes('안경') || comp.includes('콘택트') || comp.includes('렌즈') || comp.includes('아이웨어')) return '안경';
+    if (comp.includes('귀금속') || comp.includes('금은방') || comp.includes('보석') || comp.includes('쥬얼리') || comp.includes('주얼리') || comp.includes('악세사리') || comp.includes('액세서리')) return '귀금속';
+    if (comp.includes('문구') || comp.includes('팬시') || comp.includes('오피스') || comp.includes('지업') || comp.includes('알파문구')) return '문구류';
+    if (comp.includes('서점') || comp.includes('책') || comp.includes('문고')) return '서적';
+
+    // 4. 음식 / 식품 / 가공식품 / 분식
+    if (comp.includes('치킨') || comp.includes('통닭') || comp.includes('닭강정') || comp.includes('맥시칸') || comp.includes('닭갈비')) return '치킨';
+    if (comp.includes('순대국') || comp.includes('국밥') || comp.includes('설렁탕') || comp.includes('곰탕') || comp.includes('해장국') || comp.includes('순댓국') || comp.includes('추어탕') || comp.includes('감자탕') || comp.includes('찌개') || comp.includes('식당') || comp.includes('한식') || comp.includes('밥상') || comp.includes('백반')) return '한식';
+    if (comp.includes('만두') || comp.includes('왕만두')) return '만두';
+    if (comp.includes('김밥') || comp.includes('분식') || comp.includes('떡볶이') || comp.includes('순대') || comp.includes('튀김') || comp.includes('호떡') || comp.includes('토스트') || comp.includes('핫도그')) return '분식';
+    if (comp.includes('두부')) return '두부류';
+    if (comp.includes('떡')) return '떡류';
+    if (comp.includes('선식') || comp.includes('생식')) return '선식';
+    if (comp.includes('기름') || comp.includes('참기름') || comp.includes('들기름')) return '유지류';
+    if (comp.includes('뻥튀기') || comp.includes('과자') || comp.includes('제과') || comp.includes('베이커리') || comp.includes('빵') || comp.includes('브레드') || comp.includes('케이크') || comp.includes('도넛') || comp.includes('와플')) return '제과류';
+    if (comp.includes('반찬') || comp.includes('김치')) return '반찬류';
+    if (comp.includes('커피') || comp.includes('카페') || comp.includes('다방') || comp.includes('디저트') || comp.includes('마카롱')) return '커피';
+    if (comp.includes('피자')) return '피자';
+    if (comp.includes('족발') || comp.includes('보쌈')) return '족발';
+    if (comp.includes('국수') || comp.includes('칼국수') || comp.includes('냉면') || comp.includes('우동') || comp.includes('라멘') || comp.includes('소바') || comp.includes('밀면') || comp.includes('면')) return '면류';
+    if (comp.includes('보성각') || comp.includes('반점') || comp.includes('중식') || comp.includes('짜장') || comp.includes('짬뽕')) return '중식';
+    if (comp.includes('룽고') || comp.includes('파스타') || comp.includes('양식') || comp.includes('스테이크') || comp.includes('버거') || comp.includes('피자')) return '서양식';
+    if (comp.includes('초밥') || comp.includes('스시') || comp.includes('돈까스') || comp.includes('돈가스') || comp.includes('카츠') || comp.includes('일식')) return '일식';
+    if (comp.includes('삼겹') || comp.includes('갈비') || comp.includes('고기') || comp.includes('곱창') || comp.includes('막창') || comp.includes('숯불') || comp.includes('구이')) return '육류구이';
+    if (comp.includes('주점') || comp.includes('포차') || comp.includes('호프') || comp.includes('맥주') || comp.includes('비어') || comp.includes('펍')) return '주점';
+
+    // 5. 가정용품 / 생활용품
+    if (comp.includes('침구') || comp.includes('이불') || comp.includes('커튼')) return '침구류';
+    if (comp.includes('철물') || comp.includes('공구') || comp.includes('건재')) return '철물';
+    if (comp.includes('꽃') || comp.includes('꽃샘') || comp.includes('화원') || comp.includes('플라워')) return '화훼';
+    if (comp.includes('조명') || comp.includes('전기') || comp.includes('전구')) return '조명기구';
+    if (comp.includes('그릇') || comp.includes('도자기') || comp.includes('주방')) return '주방용품';
+    if (comp.includes('마트') || comp.includes('슈퍼')) return '슈퍼마켓';
+
+    // 6. 근린상권서비스 / 헬스 / 체육 / 전문서비스
+    if (comp.includes('피지오') || comp.includes('필라테스') || comp.includes('피트니스') || comp.includes('헬스') || comp.includes('PT') || comp.includes('체형') || comp.includes('교정') || comp.includes('재활') || comp.includes('요가') || comp.includes('크로스핏') || comp.includes('짐') || comp.includes('GYM') || comp.includes('트레이닝') || comp.includes('운동')) {
+      return '체육시설';
+    }
+    if (comp.includes('태권도') || comp.includes('합기도') || comp.includes('유도') || comp.includes('검도') || comp.includes('체육관')) return '태권도';
+    if (comp.includes('영어') || comp.includes('수학') || comp.includes('교습') || comp.includes('스터디') || comp.includes('독서실')) return '교습학원';
+    if (comp.includes('음악') || comp.includes('피아노') || comp.includes('미술') || comp.includes('학원')) return '예체능학원';
+    if (comp.includes('약국')) return '의약품';
+    if (comp.includes('한의원')) return '한의원';
+    if (comp.includes('치과')) return '치과의원';
+    if (comp.includes('의원') || comp.includes('내과') || comp.includes('정형외과')) return '의원';
+    if (comp.includes('이발') || comp.includes('발소') || comp.includes('바버')) return '이용업';
+    if (comp.includes('네일') || comp.includes('패디')) return '네일미용';
+    if (comp.includes('헤어') || comp.includes('미용') || comp.includes('예작') || comp.includes('살롱')) return '미용업';
+    if (comp.includes('피부') || comp.includes('에스테틱') || comp.includes('왁싱') || comp.includes('스킨') || comp.includes('건강')) return '피부미용';
+    if (comp.includes('세탁') || comp.includes('크린') || comp.includes('빨래')) return '세탁업';
+    if (comp.includes('수리') || comp.includes('정비') || comp.includes('카센터') || comp.includes('모터스') || comp.includes('오토바이') || comp.includes('자전거')) return '수리업';
+    if (comp.includes('부동산') || comp.includes('공인중개') || comp.includes('중개')) return '부동산';
+    if (comp.includes('스튜디오') || comp.includes('사진') || comp.includes('포토')) return '사진촬영';
+    if (comp.includes('당구') || comp.includes('골프') || comp.includes('스크린') || comp.includes('볼링')) return '레저스포츠';
+    if (comp.includes('반려동물') || comp.includes('애견') || comp.includes('동물병원') || comp.includes('펫')) return '반려동물';
+
+    return null;
+  }
+
+  // 상호에서 확실한 품목이 유추된 경우 우선 채택
+  const exactStoreProduct = inferExactFromStore();
+  if (exactStoreProduct) {
+    return {
+      handledItems,
+      mainProducts: exactStoreProduct
+    };
+  }
+
+  // 기존에 유효하게 저장되어 있던 rawMainProducts가 있으면 보존
   if (!subRaw && rawMainProducts && String(rawMainProducts).trim() && rawMainProducts !== 'null') {
     return {
       handledItems,
@@ -118,87 +211,50 @@ export function splitHandledAndMainProducts({
     };
   }
 
-  const comp = String(companyName || '').trim();
-
-  // 상호 + 업종 기반 단일어 주요품목 유추 헬퍼
-  function inferMainProductFromStore() {
-    if (comp.includes('과일') || comp.includes('청과')) return '과일';
-    if (comp.includes('더덕') || comp.includes('인삼') || comp.includes('약초')) return '더덕';
-    if (comp.includes('야채') || comp.includes('채소')) return '채소';
-    if (comp.includes('농산') || comp.includes('쌀') || comp.includes('곡물')) return '곡물';
-    if (comp.includes('한우')) return '한우';
-    if (comp.includes('정육') || comp.includes('식육') || comp.includes('갈비')) return '정육';
-    if (comp.includes('닭') || comp.includes('계육')) return '계육';
-    if (comp.includes('수산') || comp.includes('횟집') || comp.includes('활어')) return '활어';
-    if (comp.includes('물고기') || comp.includes('생선')) return '생선';
-    if (comp.includes('건어물') || comp.includes('굴비') || comp.includes('멸치')) return '건어물';
-    if (comp.includes('신발') || comp.includes('구두') || comp.includes('올스타')) return '신발';
-    if (comp.includes('속옷') || comp.includes('란제리') || comp.includes('옥산')) return '속옷';
-    if (comp.includes('한복') || comp.includes('주단')) return '한복';
-    if (comp.includes('패션') || comp.includes('의류') || comp.includes('오뜨레') || comp.includes('옷')) return '의류';
-    if (comp.includes('떡')) return '떡류';
-    if (comp.includes('선식') || comp.includes('생식')) return '신선식품';
-    if (comp.includes('기름') || comp.includes('참기름')) return '유지류';
-    if (comp.includes('뻥튀기') || comp.includes('과자') || comp.includes('제과')) return '과자류';
-    if (comp.includes('반찬') || comp.includes('김치')) return '반찬류';
-    if (comp.includes('커피') || comp.includes('카페') || comp.includes('마주보며')) return '커피';
-    if (comp.includes('침구') || comp.includes('이불') || comp.includes('커튼')) return '침구류';
-    if (comp.includes('철물') || comp.includes('공구')) return '철물';
-    if (comp.includes('꽃') || comp.includes('꽃샘') || comp.includes('화원')) return '직물제품';
-    if (comp.includes('마트') || comp.includes('슈퍼')) return '슈퍼마켓';
-    if (comp.includes('김밥') || comp.includes('분식') || comp.includes('호떡')) return '김밥';
-    if (comp.includes('치킨') || comp.includes('맥시칸') || comp.includes('통닭')) return '치킨';
-    if (comp.includes('피자')) return '피자';
-    if (comp.includes('보성각') || comp.includes('반점') || comp.includes('중식')) return '중식';
-    if (comp.includes('룽고') || comp.includes('파스타') || comp.includes('양식')) return '서양식';
-    if (comp.includes('쭈꾸미') || comp.includes('식당') || comp.includes('한식')) return '한식';
-    if (comp.includes('약국')) return '의약품';
-    if (comp.includes('영어') || comp.includes('수학') || comp.includes('교습')) return '교습학원';
-    if (comp.includes('음악') || comp.includes('미술') || comp.includes('학원')) return '교과학원';
-    if (comp.includes('태권도') || comp.includes('합기도') || comp.includes('체육')) return '태권도';
-    if (comp.includes('한의원') || comp.includes('의원')) return '한의원';
-    if (comp.includes('이발') || comp.includes('발소') || comp.includes('이용')) return '이용업';
-    if (comp.includes('네일')) return '네일미용';
-    if (comp.includes('헤어') || comp.includes('미용') || comp.includes('예작')) return '미용업';
-    if (comp.includes('건강')) return '피부미용';
-
-    // 업종별 기본 핵심 단일어 폴백
+  // 업종별 기본 핵심 단일어 폴백
+  function inferCategoryFallback() {
     if (handledItems === '농산물') return '채소';
     if (handledItems === '축산물') return '육류';
     if (handledItems === '수산물') return '해산물';
     if (handledItems === '의류및신발') return '의류';
-    if (handledItems === '가공식품') return '신선식품';
+    if (handledItems === '가공식품') return '가공식품';
     if (handledItems === '가정용품') return '생활잡화';
     if (handledItems === '음식점업') return '한식';
     if (handledItems === '기타소매업') return '생활잡화';
-    if (handledItems === '근린상권서비스') return '미용업';
+    if (handledItems === '근린상권서비스') return '생활서비스';
     return '잡화';
   }
 
-  // 농산물, 축산물, 수산물은 괄호 유무와 무관하게 상호/품목 맥락으로 명확한 한 단어 추출
+  // 농산물, 축산물, 수산물 등
   if (['농산물', '축산물', '수산물', '의류및신발'].includes(handledItems)) {
     if (subRaw && (subRaw.includes('속옷') || subRaw.includes('잠옷'))) return { handledItems, mainProducts: '속옷' };
     if (subRaw && subRaw.includes('곡물')) return { handledItems, mainProducts: '곡물' };
-    return { handledItems, mainProducts: inferMainProductFromStore() };
+    return { handledItems, mainProducts: inferCategoryFallback() };
   }
 
   if (!subRaw) {
-    return { handledItems, mainProducts: inferMainProductFromStore() };
+    return { handledItems, mainProducts: inferCategoryFallback() };
   }
 
-  // 2) 괄호 안 부연설명(subRaw)에서 핵심 한 단어 추출
+  // 2) 괄호 안 부연설명 또는 마켓비즈 산업분류(subRaw)에서 핵심 한 단어 추출
   let cleanedSub = subRaw
+    .replace(/^[A-Z0-9]{3,7}\s*/, '') // G47800, I56199 같은 업종코드 제거
     .replace(/\s*외\s*\d+\s*개/g, '')
     .replace(/\/.*$/, '')
     .trim();
 
+  // 의미 없는 행정/포괄 문구 필터링
   if (
     cleanedSub.includes('분류 안된') ||
     cleanedSub.includes('종합 소매업') ||
     cleanedSub.includes('음ㆍ식료품') ||
+    cleanedSub.includes('기타 상품 전문') ||
     (handledItems === '가정용품' && cleanedSub.includes('겉옷'))
   ) {
-    return { handledItems, mainProducts: inferMainProductFromStore() };
+    return { handledItems, mainProducts: inferCategoryFallback() };
+  }
+  if (cleanedSub.includes('간이 음식 포장 판매') || cleanedSub.includes('간이 음식')) {
+    return { handledItems, mainProducts: '간이음식' };
   }
   if (cleanedSub.includes('유지 및 낙농제품')) {
     return { handledItems, mainProducts: '유지류' };
@@ -208,7 +264,7 @@ export function splitHandledAndMainProducts({
     .replace(/두발\s*미용업/g, '미용업')
     .replace(/피부\s*미용업/g, '피부미용')
     .replace(/^(그 외 기타|기타|일반|가정용|조리|단순|동ㆍ식물성|남자용|여자용)\s+/g, '')
-    .replace(/\s+(전문점|음식점업|음식점|소매업|도매업|제조업|서비스업|교육기관|기관|소매|도매)$/g, '')
+    .replace(/\s+(전문점|음식점업|음식점|제과점업|제과점|소매업|도매업|제조업|서비스업|교육기관|기관|소매|도매|업)$/g, '')
     .trim();
 
   const firstToken = cleanedSub
@@ -216,7 +272,19 @@ export function splitHandledAndMainProducts({
     .replace(/(전문점|음식점업|소매업|도매업|제조업|서비스업)$/g, '')
     .trim();
 
-  const finalWord = firstToken || cleanedSub.split(/\s+/)[0] || inferMainProductFromStore();
+  // 무의미 파편 단어 블랙리스트
+  const invalidTokens = ['상품', '간이', '포장', '배달', '무점포', '방문', '전문', '종합', '기타', '일반', '단순', '판매', '소매', '도매', '제조', '서비스', '등록', '분류', '기업', '사업자'];
+
+  let finalWord = firstToken;
+  if (!finalWord || invalidTokens.includes(finalWord)) {
+    const secondToken = cleanedSub.split(/\s+/)[1];
+    if (secondToken && !invalidTokens.includes(secondToken)) {
+      finalWord = secondToken;
+    } else {
+      finalWord = inferCategoryFallback();
+    }
+  }
+
   return { handledItems, mainProducts: finalWord };
 }
 
