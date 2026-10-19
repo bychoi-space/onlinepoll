@@ -274,6 +274,16 @@ async function initSurveyDetailPage() {
       }
     }
 
+    // 쿼터가 이미 구축/장착된 상태에서는 마켓비즈 직접 검색 아코디언 자동 숨김
+    const detailsMarketbz = document.getElementById('details-marketbz-direct') || document.querySelector('.marketbz-direct-details');
+    if (detailsMarketbz) {
+      if (total > 0) {
+        detailsMarketbz.style.display = 'none';
+      } else {
+        detailsMarketbz.style.display = 'block';
+      }
+    }
+
     if (total === 0) {
       quotaTableBody.innerHTML = `
         <tr>
