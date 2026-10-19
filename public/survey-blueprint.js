@@ -93,7 +93,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     successionPlan: 'none',
     plannedYears: 8,
     rotationMode: false,
-    empSalesLink: 'auto'
+    empSalesLink: 'auto',
+    // 조사원 평가 마스터 기준점 기본값
+    evalH1_1: 4,
+    evalH1_2: 4,
+    evalH1_3: 4,
+    evalH1_4: 4,
+    evalH1_5: 4,
+    evalH2_1: 'yes',
+    evalH2_2: 'no',
+    evalH2_3: 'auto',
+    evalH2_4: 3,
+    evalH3_1: 5,
+    evalH3_2: 4,
+    evalH3_3: 5,
+    evalH3_4: 5
   };
 
   function updateGroupStatsUI() {
@@ -765,6 +779,100 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span class="baseline-slider-val" id="val-years">${currentBaseline.plannedYears || 8}년</span>
           </div>
         `;
+      // [조사원 평가 H1] 위생 및 점포 환경 5종
+      case 'H1_1':
+      case 'H1_2':
+      case 'H1_3':
+      case 'H1_4':
+      case 'H1_5': {
+        const k = `eval${fieldId}`;
+        const curVal = currentBaseline[k] ?? 4;
+        const getRatingLabel = (v) => {
+          switch (Number(v)) {
+            case 5: return '매우 양호';
+            case 4: return '양호';
+            case 3: return '보통';
+            case 2: return '불량/미흡';
+            case 1: return '매우 불량';
+            default: return '';
+          }
+        };
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-eval-${fieldId}" min="1" max="5" step="1" value="${curVal}" />
+            <span class="baseline-slider-val" id="val-eval-${fieldId}">${curVal}점 (${getRatingLabel(curVal)})</span>
+          </div>
+        `;
+      }
+      // [조사원 평가 H2] 산지직거래
+      case 'H2_1': {
+        const cur = currentBaseline.evalH2_1 || 'yes';
+        return `
+          <select class="baseline-select" id="select-eval-H2_1">
+            <option value="yes" ${cur === 'yes' ? 'selected' : ''}>① 예 (산지직거래/품질표시) [권장]</option>
+            <option value="no" ${cur === 'no' ? 'selected' : ''}>② 아니오</option>
+          </select>
+        `;
+      }
+      // [조사원 평가 H2] 스토리텔링 POP
+      case 'H2_2': {
+        const cur = currentBaseline.evalH2_2 || 'no';
+        return `
+          <select class="baseline-select" id="select-eval-H2_2">
+            <option value="yes" ${cur === 'yes' ? 'selected' : ''}>① 예 (특화 POP/감성간판 부착)</option>
+            <option value="no" ${cur === 'no' ? 'selected' : ''}>② 아니오 (일반 점포 기본) [권장]</option>
+          </select>
+        `;
+      }
+      // [조사원 평가 H2] 시식/체험 코너
+      case 'H2_3': {
+        const cur = currentBaseline.evalH2_3 || 'auto';
+        return `
+          <select class="baseline-select" id="select-eval-H2_3">
+            <option value="auto" ${cur === 'auto' ? 'selected' : ''}>⚡ 업종별 자동 (식품/수산 1:예, 공산품 2:아니오) [권장]</option>
+            <option value="yes" ${cur === 'yes' ? 'selected' : ''}>① 예 (전체 매장 실시)</option>
+            <option value="no" ${cur === 'no' ? 'selected' : ''}>② 아니오 (전체 미실시)</option>
+          </select>
+        `;
+      }
+      // [조사원 평가 H2] 소포장/밀키트 비중
+      case 'H2_4': {
+        const cur = Number(currentBaseline.evalH2_4 ?? 3);
+        return `
+          <select class="baseline-select" id="select-eval-H2_4">
+            <option value="1" ${cur === 1 ? 'selected' : ''}>없음 (0%)</option>
+            <option value="2" ${cur === 2 ? 'selected' : ''}>10% 미만</option>
+            <option value="3" ${cur === 3 ? 'selected' : ''}>10~30% 미만 (표준 가이드) [권장]</option>
+            <option value="4" ${cur === 4 ? 'selected' : ''}>30~50% 미만</option>
+            <option value="5" ${cur === 5 ? 'selected' : ''}>50~70% 미만</option>
+            <option value="6" ${cur === 6 ? 'selected' : ''}>70% 이상</option>
+          </select>
+        `;
+      }
+      // [조사원 평가 H3] 고객응대 서비스 4종
+      case 'H3_1':
+      case 'H3_2':
+      case 'H3_3':
+      case 'H3_4': {
+        const k = `eval${fieldId}`;
+        const curVal = currentBaseline[k] ?? (fieldId === 'H3_2' ? 4 : 5);
+        const getRatingLabel = (v) => {
+          switch (Number(v)) {
+            case 5: return '매우 양호';
+            case 4: return '양호';
+            case 3: return '보통';
+            case 2: return '불량/미흡';
+            case 1: return '매우 불량';
+            default: return '';
+          }
+        };
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-eval-${fieldId}" min="1" max="5" step="1" value="${curVal}" />
+            <span class="baseline-slider-val" id="val-eval-${fieldId}">${curVal}점 (${getRatingLabel(curVal)})</span>
+          </div>
+        `;
+      }
       default:
         return `
           <span class="badge-tag-tunable font-caption">
@@ -912,6 +1020,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     bindSelect('select-future-plan', 'futurePlan');
     bindSelect('select-succession-plan', 'successionPlan');
     bindSlider('slider-years', 'val-years', 'plannedYears', '년');
+
+    // [조사원 평가 H1 & H3 슬라이더 바인딩]
+    const getRatingLabel = (val) => {
+      switch (Number(val)) {
+        case 5: return '매우 양호';
+        case 4: return '양호';
+        case 3: return '보통';
+        case 2: return '불량/미흡';
+        case 1: return '매우 불량';
+        default: return '';
+      }
+    };
+
+    ['H1_1', 'H1_2', 'H1_3', 'H1_4', 'H1_5', 'H3_1', 'H3_2', 'H3_3', 'H3_4'].forEach((fid) => {
+      const slider = document.getElementById(`slider-eval-${fid}`);
+      const valEl = document.getElementById(`val-eval-${fid}`);
+      if (slider && valEl) {
+        slider.addEventListener('input', (e) => {
+          const val = parseInt(e.target.value, 10);
+          const k = `eval${fid}`;
+          currentBaseline[k] = val;
+          if (groupBaselines[activeGroup]) {
+            groupBaselines[activeGroup][k] = val;
+          }
+          valEl.textContent = `${val}점 (${getRatingLabel(val)})`;
+          markUnsaved();
+        });
+      }
+    });
+
+    // [조사원 평가 H2 셀렉트 바인딩]
+    bindSelect('select-eval-H2_1', 'evalH2_1');
+    bindSelect('select-eval-H2_2', 'evalH2_2');
+    bindSelect('select-eval-H2_3', 'evalH2_3');
+    bindSelect('select-eval-H2_4', 'evalH2_4');
   }
 
   function markUnsaved() {

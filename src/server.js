@@ -20,6 +20,8 @@ import { logger } from './utils/logger.js';
 import * as CampaignStore from './models/campaign.js';
 import { exportBusinessesToExcel } from './utils/excel.js';
 import { runKstatSurvey } from './engine/kstat-runner.js';
+import { runKstatEvaluation } from './engine/kstat-eval-runner.js';
+import { scrapeKstatSlots } from './engine/kstat-slot-scraper.js';
 import { getIndustryGroupKey } from './engine/persona-builder.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -419,6 +421,116 @@ app.post('/api/campaigns/:id/import-baseline', (req, res) => {
     success: true,
     message: `"${sourceCamp.title}"의 1/2/3그룹 마스터 기준점이 성공적으로 복사되었습니다.`,
     baseline: copiedBaseline
+  });
+});
+
+// ==========================================
+// [1.5] 케이스탯 슬롯 파싱 및 쿼터 바인딩 API
+// ==========================================
+app.post('/api/kstat/fetch-slots', async (req, res) => {
+  const { listUrl, marketName = '', maxPages = 5 } = req.body;
+  if (!listUrl) {
+    return res.status(400).json({ error: '케이스탯 list.php URL이 필요합니다.' });
+  }
+
+  try {
+    const result = await scrapeKstatSlots(listUrl, { marketName, maxPages });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/campaigns/:id/bind-kstat-slots', async (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  const { listUrl, marketName = '', slots: inputSlots } = req.body;
+  let slots = inputSlots;
+
+  if (!slots && listUrl) {
+    const scrapeResult = await scrapeKstatSlots(listUrl, { marketName, maxPages: 5 });
+    if (!scrapeResult.success) {
+      return res.status(500).json({ error: '슬롯 파싱 실패: ' + scrapeResult.error });
+    }
+    slots = scrapeResult.slots;
+  }
+
+  if (!slots || slots.length === 0) {
+    return res.status(400).json({ error: '바인딩할 슬롯 데이터가 없습니다.' });
+  }
+
+  const quotaDb = campaign.quotaDatabase || [];
+  if (quotaDb.length === 0) {
+    return res.status(400).json({ error: '캠페인에 등록된 조사 쿼터가 없습니다. 먼저 쿼터를 로드해 주세요.' });
+  }
+
+  let boundCount = 0;
+  const usedSlots = new Set();
+
+  // 1차 패스: 상호명(점포명) 기준 매칭
+  quotaDb.forEach((q) => {
+    const qName = String(q.companyName || '').replace(/[\s\(\)·]/g, '').toLowerCase();
+    const matchedSlot = slots.find(s => {
+      if (usedSlots.has(s.ran_id)) return false;
+      const sName = String(s.storeName || '').replace(/[\s\(\)·]/g, '').toLowerCase();
+      return qName.length > 1 && sName.length > 1 && (qName.includes(sName) || sName.includes(qName));
+    });
+
+    if (matchedSlot) {
+      usedSlots.add(matchedSlot.ran_id);
+      q.slotIndex = matchedSlot.slotIndex;
+      q.slotExtra = matchedSlot.extraLabel;
+      q.ranId = matchedSlot.ran_id;
+      q.slotUrl = matchedSlot.surveyUrl;
+      q.surveyUrl = matchedSlot.surveyUrl;
+      q.evalUrl = matchedSlot.evalUrl;
+      q.surveyCompleted = matchedSlot.surveyCompleted;
+      q.evalCompleted = matchedSlot.evalCompleted;
+      q.kstatMeta = { idSel: matchedSlot.idSel, kid: matchedSlot.kid, gid: matchedSlot.gid, mkCode: matchedSlot.mkCode, regNum: matchedSlot.regNum };
+      boundCount++;
+    }
+  });
+
+  // 2차 패스: 미할당 쿼터에 잔여 슬롯 순차(1:1) 할당
+  const remainingSlots = slots.filter(s => !usedSlots.has(s.ran_id));
+  let remIdx = 0;
+  quotaDb.forEach((q) => {
+    if (!q.ranId && remIdx < remainingSlots.length) {
+      const s = remainingSlots[remIdx++];
+      usedSlots.add(s.ran_id);
+      q.slotIndex = s.slotIndex;
+      q.slotExtra = s.extraLabel;
+      q.ranId = s.ran_id;
+      q.slotUrl = s.surveyUrl;
+      q.surveyUrl = s.surveyUrl;
+      q.evalUrl = s.evalUrl;
+      q.surveyCompleted = s.surveyCompleted;
+      q.evalCompleted = s.evalCompleted;
+      q.kstatMeta = { idSel: s.idSel, kid: s.kid, gid: s.gid, mkCode: s.mkCode, regNum: s.regNum };
+      boundCount++;
+    }
+  });
+
+  CampaignStore.updateCampaign(campaign.id, {
+    quotaDatabase: quotaDb,
+    kstatListUrl: listUrl || campaign.kstatListUrl
+  });
+
+  logger.success(`[Kstat 슬롯 바인딩 완료] 캠페인 "${campaign.title}" ➔ 총 ${boundCount}개 쿼터에 슬롯 바인딩 완료!`);
+  logger.broadcast({
+    type: 'QUOTA_UPDATED',
+    quotaDatabase: quotaDb
+  });
+
+  res.json({
+    success: true,
+    message: `총 ${boundCount}개 쿼터에 케이스탯 슬롯이 성공적으로 바인딩되었습니다.`,
+    boundCount,
+    totalQuotas: quotaDb.length,
+    quotaDatabase: quotaDb
   });
 });
 
@@ -934,11 +1046,45 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
         targetBiz.quotaStatus = 'pilot_done';
         targetBiz.pilotAt = new Date().toISOString();
         targetBiz.capturedSteps = result.capturedSteps;
+
+        // 조사원 평가항목 연계 실행 (슬롯에 evalUrl이 있거나 ranId가 있는 경우)
+        const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
+        if (evalUrl) {
+          logger.info(`[파일럿 2단계] "${targetBiz.companyName}" 조사원 평가항목 작성 자동 연계 시작...`);
+          try {
+            const evalResult = await runKstatEvaluation({
+              evalUrl,
+              bizData: targetBiz,
+              guidelineConfig: {
+                ...(campaign.guidelineConfig || {}),
+                masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
+              },
+              reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`),
+              onProgress: (info) => {
+                logger.info(`[파일럿 평가] ${info.message}`);
+                logger.broadcast({
+                  type: 'PILOT_PROGRESS',
+                  campaignId: campaign.id,
+                  quotaIndex: targetBiz.index,
+                  ...info
+                });
+              }
+            });
+            if (evalResult.success) {
+              targetBiz.evalStatus = 'completed';
+              targetBiz.evalResults = evalResult.evalResults;
+              logger.success(`🎉 [파일럿 2단계 완료] "${targetBiz.companyName}" 조사원 평가 작성 100% 완료!`);
+            }
+          } catch (evalErr) {
+            logger.warn(`[파일럿 평가 경고] 조사원 평가 연계 중 예외: ${evalErr.message}`);
+          }
+        }
+
         CampaignStore.updateCampaign(campaign.id, {
           quotaDatabase: quotaDb,
           status: 'ready'
         });
-        logger.success(`🎉 [파일럿 검증 완료] "${targetBiz.companyName}" 1건 시뮬레이션이 Agree.asp까지 무결점 도달했습니다!`);
+        logger.success(`🎉 [파일럿 검증 완료] "${targetBiz.companyName}" 1건 시뮬레이션(본설문+조사원평가)이 무결점 완료되었습니다!`);
         logger.broadcast({
           type: 'PILOT_COMPLETED',
           campaignId: campaign.id,
@@ -1064,7 +1210,43 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           biz.quotaStatus = safetyGuard ? 'pilot_done' : 'completed';
           biz.completedAt = new Date().toISOString();
           biz.capturedSteps = result.capturedSteps;
-          logger.success(`[배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" 설문 완료!`);
+
+          // 2단계: 조사원 평가항목 작성 자동 연계
+          const evalUrl = biz.evalUrl || (biz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${biz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
+          if (evalUrl) {
+            logger.info(`[배치 #${biz.index || (i + startIndex)} 2단계] "${biz.companyName}" 조사원 평가 작성 연계 시작...`);
+            try {
+              const evalResult = await runKstatEvaluation({
+                evalUrl,
+                bizData: biz,
+                guidelineConfig: {
+                  ...campaign.guidelineConfig,
+                  masterBaseline: campaign.masterBaseline
+                },
+                reportDir: path.join(reportsDir, campaign.id, `item_${biz.index || (i + startIndex)}`),
+                onProgress: (info) => {
+                  logger.info(`[배치 #${biz.index || (i + startIndex)}] [평가] ${info.message}`);
+                  logger.broadcast({
+                    type: 'BATCH_PROGRESS',
+                    campaignId: campaign.id,
+                    quotaIndex: biz.index || (i + startIndex),
+                    itemNumber: i + 1,
+                    totalItems: targets.length,
+                    ...info
+                  });
+                }
+              });
+              if (evalResult.success) {
+                biz.evalStatus = 'completed';
+                biz.evalResults = evalResult.evalResults;
+                logger.success(`🎉 [배치 #${biz.index || (i + startIndex)} 완료] "${biz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
+              }
+            } catch (evalErr) {
+              logger.warn(`[배치 평가 경고] "${biz.companyName}" 조사원 평가 연계 중 예외: ${evalErr.message}`);
+            }
+          } else {
+            logger.success(`[배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" 본 설문 완료!`);
+          }
         } else {
           biz.quotaStatus = 'error';
           logger.error(`[배치 ${i + 1}/${targets.length} 실패] "${biz.companyName}": ${result.error}`);

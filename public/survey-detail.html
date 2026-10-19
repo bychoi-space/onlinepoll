@@ -148,6 +148,9 @@
             <button type="button" id="btn-enrich-campaign-quota" class="btn-pill btn-pill-secondary">
               결측치 외부 보강
             </button>
+            <button type="button" id="btn-open-bind-slots" class="btn-pill btn-pill-secondary">
+              <i class="fa-solid fa-link"></i> Kstat 슬롯 바인딩
+            </button>
             <a href="quota-builder.html" class="btn-pill btn-pill-secondary">
               새 쿼터 생성기
             </a>
@@ -599,7 +602,44 @@
     </div>
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261017_3"></script>
+  <!-- Kstat 슬롯 원클릭 바인딩 모달 -->
+  <div id="modal-bind-slots" class="bind-slots-modal-overlay hidden">
+    <div class="bind-slots-modal-card">
+      <div class="bind-slots-header">
+        <h3 class="bind-slots-title">
+          <i class="fa-solid fa-link"></i> Kstat 관리자 슬롯 자동 바인딩
+        </h3>
+        <button type="button" class="btn-clean-close" id="btn-close-bind-modal" title="닫기">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="bind-slots-desc">
+        케이스탯 관리자 리스트(<code>list.php</code>) URL을 입력하시면, 생성된 슬롯 목록을 1초 만에 전수 스크랩하여 <strong>[본 설문 URL]</strong>과 <strong>[조사원 평가 URL]</strong>을 현재 쿼터 DB에 1:1로 자동 장착합니다.
+      </div>
+      <div class="bind-slots-field">
+        <label class="bind-slots-label" for="input-kstat-list-url">
+          케이스탯 관리자 리스트 URL (list.php) <span class="text-danger">*</span>
+        </label>
+        <input type="url" id="input-kstat-list-url" class="bind-slots-input" placeholder="https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php?pridSel=2026070802&josa=tapi" />
+      </div>
+      <div class="bind-slots-field">
+        <label class="bind-slots-label" for="input-kstat-market-filter">
+          대상 시장명 필터 (선택 사항)
+        </label>
+        <input type="text" id="input-kstat-market-filter" class="bind-slots-input" placeholder="예: 풍납시장 (비워둘 경우 전체 스크랩)" />
+      </div>
+      <div class="bind-slots-footer">
+        <button type="button" class="btn-pill btn-pill-secondary" id="btn-cancel-bind-modal">
+          취소
+        </button>
+        <button type="button" class="btn-pill btn-pill-primary" id="btn-submit-bind-slots">
+          <i class="fa-solid fa-bolt"></i> 슬롯 자동 스크랩 및 바인딩
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="survey-detail.js?v=20261019_1"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

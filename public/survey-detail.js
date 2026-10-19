@@ -297,11 +297,18 @@ async function initSurveyDetailPage() {
       if (st === 'pilot_done') {
         statusHtml = '<span class="badge-status pilot">검증완료</span>';
       } else if (st === 'completed') {
-        statusHtml = '<span class="badge-status success">제출완료</span>';
+        statusHtml = '<span class="badge-status success">조사표 완료</span>';
       } else if (st === 'running') {
         statusHtml = '<span class="badge-status running">실행 중</span>';
       } else if (st === 'error') {
         statusHtml = '<span class="badge-status error">오류</span>';
+      }
+
+      // 조사원 평가 상태 배지
+      if (item.evalStatus === 'completed' || item.evalCompleted) {
+        statusHtml += `<div class="eval-status-badge badge-eval-done"><i class="fa-solid fa-clipboard-check"></i> 평가 완료</div>`;
+      } else if (st === 'completed' || st === 'pilot_done') {
+        statusHtml += `<div class="eval-status-badge badge-eval-wait"><i class="fa-solid fa-clock"></i> 평가 대기</div>`;
       }
 
       const indLabel = getIndustryBadgeText(item.industry || item.handledItems);
@@ -737,7 +744,21 @@ async function initSurveyDetailPage() {
     successionPlan: 'none',
     plannedYears: 8,
     rotationMode: false,
-    empSalesLink: 'auto'
+    empSalesLink: 'auto',
+    // 조사원 평가 마스터 기준점 기본값
+    evalH1_1: 4,
+    evalH1_2: 4,
+    evalH1_3: 4,
+    evalH1_4: 4,
+    evalH1_5: 4,
+    evalH2_1: 'yes',
+    evalH2_2: 'no',
+    evalH2_3: 'auto',
+    evalH2_4: 3,
+    evalH3_1: 5,
+    evalH3_2: 4,
+    evalH3_3: 5,
+    evalH3_4: 5
   };
 
   function updateGroupStatsUI() {
@@ -1402,6 +1423,100 @@ async function initSurveyDetailPage() {
             <span class="baseline-slider-val" id="val-years">${currentBaseline.plannedYears || 8}년</span>
           </div>
         `;
+      // [조사원 평가 H1] 위생 및 점포 환경 5종
+      case 'H1_1':
+      case 'H1_2':
+      case 'H1_3':
+      case 'H1_4':
+      case 'H1_5': {
+        const k = `eval${fieldId}`;
+        const curVal = currentBaseline[k] ?? 4;
+        const getRatingLabel = (v) => {
+          switch (Number(v)) {
+            case 5: return '매우 양호';
+            case 4: return '양호';
+            case 3: return '보통';
+            case 2: return '불량/미흡';
+            case 1: return '매우 불량';
+            default: return '';
+          }
+        };
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-eval-${fieldId}" min="1" max="5" step="1" value="${curVal}" />
+            <span class="baseline-slider-val" id="val-eval-${fieldId}">${curVal}점 (${getRatingLabel(curVal)})</span>
+          </div>
+        `;
+      }
+      // [조사원 평가 H2] 산지직거래
+      case 'H2_1': {
+        const cur = currentBaseline.evalH2_1 || 'yes';
+        return `
+          <select class="baseline-select" id="select-eval-H2_1">
+            <option value="yes" ${cur === 'yes' ? 'selected' : ''}>① 예 (산지직거래/품질표시) [권장]</option>
+            <option value="no" ${cur === 'no' ? 'selected' : ''}>② 아니오</option>
+          </select>
+        `;
+      }
+      // [조사원 평가 H2] 스토리텔링 POP
+      case 'H2_2': {
+        const cur = currentBaseline.evalH2_2 || 'no';
+        return `
+          <select class="baseline-select" id="select-eval-H2_2">
+            <option value="yes" ${cur === 'yes' ? 'selected' : ''}>① 예 (특화 POP/감성간판 부착)</option>
+            <option value="no" ${cur === 'no' ? 'selected' : ''}>② 아니오 (일반 점포 기본) [권장]</option>
+          </select>
+        `;
+      }
+      // [조사원 평가 H2] 시식/체험 코너
+      case 'H2_3': {
+        const cur = currentBaseline.evalH2_3 || 'auto';
+        return `
+          <select class="baseline-select" id="select-eval-H2_3">
+            <option value="auto" ${cur === 'auto' ? 'selected' : ''}>⚡ 업종별 자동 (식품/수산 1:예, 공산품 2:아니오) [권장]</option>
+            <option value="yes" ${cur === 'yes' ? 'selected' : ''}>① 예 (전체 매장 실시)</option>
+            <option value="no" ${cur === 'no' ? 'selected' : ''}>② 아니오 (전체 미실시)</option>
+          </select>
+        `;
+      }
+      // [조사원 평가 H2] 소포장/밀키트 비중
+      case 'H2_4': {
+        const cur = Number(currentBaseline.evalH2_4 ?? 3);
+        return `
+          <select class="baseline-select" id="select-eval-H2_4">
+            <option value="1" ${cur === 1 ? 'selected' : ''}>없음 (0%)</option>
+            <option value="2" ${cur === 2 ? 'selected' : ''}>10% 미만</option>
+            <option value="3" ${cur === 3 ? 'selected' : ''}>10~30% 미만 (표준 가이드) [권장]</option>
+            <option value="4" ${cur === 4 ? 'selected' : ''}>30~50% 미만</option>
+            <option value="5" ${cur === 5 ? 'selected' : ''}>50~70% 미만</option>
+            <option value="6" ${cur === 6 ? 'selected' : ''}>70% 이상</option>
+          </select>
+        `;
+      }
+      // [조사원 평가 H3] 고객응대 서비스 4종
+      case 'H3_1':
+      case 'H3_2':
+      case 'H3_3':
+      case 'H3_4': {
+        const k = `eval${fieldId}`;
+        const curVal = currentBaseline[k] ?? (fieldId === 'H3_2' ? 4 : 5);
+        const getRatingLabel = (v) => {
+          switch (Number(v)) {
+            case 5: return '매우 양호';
+            case 4: return '양호';
+            case 3: return '보통';
+            case 2: return '불량/미흡';
+            case 1: return '매우 불량';
+            default: return '';
+          }
+        };
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-eval-${fieldId}" min="1" max="5" step="1" value="${curVal}" />
+            <span class="baseline-slider-val" id="val-eval-${fieldId}">${curVal}점 (${getRatingLabel(curVal)})</span>
+          </div>
+        `;
+      }
       default:
         return `
           <span class="badge-tag-tunable font-caption">
@@ -1548,6 +1663,41 @@ async function initSurveyDetailPage() {
     bindSelect('select-future-plan', 'futurePlan');
     bindSelect('select-succession-plan', 'successionPlan');
     bindSlider('slider-years', 'val-years', 'plannedYears', '년');
+
+    // [조사원 평가 H1 & H3 슬라이더 바인딩]
+    const getRatingLabel = (val) => {
+      switch (Number(val)) {
+        case 5: return '매우 양호';
+        case 4: return '양호';
+        case 3: return '보통';
+        case 2: return '불량/미흡';
+        case 1: return '매우 불량';
+        default: return '';
+      }
+    };
+
+    ['H1_1', 'H1_2', 'H1_3', 'H1_4', 'H1_5', 'H3_1', 'H3_2', 'H3_3', 'H3_4'].forEach((fid) => {
+      const slider = document.getElementById(`slider-eval-${fid}`);
+      const valEl = document.getElementById(`val-eval-${fid}`);
+      if (slider && valEl) {
+        slider.addEventListener('input', (e) => {
+          const val = parseInt(e.target.value, 10);
+          const k = `eval${fid}`;
+          currentBaseline[k] = val;
+          if (groupBaselines[activeGroup]) {
+            groupBaselines[activeGroup][k] = val;
+          }
+          valEl.textContent = `${val}점 (${getRatingLabel(val)})`;
+          markUnsaved();
+        });
+      }
+    });
+
+    // [조사원 평가 H2 셀렉트 바인딩]
+    bindSelect('select-eval-H2_1', 'evalH2_1');
+    bindSelect('select-eval-H2_2', 'evalH2_2');
+    bindSelect('select-eval-H2_3', 'evalH2_3');
+    bindSelect('select-eval-H2_4', 'evalH2_4');
   }
 
   function markUnsaved() {
@@ -2520,6 +2670,68 @@ async function initSurveyDetailPage() {
   }
 
   // 초기 실행 (개별 try-catch로 상호 영향 차단)
+  // Kstat 슬롯 바인딩 모달 제어
+  const btnOpenBindSlots = document.getElementById('btn-open-bind-slots');
+  const modalBindSlots = document.getElementById('modal-bind-slots');
+  const btnCloseBindModal = document.getElementById('btn-close-bind-modal');
+  const btnCancelBindModal = document.getElementById('btn-cancel-bind-modal');
+  const btnSubmitBindSlots = document.getElementById('btn-submit-bind-slots');
+  const inputKstatListUrl = document.getElementById('input-kstat-list-url');
+  const inputKstatMarketFilter = document.getElementById('input-kstat-market-filter');
+
+  if (btnOpenBindSlots && modalBindSlots) {
+    btnOpenBindSlots.addEventListener('click', () => {
+      modalBindSlots.classList.remove('hidden');
+      if (inputKstatListUrl && !inputKstatListUrl.value) {
+        inputKstatListUrl.value = 'https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php?pridSel=2026070802&josa=tapi';
+      }
+      if (inputKstatMarketFilter && !inputKstatMarketFilter.value) {
+        inputKstatMarketFilter.value = '풍납시장';
+      }
+    });
+
+    const closeModal = () => modalBindSlots.classList.add('hidden');
+    if (btnCloseBindModal) btnCloseBindModal.addEventListener('click', closeModal);
+    if (btnCancelBindModal) btnCancelBindModal.addEventListener('click', closeModal);
+
+    if (btnSubmitBindSlots) {
+      btnSubmitBindSlots.addEventListener('click', async () => {
+        const listUrl = (inputKstatListUrl?.value || '').trim();
+        const marketName = (inputKstatMarketFilter?.value || '').trim();
+        if (!listUrl) {
+          alert('케이스탯 list.php URL을 입력해 주세요.');
+          return;
+        }
+
+        btnSubmitBindSlots.disabled = true;
+        btnSubmitBindSlots.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 슬롯 스크랩 및 바인딩 중...';
+
+        try {
+          appendLog('info', `[Kstat 슬롯] ${listUrl} (시장: ${marketName || '전체'}) 스크랩 및 바인딩 시작...`);
+          const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/bind-kstat-slots`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ listUrl, marketName })
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || '슬롯 바인딩 실패');
+
+          appendLog('success', `✓ ${data.message}`);
+          alert(`✓ ${data.message}`);
+          closeModal();
+          await loadCampaign();
+        } catch (err) {
+          appendLog('error', `슬롯 바인딩 실패: ${err.message}`);
+          alert('슬롯 바인딩 오류: ' + err.message);
+        } finally {
+          btnSubmitBindSlots.disabled = false;
+          btnSubmitBindSlots.innerHTML = '<i class="fa-solid fa-bolt"></i> 슬롯 자동 스크랩 및 바인딩';
+        }
+      });
+    }
+  }
+
   try {
     await loadSavedQuotas();
   } catch (err) {
