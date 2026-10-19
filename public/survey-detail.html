@@ -56,31 +56,29 @@
   <!-- ======================================================== -->
   <div class="unified-detail-container" id="unified-detail-container">
 
-    <!-- 3대 워크플로우 탭 내비게이션 바 -->
-    <div class="workflow-nav-container">
-      <div class="workflow-tabs-group" role="tablist">
-        <button type="button" class="workflow-tab-btn" id="tab-btn-quota" data-tab="tab-section-quota">
-          <span class="tab-step-tag">STEP 1</span>
-          <span><i class="fa-solid fa-database"></i> 조사 쿼터 DB & 진행 현황</span>
-        </button>
-        <button type="button" class="workflow-tab-btn active" id="tab-btn-execution" data-tab="tab-section-execution">
-          <span class="tab-step-tag">STEP 2</span>
-          <span><i class="fa-solid fa-play"></i> 실시간 제어실 & 모니터링</span>
-        </button>
-        <button type="button" class="workflow-tab-btn" id="tab-btn-blueprint" data-tab="tab-section-blueprint">
-          <span class="tab-step-tag">STEP 3</span>
-          <span><i class="fa-solid fa-sliders"></i> 마스터 설문 기준점 에디터</span>
-        </button>
+    <!-- 3대 핵심 영역 원스톱 바로가기 바 (한 화면 통합 노출) -->
+    <div class="survey-quick-jump-bar mb-24">
+      <div class="quick-jump-pills">
+        <a href="#section-quota" class="quick-jump-pill">
+          <span class="jump-step-badge">STEP 1</span>
+          <span><i class="fa-solid fa-database"></i> 조사 쿼터 DB &amp; 진행 현황</span>
+        </a>
+        <a href="#section-execution" class="quick-jump-pill">
+          <span class="jump-step-badge step2">STEP 2</span>
+          <span><i class="fa-solid fa-play"></i> 자동화 실행 제어 &amp; 실시간 모니터링</span>
+        </a>
+        <a href="#section-master-blueprint" class="quick-jump-pill">
+          <span class="jump-step-badge step3">STEP 3</span>
+          <span><i class="fa-solid fa-sliders"></i> 마스터 설문 &amp; 조사원 평가 기준점 에디터 (17단계)</span>
+        </a>
       </div>
-      <div class="workflow-view-mode-group">
-        <button type="button" class="btn-view-mode-toggle" id="btn-toggle-view-mode" title="한 화면에서 스크롤하여 모든 섹션 보기">
-          <i class="fa-solid fa-arrows-up-down"></i> <span>전체 펼쳐보기</span>
-        </button>
+      <div class="quick-jump-status font-caption text-dim">
+        <i class="fa-solid fa-layer-group text-primary-color"></i> 1페이지 전체 순차 통합 모드
       </div>
     </div>
 
     <!-- [STEP 1] 상단 전폭 조사 쿼터 DB & 실시간 진행 현황 -->
-    <section class="clean-section-card mb-36 workflow-tab-section" id="tab-section-quota">
+    <section class="clean-section-card mb-32" id="section-quota">
       <div class="section-card-inner">
         
         <!-- 상단 헤더 & KPI 칩 바 -->
@@ -240,8 +238,8 @@
       </div>
     </section>
 
-    <!-- [STEP 2 & 3 / 실시간 모니터링] 2열 워크스페이스 -->
-    <div class="detail-split-grid workflow-tab-section active" id="tab-section-execution">
+    <!-- [STEP 2] 자동화 실행 제어 & 실시간 모니터링 (2열 워크스페이스) -->
+    <div class="detail-split-grid mb-32" id="section-execution">
       
       <!-- 좌측 열: STEP 2 방향성 & 실전 정책 + STEP 3 실행 제어 -->
       <section class="left-workspace-column">
@@ -394,8 +392,8 @@
 
     </div>
 
-    <!-- [STEP 3] 15단계 마스터 설문 블루프린트 & 기준점 에디터 (와이드 100% 통합) -->
-    <section class="clean-section-card blueprint-integrated-section workflow-tab-section" id="section-master-blueprint">
+    <!-- [STEP 3] 마스터 설문조사 & 조사원 평가 기준점 에디터 (17단계 전수) -->
+    <section class="clean-section-card blueprint-integrated-section mb-40" id="section-master-blueprint">
       
       <!-- 런타임 락 알림 배너 (배치 가동 중 마스터 기준점 조작 보호) -->
       <div id="blueprint-runtime-lock-banner" class="blueprint-runtime-lock-banner hidden">
@@ -411,13 +409,13 @@
         <div class="blueprint-header-info">
           <div class="blueprint-header-title-row">
             <span class="step-num-badge step3">STEP 3</span>
-            <h2 class="step-card-title m-0">마스터 설문 블루프린트 & 기준점 에디터 (15단계 전수 복제)</h2>
+            <h2 class="step-card-title m-0">마스터 설문조사 &amp; 조사원 평가 기준점 에디터 (17단계 전수)</h2>
             <span class="badge-status badge-blueprint ready" id="badge-master-status">
-              <i class="fa-solid fa-circle-check"></i> 15단계 복제 완료
+              <i class="fa-solid fa-circle-check"></i> 17단계 복제 완료 (본 설문 + 조사원 평가)
             </span>
           </div>
           <div class="blueprint-subtitle-row">
-            <span class="blueprint-header-subtitle">케이스탯 15단계 전체 구조가 복제되었습니다. 각 문항의 기준점을 조절하여 전체 쿼터에 반영할 수 있습니다.</span>
+            <span class="blueprint-header-subtitle">케이스탯 본 설문 1~16단계 및 조사원 평가 17단계 구조가 전수 복제되었습니다. 업종 그룹별 기준점과 조사원 평가 가이드를 조절하고 저장할 수 있습니다.</span>
             <span class="blueprint-legend-inline">
               <span class="badge-tag-bind"><i class="fa-solid fa-link"></i> 쿼터 바인딩</span>
               <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 기준점 조절</span>
@@ -438,7 +436,7 @@
 
           <div class="blueprint-action-buttons">
             <button type="button" id="btn-save-baseline" class="btn-pill btn-pill-primary">
-              <i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 저장
+              <i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 &amp; 조사원 평가 가이드 저장
             </button>
             <button type="button" id="btn-run-all-batch-bottom" class="btn-pill btn-pill-success">
               <i class="fa-solid fa-rocket"></i> 이 기준점으로 전체 배치 가동
@@ -639,7 +637,7 @@
     </div>
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261019_1"></script>
+  <script type="module" src="survey-detail.js?v=20261019_2"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

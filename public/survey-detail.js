@@ -57,11 +57,8 @@ async function initSurveyDetailPage() {
   const quotaSyncStatusMsg = document.getElementById('quota-sync-status-msg');
   const step2ConfigCard = document.getElementById('step2-execution-card');
 
-  // 3대 워크플로우 탭 & 뷰 모드
-  const workflowTabBtns = document.querySelectorAll('.workflow-tab-btn');
-  const workflowTabSections = document.querySelectorAll('.workflow-tab-section');
-  const btnToggleViewMode = document.getElementById('btn-toggle-view-mode');
-  const unifiedContainer = document.getElementById('unified-detail-container');
+  // 3대 핵심 영역 퀵 점프 네비게이션
+  const quickJumpPills = document.querySelectorAll('.quick-jump-pill');
   const linkGoToBlueprint = document.getElementById('link-go-to-blueprint');
 
   // STEP 3: 최하단 마스터 설문 블루프린트 (15단계 전수 복제)
@@ -1702,7 +1699,7 @@ async function initSurveyDetailPage() {
 
   function markUnsaved() {
     if (btnSaveBaseline) {
-      btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 저장 (미저장)';
+      btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 &amp; 평가 가이드 저장 (미저장)';
       btnSaveBaseline.className = 'btn-pill btn-pill-primary btn-pulse';
     }
   }
@@ -1916,22 +1913,22 @@ async function initSurveyDetailPage() {
 
       if (btnSaveBaseline) {
         btnSaveBaseline.disabled = false;
-        btnSaveBaseline.innerHTML = '<i class="fa-solid fa-circle-check"></i> 마스터 기준점 저장 완료!';
+        btnSaveBaseline.innerHTML = '<i class="fa-solid fa-circle-check"></i> 마스터 기준점 &amp; 평가 가이드 저장 완료!';
         btnSaveBaseline.className = 'btn-pill btn-pill-success';
       }
 
       if (badgeMasterStatus) {
-        badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 활성';
+        badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 &amp; 평가 가이드 활성';
         badgeMasterStatus.className = 'badge-status badge-blueprint ready';
       }
 
       if (showNotification) {
-        appendLog('success', '✓ 3개 업종 그룹별 마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.');
+        appendLog('success', '✓ 3개 업종 그룹별 마스터 기준점 및 조사원 평가 가이드(H1~H3)가 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.');
       }
 
       setTimeout(() => {
         if (btnSaveBaseline) {
-          btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 저장';
+          btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 &amp; 조사원 평가 가이드 저장';
           btnSaveBaseline.className = 'btn-pill btn-pill-primary';
         }
       }, 2500);
@@ -2586,55 +2583,24 @@ async function initSurveyDetailPage() {
   }
 
   // ------------------------------------------------------------------------
-  // 워크플로우 탭 전환 시스템 (1. 쿼터 DB / 2. 제어실&모니터링 / 3. 마스터 기준점)
+  // 3대 핵심 영역 부드러운 스크롤 퀵 점프 바인딩 (1페이지 통합 모드)
   // ------------------------------------------------------------------------
-  function switchWorkflowTab(targetTabId) {
-    if (!targetTabId) return;
-
-    if (unifiedContainer && unifiedContainer.classList.contains('mode-view-all')) {
-      unifiedContainer.classList.remove('mode-view-all');
-      if (btnToggleViewMode) {
-        btnToggleViewMode.classList.remove('active');
-        btnToggleViewMode.innerHTML = '<i class="fa-solid fa-arrows-up-down"></i> <span>전체 펼쳐보기</span>';
+  quickJumpPills.forEach(pill => {
+    pill.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetSelector = pill.getAttribute('href');
+      const targetEl = document.querySelector(targetSelector);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    }
-
-    workflowTabBtns.forEach(btn => {
-      const match = btn.dataset.tab === targetTabId;
-      btn.classList.toggle('active', match);
-    });
-
-    workflowTabSections.forEach(sec => {
-      const match = sec.id === targetTabId;
-      sec.classList.toggle('active', match);
-    });
-  }
-
-  workflowTabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = btn.dataset.tab;
-      switchWorkflowTab(target);
     });
   });
-
-  if (btnToggleViewMode && unifiedContainer) {
-    btnToggleViewMode.addEventListener('click', () => {
-      const isViewAll = unifiedContainer.classList.toggle('mode-view-all');
-      btnToggleViewMode.classList.toggle('active', isViewAll);
-      if (isViewAll) {
-        btnToggleViewMode.innerHTML = '<i class="fa-solid fa-table-cells-large"></i> <span>탭 모드로 전환</span>';
-      } else {
-        btnToggleViewMode.innerHTML = '<i class="fa-solid fa-arrows-up-down"></i> <span>전체 펼쳐보기</span>';
-      }
-    });
-  }
 
   if (linkGoToBlueprint) {
     linkGoToBlueprint.addEventListener('click', (e) => {
       e.preventDefault();
-      switchWorkflowTab('tab-section-blueprint');
       const bpEl = document.getElementById('section-master-blueprint');
-      if (bpEl) bpEl.scrollIntoView({ behavior: 'smooth' });
+      if (bpEl) bpEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
 
@@ -2648,7 +2614,6 @@ async function initSurveyDetailPage() {
       const data = await res.json();
       if (data.isRunning && data.campaignId === campId) {
         setRunningState(true);
-        switchWorkflowTab('tab-section-execution');
         appendLog('info', '📡 [상태 복원] 현재 원격 설문 배치가 가동 중입니다. (실시간 모니터링 연동)');
       }
     } catch (err) {
