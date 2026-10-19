@@ -6,7 +6,7 @@
 
 import { chromium } from 'playwright';
 import { getMarketMerchants, getStratifiedMarketMerchants } from './onnuri.js';
-import { enrichBusinessData, fillMissingCeoPersona } from './enricher.js';
+import { enrichBusinessData, fillMissingCeoPersona, hasCompleteAddress, searchAddressByCompany } from './enricher.js';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
 
@@ -504,6 +504,19 @@ export async function buildHybridOnnuriQuota({
       doneItem.seq = finalQuotaList.length + 1;
       // [상세주소 자동 복원] 기존 데이터의 주소가 번지 없는 광역 주소인 경우 온누리 상세 주소로 자동 복구
       doneItem.address = pickBestAddress(null, m.address, doneItem.address);
+      if (!hasCompleteAddress(doneItem.address)) {
+        try {
+          const addrResult = await searchAddressByCompany({
+            companyName: doneItem.companyName,
+            marketName: doneItem.marketName || marketName,
+            address: doneItem.address
+          });
+          if (addrResult && addrResult.address) {
+            doneItem.address = addrResult.address;
+            doneItem.roadAddress = addrResult.address;
+          }
+        } catch (e) {}
+      }
       finalQuotaList.push(doneItem);
       completedMap.delete(key);
     } else {
@@ -729,7 +742,24 @@ export async function buildHybridOnnuriQuota({
 
       const finalPhone = formatPhoneNumber(marketBzDetail.mbzPhone);
       const finalCeoName = marketBzDetail.mbzCeoName || null;
-      const finalAddress = pickBestAddress(marketBzDetail.mbzRoadAddress, merchant.address, marketBzDetail.mbzAddress);
+      let finalAddress = pickBestAddress(marketBzDetail.mbzRoadAddress, merchant.address, marketBzDetail.mbzAddress);
+
+      // 온누리와 마켓비즈 모두 번지 없는 광역 주소만 준 경우, 외부 포털에서 실존 상세 도로명 주소 자동 탐색
+      if (!hasCompleteAddress(finalAddress)) {
+        try {
+          const addrResult = await searchAddressByCompany({
+            companyName: merchant.companyName,
+            marketName: merchant.marketName || marketName,
+            address: finalAddress
+          });
+          if (addrResult && addrResult.address) {
+            logger.info(`[Hybrid Quota] "${merchant.companyName}" 상세 도로명 주소 외부 탐색 보강: "${finalAddress}" ➔ "${addrResult.address}"`);
+            finalAddress = addrResult.address;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
 
       const mergedItem = {
         seq: finalQuotaList.length + 1,

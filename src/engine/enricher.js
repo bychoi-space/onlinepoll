@@ -310,6 +310,109 @@ async function searchPhoneByCompany({ companyName, marketName, address }) {
   return null;
 }
 
+/**
+ * 주소가 번지/도로명 번호까지 온전히 갖추어진 유효 상세 주소인지 검증
+ */
+export function hasCompleteAddress(addr) {
+  if (!addr || typeof addr !== 'string') return false;
+  const trimmed = addr.trim();
+  if (trimmed.length < 8) return false;
+  // 숫자가 전혀 없으면 부실 주소
+  if (!/\d/.test(trimmed)) return false;
+
+  // "진접읍 장현리", "풍납동", "장현리 1층", "장현리 ." 처럼 번지/건물번호 없이 층수/점만 있는 부실 주소 필터링
+  const withoutFloorOrDot = trimmed.replace(/\b\d+층\b/g, '').replace(/[\.\,\s]/g, '').trim();
+  if (/(?:동|리|읍|면|가)$/.test(withoutFloorOrDot)) {
+    return false;
+  }
+
+  // 도로명 번호(예: "장현로 98", "장현로88번길 5")나 지번 번호(예: "380-29", "140-1", "637")가 포함되어 있는지 검증
+  const hasRoadOrLotNumber = /(?:로|길)\s*[\d-]+/.test(trimmed) || /\d+-\d+/.test(trimmed) || /(?:동|리|읍|면)\s+\d+/.test(trimmed) || /\d+호\b/.test(trimmed);
+  return hasRoadOrLotNumber;
+}
+
+/**
+ * 3. 상세 도로명 주소 탐색 (상호 + 시장명/행정구역 기반 포털 플레이스 검색)
+ * - 온누리 공인 DB에 "진접읍 장현리" 처럼 번지가 누락된 경우 네이버 플레이스/검색 스니펫에서 실존 상세 도로명 주소 추출
+ */
+export async function searchAddressByCompany({ companyName, marketName, address }) {
+  if (!companyName) return null;
+  const cleanCompName = companyName.replace(/\([^)]*\)/g, '').replace(/주식회사/g, '').trim();
+
+  // 지역 기반 접두사 (시/도, 시/군/구, 읍/면/동)
+  let regionPrefix = '';
+  let districtPrefix = '';
+  if (address) {
+    const parts = address.split(' ').filter(Boolean);
+    if (parts.length >= 2) regionPrefix = parts.slice(0, 2).join(' '); // 예: "경기도 남양주시" 또는 "서울특별시 송파구"
+    if (parts.length >= 3) districtPrefix = parts.slice(0, 3).join(' '); // 예: "경기도 남양주시 진접읍"
+  } else if (marketName) {
+    if (marketName.includes('남양주') || marketName.includes('장현')) districtPrefix = '경기도 남양주시 진접읍';
+    else if (marketName.includes('풍납') || marketName.includes('송파')) districtPrefix = '서울특별시 송파구';
+  }
+
+  const queries = [];
+  if (districtPrefix) queries.push(`${districtPrefix} ${cleanCompName}`);
+  if (marketName) queries.push(`${marketName} ${cleanCompName}`);
+  if (regionPrefix && !queries.includes(`${regionPrefix} ${cleanCompName}`)) {
+    queries.push(`${regionPrefix} ${cleanCompName}`);
+  }
+
+  for (const q of queries) {
+    try {
+      const url = `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent(q)}`;
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+          'Referer': 'https://www.naver.com/'
+        }
+      });
+      if (!res.ok) continue;
+      const html = await res.text();
+
+      // 시/도 정규식 패턴 생성
+      const sigungu = regionPrefix ? regionPrefix.replace(/\s+/g, '\\s*') : '(?:경기[도]?\\s*남양주시|서울(?:특별시)?\\s*[가-힣]+구)';
+      const addrPattern = new RegExp(`(?:${sigungu})\\s*[가-힣0-9\\-\\.\\s]{4,60}`, 'g');
+      const matches = html.match(addrPattern) || [];
+
+      const candidates = [];
+      for (const rawMatch of matches) {
+        let cleanAddr = rawMatch
+          .replace(/<[^>]+>/g, '')
+          .replace(/[,\t\n]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        cleanAddr = cleanAddr.split(/(?:길찾기|복사|거리뷰|리뷰|전화|영업|매일|월~|화~|수~|목~|금~|토~|일~|홈페이지|플레이스)/)[0].trim();
+
+        if (hasCompleteAddress(cleanAddr)) {
+          const matchIdx = html.indexOf(rawMatch);
+          let score = 50;
+          if (matchIdx !== -1) {
+            const surrounding = html.slice(Math.max(0, matchIdx - 500), matchIdx + 500);
+            if (surrounding.includes(cleanCompName)) score += 30;
+            if (marketName && surrounding.includes(marketName.replace('시장', ''))) score += 20;
+          }
+          candidates.push({ address: cleanAddr, score });
+        }
+      }
+
+      if (candidates.length > 0) {
+        candidates.sort((a, b) => b.score - a.score);
+        return {
+          address: candidates[0].address,
+          source: '네이버 플레이스/검색 공인정보'
+        };
+      }
+    } catch (err) {
+      logger.warn(`[Enricher] 상호(${cleanCompName}) 주소 검색 실패: ${err.message}`);
+    }
+  }
+
+  return null;
+}
+
 let cachedCeoPool = null;
 
 /**
@@ -529,7 +632,25 @@ export async function enrichBusinessData(business, usedState = null) {
     }
   }
 
-  // 3. 대표자 이름, 성별, 나이 중 누락된 값이 있으면 CEO 페르소나 풀(data/ceo_persona_pool.json)로 자동 채움
+  // 3. 주소가 없거나 번지 없는 부실 주소인 경우 외부 상세 도로명 주소 탐색
+  if (!hasCompleteAddress(enriched.address)) {
+    const addrResult = await searchAddressByCompany({
+      companyName: enriched.companyName,
+      marketName: enriched.marketName,
+      address: enriched.address || enriched.roadAddress
+    });
+    if (addrResult && addrResult.address) {
+      const prevAddr = enriched.address;
+      enriched.address = addrResult.address;
+      enriched.roadAddress = addrResult.address;
+      enriched.addressSource = addrResult.source;
+      enriched.isAddressEnriched = true;
+      hasChanged = true;
+      logger.info(`[Enricher] [주소 보강 성공] "${enriched.companyName}" ➔ "${prevAddr}" => "${enriched.address}" (${addrResult.source})`);
+    }
+  }
+
+  // 4. 대표자 이름, 성별, 나이 중 누락된 값이 있으면 CEO 페르소나 풀(data/ceo_persona_pool.json)로 자동 채움
   const prevName = enriched.ceoName;
   const prevGender = enriched.ceoGender;
   const prevAge = enriched.ceoAge;
@@ -576,11 +697,13 @@ export async function batchEnrichQuota(quotaList, onProgress = null) {
     const item = quotaList[i];
     const prevCeo = item.ceoName;
     const prevPhone = item.phone;
+    const prevAddr = item.address;
     const prevGender = item.ceoGender;
     const prevAge = item.ceoAge;
 
     const needsExternalSearch = (!prevCeo || prevCeo === 'null' || prevCeo === '-') ||
-                                (!prevPhone || prevPhone === 'null' || prevPhone === '-');
+                                (!prevPhone || prevPhone === 'null' || prevPhone === '-') ||
+                                (!hasCompleteAddress(item.address));
 
     let processedItem = { ...item };
     if (needsExternalSearch) {
@@ -593,6 +716,7 @@ export async function batchEnrichQuota(quotaList, onProgress = null) {
     if (
       processedItem.ceoName !== prevCeo ||
       processedItem.phone !== prevPhone ||
+      processedItem.address !== prevAddr ||
       processedItem.ceoGender !== prevGender ||
       processedItem.ceoAge !== prevAge
     ) {
