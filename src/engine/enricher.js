@@ -313,13 +313,18 @@ async function searchPhoneByCompany({ companyName, marketName, address }) {
 /**
  * 주소가 번지/도로명 번호까지 온전히 갖추어진 유효 상세 주소인지 검증
  */
-export function hasCompleteAddress(addr) {
+export function hasCompleteAddress(addr, marketName = '') {
   if (!addr || typeof addr !== 'string') return false;
   const trimmed = addr.trim();
   if (trimmed.length < 8) return false;
   if (!/\d/.test(trimmed)) return false;
 
-  // 브랜드명/층수만 있고 번지 없는 주소 정제 (예: "진접읍 59피자 장현점", "1층", ".")
+  // 장현시장 점포인데 타 지역(예: 화도읍)으로 들어간 오매칭 방어
+  if (marketName && (marketName.includes('장현') || marketName.includes('남양주')) && !trimmed.includes('진접읍')) {
+    return false;
+  }
+
+  // 브랜드명/층수/특수문자 정제 (예: "진접읍 59피자 장현점", "1층", ".")
   const cleanAddr = trimmed
     .replace(/\b\d+층\b/g, '')
     .replace(/(?:59피자|59|7번가|60계|24시|365)/g, '')
@@ -330,13 +335,17 @@ export function hasCompleteAddress(addr) {
     return false;
   }
 
-  // 도로명 번호(예: "장현로 84", "장현로 98", "장현로88번길 5") 또는 유효 지번 번호(예: "장현리 380-29", "풍납동 140-1", "장현리 637") 필수
-  const hasRoadNumber = /(?:로|길)\s*[\d-]+/.test(trimmed);
-  const hasLotNumber = /(?:동|리)\s*\d+(?:-\d+)?(?!\s*(?:피자|치킨|통닭|카페|점포|식당))/.test(trimmed);
-  const hasBuildingHo = /\d+호\b/.test(trimmed);
-  const hasHyphenNumber = /\d{2,4}-\d{1,4}/.test(trimmed);
+  // 도로명 번호(예: "장현로 84", "장현로 98", "장현로88번길 5") 필수 우선
+  if (/(?:로|길)\s*[\d-]+/.test(trimmed) && !trimmed.includes('59피자')) {
+    return true;
+  }
 
-  return hasRoadNumber || hasLotNumber || hasBuildingHo || hasHyphenNumber;
+  // 지번 주소: 건물명(프라자, 아파트 등)이 포함되어 있거나, 유효 번지(380-29 등)가 있는 경우 통과
+  // 단, 건물명/도로명 없이 단순 층수("1층")나 단순 호수("101호", "418호")만 있는 경우는 부실 주소
+  const hasBuildingName = /(?:프라자|아파트|빌딩|상가|타워|시장|마을|맨션)/.test(trimmed);
+  const hasRealLotNumber = /(?:동|리)\s*\d+-\d+/.test(trimmed) || /(?:동|리)\s*\d{2,4}(?!\s*(?:층|호|피자|치킨))\b/.test(trimmed);
+
+  return hasBuildingName || hasRealLotNumber;
 }
 
 /**
@@ -347,39 +356,64 @@ export async function searchAddressByCompany({ companyName, marketName, address 
   if (!companyName) return null;
   const cleanCompName = companyName.replace(/\([^)]*\)/g, '').replace(/주식회사/g, '').trim();
 
-  // 지역 기반 접두사 (시/도, 시/군/구, 읍/면/동)
+  // 지역 기반 접두사 (시/도, 시/군/구, 읍/면/동) - 시장명 기반 우선 매핑
   let regionPrefix = '';
   let districtPrefix = '';
   let districtTown = '';
-  if (address) {
-    const parts = address.split(' ').filter(Boolean);
-    if (parts.length >= 2) regionPrefix = parts.slice(0, 2).join(' '); // 예: "경기도 남양주시" 또는 "서울특별시 송파구"
-    if (parts.length >= 3) {
-      districtPrefix = parts.slice(0, 3).join(' '); // 예: "경기도 남양주시 진접읍"
-      districtTown = parts[2]; // "진접읍"
-    }
-  } else if (marketName) {
+
+  if (marketName) {
     if (marketName.includes('남양주') || marketName.includes('장현')) {
+      regionPrefix = '경기도 남양주시';
       districtPrefix = '경기도 남양주시 진접읍';
       districtTown = '진접읍';
-    } else if (marketName.includes('풍납') || marketName.includes('송파')) {
+    } else if (marketName.includes('풍납')) {
+      regionPrefix = '서울특별시 송파구';
       districtPrefix = '서울특별시 송파구 풍납동';
       districtTown = '풍납동';
+    } else if (marketName.includes('마천')) {
+      regionPrefix = '서울특별시 송파구';
+      districtPrefix = '서울특별시 송파구 마천동';
+      districtTown = '마천동';
+    } else if (marketName.includes('방이')) {
+      regionPrefix = '서울특별시 송파구';
+      districtPrefix = '서울특별시 송파구 방이동';
+      districtTown = '방이동';
+    } else if (marketName.includes('새마을')) {
+      regionPrefix = '서울특별시 송파구';
+      districtPrefix = '서울특별시 송파구 잠실동';
+      districtTown = '잠실동';
+    } else if (marketName.includes('석촌')) {
+      regionPrefix = '서울특별시 송파구';
+      districtPrefix = '서울특별시 송파구 석촌동';
+      districtTown = '석촌동';
+    }
+  }
+
+  // 시장명에서 특정하지 못했을 경우 기존 address 분석
+  if (!districtTown && address) {
+    const normalizedAddr = address
+      .replace(/(경기[도]?)(남양주시)/, '$1 $2')
+      .replace(/(서울(?:특별시)?)([가-힣]+구)/, '$1 $2')
+      .replace(/(남양주시|송파구|강동구|광진구|성동구)([가-힣]+(?:읍|면|동))/, '$1 $2');
+    const parts = normalizedAddr.split(' ').filter(Boolean);
+    if (parts.length >= 2 && !regionPrefix) regionPrefix = parts.slice(0, 2).join(' ');
+    if (parts.length >= 3 && !districtTown) {
+      districtPrefix = parts.slice(0, 3).join(' ');
+      districtTown = parts[2];
     }
   }
 
   const queries = [];
-  if (districtPrefix) queries.push(`${districtPrefix} ${cleanCompName}`);
-  if (districtTown) queries.push(`${districtTown} ${cleanCompName}`);
   if (cleanCompName.includes('오구피자')) {
     const p59 = cleanCompName.replace('오구피자', '59피자');
     if (districtPrefix) queries.push(`${districtPrefix} ${p59}`);
-    queries.push(`${p59}`);
+    if (districtTown) queries.push(`${districtTown} ${p59}`);
+    queries.push(p59);
   }
+  if (districtPrefix) queries.push(`${districtPrefix} ${cleanCompName}`);
+  if (districtTown) queries.push(`${districtTown} ${cleanCompName}`);
+  queries.push(cleanCompName);
   if (marketName) queries.push(`${marketName} ${cleanCompName}`);
-  if (regionPrefix && !queries.includes(`${regionPrefix} ${cleanCompName}`)) {
-    queries.push(`${regionPrefix} ${cleanCompName}`);
-  }
 
   // 시/도 정규식 패턴 생성 (경기[도]?, 서울(?:특별시)? 유연 매칭 지원)
   let sigungu = '(?:경기[도]?\\s*남양주시|서울(?:특별시)?\\s*[가-힣]+구)';
@@ -422,7 +456,7 @@ export async function searchAddressByCompany({ companyName, marketName, address 
         }
 
         // 도로명 번호(장현로 98) 또는 지번 번호(380-5) 필수 검증
-        if (hasCompleteAddress(cleanAddr)) {
+        if (hasCompleteAddress(cleanAddr, marketName)) {
           const matchIdx = html.indexOf(rawMatch);
           let score = 50;
           if (matchIdx !== -1) {
@@ -441,6 +475,7 @@ export async function searchAddressByCompany({ companyName, marketName, address 
           source: '네이버 플레이스/검색 공인정보'
         };
       }
+      await sleep(300, 500);
     } catch (err) {
       logger.warn(`[Enricher] 상호(${cleanCompName}) 주소 검색 실패: ${err.message}`);
     }
@@ -669,7 +704,7 @@ export async function enrichBusinessData(business, usedState = null) {
   }
 
   // 3. 주소가 없거나 번지 없는 부실 주소인 경우 외부 상세 도로명 주소 탐색
-  if (!hasCompleteAddress(enriched.address)) {
+  if (!hasCompleteAddress(enriched.address, enriched.marketName)) {
     const addrResult = await searchAddressByCompany({
       companyName: enriched.companyName,
       marketName: enriched.marketName,
@@ -739,7 +774,7 @@ export async function batchEnrichQuota(quotaList, onProgress = null) {
 
     const needsExternalSearch = (!prevCeo || prevCeo === 'null' || prevCeo === '-') ||
                                 (!prevPhone || prevPhone === 'null' || prevPhone === '-') ||
-                                (!hasCompleteAddress(item.address));
+                                (!hasCompleteAddress(item.address, item.marketName));
 
     let processedItem = { ...item };
     if (needsExternalSearch) {

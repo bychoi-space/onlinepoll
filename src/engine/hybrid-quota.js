@@ -504,7 +504,7 @@ export async function buildHybridOnnuriQuota({
       doneItem.seq = finalQuotaList.length + 1;
       // [상세주소 자동 복원] 기존 데이터의 주소가 번지 없는 광역 주소인 경우 온누리 상세 주소로 자동 복구
       doneItem.address = pickBestAddress(null, m.address, doneItem.address);
-      if (!hasCompleteAddress(doneItem.address)) {
+      if (!hasCompleteAddress(doneItem.address, doneItem.marketName || marketName)) {
         try {
           const addrResult = await searchAddressByCompany({
             companyName: doneItem.companyName,
@@ -745,7 +745,7 @@ export async function buildHybridOnnuriQuota({
       let finalAddress = pickBestAddress(marketBzDetail.mbzRoadAddress, merchant.address, marketBzDetail.mbzAddress);
 
       // 온누리와 마켓비즈 모두 번지 없는 광역 주소만 준 경우, 외부 포털에서 실존 상세 도로명 주소 자동 탐색
-      if (!hasCompleteAddress(finalAddress)) {
+      if (!hasCompleteAddress(finalAddress, merchant.marketName || marketName)) {
         try {
           const addrResult = await searchAddressByCompany({
             companyName: merchant.companyName,
