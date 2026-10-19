@@ -110,6 +110,25 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
   - `G1=1 & G1A=1` -> spawns **`G1AA.asp`** (`1`=친인척 승계, `2`=타인 양도).
   - `G2` -> 현금영수증 발행 비율 (%).
 
-## Quota Address Auto-Healing & Enrichment
+## 4. Quota Address Auto-Healing & Enrichment
 - `hasCompleteAddress(addr, marketName)`: Validates road numbers (`(?:로|길)\s*[\d-]+`), building names with numbers, or valid lot numbers, while filtering out unit-only (`101호`), floor-only (`1층`), or brand numbers (`59피자`).
 - `searchAddressByCompany({ companyName, marketName, address })`: Maps market names to legitimate administrative districts (e.g. `남양주장현전통시장` -> `진접읍`), searches Naver Place/Search snippets with town matching, and automatically updates both JSON and Excel formats.
+
+---
+
+## 5. Kstat Slot Scraper & Multi-Account Architecture (`src/engine/kstat-slot-scraper.js`)
+- **Login Session Activation**: When logging in with any surveyor credentials (`loginId`, `loginPw`), the scraper intercepts the lack of active project context and automatically executes `tapi_move('tapi', prid, prid, 'survey/' + prid + '/list')` with `?pridSel=${prid}&josa=tapi` to prevent the `ReferenceError: frm is not defined at goPage` trap.
+- **Safe DOM Check**: Verifies `window.frm` and `document.frm` presence before invoking any pagination or filter submissions.
+- **Multi-Page Pagination**: Automatically traverses `a[href*="curPage=N"]` links to extract all slots (supporting >25 slots seamlessly).
+
+---
+
+## 6. 8-Stage Operational Survey Workflow
+1. **Generate Quota**: Onnuri ➔ MarketBz 2-stage hybrid quota generation.
+2. **External Enrichment**: Auto-heal missing road addresses, CEO name, gender, and age.
+3. **Create Campaign**: Mount the verified quota into a survey campaign.
+4. **Set Surveyor Account**: Configure Kstat surveyor credentials (`loginId`, `loginPw`).
+5. **Auto-Bind Slots**: Run `kstat-slot-scraper.js` to bind 1:1 `slotUrl` and evaluator URLs in 1 second.
+6. **Review Master Blueprint (STEP 2)**: Review and tune baseline rules across 3 industry groups and surveyor evaluation guidelines.
+7. **Execute Survey Pipeline (STEP 3)**: Run Single Pilot (Quota #1) ➔ Run Batch Automation (Quota #2..N).
+8. **Verify & Review Reports**: Check 15-step screenshot gallery per store and submission logs.
