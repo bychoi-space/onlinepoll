@@ -205,10 +205,17 @@ async function autoFillUnansweredVisibleFrames(page, persona, biz) {
       else if (code === 'B1BC') await selectRankCheckboxes(f, 'B1BC', persona.sales?.profitIncreaseReasons || [6, 1, 2]);
       else if (code === 'B1BD') await selectRankCheckboxes(f, 'B1BD', persona.sales?.profitDecreaseReasons || [4, 5, 2]);
       else if (code === 'B2A') {
-        // [규칙 6] B2A 현금(세금계산서 등), 온누리, 신용카드 비중 주입 보장
-        await safeFill(f, '#B2A_1, input[name="B2A_1"]', persona.paymentMethods?.cash || '20');
-        await safeFill(f, '#B2A_2, input[name="B2A_2"]', persona.paymentMethods?.onnuri || '15');
-        await safeFill(f, '#B2A_5, input[name="B2A_5"]', persona.paymentMethods?.card || '65');
+        // [규칙 B2A] 현금, 온누리, 지역사랑, 제로페이, 신용카드 5대 결제수단 5% 단위 주입 보장
+        const sCash = String(persona.paymentMethods?.cash || '0');
+        const sOnnuri = String(persona.paymentMethods?.onnuri || '0');
+        const sLocal = String(persona.paymentMethods?.local || '0');
+        const sZeropay = String(persona.paymentMethods?.zeropay || '0');
+        const sCard = String(persona.paymentMethods?.card || '0');
+        if (parseInt(sCash, 10) > 0) await safeFill(f, '#B2A_1, input[name="B2A_1"]', sCash);
+        if (parseInt(sOnnuri, 10) > 0) await safeFill(f, '#B2A_2, input[name="B2A_2"]', sOnnuri);
+        if (parseInt(sLocal, 10) > 0) await safeFill(f, '#B2A_3, input[name="B2A_3"]', sLocal);
+        if (parseInt(sZeropay, 10) > 0) await safeFill(f, '#B2A_4, input[name="B2A_4"]', sZeropay);
+        if (parseInt(sCard, 10) > 0) await safeFill(f, '#B2A_5, input[name="B2A_5"]', sCard);
       }
       else if (code === 'B5A1') await selectKstatRadio(f, 'B5A_1', '1');
       else if (code === 'B5AA') await selectKstatRadio(f, 'B5AA', '1');
@@ -257,6 +264,29 @@ async function autoFillUnansweredVisibleFrames(page, persona, biz) {
       else if (code === 'G1A') await selectKstatRadio(f, 'G1A', (persona.future?.successionSelector || '#G1A_2').replace('#G1A_', ''));
       else if (code === 'G1AA') await selectKstatRadio(f, 'G1AA', persona.future?.successionTargetVal || '1');
       else if (code === 'G1B') await safeFill(f, '#G1B, input[name="G1B"]', persona.future?.plannedYears || '8');
+      else if (code === 'G2') {
+        const receiptVal = String(persona.future?.cashReceiptRatio || '40');
+        await f.evaluate((rPct) => {
+          if (typeof setRadioValue === 'function') {
+            try { setRadioValue('G2_1', '2'); } catch (_) {}
+            try { setRadioValue('G2_2', '1'); } catch (_) {}
+            try { setRadioValue('G2_3', '2'); } catch (_) {}
+          }
+          const r1 = document.querySelector('#G2_1_2');
+          if (r1) { r1.checked = true; r1.click(); }
+          const r2 = document.querySelector('#G2_2_1');
+          if (r2) { r2.checked = true; r2.click(); }
+          const note = document.querySelector('#G2_2_NOTE');
+          if (note) {
+            note.value = rPct;
+            note.dispatchEvent(new Event('input', { bubbles: true }));
+            note.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          const r3 = document.querySelector('#G2_3_2');
+          if (r3) { r3.checked = true; r3.click(); }
+        }, receiptVal).catch(() => {});
+        await safeFill(f, '#G2_2_NOTE, input[name="G2_2_NOTE"]', receiptVal).catch(() => {});
+      }
       else {
         // 범용 폴백: 라디오가 있으면 첫 번째(또는 2번째) 선택, 숫자/텍스트 인풋이 비어 있으면 '10' 입력
         await f.evaluate((c) => {
@@ -607,7 +637,13 @@ export async function runKstatSurvey({
       else if (stepName === 'P5') {
         const fB2 = page.frame({ url: /\/B2\.asp/i });
         if (fB2) {
-          await fB2.evaluate(() => {
+          const cashVal = parseInt(persona.paymentMethods?.cash || '0', 10);
+          const onnuriVal = parseInt(persona.paymentMethods?.onnuri || '0', 10);
+          const localVal = parseInt(persona.paymentMethods?.local || '0', 10);
+          const zeropayVal = parseInt(persona.paymentMethods?.zeropay || '0', 10);
+          const cardVal = parseInt(persona.paymentMethods?.card || '0', 10);
+
+          await fB2.evaluate(({ cash, onnuri, local, zeropay, card }) => {
             const selectRadio = (name, val) => {
               const r = document.querySelector(`input[type="radio"][name="${name}"][value="${val}"]`);
               if (r) { r.checked = true; r.click(); }
@@ -616,23 +652,23 @@ export async function runKstatSurvey({
                 setRadioMatrixValue(name, val, map[name] || '6');
               }
             };
-            selectRadio('B2_1', '1'); // 1. 현금: 취급
-            selectRadio('B2_2', '1'); // 2. 온누리상품권: 취급
-            selectRadio('B2_3', '2'); // 3. 지역사랑상품권: 취급 안 함
-            selectRadio('B2_4', '2'); // 4. 제로페이: 취급 안 함
-            selectRadio('B2_5', '1'); // 5. 신용카드: 취급 (필수)
+            selectRadio('B2_1', cash > 0 ? '1' : '2');      // 1. 현금
+            selectRadio('B2_2', onnuri > 0 ? '1' : '2');    // 2. 온누리상품권
+            selectRadio('B2_3', local > 0 ? '1' : '2');     // 3. 지역사랑상품권
+            selectRadio('B2_4', zeropay > 0 ? '1' : '2');   // 4. 제로페이 모바일결제 등
+            selectRadio('B2_5', card > 0 ? '1' : '2');      // 5. 신용카드 (필수)
             const r6_1 = document.querySelector('#B2_6_1');
             const r6_2 = document.querySelector('#B2_6_2');
             if (r6_1) r6_1.checked = false;
             if (r6_2) r6_2.checked = false;
             const tb6 = document.querySelector('#TB2_6');
             if (tb6) tb6.value = '';
-          }).catch(async () => {
-            await safeClick(fB2, '#B2_1_1');
-            await safeClick(fB2, '#B2_2_1');
-            await safeClick(fB2, '#B2_3_2');
-            await safeClick(fB2, '#B2_4_2');
-            await safeClick(fB2, '#B2_5_1');
+          }, { cash: cashVal, onnuri: onnuriVal, local: localVal, zeropay: zeropayVal, card: cardVal }).catch(async () => {
+            await safeClick(fB2, cashVal > 0 ? '#B2_1_1' : '#B2_1_2');
+            await safeClick(fB2, onnuriVal > 0 ? '#B2_2_1' : '#B2_2_2');
+            await safeClick(fB2, localVal > 0 ? '#B2_3_1' : '#B2_3_2');
+            await safeClick(fB2, zeropayVal > 0 ? '#B2_4_1' : '#B2_4_2');
+            await safeClick(fB2, cardVal > 0 ? '#B2_5_1' : '#B2_5_2');
           });
         }
         await syncDynamicFrames(page);
@@ -640,16 +676,17 @@ export async function runKstatSurvey({
 
         const fB2A = page.frame({ url: /\/B2A\.asp/i });
         if (fB2A) {
-          // [규칙 6] B2A 항목에서 '현금(세금계산서 등)' 항목에 값을 누락하지 않고 정확하게 입력
-          const cashVal = String(persona.paymentMethods.cash);
-          const onnuriVal = String(persona.paymentMethods.onnuri);
-          const cardVal = String(persona.paymentMethods.card);
+          const cashVal = String(persona.paymentMethods?.cash || '0');
+          const onnuriVal = String(persona.paymentMethods?.onnuri || '0');
+          const localVal = String(persona.paymentMethods?.local || '0');
+          const zeropayVal = String(persona.paymentMethods?.zeropay || '0');
+          const cardVal = String(persona.paymentMethods?.card || '0');
 
-          await fB2A.evaluate(({ cash, onnuri, card }) => {
+          await fB2A.evaluate(({ cash, onnuri, local, zeropay, card }) => {
             const setVal = (id, val) => {
               const el = document.getElementById(id) || document.querySelector(`input[name="${id}"]`);
-              if (el) {
-                el.value = val;
+              if (el && !el.disabled) {
+                el.value = (val && val !== '0') ? val : '';
                 el.dispatchEvent(new Event('input', { bubbles: true }));
                 el.dispatchEvent(new Event('change', { bubbles: true }));
                 el.dispatchEvent(new Event('keyup', { bubbles: true }));
@@ -658,26 +695,33 @@ export async function runKstatSurvey({
             };
             setVal('B2A_1', cash);
             setVal('B2A_2', onnuri);
+            setVal('B2A_3', local);
+            setVal('B2A_4', zeropay);
             setVal('B2A_5', card);
-          }, { cash: cashVal, onnuri: onnuriVal, card: cardVal }).catch(() => {});
+          }, { cash: cashVal, onnuri: onnuriVal, local: localVal, zeropay: zeropayVal, card: cardVal }).catch(() => {});
 
-          await safeFill(fB2A, '#B2A_1, input[name="B2A_1"]', cashVal);
-          await safeFill(fB2A, '#B2A_2, input[name="B2A_2"]', onnuriVal);
-          await safeFill(fB2A, '#B2A_5, input[name="B2A_5"]', cardVal);
+          if (parseInt(cashVal, 10) > 0) await safeFill(fB2A, '#B2A_1, input[name="B2A_1"]', cashVal);
+          if (parseInt(onnuriVal, 10) > 0) await safeFill(fB2A, '#B2A_2, input[name="B2A_2"]', onnuriVal);
+          if (parseInt(localVal, 10) > 0) await safeFill(fB2A, '#B2A_3, input[name="B2A_3"]', localVal);
+          if (parseInt(zeropayVal, 10) > 0) await safeFill(fB2A, '#B2A_4, input[name="B2A_4"]', zeropayVal);
+          if (parseInt(cardVal, 10) > 0) await safeFill(fB2A, '#B2A_5, input[name="B2A_5"]', cardVal);
 
           // B2A_1 누락 방지 재확인
-          const actualCash = await fB2A.evaluate(() => document.getElementById('B2A_1')?.value || '').catch(() => '');
-          if (!actualCash || actualCash.trim() === '') {
-            await safeFill(fB2A, '#B2A_1, input[name="B2A_1"]', cashVal);
+          if (parseInt(cashVal, 10) > 0) {
+            const actualCash = await fB2A.evaluate(() => document.getElementById('B2A_1')?.value || '').catch(() => '');
+            if (!actualCash || actualCash.trim() === '') {
+              await safeFill(fB2A, '#B2A_1, input[name="B2A_1"]', cashVal);
+            }
           }
         }
         await itemDelay();
 
         const fB3 = page.frame({ url: /\/B3\.asp/i });
         if (fB3) {
-          const rVal = persona.future?.cashReceiptRatio || '50';
-          await safeFill(fB3, '#B3_1, input[name="B3_1"]', rVal);
-          await safeFill(fB3, '#B3_2, input[name="B3_2"]', String(Math.max(0, 100 - parseInt(rVal, 10))));
+          const paperVal = String(persona.onnuri?.paperRatio || '50');
+          const digitalVal = String(persona.onnuri?.digitalRatio || '50');
+          await safeFill(fB3, '#B3_1, input[name="B3_1"]', paperVal);
+          await safeFill(fB3, '#B3_2, input[name="B3_2"]', digitalVal);
         }
       }
 
@@ -982,6 +1026,7 @@ export async function runKstatSurvey({
             const r3 = document.querySelector('#G2_3_2');
             if (r3) { r3.checked = true; r3.click(); }
           }, receiptVal).catch(() => {});
+          await safeFill(fG2, '#G2_2_NOTE, input[name="G2_2_NOTE"]', receiptVal).catch(() => {});
         }
 
         // G1=1 선택 시 G1A(승계계획 유무: 1=예, 2=아니오), G1B(향후 지속년수) 동적 로드 동기화

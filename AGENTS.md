@@ -844,3 +844,36 @@ c:/onlinepoll/
 - **안전한 DOM/폼 검증 체계**: `form[name="frm"]` 존재를 사전 검증하고, 스크립트 실행 시 `window.frm = document.forms['frm']`을 명시적으로 바인딩하여 레퍼런스 에러 원천 차단.
 - **다중 페이지 페이지네이션(Pagination) 완벽 지원**: `a[href*="curPage=N"]` 직접 클릭 및 순회 알고리즘을 장착하여 남양주 장현시장 28개 슬롯(1페이지 15개, 2페이지 13개)을 1초 만에 전수 스크랩 및 쿼터 DB 바인딩 100% 성공.
 
+---
+
+## 5-9. 시스템 개발 연혁 (Day 17 완료 내역 - B2A, C2-1-1, G2 5% 단위 입력 규칙 전면 규격화)
+
+### 1) B2A 문항 5대 결제수단 비중 5% 단위 스냅 및 100% 정합성 엔진 (`src/engine/persona-builder.js`, `src/engine/kstat-runner.js`)
+- **요구사항**: 현금, 온누리상품권, 지역사랑상품권, 제로페이 모바일결제 등, 신용카드 5개 항목 모두 5% 단위로 입력하고 총합 100% 보장 (예: 현금 5%, 온누리 5%, 지역사랑 5%, 제로페이 20%, 신용카드 65% 등).
+- **수학적 정합 배분 풀 (`distributionPool`)**:
+  - `payCard` (신용카드): 55~70% 범위 5% 단위 (`payCard % 5 === 0`).
+  - 잔여 비중 `remainingForOther = 100 - payCard` (30~45)에 대해, 현금(`payCash`), 온누리(`payOnnuri`), 지역사랑(`payLocal`), 제로페이(`payZeropay`) 4개 항목을 모두 5% 단위로 배분하는 정규화 매트릭스 탑재.
+  - 모든 슬롯에서 5개 항목의 합계가 100%가 되며, 각 항목이 정확히 5의 배수임을 수학적으로 보장 (150회 점포 시뮬레이션 전수 통과).
+- **Kstat P5 상호 연동**:
+  - `B2.asp`에서 각 결제수단 비중이 0 초과일 때 `1`(취급), 0일 때 `2`(취급 안 함)으로 정밀 연동.
+  - `B2A.asp`에서 `setVal` DOM 이벤트(`input`, `change`, `keyup`, `blur`) 및 Playwright `safeFill` 2중 주입.
+  - P7 `B5A_2`(지역사랑상품권 가맹 여부)와 연동: `payLocal > 0`일 때 `1`(가맹), `0`일 때 `2`(미가맹 ➔ `B5AB.asp` 사유) 상호 정합성 완비.
+
+### 2) C2-1-1 문항 (C2AA.asp) 가격표시 비율 5% 단위 규칙 (`persona-builder.js`, `kstat-runner.js`)
+- **요구사항**: 전체 상품 수 대비 가격표시 비율도 5% 단위로 입력 (80%, 85%, 90%, 95%, 100% 등).
+- **구현**:
+  - `priceTagPool = [80, 85, 90, 95, 100, 85, 90, 95, 80, 90]` 로테이션 풀 및 사용자 기준점 지정 시 `Math.round(val / 5) * 5` 클램핑.
+  - P9 `C2AA.asp` 입력 시 `#C2AA, input[name="C2AA"]`에 5% 단위 값 주입 및 3중 안전망(`autoFillUnansweredVisibleFrames`) 동기화.
+
+### 3) G2 문항 현금영수증 발행 가능 비중 5% 단위 규칙 (`persona-builder.js`, `kstat-runner.js`)
+- **요구사항**: 현금영수증 발행 가능 비중도 5% 단위로 입력 (30%, 35%, 40%, 45%, 50%, 55% 등).
+- **구현**:
+  - `receiptPool = [30, 35, 40, 45, 50, 55, 35, 40, 45, 50]` 로테이션 풀 및 사용자 기준점 지정 시 `Math.round(val / 5) * 5` 클램핑.
+  - P14 `G2.asp` 내 `G2_2_1`(발행 가능 여부: 가능) 라디오 선택 후, `G2_2_NOTE` 입력창에 5% 단위 비중 입력(`evaluate` + `safeFill` 2중 주입).
+
+### 4) 프론트엔드 기준점 슬라이더 스텝 동기화 (`public/survey-detail.js`, `public/survey-blueprint.js`)
+- `slider-credit-card`: `min="55" max="75" step="5"` 스텝 적용.
+- `slider-onnuri`: `min="5" max="25" step="5"` 스텝 적용.
+- 사용자가 UI에서 슬라이더를 조작하더라도 무조건 5% 단위로만 이동하도록 UX 정합성 완결.
+
+

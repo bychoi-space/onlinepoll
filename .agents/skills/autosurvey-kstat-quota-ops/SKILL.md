@@ -77,13 +77,14 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
   - `B1BB=2` (영업이익 감소) -> spawns **`B1BD.asp`** (3-rank choices from `1..7`).
   - `B1E` (월 평균 영업일수) clamped to `1..30` (`31` triggers alert).
 - **P5 (`B2`, `B2A`, `B3`)**:
-  - `B2_1` (현금), `B2_2` (온누리), `B2_5` (신용카드) set to `1` (취급); `B2_3`, `B2_4`, `B2_6` set to `2` (미취급).
-  - `B2A_1 + B2A_2 + B2A_5 === 100`.
-  - `B3_1 + B3_2 === 100` (온누리 지류 + 디지털 비중).
+  - `B2A` 5대 결제수단 비중 5% 단위 필수 입력 & 합계 100% 보장: `현금`(`B2A_1`), `온누리`(`B2A_2`), `지역사랑`(`B2A_3`), `제로페이 모바일결제 등`(`B2A_4`), `신용카드`(`B2A_5`) 5개 항목 모두 5% 단위로 배분 (예: 현금 5%, 온누리 5%, 지역사랑 5%, 제로페이 20%, 신용카드 65% 등, 총합 100%).
+  - `B2.asp`는 각 항목 비중 `> 0`일 때 `1`(취급), `0`일 때 `2`(취급 안 함)으로 정밀 연동.
+  - `B3_1 + B3_2 === 100` (온누리 지류 + 디지털 비중 5% 단위).
 - **P6 (`B4`)**:
   - `B4_1` (인건비: `0` when regular/temp employees === 0) + `B4_2` (원재료비) + `B4_3` (임차료) + `B4_4` (`10%`, `TB4_4="세금"`) === `100%`.
 - **P7 (`B5`)**:
   - **Cross-Page Rule**: When P5 `B3_2 >= 1`, Kstat `VALIDATION_RULES["B5A1"]` forbids `@B5A_1=2`. Always set `B5A_1 = 1` (온누리 가맹).
+  - P5 B2A에서 지역사랑 비중이 있을 시 `B5A_2 = 1`(가맹), 없을 시 `B5A_2 = 2`(미가맹 ➔ `B5AB.asp` 사유 `1..4` 연동).
   - `B5B_1` (`joinYear`) must be `>= A5_1` (`openYear`) and `<= 2025`.
   - `B5D_1=4,5` -> spawns **`B5E.asp`** (매출 증가율 %).
   - `B5F_1=4,5` -> spawns **`B5G.asp`** (고객 증가율 %).
@@ -91,7 +92,8 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
 - **P8 (`C1A`~`C1G`)**:
   - `C1B=1` -> `C1BA.asp`; `C1D=1` -> `C1DA.asp`; `C1E=1` -> `C1EA.asp`; `C1F=1` -> `C1FA.asp`; `C1G=2` -> `C1GA.asp`.
 - **P9 (`C2A`~`C2E`)**:
-  - `C2A=1` -> `C2AA.asp` (가격표시 비율 %); `C2B=1` -> `C2BA.asp` (원산지표시 비율 %); `C2E` (국산 비중 %).
+  - `C2A=1` -> `C2AA.asp` (C2-1-1 전체 상품 수 대비 가격표시 비율: 무조건 5% 단위 입력, 80%, 85%, 90%, 95%, 100%).
+  - `C2B=1` -> `C2BA.asp` (원산지표시 비율 %); `C2E` (국산 비중 %).
 - **P10 (`D1`)**:
   - `D1=2` & `D1A=2,3` -> `D1B`, `D1C`, `D1D`.
   - `D1D=1,2` (임대료 상승/하락) -> spawns **`D1DA.asp`** (변동률 %).
@@ -108,7 +110,7 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
 - **P14 (`G1`, `G2`)**:
   - `G1=1` (계속 운영) -> spawns **`G1A.asp`** (`1`=승계계획 있음, `2`=없음) and **`G1B.asp`** (지속 운영 연수).
   - `G1=1 & G1A=1` -> spawns **`G1AA.asp`** (`1`=친인척 승계, `2`=타인 양도).
-  - `G2` -> 현금영수증 발행 비율 (%).
+  - `G2` -> G2 문항 현금영수증 발행 가능 비중(`G2_2_NOTE`): 무조건 5% 단위 입력 (30%, 35%, 40%, 45%, 50%, 55% 등).
 
 ## 4. Quota Address Auto-Healing & Enrichment
 - `hasCompleteAddress(addr, marketName)`: Validates road numbers (`(?:로|길)\s*[\d-]+`), building names with numbers, or valid lot numbers, while filtering out unit-only (`101호`), floor-only (`1층`), or brand numbers (`59피자`).

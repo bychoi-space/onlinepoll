@@ -320,14 +320,56 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     [5, 4, 3]
   ], quotaIndex);
 
-  // 5. 결제수단 비중 (P5 - 합계 100% 필수)
-  // [규칙 2 & 3] 신용카드 취급 필수, 비중은 60~70% 랜덤, 온누리 10~20%, 현금 나머지 (합계 100%)
-  const cardBase = mb.creditCardRatio !== undefined ? parseInt(mb.creditCardRatio, 10) : 65;
-  const payCard = Math.max(55, Math.min(75, (isNaN(cardBase) ? 65 : cardBase) + randBetween(-2, 2)));
-  const remainingPay = 100 - payCard;
-  const onnuriBase = mb.onnuriRatio !== undefined ? parseInt(mb.onnuriRatio, 10) : 15;
-  const payOnnuri = Math.max(5, Math.min(Math.max(5, remainingPay - 5), (isNaN(onnuriBase) ? 15 : onnuriBase) + randBetween(-2, 2)));
-  const payCash = Math.max(1, 100 - payCard - payOnnuri);
+  // 5. 결제수단 비중 (P5 B2A - 항목 단위로 비중치를 5% 단위로 입력, 합계 100% 필수)
+  // 5대 결제수단: 현금(B2A_1), 온누리상품권(B2A_2), 지역사랑상품권(B2A_3), 제로페이 모바일결제 등(B2A_4), 신용카드(B2A_5)
+  // 예시: 현금 5%, 온누리상품권 5%, 지역사랑상품권 5%, 제로페이모바일결제등 20%, 신용카드 65% (합계 100%)
+  let cardBase = mb.creditCardRatio !== undefined ? parseInt(mb.creditCardRatio, 10) : 65;
+  let payCard = Math.round(cardBase / 5) * 5;
+  payCard = Math.max(55, Math.min(70, payCard));
+  if (mb.rotationMode) {
+    payCard = rotate([65, 60, 70, 65, 60, 65, 70, 60], quotaIndex);
+  }
+
+  const remainingForOther = 100 - payCard; // 30, 35, 40, 45 (모두 5% 단위)
+
+  // 4개 항목 [현금, 온누리, 지역사랑, 제로페이] 5% 단위 정합 배분 풀 (card와 합산 시 정확히 100% 보장)
+  const distributionPool = {
+    30: [
+      [5, 5, 5, 15],  // 5+5+5+15 = 30
+      [10, 10, 5, 5], // 10+10+5+5 = 30
+      [10, 5, 5, 10], // 10+5+5+10 = 30
+      [5, 10, 5, 10], // 5+10+5+10 = 30
+      [15, 5, 5, 5],  // 15+5+5+5 = 30
+      [5, 10, 10, 5]  // 5+10+10+5 = 30
+    ],
+    35: [
+      [5, 5, 5, 20],  // 5+5+5+20 = 35 (사용자 지정 예시: 현금 5, 온누리 5, 지역 5, 제로페이 20, 카드 65)
+      [10, 10, 5, 10], // 10+10+5+10 = 35
+      [10, 5, 5, 15],  // 10+5+5+15 = 35
+      [15, 10, 5, 5],  // 15+10+5+5 = 35
+      [5, 10, 5, 15],  // 5+10+5+15 = 35
+      [10, 15, 5, 5]   // 10+15+5+5 = 35
+    ],
+    40: [
+      [10, 10, 5, 15], // 10+10+5+15 = 40
+      [10, 15, 5, 10], // 10+15+5+10 = 40
+      [15, 10, 5, 10], // 15+10+5+10 = 40
+      [5, 15, 5, 15],  // 5+15+5+15 = 40
+      [5, 10, 10, 15], // 5+10+10+15 = 40
+      [10, 10, 10, 10] // 10+10+10+10 = 40
+    ],
+    45: [
+      [10, 15, 5, 15], // 10+15+5+15 = 45
+      [15, 15, 5, 10], // 15+15+5+10 = 45
+      [10, 10, 10, 15], // 10+10+10+15 = 45
+      [5, 15, 10, 15], // 5+15+10+15 = 45
+      [15, 10, 5, 15], // 15+10+5+15 = 45
+      [10, 15, 10, 10] // 10+15+10+10 = 45
+    ]
+  };
+
+  const pool = distributionPool[remainingForOther] || distributionPool[35];
+  const [payCash, payOnnuri, payLocal, payZeropay] = rotate(pool, quotaIndex);
 
   // 6. 영업비용 구성비 (P6 B4 - 합계 100% 필수)
   // [B4_4] 기타(세금 등) 비중 조절 가능 (기본 10%, 로테이션 시 8~15% 자연순환)
@@ -377,12 +419,14 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   // [중요] P5 B3(온누리 디지털형 비중 >= 1%)와 충돌 방지를 위해 B5A_1(온누리상품권 가맹여부)은 항상 #B5A_1_1(가맹) 필수!
   const onnuriPaperSelector = '#B5A_1_1';
 
-  // B5A_2(지역사랑상품권 가맹여부)
-  let onnuriMobileSelector = '#B5A_2_2';
+  // B5A_2(지역사랑상품권 가맹여부 - P5 B2A에서 지역사랑상품권 비중이 있으면 가맹, 없으면 미가맹 연동)
+  let onnuriMobileSelector = payLocal > 0 ? '#B5A_2_1' : '#B5A_2_2';
   if (mb.onnuriMobileMember === 'rotation' || mb.rotationMode) {
-    onnuriMobileSelector = (quotaIndex % 2 === 0) ? '#B5A_2_1' : '#B5A_2_2';
+    onnuriMobileSelector = payLocal > 0 ? '#B5A_2_1' : ((quotaIndex % 2 === 0) ? '#B5A_2_1' : '#B5A_2_2');
   } else if (mb.onnuriMobileMember === 'yes') {
     onnuriMobileSelector = '#B5A_2_1';
+  } else if (mb.onnuriMobileMember === 'no') {
+    onnuriMobileSelector = '#B5A_2_2';
   }
 
   // B5D_1(온누리 매출 증가 기여도: 1~5, 4/5 선택 시 B5E 증가율 노출)
@@ -497,8 +541,16 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   if (mb.plannedYears === 'rotation' || mb.rotationMode) {
     plannedYears = String(rotate([5, 8, 10, 7, 12, 6], quotaIndex));
   }
-  const baseReceipt = mb.cashReceiptRatio !== undefined ? parseInt(mb.cashReceiptRatio, 10) : 50;
-  const cashReceiptRatio = String(Math.max(10, Math.min(90, baseReceipt + randBetween(-4, 4))));
+  // [규칙 G2] 현금영수증 발행 가능 비중: 무조건 5% 단위 (30%, 35%, 40%, 45%, 50%, 55%, 60% 등)
+  const baseReceipt = mb.cashReceiptRatio !== undefined ? parseInt(mb.cashReceiptRatio, 10) : 40;
+  const receiptPool = [35, 40, 45, 50, 30, 45, 55, 35, 40, 50];
+  let receiptRateNum;
+  if (mb.cashReceiptRatio !== undefined && !mb.rotationMode) {
+    receiptRateNum = Math.max(20, Math.min(80, Math.round(baseReceipt / 5) * 5));
+  } else {
+    receiptRateNum = rotate(receiptPool, quotaIndex);
+  }
+  const cashReceiptRatio = String(receiptRateNum);
 
   let futurePlanSelector = '#G1_1';
   if (mb.futurePlan === 'rotation' || mb.rotationMode) {
@@ -553,10 +605,18 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
 
   // 13. 원산지 및 가격표시 (P9)
   // C2A: 가격 표시 여부 (1: 표시, 2: 미표시)
-  const rawPriceTagComp = mb.priceTagCompliance !== undefined ? parseInt(mb.priceTagCompliance, 10) : 80;
+  const rawPriceTagComp = mb.priceTagCompliance !== undefined ? parseInt(mb.priceTagCompliance, 10) : 85;
   const priceTagVal = rawPriceTagComp <= 0 ? '2' : '1';
   const originTargetSelector = `#C2A_${priceTagVal}`;
-  const priceTagRate = String(Math.max(50, Math.min(100, (rawPriceTagComp || 80) + randBetween(-2, 2))));
+  // [규칙 C2-1-1 / C2AA] 전체 상품 수 대비 표시 비율: 무조건 5% 단위 (80%, 85%, 90%, 95%, 100%)
+  const priceTagPool = [85, 90, 80, 95, 90, 85, 95, 100, 90, 85];
+  let priceTagRateNum;
+  if (mb.priceTagCompliance !== undefined && !mb.rotationMode) {
+    priceTagRateNum = Math.max(80, Math.min(100, Math.round(rawPriceTagComp / 5) * 5));
+  } else {
+    priceTagRateNum = rotate(priceTagPool, quotaIndex);
+  }
+  const priceTagRate = String(priceTagRateNum);
 
   // C2B: 원산지 표시 여부 (1: 표시, 2: 미표시, 3: 미해당)
   let originMarkVal = '1';
@@ -613,9 +673,11 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       profitDecreaseReasons
     },
     paymentMethods: {
-      card: String(payCard),
-      onnuri: String(payOnnuri),
-      cash: String(payCash)
+      cash: String(payCash),       // B2A_1 (현금)
+      onnuri: String(payOnnuri),   // B2A_2 (온누리상품권)
+      local: String(payLocal),     // B2A_3 (지역사랑상품권)
+      zeropay: String(payZeropay), // B2A_4 (제로페이 모바일결제 등)
+      card: String(payCard)        // B2A_5 (신용카드)
     },
     costs: {
       labor: String(costLabor),
@@ -627,6 +689,8 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     onnuri: {
       joinYear: String(onnuriJoinYear),
       salesRatio: onnuriSalesRatio,
+      paperRatio: String(rotate([50, 60, 70, 45, 55, 65], quotaIndex)),
+      digitalRatio: String(100 - rotate([50, 60, 70, 45, 55, 65], quotaIndex)),
       satisfactionSelector: onnuriSatisfactionSelector,
       helpVal: onnuriHelpVal,
       increaseRate: onnuriIncreaseRate,

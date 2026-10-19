@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       case 'B2A_5':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-credit-card" min="60" max="70" step="1" value="${currentBaseline.creditCardRatio || 65}" />
+            <input type="range" class="baseline-slider" id="slider-credit-card" min="55" max="75" step="5" value="${currentBaseline.creditCardRatio || 65}" />
             <span class="baseline-slider-val" id="val-credit-card">${currentBaseline.creditCardRatio || 65}%</span>
           </div>
         `;
@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       case 'B2A_2':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-onnuri" min="10" max="20" step="1" value="${currentBaseline.onnuriRatio || 15}" />
+            <input type="range" class="baseline-slider" id="slider-onnuri" min="5" max="25" step="5" value="${currentBaseline.onnuriRatio || 15}" />
             <span class="baseline-slider-val" id="val-onnuri">${currentBaseline.onnuriRatio || 15}%</span>
           </div>
         `;

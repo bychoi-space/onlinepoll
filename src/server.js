@@ -209,6 +209,11 @@ app.post('/api/campaigns', (req, res) => {
 
 // 특정 캠페인 상세 조회
 app.get('/api/campaigns/:id', (req, res) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
   const campaign = CampaignStore.getCampaignById(req.params.id);
   if (!campaign) {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
@@ -245,6 +250,10 @@ app.put('/api/campaigns/:id/quota', (req, res) => {
 
   // 1. 캠페인 쿼터 DB 갱신
   CampaignStore.updateCampaign(campaign.id, { quotaDatabase });
+  logger.broadcast({
+    type: 'QUOTA_UPDATED',
+    quotaDatabase
+  });
 
   // 2. 연관된 쿼터 파일(JSON & XLSX) 동기화
   try {
@@ -480,16 +489,27 @@ app.post('/api/campaigns/:id/bind-kstat-slots', async (req, res) => {
     return res.status(400).json({ error: '캠페인에 등록된 조사 쿼터가 없습니다. 먼저 쿼터를 로드해 주세요.' });
   }
 
+  // 0단계: 기존 잔류 슬롯 필드 완전 초기화 (재바인딩 시 잔류 데이터로 인한 중복 방지)
+  quotaDb.forEach((q) => {
+    delete q.slotIndex;
+    delete q.slotExtra;
+    delete q.ranId;
+    delete q.slotUrl;
+    delete q.surveyUrl;
+    delete q.evalUrl;
+    delete q.kstatMeta;
+  });
+
   let boundCount = 0;
   const usedSlots = new Set();
 
-  // 1차 패스: 상호명(점포명) 기준 매칭
+  // 1차 패스: 상호명(점포명) 기준 매칭 (Kstat 슬롯에 실제 점포명이 입력된 경우)
   quotaDb.forEach((q) => {
     const qName = String(q.companyName || '').replace(/[\s\(\)·]/g, '').toLowerCase();
     const matchedSlot = slots.find(s => {
       if (usedSlots.has(s.ran_id)) return false;
       const sName = String(s.storeName || '').replace(/[\s\(\)·]/g, '').toLowerCase();
-      return qName.length > 1 && sName.length > 1 && (qName.includes(sName) || sName.includes(qName));
+      return qName.length > 1 && sName.length > 1 && (qName === sName || qName.includes(sName) || sName.includes(qName));
     });
 
     if (matchedSlot) {
@@ -526,6 +546,18 @@ app.post('/api/campaigns/:id/bind-kstat-slots', async (req, res) => {
       boundCount++;
     }
   });
+
+  // 3차 패스: 슬롯 고유성(Uniqueness) 철저 검증 - 중복 슬롯 발생 시 즉시 방어
+  const seenRanIds = new Set();
+  for (const q of quotaDb) {
+    if (q.ranId) {
+      if (seenRanIds.has(q.ranId)) {
+        logger.error(`[슬롯 바인딩 오류] 중복 슬롯 ID 감지: [${q.companyName}] 점포에 중복된 슬롯(${q.ranId})이 감지되어 바인딩을 차단합니다.`);
+        return res.status(409).json({ error: `슬롯 중복 매핑 감지: [${q.companyName}] 점포에 중복된 슬롯 ID(${q.ranId})가 발생했습니다.` });
+      }
+      seenRanIds.add(q.ranId);
+    }
+  }
 
   CampaignStore.updateCampaign(campaign.id, {
     quotaDatabase: quotaDb,
@@ -886,10 +918,16 @@ app.post('/api/campaigns/:id/bind-slots', async (req, res) => {
     }
 
     let mappedCount = 0;
+    const usedSlotUrls = new Set();
     quotaDb.forEach((biz, idx) => {
-      const slot = slots.find(s => (s.index === (biz.index || biz.seq || idx + 1)) || (s.seq === (biz.index || biz.seq || idx + 1))) || slots[idx];
-      if (slot && slot.slotUrl) {
-        biz.slotUrl = String(slot.slotUrl).trim();
+      let slot = slots.find(s => (s.index === (biz.index || biz.seq || idx + 1)) || (s.seq === (biz.index || biz.seq || idx + 1)));
+      if (!slot || (slot.slotUrl && usedSlotUrls.has(String(slot.slotUrl).trim()))) {
+        slot = slots[idx];
+      }
+      if (slot && slot.slotUrl && !usedSlotUrls.has(String(slot.slotUrl).trim())) {
+        const cleanUrl = String(slot.slotUrl).trim();
+        usedSlotUrls.add(cleanUrl);
+        biz.slotUrl = cleanUrl;
         biz.slotIndex = slot.slotIndex || (idx + 1);
         biz.slotExtra = slot.slotExtra || (slot.extraLabel || `(${idx})추가`);
         biz.ranId = slot.ranId || (slot.ran_id || (biz.slotUrl.match(/[?&]KID=([^&]+)/i)?.[1] || null));

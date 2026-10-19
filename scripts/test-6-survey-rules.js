@@ -91,16 +91,47 @@ for (let i = 1; i <= 5; i++) {
 }
 console.log('✅ 일평균 매출액 라디오 구간 계산 통과!\n');
 
-console.log('=== [6] B2A 결제수단 비중 및 현금 누락 방지 검증 ===');
-for (let i = 1; i <= 5; i++) {
+console.log('=== [6] B2A 5대 결제수단 비중 5% 단위 및 합계 100% 검증 ===');
+let b2aPass = true;
+for (let i = 1; i <= 24; i++) {
   const p = generateQuotaPersona(mockBiz, i, {});
   const cash = parseInt(p.paymentMethods.cash, 10);
   const onnuri = parseInt(p.paymentMethods.onnuri, 10);
+  const local = parseInt(p.paymentMethods.local, 10);
+  const zeropay = parseInt(p.paymentMethods.zeropay, 10);
   const card = parseInt(p.paymentMethods.card, 10);
-  const sum = cash + onnuri + card;
-  console.log(`쿼터 #${i} -> 현금: ${cash}%, 온누리: ${onnuri}%, 카드: ${card}% | 합계: ${sum}%`);
-  if (cash <= 0 || sum !== 100) {
-    console.error(`❌ B2A 현금 누락 또는 합계 불일치: 합계=${sum}, 현금=${cash}`);
+  const sum = cash + onnuri + local + zeropay + card;
+  if (i <= 5) {
+    console.log(`쿼터 #${i} -> 현금: ${cash}%, 온누리: ${onnuri}%, 지역: ${local}%, 제로: ${zeropay}%, 카드: ${card}% | 합계: ${sum}%`);
+  }
+  if (sum !== 100 || cash % 5 !== 0 || onnuri % 5 !== 0 || local % 5 !== 0 || zeropay % 5 !== 0 || card % 5 !== 0) {
+    console.error(`❌ B2A 5% 단위 또는 합계 불일치: 합계=${sum}, 현금=${cash}, 온누리=${onnuri}, 지역=${local}, 제로=${zeropay}, 카드=${card}`);
+    b2aPass = false;
   }
 }
-console.log('✅ B2A 현금(세금계산서 등) 정상 포함 및 합계 100% 검증 통과!');
+if (b2aPass) console.log('✅ B2A 5대 결제수단 5% 단위 및 합계 100% 검증 전수 통과!\n');
+
+console.log('=== [7] C2-1-1 가격표시 비율 5% 단위 검증 ===');
+let c2aaPass = true;
+for (let i = 1; i <= 24; i++) {
+  const p = generateQuotaPersona(mockBiz, i, {});
+  const rate = parseInt(p.compliance.priceTagRate, 10);
+  if (rate % 5 !== 0 || rate < 50 || rate > 100) {
+    console.error(`❌ C2-1-1 5% 단위 위반: 쿼터 #${i} -> ${rate}%`);
+    c2aaPass = false;
+  }
+}
+if (c2aaPass) console.log('✅ C2-1-1 가격표시 비율 5% 단위 검증 100% 통과!\n');
+
+console.log('=== [8] G2 현금영수증 발행 가능 비중 5% 단위 검증 ===');
+let g2Pass = true;
+for (let i = 1; i <= 24; i++) {
+  const p = generateQuotaPersona(mockBiz, i, {});
+  const rate = parseInt(p.future.cashReceiptRatio, 10);
+  if (rate % 5 !== 0 || rate < 20 || rate > 80) {
+    console.error(`❌ G2 5% 단위 위반: 쿼터 #${i} -> ${rate}%`);
+    g2Pass = false;
+  }
+}
+if (g2Pass) console.log('✅ G2 현금영수증 발행 가능 비중 5% 단위 검증 100% 통과!');
+

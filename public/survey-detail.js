@@ -99,7 +99,7 @@ async function initSurveyDetailPage() {
   // ------------------------------------------------------------------------
   async function loadCampaign() {
     try {
-      const res = await fetch(`/api/campaigns/${campId}`);
+      const res = await fetch(`/api/campaigns/${campId}?_t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('캠페인을 찾을 수 없습니다.');
       currentCampaign = await res.json();
       renderCampaignDetails(currentCampaign);
@@ -1196,7 +1196,7 @@ async function initSurveyDetailPage() {
       case 'B2A_5':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-credit-card" min="60" max="70" step="1" value="${currentBaseline.creditCardRatio || 65}" />
+            <input type="range" class="baseline-slider" id="slider-credit-card" min="55" max="75" step="5" value="${currentBaseline.creditCardRatio || 65}" />
             <span class="baseline-slider-val" id="val-credit-card">${currentBaseline.creditCardRatio || 65}%</span>
           </div>
         `;
@@ -1204,7 +1204,7 @@ async function initSurveyDetailPage() {
       case 'B2A_2':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-onnuri" min="10" max="20" step="1" value="${currentBaseline.onnuriRatio || 15}" />
+            <input type="range" class="baseline-slider" id="slider-onnuri" min="5" max="25" step="5" value="${currentBaseline.onnuriRatio || 15}" />
             <span class="baseline-slider-val" id="val-onnuri">${currentBaseline.onnuriRatio || 15}%</span>
           </div>
         `;
