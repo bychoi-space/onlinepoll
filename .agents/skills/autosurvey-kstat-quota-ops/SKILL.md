@@ -109,3 +109,7 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
   - `G1=1` (계속 운영) -> spawns **`G1A.asp`** (`1`=승계계획 있음, `2`=없음) and **`G1B.asp`** (지속 운영 연수).
   - `G1=1 & G1A=1` -> spawns **`G1AA.asp`** (`1`=친인척 승계, `2`=타인 양도).
   - `G2` -> 현금영수증 발행 비율 (%).
+
+## Quota Address Auto-Healing & Enrichment
+- `hasCompleteAddress(addr, marketName)`: Validates road numbers (`(?:로|길)\s*[\d-]+`), building names with numbers, or valid lot numbers, while filtering out unit-only (`101호`), floor-only (`1층`), or brand numbers (`59피자`).
+- `searchAddressByCompany({ companyName, marketName, address })`: Maps market names to legitimate administrative districts (e.g. `남양주장현전통시장` -> `진접읍`), searches Naver Place/Search snippets with town matching, and automatically updates both JSON and Excel formats.
