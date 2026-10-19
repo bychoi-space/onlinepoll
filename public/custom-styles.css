@@ -4581,16 +4581,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
   margin-bottom: 32px !important;
 }
 
-#section-execution,
-.detail-split-grid {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1.32fr) 460px !important;
-  gap: 24px !important;
-  align-items: start !important;
+#section-master-blueprint {
+  display: block !important;
   margin-bottom: 32px !important;
 }
 
-#section-master-blueprint {
+#section-execution {
   display: block !important;
   margin-bottom: 48px !important;
 }
@@ -5299,6 +5295,297 @@ input[type="range"]::-webkit-slider-thumb:hover {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+/* ==========================================================================
+   설문 상세 작업실 개편 (STEP 1 동적 툴바, STEP 2 템플릿, STEP 3 2단계 실행, 플로팅 모니터링)
+   ========================================================================== */
+
+/* 1) STEP 1 동적 툴바 및 Kstat 계정 칩 */
+.quota-unmounted-group,
+.quota-mounted-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.kstat-account-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #e2e8f0;
+}
+
+.kstat-account-pill strong {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.btn-link-action {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-link-action:hover {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.live-dot-pulse-sm {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #10b981;
+  display: inline-block;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse-green 1.8s infinite;
+}
+
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* 2) STEP 2 마스터 블루프린트 템플릿 셀렉터 */
+.blueprint-template-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blueprint-template-select {
+  min-width: 280px;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 8px 12px !important;
+  height: 38px !important;
+}
+
+/* 3) STEP 3 자동화 실행 제어 파이프라인 */
+.execution-target-summary-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px 18px;
+}
+
+.execution-2stage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .execution-2stage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stage-action-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.stage-action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
+}
+
+.stage-pilot-card {
+  border-left: 4px solid #0284c7;
+}
+
+.stage-batch-card {
+  border-left: 4px solid #059669;
+}
+
+.stage-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.stage-card-desc {
+  line-height: 1.55;
+  color: #64748b;
+  flex: 1;
+}
+
+.stage-tag-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0284c7;
+  letter-spacing: -0.2px;
+}
+
+.stage-tag-badge.badge-batch {
+  background: #dcfce7;
+  color: #059669;
+}
+
+.stage-card-footer {
+  margin-top: auto;
+}
+
+/* 4) 플로팅 모니터링 런처 & 슬라이드 드로어 */
+.floating-monitor-launcher {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  z-index: 1050;
+}
+
+.btn-floating-monitor {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(2, 132, 199, 0.2);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-floating-monitor:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: #38bdf8;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 24px rgba(2, 132, 199, 0.35);
+}
+
+.live-dot-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #38bdf8;
+  box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7);
+  animation: pulse-cyan 1.8s infinite;
+}
+
+@keyframes pulse-cyan {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+}
+
+.badge-mini-progress {
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+
+/* 플로팅 슬라이드 드로어 */
+.floating-monitor-drawer {
+  position: fixed;
+  top: 56px;
+  right: 0;
+  bottom: 0;
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  background: #0f172a;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: -12px 0 36px rgba(0, 0, 0, 0.65);
+  z-index: 1045;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(105%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-monitor-drawer.is-open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.drawer-title {
+  color: #ffffff;
+}
+
+.btn-drawer-minimize {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-drawer-minimize:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.drawer-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.drawer-body .monitor-progress-section {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.drawer-body .timeline-stepper-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.drawer-body .monitor-terminal {
+  flex: 1;
+  min-height: 280px;
 }
 
 

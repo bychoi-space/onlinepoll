@@ -80,6 +80,11 @@ async function initSurveyDetailPage() {
   const monitorProgressFill = document.getElementById('monitor-progress-fill');
   const currentActiveStoreLabel = document.getElementById('current-active-store-label');
   const currentStorePulse = document.getElementById('current-store-pulse');
+  const floatingMonitorDrawer = document.getElementById('floating-monitor-drawer');
+  const btnToggleMonitor = document.getElementById('btn-toggle-monitor');
+  const btnMinimizeMonitor = document.getElementById('btn-minimize-monitor');
+  const btnQuickOpenMonitor = document.getElementById('btn-quick-open-monitor');
+  const launcherMiniProgress = document.getElementById('launcher-mini-progress');
 
   // 실시간 로그
   const btnClearLogs = document.getElementById('btn-clear-logs');
@@ -145,6 +150,7 @@ async function initSurveyDetailPage() {
     const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
     if (progressSummaryLabel) progressSummaryLabel.textContent = `배치 진행률 (${completedCount} / ${totalCount} 완료)`;
     if (progressPercentLabel) progressPercentLabel.textContent = `${pct}%`;
+    if (launcherMiniProgress) launcherMiniProgress.textContent = `${pct}%`;
     if (monitorProgressFill) monitorProgressFill.style.width = `${pct}%`;
     if (activeStoreName && currentActiveStoreLabel) {
       currentActiveStoreLabel.textContent = `현재 대상: ${activeStoreName}`;
@@ -282,6 +288,35 @@ async function initSurveyDetailPage() {
       } else {
         kpiSlotCount.className = 'kpi-val text-warning font-bold';
       }
+    }
+
+    // 쿼터 장착 여부에 따른 동적 툴바 전환 (불필요한 버튼 숨김)
+    const quotaUnmountedGroup = document.getElementById('quota-unmounted-group');
+    const quotaMountedGroup = document.getElementById('quota-mounted-group');
+    const kstatAccountNameBadge = document.getElementById('kstat-account-name-badge');
+    const execSlotCountLabel = document.getElementById('exec-slot-count-label');
+    const execSurveyorLabel = document.getElementById('exec-surveyor-label');
+
+    if (quotaUnmountedGroup && quotaMountedGroup) {
+      if (total > 0) {
+        quotaUnmountedGroup.classList.add('hidden');
+        quotaMountedGroup.classList.remove('hidden');
+      } else {
+        quotaUnmountedGroup.classList.remove('hidden');
+        quotaMountedGroup.classList.add('hidden');
+      }
+    }
+
+    const currentSurveyor = currentCampaign?.kstatLoginId || '가온김영옥';
+    if (kstatAccountNameBadge) {
+      kstatAccountNameBadge.textContent = currentSurveyor;
+    }
+    if (execSurveyorLabel) {
+      execSurveyorLabel.textContent = currentSurveyor;
+    }
+    if (execSlotCountLabel) {
+      const slotPct = total > 0 ? Math.round((mappedSlots / total) * 100) : 0;
+      execSlotCountLabel.textContent = `${mappedSlots}건 / ${total}건 (${slotPct}%)`;
     }
 
     // 쿼터가 이미 구축/장착된 상태에서는 마켓비즈 직접 검색 아코디언 자동 숨김
@@ -2060,6 +2095,7 @@ async function initSurveyDetailPage() {
 
     try {
       setRunningState(true);
+      openMonitorDrawer();
       resetTimelineChips();
       appendLog('info', `🎯 [1번 단일 검증 시작] "${firstBiz.companyName}" 점포로 Q1부터 Agree.asp까지 안전 완주를 진행합니다... (슬롯: #${firstBiz.slotIndex || 1})`);
 
@@ -2117,6 +2153,7 @@ async function initSurveyDetailPage() {
 
     try {
       setRunningState(true);
+      openMonitorDrawer();
       appendLog('info', `🚀 [배치 가동 시작] ${startIdx}번 쿼터부터 ${targets.length}건 1:1 슬롯 고속 자동화 연속 실행을 시작합니다...`);
 
       // 1. 기준점 저장 보장
@@ -2770,6 +2807,43 @@ async function initSurveyDetailPage() {
         }
       });
     }
+  }
+
+  // 플로팅 모니터링 드로어 제어 함수 및 이벤트 리스너
+  function openMonitorDrawer() {
+    if (floatingMonitorDrawer) floatingMonitorDrawer.classList.add('is-open');
+  }
+  function closeMonitorDrawer() {
+    if (floatingMonitorDrawer) floatingMonitorDrawer.classList.remove('is-open');
+  }
+  function toggleMonitorDrawer() {
+    if (floatingMonitorDrawer) floatingMonitorDrawer.classList.toggle('is-open');
+  }
+
+  if (btnToggleMonitor) btnToggleMonitor.addEventListener('click', toggleMonitorDrawer);
+  if (btnMinimizeMonitor) btnMinimizeMonitor.addEventListener('click', closeMonitorDrawer);
+  if (btnQuickOpenMonitor) btnQuickOpenMonitor.addEventListener('click', openMonitorDrawer);
+
+  // 쿼터 교체 토글 및 조사원 계정 설정 패널 토글
+  const btnToggleQuotaReplace = document.getElementById('btn-toggle-quota-replace');
+  const btnToggleAccountPanel = document.getElementById('btn-toggle-account-panel');
+  const kstatAuthPanel = document.getElementById('kstat-auth-panel');
+
+  if (btnToggleQuotaReplace) {
+    btnToggleQuotaReplace.addEventListener('click', () => {
+      const quotaUnmounted = document.getElementById('quota-unmounted-group');
+      if (quotaUnmounted) quotaUnmounted.classList.toggle('hidden');
+    });
+  }
+
+  if (btnToggleAccountPanel && kstatAuthPanel) {
+    btnToggleAccountPanel.addEventListener('click', () => {
+      kstatAuthPanel.classList.toggle('hidden');
+      if (!kstatAuthPanel.classList.contains('hidden')) {
+        const idInput = document.getElementById('input-kstat-account-id');
+        if (idInput) idInput.focus();
+      }
+    });
   }
 
   try {
