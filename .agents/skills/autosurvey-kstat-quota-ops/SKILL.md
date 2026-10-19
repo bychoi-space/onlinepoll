@@ -44,7 +44,7 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
   - If `ceoName` is missing, deterministically select a complete `{ name, gender, age }` profile from `data/ceo_profile_pool.json` seeded by the 10-digit `bizNumber`.
 
 ### 2.4 Multi-Sweep Candidate Extraction (`src/engine/onnuri.js` & `src/engine/hybrid-quota.js`)
-- Because Onnuri Master DB (`data/onnuri_master_db.json`) does not store `openDate`, filtering out `openYear > 2025` happens during Stage 2 (MarketBz lookup).
+- Because Onnuri Master DB (`data/onnuri_master_db.json` — 3,996 traditional markets, shopping districts, alley-type shopping districts, and 205,429 merchants) stores registration dates (`regDate`), filtering out `openYear > 2025` happens during Stage 2 (MarketBz lookup).
 - `getStratifiedMarketMerchants` extracts up to **4x candidates (minimum +8 buffer)** per industry bucket (`candidatePool`).
 - `hybrid-quota.js` iterates through candidates until each industry bucket reaches 100% of its target quota, performing multi-sweep fallback across remaining market merchants if needed.
 

@@ -38,40 +38,54 @@ async function getDistricts(regionCode) {
   return data.list || [];
 }
 
-// 3. 특정 구군의 시장 데이터 수집
+// 3. 특정 구군의 시장 및 상점가 데이터 수집 (최대 2000건 & 다중 페이지 지원)
 async function fetchDistrictMerchants(regionCode, districtCode, keyword = '시장') {
-  try {
-    const res = await fetch(`${ONNURI_BASE_URL}/afms/afm/common/selectFrcsData.do`, {
-      method: 'POST',
-      headers: DEFAULT_HEADERS,
-      body: new URLSearchParams({
-        SEARCH_LCLGV_CD: regionCode,
-        SEARCH_SGG_CD: districtCode,
-        SEARCH_MRKT_NM: keyword,
-        SEARCH_TYPE: '1',
-        SEARCH_WORD: '',
-        pageIndex: '1',
-        recordCountPerPage: '500'
-      }).toString()
-    });
-    const data = await res.json();
-    return data.list || [];
-  } catch (e) {
-    return [];
+  let allList = [];
+  let pageIndex = 1;
+  const pageSize = 2000;
+
+  while (true) {
+    try {
+      const res = await fetch(`${ONNURI_BASE_URL}/afms/afm/common/selectFrcsData.do`, {
+        method: 'POST',
+        headers: DEFAULT_HEADERS,
+        body: new URLSearchParams({
+          SEARCH_LCLGV_CD: regionCode,
+          SEARCH_SGG_CD: districtCode,
+          SEARCH_MRKT_NM: keyword,
+          SEARCH_TYPE: '1',
+          SEARCH_WORD: '',
+          pageIndex: String(pageIndex),
+          recordCountPerPage: String(pageSize)
+        }).toString()
+      });
+      const data = await res.json();
+      const list = data.list || [];
+      allList = allList.concat(list);
+      if (list.length < pageSize || pageIndex >= 5) break;
+      pageIndex++;
+    } catch (e) {
+      break;
+    }
   }
+  return allList;
 }
 
-export async function buildMasterDB() {
-  console.log('=== [Onnuri Master DB Builder] 전국 전통시장 온누리 마스터 DB 구축 시작 ===');
+export async function buildMasterDB(options = {}) {
+  console.log('=== [Onnuri Master DB Builder] 전국 전통시장 & 상점가·골목형상점가 마스터 DB 구축 시작 ===');
   const startTime = Date.now();
 
   const regions = await getRegions();
   console.log(`전국 ${regions.length}개 시·도 로드 완료.`);
 
+  // CLI 인자 또는 옵션 처리 (--region=09, --district=09009)
+  const targetRegionArg = options.regionCode || process.argv.find(a => a.startsWith('--region='))?.split('=')[1];
+  const targetDistrictArg = options.districtCode || process.argv.find(a => a.startsWith('--district='))?.split('=')[1];
+
   // 기존 DB가 있으면 로드하여 병합 (누적 업데이트)
   let masterDB = {
     updatedAt: new Date().toISOString(),
-    version: '1.0.0',
+    version: '1.1.0',
     totalMarkets: 0,
     totalMerchants: 0,
     markets: {},
@@ -95,8 +109,17 @@ export async function buildMasterDB() {
     }
   }
 
-  // 전국 17개 시/도 전체 전통시장 전수 스캔
-  const targetRegions = regions;
+  // 전통시장 + 일반상점가 + 골목형상점가 + 로데오 5대 키워드 전수 스캔
+  const SEARCH_KEYWORDS = ['시장', '상점', '상가', '골목', '로데오'];
+
+  // 대상 지역 필터링
+  let targetRegions = regions;
+  if (targetRegionArg) {
+    targetRegions = regions.filter(r => r.LCLGV_CD === targetRegionArg);
+    console.log(`[필터 적용] 대상 시/도: ${targetRegions.map(r => r.LCLGV_NM).join(', ')}`);
+  }
+
+  let totalNewAdded = 0;
 
   for (const reg of targetRegions) {
     const regCode = reg.LCLGV_CD;
@@ -109,12 +132,17 @@ export async function buildMasterDB() {
       districts: districts.map(d => ({ code: d.SGG_CD, name: d.SGG_NM }))
     };
 
-    for (const dist of districts) {
+    let targetDistricts = districts;
+    if (targetDistrictArg) {
+      targetDistricts = districts.filter(d => d.SGG_CD === targetDistrictArg);
+      console.log(`  [구/군 필터 적용] 대상 구/군: ${targetDistricts.map(d => d.SGG_NM).join(', ')}`);
+    }
+
+    for (const dist of targetDistricts) {
       const distCode = dist.SGG_CD;
       const distName = dist.SGG_NM;
 
-      // '시장', '상가' 2개 키워드로 해당 구 전수 스캔
-      for (const kw of ['시장', '상가']) {
+      for (const kw of SEARCH_KEYWORDS) {
         const rawList = await fetchDistrictMerchants(regCode, distCode, kw);
         if (!rawList || rawList.length === 0) continue;
 
@@ -139,6 +167,7 @@ export async function buildMasterDB() {
 
           if (!seenBiz.has(rawBiz)) {
             seenBiz.add(rawBiz);
+            totalNewAdded++;
             masterDB.markets[mktName].merchants.push({
               marketName: mktName,
               companyName: item.ACTL_FRCS_NM || '상호 미기재',
@@ -174,7 +203,7 @@ export async function buildMasterDB() {
   // 파일 저장
   const dir = path.dirname(MASTER_DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(MASTER_DB_PATH, JSON.stringify(masterDB, null, 2), 'utf8');
+  fs.writeFileSync(MASTER_DB_PATH, JSON.stringify(masterDB), 'utf8');
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log(`\n\n🎉 [마스터 DB 구축 완료!] 소요시간: ${elapsed}초`);
