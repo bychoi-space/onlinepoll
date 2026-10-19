@@ -5,13 +5,19 @@ const blueprint = {
   surveyId: 'kstat_tapi_trad_market_2026',
   title: '2026 전통시장 및 점포경영 실태조사 (Kstat TAPI 15단계 마스터 블루프린트)',
   description: '케이스탯 TAPI 전문 플랫폼의 모든 설문 구조(Q1~P14, Agree)를 100% 동일하게 복제한 단일 통합 마스터 템플릿입니다.',
-  version: '2.0.0',
+  version: '2.1.0',
   defaultBaseline: {
     creditCardRatio: 65,
-    creditCardRange: [60, 70],
-    onnuriRatio: 15,
-    onnuriRange: [10, 20],
-    cashRatio: 20,
+    creditCardRange: [55, 75],
+    onnuriRatio: 10,
+    onnuriRange: [5, 25],
+    localPayMember: 'rotation',
+    zeropayMember: 'rotation',
+    localRatio: 5,
+    zeropayRatio: 10,
+    onnuriPaperRatio: 35,
+    cashReceiptRatio: 40,
+    cashRatio: 10,
     costTaxRatio: 10,
     costLaborRatioWithEmp: 25,
     deliveryFoodAdoption: 75,
@@ -115,14 +121,19 @@ const blueprint = {
       aspFile: 'P5.asp',
       title: '결제수단별 취급 및 매출 비중',
       category: 'PAYMENT',
-      badge: 'RULE_FIXED',
-      description: '신용카드 필수 취급(60~70%), 온누리상품권(10~20%), 현금(잔여 비중) 합계 100% 검증.',
+      badge: 'TUNABLE_JITTER',
+      description: '신용카드, 온누리상품권, 현금, 지역사랑상품권, 제로페이 모바일결제 등 5대 결제수단 5% 단위 입력 및 합계 100% 검증.',
       fields: [
         { id: 'B2_5_1', label: '신용카드 취급 여부', type: 'fixed', value: '취급 (B2_5_1)', note: '★온누리 등록업체 100% 필수 취급★' },
-        { id: 'B2A_5', label: '신용카드 결제 비중', type: 'tunable', baseline: '65 %', range: '60~70 %', note: '★사용자 지정 60~70% 랜덤★' },
-        { id: 'B2A_2', label: '온누리상품권 결제 비중', type: 'tunable', baseline: '15 %', range: '10~20 %', note: '시장 상권 비중' },
-        { id: 'B2A_1', label: '현금 결제 비중', type: 'jitter', baseline: '20 %', note: '100% - (카드+온누리) 잔여 비중' },
-        { id: 'B3_1', label: '현금영수증 발급 비중', type: 'jitter', baseline: '50 %', range: '40~70 %', note: '현금 매출 대비' }
+        { id: 'B2_3', label: '지역사랑상품권 취급 여부', type: 'tunable', baseline: '취급 / 미취급 로테이션', range: '취급 (1) / 미취급 (2) / 자유 로테이션', note: '점포별 취급/미취급 분산 선택' },
+        { id: 'B2_4', label: '제로페이 모바일결제 등 취급 여부', type: 'tunable', baseline: '취급 / 미취급 로테이션', range: '취급 (1) / 미취급 (2) / 자유 로테이션', note: '삼성·애플·네이버페이 등' },
+        { id: 'B2A_5', label: '신용카드 결제 비중', type: 'tunable', baseline: '65 %', range: '55~75 % (5% 단위)', note: '★5% 단위 입력★' },
+        { id: 'B2A_2', label: '온누리상품권 결제 비중', type: 'tunable', baseline: '10 %', range: '5~25 % (5% 단위)', note: '★5% 단위 입력★' },
+        { id: 'B2A_3', label: '지역사랑상품권 결제 비중', type: 'tunable', baseline: '5 %', range: '0~20 % (5% 단위)', note: '취급 시 5% 단위 배분' },
+        { id: 'B2A_4', label: '제로페이 모바일결제 등 비중', type: 'tunable', baseline: '10 %', range: '0~25 % (5% 단위)', note: '취급 시 5% 단위 배분' },
+        { id: 'B2A_1', label: '현금 결제 비중', type: 'jitter', baseline: '10 %', note: '100% 잔여 비중 (5% 단위 자동)' },
+        { id: 'B3_1', label: '온누리상품권 지류형 비중', type: 'tunable', baseline: '35 %', range: '20~80 % (5% 단위)', note: '★지류형 5% 단위 (B3)★' },
+        { id: 'B3_2', label: '온누리상품권 디지털형 비중', type: 'jitter', baseline: '65 %', note: '100% - 지류형 (5% 단위 자동)' }
       ]
     },
     {
@@ -251,7 +262,8 @@ const blueprint = {
       fields: [
         { id: 'G1', label: '향후 점포 운영 계획', type: 'fixed', value: '현재 상태 유지 (1)', note: '소상공인 70% 이상 유지' },
         { id: 'G1A', label: '사업 승계 여부', type: 'fixed', value: '승계 계획 없음/미정 (2)', note: '안전 스킵' },
-        { id: 'G1B', label: '점포 지속 예정 기간 (연수)', type: 'tunable', baseline: '8 년', range: '3, 4, 5, 7, 8, 10, 12, 15, 20년', note: '★7년 편중 없는 다양한 연수★' }
+        { id: 'G1B', label: '점포 지속 예정 기간 (연수)', type: 'tunable', baseline: '8 년', range: '3, 4, 5, 7, 8, 10, 12, 15, 20년', note: '★7년 편중 없는 다양한 연수★' },
+        { id: 'G2', label: '현금영수증 발행 가능 비중 (G2)', type: 'tunable', baseline: '40 %', range: '20~80 % (5% 단위)', note: '★5% 단위 입력★' }
       ]
     },
     {

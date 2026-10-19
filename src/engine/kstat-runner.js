@@ -217,6 +217,24 @@ async function autoFillUnansweredVisibleFrames(page, persona, biz) {
         if (parseInt(sZeropay, 10) > 0) await safeFill(f, '#B2A_4, input[name="B2A_4"]', sZeropay);
         if (parseInt(sCard, 10) > 0) await safeFill(f, '#B2A_5, input[name="B2A_5"]', sCard);
       }
+      else if (code === 'B2') {
+        const cashVal = parseInt(persona.paymentMethods?.cash || '0', 10);
+        const onnuriVal = parseInt(persona.paymentMethods?.onnuri || '0', 10);
+        const localVal = parseInt(persona.paymentMethods?.local || '0', 10);
+        const zeropayVal = parseInt(persona.paymentMethods?.zeropay || '0', 10);
+        const cardVal = parseInt(persona.paymentMethods?.card || '0', 10);
+        await selectKstatRadio(f, 'B2_1', cashVal > 0 ? '1' : '2');
+        await selectKstatRadio(f, 'B2_2', onnuriVal > 0 ? '1' : '2');
+        await selectKstatRadio(f, 'B2_3', localVal > 0 ? '1' : '2');
+        await selectKstatRadio(f, 'B2_4', zeropayVal > 0 ? '1' : '2');
+        await selectKstatRadio(f, 'B2_5', cardVal > 0 ? '1' : '2');
+      }
+      else if (code === 'B3') {
+        const paperVal = String(persona.onnuri?.paperRatio || '40');
+        const digitalVal = String(persona.onnuri?.digitalRatio || '60');
+        await safeFill(f, '#B3_1, input[name="B3_1"]', paperVal);
+        await safeFill(f, '#B3_2, input[name="B3_2"]', digitalVal);
+      }
       else if (code === 'B5A1') await selectKstatRadio(f, 'B5A_1', '1');
       else if (code === 'B5AA') await selectKstatRadio(f, 'B5AA', '1');
       else if (code === 'B5B1') await safeFill(f, '#B5B_1, input[name="B5B_1"]', persona.onnuri?.joinYear || '2020');

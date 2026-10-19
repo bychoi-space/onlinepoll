@@ -133,5 +133,75 @@ for (let i = 1; i <= 24; i++) {
     g2Pass = false;
   }
 }
-if (g2Pass) console.log('✅ G2 현금영수증 발행 가능 비중 5% 단위 검증 100% 통과!');
+if (g2Pass) console.log('✅ G2 현금영수증 발행 가능 비중 5% 단위 검증 100% 통과!\n');
+
+console.log('=== [9] B2 지역사랑상품권 및 제로페이 모바일결제 취급 여부 분산 검증 ===');
+let b2Pass = true;
+let localYes = 0, localNo = 0;
+let zeroYes = 0, zeroNo = 0;
+for (let i = 1; i <= 24; i++) {
+  const p = generateQuotaPersona(mockBiz, i, {});
+  const handling = p.paymentHandling;
+  if (!handling) {
+    console.error(`❌ 쿼터 #${i} paymentHandling 미정의`);
+    b2Pass = false;
+    continue;
+  }
+  if (handling.cash !== '1' || handling.onnuri !== '1' || handling.card !== '1') {
+    console.error(`❌ 쿼터 #${i} 기본 필수결제(현금, 온누리, 카드) 미취급`);
+    b2Pass = false;
+  }
+  if (handling.local === '1') localYes++; else localNo++;
+  if (handling.zeropay === '1') zeroYes++; else zeroNo++;
+
+  // 정합성 검증: 취급(1)이면 B2A > 0이어야 하고, 미취급(2)이면 B2A === 0이어야 함
+  const localVal = parseInt(p.paymentMethods.local, 10);
+  const zeroVal = parseInt(p.paymentMethods.zeropay, 10);
+  if (handling.local === '1' && localVal === 0) {
+    console.error(`❌ 쿼터 #${i} 지역사랑 취급(1)이나 B2A 비중이 0%임`);
+    b2Pass = false;
+  }
+  if (handling.local === '2' && localVal > 0) {
+    console.error(`❌ 쿼터 #${i} 지역사랑 미취급(2)이나 B2A 비중이 ${localVal}%임`);
+    b2Pass = false;
+  }
+  if (handling.zeropay === '1' && zeroVal === 0) {
+    console.error(`❌ 쿼터 #${i} 제로페이 취급(1)이나 B2A 비중이 0%임`);
+    b2Pass = false;
+  }
+  if (handling.zeropay === '2' && zeroVal > 0) {
+    console.error(`❌ 쿼터 #${i} 제로페이 미취급(2)이나 B2A 비중이 ${zeroVal}%임`);
+    b2Pass = false;
+  }
+}
+console.log(`24개 점포 분산 결과:`);
+console.log(`- 지역사랑상품권: 취급 ${localYes}개 / 미취급 ${localNo}개`);
+console.log(`- 제로페이 모바일: 취급 ${zeroYes}개 / 미취급 ${zeroNo}개`);
+if (localYes > 0 && localNo > 0 && zeroYes > 0 && zeroNo > 0 && b2Pass) {
+  console.log('✅ B2 결제수단 자연 분산 및 B2A 비중과의 정합성 100% 통과!\n');
+} else {
+  console.error('❌ B2 결제수단 분산 실패 (모두 취급이거나 모두 미취급)');
+}
+
+console.log('=== [10] B3 온누리상품권 지류형 및 디지털형 5% 단위 및 합계 100% 검증 ===');
+let b3Pass = true;
+for (let i = 1; i <= 24; i++) {
+  const p = generateQuotaPersona(mockBiz, i, {});
+  const paper = parseInt(p.onnuriTypes.paperRatio, 10);
+  const digital = parseInt(p.onnuriTypes.digitalRatio, 10);
+  const sum = paper + digital;
+  if (i <= 5) {
+    console.log(`쿼터 #${i} -> 지류형: ${paper}%, 디지털형: ${digital}% | 합계: ${sum}%`);
+  }
+  if (sum !== 100) {
+    console.error(`❌ B3 합계 100% 위반: 쿼터 #${i} -> 합계 ${sum}%`);
+    b3Pass = false;
+  }
+  if (paper % 5 !== 0 || digital % 5 !== 0) {
+    console.error(`❌ B3 5% 단위 위반: 쿼터 #${i} -> 지류 ${paper}%, 디지털 ${digital}%`);
+    b3Pass = false;
+  }
+}
+if (b3Pass) console.log('✅ B3 지류형/디지털형 비중 5% 단위 및 합계 100% 검증 100% 통과!');
+
 

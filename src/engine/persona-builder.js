@@ -320,9 +320,29 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     [5, 4, 3]
   ], quotaIndex);
 
-  // 5. 결제수단 비중 (P5 B2A - 항목 단위로 비중치를 5% 단위로 입력, 합계 100% 필수)
-  // 5대 결제수단: 현금(B2A_1), 온누리상품권(B2A_2), 지역사랑상품권(B2A_3), 제로페이 모바일결제 등(B2A_4), 신용카드(B2A_5)
-  // 예시: 현금 5%, 온누리상품권 5%, 지역사랑상품권 5%, 제로페이모바일결제등 20%, 신용카드 65% (합계 100%)
+  // 5. 결제수단별 취급(B2) 및 비중(B2A) - 5% 단위 입력 & 합계 100% 필수
+  // 5대 결제수단: 현금(B2A_1), 온누리(B2A_2), 지역사랑(B2A_3), 제로페이 모바일결제 등(B2A_4), 신용카드(B2A_5)
+  // [규칙 B2] '지역사랑상품권' 및 '제로페이 모바일 결제 등'도 점포별로 취급(1) / 미취급(2)을 적절히 자연 분산
+  let handleLocal = true;
+  if (mb.localPayMember === 'yes') {
+    handleLocal = true;
+  } else if (mb.localPayMember === 'no') {
+    handleLocal = false;
+  } else {
+    // rotation 모드 (기본값): 점포별 자연 분산 (약 60% 취급, 40% 미취급)
+    handleLocal = rotate([true, true, false, true, false, true, true, false, true, false], quotaIndex);
+  }
+
+  let handleZeropay = true;
+  if (mb.zeropayMember === 'yes') {
+    handleZeropay = true;
+  } else if (mb.zeropayMember === 'no') {
+    handleZeropay = false;
+  } else {
+    // rotation 모드 (기본값): 점포별 자연 분산 (약 60% 취급, 40% 미취급)
+    handleZeropay = rotate([true, false, true, true, false, true, false, true, true, false], quotaIndex);
+  }
+
   let cardBase = mb.creditCardRatio !== undefined ? parseInt(mb.creditCardRatio, 10) : 65;
   let payCard = Math.round(cardBase / 5) * 5;
   payCard = Math.max(55, Math.min(70, payCard));
@@ -332,44 +352,91 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
 
   const remainingForOther = 100 - payCard; // 30, 35, 40, 45 (모두 5% 단위)
 
-  // 4개 항목 [현금, 온누리, 지역사랑, 제로페이] 5% 단위 정합 배분 풀 (card와 합산 시 정확히 100% 보장)
-  const distributionPool = {
+  // 취급 여부 조합별 5% 단위 정합 배분 풀 (card와 합산 시 정확히 100% 보장)
+  // [payCash, payOnnuri, payLocal, payZeropay]
+  const poolBoth = {
     30: [
-      [5, 5, 5, 15],  // 5+5+5+15 = 30
-      [10, 10, 5, 5], // 10+10+5+5 = 30
-      [10, 5, 5, 10], // 10+5+5+10 = 30
-      [5, 10, 5, 10], // 5+10+5+10 = 30
-      [15, 5, 5, 5],  // 15+5+5+5 = 30
-      [5, 10, 10, 5]  // 5+10+10+5 = 30
+      [5, 5, 5, 15], [10, 10, 5, 5], [10, 5, 5, 10], [5, 10, 5, 10], [15, 5, 5, 5], [5, 10, 10, 5]
     ],
     35: [
-      [5, 5, 5, 20],  // 5+5+5+20 = 35 (사용자 지정 예시: 현금 5, 온누리 5, 지역 5, 제로페이 20, 카드 65)
-      [10, 10, 5, 10], // 10+10+5+10 = 35
-      [10, 5, 5, 15],  // 10+5+5+15 = 35
-      [15, 10, 5, 5],  // 15+10+5+5 = 35
-      [5, 10, 5, 15],  // 5+10+5+15 = 35
-      [10, 15, 5, 5]   // 10+15+5+5 = 35
+      [5, 5, 5, 20], [10, 10, 5, 10], [10, 5, 5, 15], [15, 10, 5, 5], [5, 10, 5, 15], [5, 5, 10, 15]
     ],
     40: [
-      [10, 10, 5, 15], // 10+10+5+15 = 40
-      [10, 15, 5, 10], // 10+15+5+10 = 40
-      [15, 10, 5, 10], // 15+10+5+10 = 40
-      [5, 15, 5, 15],  // 5+15+5+15 = 40
-      [5, 10, 10, 15], // 5+10+10+15 = 40
-      [10, 10, 10, 10] // 10+10+10+10 = 40
+      [10, 10, 5, 15], [10, 15, 5, 10], [15, 10, 5, 10], [5, 15, 5, 15], [5, 10, 10, 15], [10, 10, 10, 10]
     ],
     45: [
-      [10, 15, 5, 15], // 10+15+5+15 = 45
-      [15, 15, 5, 10], // 15+15+5+10 = 45
-      [10, 10, 10, 15], // 10+10+10+15 = 45
-      [5, 15, 10, 15], // 5+15+10+15 = 45
-      [15, 10, 5, 15], // 15+10+5+15 = 45
-      [10, 15, 10, 10] // 10+15+10+10 = 45
+      [10, 15, 5, 15], [15, 15, 5, 10], [10, 10, 10, 15], [5, 15, 10, 15], [15, 10, 5, 15], [10, 15, 10, 10]
     ]
   };
 
-  const pool = distributionPool[remainingForOther] || distributionPool[35];
-  const [payCash, payOnnuri, payLocal, payZeropay] = rotate(pool, quotaIndex);
+  const poolLocalOnly = {
+    30: [
+      [15, 10, 5, 0], [10, 15, 5, 0], [10, 10, 10, 0], [15, 5, 10, 0], [20, 5, 5, 0]
+    ],
+    35: [
+      [15, 15, 5, 0], [20, 10, 5, 0], [10, 20, 5, 0], [15, 10, 10, 0], [10, 15, 10, 0], [20, 5, 10, 0]
+    ],
+    40: [
+      [20, 15, 5, 0], [15, 20, 5, 0], [20, 10, 10, 0], [15, 15, 10, 0], [25, 10, 5, 0]
+    ],
+    45: [
+      [25, 15, 5, 0], [20, 20, 5, 0], [20, 15, 10, 0], [15, 20, 10, 0], [25, 10, 10, 0]
+    ]
+  };
+
+  const poolZeropayOnly = {
+    30: [
+      [15, 10, 0, 5], [10, 10, 0, 10], [10, 5, 0, 15], [15, 5, 0, 10], [5, 10, 0, 15]
+    ],
+    35: [
+      [15, 15, 0, 5], [10, 10, 0, 15], [10, 5, 0, 20], [15, 10, 0, 10], [5, 10, 0, 20], [20, 5, 0, 10]
+    ],
+    40: [
+      [15, 15, 0, 10], [15, 10, 0, 15], [10, 15, 0, 15], [10, 10, 0, 20], [20, 10, 0, 10]
+    ],
+    45: [
+      [20, 15, 0, 10], [15, 15, 0, 15], [15, 10, 0, 20], [20, 10, 0, 15], [10, 15, 0, 20]
+    ]
+  };
+
+  const poolNeither = {
+    30: [
+      [15, 15, 0, 0], [20, 10, 0, 0], [10, 20, 0, 0], [25, 5, 0, 0]
+    ],
+    35: [
+      [20, 15, 0, 0], [15, 20, 0, 0], [25, 10, 0, 0], [10, 25, 0, 0]
+    ],
+    40: [
+      [25, 15, 0, 0], [20, 20, 0, 0], [30, 10, 0, 0], [15, 25, 0, 0]
+    ],
+    45: [
+      [25, 20, 0, 0], [20, 25, 0, 0], [30, 15, 0, 0], [15, 30, 0, 0]
+    ]
+  };
+
+  let targetMap = poolBoth;
+  if (handleLocal && handleZeropay) targetMap = poolBoth;
+  else if (handleLocal && !handleZeropay) targetMap = poolLocalOnly;
+  else if (!handleLocal && handleZeropay) targetMap = poolZeropayOnly;
+  else targetMap = poolNeither;
+
+  const currentPool = targetMap[remainingForOther] || targetMap[35];
+  const [payCash, payOnnuri, payLocal, payZeropay] = rotate(currentPool, quotaIndex);
+
+  // [규칙 B3] 온누리상품권 형태별 비중 (지류형 B3_1 vs 디지털형 B3_2): 무조건 5% 단위 (합계 100%)
+  // 예시: 20% / 80%, 30% / 70%, 35% / 65%, 40% / 60%, 45% / 55%, 50% / 50% 등
+  const b3Pool = [
+    [35, 65], [30, 70], [40, 60], [20, 80], [45, 55], [50, 50],
+    [25, 75], [55, 45], [60, 40], [35, 65], [30, 70], [40, 60]
+  ];
+  let paperVal, digitalVal;
+  if (mb.onnuriPaperRatio !== undefined && !mb.rotationMode) {
+    let p = Math.round(parseInt(mb.onnuriPaperRatio, 10) / 5) * 5;
+    paperVal = Math.max(10, Math.min(90, p));
+    digitalVal = 100 - paperVal;
+  } else {
+    [paperVal, digitalVal] = rotate(b3Pool, quotaIndex);
+  }
 
   // 6. 영업비용 구성비 (P6 B4 - 합계 100% 필수)
   // [B4_4] 기타(세금 등) 비중 조절 가능 (기본 10%, 로테이션 시 8~15% 자연순환)
@@ -679,6 +746,13 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       zeropay: String(payZeropay), // B2A_4 (제로페이 모바일결제 등)
       card: String(payCard)        // B2A_5 (신용카드)
     },
+    paymentHandling: {
+      cash: '1',
+      onnuri: '1',
+      local: payLocal > 0 ? '1' : '2',
+      zeropay: payZeropay > 0 ? '1' : '2',
+      card: '1'
+    },
     costs: {
       labor: String(costLabor),
       raw: String(costRaw),
@@ -689,14 +763,18 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     onnuri: {
       joinYear: String(onnuriJoinYear),
       salesRatio: onnuriSalesRatio,
-      paperRatio: String(rotate([50, 60, 70, 45, 55, 65], quotaIndex)),
-      digitalRatio: String(100 - rotate([50, 60, 70, 45, 55, 65], quotaIndex)),
+      paperRatio: String(paperVal),
+      digitalRatio: String(digitalVal),
       satisfactionSelector: onnuriSatisfactionSelector,
       helpVal: onnuriHelpVal,
       increaseRate: onnuriIncreaseRate,
       monthlyCustomers: onnuriMonthlyCustomers,
       paperSelector: onnuriPaperSelector,
       mobileSelector: onnuriMobileSelector
+    },
+    onnuriTypes: {
+      paperRatio: String(paperVal),
+      digitalRatio: String(digitalVal)
     },
     lease: {
       isRent,
