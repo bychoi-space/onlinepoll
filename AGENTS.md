@@ -774,3 +774,20 @@ c:/onlinepoll/
   - JSON 메타데이터 및 SheetJS Excel(`quota_onnuri_...xlsx`) 동시 자동 갱신 완료.
   - 장현시장 29개 점포 대상 실전 검증 결과, 29개 전수 100% 실존 상세 주소(도로명 26건, 정식 지번 및 건물명 3건) 완결 달성.
 
+---
+
+## 5-8. 시스템 개발 연혁 (Day 16 완료 내역 - Kstat 조사원 계정 전환 및 프로젝트 활성화/슬롯 자동 바인딩 완결)
+
+### 1) 'ReferenceError: frm is not defined' 슬롯 바인딩 오류 근본 원인 규명
+- **원인 1 - 신규 조사원 로그인 후 프로젝트 세션 미활성화**:
+  - `강영미a` 등 신규 조사원 계정으로 Kstat 로그인 시 기본 대시보드인 `1_project/tapi_project.php`에 도달함.
+  - 이 상태에서 프로젝트(PRID: 2026070802) 카드를 클릭하거나 세션 파라미터를 넘기지 않고 `survey/.../list.php`로 직접 진입하면 Kstat이 `"프로젝트 선택해 주세요"`라는 폼 없는 에러 화면을 노출함.
+- **원인 2 - 에러 화면 내 `goPage` 실행 시 `frm` 부재 트랩**:
+  - Kstat 상단 인라인 스크립트의 `goPage()`는 `frm.action = ...; frm.submit();`을 실행하도록 짜여 있어, 에러 화면에서 `<form name="frm">`이 없으므로 `ReferenceError: frm is not defined`가 발생함.
+
+### 2) Kstat 프로젝트 세션 자동 활성화 및 슬롯 스크래퍼 고도화 (`src/engine/kstat-slot-scraper.js`)
+- **프로젝트(PRID) 카드 자동 활성화**: 로그인 후 `tapi_project.php` 화면에서 해당 조사 프로젝트(점포주조사 PRID: 2026070802)를 자동으로 식별하여 `tapi_move` 트리거 및 세션 확정.
+- **리스트 URL 파라미터 보완**: `list.php?pridSel=...&josa=tapi` 파라미터를 자동 부가하여 세션 유실 방어.
+- **안전한 DOM/폼 검증 체계**: `form[name="frm"]` 존재를 사전 검증하고, 스크립트 실행 시 `window.frm = document.forms['frm']`을 명시적으로 바인딩하여 레퍼런스 에러 원천 차단.
+- **다중 페이지 페이지네이션(Pagination) 완벽 지원**: `a[href*="curPage=N"]` 직접 클릭 및 순회 알고리즘을 장착하여 남양주 장현시장 28개 슬롯(1페이지 15개, 2페이지 13개)을 1초 만에 전수 스크랩 및 쿼터 DB 바인딩 100% 성공.
+
