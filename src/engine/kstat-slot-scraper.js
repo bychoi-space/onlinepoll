@@ -11,12 +11,15 @@ import { logger } from '../utils/logger.js';
 export async function scrapeKstatSlots(listUrl, options = {}) {
   const {
     marketName = '',
-    maxPages = 5,
+    maxPages = 10,
     loginId = process.env.KSTAT_LOGIN_ID || '가온김영옥',
     loginPw = process.env.KSTAT_LOGIN_PW || '1234'
   } = options;
 
-  logger.info(`[Kstat 슬롯 스크래퍼] 시작: URL=${listUrl}, 시장필터="${marketName || '전체'}"`);
+  logger.info(`[Kstat 슬롯 스크래퍼] 시작: URL=${listUrl}, 시장필터="${marketName || '전체'}", 계정="${loginId}"`);
+
+  const pridMatch = listUrl.match(/survey\/([0-9]+)/);
+  const targetPrid = pridMatch ? pridMatch[1] : '2026070802';
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -57,16 +60,69 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
       logger.info(`[Kstat 슬롯 스크래퍼] 로그인 확인 성공: "${loggedUser}"`);
     }
 
-    // 2. 관리자 리스트 진입
-    logger.info(`[Kstat 슬롯 스크래퍼] 리스트 페이지 이동: ${listUrl}`);
-    await page.goto(listUrl, { waitUntil: 'networkidle', timeout: 20000 });
+    // 2. Kstat 프로젝트 세션 활성화
+    // 로그인 후 tapi_project.php에 머물러 있는 경우, 해당 프로젝트(PRID) 카드를 클릭하여 세션을 확정
+    logger.info(`[Kstat 슬롯 스크래퍼] 프로젝트(PRID: ${targetPrid}) 활성화 확인...`);
+    const isProjectPage = await page.evaluate(() => {
+      return window.location.href.includes('tapi_project.php') || !!document.querySelector('.card-body');
+    }).catch(() => false);
+
+    if (isProjectPage) {
+      await page.evaluate((prid) => {
+        if (typeof tapi_move === 'function') {
+          tapi_move('tapi', prid, prid, 'survey/' + prid + '/list');
+        } else {
+          const cards = Array.from(document.querySelectorAll('.card-body'));
+          const targetCard = cards.find(c => c.innerText.includes(prid) && c.innerText.includes('점포주조사')) || cards.find(c => c.innerText.includes(prid));
+          if (targetCard) targetCard.click();
+        }
+      }, targetPrid).catch(() => {});
+      await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+    }
+
+    // 리스트 URL 파라미터 보완 (?pridSel=...&josa=tapi)
+    let finalTargetUrl = listUrl;
+    if (!finalTargetUrl.includes('pridSel=')) {
+      finalTargetUrl += (finalTargetUrl.includes('?') ? '&' : '?') + `pridSel=${targetPrid}&josa=tapi`;
+    }
+
+    if (!page.url().includes('list.php')) {
+      logger.info(`[Kstat 슬롯 스크래퍼] 리스트 페이지 이동: ${finalTargetUrl}`);
+      await page.goto(finalTargetUrl, { waitUntil: 'networkidle', timeout: 20000 });
+    }
+
+    // '프로젝트 선택해 주세요' 오류 페이지인 경우 프로젝트 재선택 페일세이프
+    const needsProjectSelection = await page.evaluate(() => {
+      return document.body && document.body.innerText.includes('프로젝트 선택해 주세요');
+    }).catch(() => false);
+
+    if (needsProjectSelection) {
+      logger.warn(`[Kstat 슬롯 스크래퍼] "프로젝트 선택해 주세요" 감지됨 ➔ tapi_project.php로 이동하여 프로젝트 명시적 선택 수행`);
+      await page.goto('https://survey.kstat.co.kr/kstat_survey/1_project/tapi_project.php', { waitUntil: 'networkidle', timeout: 15000 });
+      await page.evaluate((prid) => {
+        if (typeof tapi_move === 'function') {
+          tapi_move('tapi', prid, prid, 'survey/' + prid + '/list');
+        } else {
+          const cards = Array.from(document.querySelectorAll('.card-body'));
+          const targetCard = cards.find(c => c.innerText.includes(prid));
+          if (targetCard) targetCard.click();
+        }
+      }, targetPrid);
+      await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+    }
+
+    // 폼 로드 대기 및 검증
+    await page.waitForSelector('form[name="frm"]', { timeout: 10000 }).catch(() => {});
+    const hasForm = await page.evaluate(() => !!document.querySelector('form[name="frm"]'));
+    if (!hasForm) {
+      throw new Error(`Kstat 리스트 페이지(list.php)에 폼(form[name="frm"])이 로드되지 않았습니다. 현재 URL: ${page.url()}`);
+    }
 
     // 3. 시장명(marketName)이 지정된 경우, 상단 검색창에 입력 후 검색 실행
     if (marketName && marketName.trim() !== '') {
       const searchVal = marketName.trim();
       logger.info(`[Kstat 슬롯 스크래퍼] 시장 검색창(srhSijang)에 "${searchVal}" 입력 및 검색 수행...`);
       await page.fill('input[name="srhSijang"]', searchVal).catch(async () => {
-        // 대체: placeholder 기반
         const inp = await page.$('input[placeholder*="시장/상점가명"]');
         if (inp) await inp.fill(searchVal);
       });
@@ -74,8 +130,12 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
       await Promise.all([
         page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
         page.evaluate(() => {
-          if (typeof goPage === 'function') goPage(0, '', '');
-          else document.querySelector('input[type="button"][value="검색"]')?.click();
+          window.frm = document.forms['frm'] || document.querySelector('form[name="frm"]');
+          if (typeof goPage === 'function' && window.frm) {
+            goPage(0, '', '');
+          } else {
+            document.querySelector('input[type="button"][value="검색"]')?.click();
+          }
         })
       ]);
       await page.waitForTimeout(1000);
@@ -83,14 +143,14 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
 
     // 4. 폼 메타(pridSel, mnid) 추출
     const formMeta = await page.evaluate(() => {
-      const frm = document.querySelector('form[name="frm"]');
+      const frm = document.forms['frm'] || document.querySelector('form[name="frm"]');
       return {
         pridSel: frm?.querySelector('input[name="pridSel"]')?.value || '2026070802',
         mnid: frm?.querySelector('input[name="mnid"]')?.value || '900001346'
       };
-    }).catch(() => ({ pridSel: '2026070802', mnid: '900001346' }));
+    }).catch(() => ({ pridSel: targetPrid, mnid: '900001346' }));
 
-    const detectedPrid = formMeta.pridSel;
+    const detectedPrid = formMeta.pridSel || targetPrid;
     const detectedMnid = formMeta.mnid;
 
     // 5. 페이지 순회 및 슬롯 추출
@@ -98,25 +158,38 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
 
     for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
       if (pageNum > 1) {
-        // 다음 페이지 이동
-        logger.info(`[Kstat 슬롯 스크래퍼] ${pageNum}페이지 이동...`);
-        const hasNextPage = await page.evaluate((p) => {
-          if (typeof goPage === 'function') {
-            const frm = document.querySelector('form[name="frm"]');
-            if (frm) {
-              frm.curPage.value = p;
-              goPage(0, '', '');
+        logger.info(`[Kstat 슬롯 스크래퍼] ${pageNum}페이지 이동 시도...`);
+        const pageLinkSelector = `a[href*="curPage=${pageNum}"]`;
+        const pageLink = await page.$(pageLinkSelector);
+
+        if (pageLink) {
+          await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+            pageLink.click()
+          ]);
+          await page.waitForTimeout(600);
+        } else {
+          // fallback: frm.curPage 설정 후 이동
+          const moved = await page.evaluate((p) => {
+            window.frm = document.forms['frm'] || document.querySelector('form[name="frm"]');
+            if (window.frm) {
+              window.frm.curPage.value = p;
+              if (typeof goPage === 'function') {
+                goPage(0, '', '');
+                return true;
+              }
+              window.frm.submit();
               return true;
             }
-          }
-          return false;
-        }, pageNum);
+            return false;
+          }, pageNum);
 
-        if (hasNextPage) {
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
-          await page.waitForTimeout(500);
-        } else {
-          break;
+          if (moved) {
+            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+            await page.waitForTimeout(600);
+          } else {
+            break;
+          }
         }
       }
 
@@ -163,21 +236,13 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
       logger.info(`[Kstat 슬롯 스크래퍼] ${pageNum}페이지: ${rows.length}개 슬롯 추출 완료.`);
       allSlots.push(...rows);
 
-      // 총 검색 건수 및 다음 페이지 링크 감지
-      const pageInfo = await page.evaluate((currP) => {
-        const srhMsg = document.querySelector('#srhMsg')?.textContent || '';
-        const countMatch = srhMsg.match(/([0-9]+)\s*개/);
-        const totalSearchCount = countMatch ? parseInt(countMatch[1], 10) : 0;
-        
-        // 다음 페이지 링크 존재 여부
-        const nextPageLink = document.querySelector(`a[href*="curPage=${currP + 1}"]`);
-        return {
-          totalSearchCount,
-          hasNextPage: !!nextPageLink
-        };
+      // 다음 페이지 존재 여부 확인 (다음 페이지 링크 감지)
+      const hasNext = await page.evaluate((currP) => {
+        const nextLink = document.querySelector(`a[href*="curPage=${currP + 1}"]`);
+        return !!nextLink;
       }, pageNum);
 
-      if (!pageInfo.hasNextPage || rows.length === 0) {
+      if (!hasNext) {
         break;
       }
     }
