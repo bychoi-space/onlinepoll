@@ -26,7 +26,15 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
 
   try {
     // 1. Kstat 관리자 로그인
-    logger.info('[Kstat 슬롯 스크래퍼] 관리자 로그인 진행 중...');
+    let loginAlertMsg = '';
+    const loginDialogHandler = async (dialog) => {
+      loginAlertMsg = dialog.message();
+      logger.warn(`[Kstat 슬롯 스크래퍼] 로그인 대화상자 감지: "${loginAlertMsg}"`);
+      await dialog.accept().catch(() => {});
+    };
+    page.on('dialog', loginDialogHandler);
+
+    logger.info(`[Kstat 슬롯 스크래퍼] 관리자 로그인 진행 중 (조사원 성명: ${loginId})...`);
     await page.goto('https://survey.kstat.co.kr/kstat_survey/inc/login.php', { waitUntil: 'domcontentloaded', timeout: 20000 });
     await page.fill('#floatingID', loginId);
     await page.fill('#floatingPassword', loginPw);
@@ -34,6 +42,20 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
       page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
       page.click('#btnLogin')
     ]);
+
+    page.off('dialog', loginDialogHandler);
+
+    if (page.url().includes('login.php') && loginAlertMsg) {
+      throw new Error(`Kstat 로그인 실패 (조사원: ${loginId}): ${loginAlertMsg}`);
+    }
+
+    const loggedUser = await page.evaluate(() => {
+      const signout = document.querySelector('a[href*="logout.php"]');
+      return signout ? signout.innerText.trim() : '';
+    }).catch(() => '');
+    if (loggedUser) {
+      logger.info(`[Kstat 슬롯 스크래퍼] 로그인 확인 성공: "${loggedUser}"`);
+    }
 
     // 2. 관리자 리스트 진입
     logger.info(`[Kstat 슬롯 스크래퍼] 리스트 페이지 이동: ${listUrl}`);

@@ -152,6 +152,34 @@
           </div>
         </div>
 
+        <!-- Kstat 조사원 포털 연동 설정 바 (이름/암호 관리) -->
+        <div class="kstat-auth-panel mb-16">
+          <div class="kstat-auth-left">
+            <span class="kstat-auth-title">
+              <i class="fa-solid fa-id-badge"></i> Kstat 조사원 계정 설정
+            </span>
+            <div class="kstat-auth-field">
+              <label for="input-kstat-account-id" class="kstat-auth-label">이름 (ID):</label>
+              <input type="text" id="input-kstat-account-id" class="figma-input kstat-auth-input" placeholder="예: 가온김영옥, 강영미a" value="가온김영옥" />
+            </div>
+            <div class="kstat-auth-field">
+              <label for="input-kstat-account-pw" class="kstat-auth-label">암호 (PW):</label>
+              <input type="password" id="input-kstat-account-pw" class="figma-input kstat-auth-input" placeholder="1234" value="1234" />
+            </div>
+            <button type="button" id="btn-save-kstat-account" class="btn-pill btn-pill-secondary btn-pill-small" title="현재 캠페인에 Kstat 조사원 로그인 계정 저장">
+              <i class="fa-solid fa-floppy-disk"></i> 계정 저장
+            </button>
+            <a href="https://survey.kstat.co.kr/kstat_survey/inc/login.php" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small" title="새 탭에서 KSTAT 관리자 로그인 사이트 열기">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Kstat 바로가기
+            </a>
+          </div>
+          <div class="kstat-auth-right">
+            <span class="badge-kstat-active-account" id="badge-current-kstat-account">
+              <i class="fa-solid fa-user-check"></i> 연동 계정: <strong>가온김영옥</strong>
+            </span>
+          </div>
+        </div>
+
         <!-- 마켓비즈 직접 검색 토글 (쿼터 미장착 시에만 노출) -->
         <details class="marketbz-direct-details mb-16" id="details-marketbz-direct">
           <summary class="marketbz-direct-summary">
@@ -615,6 +643,21 @@
       <div class="bind-slots-desc">
         케이스탯 관리자 리스트(<code>list.php</code>) URL을 입력하시면, 생성된 슬롯 목록을 1초 만에 전수 스크랩하여 <strong>[본 설문 URL]</strong>과 <strong>[조사원 평가 URL]</strong>을 현재 쿼터 DB에 1:1로 자동 장착합니다.
       </div>
+      <!-- Kstat 로그인 계정 입력 (2열 그리드) -->
+      <div class="bind-slots-grid-2col mb-14">
+        <div class="bind-slots-field">
+          <label class="bind-slots-label" for="input-kstat-login-id">
+            Kstat 조사원 이름 (ID) <span class="text-danger">*</span>
+          </label>
+          <input type="text" id="input-kstat-login-id" class="bind-slots-input font-bold" placeholder="예: 가온김영옥, 강영미a" value="가온김영옥" />
+        </div>
+        <div class="bind-slots-field">
+          <label class="bind-slots-label" for="input-kstat-login-pw">
+            Kstat 로그인 암호 (PW) <span class="text-danger">*</span>
+          </label>
+          <input type="password" id="input-kstat-login-pw" class="bind-slots-input font-bold" placeholder="1234" value="1234" />
+        </div>
+      </div>
       <div class="bind-slots-field">
         <label class="bind-slots-label" for="input-kstat-list-url">
           케이스탯 관리자 리스트 URL (list.php) <span class="text-danger">*</span>
@@ -638,7 +681,7 @@
     </div>
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261019_3"></script>
+  <script type="module" src="survey-detail.js?v=20261019_4"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

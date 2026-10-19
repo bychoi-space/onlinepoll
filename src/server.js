@@ -428,13 +428,18 @@ app.post('/api/campaigns/:id/import-baseline', (req, res) => {
 // [1.5] 케이스탯 슬롯 파싱 및 쿼터 바인딩 API
 // ==========================================
 app.post('/api/kstat/fetch-slots', async (req, res) => {
-  const { listUrl, marketName = '', maxPages = 5 } = req.body;
+  const { listUrl, marketName = '', maxPages = 5, loginId, loginPw } = req.body;
   if (!listUrl) {
     return res.status(400).json({ error: '케이스탯 list.php URL이 필요합니다.' });
   }
 
   try {
-    const result = await scrapeKstatSlots(listUrl, { marketName, maxPages });
+    const result = await scrapeKstatSlots(listUrl, {
+      marketName,
+      maxPages,
+      loginId: loginId ? String(loginId).trim() : (process.env.KSTAT_LOGIN_ID || '가온김영옥'),
+      loginPw: loginPw ? String(loginPw).trim() : (process.env.KSTAT_LOGIN_PW || '1234')
+    });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -447,11 +452,19 @@ app.post('/api/campaigns/:id/bind-kstat-slots', async (req, res) => {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
   }
 
-  const { listUrl, marketName = '', slots: inputSlots } = req.body;
+  const { listUrl, marketName = '', slots: inputSlots, loginId, loginPw } = req.body;
   let slots = inputSlots;
 
+  const effectiveLoginId = (loginId || campaign.kstatLoginId || process.env.KSTAT_LOGIN_ID || '가온김영옥').trim();
+  const effectiveLoginPw = (loginPw || campaign.kstatLoginPw || process.env.KSTAT_LOGIN_PW || '1234').trim();
+
   if (!slots && listUrl) {
-    const scrapeResult = await scrapeKstatSlots(listUrl, { marketName, maxPages: 5 });
+    const scrapeResult = await scrapeKstatSlots(listUrl, {
+      marketName,
+      maxPages: 5,
+      loginId: effectiveLoginId,
+      loginPw: effectiveLoginPw
+    });
     if (!scrapeResult.success) {
       return res.status(500).json({ error: '슬롯 파싱 실패: ' + scrapeResult.error });
     }
@@ -516,10 +529,12 @@ app.post('/api/campaigns/:id/bind-kstat-slots', async (req, res) => {
 
   CampaignStore.updateCampaign(campaign.id, {
     quotaDatabase: quotaDb,
-    kstatListUrl: listUrl || campaign.kstatListUrl
+    kstatListUrl: listUrl || campaign.kstatListUrl,
+    kstatLoginId: effectiveLoginId,
+    kstatLoginPw: effectiveLoginPw
   });
 
-  logger.success(`[Kstat 슬롯 바인딩 완료] 캠페인 "${campaign.title}" ➔ 총 ${boundCount}개 쿼터에 슬롯 바인딩 완료!`);
+  logger.success(`[Kstat 슬롯 바인딩 완료] 캠페인 "${campaign.title}" (조사원: ${effectiveLoginId}) ➔ 총 ${boundCount}개 쿼터에 슬롯 바인딩 완료!`);
   logger.broadcast({
     type: 'QUOTA_UPDATED',
     quotaDatabase: quotaDb
@@ -527,8 +542,9 @@ app.post('/api/campaigns/:id/bind-kstat-slots', async (req, res) => {
 
   res.json({
     success: true,
-    message: `총 ${boundCount}개 쿼터에 케이스탯 슬롯이 성공적으로 바인딩되었습니다.`,
+    message: `총 ${boundCount}개 쿼터에 케이스탯 슬롯 (조사원: ${effectiveLoginId})이 성공적으로 바인딩되었습니다.`,
     boundCount,
+    loginId: effectiveLoginId,
     totalQuotas: quotaDb.length,
     quotaDatabase: quotaDb
   });

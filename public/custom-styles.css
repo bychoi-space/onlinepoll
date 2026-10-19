@@ -5213,5 +5213,93 @@ input[type="range"]::-webkit-slider-thumb:hover {
   padding-top: 16px;
 }
 
+/* Kstat 조사원 포털 연동 계정 바 (STEP 1) */
+.kstat-auth-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #0284c7;
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+
+.kstat-auth-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.kstat-auth-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0369a1;
+  white-space: nowrap;
+}
+
+.kstat-auth-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kstat-auth-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.kstat-auth-input {
+  height: 32px !important;
+  padding: 4px 10px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  width: 120px !important;
+}
+
+.kstat-auth-input:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
+}
+
+.kstat-auth-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge-kstat-active-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #bae6fd;
+  white-space: nowrap;
+}
+
+/* Kstat 슬롯 바인딩 모달 2열 그리드 */
+.bind-slots-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 
 

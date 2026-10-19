@@ -122,6 +122,16 @@ async function initSurveyDetailPage() {
       if (selectSurveyEngine) selectSurveyEngine.value = camp.guidelineConfig.engine || 'kstat_tapi';
     }
 
+    // Kstat 조사원 연동 계정 바인딩
+    const inputKstatAccountId = document.getElementById('input-kstat-account-id');
+    const inputKstatAccountPw = document.getElementById('input-kstat-account-pw');
+    const badgeCurrentKstatAccount = document.getElementById('badge-current-kstat-account');
+    if (inputKstatAccountId) inputKstatAccountId.value = camp.kstatLoginId || '가온김영옥';
+    if (inputKstatAccountPw) inputKstatAccountPw.value = camp.kstatLoginPw || '1234';
+    if (badgeCurrentKstatAccount) {
+      badgeCurrentKstatAccount.innerHTML = `<i class="fa-solid fa-user-check"></i> 연동 계정: <strong>${escapeHtml(camp.kstatLoginId || '가온김영옥')}</strong>`;
+    }
+
     // 버튼 상태 머신 갱신 (1번 검증 완료 및 배치 완료 제어)
     updateButtonStates();
     updateGroupStatsUI();
@@ -2645,20 +2655,67 @@ async function initSurveyDetailPage() {
   }
 
   // 초기 실행 (개별 try-catch로 상호 영향 차단)
+  // Kstat 조사원 계정 설정 저장 제어
+  const btnSaveKstatAccount = document.getElementById('btn-save-kstat-account');
+  const inputKstatAccountId = document.getElementById('input-kstat-account-id');
+  const inputKstatAccountPw = document.getElementById('input-kstat-account-pw');
+  const badgeCurrentKstatAccount = document.getElementById('badge-current-kstat-account');
+
+  if (btnSaveKstatAccount) {
+    btnSaveKstatAccount.addEventListener('click', async () => {
+      const loginId = (inputKstatAccountId?.value || '').trim();
+      const loginPw = (inputKstatAccountPw?.value || '').trim();
+      if (!loginId) {
+        alert('Kstat 조사원 성명(ID)을 입력해주세요.');
+        return;
+      }
+      btnSaveKstatAccount.disabled = true;
+      try {
+        const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kstatLoginId: loginId, kstatLoginPw: loginPw })
+        });
+        if (!res.ok) throw new Error('계정 저장 실패');
+        if (currentCampaign) {
+          currentCampaign.kstatLoginId = loginId;
+          currentCampaign.kstatLoginPw = loginPw;
+        }
+        if (badgeCurrentKstatAccount) {
+          badgeCurrentKstatAccount.innerHTML = `<i class="fa-solid fa-user-check"></i> 연동 계정: <strong>${escapeHtml(loginId)}</strong>`;
+        }
+        appendLog('success', `✓ Kstat 조사원 계정(${loginId})이 저장되었습니다.`);
+        alert(`✓ Kstat 조사원 계정(${loginId})이 성공적으로 저장되었습니다.`);
+      } catch (err) {
+        alert('계정 저장 오류: ' + err.message);
+      } finally {
+        btnSaveKstatAccount.disabled = false;
+      }
+    });
+  }
+
   // Kstat 슬롯 바인딩 모달 제어
   const btnOpenBindSlots = document.getElementById('btn-open-bind-slots');
   const modalBindSlots = document.getElementById('modal-bind-slots');
   const btnCloseBindModal = document.getElementById('btn-close-bind-modal');
   const btnCancelBindModal = document.getElementById('btn-cancel-bind-modal');
   const btnSubmitBindSlots = document.getElementById('btn-submit-bind-slots');
+  const inputKstatLoginId = document.getElementById('input-kstat-login-id');
+  const inputKstatLoginPw = document.getElementById('input-kstat-login-pw');
   const inputKstatListUrl = document.getElementById('input-kstat-list-url');
   const inputKstatMarketFilter = document.getElementById('input-kstat-market-filter');
 
   if (btnOpenBindSlots && modalBindSlots) {
     btnOpenBindSlots.addEventListener('click', () => {
       modalBindSlots.classList.remove('hidden');
+      if (inputKstatLoginId) {
+        inputKstatLoginId.value = inputKstatAccountId?.value || currentCampaign?.kstatLoginId || '가온김영옥';
+      }
+      if (inputKstatLoginPw) {
+        inputKstatLoginPw.value = inputKstatAccountPw?.value || currentCampaign?.kstatLoginPw || '1234';
+      }
       if (inputKstatListUrl && !inputKstatListUrl.value) {
-        inputKstatListUrl.value = 'https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php?pridSel=2026070802&josa=tapi';
+        inputKstatListUrl.value = currentCampaign?.kstatListUrl || 'https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php?pridSel=2026070802&josa=tapi';
       }
       if (inputKstatMarketFilter && !inputKstatMarketFilter.value) {
         inputKstatMarketFilter.value = '풍납시장';
@@ -2671,6 +2728,8 @@ async function initSurveyDetailPage() {
 
     if (btnSubmitBindSlots) {
       btnSubmitBindSlots.addEventListener('click', async () => {
+        const loginId = (inputKstatLoginId?.value || '').trim() || '가온김영옥';
+        const loginPw = (inputKstatLoginPw?.value || '').trim() || '1234';
         const listUrl = (inputKstatListUrl?.value || '').trim();
         const marketName = (inputKstatMarketFilter?.value || '').trim();
         if (!listUrl) {
@@ -2682,15 +2741,21 @@ async function initSurveyDetailPage() {
         btnSubmitBindSlots.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 슬롯 스크랩 및 바인딩 중...';
 
         try {
-          appendLog('info', `[Kstat 슬롯] ${listUrl} (시장: ${marketName || '전체'}) 스크랩 및 바인딩 시작...`);
+          appendLog('info', `[Kstat 슬롯] ${listUrl} (조사원: ${loginId}, 시장: ${marketName || '전체'}) 스크랩 및 바인딩 시작...`);
           const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/bind-kstat-slots`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ listUrl, marketName })
+            body: JSON.stringify({ listUrl, marketName, loginId, loginPw })
           });
 
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || '슬롯 바인딩 실패');
+
+          if (inputKstatAccountId) inputKstatAccountId.value = loginId;
+          if (inputKstatAccountPw) inputKstatAccountPw.value = loginPw;
+          if (badgeCurrentKstatAccount) {
+            badgeCurrentKstatAccount.innerHTML = `<i class="fa-solid fa-user-check"></i> 연동 계정: <strong>${escapeHtml(loginId)}</strong>`;
+          }
 
           appendLog('success', `✓ ${data.message}`);
           alert(`✓ ${data.message}`);
