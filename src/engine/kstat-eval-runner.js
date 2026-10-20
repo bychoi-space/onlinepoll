@@ -70,6 +70,24 @@ function calculateJitterRating(baseRating, seedNum, offset = 0) {
 }
 
 /**
+ * [H3] 고객응대 서비스 문항 전용 랜덤 선택기
+ * 규칙: [H3] 문항 - 3.보통 4.양호. 5.매우양호 항목을 랜덤하게 선택
+ * @param {string|number} [userChoice] - 사용자 설정값 (선택)
+ * @returns {string} '3', '4', '5' 중 하나
+ */
+function getRandomH3Rating(userChoice = null) {
+  const allowed = ['3', '4', '5']; // 3: 보통, 4: 양호, 5: 매우양호
+  const str = String(userChoice || '').trim();
+  // 사용자가 명시적으로 3, 4, 5 고정을 선택한 경우 (random_345 또는 미설정이 아닐 때)
+  if (str && allowed.includes(str) && !str.includes('rand') && str !== 'auto') {
+    return str;
+  }
+  // 기본 대전제: 3.보통, 4.양호, 5.매우양호 중 균등 무작위(Random) 선택
+  const idx = Math.floor(Math.random() * allowed.length);
+  return allowed[idx];
+}
+
+/**
  * 조사원 평가항목 설문(P26042401BA) 자동 실행
  * 
  * @param {object} params
@@ -188,15 +206,15 @@ export async function runKstatEvaluation({
     let h2_2_val = (evalCriteria.h2_2 === '1' || evalCriteria.h2_2 === 'yes') ? '1' : '2'; // 스토리텔링 POP
     let h2_4_val = String(evalCriteria.h2_4 || (isFood ? '3' : '1')); // 밀키트/소포장 진열비중 (1:없음, 3:10~30%)
 
-    // H3 (고객 응대서비스 수준: 4문항 5점 척도)
+    // H3 (고객 응대서비스 수준: [H3] 문항 - 3.보통 4.양호. 5.매우양호 항목을 랜덤하게 선택)
     const h3Ratings = {
-      H3_1: calculateJitterRating(evalCriteria.h3_1 || 5, seedNum, 6),
-      H3_2: calculateJitterRating(evalCriteria.h3_2 || 4, seedNum, 7),
-      H3_3: calculateJitterRating(evalCriteria.h3_3 || 5, seedNum, 8),
-      H3_4: calculateJitterRating(evalCriteria.h3_4 || 5, seedNum, 9)
+      H3_1: getRandomH3Rating(evalCriteria.h3_1 || evalCriteria.evalH3_1),
+      H3_2: getRandomH3Rating(evalCriteria.h3_2 || evalCriteria.evalH3_2),
+      H3_3: getRandomH3Rating(evalCriteria.h3_3 || evalCriteria.evalH3_3),
+      H3_4: getRandomH3Rating(evalCriteria.h3_4 || evalCriteria.evalH3_4)
     };
 
-    logger.info(`[조사원 평가 주입] H1 위생: [${Object.values(h1Ratings).join(',')}] / H2 현황: [${h2_1_val},${h2_2_val},${h2_3_val},비중:${h2_4_val}] / H3 응대: [${Object.values(h3Ratings).join(',')}]`);
+    logger.info(`[조사원 평가 주입] H1 위생: [${Object.values(h1Ratings).join(',')}] / H2 현황: [${h2_1_val},${h2_2_val},${h2_3_val},비중:${h2_4_val}] / H3 응대(3:보통/4:양호/5:매우양호 랜덤): [${Object.entries(h3Ratings).map(([k, v]) => `${k}=${v}`).join(', ')}]`);
 
     // 4. frame_H1 입력
     for (const [key, val] of Object.entries(h1Ratings)) {
@@ -211,9 +229,22 @@ export async function runKstatEvaluation({
     await selectKstatRadio(frameH2, 'H2_4', h2_4_val);
     await page.waitForTimeout(150);
 
-    // 6. frame_H3 입력
-    for (const [key, val] of Object.entries(h3Ratings)) {
-      await selectKstatRadio(frameH3, key, val);
+    // 6. frame_H3 입력 ([H3] 문항 - 3.보통 4.양호. 5.매우양호 항목을 랜덤하게 선택)
+    const detectedH3Keys = await frameH3.evaluate(() => {
+      const radios = Array.from(document.querySelectorAll('input[type="radio"]'));
+      const names = Array.from(new Set(radios.map(r => r.name).filter(Boolean)));
+      return names;
+    }).catch(() => []);
+
+    const targetH3Keys = (detectedH3Keys && detectedH3Keys.length > 0)
+      ? detectedH3Keys
+      : ['H3_1', 'H3_2', 'H3_3', 'H3_4'];
+
+    for (const key of targetH3Keys) {
+      if (!h3Ratings[key]) {
+        h3Ratings[key] = getRandomH3Rating(evalCriteria[key.toLowerCase()] || evalCriteria[`eval${key}`]);
+      }
+      await selectKstatRadio(frameH3, key, h3Ratings[key]);
       await page.waitForTimeout(100);
     }
 

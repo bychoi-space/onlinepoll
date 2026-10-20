@@ -113,6 +113,10 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
   - `G1=1 & G1A=1` -> spawns **`G1AA.asp`** (`1`=친인척 승계, `2`=타인 양도).
   - `G2` -> G2 문항 현금영수증 발행 가능 비중(`G2_2_NOTE`): 무조건 5% 단위 입력 (30%, 35%, 40%, 45%, 50%, 55% 등).
 
+### 3.4 Surveyor Evaluation Engine & [H3] Random Selection Rule (`src/engine/kstat-eval-runner.js`)
+- **Single Page with 3 Sub-Frames**: P26042401BA / P1.asp contains `H1.asp` (청결위생 5문항 5점 척도), `H2.asp` (점포현황 4문항), and `H3.asp` (고객응대 서비스 4문항 5점 척도).
+- **[H3] 문항 응답 규칙**: 모든 [H3] 문항(`H3_1` ~ `H3_4` 및 동적 감지 라디오 그룹)은 `3. 보통`, `4. 양호`, `5. 매우양호` 항목 중에서 균등하게 무작위(Random) 선택 (`getRandomH3Rating`).
+
 ## 4. Quota Address Auto-Healing & Enrichment
 - `hasCompleteAddress(addr, marketName)`: Validates road numbers (`(?:로|길)\s*[\d-]+`), building names with numbers, or valid lot numbers, while filtering out unit-only (`101호`), floor-only (`1층`), or brand numbers (`59피자`).
 - `searchAddressByCompany({ companyName, marketName, address })`: Maps market names to legitimate administrative districts (e.g. `남양주장현전통시장` -> `진접읍`), searches Naver Place/Search snippets with town matching, and automatically updates both JSON and Excel formats.

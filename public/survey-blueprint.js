@@ -104,10 +104,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     evalH2_2: 'no',
     evalH2_3: 'auto',
     evalH2_4: 3,
-    evalH3_1: 5,
-    evalH3_2: 4,
-    evalH3_3: 5,
-    evalH3_4: 5
+    evalH3_1: 'random_345',
+    evalH3_2: 'random_345',
+    evalH3_3: 'random_345',
+    evalH3_4: 'random_345'
   };
 
   function updateGroupStatsUI() {
@@ -897,28 +897,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           </select>
         `;
       }
-      // [조사원 평가 H3] 고객응대 서비스 4종
+      // [조사원 평가 H3] 고객응대 서비스 4종 (3.보통, 4.양호, 5.매우양호 랜덤 분산 규칙)
       case 'H3_1':
       case 'H3_2':
       case 'H3_3':
       case 'H3_4': {
         const k = `eval${fieldId}`;
-        const curVal = currentBaseline[k] ?? (fieldId === 'H3_2' ? 4 : 5);
-        const getRatingLabel = (v) => {
-          switch (Number(v)) {
-            case 5: return '매우 양호';
-            case 4: return '양호';
-            case 3: return '보통';
-            case 2: return '불량/미흡';
-            case 1: return '매우 불량';
-            default: return '';
-          }
-        };
+        const curVal = currentBaseline[k] || 'random_345';
         return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-eval-${fieldId}" min="1" max="5" step="1" value="${curVal}" />
-            <span class="baseline-slider-val" id="val-eval-${fieldId}">${curVal}점 (${getRatingLabel(curVal)})</span>
-          </div>
+          <select class="baseline-select" id="select-eval-${fieldId}">
+            <option value="random_345" ${curVal === 'random_345' || curVal === 'random' || !curVal ? 'selected' : ''}>🎲 3.보통 · 4.양호 · 5.매우양호 랜덤 [권장 규칙]</option>
+            <option value="5" ${String(curVal) === '5' ? 'selected' : ''}>5점 (매우 양호 고정)</option>
+            <option value="4" ${String(curVal) === '4' ? 'selected' : ''}>4점 (양호 고정)</option>
+            <option value="3" ${String(curVal) === '3' ? 'selected' : ''}>3점 (보통 고정)</option>
+          </select>
         `;
       }
       default:
@@ -1097,7 +1089,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     };
 
-    ['H1_1', 'H1_2', 'H1_3', 'H1_4', 'H1_5', 'H3_1', 'H3_2', 'H3_3', 'H3_4'].forEach((fid) => {
+    ['H1_1', 'H1_2', 'H1_3', 'H1_4', 'H1_5'].forEach((fid) => {
       const slider = document.getElementById(`slider-eval-${fid}`);
       const valEl = document.getElementById(`val-eval-${fid}`);
       if (slider && valEl) {
@@ -1119,6 +1111,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     bindSelect('select-eval-H2_2', 'evalH2_2');
     bindSelect('select-eval-H2_3', 'evalH2_3');
     bindSelect('select-eval-H2_4', 'evalH2_4');
+
+    // [조사원 평가 H3 셀렉트 바인딩 - 3.보통/4.양호/5.매우양호 랜덤 규칙]
+    ['H3_1', 'H3_2', 'H3_3', 'H3_4'].forEach((fid) => {
+      bindSelect(`select-eval-${fid}`, `eval${fid}`);
+    });
   }
 
   function markUnsaved() {

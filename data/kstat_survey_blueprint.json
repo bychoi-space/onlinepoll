@@ -45,7 +45,20 @@
       2,
       10
     ],
-    "salesMarginAvg": 25
+    "salesMarginAvg": 25,
+    "evalH1_1": 4,
+    "evalH1_2": 4,
+    "evalH1_3": 4,
+    "evalH1_4": 4,
+    "evalH1_5": 4,
+    "evalH2_1": "yes",
+    "evalH2_2": "no",
+    "evalH2_3": "auto",
+    "evalH2_4": 3,
+    "evalH3_1": "random_345",
+    "evalH3_2": "random_345",
+    "evalH3_3": "random_345",
+    "evalH3_4": "random_345"
   },
   "stages": [
     {
@@ -752,6 +765,121 @@
           "type": "action",
           "value": "설문 완료",
           "note": "최종 완료 트랜잭션"
+        }
+      ]
+    },
+    {
+      "step": "EVAL",
+      "stepNum": 17,
+      "aspFile": "P1.asp (조사원평가)",
+      "title": "조사원 평가항목 작성 (위생 · 현황 · 고객응대)",
+      "category": "EVALUATION",
+      "badge": "TUNABLE_JITTER",
+      "description": "Kstat P26042401BA 조사원 현장 방문 실태평가 3대 영역 (청결위생 5문항, 점포현황 4문항, 응대서비스 4문항). [H3] 문항은 3.보통/4.양호/5.매우양호 항목을 랜덤하게 선택합니다.",
+      "fields": [
+        {
+          "id": "H1_1",
+          "label": "개별 점포 내부 청결 및 위생",
+          "type": "tunable",
+          "baseline": "4 점",
+          "range": "1~5 점",
+          "note": "바닥/매대/집기 위생 상태"
+        },
+        {
+          "id": "H1_2",
+          "label": "고객선(점포진열선) 준수 상태",
+          "type": "tunable",
+          "baseline": "4 점",
+          "range": "1~5 점",
+          "note": "통로 침범 없는 정돈 상태"
+        },
+        {
+          "id": "H1_3",
+          "label": "취급 상품 품질 수준",
+          "type": "tunable",
+          "baseline": "4 점",
+          "range": "1~5 점",
+          "note": "신선도 및 포장 상태"
+        },
+        {
+          "id": "H1_4",
+          "label": "매장 연출 및 상품 진열 상태",
+          "type": "tunable",
+          "baseline": "4 점",
+          "range": "1~5 점",
+          "note": "전용 디스플레이 및 연출"
+        },
+        {
+          "id": "H1_5",
+          "label": "점포 외관 및 조명 정비 상태",
+          "type": "tunable",
+          "baseline": "4 점",
+          "range": "1~5 점",
+          "note": "간판, 매장 내외부 조도"
+        },
+        {
+          "id": "H2_1",
+          "label": "산지직거래 / 품질 표지물 게시 여부",
+          "type": "tunable",
+          "baseline": "예",
+          "range": "예 / 아니오",
+          "note": "원산지 및 품질 표지물"
+        },
+        {
+          "id": "H2_2",
+          "label": "점포 스토리텔링 POP / 감성 간판 부착",
+          "type": "tunable",
+          "baseline": "아니오",
+          "range": "예 / 아니오",
+          "note": "특화 홍보물 부착 여부"
+        },
+        {
+          "id": "H2_3",
+          "label": "시식·체험 코너 또는 맞춤 손질 안내",
+          "type": "tunable",
+          "baseline": "업종별 자동",
+          "range": "자동 / 예 / 아니오",
+          "note": "식품/수산 1(예), 기타 2(아니오)"
+        },
+        {
+          "id": "H2_4",
+          "label": "소포장·전처리·밀키트 상품 진열 비중",
+          "type": "tunable",
+          "baseline": "10~30% 미만",
+          "range": "0% ~ 70%이상",
+          "note": "간편 상품 진열 비중 (1~6)"
+        },
+        {
+          "id": "H3_1",
+          "label": "고객 맞이 인사 및 첫인상 태도",
+          "type": "tunable",
+          "baseline": "3.보통 / 4.양호 / 5.매우양호 랜덤",
+          "range": "3~5 점 랜덤",
+          "note": "[H3 규칙] 3.보통/4.양호/5.매우양호 랜덤 선택"
+        },
+        {
+          "id": "H3_2",
+          "label": "상품 정보 제공 및 추천 친절도",
+          "type": "tunable",
+          "baseline": "3.보통 / 4.양호 / 5.매우양호 랜덤",
+          "range": "3~5 점 랜덤",
+          "note": "[H3 규칙] 3.보통/4.양호/5.매우양호 랜덤 선택"
+        },
+        {
+          "id": "H3_3",
+          "label": "판매 권유 및 호객 적절성",
+          "type": "tunable",
+          "baseline": "3.보통 / 4.양호 / 5.매우양호 랜덤",
+          "range": "3~5 점 랜덤",
+          "note": "[H3 규칙] 3.보통/4.양호/5.매우양호 랜덤 선택"
+        },
+        {
+          "id": "H3_4",
+          "label": "결제 편의 및 배웅 매너",
+          "type": "tunable",
+          "baseline": "3.보통 / 4.양호 / 5.매우양호 랜덤",
+          "range": "3~5 점 랜덤",
+          "note": "[H3 규칙] 3.보통/4.양호/5.매우양호 랜덤 선택"
         }
       ]
     }
