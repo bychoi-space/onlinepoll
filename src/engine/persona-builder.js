@@ -177,6 +177,10 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   let age;
   if (rawAge !== undefined && rawAge !== null && !isNaN(parseInt(rawAge, 10)) && parseInt(rawAge, 10) > 0) {
     age = String(parseInt(rawAge, 10));
+  } else if (mb.defaultCeoAgeMin !== undefined && mb.defaultCeoAgeMax !== undefined) {
+    const minA = Math.max(25, parseInt(mb.defaultCeoAgeMin, 10));
+    const maxA = Math.max(minA, parseInt(mb.defaultCeoAgeMax, 10));
+    age = String(randBetween(minA, maxA));
   } else if (mb.defaultCeoAge !== undefined && !isNaN(parseInt(mb.defaultCeoAge, 10))) {
     const baseAge = parseInt(mb.defaultCeoAge, 10);
     age = String(Math.max(30, Math.min(75, baseAge + randBetween(-2, 2))));
@@ -189,14 +193,29 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const scaleVariance = ((quotaIndex * 7 + 13) % 10) / 10; // 0.0 ~ 0.9 점포별 균등 자연 분산
   const sizeFactor = isAutoEmp ? (0.70 + scaleVariance * 0.65) : 1.0; // 0.70 ~ 1.35 스케일링 계수
 
-  const basePyeong = mb.storePyeong !== undefined ? parseInt(mb.storePyeong, 10) : 14;
-  const areaPyeong = Math.max(5, Math.min(50, Math.round(basePyeong * (0.8 + sizeFactor * 0.2) + randBetween(-1, 1))));
-  const areaSquareMeter = Math.round(areaPyeong * 3.3058);
+  let areaSquareMeter, areaPyeong;
+  if (mb.storeSqmMin !== undefined && mb.storeSqmMax !== undefined) {
+    const minSqm = Math.max(10, parseInt(mb.storeSqmMin, 10));
+    const maxSqm = Math.max(minSqm, parseInt(mb.storeSqmMax, 10));
+    areaSquareMeter = randBetween(minSqm, maxSqm);
+    areaPyeong = Math.max(1, Math.round(areaSquareMeter / 3.3058));
+  } else {
+    const basePyeong = mb.storePyeong !== undefined ? parseInt(mb.storePyeong, 10) : 14;
+    areaPyeong = Math.max(5, Math.min(50, Math.round(basePyeong * (0.8 + sizeFactor * 0.2) + randBetween(-1, 1))));
+    areaSquareMeter = Math.round(areaPyeong * 3.3058);
+  }
 
   // 4. 매출액 및 영업이익 (P3, P4)
-  const baseDailySales = mb.dailySales !== undefined ? parseInt(mb.dailySales, 10) : 65;
-  const scaledDaily = Math.round(baseDailySales * sizeFactor + randBetween(-4, 4));
-  const dailySales = Math.max(20, Math.min(220, scaledDaily));
+  let dailySales;
+  if (mb.dailySalesMin !== undefined && mb.dailySalesMax !== undefined) {
+    const minDaily = Math.max(5, parseInt(mb.dailySalesMin, 10));
+    const maxDaily = Math.max(minDaily, parseInt(mb.dailySalesMax, 10));
+    dailySales = randBetween(minDaily, maxDaily);
+  } else {
+    const baseDailySales = mb.dailySales !== undefined ? parseInt(mb.dailySales, 10) : 65;
+    const scaledDaily = Math.round(baseDailySales * sizeFactor + randBetween(-4, 4));
+    dailySales = Math.max(20, Math.min(220, scaledDaily));
+  }
 
   // [규칙 5] 일평균 매출액 라디오 구간 매핑 (B1AA_1_1 ~ B1AA_1_11)
   // 1: 5만원 미만, 2: 5~10, 3: 10~15, 4: 15~20, 5: 20~25, 6: 25~30, 7: 30~50, 8: 50~70, 9: 70~100, 10: 100~150, 11: 150만원 이상
@@ -217,13 +236,30 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const scaledAnnual = Math.round(baseAnnualSales * sizeFactor + randBetween(-6, 6));
   const annualSales = Math.max(40, Math.min(500, scaledAnnual));
 
-  // 5. 종업원수 산출 (P2 A10) - [규칙] 매출 연동 자동 고용 규칙
-  // 매출이 높으면 종업원수도 올리고, 매출이 낮으면 0명이거나 낮은 숫자로 자동 스케일링
+  // 5. 종업원수 산출 (P2 A10) - [규칙] 매출 연동 자동 고용 규칙 또는 레인지 설정
   let employeeRegular = 0;
   let employeeTemp = 0;
   let employeeFamily = 1;
 
-  if (isAutoEmp) {
+  const hasExplicitEmployeeRanges = (
+    mb.employeeFamilyMin !== undefined && mb.employeeFamilyMax !== undefined &&
+    mb.employeeRegularMin !== undefined && mb.employeeRegularMax !== undefined &&
+    mb.employeeTempMin !== undefined && mb.employeeTempMax !== undefined
+  );
+
+  if (hasExplicitEmployeeRanges) {
+    const minFam = Math.max(0, parseInt(mb.employeeFamilyMin, 10));
+    const maxFam = Math.max(minFam, parseInt(mb.employeeFamilyMax, 10));
+    employeeFamily = randBetween(minFam, maxFam);
+
+    const minReg = Math.max(0, parseInt(mb.employeeRegularMin, 10));
+    const maxReg = Math.max(minReg, parseInt(mb.employeeRegularMax, 10));
+    employeeRegular = randBetween(minReg, maxReg);
+
+    const minTmp = Math.max(0, parseInt(mb.employeeTempMin, 10));
+    const maxTmp = Math.max(minTmp, parseInt(mb.employeeTempMax, 10));
+    employeeTemp = randBetween(minTmp, maxTmp);
+  } else if (isAutoEmp) {
     const baseRegular = mb.employeeRegular !== undefined ? parseInt(mb.employeeRegular, 10) : 0;
     const baseTemp = mb.employeeTemp !== undefined ? parseInt(mb.employeeTemp, 10) : 0;
     const baseFamily = mb.employeeFamily !== undefined ? parseInt(mb.employeeFamily, 10) : 1;
@@ -565,9 +601,16 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     onnuriJoinYear = Math.max(openYearNum, Math.min(2024, openYearNum + randBetween(0, 1)));
   }
   const onnuriSalesRatio = String(payOnnuri);
-  // [규칙 6] B5-3 온누리상품권 월평균 이용 고객 수: 2~10명 사이 랜덤
-  const onnuriBaseCust = mb.onnuriCustomerAvg !== undefined ? parseInt(mb.onnuriCustomerAvg, 10) : 5;
-  const onnuriMonthlyCustomers = String(Math.max(2, Math.min(20, (isNaN(onnuriBaseCust) ? 5 : onnuriBaseCust) + randBetween(-1, 1))));
+  // [규칙 6] B5-3 온누리상품권 월평균 이용 고객 수
+  let onnuriMonthlyCustomers;
+  if (mb.onnuriCustomersMin !== undefined && mb.onnuriCustomersMax !== undefined) {
+    const minCust = Math.max(1, parseInt(mb.onnuriCustomersMin, 10));
+    const maxCust = Math.max(minCust, parseInt(mb.onnuriCustomersMax, 10));
+    onnuriMonthlyCustomers = String(randBetween(minCust, maxCust));
+  } else {
+    const onnuriBaseCust = mb.onnuriCustomerAvg !== undefined ? parseInt(mb.onnuriCustomerAvg, 10) : 5;
+    onnuriMonthlyCustomers = String(Math.max(2, Math.min(20, (isNaN(onnuriBaseCust) ? 5 : onnuriBaseCust) + randBetween(-1, 1))));
+  }
 
   // B5A_1 지류상품권 가맹 여부 (기본 가맹, 사용자 설정 지원)
   let onnuriPaperSelector = '#B5A_1_1';
@@ -605,21 +648,39 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const rentRate = mb.rentAdoptionRate !== undefined ? (mb.rentAdoptionRate / 100) : 0.8;
   const isRent = rng() < rentRate;
 
-  // [규칙 3] 보증금: 무조건 천만원 단위 (1000, 2000, 3000, 4000, 5000 등 1000의 배수)
-  const baseDep = mb.depositAmount !== undefined ? parseInt(mb.depositAmount, 10) : 2000;
-  let depNum = Math.round(baseDep / 1000) * 1000;
-  if (depNum < 1000) depNum = 1000;
-  const depStep = rotate([-1000, 0, 1000, 0, 2000, -1000, 0, 1000], quotaIndex);
-  depNum = Math.max(1000, depNum + depStep);
-  const deposit = String(depNum);
+  // [규칙 3] 보증금
+  let deposit;
+  if (mb.depositMin !== undefined && mb.depositMax !== undefined) {
+    const minDep = Math.max(500, parseInt(mb.depositMin, 10));
+    const maxDep = Math.max(minDep, parseInt(mb.depositMax, 10));
+    const rawDep = randBetween(minDep, maxDep);
+    let depNum = Math.round(rawDep / 500) * 500;
+    deposit = String(Math.max(500, depNum));
+  } else {
+    const baseDep = mb.depositAmount !== undefined ? parseInt(mb.depositAmount, 10) : 2000;
+    let depNum = Math.round(baseDep / 1000) * 1000;
+    if (depNum < 1000) depNum = 1000;
+    const depStep = rotate([-1000, 0, 1000, 0, 2000, -1000, 0, 1000], quotaIndex);
+    depNum = Math.max(1000, depNum + depStep);
+    deposit = String(depNum);
+  }
 
-  // [규칙 4] 월세: 무조건 5만원 단위 (50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110 등 5의 배수)
-  const baseRentAmt = mb.monthlyRentAmount !== undefined ? parseInt(mb.monthlyRentAmount, 10) : 110;
-  let rentNum = Math.round(baseRentAmt / 5) * 5;
-  const rentStep = rotate([-10, -5, 0, 5, 10, -5, 0, 15, -10, 5], quotaIndex);
-  rentNum = Math.round((rentNum + rentStep) / 5) * 5;
-  rentNum = Math.max(30, rentNum); // 최소 30만원
-  const monthlyRent = String(rentNum);
+  // [규칙 4] 월세
+  let monthlyRent;
+  if (mb.monthlyRentMin !== undefined && mb.monthlyRentMax !== undefined) {
+    const minRent = Math.max(10, parseInt(mb.monthlyRentMin, 10));
+    const maxRent = Math.max(minRent, parseInt(mb.monthlyRentMax, 10));
+    const rawRent = randBetween(minRent, maxRent);
+    let rentNum = Math.round(rawRent / 5) * 5;
+    monthlyRent = String(Math.max(10, rentNum));
+  } else {
+    const baseRentAmt = mb.monthlyRentAmount !== undefined ? parseInt(mb.monthlyRentAmount, 10) : 110;
+    let rentNum = Math.round(baseRentAmt / 5) * 5;
+    const rentStep = rotate([-10, -5, 0, 5, 10, -5, 0, 15, -10, 5], quotaIndex);
+    rentNum = Math.round((rentNum + rentStep) / 5) * 5;
+    rentNum = Math.max(30, rentNum); // 최소 30만원
+    monthlyRent = String(rentNum);
+  }
 
   let rentTrendSelector = '#D1D_3';
   if (mb.rentTrend === 'rotation' || mb.rotationMode) {
@@ -691,21 +752,42 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   // 10. 부채 및 자금 현황 (P11)
   const debtRate = mb.debtAdoptionRate !== undefined ? (mb.debtAdoptionRate / 100) : 0.45;
   const hasDebt = rng() < debtRate;
-  const debtAvg = mb.debtAvgAmount !== undefined ? parseInt(mb.debtAvgAmount, 10) : 2500;
-  const debtAmount = String(Math.max(500, debtAvg + randBetween(-300, 500)));
+  let debtAmount;
+  if (mb.debtAmountMin !== undefined && mb.debtAmountMax !== undefined) {
+    const minDebt = Math.max(100, parseInt(mb.debtAmountMin, 10));
+    const maxDebt = Math.max(minDebt, parseInt(mb.debtAmountMax, 10));
+    const rawDebt = randBetween(minDebt, maxDebt);
+    const debtNum = Math.round(rawDebt / 100) * 100;
+    debtAmount = String(Math.max(100, debtNum));
+  } else {
+    const debtAvg = mb.debtAvgAmount !== undefined ? parseInt(mb.debtAvgAmount, 10) : 2500;
+    debtAmount = String(Math.max(500, debtAvg + randBetween(-300, 500)));
+  }
 
   // 11. 향후 운영 계획 (P14)
-  let plannedYears = String(mb.plannedYears || 8);
-  if (mb.plannedYears === 'rotation' || mb.rotationMode) {
+  let plannedYears;
+  if (mb.plannedYearsMin !== undefined && mb.plannedYearsMax !== undefined) {
+    const minY = Math.max(1, parseInt(mb.plannedYearsMin, 10));
+    const maxY = Math.max(minY, parseInt(mb.plannedYearsMax, 10));
+    plannedYears = String(randBetween(minY, maxY));
+  } else if (mb.plannedYears === 'rotation' || mb.rotationMode) {
     plannedYears = String(rotate([5, 8, 10, 7, 12, 6], quotaIndex));
+  } else {
+    plannedYears = String(mb.plannedYears || 8);
   }
-  // [규칙 G2] 현금영수증 발행 가능 비중: 무조건 5% 단위 (30%, 35%, 40%, 45%, 50%, 55%, 60% 등)
-  const baseReceipt = mb.cashReceiptRatio !== undefined ? parseInt(mb.cashReceiptRatio, 10) : 40;
-  const receiptPool = [35, 40, 45, 50, 30, 45, 55, 35, 40, 50];
+
+  // [규칙 G2] 현금영수증 발행 가능 비중: 무조건 5% 단위
   let receiptRateNum;
-  if (mb.cashReceiptRatio !== undefined && !mb.rotationMode) {
+  if (mb.cashReceiptRatioMin !== undefined && mb.cashReceiptRatioMax !== undefined) {
+    const minCr = Math.max(0, parseInt(mb.cashReceiptRatioMin, 10));
+    const maxCr = Math.max(minCr, parseInt(mb.cashReceiptRatioMax, 10));
+    const rawCr = randBetween(minCr, maxCr);
+    receiptRateNum = Math.round(rawCr / 5) * 5;
+  } else if (mb.cashReceiptRatio !== undefined && !mb.rotationMode) {
+    const baseReceipt = parseInt(mb.cashReceiptRatio, 10) || 40;
     receiptRateNum = Math.max(20, Math.min(80, Math.round(baseReceipt / 5) * 5));
   } else {
+    const receiptPool = [35, 40, 45, 50, 30, 45, 55, 35, 40, 50];
     receiptRateNum = rotate(receiptPool, quotaIndex);
   }
   const cashReceiptRatio = String(receiptRateNum);

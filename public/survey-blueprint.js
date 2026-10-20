@@ -52,10 +52,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentBaseline = {
     storePyeong: 14,
     storeSqm: 46,
+    storeSqmMin: 20,
+    storeSqmMax: 65,
     employeeFamily: 1,
+    employeeFamilyMin: 0,
+    employeeFamilyMax: 2,
     employeeRegular: 0,
+    employeeRegularMin: 0,
+    employeeRegularMax: 2,
     employeeTemp: 0,
+    employeeTempMin: 0,
+    employeeTempMax: 1,
     dailySales: 65,
+    dailySalesMin: 30,
+    dailySalesMax: 80,
     annualSales: 180,
     operatingMonths: 12,
     quarterPattern: 'even',
@@ -74,6 +84,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     onnuriPaperRatio: 35,
     onnuriDigitalRatio: 65,
     cashReceiptRatio: 40,
+    cashReceiptRatioMin: 40,
+    cashReceiptRatioMax: 80,
     costTaxRatio: 10,
     costLaborRatio: 25,
     costRentRatio: 20,
@@ -81,6 +93,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     onnuriPaperMember: 'yes',
     onnuriMobileMember: 'no',
     onnuriCustomerAvg: 5,
+    onnuriCustomersMin: 3,
+    onnuriCustomersMax: 12,
     onnuriSatisfaction: 'good',
     deliveryFoodAdoption: 75,
     deliverySalesRatio: 25,
@@ -91,10 +105,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     priceTagCompliance: 80,
     rentAdoptionRate: 80,
     depositAmount: 2000,
+    depositMin: 1000,
+    depositMax: 3000,
     monthlyRentAmount: 110,
+    monthlyRentMin: 60,
+    monthlyRentMax: 180,
     rentTrend: 'freeze',
     debtAdoptionRate: 45,
     debtAvgAmount: 2500,
+    debtAmountMin: 1000,
+    debtAmountMax: 5000,
     fireInsurance: 'yes',
     liabilityInsurance: 'yes',
     issuePriority: 'standard',
@@ -102,11 +122,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     futurePlan: 'maintain',
     successionPlan: 'none',
     plannedYears: 8,
+    plannedYearsMin: 3,
+    plannedYearsMax: 12,
     rotationMode: false,
     empSalesLink: 'auto',
     respondentRole: 'owner',
     defaultCeoGender: 'auto',
     defaultCeoAge: 52,
+    defaultCeoAgeMin: 45,
+    defaultCeoAgeMax: 65,
     bizRegType: 'individual',
     taxType: 'general',
     creditCardMember: 'yes',
@@ -115,6 +139,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     privacyAgree: 'yes',
     // 조사원 평가 마스터 기준점 기본값
     evalH1_1: 4,
+    evalH1_1_Min: 3,
+    evalH1_1_Max: 5,
+    evalH1_2: 4,
+    evalH1_2_Min: 3,
+    evalH1_2_Max: 5,
+    evalH1_3: 4,
+    evalH1_3_Min: 3,
+    evalH1_3_Max: 5,
+    evalH1_4: 4,
+    evalH1_4_Min: 3,
+    evalH1_4_Max: 5,
+    evalH1_5: 4,
+    evalH1_5_Min: 3,
+    evalH1_5_Max: 5,
     evalH1_2: 4,
     evalH1_3: 4,
     evalH1_4: 4,
@@ -407,6 +445,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
   }
 
+  function renderDualRangeControl(idPrefix, minKey, maxKey, minBound, maxBound, step, defaultMin, defaultMax, unit) {
+    const curMin = currentBaseline[minKey] !== undefined ? currentBaseline[minKey] : defaultMin;
+    const curMax = currentBaseline[maxKey] !== undefined ? currentBaseline[maxKey] : defaultMax;
+    const minPercent = Math.max(0, Math.min(100, ((curMin - minBound) / (maxBound - minBound)) * 100));
+    const maxPercent = Math.max(0, Math.min(100, ((curMax - minBound) / (maxBound - minBound)) * 100));
+    const widthPercent = Math.max(0, maxPercent - minPercent);
+
+    return `
+      <div class="baseline-range-container">
+        <div class="dual-slider-track-wrap">
+          <div class="dual-slider-track"></div>
+          <div class="dual-slider-highlight" id="highlight-${idPrefix}" style="left:${minPercent}%;width:${widthPercent}%;"></div>
+          <input type="range" class="dual-slider-thumb thumb-min" id="range-min-${idPrefix}" min="${minBound}" max="${maxBound}" step="${step}" value="${curMin}" />
+          <input type="range" class="dual-slider-thumb thumb-max" id="range-max-${idPrefix}" min="${minBound}" max="${maxBound}" step="${step}" value="${curMax}" />
+        </div>
+        <div class="range-display-badge" id="badge-${idPrefix}">
+          <span class="range-badge-min font-mono font-bold" id="badge-min-${idPrefix}">${curMin}</span>
+          <span class="range-sep">~</span>
+          <span class="range-badge-max font-mono font-bold" id="badge-max-${idPrefix}">${curMax}</span>
+          <span class="range-unit">${unit}</span>
+        </div>
+      </div>
+    `;
+  }
+
   // 기준점 조절 컨트롤 (슬라이더 / 스텝퍼 / 셀렉트)
   function renderTunableControl(fieldId, field) {
     switch (fieldId) {
@@ -434,14 +497,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           </select>
         `;
       }
-      // P1: 대표자 나이 가이드 (결측 시 폴백)
+      // P1: 대표자 나이 가이드 (결측 시 폴백: Min~Max 레인지)
       case 'A2':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-ceo-age" min="35" max="75" step="1" value="${currentBaseline.defaultCeoAge || 52}" />
-            <span class="baseline-slider-val" id="val-ceo-age">${currentBaseline.defaultCeoAge || 52}세 (결측 시 기준)</span>
-          </div>
-        `;
+        return renderDualRangeControl('ceo-age', 'defaultCeoAgeMin', 'defaultCeoAgeMax', 30, 75, 1, 45, 65, '세');
       // P1: 사업자 등록 형태
       case 'A3': {
         const curReg = currentBaseline.bizRegType || 'individual';
@@ -466,16 +524,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           </select>
         `;
       }
-      // P2: 매장 면적 (m² 조절)
-      case 'A9_1': {
-        const sqmVal = currentBaseline.storeSqm || Math.round((currentBaseline.storePyeong || 14) * 3.3058);
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-sqm" min="15" max="250" step="1" value="${sqmVal}" />
-            <span class="baseline-slider-val" id="val-sqm">${sqmVal} m²</span>
-          </div>
-        `;
-      }
+      // P2: 매장 면적 (m² Min~Max 레인지)
+      case 'A9_1':
+        return renderDualRangeControl('sqm', 'storeSqmMin', 'storeSqmMax', 10, 250, 1, 20, 65, 'm²');
       // P2: 매장 면적 (평수 조절)
       case 'A9_2':
         return `
@@ -484,30 +535,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span class="baseline-slider-val" id="val-pyeong">${currentBaseline.storePyeong || 14}평</span>
           </div>
         `;
-      // P2: 가족 종사자 수
+      // P2: 가족 종사자 수 (Min~Max 레인지)
       case 'A10_1':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-family-emp" min="0" max="5" step="1" value="${currentBaseline.employeeFamily ?? 1}" />
-            <span class="baseline-slider-val" id="val-family-emp">${currentBaseline.employeeFamily ?? 1}명</span>
-          </div>
-        `;
-      // P2: 상시 유급 종업원 수 (인건비 연동)
+        return renderDualRangeControl('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, 1, 0, 2, '명');
+      // P2: 상시 유급 종업원 수 (Min~Max 레인지)
       case 'A10_2':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-paid-emp" min="0" max="5" step="1" value="${currentBaseline.employeeRegular ?? 0}" />
-            <span class="baseline-slider-val" id="val-paid-emp">${currentBaseline.employeeRegular ?? 0}명</span>
-          </div>
-        `;
-      // P2: 임시/일용 종업원 수
+        return renderDualRangeControl('paid-emp', 'employeeRegularMin', 'employeeRegularMax', 0, 10, 1, 0, 2, '명');
+      // P2: 임시/일용 종업원 수 (Min~Max 레인지)
       case 'A10_3':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-temp-emp" min="0" max="5" step="1" value="${currentBaseline.employeeTemp ?? 0}" />
-            <span class="baseline-slider-val" id="val-temp-emp">${currentBaseline.employeeTemp ?? 0}명</span>
-          </div>
-        `;
+        return renderDualRangeControl('temp-emp', 'employeeTempMin', 'employeeTempMax', 0, 5, 1, 0, 1, '명');
       // P2: 매출 연동 고용 규칙
       case 'RULE_EMP_SALES': {
         const curRule = currentBaseline.empSalesLink || 'auto';
@@ -518,14 +554,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           </select>
         `;
       }
-      // P3: 일평균 매출액 (만 원)
+      // P3: 일평균 매출액 (만 원 Min~Max 레인지)
       case 'B1AA':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-daily-sales" min="10" max="300" step="5" value="${currentBaseline.dailySales || 65}" />
-            <span class="baseline-slider-val" id="val-daily-sales">${currentBaseline.dailySales || 65}만</span>
-          </div>
-        `;
+        return renderDualRangeControl('daily-sales', 'dailySalesMin', 'dailySalesMax', 10, 300, 5, 30, 80, '만');
       // P3: 연간 총매출액 (백만 원)
       case 'B1AB':
         return `
@@ -760,14 +791,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           </select>
         `;
       }
-      // P7: 일평균 온누리 이용 고객 수
+      // P7: 일평균 온누리 이용 고객 수 (Min~Max 레인지)
       case 'B5C_1':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-onnuri-cust" min="2" max="20" step="1" value="${currentBaseline.onnuriCustomerAvg || 5}" />
-            <span class="baseline-slider-val" id="val-onnuri-cust">${currentBaseline.onnuriCustomerAvg || 5}명</span>
-          </div>
-        `;
+        return renderDualRangeControl('onnuri-cust', 'onnuriCustomersMin', 'onnuriCustomersMax', 1, 30, 1, 3, 12, '명');
       // P7: 지류상품권 가맹 여부
       case 'B5A_1': {
         const curPaper = currentBaseline.onnuriPaperMember || 'yes';
@@ -870,22 +896,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span class="baseline-slider-val" id="val-rent-rate">임차 ${currentBaseline.rentAdoptionRate || 80}%</span>
           </div>
         `;
-      // P10: 임차 보증금 (만 원)
+      // P10: 임차 보증금 (만 원 Min~Max 레인지)
       case 'D1C_1':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-deposit" min="500" max="5000" step="100" value="${currentBaseline.depositAmount || 2000}" />
-            <span class="baseline-slider-val" id="val-deposit">${currentBaseline.depositAmount || 2000}만</span>
-          </div>
-        `;
-      // P10: 월 임차료 (만 원)
+        return renderDualRangeControl('deposit', 'depositMin', 'depositMax', 300, 10000, 100, 1000, 3000, '만');
+      // P10: 월 임차료 (만 원 Min~Max 레인지)
       case 'D1C_2':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-monthly-rent" min="40" max="300" step="5" value="${currentBaseline.monthlyRentAmount || 110}" />
-            <span class="baseline-slider-val" id="val-monthly-rent">${currentBaseline.monthlyRentAmount || 110}만</span>
-          </div>
-        `;
+        return renderDualRangeControl('monthly-rent', 'monthlyRentMin', 'monthlyRentMax', 20, 500, 5, 60, 180, '만');
       // P10: 임대료 증감 추이
       case 'D1D': {
         const curTrend = currentBaseline.rentTrend || 'freeze';
@@ -906,14 +922,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span class="baseline-slider-val" id="val-debt">${currentBaseline.debtAdoptionRate || 45}%</span>
           </div>
         `;
-      // P11: 부채 보유 금액 (만 원)
+      // P11: 부채 보유 금액 (만 원 Min~Max 레인지)
       case 'E1A':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-debt-amount" min="500" max="8000" step="100" value="${currentBaseline.debtAvgAmount || 2500}" />
-            <span class="baseline-slider-val" id="val-debt-amount">${currentBaseline.debtAvgAmount || 2500}만</span>
-          </div>
-        `;
+        return renderDualRangeControl('debt-amount', 'debtAmountMin', 'debtAmountMax', 500, 20000, 100, 1000, 5000, '만');
       // P12: 화재보험/공제 가입
       case 'E2A': {
         const curFire = currentBaseline.fireInsurance || 'yes';
@@ -987,22 +998,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           </select>
         `;
       }
-      // P14: 점포 지속 예정 기간 (연수)
+      // P14: 점포 지속 예정 기간 (연수 Min~Max 레인지)
       case 'G1B':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-years" min="3" max="20" step="1" value="${currentBaseline.plannedYears || 8}" />
-            <span class="baseline-slider-val" id="val-years">${currentBaseline.plannedYears || 8}년</span>
-          </div>
-        `;
-      // P14: 현금영수증 발행 가능 비중 (G2)
+        return renderDualRangeControl('planned-years', 'plannedYearsMin', 'plannedYearsMax', 1, 30, 1, 3, 12, '년');
+      // P14: 현금영수증 발행 가능 비중 (G2 Min~Max 레인지)
       case 'G2':
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-cash-receipt" min="20" max="80" step="5" value="${currentBaseline.cashReceiptRatio || 40}" />
-            <span class="baseline-slider-val" id="val-cash-receipt">${currentBaseline.cashReceiptRatio || 40}%</span>
-          </div>
-        `;
+        return renderDualRangeControl('cash-receipt', 'cashReceiptRatioMin', 'cashReceiptRatioMax', 10, 100, 5, 40, 80, '%');
       // Agree: 개인정보 수집 및 이용 동의
       case 'AGREE_1': {
         const curAgree = currentBaseline.privacyAgree || 'yes';
@@ -1013,30 +1014,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           </select>
         `;
       }
-      // [조사원 평가 H1] 위생 및 점포 환경 5종
+      // [조사원 평가 H1] 위생 및 점포 환경 5종 (Min~Max 레인지)
       case 'H1_1':
       case 'H1_2':
       case 'H1_3':
       case 'H1_4':
       case 'H1_5': {
-        const k = `eval${fieldId}`;
-        const curVal = currentBaseline[k] ?? 4;
-        const getRatingLabel = (v) => {
-          switch (Number(v)) {
-            case 5: return '매우 양호';
-            case 4: return '양호';
-            case 3: return '보통';
-            case 2: return '불량/미흡';
-            case 1: return '매우 불량';
-            default: return '';
-          }
-        };
-        return `
-          <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-eval-${fieldId}" min="1" max="5" step="1" value="${curVal}" />
-            <span class="baseline-slider-val" id="val-eval-${fieldId}">${curVal}점 (${getRatingLabel(curVal)})</span>
-          </div>
-        `;
+        return renderDualRangeControl(`eval-${fieldId.toLowerCase()}`, `eval${fieldId}_Min`, `eval${fieldId}_Max`, 1, 5, 1, 3, 5, '점');
       }
       // [조사원 평가 H2] 산지직거래
       case 'H2_1': {
@@ -1229,25 +1213,80 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (valRaw) valRaw.textContent = `${raw}%`;
     };
 
+    // 듀얼 포인트 레인지 컨트롤 바인더
+    const bindDualRange = (idPrefix, minKey, maxKey, minBound, maxBound, unit, onSync) => {
+      const elMin = document.getElementById(`range-min-${idPrefix}`);
+      const elMax = document.getElementById(`range-max-${idPrefix}`);
+      const elHighlight = document.getElementById(`highlight-${idPrefix}`);
+      const elBadgeMin = document.getElementById(`badge-min-${idPrefix}`);
+      const elBadgeMax = document.getElementById(`badge-max-${idPrefix}`);
+      if (!elMin || !elMax) return;
+
+      const updateVisuals = (minVal, maxVal) => {
+        const minPercent = Math.max(0, Math.min(100, ((minVal - minBound) / (maxBound - minBound)) * 100));
+        const maxPercent = Math.max(0, Math.min(100, ((maxVal - minBound) / (maxBound - minBound)) * 100));
+        if (elHighlight) {
+          elHighlight.style.left = `${minPercent}%`;
+          elHighlight.style.width = `${Math.max(0, maxPercent - minPercent)}%`;
+        }
+        if (elBadgeMin) elBadgeMin.textContent = minVal;
+        if (elBadgeMax) elBadgeMax.textContent = maxVal;
+      };
+
+      const syncValues = () => {
+        let minVal = parseFloat(elMin.value);
+        let maxVal = parseFloat(elMax.value);
+        if (minVal > maxVal) {
+          if (document.activeElement === elMin) {
+            minVal = maxVal;
+            elMin.value = minVal;
+          } else {
+            maxVal = minVal;
+            elMax.value = maxVal;
+          }
+        }
+        currentBaseline[minKey] = minVal;
+        currentBaseline[maxKey] = maxVal;
+        if (groupBaselines && groupBaselines[activeGroup]) {
+          groupBaselines[activeGroup][minKey] = minVal;
+          groupBaselines[activeGroup][maxKey] = maxVal;
+        }
+        updateVisuals(minVal, maxVal);
+        if (typeof onSync === 'function') onSync(minVal, maxVal);
+      };
+
+      elMin.addEventListener('input', syncValues);
+      elMax.addEventListener('input', syncValues);
+      elMin.addEventListener('change', () => { syncValues(); markUnsaved(); });
+      elMax.addEventListener('change', () => { syncValues(); markUnsaved(); });
+    };
+
     // Q1: 응답자 자격
     bindSelect('select-respondent-role', 'respondentRole');
 
     // P1: 성별/나이 결측 폴백 & 사업자 등록 형태 & 과세 유형
     bindSelect('select-ceo-gender-fallback', 'defaultCeoGender');
-    bindSlider('slider-ceo-age', 'val-ceo-age', 'defaultCeoAge', '세 (결측 시)');
+    bindDualRange('ceo-age', 'defaultCeoAgeMin', 'defaultCeoAgeMax', 30, 75, '세');
     bindSelect('select-biz-reg-type', 'bizRegType');
     bindSelect('select-tax-type', 'taxType');
 
-    // P2: 매장 면적 & 종업원 수
-    bindSlider('slider-sqm', 'val-sqm', 'storeSqm', ' m²', updatePyeong);
+    // P2: 매장 면적 & 종업원 수 (듀얼 레인지)
+    bindDualRange('sqm', 'storeSqmMin', 'storeSqmMax', 10, 250, ' m²', (min, max) => {
+      currentBaseline.storePyeongMin = Math.round(min / 3.3058);
+      currentBaseline.storePyeongMax = Math.round(max / 3.3058);
+      if (groupBaselines && groupBaselines[activeGroup]) {
+        groupBaselines[activeGroup].storePyeongMin = currentBaseline.storePyeongMin;
+        groupBaselines[activeGroup].storePyeongMax = currentBaseline.storePyeongMax;
+      }
+    });
     bindSlider('slider-pyeong', 'val-pyeong', 'storePyeong', '평', updateSqm);
-    bindSlider('slider-family-emp', 'val-family-emp', 'employeeFamily', '명');
-    bindSlider('slider-paid-emp', 'val-paid-emp', 'employeeRegular', '명', updateRawCost);
-    bindSlider('slider-temp-emp', 'val-temp-emp', 'employeeTemp', '명');
+    bindDualRange('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, '명');
+    bindDualRange('paid-emp', 'employeeRegularMin', 'employeeRegularMax', 0, 10, '명', updateRawCost);
+    bindDualRange('temp-emp', 'employeeTempMin', 'employeeTempMax', 0, 5, '명');
     bindSelect('select-emp-sales-link', 'empSalesLink');
 
     // P3: 매출 & 영업개월수 & 분기 패턴
-    bindSlider('slider-daily-sales', 'val-daily-sales', 'dailySales', '만');
+    bindDualRange('daily-sales', 'dailySalesMin', 'dailySalesMax', 10, 300, '만');
     bindSlider('slider-annual-sales', 'val-annual-sales', 'annualSales', 'M', updateProfit);
     bindSlider('slider-operating-months', 'val-operating-months', 'operatingMonths', '개월');
     bindSelect('select-quarter-pattern', 'quarterPattern');
@@ -1280,7 +1319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // P7: 온누리 고객수 & 지류 & 모바일 & 가맹연도 & 만족도
     bindSelect('select-onnuri-join-mode', 'onnuriJoinYearMode');
-    bindSlider('slider-onnuri-cust', 'val-onnuri-cust', 'onnuriCustomerAvg', '명');
+    bindDualRange('onnuri-cust', 'onnuriCustomersMin', 'onnuriCustomersMax', 1, 30, '명');
     bindSelect('select-onnuri-paper', 'onnuriPaperMember');
     bindSelect('select-onnuri-mobile', 'onnuriMobileMember');
     bindSelect('select-onnuri-satisfaction', 'onnuriSatisfaction');
@@ -1298,13 +1337,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // P10: 임차율 & 보증금 & 월세 & 임대료 추이
     bindSlider('slider-rent-rate', 'val-rent-rate', 'rentAdoptionRate', '%');
-    bindSlider('slider-deposit', 'val-deposit', 'depositAmount', '만');
-    bindSlider('slider-monthly-rent', 'val-monthly-rent', 'monthlyRentAmount', '만');
+    bindDualRange('deposit', 'depositMin', 'depositMax', 300, 10000, '만');
+    bindDualRange('monthly-rent', 'monthlyRentMin', 'monthlyRentMax', 20, 500, '만');
     bindSelect('select-rent-trend', 'rentTrend');
 
     // P11: 부채 비율 & 부채 금액
     bindSlider('slider-debt', 'val-debt', 'debtAdoptionRate', '%');
-    bindSlider('slider-debt-amount', 'val-debt-amount', 'debtAvgAmount', '만');
+    bindDualRange('debt-amount', 'debtAmountMin', 'debtAmountMax', 500, 20000, '만');
 
     // P12: 화재보험 & 영업배상
     bindSelect('select-fire-insurance', 'fireInsurance');
@@ -1317,11 +1356,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // P14: 향후계획 & 승계계획 & 예정기간 & 현금영수증 발행 비중 (G2)
     bindSelect('select-future-plan', 'futurePlan');
     bindSelect('select-succession-plan', 'successionPlan');
-    bindSlider('slider-years', 'val-years', 'plannedYears', '년');
-    bindSlider('slider-cash-receipt', 'val-cash-receipt', 'cashReceiptRatio', '%');
+    bindDualRange('planned-years', 'plannedYearsMin', 'plannedYearsMax', 1, 30, '년');
+    bindDualRange('cash-receipt', 'cashReceiptRatioMin', 'cashReceiptRatioMax', 10, 100, '%');
 
     // Agree: 개인정보 동의
     bindSelect('select-privacy-agree', 'privacyAgree');
+
+    // [조사원 평가 H1 5종 듀얼 레인지 바인딩]
+    ['1', '2', '3', '4', '5'].forEach(num => {
+      bindDualRange(`eval-h1-${num}`, `evalH1_${num}_Min`, `evalH1_${num}_Max`, 1, 5, '점');
+    });
 
     // [조사원 평가 H1 & H3 슬라이더 바인딩]
     const getRatingLabel = (val) => {

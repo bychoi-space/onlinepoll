@@ -69,6 +69,21 @@ function calculateJitterRating(baseRating, seedNum, offset = 0) {
   return String(base);
 }
 
+// [H1] 환경 평가 레인지(Min ~ Max) 샘플링 또는 지터 계산기
+function calculateRangeRating(minR, maxR, fallbackVal, seedNum, offset = 0) {
+  if (minR !== undefined && maxR !== undefined) {
+    const min = Math.max(1, Math.min(5, parseInt(minR, 10)));
+    const max = Math.max(min, Math.min(5, parseInt(maxR, 10)));
+    if (min === max) return String(min);
+    // 점포 시드와 오프셋을 활용한 결정론적 균등 분산 (점포마다 일관되나 점포 간에 [min, max] 범위 내 골고루 분포)
+    const hash = (seedNum * 17 + offset * 31 + 7) % 1000;
+    const rangeSize = max - min + 1;
+    const sampled = min + (hash % rangeSize);
+    return String(sampled);
+  }
+  return calculateJitterRating(fallbackVal || 4, seedNum, offset);
+}
+
 /**
  * [H3] 고객응대 서비스 문항 전용 랜덤 선택기
  * 규칙: [H3] 문항 - 3.보통 4.양호. 5.매우양호 항목을 랜덤하게 선택
@@ -187,13 +202,20 @@ export async function runKstatEvaluation({
     const industryStr = String(bizData.industry || bizData.handledItems || '');
     const isFood = industryStr.includes('음식') || industryStr.includes('식품') || industryStr.includes('수산') || industryStr.includes('농산') || industryStr.includes('축산');
 
-    // H1 (점포 환경 및 위생 평가: 5문항 5점 척도)
+    // H1 (점포 환경 및 위생 평가: 5문항 5점 척도 - 2-Point Range [Min, Max] 완벽 연동)
+    const getH1Rating = (idx) => {
+      const minVal = evalCriteria[`evalH1_${idx}_Min`] ?? evalCriteria[`h1_${idx}_Min`];
+      const maxVal = evalCriteria[`evalH1_${idx}_Max`] ?? evalCriteria[`h1_${idx}_Max`];
+      const fallback = evalCriteria[`evalH1_${idx}`] ?? evalCriteria[`h1_${idx}`] ?? 4;
+      return calculateRangeRating(minVal, maxVal, fallback, seedNum, idx);
+    };
+
     const h1Ratings = {
-      H1_1: calculateJitterRating(evalCriteria.h1_1 || 4, seedNum, 1),
-      H1_2: calculateJitterRating(evalCriteria.h1_2 || 4, seedNum, 2),
-      H1_3: calculateJitterRating(evalCriteria.h1_3 || 4, seedNum, 3),
-      H1_4: calculateJitterRating(evalCriteria.h1_4 || 4, seedNum, 4),
-      H1_5: calculateJitterRating(evalCriteria.h1_5 || 4, seedNum, 5)
+      H1_1: getH1Rating(1),
+      H1_2: getH1Rating(2),
+      H1_3: getH1Rating(3),
+      H1_4: getH1Rating(4),
+      H1_5: getH1Rating(5)
     };
 
     // H2 (점포 현황: 산지직거래, 스토리텔링POP, 시식체험, 밀키트/전처리 비중)
