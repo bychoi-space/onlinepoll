@@ -128,6 +128,32 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const industryMeta = categorizeIndustry(bizData.handledItems, bizData.industry);
   const groupKey = getIndustryGroupKey(bizData.industry, bizData.handledItems);
 
+  // 마스터 블루프린트 기준점 설정 결합 (업종 그룹별 전용 가이드 우선 적용)
+  const baseCfg = guidelineConfig.masterBaseline || {};
+  const groupBaseline = baseCfg.groups?.[groupKey] || {};
+  const mb = { ...baseCfg, ...groupBaseline };
+
+  // 회전 선택 헬퍼 (인덱스 기반 균등 분산, idx=0 방어 포함)
+  const rotate = (arr, idx) => arr[Math.max(0, (Number(idx) || 1) - 1) % arr.length];
+
+  // Q1 응답자 자격 (점포와의 관계: 점포주 1, 가족 2, 종업원 3, 로테이션)
+  let respondentRoleSelector = '#Q1_12_1';
+  if (mb.respondentRole === 'family') respondentRoleSelector = '#Q1_12_2';
+  else if (mb.respondentRole === 'manager') respondentRoleSelector = '#Q1_12_3';
+  else if (mb.respondentRole === 'rotation') respondentRoleSelector = rotate(['#Q1_12_1', '#Q1_12_1', '#Q1_12_2', '#Q1_12_3'], quotaIndex);
+
+  // P1 사업체 등록 형태 (개인 2, 법인 1, 무등록 3, 로테이션)
+  let bizRegSelector = '#A3_2';
+  if (mb.bizRegType === 'corporate') bizRegSelector = '#A3_1';
+  else if (mb.bizRegType === 'unregistered') bizRegSelector = '#A3_3';
+  else if (mb.bizRegType === 'rotation') bizRegSelector = rotate(['#A3_2', '#A3_2', '#A3_2', '#A3_1'], quotaIndex);
+
+  // P1 과세 유형 (일반 1, 간이 2, 면세 3, 로테이션)
+  let taxTypeSelector = '#A3A_1';
+  if (mb.taxType === 'simple') taxTypeSelector = '#A3A_2';
+  else if (mb.taxType === 'exempt') taxTypeSelector = '#A3A_3';
+  else if (mb.taxType === 'rotation') taxTypeSelector = rotate(['#A3A_1', '#A3A_1', '#A3A_2', '#A3A_3'], quotaIndex);
+
   // 2. 대표자 연령 및 성별 (사용자가 쿼터 테이블에 직접 입력한 값 무조건 100% 우선 반영)
   const ceoName = String(bizData.ceoName || bizData.representativeName || bizData.ceo || bizData.ownerName || '점포주').trim();
   let genderSelector;
@@ -135,6 +161,12 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   if (rawGender) {
     const isFemale = (rawGender === '여' || rawGender.toLowerCase() === 'female' || rawGender === '여자' || rawGender === '여성');
     genderSelector = isFemale ? '#A1_2' : '#A1_1';
+  } else if (mb.defaultCeoGender === 'male') {
+    genderSelector = '#A1_1';
+  } else if (mb.defaultCeoGender === 'female') {
+    genderSelector = '#A1_2';
+  } else if (mb.defaultCeoGender === 'rotation') {
+    genderSelector = (quotaIndex % 2 === 0 ? '#A1_2' : '#A1_1');
   } else {
     // 이름 기반 성별 추론 (끝글자가 은/숙/미/희/자/순/영 등 여성 선호, 그 외 남성 선호)
     const isFemaleName = /[은숙미희자순영경혜진선애]/.test(ceoName.slice(-1));
@@ -145,14 +177,12 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   let age;
   if (rawAge !== undefined && rawAge !== null && !isNaN(parseInt(rawAge, 10)) && parseInt(rawAge, 10) > 0) {
     age = String(parseInt(rawAge, 10));
+  } else if (mb.defaultCeoAge !== undefined && !isNaN(parseInt(mb.defaultCeoAge, 10))) {
+    const baseAge = parseInt(mb.defaultCeoAge, 10);
+    age = String(Math.max(30, Math.min(75, baseAge + randBetween(-2, 2))));
   } else {
     age = String(randBetween(42, 63)); // 40대~60대
   }
-
-  // 마스터 블루프린트 기준점 설정 결합 (업종 그룹별 전용 가이드 우선 적용)
-  const baseCfg = guidelineConfig.masterBaseline || {};
-  const groupBaseline = baseCfg.groups?.[groupKey] || {};
-  const mb = { ...baseCfg, ...groupBaseline };
 
   // 3. 매장 면적 및 점포 규모 계수 (P2)
   const isAutoEmp = mb.empSalesLink !== 'fixed';
@@ -247,9 +277,6 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   }
 
   const hasEmployees = employeeRegular > 0 || employeeTemp > 0;
-  
-  // 회전 선택 헬퍼 (인덱스 기반 균등 분산, idx=0 방어 포함)
-  const rotate = (arr, idx) => arr[Math.max(0, (Number(idx) || 1) - 1) % arr.length];
 
   // 분기별 비중 (합계 100%)
   const qPattern = (mb.quarterPattern === 'rotation' || mb.rotationMode)
@@ -320,6 +347,9 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     [5, 4, 3]
   ], quotaIndex);
 
+  // 1년 영업개월수 (B1AC: 기본 12개월, 사용자 지정 가능)
+  const operatingMonths = String(mb.operatingMonths !== undefined ? parseInt(mb.operatingMonths, 10) : 12);
+
   // 5. 결제수단별 취급(B2) 및 비중(B2A) - 5% 단위 입력 & 합계 100% 필수
   // 5대 결제수단: 현금(B2A_1), 온누리(B2A_2), 지역사랑(B2A_3), 제로페이 모바일결제 등(B2A_4), 신용카드(B2A_5)
   // [규칙 B2] '지역사랑상품권' 및 '제로페이 모바일 결제 등'도 점포별로 취급(1) / 미취급(2)을 적절히 자연 분산
@@ -349,8 +379,12 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   if (mb.rotationMode) {
     payCard = rotate([65, 60, 70, 65, 60, 65, 70, 60], quotaIndex);
   }
+  const isNoCard = mb.creditCardMember === 'no';
+  if (isNoCard) {
+    payCard = 0;
+  }
 
-  const remainingForOther = 100 - payCard; // 30, 35, 40, 45 (모두 5% 단위)
+  const remainingForOther = isNoCard ? 35 : (100 - payCard); // 30, 35, 40, 45 (모두 5% 단위)
 
   // 취급 여부 조합별 5% 단위 정합 배분 풀 (card와 합산 시 정확히 100% 보장)
   // [payCash, payOnnuri, payLocal, payZeropay]
@@ -421,7 +455,24 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   else targetMap = poolNeither;
 
   const currentPool = targetMap[remainingForOther] || targetMap[35];
-  const [payCash, payOnnuri, payLocal, payZeropay] = rotate(currentPool, quotaIndex);
+  let [payCash, payOnnuri, payLocal, payZeropay] = rotate(currentPool, quotaIndex);
+  if (isNoCard) {
+    payCash += 65; // 신용카드 미취급 시 잔여 비중 전액 현금으로 흡수하여 합계 100% 보장
+  }
+
+  // 사용자 지정 현금 비중(cashRatio) 반영 (5% 단위 정합성 유지)
+  if (mb.cashRatio !== undefined && !mb.rotationMode) {
+    const userCash = Math.max(0, Math.min(40, Math.round(parseInt(mb.cashRatio, 10) / 5) * 5));
+    const delta = userCash - payCash;
+    if (delta !== 0) {
+      payCash = userCash;
+      if (payOnnuri - delta >= 5) {
+        payOnnuri -= delta;
+      } else if (payCard - delta >= 50) {
+        payCard -= delta;
+      }
+    }
+  }
 
   // [규칙 B3] 온누리상품권 형태별 비중 (지류형 B3_1 vs 디지털형 B3_2): 무조건 5% 단위 (합계 100%)
   // 예시: 20% / 80%, 30% / 70%, 35% / 65%, 40% / 60%, 45% / 55%, 50% / 50% 등
@@ -430,7 +481,11 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     [25, 75], [55, 45], [60, 40], [35, 65], [30, 70], [40, 60]
   ];
   let paperVal, digitalVal;
-  if (mb.onnuriPaperRatio !== undefined && !mb.rotationMode) {
+  if (mb.onnuriDigitalRatio !== undefined && mb.onnuriPaperRatio === undefined && !mb.rotationMode) {
+    let d = Math.round(parseInt(mb.onnuriDigitalRatio, 10) / 5) * 5;
+    digitalVal = Math.max(10, Math.min(90, d));
+    paperVal = 100 - digitalVal;
+  } else if (mb.onnuriPaperRatio !== undefined && !mb.rotationMode) {
     let p = Math.round(parseInt(mb.onnuriPaperRatio, 10) / 5) * 5;
     paperVal = Math.max(10, Math.min(90, p));
     digitalVal = 100 - paperVal;
@@ -447,7 +502,14 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     costEtc = rotate([8, 10, 12, 10, 15, 7], quotaIndex);
   }
   costEtc = Math.max(5, Math.min(20, isNaN(costEtc) ? 10 : costEtc));
-  const costEtcText = '세금';
+  let costEtcText = '세금';
+  if (mb.costEtcText) {
+    if (mb.costEtcText === 'rotation') {
+      costEtcText = rotate(['세금', '공과금', '광고비', '소모품비', '잡비'], quotaIndex);
+    } else {
+      costEtcText = mb.costEtcText;
+    }
+  }
   const remainingCost = 100 - costEtc;
   let costLabor = 0;
   const rentBase = mb.costRentRatio !== undefined ? parseInt(mb.costRentRatio, 10) : 20;
@@ -465,6 +527,22 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   }
   let costRaw = remainingCost - (costLabor + costRent);
 
+  // 사용자 지정 원재료/상품매입비 비중(costRawRatio) 명시 설정 시 반영
+  if (mb.costRawRatio !== undefined && !mb.rotationMode) {
+    const targetRaw = parseInt(mb.costRawRatio, 10);
+    if (!isNaN(targetRaw) && targetRaw >= 10 && targetRaw <= 85) {
+      costRaw = targetRaw;
+      const leftOver = remainingCost - costRaw;
+      if (hasEmployees) {
+        costRent = Math.max(5, Math.round(leftOver * 0.45));
+        costLabor = Math.max(5, leftOver - costRent);
+      } else {
+        costLabor = 0;
+        costRent = Math.max(5, leftOver);
+      }
+    }
+  }
+
   // 7. 온누리상품권 현황 (P7)
   const rawOpenDate = bizData.openDate || bizData.openYear || '2020';
   const rawYear = parseInt(String(rawOpenDate).split(/[-.]/)[0], 10) || 2020;
@@ -474,8 +552,16 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   let onnuriJoinYear;
   if (openYearNum >= 2025) {
     onnuriJoinYear = 2025; // 2025년 개업 점포 및 2026 점포는 2025로 일치화
+  } else if (mb.onnuriJoinYearMode === '2024') {
+    onnuriJoinYear = Math.max(openYearNum, 2024);
+  } else if (mb.onnuriJoinYearMode === '2023') {
+    onnuriJoinYear = Math.max(openYearNum, 2023);
+  } else if (mb.onnuriJoinYearMode === '2025') {
+    onnuriJoinYear = Math.max(openYearNum, 2025);
+  } else if (mb.onnuriJoinYearMode === 'rotation') {
+    onnuriJoinYear = Math.max(openYearNum, Math.min(2024, rotate([openYearNum, openYearNum + 1, 2023, 2024], quotaIndex)));
   } else {
-    // 개업연도 이상, 2024 이하
+    // auto: 개업연도 이상, 2024 이하
     onnuriJoinYear = Math.max(openYearNum, Math.min(2024, openYearNum + randBetween(0, 1)));
   }
   const onnuriSalesRatio = String(payOnnuri);
@@ -483,8 +569,13 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const onnuriBaseCust = mb.onnuriCustomerAvg !== undefined ? parseInt(mb.onnuriCustomerAvg, 10) : 5;
   const onnuriMonthlyCustomers = String(Math.max(2, Math.min(20, (isNaN(onnuriBaseCust) ? 5 : onnuriBaseCust) + randBetween(-1, 1))));
 
-  // [중요] P5 B3(온누리 디지털형 비중 >= 1%)와 충돌 방지를 위해 B5A_1(온누리상품권 가맹여부)은 항상 #B5A_1_1(가맹) 필수!
-  const onnuriPaperSelector = '#B5A_1_1';
+  // B5A_1 지류상품권 가맹 여부 (기본 가맹, 사용자 설정 지원)
+  let onnuriPaperSelector = '#B5A_1_1';
+  if (mb.onnuriPaperMember === 'no') {
+    onnuriPaperSelector = '#B5A_1_2';
+  } else if (mb.onnuriPaperMember === 'rotation') {
+    onnuriPaperSelector = (quotaIndex % 3 === 0) ? '#B5A_1_2' : '#B5A_1_1';
+  }
 
   // B5A_2(지역사랑상품권 가맹여부 - P5 B2A에서 지역사랑상품권 비중이 있으면 가맹, 없으면 미가맹 연동)
   let onnuriMobileSelector = payLocal > 0 ? '#B5A_2_1' : '#B5A_2_2';
@@ -712,9 +803,21 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   }
   const liabilityReason = String(rotate([3, 2, 1], quotaIndex)); // E2BA 미가입 사유 (1~4)
 
+  // 15. 개인정보 수집 및 이용 동의 (Agree.asp)
+  let privacyAgreeSelector = '#AGREE_1';
+  if (mb.privacyAgree === 'no') {
+    privacyAgreeSelector = '#AGREE_2';
+  } else if (mb.privacyAgree === 'rotation') {
+    privacyAgreeSelector = (quotaIndex % 10 === 0) ? '#AGREE_2' : '#AGREE_1';
+  }
+
   return {
     quotaIndex,
     industryMeta,
+    respondentRoleSelector,
+    bizRegSelector,
+    taxTypeSelector,
+    privacyAgreeSelector,
     genderSelector,
     age,
     areaSquareMeter: String(areaSquareMeter),
@@ -728,6 +831,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       daily: String(dailySales),
       dailyRadioVal,
       annual: String(annualSales),
+      operatingMonths,
       quarters: { q1: String(q1), q2: String(q2), q3: String(q3), q4: String(q4) },
       profitMarginRate: exactMarginRate,
       annualProfit: String(annualProfit),
@@ -751,7 +855,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       onnuri: '1',
       local: payLocal > 0 ? '1' : '2',
       zeropay: payZeropay > 0 ? '1' : '2',
-      card: '1'
+      card: payCard > 0 ? '1' : '2'
     },
     costs: {
       labor: String(costLabor),

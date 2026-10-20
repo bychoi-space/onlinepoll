@@ -482,7 +482,7 @@ export async function runKstatSurvey({
       await itemDelay();
       await safeFill(page, '#Q1_10', biz.ceoName);
       await safeFill(page, '#Q1_11', biz.phone);
-      await safeClick(page, '#Q1_12_1'); // 응답자: 점포주
+      await safeClick(page, persona.respondentRoleSelector || '#Q1_12_1'); // 응답자: 점포주/가족/종업원 가이드 연동
       await safeClick(page, '#Q1_13_2'); // 정보수신: 아니오
 
       capturedSteps.push({
@@ -543,7 +543,8 @@ export async function runKstatSurvey({
         await itemDelay();
 
         const fA3 = page.frame({ url: /\/A3\.asp/i });
-        if (fA3) await selectKstatRadio(fA3, 'A3', '2'); // 개인사업자
+        const a3Val = (persona.bizRegSelector || '#A3_2').replace('#A3_', '');
+        if (fA3) await selectKstatRadio(fA3, 'A3', a3Val); // 사업체 등록형태 (개인/법인/무등록 가이드 연동)
 
         const fA4 = page.frame({ url: /\/A4\.asp/i });
         if (fA4) await selectKstatRadio(fA4, 'A4', '1'); // 사업자 등록
@@ -551,7 +552,8 @@ export async function runKstatSurvey({
         await syncDynamicFrames(page);
 
         const fA3A = page.frame({ url: /\/A3A\.asp/i });
-        if (fA3A) await selectKstatRadio(fA3A, 'A3A', '1'); // 일반과세
+        const a3aVal = (persona.taxTypeSelector || '#A3A_1').replace('#A3A_', '');
+        if (fA3A) await selectKstatRadio(fA3A, 'A3A', a3aVal); // 과세유형 (일반/간이/면세 가이드 연동)
         await itemDelay();
 
         const fA4A = page.frame({ url: /\/A4A\.asp/i });
@@ -605,7 +607,7 @@ export async function runKstatSurvey({
 
         const fB1AC = page.frame({ url: /\/B1AC\.asp/i });
         if (fB1AC) {
-          await safeFill(fB1AC, '#B1AC, input[name="B1AC"]', '12');
+          await safeFill(fB1AC, '#B1AC, input[name="B1AC"]', String(persona.sales?.operatingMonths || '12'));
           await safeFill(fB1AC, 'input[name="B1AC_1"]', persona.sales.quarters.q1);
           await safeFill(fB1AC, 'input[name="B1AC_2"]', persona.sales.quarters.q2);
           await safeFill(fB1AC, 'input[name="B1AC_3"]', persona.sales.quarters.q3);
@@ -759,8 +761,8 @@ export async function runKstatSurvey({
       else if (stepName === 'P7') {
         const fB5A1 = page.frame({ url: /\/B5A1\.asp/i }) || page.frame({ url: /\/B5A\.asp/i });
         if (fB5A1) {
-          // B3_2 >= 1 검증 규칙과 충돌하지 않도록 B5A_1은 항상 '1'(가맹) 선택
-          await selectKstatRadio(fB5A1, 'B5A_1', '1');
+          const b5a1Val = (persona.onnuri?.paperSelector || '#B5A_1_1').replace('#B5A_1_', '');
+          await selectKstatRadio(fB5A1, 'B5A_1', b5a1Val);
         }
 
         const fB5A2 = page.frame({ url: /\/B5A2\.asp/i });
@@ -1119,7 +1121,7 @@ export async function runKstatSurvey({
     await readingDelay();
     const reachedAgree = page.url().includes('Agree.asp');
     if (reachedAgree) {
-      await safeClick(page, '#AGREE_1');
+      await safeClick(page, persona.privacyAgreeSelector || '#AGREE_1'); // 개인정보 수집 및 이용 동의 가이드 연동
       await preNextDelay();
 
       capturedSteps.push({

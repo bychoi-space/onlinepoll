@@ -754,11 +754,13 @@ async function initSurveyDetailPage() {
 
   let currentBaseline = {
     storePyeong: 14,
+    storeSqm: 46,
     employeeFamily: 1,
     employeeRegular: 0,
     employeeTemp: 0,
     dailySales: 65,
     annualSales: 180,
+    operatingMonths: 12,
     quarterPattern: 'even',
     profitMarginRate: 25,
     salesChange: 'similar',
@@ -766,11 +768,19 @@ async function initSurveyDetailPage() {
     dailyBusinessHours: 11,
     monthlyBusinessDays: 26,
     creditCardRatio: 65,
-    onnuriRatio: 15,
-    cashReceiptRatio: 50,
+    onnuriRatio: 10,
+    localPayMember: 'rotation',
+    zeropayMember: 'rotation',
+    localRatio: 5,
+    zeropayRatio: 10,
+    cashRatio: 10,
+    onnuriPaperRatio: 35,
+    onnuriDigitalRatio: 65,
+    cashReceiptRatio: 40,
     costTaxRatio: 10,
     costLaborRatio: 25,
     costRentRatio: 20,
+    costRawRatio: 45,
     onnuriPaperMember: 'yes',
     onnuriMobileMember: 'no',
     onnuriCustomerAvg: 5,
@@ -797,6 +807,15 @@ async function initSurveyDetailPage() {
     plannedYears: 8,
     rotationMode: false,
     empSalesLink: 'auto',
+    respondentRole: 'owner',
+    defaultCeoGender: 'auto',
+    defaultCeoAge: 52,
+    bizRegType: 'individual',
+    taxType: 'general',
+    creditCardMember: 'yes',
+    costEtcText: '세금',
+    onnuriJoinYearMode: 'auto',
+    privacyAgree: 'yes',
     // 조사원 평가 마스터 기준점 기본값
     evalH1_1: 4,
     evalH1_2: 4,
@@ -1087,11 +1106,77 @@ async function initSurveyDetailPage() {
 
   function renderTunableControl(fieldId, field) {
     switch (fieldId) {
+      // Q1: 응답자 자격 (점포와의 관계)
+      case 'Q1_12_1': {
+        const curRole = currentBaseline.respondentRole || 'owner';
+        return `
+          <select class="baseline-select" id="select-respondent-role">
+            <option value="owner" ${curRole === 'owner' ? 'selected' : ''}>점포주 / 대표자 본인 (1) [기본]</option>
+            <option value="family" ${curRole === 'family' ? 'selected' : ''}>배우자 및 가족 종사자 (2)</option>
+            <option value="manager" ${curRole === 'manager' ? 'selected' : ''}>점장 / 지배인 / 종업원 (3)</option>
+            <option value="rotation" ${curRole === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
+          </select>
+        `;
+      }
+      // P1: 대표자 성별 가이드 (결측 시 폴백)
+      case 'A1': {
+        const curGen = currentBaseline.defaultCeoGender || 'auto';
+        return `
+          <select class="baseline-select" id="select-ceo-gender-fallback">
+            <option value="auto" ${curGen === 'auto' ? 'selected' : ''}>⚡ 쿼터 실존 성별 우선 (결측 시 자동 판별) [권장]</option>
+            <option value="male" ${curGen === 'male' ? 'selected' : ''}>남성 대표자 우선 (#A1_1)</option>
+            <option value="female" ${curGen === 'female' ? 'selected' : ''}>여성 대표자 우선 (#A1_2)</option>
+            <option value="rotation" ${curGen === 'rotation' ? 'selected' : ''}>🎲 남녀 50:50 균등 로테이션</option>
+          </select>
+        `;
+      }
+      // P1: 대표자 나이 가이드 (결측 시 폴백)
+      case 'A2':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-ceo-age" min="35" max="75" step="1" value="${currentBaseline.defaultCeoAge || 52}" />
+            <span class="baseline-slider-val" id="val-ceo-age">${currentBaseline.defaultCeoAge || 52}세 (결측 시 기준)</span>
+          </div>
+        `;
+      // P1: 사업자 등록 형태
+      case 'A3': {
+        const curReg = currentBaseline.bizRegType || 'individual';
+        return `
+          <select class="baseline-select" id="select-biz-reg-type">
+            <option value="individual" ${curReg === 'individual' ? 'selected' : ''}>개인사업자 (2) [소상공인 표준]</option>
+            <option value="corporate" ${curReg === 'corporate' ? 'selected' : ''}>법인사업자 (1)</option>
+            <option value="unregistered" ${curReg === 'unregistered' ? 'selected' : ''}>무등록 사업자 (3)</option>
+            <option value="rotation" ${curReg === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션</option>
+          </select>
+        `;
+      }
+      // P1: 과세 유형
+      case 'A3A': {
+        const curTax = currentBaseline.taxType || 'general';
+        return `
+          <select class="baseline-select" id="select-tax-type">
+            <option value="general" ${curTax === 'general' ? 'selected' : ''}>일반과세자 (1) [표준]</option>
+            <option value="simple" ${curTax === 'simple' ? 'selected' : ''}>간이과세자 (2)</option>
+            <option value="exempt" ${curTax === 'exempt' ? 'selected' : ''}>면세사업자 (3)</option>
+            <option value="rotation" ${curTax === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
+          </select>
+        `;
+      }
+      // P2: 매장 면적 (m² 조절)
+      case 'A9_1': {
+        const sqmVal = currentBaseline.storeSqm || Math.round((currentBaseline.storePyeong || 14) * 3.3058);
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-sqm" min="15" max="250" step="1" value="${sqmVal}" />
+            <span class="baseline-slider-val" id="val-sqm">${sqmVal} m²</span>
+          </div>
+        `;
+      }
       // P2: 매장 면적 (평수 조절)
       case 'A9_2':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-pyeong" min="5" max="50" step="1" value="${currentBaseline.storePyeong || 14}" />
+            <input type="range" class="baseline-slider" id="slider-pyeong" min="5" max="75" step="1" value="${currentBaseline.storePyeong || 14}" />
             <span class="baseline-slider-val" id="val-pyeong">${currentBaseline.storePyeong || 14}평</span>
           </div>
         `;
@@ -1099,7 +1184,7 @@ async function initSurveyDetailPage() {
       case 'A10_1':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-family-emp" min="0" max="3" step="1" value="${currentBaseline.employeeFamily ?? 1}" />
+            <input type="range" class="baseline-slider" id="slider-family-emp" min="0" max="5" step="1" value="${currentBaseline.employeeFamily ?? 1}" />
             <span class="baseline-slider-val" id="val-family-emp">${currentBaseline.employeeFamily ?? 1}명</span>
           </div>
         `;
@@ -1115,7 +1200,7 @@ async function initSurveyDetailPage() {
       case 'A10_3':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-temp-emp" min="0" max="3" step="1" value="${currentBaseline.employeeTemp ?? 0}" />
+            <input type="range" class="baseline-slider" id="slider-temp-emp" min="0" max="5" step="1" value="${currentBaseline.employeeTemp ?? 0}" />
             <span class="baseline-slider-val" id="val-temp-emp">${currentBaseline.employeeTemp ?? 0}명</span>
           </div>
         `;
@@ -1133,7 +1218,7 @@ async function initSurveyDetailPage() {
       case 'B1AA':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-daily-sales" min="20" max="200" step="5" value="${currentBaseline.dailySales || 65}" />
+            <input type="range" class="baseline-slider" id="slider-daily-sales" min="10" max="300" step="5" value="${currentBaseline.dailySales || 65}" />
             <span class="baseline-slider-val" id="val-daily-sales">${currentBaseline.dailySales || 65}만</span>
           </div>
         `;
@@ -1141,8 +1226,16 @@ async function initSurveyDetailPage() {
       case 'B1AB':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-annual-sales" min="50" max="350" step="10" value="${currentBaseline.annualSales || 180}" />
+            <input type="range" class="baseline-slider" id="slider-annual-sales" min="40" max="500" step="10" value="${currentBaseline.annualSales || 180}" />
             <span class="baseline-slider-val" id="val-annual-sales">${currentBaseline.annualSales || 180}M</span>
+          </div>
+        `;
+      // P3: 1년 영업개월수
+      case 'B1AC':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-operating-months" min="1" max="12" step="1" value="${currentBaseline.operatingMonths || 12}" />
+            <span class="baseline-slider-val" id="val-operating-months">${currentBaseline.operatingMonths || 12}개월</span>
           </div>
         `;
       // P3: 분기별 매출 비중 패턴
@@ -1150,12 +1243,23 @@ async function initSurveyDetailPage() {
         const curPat = currentBaseline.quarterPattern || 'even';
         return `
           <select class="baseline-select" id="select-quarter-pattern">
-            <option value="even" ${curPat === 'even' ? 'selected' : ''}>균등형 (25/25/25/25%)</option>
+            <option value="even" ${curPat === 'even' ? 'selected' : ''}>균등형 (25/25/25/25%) [기본값]</option>
             <option value="h2" ${curPat === 'h2' ? 'selected' : ''}>하반기·명절 성수기 (20/20/30/30%)</option>
             <option value="h1" ${curPat === 'h1' ? 'selected' : ''}>상반기 성수기 (30/30/20/20%)</option>
             <option value="season" ${curPat === 'season' ? 'selected' : ''}>봄·가을 성수기 (30/20/30/20%)</option>
             <option value="rotation" ${curPat === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환)</option>
           </select>
+        `;
+      }
+      // P4: 연간 영업이익
+      case 'B1BA': {
+        const s = currentBaseline.annualSales || 180;
+        const m = currentBaseline.profitMarginRate || 25;
+        const profit = Math.round((s * m) / 100);
+        return `
+          <span class="badge-status ready font-caption font-bold" id="val-profit">
+            <i class="fa-solid fa-calculator"></i> ${profit} 백만 원 (연매출×이익률 자동 연동)
+          </span>
         `;
       }
       // P4: 영업이익률 (%)
@@ -1182,7 +1286,7 @@ async function initSurveyDetailPage() {
       case 'B1C':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-daily-cust" min="15" max="150" step="5" value="${currentBaseline.dailyCustomers || 45}" />
+            <input type="range" class="baseline-slider" id="slider-daily-cust" min="10" max="200" step="5" value="${currentBaseline.dailyCustomers || 45}" />
             <span class="baseline-slider-val" id="val-daily-cust">${currentBaseline.dailyCustomers || 45}명</span>
           </div>
         `;
@@ -1190,7 +1294,7 @@ async function initSurveyDetailPage() {
       case 'B1D':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-biz-hours" min="8" max="16" step="1" value="${currentBaseline.dailyBusinessHours || 11}" />
+            <input type="range" class="baseline-slider" id="slider-biz-hours" min="6" max="18" step="1" value="${currentBaseline.dailyBusinessHours || 11}" />
             <span class="baseline-slider-val" id="val-biz-hours">${currentBaseline.dailyBusinessHours || 11}시간</span>
           </div>
         `;
@@ -1198,7 +1302,7 @@ async function initSurveyDetailPage() {
       case 'B1E':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-biz-days" min="20" max="31" step="1" value="${currentBaseline.monthlyBusinessDays || 26}" />
+            <input type="range" class="baseline-slider" id="slider-biz-days" min="15" max="30" step="1" value="${currentBaseline.monthlyBusinessDays || 26}" />
             <span class="baseline-slider-val" id="val-biz-days">${currentBaseline.monthlyBusinessDays || 26}일</span>
           </div>
         `;
@@ -1221,6 +1325,16 @@ async function initSurveyDetailPage() {
             <option value="rotation" ${curZero === 'rotation' ? 'selected' : ''}>🎲 자유 로테이션 (점포별 순환) [기본값]</option>
             <option value="yes" ${curZero === 'yes' ? 'selected' : ''}>취급 (1)</option>
             <option value="no" ${curZero === 'no' ? 'selected' : ''}>취급 안 함 (2)</option>
+          </select>
+        `;
+      }
+      // P5: 신용카드 취급 여부 (B2_5_1)
+      case 'B2_5_1': {
+        const curCard = currentBaseline.creditCardMember || 'yes';
+        return `
+          <select class="baseline-select" id="select-credit-card-member">
+            <option value="yes" ${curCard === 'yes' ? 'selected' : ''}>신용카드 취급 (1) [기본]</option>
+            <option value="no" ${curCard === 'no' ? 'selected' : ''}>신용카드 미취급 (2)</option>
           </select>
         `;
       }
@@ -1256,14 +1370,32 @@ async function initSurveyDetailPage() {
             <span class="baseline-slider-val" id="val-zeropay">${currentBaseline.zeropayRatio ?? 10}%</span>
           </div>
         `;
-      // P5: 온누리상품권 지류형 비중 (B3)
+      // P5: 현금 결제 비중
+      case 'B2A_1':
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-cash-ratio" min="0" max="40" step="5" value="${currentBaseline.cashRatio ?? 10}" />
+            <span class="baseline-slider-val" id="val-cash-ratio">${currentBaseline.cashRatio ?? 10}%</span>
+          </div>
+        `;
+      // P5: 온누리상품권 지류형 비중 (B3_1)
       case 'B3_1':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-onnuri-paper-ratio" min="20" max="80" step="5" value="${currentBaseline.onnuriPaperRatio || 35}" />
+            <input type="range" class="baseline-slider" id="slider-onnuri-paper-ratio" min="10" max="90" step="5" value="${currentBaseline.onnuriPaperRatio || 35}" />
             <span class="baseline-slider-val" id="val-onnuri-paper-ratio">${currentBaseline.onnuriPaperRatio || 35}%</span>
           </div>
         `;
+      // P5: 온누리상품권 디지털형 비중 (B3_2)
+      case 'B3_2': {
+        const digitalVal = currentBaseline.onnuriDigitalRatio !== undefined ? currentBaseline.onnuriDigitalRatio : (100 - (currentBaseline.onnuriPaperRatio || 35));
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-onnuri-digital-ratio" min="10" max="90" step="5" value="${digitalVal}" />
+            <span class="baseline-slider-val" id="val-onnuri-digital-ratio">${digitalVal}%</span>
+          </div>
+        `;
+      }
       // P6: 인건비 지출 비중
       case 'B4_1':
         return `
@@ -1276,10 +1408,20 @@ async function initSurveyDetailPage() {
       case 'B4_3':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-cost-rent" min="10" max="35" step="1" value="${currentBaseline.costRentRatio || 20}" />
+            <input type="range" class="baseline-slider" id="slider-cost-rent" min="5" max="50" step="1" value="${currentBaseline.costRentRatio || 20}" />
             <span class="baseline-slider-val" id="val-cost-rent">${currentBaseline.costRentRatio || 20}%</span>
           </div>
         `;
+      // P6: 원재료/상품매입비 비중
+      case 'B4_2': {
+        const rawVal = currentBaseline.costRawRatio !== undefined ? currentBaseline.costRawRatio : 45;
+        return `
+          <div class="baseline-slider-container">
+            <input type="range" class="baseline-slider" id="slider-cost-raw" min="20" max="85" step="1" value="${rawVal}" />
+            <span class="baseline-slider-val" id="val-cost-raw">${rawVal}%</span>
+          </div>
+        `;
+      }
       // P6: 기타(세금) 지출 비중
       case 'B4_4':
         return `
@@ -1288,11 +1430,37 @@ async function initSurveyDetailPage() {
             <span class="baseline-slider-val" id="val-cost-tax">${currentBaseline.costTaxRatio ?? 10}%</span>
           </div>
         `;
+      // P6: 기타 영업비용 명칭 (TB4_4)
+      case 'TB4_4': {
+        const curEtc = currentBaseline.costEtcText || '세금';
+        return `
+          <select class="baseline-select" id="select-cost-etc-text">
+            <option value="세금" ${curEtc === '세금' ? 'selected' : ''}>세금 (부가가치세·종합소득세) [기본]</option>
+            <option value="공과금" ${curEtc === '공과금' ? 'selected' : ''}>공과금 (수도광열비·전기요금)</option>
+            <option value="광고비" ${curEtc === '광고비' ? 'selected' : ''}>광고홍보비 / 마케팅비</option>
+            <option value="포장소모품비" ${curEtc === '포장소모품비' ? 'selected' : ''}>포장재 / 소모품비</option>
+            <option value="기타잡비" ${curEtc === '기타잡비' ? 'selected' : ''}>기타 운영잡비</option>
+          </select>
+        `;
+      }
+      // P7: 온누리상품권 가맹 시작년도 (B5B_1)
+      case 'B5B_1': {
+        const curJoin = currentBaseline.onnuriJoinYearMode || 'auto';
+        return `
+          <select class="baseline-select" id="select-onnuri-join-mode">
+            <option value="auto" ${curJoin === 'auto' ? 'selected' : ''}>⚡ 개업연도 자동 연동 (A5 기준) [권장]</option>
+            <option value="2024" ${curJoin === '2024' ? 'selected' : ''}>2024년 고정 가맹</option>
+            <option value="2023" ${curJoin === '2023' ? 'selected' : ''}>2023년 고정 가맹</option>
+            <option value="2025" ${curJoin === '2025' ? 'selected' : ''}>2025년 고정 가맹</option>
+            <option value="rotation" ${curJoin === 'rotation' ? 'selected' : ''}>🎲 개업연도~2024년 자연 분산</option>
+          </select>
+        `;
+      }
       // P7: 일평균 온누리 이용 고객 수
       case 'B5C_1':
         return `
           <div class="baseline-slider-container">
-            <input type="range" class="baseline-slider" id="slider-onnuri-cust" min="2" max="10" step="1" value="${currentBaseline.onnuriCustomerAvg || 5}" />
+            <input type="range" class="baseline-slider" id="slider-onnuri-cust" min="2" max="20" step="1" value="${currentBaseline.onnuriCustomerAvg || 5}" />
             <span class="baseline-slider-val" id="val-onnuri-cust">${currentBaseline.onnuriCustomerAvg || 5}명</span>
           </div>
         `;
@@ -1531,6 +1699,16 @@ async function initSurveyDetailPage() {
             <span class="baseline-slider-val" id="val-cash-receipt">${currentBaseline.cashReceiptRatio || 40}%</span>
           </div>
         `;
+      // Agree: 개인정보 수집 및 이용 동의
+      case 'AGREE_1': {
+        const curAgree = currentBaseline.privacyAgree || 'yes';
+        return `
+          <select class="baseline-select" id="select-privacy-agree">
+            <option value="yes" ${curAgree === 'yes' ? 'selected' : ''}>개인정보 수집·이용 동의함 (1) [필수 권장]</option>
+            <option value="no" ${curAgree === 'no' ? 'selected' : ''}>동의하지 않음 (2) [설문 중단]</option>
+          </select>
+        `;
+      }
       // [조사원 평가 H1] 위생 및 점포 환경 5종
       case 'H1_1':
       case 'H1_2':
@@ -1657,12 +1835,30 @@ async function initSurveyDetailPage() {
       }
     };
 
-    const updateSqm = () => {
-      const valSqm = document.getElementById('val-sqm');
-      if (valSqm) {
-        const p = currentBaseline.storePyeong || 14;
-        valSqm.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i> ${Math.round(p * 3.3058)} m² (자동 연동)`;
+    const updateSqm = (p) => {
+      const pyeong = p !== undefined ? p : (currentBaseline.storePyeong || 14);
+      const sqm = Math.round(pyeong * 3.3058);
+      currentBaseline.storeSqm = sqm;
+      if (groupBaselines[activeGroup]) {
+        groupBaselines[activeGroup].storeSqm = sqm;
       }
+      const sliderSqm = document.getElementById('slider-sqm');
+      const valSqm = document.getElementById('val-sqm');
+      if (sliderSqm) sliderSqm.value = sqm;
+      if (valSqm) valSqm.textContent = `${sqm} m²`;
+    };
+
+    const updatePyeong = (s) => {
+      const sqm = s !== undefined ? s : (currentBaseline.storeSqm || 46);
+      const pyeong = Math.max(5, Math.round(sqm / 3.3058));
+      currentBaseline.storePyeong = pyeong;
+      if (groupBaselines[activeGroup]) {
+        groupBaselines[activeGroup].storePyeong = pyeong;
+      }
+      const sliderPyeong = document.getElementById('slider-pyeong');
+      const valPyeong = document.getElementById('val-pyeong');
+      if (sliderPyeong) sliderPyeong.value = pyeong;
+      if (valPyeong) valPyeong.textContent = `${pyeong}평`;
     };
 
     const updateProfit = () => {
@@ -1670,7 +1866,8 @@ async function initSurveyDetailPage() {
       if (valProfit) {
         const s = currentBaseline.annualSales || 180;
         const m = currentBaseline.profitMarginRate || 25;
-        valProfit.innerHTML = `<i class="fa-solid fa-calculator"></i> ${Math.round((s * m) / 100)} 백만 원 (자동 연동)`;
+        const profit = Math.round((s * m) / 100);
+        valProfit.innerHTML = `<i class="fa-solid fa-calculator"></i> ${profit} 백만 원 (연매출×이익률 자동 연동)`;
       }
     };
 
@@ -1682,40 +1879,72 @@ async function initSurveyDetailPage() {
         const local = currentBaseline.localRatio ?? 5;
         const zeropay = currentBaseline.zeropayRatio ?? 10;
         const cash = Math.max(0, 100 - card - onnuri - local - zeropay);
-        valCash.innerHTML = `<i class="fa-solid fa-calculator"></i> ${cash}% (자동 잔여, 5% 단위)`;
+        valCash.innerHTML = `${cash}%`;
       }
     };
 
-    const updateOnnuriDigital = () => {
-      const valDigital = document.getElementById('val-onnuri-digital');
-      if (valDigital) {
-        const paper = currentBaseline.onnuriPaperRatio || 35;
-        const digital = 100 - paper;
-        valDigital.innerHTML = `<i class="fa-solid fa-calculator"></i> ${digital}% (자동 잔여, 5% 단위)`;
+    const updateOnnuriDigital = (paperVal) => {
+      const p = paperVal !== undefined ? paperVal : (currentBaseline.onnuriPaperRatio || 35);
+      const digital = 100 - p;
+      currentBaseline.onnuriDigitalRatio = digital;
+      if (groupBaselines[activeGroup]) {
+        groupBaselines[activeGroup].onnuriDigitalRatio = digital;
       }
+      const sliderDigital = document.getElementById('slider-onnuri-digital-ratio');
+      const valDigital = document.getElementById('val-onnuri-digital-ratio');
+      if (sliderDigital) sliderDigital.value = digital;
+      if (valDigital) valDigital.textContent = `${digital}%`;
+    };
+
+    const updateOnnuriPaper = (digitalVal) => {
+      const d = digitalVal !== undefined ? digitalVal : (currentBaseline.onnuriDigitalRatio || 65);
+      const paper = 100 - d;
+      currentBaseline.onnuriPaperRatio = paper;
+      if (groupBaselines[activeGroup]) {
+        groupBaselines[activeGroup].onnuriPaperRatio = paper;
+      }
+      const sliderPaper = document.getElementById('slider-onnuri-paper-ratio');
+      const valPaper = document.getElementById('val-onnuri-paper-ratio');
+      if (sliderPaper) sliderPaper.value = paper;
+      if (valPaper) valPaper.textContent = `${paper}%`;
     };
 
     const updateRawCost = () => {
-      const valRaw = document.getElementById('val-cost-raw');
-      if (valRaw) {
-        const tax = currentBaseline.costTaxRatio || 10;
-        const labor = (currentBaseline.employeeRegular > 0 ? (currentBaseline.costLaborRatio || 25) : 0);
-        const rent = currentBaseline.costRentRatio || 20;
-        const raw = Math.max(10, 100 - tax - labor - rent);
-        valRaw.innerHTML = `<i class="fa-solid fa-calculator"></i> ${raw}% (자동 잔여)`;
+      const tax = currentBaseline.costTaxRatio || 10;
+      const labor = (currentBaseline.employeeRegular > 0 ? (currentBaseline.costLaborRatio || 25) : 0);
+      const rent = currentBaseline.costRentRatio || 20;
+      const raw = Math.max(10, 100 - tax - labor - rent);
+      currentBaseline.costRawRatio = raw;
+      if (groupBaselines[activeGroup]) {
+        groupBaselines[activeGroup].costRawRatio = raw;
       }
+      const sliderRaw = document.getElementById('slider-cost-raw');
+      const valRaw = document.getElementById('val-cost-raw');
+      if (sliderRaw) sliderRaw.value = raw;
+      if (valRaw) valRaw.textContent = `${raw}%`;
     };
 
+    // Q1: 응답자 자격
+    bindSelect('select-respondent-role', 'respondentRole');
+
+    // P1: 성별/나이 결측 폴백 & 사업자 등록 형태 & 과세 유형
+    bindSelect('select-ceo-gender-fallback', 'defaultCeoGender');
+    bindSlider('slider-ceo-age', 'val-ceo-age', 'defaultCeoAge', '세 (결측 시)');
+    bindSelect('select-biz-reg-type', 'bizRegType');
+    bindSelect('select-tax-type', 'taxType');
+
     // P2: 매장 면적 & 종업원 수
+    bindSlider('slider-sqm', 'val-sqm', 'storeSqm', ' m²', updatePyeong);
     bindSlider('slider-pyeong', 'val-pyeong', 'storePyeong', '평', updateSqm);
     bindSlider('slider-family-emp', 'val-family-emp', 'employeeFamily', '명');
     bindSlider('slider-paid-emp', 'val-paid-emp', 'employeeRegular', '명', updateRawCost);
     bindSlider('slider-temp-emp', 'val-temp-emp', 'employeeTemp', '명');
     bindSelect('select-emp-sales-link', 'empSalesLink');
 
-    // P3: 매출 & 분기 패턴
+    // P3: 매출 & 영업개월수 & 분기 패턴
     bindSlider('slider-daily-sales', 'val-daily-sales', 'dailySales', '만');
     bindSlider('slider-annual-sales', 'val-annual-sales', 'annualSales', 'M', updateProfit);
+    bindSlider('slider-operating-months', 'val-operating-months', 'operatingMonths', '개월');
     bindSelect('select-quarter-pattern', 'quarterPattern');
 
     // P4: 마진율 & 매출변화 & 고객수 & 시간 & 일수
@@ -1725,21 +1954,27 @@ async function initSurveyDetailPage() {
     bindSlider('slider-biz-hours', 'val-biz-hours', 'dailyBusinessHours', '시간');
     bindSlider('slider-biz-days', 'val-biz-days', 'monthlyBusinessDays', '일');
 
-    // P5: 결제수단별 취급(지역사랑/제로페이) & 비중(카드/온누리/지역/제로) & 온누리지류형
+    // P5: 결제수단별 취급(지역사랑/제로페이) & 비중 & 온누리지류/디지털
     bindSelect('select-local-member', 'localPayMember');
     bindSelect('select-zeropay-member', 'zeropayMember');
+    bindSelect('select-credit-card-member', 'creditCardMember');
     bindSlider('slider-credit-card', 'val-credit-card', 'creditCardRatio', '%', updateCashRatio);
     bindSlider('slider-onnuri', 'val-onnuri', 'onnuriRatio', '%', updateCashRatio);
     bindSlider('slider-local-pay', 'val-local-pay', 'localRatio', '%', updateCashRatio);
     bindSlider('slider-zeropay', 'val-zeropay', 'zeropayRatio', '%', updateCashRatio);
+    bindSlider('slider-cash-ratio', 'val-cash-ratio', 'cashRatio', '%');
     bindSlider('slider-onnuri-paper-ratio', 'val-onnuri-paper-ratio', 'onnuriPaperRatio', '%', updateOnnuriDigital);
+    bindSlider('slider-onnuri-digital-ratio', 'val-onnuri-digital-ratio', 'onnuriDigitalRatio', '%', updateOnnuriPaper);
 
-    // P6: 인건비 & 임차료 & 기타(세금)
+    // P6: 인건비 & 임차료 & 원재료비 & 기타(세금)
     bindSlider('slider-cost-labor', 'val-cost-labor', 'costLaborRatio', '%', updateRawCost);
     bindSlider('slider-cost-rent', 'val-cost-rent', 'costRentRatio', '%', updateRawCost);
+    bindSlider('slider-cost-raw', 'val-cost-raw', 'costRawRatio', '%');
     bindSlider('slider-cost-tax', 'val-cost-tax', 'costTaxRatio', '%', updateRawCost);
+    bindSelect('select-cost-etc-text', 'costEtcText');
 
-    // P7: 온누리 고객수 & 지류 & 모바일 & 만족도
+    // P7: 온누리 고객수 & 지류 & 모바일 & 가맹연도 & 만족도
+    bindSelect('select-onnuri-join-mode', 'onnuriJoinYearMode');
     bindSlider('slider-onnuri-cust', 'val-onnuri-cust', 'onnuriCustomerAvg', '명');
     bindSelect('select-onnuri-paper', 'onnuriPaperMember');
     bindSelect('select-onnuri-mobile', 'onnuriMobileMember');
@@ -1779,6 +2014,9 @@ async function initSurveyDetailPage() {
     bindSelect('select-succession-plan', 'successionPlan');
     bindSlider('slider-years', 'val-years', 'plannedYears', '년');
     bindSlider('slider-cash-receipt', 'val-cash-receipt', 'cashReceiptRatio', '%');
+
+    // Agree: 개인정보 동의
+    bindSelect('select-privacy-agree', 'privacyAgree');
 
     // [조사원 평가 H1 & H3 슬라이더 바인딩]
     const getRatingLabel = (val) => {
