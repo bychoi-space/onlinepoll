@@ -696,11 +696,28 @@ export async function runKstatSurvey({
 
         const fB2A = page.frame({ url: /\/B2A\.asp/i });
         if (fB2A) {
-          const cashVal = String(persona.paymentMethods?.cash || '0');
-          const onnuriVal = String(persona.paymentMethods?.onnuri || '0');
-          const localVal = String(persona.paymentMethods?.local || '0');
-          const zeropayVal = String(persona.paymentMethods?.zeropay || '0');
-          const cardVal = String(persona.paymentMethods?.card || '0');
+          let nCash = parseInt(persona.paymentMethods?.cash || '0', 10);
+          let nOnnuri = parseInt(persona.paymentMethods?.onnuri || '0', 10);
+          let nLocal = parseInt(persona.paymentMethods?.local || '0', 10);
+          let nZeropay = parseInt(persona.paymentMethods?.zeropay || '0', 10);
+          let nCard = parseInt(persona.paymentMethods?.card || '0', 10);
+
+          const sumB2A = nCash + nOnnuri + nLocal + nZeropay + nCard;
+          if (sumB2A !== 100) {
+            const diff = 100 - sumB2A;
+            if (nCard + diff >= 20) {
+              nCard += diff;
+            } else {
+              nCash = Math.max(5, nCash + diff);
+            }
+            logger.warn(`[Kstat P5] B2A 결제수단 합계(${sumB2A}%) 불일치 감지 ➔ 100% 자동 보정 (현금:${nCash}, 카드:${nCard}, 온누리:${nOnnuri})`);
+          }
+
+          const cashVal = String(nCash);
+          const onnuriVal = String(nOnnuri);
+          const localVal = String(nLocal);
+          const zeropayVal = String(nZeropay);
+          const cardVal = String(nCard);
 
           await fB2A.evaluate(({ cash, onnuri, local, zeropay, card }) => {
             const setVal = (id, val) => {

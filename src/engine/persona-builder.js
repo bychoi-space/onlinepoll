@@ -239,75 +239,76 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   // 5. 종업원수 산출 (P2 A10) - [규칙] 매출 연동 자동 고용 규칙 또는 레인지 설정
   let employeeRegular = 0;
   let employeeTemp = 0;
-  let employeeFamily = 1;
+  let employeeFamily = 0;
 
-  const hasExplicitEmployeeRanges = (
-    mb.employeeFamilyMin !== undefined && mb.employeeFamilyMax !== undefined &&
-    mb.employeeRegularMin !== undefined && mb.employeeRegularMax !== undefined &&
-    mb.employeeTempMin !== undefined && mb.employeeTempMax !== undefined
-  );
-
-  if (hasExplicitEmployeeRanges) {
+  // 1) 가족 종사자 수 (A10_1) 결정: 레인지 설정 시 엄격 반영 (0명 허용), 미설정 시 autoEmp/기본값 반영
+  if (mb.employeeFamilyMin !== undefined && mb.employeeFamilyMax !== undefined) {
     const minFam = Math.max(0, parseInt(mb.employeeFamilyMin, 10));
     const maxFam = Math.max(minFam, parseInt(mb.employeeFamilyMax, 10));
     employeeFamily = randBetween(minFam, maxFam);
+  } else if (isAutoEmp) {
+    const baseFamily = mb.employeeFamily !== undefined ? parseInt(mb.employeeFamily, 10) : 0;
+    if (annualSales < 125 || dailySales < 50) {
+      employeeFamily = baseFamily > 0 ? (rng() < 0.5 ? 1 : 0) : (annualSales >= 90 && rng() < 0.3 ? 1 : 0);
+    } else if (annualSales < 220) {
+      employeeFamily = Math.max(0, baseFamily);
+    } else if (annualSales < 320) {
+      employeeFamily = baseFamily > 0 ? 1 : (rng() < 0.4 ? 1 : 0);
+    } else {
+      employeeFamily = Math.max(0, baseFamily);
+    }
+  } else {
+    const baseFamily = mb.employeeFamily !== undefined ? parseInt(mb.employeeFamily, 10) : 0;
+    employeeFamily = Math.max(0, baseFamily);
+  }
 
+  // 2) 상시 유급 종업원 수 (A10_2) 및 임시/일용 종업원 수 (A10_3) 결정
+  if (mb.employeeRegularMin !== undefined && mb.employeeRegularMax !== undefined) {
     const minReg = Math.max(0, parseInt(mb.employeeRegularMin, 10));
     const maxReg = Math.max(minReg, parseInt(mb.employeeRegularMax, 10));
     employeeRegular = randBetween(minReg, maxReg);
+  } else if (isAutoEmp) {
+    const baseRegular = mb.employeeRegular !== undefined ? parseInt(mb.employeeRegular, 10) : 0;
+    if (annualSales < 125 || dailySales < 50) {
+      employeeRegular = 0;
+    } else if (annualSales < 220) {
+      if (groupKey === 'group3' && annualSales >= 160) {
+        employeeRegular = 1;
+      } else if (annualSales >= 175 && (baseRegular > 0 || rng() < 0.45)) {
+        employeeRegular = 1;
+      } else {
+        employeeRegular = 0;
+      }
+    } else if (annualSales < 320) {
+      employeeRegular = Math.max(1, baseRegular + (annualSales >= 265 ? 1 : 0));
+    } else {
+      employeeRegular = Math.max(2, baseRegular + randBetween(1, 2));
+    }
+  } else {
+    const baseRegular = mb.employeeRegular !== undefined ? parseInt(mb.employeeRegular, 10) : 0;
+    employeeRegular = Math.max(0, baseRegular);
+  }
 
+  if (mb.employeeTempMin !== undefined && mb.employeeTempMax !== undefined) {
     const minTmp = Math.max(0, parseInt(mb.employeeTempMin, 10));
     const maxTmp = Math.max(minTmp, parseInt(mb.employeeTempMax, 10));
     employeeTemp = randBetween(minTmp, maxTmp);
   } else if (isAutoEmp) {
-    const baseRegular = mb.employeeRegular !== undefined ? parseInt(mb.employeeRegular, 10) : 0;
     const baseTemp = mb.employeeTemp !== undefined ? parseInt(mb.employeeTemp, 10) : 0;
-    const baseFamily = mb.employeeFamily !== undefined ? parseInt(mb.employeeFamily, 10) : 1;
-
-    // 1) 저매출 구간 (연매출 < 125백만 원 또는 일매출 < 50만 원)
-    // 영세 1인/가족 점포: 상용/임시 종업원 고용 여력 없음 (0명 필수, 인건비 0원)
     if (annualSales < 125 || dailySales < 50) {
-      employeeRegular = 0;
       employeeTemp = 0;
-      employeeFamily = annualSales < 90 ? 0 : (rng() < 0.6 ? 1 : 0);
-    }
-    // 2) 중소매출 구간 (연매출 125 ~ 220백만 원 / 일매출 50 ~ 80만 원)
-    // 골목상권 표준: 가족 1명 + (외식업이거나 매출 175M 이상 시 1명 가능, 그 외 0명)
-    else if (annualSales < 220) {
-      employeeFamily = Math.max(0, baseFamily);
+    } else if (annualSales < 220) {
       if (groupKey === 'group3' && annualSales >= 160) {
-        employeeRegular = 1;
         employeeTemp = (rng() < 0.4 ? 1 : 0);
-      } else if (annualSales >= 175 && (baseRegular > 0 || rng() < 0.45)) {
-        employeeRegular = 1;
-        employeeTemp = 0;
       } else {
-        employeeRegular = 0;
         employeeTemp = (annualSales >= 150 && rng() < 0.35) ? 1 : 0;
       }
-    }
-    // 3) 고매출 구간 (연매출 220 ~ 320백만 원 / 일매출 80 ~ 115만 원)
-    // 성업 점포: 1인 운영 불가, 유급 상용 1~2명 필수 고용
-    else if (annualSales < 320) {
-      employeeFamily = 1;
-      employeeRegular = Math.max(1, baseRegular + (annualSales >= 265 ? 1 : 0));
+    } else if (annualSales < 320) {
       employeeTemp = (baseTemp > 0 ? baseTemp : (rng() < 0.5 ? 1 : 0));
-    }
-    // 4) 초고매출 구간 (연매출 320백만 원 이상 / 일매출 115만 원 이상)
-    // 대형/기업형 점포: 상용 2~3명, 임시 1~2명
-    else {
-      employeeFamily = Math.max(1, baseFamily);
-      employeeRegular = Math.max(2, baseRegular + randBetween(1, 2));
+    } else {
       employeeTemp = Math.max(1, (baseTemp || 1));
     }
   } else {
-    // 수동 고정 모드 (사용자 슬라이더 지정값 엄격 유지)
-    const baseFamily = mb.employeeFamily !== undefined ? parseInt(mb.employeeFamily, 10) : 1;
-    employeeFamily = Math.max(0, baseFamily + (baseFamily > 0 ? randBetween(-1, 0) : 0));
-
-    const baseRegular = mb.employeeRegular !== undefined ? parseInt(mb.employeeRegular, 10) : 0;
-    employeeRegular = Math.max(0, baseRegular);
-
     const baseTemp = mb.employeeTemp !== undefined ? parseInt(mb.employeeTemp, 10) : 0;
     employeeTemp = Math.max(0, baseTemp);
   }
@@ -499,14 +500,38 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   // 사용자 지정 현금 비중(cashRatio) 반영 (5% 단위 정합성 유지)
   if (mb.cashRatio !== undefined && !mb.rotationMode) {
     const userCash = Math.max(0, Math.min(40, Math.round(parseInt(mb.cashRatio, 10) / 5) * 5));
-    const delta = userCash - payCash;
+    let delta = userCash - payCash;
     if (delta !== 0) {
       payCash = userCash;
-      if (payOnnuri - delta >= 5) {
-        payOnnuri -= delta;
-      } else if (payCard - delta >= 50) {
+      // delta를 신용카드(payCard)에서 우선 차감
+      if (!isNoCard && payCard - delta >= 30) {
         payCard -= delta;
+        delta = 0;
+      } else if (!isNoCard) {
+        const canDeduct = Math.max(0, payCard - 30);
+        payCard -= canDeduct;
+        delta -= canDeduct;
       }
+
+      // 그래도 남은 delta는 온누리/제로페이에서 분산 차감
+      if (delta > 0 && payOnnuri - delta >= 5) {
+        payOnnuri -= delta;
+        delta = 0;
+      } else if (delta > 0 && payZeropay - delta >= 0) {
+        payZeropay -= delta;
+        delta = 0;
+      }
+    }
+  }
+
+  // [무결점 100% 보장] 5대 결제수단(현금, 온누리, 지역, 제로페이, 카드) 합계 정확히 100% 엄격 정규화
+  let paymentSum = payCash + payOnnuri + payLocal + payZeropay + payCard;
+  if (paymentSum !== 100) {
+    const diff = 100 - paymentSum;
+    if (!isNoCard && payCard + diff >= 20) {
+      payCard += diff;
+    } else {
+      payCash = Math.max(5, payCash + diff);
     }
   }
 

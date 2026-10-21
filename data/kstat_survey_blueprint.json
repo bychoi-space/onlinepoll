@@ -10,7 +10,7 @@
     "storeSqmMax": 65,
     "storePyeongMin": 6,
     "storePyeongMax": 20,
-    "employeeFamily": 1,
+    "employeeFamily": 0,
     "employeeFamilyMin": 0,
     "employeeFamilyMax": 2,
     "employeeRegular": 0,
@@ -298,9 +298,9 @@
           "id": "A10_1",
           "label": "가족 종사자 수",
           "type": "tunable",
-          "baseline": "1 명",
+          "baseline": "0 명",
           "range": "0~5 명",
-          "note": "무급 가족종사자"
+          "note": "무급 가족종사자 (0명 가능)"
         },
         {
           "id": "A10_2",

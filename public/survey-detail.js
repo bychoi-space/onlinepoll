@@ -757,7 +757,7 @@ async function initSurveyDetailPage() {
     storeSqm: 46,
     storeSqmMin: 20,
     storeSqmMax: 65,
-    employeeFamily: 1,
+    employeeFamily: 0,
     employeeFamilyMin: 0,
     employeeFamilyMax: 2,
     employeeRegular: 0,

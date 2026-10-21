@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const customFields = [];
   let lastCreatedQuota = null;
   let savedQuotasList = [];
+  let isGeneratingQuota = false;
 
   // ==========================================
   // [0] 기존 쿼터 목록 로드 & 이어하기(Resume) 선택 제어
@@ -335,7 +336,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 초기 온누리 지역 및 마스터 DB 상태 로드
   loadMasterDBStatus();
   loadOnnuriRegions().then(() => {
-    fetchMarketStats();
+    if (inputOnnuriMarket && inputOnnuriMarket.value.trim()) {
+      fetchMarketStats();
+    }
   });
 
   // ==========================================
@@ -694,7 +697,8 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           appendLog(data.level, data.message, data.timestamp);
         } else if (data.type === 'QUOTA_CHECKPOINT') {
-          // 매 건 수집되어 파일에 체크포인트 저장될 때마다 즉시 화면 표 갱신 & 이어하기 파일명 자동 세팅
+          // 사용자가 직접 쿼터 생성을 실행 중일 때만 실시간 화면 표 갱신 (초기 접속 시 과거 이벤트로 인한 오염 원천 차단)
+          if (!isGeneratingQuota) return;
           if (data.jsonFileName && inputResumeFileName) {
             inputResumeFileName.value = data.jsonFileName;
           }
@@ -721,6 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resumeFileName = inputResumeFileName && inputResumeFileName.value ? inputResumeFileName.value.trim() : null;
 
     try {
+      isGeneratingQuota = true;
       btnGenerate.disabled = true;
       if (btnResumeFailedQuota) btnResumeFailedQuota.disabled = true;
 
@@ -812,6 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadSavedQuotasForResume(inputResumeFileName ? inputResumeFileName.value : null);
       alert(`쿼터 생성 중 연결 지연이 발생했습니다: ${err.message}\n\n현재까지 수집된 쿼터는 안전하게 저장되었습니다. [실패 지점부터 이어하기] 버튼을 눌러 중단된 지점부터 바로 이어서 완료하실 수 있습니다.`);
     } finally {
+      isGeneratingQuota = false;
       btnGenerate.disabled = false;
       if (btnResumeFailedQuota) btnResumeFailedQuota.disabled = false;
       updateSubmitButtonLabel();

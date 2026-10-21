@@ -651,18 +651,11 @@ export async function getStratifiedMarketMerchants({
       }
     }
 
-    // 그래도 특정 업종 재고 한계로 전체 목표 수량에 미달하는 경우 시장 내 잔여 우량 가맹점에서 충원
+    // [원칙 엄수: 거짓된 데이터 원천 차단]
+    // 시장에 해당 업종 실존 가맹점이 부족한 경우, 다른 업종(음식점 등)을 가져와 가짜 업종(농산물 등)으로 위장시키지 않습니다.
     for (const item of shortages) {
-      if (item.needed <= 0) continue;
-      const fallbackPool = validMerchants
-        .filter(m => !usedBizNumbers.has(m.bizNumber))
-        .map(m => ({ ...m, targetCategory: item.catName }));
-
-      const pickedFallback = fallbackPool.slice(0, item.needed);
-      for (const p of pickedFallback) {
-        usedBizNumbers.add(p.bizNumber);
-        selectedResults.push(p);
-        item.needed--;
+      if (item.needed > 0 && item.catName !== '가정용품') {
+        logger.warn(`[Onnuri 층화 추출] "${marketName}" 시장 내 "${item.catName}" 실존 정상가맹점 부족 (요청 대비 ${item.needed}건 부족) ➔ 팩트 기반 데이터 보존을 위해 실존 가맹점만 선별합니다.`);
       }
     }
   }

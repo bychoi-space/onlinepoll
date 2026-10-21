@@ -58,9 +58,11 @@ class EventBroadcaster {
   addClient(res) {
     this.clients.add(res);
 
-    // 연결 시 최근 히스토리 전송
+    // 연결 시 최근 일반 텍스트 로그 히스토리만 전송 (QUOTA_CHECKPOINT 등 대형 쿼터 데이터는 과거 재생에서 엄격 제외하여 신규 접속 시 화면 오염 원천 방지)
     this.history.forEach((data) => {
-      res.write(`data: ${JSON.stringify(data)}\n\n`);
+      if (data.type === 'log') {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      }
     });
 
     res.on('close', () => {
@@ -104,9 +106,12 @@ class EventBroadcaster {
       };
     }
 
-    this.history.push(eventData);
-    if (this.history.length > this.maxHistory) {
-      this.history.shift();
+    // 일반 로그 및 중요 알림만 히스토리에 보관 (QUOTA_CHECKPOINT 같은 대형 쿼터 데이터는 클라이언트 화면 오염 및 메모리 누수 방지를 위해 히스토리 보관 제외)
+    if (eventData.type !== 'QUOTA_CHECKPOINT') {
+      this.history.push(eventData);
+      if (this.history.length > this.maxHistory) {
+        this.history.shift();
+      }
     }
 
     const message = `data: ${JSON.stringify(eventData)}\n\n`;
