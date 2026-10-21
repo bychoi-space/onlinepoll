@@ -594,6 +594,30 @@ document.addEventListener('DOMContentLoaded', () => {
     btnScanMarketStats.addEventListener('click', fetchMarketStats);
   }
 
+  // 시장명 입력창에서 엔터 키 입력 시 전체 쿼터 생성이 아닌 [현황조회]만 안전하게 실행되도록 방어
+  if (inputOnnuriMarket) {
+    inputOnnuriMarket.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        fetchMarketStats();
+      }
+    });
+  }
+
+  // 폼 내 일반 텍스트 입력란에서 엔터 키 입력 시 무의도한 쿼터 생성 Submit 방지
+  form.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'submit') {
+      if (e.target.id === 'onnuri-market-name') {
+        e.preventDefault();
+        e.stopPropagation();
+        fetchMarketStats();
+      } else if (e.target.id !== 'input-new-field') {
+        e.preventDefault();
+      }
+    }
+  });
+
   // 초기 테이블 렌더링
   renderStratifiedTable();
   updateStratifiedTotal();
