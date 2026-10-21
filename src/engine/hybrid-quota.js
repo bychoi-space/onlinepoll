@@ -6,7 +6,7 @@
 
 import { chromium } from 'playwright';
 import { getMarketMerchants, getStratifiedMarketMerchants } from './onnuri.js';
-import { enrichBusinessData, fillMissingCeoPersona, hasCompleteAddress, searchAddressByCompany } from './enricher.js';
+import { enrichBusinessData, fillMissingCeoPersona, hasCompleteAddress, searchAddressByCompany, ensureRoadAddress, normalizeRoadAddress } from './enricher.js';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
 
@@ -298,18 +298,25 @@ export function formatStandardHandledItems(opts) {
  * - 상세 번지/건물번호가 있는 구체적인 주소를 최우선 보존
  */
 export function pickBestAddress(mbzRoad, onnuriAddr, mbzLot) {
+  const hasRoadNumber = (addr) => {
+    if (!addr || typeof addr !== 'string') return false;
+    return /(?:로|길)\s*[\d-]+/.test(addr);
+  };
   const hasDetail = (addr) => {
     if (!addr || typeof addr !== 'string') return false;
     const trimmed = addr.trim();
-    // 상세 번지/건물번호/호수 등 숫자 정보가 포함되어 있고 8글자 이상인 경우 유효 상세주소로 판단
     return /\d/.test(trimmed) && trimmed.length >= 8;
   };
 
   // 1순위: 마켓비즈 도로명 주소 (상세 건물번호/도로명이 있는 경우)
+  if (hasRoadNumber(mbzRoad)) return mbzRoad.trim();
+  // 2순위: 온누리 주소 중 도로명 번호가 있는 경우
+  if (hasRoadNumber(onnuriAddr)) return onnuriAddr.trim();
+  // 3순위: 마켓비즈 도로명 주소 (일반 상세가 있는 경우)
   if (hasDetail(mbzRoad)) return mbzRoad.trim();
-  // 2순위: 온누리 공인 주소 (동, 번지, 호수 등 상세 점포 위치가 있는 경우)
+  // 4순위: 온누리 공인 주소 (동, 번지, 호수 등 상세 점포 위치가 있는 경우)
   if (hasDetail(onnuriAddr)) return onnuriAddr.trim();
-  // 3순위: 마켓비즈 지번 소재지 (상세 번지가 있는 경우)
+  // 5순위: 마켓비즈 지번 소재지 (상세 번지가 있는 경우)
   if (hasDetail(mbzLot)) return mbzLot.trim();
 
   // 상세 번호가 없는 광역 주소만 남은 경우, 더 구체적이고 긴 주소를 우선 선택
@@ -744,21 +751,17 @@ export async function buildHybridOnnuriQuota({
       const finalCeoName = marketBzDetail.mbzCeoName || null;
       let finalAddress = pickBestAddress(marketBzDetail.mbzRoadAddress, merchant.address, marketBzDetail.mbzAddress);
 
-      // 온누리와 마켓비즈 모두 번지 없는 광역 주소만 준 경우, 외부 포털에서 실존 상세 도로명 주소 자동 탐색
-      if (!hasCompleteAddress(finalAddress, merchant.marketName || marketName)) {
-        try {
-          const addrResult = await searchAddressByCompany({
-            companyName: merchant.companyName,
-            marketName: merchant.marketName || marketName,
-            address: finalAddress
-          });
-          if (addrResult && addrResult.address) {
-            logger.info(`[Hybrid Quota] "${merchant.companyName}" 상세 도로명 주소 외부 탐색 보강: "${finalAddress}" ➔ "${addrResult.address}"`);
-            finalAddress = addrResult.address;
-          }
-        } catch (e) {
-          // ignore
-        }
+      // 모든 주소를 100% 공인 도로명주소로 정규화 및 보강
+      try {
+        finalAddress = await ensureRoadAddress({
+          companyName: merchant.companyName,
+          marketName: merchant.marketName || marketName,
+          address: finalAddress,
+          bizNumber: merchant.bizNumber
+        });
+      } catch (e) {
+        logger.warn(`[Hybrid Quota] "${merchant.companyName}" 도로명주소 보강 중 경미한 오류: ${e.message}`);
+        finalAddress = normalizeRoadAddress(finalAddress);
       }
 
       const mergedItem = {

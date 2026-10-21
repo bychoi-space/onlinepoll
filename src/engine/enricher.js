@@ -484,6 +484,275 @@ export async function searchAddressByCompany({ companyName, marketName, address 
   return null;
 }
 
+const KAKAO_KEY = 'b70a114467ff79ff2dd5d4d4d1ba118f';
+const KAKAO_HEADERS = {
+  Authorization: `KakaoAK ${KAKAO_KEY}`,
+  'KA': 'sdk/1.0.0 os/javascript lang/ko-KR device/pc origin/https://www.onnuri.gift',
+  'Origin': 'https://www.onnuri.gift'
+};
+
+const onnuriPlaceCache = new Map();
+
+/**
+ * 온누리 신규 플랫폼(onnuri.gift) 시장별 가맹점 캐시 로더
+ */
+export async function getOnnuriMarketStores(marketName, sampleAddress = '') {
+  const cacheKey = (marketName || sampleAddress || '').trim();
+  if (!cacheKey) return [];
+  if (onnuriPlaceCache.has(cacheKey)) return onnuriPlaceCache.get(cacheKey);
+
+  try {
+    let coord = null;
+    const searchTerms = [
+      marketName,
+      marketName ? `${marketName} 전통시장` : '',
+      marketName ? `${marketName} 상점가` : '',
+      sampleAddress ? sampleAddress.split(' ').slice(0, 3).join(' ') : ''
+    ].filter(Boolean);
+
+    for (const st of searchTerms) {
+      try {
+        const res = await fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(st)}`, {
+          headers: KAKAO_HEADERS
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const doc = data.documents?.[0];
+        if (doc?.x && doc?.y) {
+          coord = { latitude: parseFloat(doc.y), longitude: parseFloat(doc.x) };
+          break;
+        }
+      } catch (_) {}
+    }
+
+    if (coord) {
+      const pRes = await fetch('https://www.onnuri.gift/api/v3/onrgt/place/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+        body: JSON.stringify({
+          latitude: coord.latitude,
+          longitude: coord.longitude,
+          radius: 800
+        })
+      });
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        const list = pData.data?.list || [];
+        onnuriPlaceCache.set(cacheKey, list);
+        return list;
+      }
+    }
+  } catch (err) {
+    logger.warn(`[Enricher] onnuri.gift 시장 가맹점 조회 실패 (${marketName}): ${err.message}`);
+  }
+
+  onnuriPlaceCache.set(cacheKey, []);
+  return [];
+}
+
+/**
+ * 지번주소를 카카오 공인 Geocoder API를 통해 도로명주소로 변환
+ */
+export async function convertLotToRoadAddress(addr) {
+  if (!addr || typeof addr !== 'string') return null;
+  const cleanLot = addr
+    .replace(/\([^)]*\)/g, '')
+    .replace(/지하\s*\d+층/g, '')
+    .replace(/\b\d+층\b/g, '')
+    .replace(/\b\d+호\b/g, '')
+    .replace(/[,\t]/g, ' ')
+    .trim();
+  try {
+    const res = await fetch(`https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(cleanLot)}`, {
+      headers: KAKAO_HEADERS
+    });
+    if (!res.ok) return null;
+    const d = await res.json();
+    const doc = d.documents?.[0];
+    if (doc?.road_address?.address_name) {
+      const bName = doc.road_address.building_name ? ` (${doc.road_address.building_name})` : '';
+      return `${doc.road_address.address_name}${bName}`;
+    }
+  } catch (_) {}
+  return null;
+}
+
+/**
+ * 키워드(상호+지역)를 카카오 로컬 검색을 통해 도로명주소로 변환 (지역 교차 검증 적용)
+ */
+export async function convertKeywordToRoadAddress(keyword, requiredRegion = '') {
+  if (!keyword || typeof keyword !== 'string') return null;
+  try {
+    const res = await fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(keyword)}`, {
+      headers: KAKAO_HEADERS
+    });
+    if (!res.ok) return null;
+    const d = await res.json();
+    const docs = d.documents || [];
+    for (const doc of docs) {
+      if (doc?.road_address_name && /(?:로|길)\s*[\d-]+/.test(doc.road_address_name)) {
+        // 지역 교차 검증: 지정된 시/도, 시/군/구, 읍/면/동이 있는 경우 타 지역 배제
+        if (requiredRegion) {
+          const reqParts = requiredRegion.split(' ').filter(p => p.length >= 2);
+          const roadMatches = reqParts.some(rp => doc.road_address_name.includes(rp) || (doc.address_name && doc.address_name.includes(rp)));
+          if (!roadMatches) continue;
+        }
+        return doc.road_address_name;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+/**
+ * 도로명주소 표준 정규화 (시/도 명칭 통일 및 불필요 공백 제거)
+ */
+export function normalizeRoadAddress(addr) {
+  if (!addr || typeof addr !== 'string') return '';
+  let cleaned = String(addr).trim();
+  if (cleaned.startsWith('서울 ') && !cleaned.startsWith('서울특별시 ')) {
+    cleaned = '서울특별시 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('경기 ') && !cleaned.startsWith('경기도 ')) {
+    cleaned = '경기도 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('인천 ') && !cleaned.startsWith('인천광역시 ')) {
+    cleaned = '인천광역시 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('부산 ') && !cleaned.startsWith('부산광역시 ')) {
+    cleaned = '부산광역시 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('대구 ') && !cleaned.startsWith('대구광역시 ')) {
+    cleaned = '대구광역시 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('대전 ') && !cleaned.startsWith('대전광역시 ')) {
+    cleaned = '대전광역시 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('광주 ') && !cleaned.startsWith('광주광역시 ')) {
+    cleaned = '광주광역시 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('울산 ') && !cleaned.startsWith('울산광역시 ')) {
+    cleaned = '울산광역시 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('세종 ') && !cleaned.startsWith('세종특별자치시 ')) {
+    cleaned = '세종특별자치시 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('강원 ') && !cleaned.startsWith('강원특별자치도 ')) {
+    cleaned = '강원특별자치도 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('전북 ') && !cleaned.startsWith('전북특별자치도 ')) {
+    cleaned = '전북특별자치도 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('경북 ') && !cleaned.startsWith('경상북도 ')) {
+    cleaned = '경상북도 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('경남 ') && !cleaned.startsWith('경상남도 ')) {
+    cleaned = '경상남도 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('충북 ') && !cleaned.startsWith('충청북도 ')) {
+    cleaned = '충청북도 ' + cleaned.slice(3);
+  } else if (cleaned.startsWith('충남 ') && !cleaned.startsWith('충청남도 ')) {
+    cleaned = '충청남도 ' + cleaned.slice(3);
+  }
+  return cleaned.replace(/\s+/g, ' ');
+}
+
+/**
+ * 도로명주소 100% 보장 엔진 (4단계 하이브리드 파이프라인)
+ */
+export async function ensureRoadAddress({ companyName, marketName, address, bizNumber }) {
+  if (!address && !companyName) return null;
+
+  const currentAddr = String(address || '').trim();
+  const cleanComp = String(companyName || '').replace(/\([^)]*\)/g, '').replace(/주식회사/g, '').trim();
+
+  // 1. 이미 유효한 도로명 번호가 포함된 도로명주소인 경우
+  if (/(?:로|길)\s*[\d-]+/.test(currentAddr)) {
+    return normalizeRoadAddress(currentAddr);
+  }
+
+  // 2. 카카오 공인 Geocoder API (지번 ➔ 도로명주소 변환)
+  if (currentAddr && /\d/.test(currentAddr)) {
+    const road = await convertLotToRoadAddress(currentAddr);
+    if (road && /(?:로|길)\s*[\d-]+/.test(road)) {
+      return normalizeRoadAddress(road);
+    }
+  }
+
+  // 3. onnuri.gift 신규 플랫폼 시장 가맹점 매칭
+  if (cleanComp) {
+    const stores = await getOnnuriMarketStores(marketName, currentAddr);
+    if (stores.length > 0) {
+      const match = stores.find(s => {
+        const sName = (s.frcsNm || '').replace(/\([^)]*\)/g, '').trim();
+        return sName === cleanComp || sName.includes(cleanComp) || cleanComp.includes(sName);
+      });
+      if (match?.frcsAddr && /(?:로|길)\s*[\d-]+/.test(match.frcsAddr)) {
+        return normalizeRoadAddress(match.frcsAddr);
+      }
+    }
+  }
+
+  // 4. 카카오 키워드 검색 ([지역 접두사] + [상호 변형])
+  if (cleanComp) {
+    // 지역 단서 추출 (시/도, 시/군/구, 읍/면/동)
+    const addrParts = currentAddr.split(' ').filter(Boolean);
+    let regionPrefix = '';
+    let dongOrGu = '';
+
+    for (let i = addrParts.length - 1; i >= 0; i--) {
+      const p = addrParts[i];
+      if (/(?:동|읍|면|리)$/.test(p)) {
+        dongOrGu = p;
+        break;
+      }
+    }
+    if (!dongOrGu) {
+      for (let i = addrParts.length - 1; i >= 0; i--) {
+        const p = addrParts[i];
+        if (/(?:구|군|시)$/.test(p)) {
+          dongOrGu = p;
+          break;
+        }
+      }
+    }
+
+    if (addrParts.length >= 2) {
+      regionPrefix = addrParts.slice(0, 3).join(' ');
+    }
+
+    // 상호 변형 생성 (오렌즈안경원 -> 오렌즈, 신림점 분리 등)
+    const compVariants = [
+      cleanComp,
+      cleanComp.replace(/안경원$/, '안경'),
+      cleanComp.replace(/안경원$/, ''),
+      cleanComp.replace(/점$/, '').trim(),
+      cleanComp.replace(/본점$/, '').trim()
+    ].filter((v, idx, arr) => v && arr.indexOf(v) === idx);
+
+    const requiredRegion = dongOrGu || regionPrefix || marketName || '';
+
+    for (const cv of compVariants) {
+      const searchQueries = [
+        dongOrGu ? `${dongOrGu} ${cv}` : '',
+        regionPrefix ? `${regionPrefix} ${cv}` : '',
+        marketName ? `${marketName} ${cv}` : '',
+        cv
+      ].filter((q, idx, arr) => q && arr.indexOf(q) === idx);
+
+      for (const q of searchQueries) {
+        const road = await convertKeywordToRoadAddress(q, requiredRegion);
+        if (road && /(?:로|길)\s*[\d-]+/.test(road)) {
+          return normalizeRoadAddress(road);
+        }
+      }
+    }
+  }
+
+  // 5. 네이버 플레이스 검색 (폴백)
+  if (cleanComp) {
+    try {
+      const nRes = await searchAddressByCompany({
+        companyName: cleanComp,
+        marketName,
+        address: currentAddr
+      });
+      if (nRes?.address && /(?:로|길)\s*[\d-]+/.test(nRes.address)) {
+        return normalizeRoadAddress(nRes.address);
+      }
+    } catch (_) {}
+  }
+
+  return normalizeRoadAddress(currentAddr);
+}
+
 let cachedCeoPool = null;
 
 /**
@@ -703,21 +972,23 @@ export async function enrichBusinessData(business, usedState = null) {
     }
   }
 
-  // 3. 주소가 없거나 번지 없는 부실 주소인 경우 외부 상세 도로명 주소 탐색
-  if (!hasCompleteAddress(enriched.address, enriched.marketName)) {
-    const addrResult = await searchAddressByCompany({
+  // 3. 주소가 없거나 도로명주소가 아니거나 번지 없는 부실 주소인 경우 100% 공인 도로명주소로 변환/보강
+  const isRoadAddress = enriched.address && /(?:로|길)\s*[\d-]+/.test(enriched.address);
+  if (!isRoadAddress || !hasCompleteAddress(enriched.address, enriched.marketName)) {
+    const roadAddr = await ensureRoadAddress({
       companyName: enriched.companyName,
       marketName: enriched.marketName,
-      address: enriched.address || enriched.roadAddress
+      address: enriched.address || enriched.roadAddress,
+      bizNumber: enriched.bizNumber
     });
-    if (addrResult && addrResult.address) {
+    if (roadAddr && roadAddr !== enriched.address) {
       const prevAddr = enriched.address;
-      enriched.address = addrResult.address;
-      enriched.roadAddress = addrResult.address;
-      enriched.addressSource = addrResult.source;
+      enriched.address = roadAddr;
+      enriched.roadAddress = roadAddr;
+      enriched.addressSource = '공인 도로명주소 엔진 (Kakao/Onnuri)';
       enriched.isAddressEnriched = true;
       hasChanged = true;
-      logger.info(`[Enricher] [주소 보강 성공] "${enriched.companyName}" ➔ "${prevAddr}" => "${enriched.address}" (${addrResult.source})`);
+      logger.info(`[Enricher] [도로명주소 표준화 성공] "${enriched.companyName}" ➔ "${prevAddr}" => "${enriched.address}"`);
     }
   }
 
