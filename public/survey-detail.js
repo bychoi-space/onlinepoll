@@ -1154,6 +1154,19 @@ async function initSurveyDetailPage() {
 
     // 3. 상인회 전용 카드 그리드 렌더링
     blueprintStageGrid.innerHTML = `
+      <!-- 상인회 전용 빠른 정책 가이드 프리셋 툴바 -->
+      <div class="assoc-preset-toolbar mb-16 flex-between">
+        <span class="font-caption text-dim"><i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i> 빠른 정책 가이드 설정:</span>
+        <div class="flex-center-gap-8">
+          <button type="button" class="btn-chip" id="btn-assoc-preset-random" title="F5, F6, G1, G2를 모두 1~5번 무작위 랜덤 답변으로 일괄 설정">
+            <i class="fa-solid fa-dice"></i> 🎲 1~5번 전 문항 랜덤 분산 일괄 적용
+          </button>
+          <button type="button" class="btn-chip" id="btn-assoc-preset-default" title="모든 정책 문항을 표준 1번 항목으로 초기화">
+            <i class="fa-solid fa-rotate-left"></i> 표준 1번 항목 일괄 초기화
+          </button>
+        </div>
+      </div>
+
       <!-- 카드 0: 기입력 항목 보존 및 슬롯 건너뛰기 규칙 카드 -->
       <section class="blueprint-card assoc-rule-card">
         <div class="blueprint-card-header">
@@ -1249,6 +1262,7 @@ async function initSurveyDetailPage() {
         <div class="blueprint-stage-desc">시장 내 빈 점포(공실)가 발생하는 가장 주된 요인을 설정합니다.</div>
         <div class="p-14">
           <select id="select-assoc-F5" class="figma-select w-full">
+            <option value="random" ${assocPolicyState.F5_emptyStoreReason === 'random' ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변] (슬롯별 무작위 자동 분산)</option>
             <option value="1" ${assocPolicyState.F5_emptyStoreReason === '1' ? 'selected' : ''}>1. 온라인 소비 확산 및 비대면 거래 증가</option>
             <option value="2" ${assocPolicyState.F5_emptyStoreReason === '2' ? 'selected' : ''}>2. 인근 대형마트, 복합쇼핑몰, 인근 상권과의 경쟁 밀림</option>
             <option value="3" ${assocPolicyState.F5_emptyStoreReason === '3' ? 'selected' : ''}>3. 과도하게 높은 임대료 및 권리금 조건</option>
@@ -1270,6 +1284,7 @@ async function initSurveyDetailPage() {
         <div class="blueprint-stage-desc">빈 점포 해결을 위해 정부 및 지자체에서 가장 시급히 지원해야 할 정책을 설정합니다.</div>
         <div class="p-14">
           <select id="select-assoc-F6" class="figma-select w-full">
+            <option value="random" ${assocPolicyState.F6_emptyStorePolicy === 'random' ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변] (슬롯별 무작위 자동 분산)</option>
             <option value="1" ${assocPolicyState.F6_emptyStorePolicy === '1' ? 'selected' : ''}>1. 빈 점포를 공공 임대·매입하여 상인회에 재임대하는 제도</option>
             <option value="2" ${assocPolicyState.F6_emptyStorePolicy === '2' ? 'selected' : ''}>2. 빈 점포를 활용하는 상인에 대한 금융 지원(융자, 보조금) 확대</option>
             <option value="3" ${assocPolicyState.F6_emptyStorePolicy === '3' ? 'selected' : ''}>3. 빈 점포 공간 전환 컨설팅 및 시행 지원</option>
@@ -1292,6 +1307,7 @@ async function initSurveyDetailPage() {
         <div class="blueprint-stage-desc">전통시장 내 바가지요금 논란이 발생하는 근본적인 원인을 설정합니다.</div>
         <div class="p-14">
           <select id="select-assoc-G1" class="figma-select w-full">
+            <option value="random" ${assocPolicyState.G1_overchargeReason === 'random' ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변] (슬롯별 무작위 자동 분산)</option>
             <option value="1" ${assocPolicyState.G1_overchargeReason === '1' ? 'selected' : ''}>1. 외부 관광객 대상 일시적 가격 인상 관행</option>
             <option value="2" ${assocPolicyState.G1_overchargeReason === '2' ? 'selected' : ''}>2. 상인 간 가격 자율경쟁 및 통제 미흡</option>
             <option value="3" ${assocPolicyState.G1_overchargeReason === '3' ? 'selected' : ''}>3. 원재료 가격 상승에 따른 임의 가격 인상</option>
@@ -1314,6 +1330,7 @@ async function initSurveyDetailPage() {
         <div class="blueprint-stage-desc">바가지요금 근절과 시장 신뢰 회복을 위한 최선의 방안을 설정합니다.</div>
         <div class="p-14">
           <select id="select-assoc-G2" class="figma-select w-full">
+            <option value="random" ${assocPolicyState.G2_overchargeSolution === 'random' ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변] (슬롯별 무작위 자동 분산)</option>
             <option value="1" ${assocPolicyState.G2_overchargeSolution === '1' ? 'selected' : ''}>1. 시장 차원의 자율관리 (상인회 중심 가격 가이드라인 운영)</option>
             <option value="2" ${assocPolicyState.G2_overchargeSolution === '2' ? 'selected' : ''}>2. 지자체·정부의 점검 및 단속 강화</option>
             <option value="3" ${assocPolicyState.G2_overchargeSolution === '3' ? 'selected' : ''}>3. 바가지요금 신고·공개 시스템 활성화</option>
@@ -1442,6 +1459,35 @@ async function initSurveyDetailPage() {
     bindAssocField('cb-assoc-heating-warmair', 'G4_heating_warmAir', true);
     bindAssocField('cb-assoc-flood-pump', 'G4_flood_pump', true);
     bindAssocField('cb-assoc-flood-wall', 'G4_flood_wall', true);
+
+    // 5. 상인회 빠른 정책 프리셋 버튼 리스너
+    const btnAssocRandom = document.getElementById('btn-assoc-preset-random');
+    if (btnAssocRandom) {
+      btnAssocRandom.addEventListener('click', () => {
+        ['select-assoc-F5', 'select-assoc-F6', 'select-assoc-G1', 'select-assoc-G2'].forEach(id => {
+          const sel = document.getElementById(id);
+          if (sel) {
+            sel.value = 'random';
+            sel.dispatchEvent(new Event('change'));
+          }
+        });
+        appendLog('info', '🎲 F5, F6, G1, G2 정책 문항이 [1~5 항목 랜덤 답변]으로 일괄 설정되었습니다.');
+      });
+    }
+
+    const btnAssocDefault = document.getElementById('btn-assoc-preset-default');
+    if (btnAssocDefault) {
+      btnAssocDefault.addEventListener('click', () => {
+        ['select-assoc-F5', 'select-assoc-F6', 'select-assoc-G1', 'select-assoc-G2'].forEach(id => {
+          const sel = document.getElementById(id);
+          if (sel) {
+            sel.value = '1';
+            sel.dispatchEvent(new Event('change'));
+          }
+        });
+        appendLog('info', '표준 정책 문항이 1번 항목으로 일괄 설정되었습니다.');
+      });
+    }
   }
 
   async function loadBlueprint() {

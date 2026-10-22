@@ -192,8 +192,17 @@ export async function runKstatAssocSurvey(options = {}) {
         await syncAllChildFrames(page);
         await delay(600);
 
-        const f5Val = policy.F5_emptyStoreReason || '1';
-        const f6Val = policy.F6_emptyStorePolicy || '1';
+        // 1~5 랜덤 분산 지원: 설정값이 'random'인 경우 1~5 중 무작위 정수 선택
+        let f5Val = policy.F5_emptyStoreReason || '1';
+        if (f5Val === 'random') {
+          f5Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위
+        }
+        let f6Val = policy.F6_emptyStorePolicy || '1';
+        if (f6Val === 'random') {
+          f6Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위 (6번 기타 제외)
+        }
+
+        logger.info(`[상인회 러너] [P21] 정책 답변: F5=${f5Val}${policy.F5_emptyStoreReason === 'random' ? ' (🎲 1~5 랜덤)' : ''}, F6=${f6Val}${policy.F6_emptyStorePolicy === 'random' ? ' (🎲 1~5 랜덤)' : ''}`);
 
         for (const f of page.frames()) {
           try {
@@ -237,8 +246,17 @@ export async function runKstatAssocSurvey(options = {}) {
         await syncAllChildFrames(page);
         await delay(600);
 
-        const g1Val = policy.G1_overchargeReason || '1';
-        const g2Val = policy.G2_overchargeSolution || '1';
+        // 1~5 랜덤 분산 지원: 설정값이 'random'인 경우 1~5 중 무작위 정수 선택
+        let g1Val = policy.G1_overchargeReason || '1';
+        if (g1Val === 'random') {
+          g1Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위 (6번 기타 제외)
+        }
+        let g2Val = policy.G2_overchargeSolution || '1';
+        if (g2Val === 'random') {
+          g2Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위 (6번 기타 제외)
+        }
+
+        logger.info(`[상인회 러너] [P22] 정책 답변: G1=${g1Val}${policy.G1_overchargeReason === 'random' ? ' (🎲 1~5 랜덤)' : ''}, G2=${g2Val}${policy.G2_overchargeSolution === 'random' ? ' (🎲 1~5 랜덤)' : ''}`);
 
         for (const f of page.frames()) {
           try {
