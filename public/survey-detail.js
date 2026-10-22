@@ -67,8 +67,8 @@ async function initSurveyDetailPage() {
   const badgeMasterStatus = document.getElementById('badge-master-status');
   const blueprintStageGrid = document.getElementById('blueprint-stage-grid');
   const btnSaveBaseline = document.getElementById('btn-save-baseline');
-  const btnRunAllBatchBottom = document.getElementById('btn-run-all-batch-bottom');
-  const btnStopAllBatchBottom = document.getElementById('btn-stop-all-batch-bottom');
+  const btnRunAllBatchBottom = document.getElementById('btn-run-all-batch-bottom'); // 레거시 호환
+  const btnStopAllBatchBottom = document.getElementById('btn-stop-all-batch-bottom'); // 레거시 호환
   const btnPresetStandard = document.getElementById('btn-preset-standard');
   const btnPresetGrowth = document.getElementById('btn-preset-growth');
   const btnPresetTraditional = document.getElementById('btn-preset-traditional');
@@ -217,10 +217,12 @@ async function initSurveyDetailPage() {
     updateBatchProgressBar(completedOrPilotCount, quotaDb.length);
 
     if (isRunning) {
-      btnPilot.disabled = true;
+      if (btnPilot) btnPilot.disabled = true;
       btnBatch.disabled = true;
+      btnBatch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 배치 진행 중...';
       if (btnRunAllBatchBottom) btnRunAllBatchBottom.disabled = true;
       btnStop.disabled = false;
+      btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> 배치 중지';
       if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = false;
       if (step2ConfigCard) step2ConfigCard.classList.add('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = true;
@@ -236,6 +238,7 @@ async function initSurveyDetailPage() {
       if (btnPresetRotation) btnPresetRotation.disabled = true;
     } else {
       btnStop.disabled = true;
+      btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> 배치 중지';
       if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = true;
       if (step2ConfigCard) step2ConfigCard.classList.remove('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = false;
@@ -261,34 +264,31 @@ async function initSurveyDetailPage() {
         }
       }
 
-      // 2) 1번 단일 검증 버튼 상태
-      if (firstDone) {
-        btnPilot.disabled = true;
-        btnPilot.textContent = '1번 쿼터 검증 완료';
-      } else {
-        btnPilot.disabled = false;
-        btnPilot.textContent = '1번 단일 검증';
+      // 2) 레거시 1번 단일 검증 버튼 (호환용)
+      if (btnPilot) {
+        btnPilot.disabled = firstDone;
+        btnPilot.textContent = firstDone ? '1번 쿼터 검증 완료' : '1번 단일 검증';
       }
 
-      // 3) 전체 배치 자동화 가동 버튼 상태
+      // 3) 단일 통합 배치 자동화 버튼 상태
       const allCompleted = quotaDb.length > 0 && quotaDb.every(b => b.quotaStatus === 'completed');
       if (allCompleted) {
         btnBatch.disabled = true;
-        btnBatch.textContent = '전체 배치 자동화 최종 마감 완료 (100%)';
+        btnBatch.innerHTML = '<i class="fa-solid fa-circle-check"></i> 전체 배치 자동화 최종 마감 완료 (100%)';
         if (btnRunAllBatchBottom) {
           btnRunAllBatchBottom.disabled = true;
           btnRunAllBatchBottom.textContent = '전체 배치 마감 완료 (100%)';
         }
       } else {
         btnBatch.disabled = false;
+        if (firstDone) {
+          btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 미완료 슬롯 순차 배치 자동화 계속 가동';
+        } else {
+          btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 전체 배치 자동화 시작';
+        }
         if (btnRunAllBatchBottom) {
           btnRunAllBatchBottom.disabled = false;
           btnRunAllBatchBottom.innerHTML = '<i class="fa-solid fa-rocket"></i> 이 기준점으로 전체 배치 가동';
-        }
-        if (firstDone) {
-          btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 잔여 쿼터 배치 자동화 가동 (2번~24번)';
-        } else {
-          btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 전체 쿼터 배치 자동화 가동 (1번~24번)';
         }
       }
     }
@@ -3051,11 +3051,9 @@ async function initSurveyDetailPage() {
     }
 
     let surveyUrl = targets[0]?.slotUrl || inputSurveyUrl.value.trim();
-    const safetyGuard = checkSafetyGuard.checked;
+    const safetyGuard = checkSafetyGuard ? checkSafetyGuard.checked : false;
     const confirmMsg = safetyGuard
-      ? (startIdx === 1
-          ? `1번부터 ${quotaDb.length}번까지 전체 쿼터 연속 배치를 시작합니다. (각 점포별 1:1 고유 슬롯으로 실행, 최종 동의 단계 안전 대기)`
-          : `2번 쿼터부터 잔여 ${targets.length}건 연속 배치를 시작합니다. (각 점포별 1:1 고유 슬롯으로 실행, 최종 동의 단계 안전 대기)`)
+      ? `${targets.length}개 대상 슬롯에 대해 배치 자동화를 시작합니다. (각 점포/상인회별 1:1 슬롯, 최종 동의 단계 안전 대기)`
       : `⚠️ 주의: 최종 제출 안전가드가 해제되어 있습니다!\n${targets.length}건의 설문이 각 점포별 1:1 슬롯으로 실제 최종 제출 마감됩니다. 계속하시겠습니까?`;
 
     if (!confirm(confirmMsg)) return;
@@ -3509,10 +3507,12 @@ async function initSurveyDetailPage() {
     if (running) {
       statusIndicator.classList.add('running');
       statusText.textContent = '자동화 실행 중 (로봇 작동)';
-      btnPilot.disabled = true;
+      if (btnPilot) btnPilot.disabled = true;
       btnBatch.disabled = true;
+      btnBatch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 배치 진행 중...';
       if (btnRunAllBatchBottom) btnRunAllBatchBottom.disabled = true;
       btnStop.disabled = false;
+      btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> 배치 중지';
       if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = false;
       if (step2ConfigCard) step2ConfigCard.classList.add('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = true;
@@ -3530,6 +3530,7 @@ async function initSurveyDetailPage() {
       statusIndicator.classList.remove('running');
       statusText.textContent = '준비 완료 (대기 중)';
       btnStop.disabled = true;
+      btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> 배치 중지';
       if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = true;
       if (step2ConfigCard) step2ConfigCard.classList.remove('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = false;

@@ -5539,6 +5539,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
   border-left: 4px solid #059669;
 }
 
+.execution-single-batch-wrap {
+  width: 100%;
+}
+
+.stage-batch-card.full-width-card {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 24px 28px;
+}
+
 .stage-card-title {
   font-size: 16px;
   font-weight: 700;
