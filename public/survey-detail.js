@@ -1389,7 +1389,8 @@ async function initSurveyDetailPage() {
       blueprintData = data.blueprint;
 
       // 상인회 전용 블루프린트 분기 (완전 격리)
-      if (data.surveyType === 'kstat_assoc') {
+      const isAssocCampaign = (data.surveyType === 'kstat_assoc' || currentCampaign?.surveyType === 'kstat_assoc');
+      if (isAssocCampaign) {
         renderAssocBlueprint(data);
         return;
       }

@@ -308,16 +308,47 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
   // 상인회 조사 전용 블루프린트 분기 (완전 격리)
   if (campaign.surveyType === 'kstat_assoc') {
     const assocBlueprintPath = path.join(dataDir, 'kstat_assoc_blueprint.json');
+    let assocBlueprint = null;
     if (fs.existsSync(assocBlueprintPath)) {
-      const assocBlueprint = JSON.parse(fs.readFileSync(assocBlueprintPath, 'utf-8'));
-      return res.json({
-        surveyType: 'kstat_assoc',
-        blueprint: assocBlueprint,
-        policy: campaign.assocPolicy || assocBlueprint.defaultPolicy,
-        campaignTitle: campaign.title,
-        slotCount: (campaign.quotaDatabase || []).length
-      });
+      try {
+        assocBlueprint = JSON.parse(fs.readFileSync(assocBlueprintPath, 'utf-8'));
+      } catch (err) {
+        console.error('상인회 블루프린트 파일 파싱 실패:', err);
+      }
     }
+    if (!assocBlueprint) {
+      assocBlueprint = {
+        surveyId: 'kstat_merchant_assoc_2026',
+        title: '2025년 기준 전통시장·상점가 및 점포경영 실태조사 (B.상인회조사)',
+        defaultPolicy: {
+          F5_emptyStoreReason: '1',
+          F6_emptyStorePolicy: '1',
+          G1_overchargeReason: '1',
+          G2_overchargeSolution: '1',
+          G3_program: '1',
+          G3_famousStore: '1',
+          G3_nightLight: '1',
+          G3_tourLink: '1',
+          G3_communitySpace: '1',
+          G3_certifiedStoreCount: '0',
+          G4_cooling_aircon: true,
+          G4_cooling_fan: true,
+          G4_cooling_arcade: true,
+          G4_heating_warmAir: true,
+          G4_flood_pump: true,
+          G4_flood_wall: false,
+          G4_flood_activity_2025: true,
+          G4_flood_activity_2026: true
+        }
+      };
+    }
+    return res.json({
+      surveyType: 'kstat_assoc',
+      blueprint: assocBlueprint,
+      policy: campaign.assocPolicy || assocBlueprint.defaultPolicy,
+      campaignTitle: campaign.title,
+      slotCount: (campaign.quotaDatabase || []).length
+    });
   }
 
   const blueprintPath = path.join(dataDir, 'kstat_survey_blueprint.json');

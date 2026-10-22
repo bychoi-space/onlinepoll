@@ -1,0 +1,95 @@
+{
+  "surveyId": "kstat_merchant_assoc_2026",
+  "title": "2025년 기준 전통시장·상점가 및 점포경영 실태조사 (B.상인회조사)",
+  "description": "케이스탯 TAPI 상인회조사 25단계(Q1~P23, Agree) 전용 마스터 블루프린트입니다. A3~F4는 전년도 응답 미러링, F5~G4는 사용자 정책 가이드라인을 기반으로 자동 응답합니다.",
+  "version": "1.0.0",
+  "defaultPolicy": {
+    "F5_emptyStoreReason": "1",
+    "F6_emptyStorePolicy": "1",
+    "G1_overchargeReason": "1",
+    "G2_overchargeSolution": "1",
+    "G3_program": "1",
+    "G3_famousStore": "1",
+    "G3_nightLight": "1",
+    "G3_tourLink": "1",
+    "G3_communitySpace": "1",
+    "G3_certifiedStoreCount": "0",
+    "G4_cooling_aircon": true,
+    "G4_cooling_fan": true,
+    "G4_cooling_arcade": true,
+    "G4_heating_warmAir": true,
+    "G4_flood_pump": true,
+    "G4_flood_wall": false,
+    "G4_flood_activity_2025": true,
+    "G4_flood_activity_2026": true
+  },
+  "sections": [
+    {
+      "key": "Q1",
+      "title": "기본정보 (Q1)",
+      "desc": "상인회 등록번호, 실태조사코드, 시장·상점가 명, 주소, 상인대표 성명, 연락처, 조사원 성명"
+    },
+    {
+      "key": "A3_to_F4",
+      "title": "전년도 비교 문항 (A3 ~ F4)",
+      "desc": "P1~P20 단계의 모든 문항은 좌측 2024년 기준(전년도 응답)을 자동으로 읽어 2025년 기준에 동일하게 1:1 미러링 복사합니다."
+    },
+    {
+      "key": "F5",
+      "title": "F5. 빈 점포 발생 핵심 원인 (P21)",
+      "options": [
+        { "value": "1", "label": "1. 온라인 소비 확산 및 비대면 거래 증가" },
+        { "value": "2", "label": "2. 인근 대형마트, 복합쇼핑몰, 인근 상권과의 경쟁 밀림" },
+        { "value": "3", "label": "3. 과도하게 높은 임대료 및 권리금 조건" },
+        { "value": "4", "label": "4. 상인의 고령화 및 가업 승계(후계자) 부족" },
+        { "value": "5", "label": "5. 기타" }
+      ]
+    },
+    {
+      "key": "F6",
+      "title": "F6. 시급한 빈점포 정부 지원 정책 (P21)",
+      "options": [
+        { "value": "1", "label": "1. 빈 점포를 공공 임대·매입하여 상인회에 재임대하는 제도" },
+        { "value": "2", "label": "2. 빈 점포를 활용하는 상인에 대한 금융 지원(융자, 보조금) 확대" },
+        { "value": "3", "label": "3. 빈 점포 공간 전환 컨설팅 및 시행 지원" },
+        { "value": "4", "label": "4. 공실 상가 소유주에게 임대료 인하를 유도하는 세제 혜택 등 인센티브 부여" },
+        { "value": "5", "label": "5. 빈 점포 파악 및 관리를 위한 통합 플랫폼 구축" },
+        { "value": "6", "label": "6. 기타" }
+      ]
+    },
+    {
+      "key": "G1",
+      "title": "G1. 바가지요금 문제 발생 주요 원인 (P22)",
+      "options": [
+        { "value": "1", "label": "1. 외부 관광객 대상 일시적 가격 인상 관행" },
+        { "value": "2", "label": "2. 상인 간 가격 자율경쟁 및 통제 미흡" },
+        { "value": "3", "label": "3. 원재료 가격 상승에 따른 임의 가격 인상" },
+        { "value": "4", "label": "4. 일부 상인의 과도한 이윤추구 형태" },
+        { "value": "5", "label": "5. 시장 차원의 관리·감독 부족" },
+        { "value": "6", "label": "6. 기타" }
+      ]
+    },
+    {
+      "key": "G2",
+      "title": "G2. 바가지요금 개선을 위한 가장 효과적인 대응방안 (P22)",
+      "options": [
+        { "value": "1", "label": "1. 시장 차원의 자율관리 (상인회 중심 가격 가이드라인 운영)" },
+        { "value": "2", "label": "2. 지자체·정부의 점검 및 단속 강화" },
+        { "value": "3", "label": "3. 바가지요금 신고·공개 시스템 활성화" },
+        { "value": "4", "label": "4. 친절·가격교육 등 상인 대상 인식개선 교육" },
+        { "value": "5", "label": "5. 우수상점 인증제 등 인센티브 제공" },
+        { "value": "6", "label": "6. 기타" }
+      ]
+    },
+    {
+      "key": "G3",
+      "title": "G3. 상설 프로그램 / 명물점포 / 야간조명 / 관광연계 / 커뮤니티 공간 (P23)",
+      "desc": "문화행사, 명물점포, 야간조명, 관광연계, 커뮤니티 공간 각각 있다(1) / 없다(2)"
+    },
+    {
+      "key": "G4",
+      "title": "G4. 기후재해 대비 현황 (P23)",
+      "desc": "냉방시설(에어컨, 냉풍기, 아케이드 등), 난방시설(온풍기, 난로 등), 수해 방지 시설(배수펌프, 차수판 등) 보유 및 필요 여부"
+    }
+  ]
+}

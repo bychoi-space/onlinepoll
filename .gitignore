@@ -9,6 +9,7 @@ package-lock.json
 data/*
 !data/onnuri_master_db.json
 !data/kstat_survey_blueprint.json
+!data/kstat_assoc_blueprint.json
 !data/ceo_persona_pool.json
 data/campaigns.json
 !data/quotas/
