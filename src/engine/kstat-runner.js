@@ -204,6 +204,37 @@ async function autoFillUnansweredVisibleFrames(page, persona, biz) {
       else if (code === 'B1BB') await selectKstatRadio(f, 'B1BB', (persona.sales?.salesChangeSelector || '#B1BB_3').replace('#B1BB_', ''));
       else if (code === 'B1BC') await selectRankCheckboxes(f, 'B1BC', persona.sales?.profitIncreaseReasons || [6, 1, 2]);
       else if (code === 'B1BD') await selectRankCheckboxes(f, 'B1BD', persona.sales?.profitDecreaseReasons || [4, 5, 2]);
+      else if (code === 'B1C') {
+        const isUnknown = persona.sales?.isNonLocalUnknown !== false;
+        await safeFill(f, '#B1C, input[name="B1C"]', persona.sales?.dailyCustomers || '45');
+        await f.evaluate((unknown, rate) => {
+          const chk = document.getElementById('B1C_9') || document.querySelector('input[name="B1C_9"]');
+          const txt = document.getElementById('B1C_1') || document.querySelector('input[name="B1C_1"]');
+          if (unknown) {
+            if (chk) {
+              chk.checked = true;
+              if (typeof B1C_NoneCheck === 'function') B1C_NoneCheck(chk);
+              chk.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (txt) {
+              txt.value = '';
+              txt.disabled = true;
+            }
+          } else {
+            if (chk) {
+              chk.checked = false;
+              if (typeof B1C_NoneCheck === 'function') B1C_NoneCheck(chk);
+              chk.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (txt) {
+              txt.disabled = false;
+              txt.value = rate;
+              txt.dispatchEvent(new Event('input', { bubbles: true }));
+              txt.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+        }, isUnknown, persona.sales?.nonLocalCustomerRate || '15').catch(() => {});
+      }
       else if (code === 'B2A') {
         // [규칙 B2A] 현금, 온누리, 지역사랑, 제로페이, 신용카드 5대 결제수단 5% 단위 주입 보장
         const sCash = String(persona.paymentMethods?.cash || '0');
@@ -644,8 +675,68 @@ export async function runKstatSurvey({
 
         const fB1C = page.frame({ url: /\/B1C\.asp/i });
         if (fB1C) {
+          const isUnknown = persona.sales?.isNonLocalUnknown !== false;
           await safeFill(fB1C, '#B1C, input[name="B1C"]', persona.sales.dailyCustomers);
-          await safeFill(fB1C, '#B1C_1, input[name="B1C_1"]', String(Math.max(1, Math.round(parseInt(persona.sales.dailyCustomers, 10) * 0.6))));
+          await itemDelay();
+
+          // [규칙 B1-3] 지역 외 고객 비중: 약 90%는 '모름' 체크박스(B1C_9)를 선택하고 퍼센트(B1C_1) 미입력
+          await fB1C.evaluate((unknown, rate) => {
+            const chk = document.getElementById('B1C_9') || document.querySelector('input[name="B1C_9"]');
+            const txt = document.getElementById('B1C_1') || document.querySelector('input[name="B1C_1"]');
+            if (unknown) {
+              if (chk) {
+                chk.checked = true;
+                if (typeof B1C_NoneCheck === 'function') {
+                  B1C_NoneCheck(chk);
+                } else if (txt) {
+                  txt.value = '';
+                  txt.disabled = true;
+                }
+                chk.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              if (txt) {
+                txt.value = '';
+                txt.disabled = true;
+              }
+            } else {
+              if (chk) {
+                chk.checked = false;
+                if (typeof B1C_NoneCheck === 'function') {
+                  B1C_NoneCheck(chk);
+                } else if (txt) {
+                  txt.disabled = false;
+                }
+                chk.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              if (txt) {
+                txt.disabled = false;
+                txt.value = rate;
+                txt.dispatchEvent(new Event('input', { bubbles: true }));
+                txt.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            }
+          }, isUnknown, persona.sales?.nonLocalCustomerRate || '15').catch(() => {});
+
+          if (isUnknown) {
+            const isChecked = await fB1C.evaluate(() => {
+              const chk = document.getElementById('B1C_9');
+              return chk ? chk.checked : false;
+            }).catch(() => false);
+            if (!isChecked) {
+              await safeClick(fB1C, '#B1C_9');
+            }
+            await fB1C.evaluate(() => {
+              const txt = document.getElementById('B1C_1');
+              if (txt) {
+                txt.value = '';
+                txt.disabled = true;
+              }
+            }).catch(() => {});
+          } else {
+            if (persona.sales?.nonLocalCustomerRate) {
+              await safeFill(fB1C, '#B1C_1, input[name="B1C_1"]', persona.sales.nonLocalCustomerRate);
+            }
+          }
         }
         const fB1D = page.frame({ url: /\/B1D\.asp/i });
         if (fB1D) await safeFill(fB1D, '#B1D, input[name="B1D"]', persona.sales?.dailyBusinessHours || '11');

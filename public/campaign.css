@@ -158,6 +158,12 @@
   border: 1px solid #f0d58a;
 }
 
+.badge-quota-type.assoc {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
 .badge-status {
   font-family: var(--font-sans);
   font-size: 11px;

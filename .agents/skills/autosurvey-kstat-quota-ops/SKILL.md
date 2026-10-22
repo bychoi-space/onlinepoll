@@ -75,6 +75,7 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
   - `B1BA` (`annualProfit`) and `B1BA_1` (`exactMarginRate` %) mathematically matched.
   - `B1BB=1` (영업이익 증가) -> spawns **`B1BC.asp`** (3-rank choices from `1..8`).
   - `B1BB=2` (영업이익 감소) -> spawns **`B1BD.asp`** (3-rank choices from `1..7`).
+  - `B1C` (1일 평균 구매 고객수) & **`B1C_9` (지역 외 고객 비중)**: 약 90%의 점포는 `B1C_9`('모름') 체크박스를 선택하고 `B1C_1`(퍼센트) 미입력(공란/disabled 유지), 나머지 10% 점포만 10~30% 비중 분산 입력.
   - `B1E` (월 평균 영업일수) clamped to `1..30` (`31` triggers alert).
 - **P5 (`B2`, `B2A`, `B3`)**:
   - `B2` 결제수단 취급 여부 점포별 자연 분산: `현금`(`B2_1=1`), `온누리`(`B2_2=1`), `신용카드`(`B2_5=1`) 필수 취급; `지역사랑상품권`(`B2_3`), `제로페이 모바일결제 등`(`B2_4`)은 점포별 취급(1)/미취급(2) 자연 분산 (기준점 가이드 `localPayMember`, `zeropayMember` 연동).
@@ -130,12 +131,13 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
 
 ---
 
-## 6. 8-Stage Operational Survey Workflow
-1. **Generate Quota**: Onnuri ➔ MarketBz 2-stage hybrid quota generation.
-2. **External Enrichment**: Auto-heal missing road addresses, CEO name, gender, and age.
-3. **Create Campaign**: Mount the verified quota into a survey campaign.
-4. **Set Surveyor Account**: Configure Kstat surveyor credentials (`loginId`, `loginPw`).
-5. **Auto-Bind Slots**: Run `kstat-slot-scraper.js` to bind 1:1 `slotUrl` and evaluator URLs in 1 second.
-6. **Review Master Blueprint (STEP 2)**: Review and tune baseline rules across 3 industry groups and surveyor evaluation guidelines.
-7. **Execute Survey Pipeline (STEP 3)**: Run Single Pilot (Quota #1) ➔ Run Batch Automation (Quota #2..N).
-8. **Verify & Review Reports**: Check 15-step screenshot gallery per store and submission logs.
+---
+
+## 7. Kstat Multi-Account & Multi-Survey Registry
+- **Surveyor Accounts**:
+  - `가온김영옥` / `1234`: 점포경영 실태조사 (`PRID: 2026070802`, 설문코드 `P26042401B`, 평가코드 `P26042401BA`)
+  - `가온박정순` / `1234`: 전통시장·상점가 및 점포경영 실태조사 - B.상인회조사 (`PRID: 2026070801`, 설문코드 `P26042401A`, 평가코드 `P26042401AA`)
+- **Survey Types**:
+  1. `kstat_traditional_market` (점포조사, 15단계 다중 iframe, 9대 업종 쿼터)
+  2. `kstat_merchant_assoc` (상인회조사, 25단계 Q1~P23+Agree, A3~F4 전년도 응답 미러링, F5~G4 정책 가이드)
+

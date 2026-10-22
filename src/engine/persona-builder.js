@@ -246,14 +246,19 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     const minFam = Math.max(0, parseInt(mb.employeeFamilyMin, 10));
     const maxFam = Math.max(minFam, parseInt(mb.employeeFamilyMax, 10));
     employeeFamily = randBetween(minFam, maxFam);
+  } else if (mb.employeeFamily !== undefined && parseInt(mb.employeeFamily, 10) === 0) {
+    // 사용자가 0명으로 지정한 경우 전 업종 그룹 0명 엄격 유지
+    employeeFamily = 0;
   } else if (isAutoEmp) {
     const baseFamily = mb.employeeFamily !== undefined ? parseInt(mb.employeeFamily, 10) : 0;
-    if (annualSales < 125 || dailySales < 50) {
-      employeeFamily = baseFamily > 0 ? (rng() < 0.5 ? 1 : 0) : (annualSales >= 90 && rng() < 0.3 ? 1 : 0);
+    if (baseFamily === 0) {
+      employeeFamily = 0;
+    } else if (annualSales < 125 || dailySales < 50) {
+      employeeFamily = baseFamily > 0 ? (rng() < 0.5 ? 1 : 0) : 0;
     } else if (annualSales < 220) {
       employeeFamily = Math.max(0, baseFamily);
     } else if (annualSales < 320) {
-      employeeFamily = baseFamily > 0 ? 1 : (rng() < 0.4 ? 1 : 0);
+      employeeFamily = baseFamily > 0 ? 1 : 0;
     } else {
       employeeFamily = Math.max(0, baseFamily);
     }
@@ -357,6 +362,31 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   // 일평균 고객 수 및 영업일수 (B1E: 1~30 이하 필수)
   const baseCust = mb.dailyCustomers !== undefined ? parseInt(mb.dailyCustomers, 10) : 45;
   const dailyCustomers = Math.max(10, baseCust + randBetween(-5, 5));
+
+  // [B1-3] 1일 평균 구매 고객수 - '지역 외 고객 비중' (약 90%는 '모름' 체크 및 퍼센트 미입력, 10%는 10~30% 비중 분산 입력)
+  const rawUnknownRate = mb.nonLocalUnknownRate !== undefined ? parseInt(mb.nonLocalUnknownRate, 10) : 90;
+  const unknownRate = isNaN(rawUnknownRate) ? 90 : rawUnknownRate;
+
+  let isNonLocalUnknown;
+  if (unknownRate >= 100) {
+    isNonLocalUnknown = true;
+  } else if (unknownRate <= 0) {
+    isNonLocalUnknown = false;
+  } else {
+    // 90% 기본 규칙: 10개 점포 중 9개(90%)는 모름 체크, 1개(10%, quotaIndex % 10 === 0)는 비중 직접 입력
+    // 파일럿(1번 점포)은 무조건 90% 모름 체크 규칙 준수 (1 % 10 !== 0)
+    if (unknownRate === 90) {
+      isNonLocalUnknown = (quotaIndex % 10 !== 0);
+    } else {
+      const slot = (quotaIndex - 1) % 10;
+      const enterCount = Math.max(1, Math.round(10 * (1 - unknownRate / 100)));
+      isNonLocalUnknown = (slot >= enterCount);
+    }
+  }
+
+  // 비중을 입력하는 점포(10%)인 경우 10~30% 사이 자연스러운 5% 단위 비중 배분
+  const nonLocalCustomerRate = isNonLocalUnknown ? '' : rotate(['15', '20', '10', '25', '30'], Math.floor(quotaIndex / 10));
+
   const baseDays = mb.monthlyBusinessDays !== undefined ? parseInt(mb.monthlyBusinessDays, 10) : 26;
   const monthlyOpenDays = Math.max(15, Math.min(30, baseDays + randBetween(-1, 1)));
   const dailyBusinessHours = String(Math.max(1, Math.min(24, parseInt(mb.dailyBusinessHours, 10) || 11)));
@@ -944,6 +974,8 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
       annualProfit: String(annualProfit),
       monthlyProfit: String(monthlyProfit),
       dailyCustomers: String(dailyCustomers),
+      isNonLocalUnknown,
+      nonLocalCustomerRate,
       monthlyOpenDays: String(monthlyOpenDays),
       dailyBusinessHours,
       salesChangeSelector,

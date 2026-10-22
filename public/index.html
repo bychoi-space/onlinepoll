@@ -181,18 +181,33 @@
           <label for="new-desc" class="figma-label">설문 설명</label>
           <input type="text" id="new-desc" class="figma-input" placeholder="예: 외식업 점주 대상 정책 지원 실태 조사" />
         </div>
-        <div class="form-group mb-20">
+        <div class="form-group mb-16">
           <label class="figma-label">조사 대상 유형 <span class="required">*</span></label>
           <div class="segmented-mode-group m-0">
             <label class="segmented-mode-item active" id="modal-tab-b2b">
               <input type="radio" name="new-quota-type" value="b2b" checked />
               <i class="fa-solid fa-building"></i>
-              <span>사업주 (B2B)</span>
+              <span>사업주 / 상인회 (B2B)</span>
             </label>
             <label class="segmented-mode-item" id="modal-tab-b2c">
               <input type="radio" name="new-quota-type" value="b2c" />
               <i class="fa-solid fa-user"></i>
               <span>개인 (B2C)</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group mb-20">
+          <label class="figma-label">설문 엔진 유형 <span class="required">*</span></label>
+          <div class="segmented-mode-group m-0">
+            <label class="segmented-mode-item active" id="modal-tab-survey-store">
+              <input type="radio" name="new-survey-type" value="kstat_store" checked />
+              <i class="fa-solid fa-store"></i>
+              <span>전통시장 점포조사 (15단계)</span>
+            </label>
+            <label class="segmented-mode-item" id="modal-tab-survey-assoc">
+              <input type="radio" name="new-survey-type" value="kstat_assoc" />
+              <i class="fa-solid fa-sitemap"></i>
+              <span>상인회 실태조사 (25단계)</span>
             </label>
           </div>
         </div>

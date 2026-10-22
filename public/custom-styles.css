@@ -5668,21 +5668,226 @@ input[type="range"]::-webkit-slider-thumb:hover {
   gap: 16px;
 }
 
+/* 실시간 모니터링 드로어 내부 텍스트 폰트 컬러 및 고대비 다크 테마 완전 최적화 */
+.floating-monitor-drawer {
+  color: #f1f5f9;
+}
+
+/* 1. 진행률 섹션 */
 .drawer-body .monitor-progress-section {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 14px 16px;
 }
 
+.drawer-body .monitor-progress-section .text-dim,
+.drawer-body #progress-summary-label {
+  color: #f1f5f9 !important;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.2px;
+}
+
+.drawer-body #progress-percent-label {
+  color: #38bdf8 !important;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.drawer-body .monitor-progress-track {
+  background: rgba(255, 255, 255, 0.12);
+  height: 9px;
+  border-radius: 999px;
+}
+
+.drawer-body .current-store-status-bar {
+  margin-top: 10px;
+}
+
+.drawer-body #current-active-store-label {
+  color: #cbd5e1 !important;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.drawer-body .pulse-dot-wrap {
+  color: #38bdf8 !important;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.drawer-body .pulse-dot {
+  background: #38bdf8;
+  box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7);
+}
+
+/* 2. 15단계 타임라인 섹션 */
 .drawer-body .timeline-stepper-box {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 14px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 14px 16px;
 }
 
+.drawer-body .timeline-header .text-dim {
+  color: #f1f5f9 !important;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.2px;
+}
+
+.drawer-body #current-step-label {
+  color: #38bdf8 !important;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.drawer-body .timeline-chips-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.drawer-body .step-chip {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: #1e293b;
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: all 0.2s ease;
+}
+
+.drawer-body .step-chip.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+  font-weight: 800;
+}
+
+.drawer-body .step-chip.done {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+  font-weight: 700;
+}
+
+.drawer-body .step-chip-final {
+  border-left: 2px solid #f59e0b;
+}
+
+/* 3. 모니터링 터미널 (High-Contrast Premium Dark IDE Console) */
 .drawer-body .monitor-terminal {
   flex: 1;
-  min-height: 280px;
+  min-height: 320px;
+  background: #030712;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-body .terminal-bar {
+  background: #0f172a;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.drawer-body .term-title {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 0.3px;
+}
+
+.drawer-body .terminal-body {
+  padding: 14px 16px;
+  flex: 1;
+  overflow-y: auto;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.7;
+  background: #030712;
+  color: #f8fafc;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) #030712;
+}
+
+.drawer-body .terminal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.drawer-body .terminal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+.drawer-body .terminal-body::-webkit-scrollbar-track {
+  background: #030712;
+}
+
+.drawer-body .log-entry {
+  margin-bottom: 6px;
+  word-break: break-all;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.drawer-body .log-time {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.drawer-body .log-msg {
+  color: #f8fafc !important;
+  font-weight: 500;
+  flex: 1;
+}
+
+.drawer-body .log-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.drawer-body .log-badge.info {
+  background: rgba(56, 189, 248, 0.18);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.drawer-body .log-badge.success {
+  background: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+.drawer-body .log-badge.warn {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.drawer-body .log-badge.error {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.4);
 }
 
 

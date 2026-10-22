@@ -110,7 +110,8 @@ const blueprint = {
         { id: 'B1BA', label: '연간 영업이익 (백만 원)', type: 'tunable', baseline: '45 백만 원', note: '연매출 * 이익률%' },
         { id: 'B1BA_1', label: '매출액 대비 영업이익률 (%)', type: 'tunable', baseline: '25 %', range: '15~35 %', note: '★영업이익/매출액 수학적 일치 필수★' },
         { id: 'B1BB', label: '전년 대비 매출 변화', type: 'fixed', value: '비슷함 (B1BB_3)', note: '추가 세부문항 안전 스킵' },
-        { id: 'B1C', label: '일평균 방문 고객 수', type: 'jitter', baseline: '45 명', range: '25~75 명', note: '업종별 분산' },
+        { id: 'B1C', label: '1일 평균 구매 고객수', type: 'jitter', baseline: '45 명', range: '25~75 명', note: '업종별 분산' },
+        { id: 'B1C_1', label: '지역 외 고객 비중', type: 'tunable', baseline: '약 90% 모름 체크', range: '90% 모름 / 100% 모름 / 0% 직접입력', note: '약 90% 모름 체크 (퍼센트 미입력), 10% 비중 분산 입력' },
         { id: 'B1D', label: '일평균 영업 시간', type: 'fixed', value: '11 시간', note: '오전 9시~오후 8시' },
         { id: 'B1E', label: '월평균 영업 일수', type: 'jitter', baseline: '26 일', range: '24~28 일', note: '주 6일 근무' }
       ]

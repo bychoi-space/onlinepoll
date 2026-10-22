@@ -77,6 +77,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  const modalTabSurveyStore = document.getElementById('modal-tab-survey-store');
+  const modalTabSurveyAssoc = document.getElementById('modal-tab-survey-assoc');
+  const modalSurveyRadios = document.querySelectorAll('input[name="new-survey-type"]');
+
+  modalSurveyRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      if (e.target.value === 'kstat_assoc') {
+        modalTabSurveyAssoc.classList.add('active');
+        modalTabSurveyStore.classList.remove('active');
+      } else {
+        modalTabSurveyStore.classList.add('active');
+        modalTabSurveyAssoc.classList.remove('active');
+      }
+    });
+  });
+
   btnOpenModal.addEventListener('click', () => { modal.classList.add('is-open'); });
   btnCloseModal.addEventListener('click', () => { modal.classList.remove('is-open'); });
   btnCancelModal.addEventListener('click', () => { modal.classList.remove('is-open'); });
@@ -114,9 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     campaignContainer.innerHTML = campaigns.map(c => {
-      const quotaLabel = c.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)';
-      const quotaBadgeClass = c.quotaType === 'b2b' ? 'b2b' : 'b2c';
-      const quotaIcon = c.quotaType === 'b2b' ? 'fa-building' : 'fa-user';
+      const isAssoc = (c.surveyType === 'kstat_assoc');
+      const quotaLabel = isAssoc ? '상인회 대상 (25단계)' : (c.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)');
+      const quotaBadgeClass = isAssoc ? 'assoc' : (c.quotaType === 'b2b' ? 'b2b' : 'b2c');
+      const quotaIcon = isAssoc ? 'fa-sitemap' : (c.quotaType === 'b2b' ? 'fa-building' : 'fa-user');
 
       let statusText = '대기 중';
       let statusClass = 'ready';
@@ -125,25 +142,25 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (c.status === 'completed') { statusText = '설문 완료'; statusClass = 'completed'; }
 
       const dbCount = c.quotaDatabase ? c.quotaDatabase.length : 0;
-      const targetCount = c.quotaConfig?.targetCount || 1;
+      const targetCount = c.quotaConfig?.targetCount || (isAssoc ? 8 : 1);
       const dateStr = new Date(c.createdAt).toLocaleDateString('ko-KR');
 
       return `
-        <div class="campaign-card" data-id="${c.id}">
+        <div class="campaign-card ${isAssoc ? 'assoc-card' : ''}" data-id="${c.id}">
           <div>
             <div class="campaign-card-header">
               <span class="badge-quota-type ${quotaBadgeClass}"><i class="fa-solid ${quotaIcon}"></i> ${quotaLabel}</span>
               <span class="badge-status ${statusClass}">${statusText}</span>
             </div>
             <h3 class="campaign-title">${escapeHtml(c.title)}</h3>
-            <p class="campaign-desc">${escapeHtml(c.description || '상세 설정을 통해 쿼터 DB 및 방향성을 구성하세요.')}</p>
+            <p class="campaign-desc">${escapeHtml(c.description || (isAssoc ? '전통시장 상인회 25단계 전년도 일치 미러링 및 2026 정책 가이드 설문' : '상세 설정을 통해 쿼터 DB 및 방향성을 구성하세요.'))}</p>
           </div>
 
           <div>
             <div class="campaign-meta-box">
               <div class="meta-item">
                 <span>조사 쿼터 DB</span>
-                <strong>${c.quotaType === 'b2b' ? `${dbCount}개 보유 / 목표 ${targetCount}개` : '개인 페르소나 자동변주'}</strong>
+                <strong>${isAssoc ? `${dbCount}개 시장 확보 / 대상 8개소` : (c.quotaType === 'b2b' ? `${dbCount}개 보유 / 목표 ${targetCount}개` : '개인 페르소나 자동변주')}</strong>
               </div>
               <div class="meta-item">
                 <span>등록일</span>
@@ -181,12 +198,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = document.getElementById('new-title').value.trim();
     const description = document.getElementById('new-desc').value.trim();
     const quotaType = document.querySelector('input[name="new-quota-type"]:checked').value;
+    const surveyType = document.querySelector('input[name="new-survey-type"]:checked')?.value || 'kstat_store';
 
     try {
       const res = await fetch('/api/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description, quotaType })
+        body: JSON.stringify({ title, description, quotaType, surveyType })
       });
       const newCamp = await res.json();
       window.location.href = `survey-detail.html?id=${newCamp.id}`;

@@ -85,6 +85,7 @@ export function createCampaign(data = {}) {
     title: data.title || '새로운 설문조사 캠페인',
     description: data.description || '',
     quotaType: data.quotaType || 'b2c',
+    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc'
     status: 'ready',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

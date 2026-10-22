@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     storeSqmMax: 65,
     employeeFamily: 0,
     employeeFamilyMin: 0,
-    employeeFamilyMax: 2,
+    employeeFamilyMax: 0,
     employeeRegular: 0,
     employeeRegularMin: 0,
     employeeRegularMax: 2,
@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     profitMarginRate: 25,
     salesChange: 'similar',
     dailyCustomers: 45,
+    nonLocalUnknownRate: 90,
     dailyBusinessHours: 11,
     monthlyBusinessDays: 26,
     creditCardRatio: 65,
@@ -261,12 +262,30 @@ document.addEventListener('DOMContentLoaded', async () => {
           group3: { ...currentBaseline, ...(data.baseline?.groups?.group3 || data.baseline || {}) }
         };
       }
+
+      // [A10_1] 가족 종사자 수: 1번(식품군), 2번(공산생활서비스군), 3번(외식음식점업군) 전 그룹 0명 기본 및 설정 보장
+      ['group1', 'group2', 'group3'].forEach(g => {
+        if (groupBaselines[g]) {
+          if (groupBaselines[g].employeeFamilyMin === 1 && groupBaselines[g].employeeFamilyMax === 1) {
+            groupBaselines[g].employeeFamily = 0;
+            groupBaselines[g].employeeFamilyMin = 0;
+            groupBaselines[g].employeeFamilyMax = 0;
+          }
+        }
+      });
+
       groupStats = data.groupStats || null;
 
       if (groupBaselines[activeGroup]) {
         currentBaseline = { ...groupBaselines[activeGroup] };
       } else if (data.baseline) {
         currentBaseline = { ...currentBaseline, ...data.baseline };
+      }
+
+      if (currentBaseline.employeeFamilyMin === 1 && currentBaseline.employeeFamilyMax === 1) {
+        currentBaseline.employeeFamily = 0;
+        currentBaseline.employeeFamilyMin = 0;
+        currentBaseline.employeeFamilyMax = 0;
       }
 
       if (campaignTitleHeading) {
@@ -537,7 +556,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
       // P2: 가족 종사자 수 (Min~Max 레인지)
       case 'A10_1':
-        return renderDualRangeControl('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, 1, 0, 2, '명');
+        return renderDualRangeControl('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, 1, 0, 0, '명');
       // P2: 상시 유급 종업원 수 (Min~Max 레인지)
       case 'A10_2':
         return renderDualRangeControl('paid-emp', 'employeeRegularMin', 'employeeRegularMax', 0, 10, 1, 0, 2, '명');
@@ -625,6 +644,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span class="baseline-slider-val" id="val-daily-cust">${currentBaseline.dailyCustomers || 45}명</span>
           </div>
         `;
+      // P4: 지역 외 고객 비중
+      case 'B1C_1': {
+        const curUnknown = currentBaseline.nonLocalUnknownRate !== undefined ? String(currentBaseline.nonLocalUnknownRate) : '90';
+        return `
+          <select class="baseline-select" id="select-non-local-cust">
+            <option value="90" ${curUnknown === '90' ? 'selected' : ''}>약 90% 모름 (기본 권장)</option>
+            <option value="100" ${curUnknown === '100' ? 'selected' : ''}>100% 모름 체크</option>
+            <option value="0" ${curUnknown === '0' ? 'selected' : ''}>0% (전부 비중 입력)</option>
+          </select>
+        `;
+      }
       // P4: 일평균 영업 시간
       case 'B1D':
         return `
@@ -1295,6 +1325,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     bindSlider('slider-margin', 'val-margin', 'profitMarginRate', '%', updateProfit);
     bindSelect('select-sales-change', 'salesChange');
     bindSlider('slider-daily-cust', 'val-daily-cust', 'dailyCustomers', '명');
+    bindSelect('select-non-local-cust', 'nonLocalUnknownRate');
     bindSlider('slider-biz-hours', 'val-biz-hours', 'dailyBusinessHours', '시간');
     bindSlider('slider-biz-days', 'val-biz-days', 'monthlyBusinessDays', '일');
 
@@ -1418,7 +1449,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnPresetStandard.addEventListener('click', () => {
       applyPreset({
         storePyeong: 14,
-        employeeFamily: 1,
+        employeeFamily: 0,
+        employeeFamilyMin: 0,
+        employeeFamilyMax: 0,
         employeeRegular: 0,
         employeeTemp: 0,
         dailySales: 65,
@@ -1427,6 +1460,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         profitMarginRate: 25,
         salesChange: 'similar',
         dailyCustomers: 45,
+        nonLocalUnknownRate: 90,
         dailyBusinessHours: 11,
         monthlyBusinessDays: 26,
         creditCardRatio: 65,
@@ -1468,7 +1502,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnPresetGrowth.addEventListener('click', () => {
       applyPreset({
         storePyeong: 25,
-        employeeFamily: 1,
+        employeeFamily: 0,
+        employeeFamilyMin: 0,
+        employeeFamilyMax: 0,
         employeeRegular: 2,
         employeeTemp: 1,
         dailySales: 130,
@@ -1477,6 +1513,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         profitMarginRate: 32,
         salesChange: 'increase',
         dailyCustomers: 90,
+        nonLocalUnknownRate: 90,
         dailyBusinessHours: 13,
         monthlyBusinessDays: 28,
         creditCardRatio: 70,
@@ -1518,7 +1555,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnPresetTraditional.addEventListener('click', () => {
       applyPreset({
         storePyeong: 8,
-        employeeFamily: 1,
+        employeeFamily: 0,
+        employeeFamilyMin: 0,
+        employeeFamilyMax: 0,
         employeeRegular: 0,
         employeeTemp: 0,
         dailySales: 45,
@@ -1527,6 +1566,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         profitMarginRate: 20,
         salesChange: 'decrease',
         dailyCustomers: 30,
+        nonLocalUnknownRate: 90,
         dailyBusinessHours: 10,
         monthlyBusinessDays: 25,
         creditCardRatio: 60,

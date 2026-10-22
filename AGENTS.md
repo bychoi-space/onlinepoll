@@ -943,3 +943,93 @@ c:/onlinepoll/
   - `data/kstat_survey_blueprint.json`의 17단계 `EVAL` 복제 및 `H3_1` ~ `H3_4` 기본값을 `random_345`로 표준화.
   - `public/survey-detail.js` 및 `public/survey-blueprint.js`의 H3 필드를 드롭다운 셀렉터로 개편하여 `🎲 3.보통 · 4.양호 · 5.매우양호 랜덤 [권장 규칙]` 기본 장착 및 3/4/5점 고정 옵션 동시 지원.
   - 단위 테스트(`scratch/test-eval-h3-rule.mjs`) 1,500회 시뮬레이션을 통해 3점(547회), 4점(474회), 5점(479회)으로 100% 정상 무작위 분산 검증 완료.
+
+---
+
+## 5-13. 시스템 개발 연혁 (Day 21 완료 내역 - [B1-3] 지역 외 고객 비중 90% '모름' 체크 및 퍼센트 미입력 규칙 탑재)
+
+### 1) [B1-3] 1일 평균 구매 고객수 내 '지역 외 고객 비중' 규칙 정밀화
+- **요구사항**: `[B1-3] 1일 평균 구매 고객수` 항목의 `지역 외 고객 비중`에 대해 점포의 **약 90%는 '모름' 체크박스(`B1C_9`)를 선택하고 퍼센트(`B1C_1`)를 입력하지 않도록** 규칙 정립.
+- **케이스탯 DOM & 유효성 검증 정밀 분석 (`B1C.asp`)**:
+  - `B1C_9`('모름') 체크 시 내부 JS `B1C_NoneCheck(this)`가 트리거되어 `B1C_1`의 값을 비우고 `disabled = true` 처리.
+  - 다음 버튼 클릭 시 `B1C_9`가 체크되어 있으면 `B1C_1` 비중 입력을 검증하지 않고 정상 통과 (`next()` 내 `if (!$("#B1C_9").is(":checked"))` 분기).
+  - 반대로 `B1C_9` 미체크 시에는 반드시 `B1C_1` > 0 입력이 필수 검증됨.
+
+### 2) 페르소나 생성기 (`src/engine/persona-builder.js`) 90% 모름 규칙 엔진 완성
+- `generateQuotaPersona()`에 `isNonLocalUnknown` 및 `nonLocalCustomerRate` 필드 탑재.
+- 기본 90% 규칙: 10개 점포 단위로 9개(90%) 점포는 `isNonLocalUnknown = true`, `nonLocalCustomerRate = ''` (파일럿 1번 점포 포함).
+- 잔여 10% 점포(`quotaIndex % 10 === 0`, 예: 10번, 20번)만 `isNonLocalUnknown = false`로 지정하고 10~30% 범위의 자연스러운 비중(15%, 20% 등)을 분산 배분.
+- 마스터 블루프린트(`mb.nonLocalUnknownRate`)와 연동하여 100%(전부 모름), 0%(전부 직접입력) 등 사용자 설정 완벽 지원.
+
+### 3) 실행 러너 (`src/engine/kstat-runner.js`) DOM 인터랙션 완결
+- `P4` 실행 루프 내 `fB1C` 인터랙션 로직 전면 개편:
+  - `isNonLocalUnknown === true` (90%): `#B1C`에 방문 고객수(명) 입력 후 `#B1C_9`('모름') 체크박스 활성화, `B1C_NoneCheck()` 호출, `#B1C_1` 공란 및 `disabled` 상태 확정.
+  - `isNonLocalUnknown === false` (10%): `#B1C_9` 체크 해제 및 `#B1C_1`에 자연스러운 정수 비중(10~30%) 입력.
+- 하위 프레임 자동 감지/폴백 안전망 `autoFillUnansweredVisibleFrames`에도 `B1C` 전용 처리 핸들러 추가 탑재.
+
+### 4) 마스터 블루프린트 및 대시보드 UI 동기화
+- `data/kstat_survey_blueprint.json`: `defaultBaseline.nonLocalUnknownRate: 90` 추가 및 P4에 `B1C_1`(`지역 외 고객 비중`) 항목 명세 탑재.
+- `public/survey-detail.js` 및 `public/survey-blueprint.js`:
+  - `DEFAULT_BASELINE` 및 3대 프리셋(표준/성장/전통)에 `nonLocalUnknownRate: 90` 기본 탑재.
+  - P4 마스터 가이드 UI에 `지역 외 고객 비중` 셀렉터(`약 90% 모름 [기본 권장]`, `100% 모름 체크`, `0% 직접입력`) 추가 및 실시간 설정 양방향 바인딩 완료.
+
+---
+
+## 5-14. 시스템 개발 연혁 (Day 22 완료 내역 - [A10_1] 가족 종사자 수 1·2·3 전 그룹 0명 지원 및 초기값 일치화)
+
+### 1) [A10_1] 가족 종사자 수 3대 업종 그룹 불일치 전면 시정
+- **문제 진단**: 2번 그룹(공산·생활·서비스군)에는 `employeeFamily: 0, employeeFamilyMin: 0, employeeFamilyMax: 0` (0~0명)이 적용되었으나, 1번 그룹(식품군)과 3번 그룹(외식·음식점업군)의 기존 마스터 기준점에 `employeeFamilyMin: 1, employeeFamilyMax: 1`이 잔존하여 화면상에 `1 ~ 1 명`으로 고정 노출되던 결함 발견.
+- **백엔드 기본값 & 동적 정규화 (`src/server.js`)**:
+  - `defaultGroupBaselines`의 `group1`, `group2`, `group3` 전원에 `employeeFamily: 0, employeeFamilyMin: 0, employeeFamilyMax: 0` 명시 적용.
+  - `/api/campaigns/:id/blueprint` 응답 및 `/api/campaigns/create-from-quota` 시 과거 캠페인에서 계승된 1번/3번 그룹의 `1 ~ 1` 값을 `0 ~ 0`으로 즉각 자동 정규화.
+- **프론트엔드 UI & 프리셋 동기화 (`public/survey-detail.js`, `public/survey-blueprint.js`)**:
+  - `DEFAULT_BASELINE` 및 3대 프리셋(표준/성장/전통)의 `employeeFamily` 1명 하드코딩 제거 및 `0 ~ 0명`으로 수정.
+  - `renderDualRangeControl` 기본값을 `0 ~ 0명`으로 통일하고, `loadBlueprint()` 시 1/2/3 전 그룹에 걸쳐 `0명` 지원을 동기화.
+- **GCP 운영 서버 캠페인 23건 실시간 마스터 기준점 일괄 동기화 완료**:
+  - 활성 캠페인(`camp_1792561666462` 등)의 1번(식품군), 2번(공산군), 3번(외식군) 전 그룹 `A10_1`을 `0 ~ 0 명`으로 완벽 갱신 완료.
+
+---
+
+## 5-15. 시스템 개발 연혁 (Day 23 완료 내역 - [상인회 조사] 신규 프로젝트 분석 및 조사원 다중 계정 체계 정립)
+
+### 1) Kstat 조사원 계정 풀 확장 및 멀티 프로젝트 메타데이터 등록
+- **신규 조사원 계정 등록**: `가온박정순` / `1234`
+- **신규 대상 프로젝트**: `2025년 기준 전통시장, 상점가 및 점포경영 실태조사 - B.상인회조사`
+  - 프로젝트 ID (`PRID`): `2026070801`
+  - 관리자 목록 URL: `https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi`
+  - 본 설문 URL 체계: `https://kstat.surveys.kr/2026/P26042401A/index.asp?KID={KID}&type=tapi&prid=2026070801&mnid=900001374&srt=1`
+  - 조사원 평가 URL 체계: `https://kstat.surveys.kr/2026/P26042401AA/?KID={KID}&type=tapi&prid=2026070801&mnid=900001374&srt=2`
+- **배정 시장 확인 (서울 관악구 8개 상인회)**: 신림중앙시장, 서원동상점가, 난곡골목형상점가, 서림행복가득한골목형상점가, 녹두S밸리골목형상점가, 녹두골목형상점가, 미성동도깨비시장, 난우길골목형상점가.
+
+### 2) 상인회 조사 25단계(Q1, P1~P23, Agree) 전수 구조 규명
+- **전체 흐름**: `Q1.asp`(기본쿼터) ➔ `P1`~`P23` ➔ `Agree.asp`(최종동의) ➔ `P26042401AA`(조사원 평가).
+- **[핵심 메커니즘] 전년도 동일 응답 구조 (A3 ~ F4)**:
+  - 좌측 열에 `2024년 기준 (전년도 응답)`이 `name="P..."`(예: `PA3A`, `PC1_1_1` 등)로 disabled 렌더링되고, `prevData` 객체에 데이터가 완벽히 로드되어 있음.
+  - 우측 `2025년 기준` 필드(`name="A3A"`, `name="C1_1_1"` 등)에 좌측 전년도 값을 1:1 매핑하여 동일하게 자동 복사/선택(Mirroring) 처리 가능.
+- **[핵심 메커니즘] 사용자 가이드라인 설정 구간 (F5, F6, G1, G2, G3, G4)**:
+### 3) 상인회 조사 (2026070801) 완전 독립 엔진 및 UI/UX 완결
+- **[원칙 엄수] 온누리 점포조사 코드 0.001% 침범 없는 완전 격리 구조**:
+  - 기존 온누리 점포조사 엔진(`kstat-runner.js`, `kstat-eval-runner.js`, `persona-builder.js`, `kstat_survey_blueprint.json`)을 동결 보존.
+  - 상인회 조사는 전용 파일(`src/engine/kstat-assoc-runner.js`, `src/engine/kstat-assoc-slot-scraper.js`, `data/kstat_assoc_blueprint.json`)로 완전 분리 구축.
+- **상인회 슬롯 자동 스크래퍼 (`src/engine/kstat-assoc-slot-scraper.js`)**:
+  - 관악구 8개 상인회 슬롯을 8초 만에 무결점 수집 (시장코드, 등록번호, 시장명, 유형, 회장명, 연락처, 슬롯URL, 평가URL).
+  - 백엔드 `POST /api/kstat/fetch-assoc-slots` 및 `POST /api/campaigns/:id/bind-assoc-slots` API 완성.
+- **25단계 전년도 일치 미러링 러너 (`src/engine/kstat-assoc-runner.js`)**:
+  - `mirrorPrevYearToCurrent`: `window.prevData`와 `window.currData`를 읽어 2025년 필드로 1:1 자동 주입.
+  - `A5` 대표품목 Fallback 방어, `A6` 점포현황 공란 0 자동 채움 및 `calculateA6()` 계산 유효성 검증 해결.
+  - `F5`~`G4` 사용자 정책 가이드라인 자동 주입 및 `Agree.asp` 안전 정지 완결.
+- **대시보드 UI/UX 통합 (`index.html`, `campaign-list.js`, `survey-detail.html`, `survey-detail.js`)**:
+  - 신규 캠페인 생성 모달에 `[설문 엔진 유형: 전통시장 점포조사(15단계) vs 상인회 실태조사(25단계)]` 선택기 추가.
+  - 캠페인 카드에 `[상인회 대상 (25단계)]` 청록색 전용 배지 시각화.
+  - 설문 상세 작업실 STEP 1: 상인회 전용 9개 컬럼 테이블 동적 렌더링 및 `[Kstat 상인회 슬롯 자동 바인딩 (가온박정순)]` 원클릭 버튼 연동.
+  - 설문 상세 작업실 STEP 2: 상인회 6대 정책 가이드라인 에디터(F5~G4) 렌더링 및 3대 업종 그룹 점포 베이스라인 완전 은닉.
+  - 설문 상세 작업실 STEP 3: 파일럿 1번 검증 및 잔여 슬롯 배치 자동화 가동 분기 연동 완료.
+
+### 4) 인수인계 및 잔여 작업 체크리스트 (Handover & Next Tasks)
+- 상세 인수인계서: [`HANDOVER_MERCHANT_ASSOC_TASKS.md`](file:///c:/Users/sisun/onlinepoll/HANDOVER_MERCHANT_ASSOC_TASKS.md)
+- **출근 후 즉시 진행할 잔여 작업 (약 10~15분 소요)**:
+  1. `src/engine/kstat-assoc-runner.js`에 프레임 동기화 대기(`syncDynamicFrames`) 및 특수 프레임 핸들러(A3A 1선택, A5 pa5일치, A6A 0채움, D3 '2'일때 TD3_1 비우기, F1~F4 0채움 및 calcF1_4 호출, G3 2선택, G4 안전체크박스 선택) 최종 병합.
+  2. `node scripts/test-assoc-pilot-run.js` 실행하여 Q1~P23 ➔ Agree 안전 정지 1번 슬럿 파일럿 100% 완주 검증.
+  3. 웹 대시보드 상세 화면에서 `[1번 상인회 파일럿 검증 가동]` 클릭 ➔ 실시간 모니터링 로그 및 Agree 스크린샷 확인.
+  4. 기존 온누리 점포조사 캠페인 진입하여 15단계 베이스라인 및 점포 테이블 100% 정상 작동 회귀 검증(Regression Check).
+

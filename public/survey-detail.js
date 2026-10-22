@@ -112,9 +112,49 @@ async function initSurveyDetailPage() {
   function renderCampaignDetails(camp) {
     titleEl.textContent = camp.title;
 
+    const isAssoc = (camp.surveyType === 'kstat_assoc');
+
     // 배지 상태
     statusBadge.className = `badge-status ${camp.status || 'ready'}`;
     statusBadge.textContent = camp.status === 'running' ? '실행 중' : (camp.status === 'completed' ? '완료' : '준비 완료');
+
+    if (quotaBadge) {
+      if (isAssoc) {
+        quotaBadge.className = 'badge-quota-type assoc';
+        quotaBadge.textContent = '상인회 대상 (25단계)';
+      } else {
+        quotaBadge.className = `badge-quota-type ${camp.quotaType === 'b2b' ? 'b2b' : 'b2c'}`;
+        quotaBadge.textContent = camp.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)';
+      }
+    }
+
+    // 조사원 연동 계정 바인딩
+    const defaultSurveyor = isAssoc ? '가온박정순' : '가온김영옥';
+    const inputKstatAccountId = document.getElementById('input-kstat-account-id');
+    const inputKstatAccountPw = document.getElementById('input-kstat-account-pw');
+    const badgeCurrentKstatAccount = document.getElementById('badge-current-kstat-account');
+    if (inputKstatAccountId) inputKstatAccountId.value = camp.kstatLoginId || defaultSurveyor;
+    if (inputKstatAccountPw) inputKstatAccountPw.value = camp.kstatLoginPw || '1234';
+    if (badgeCurrentKstatAccount) {
+      badgeCurrentKstatAccount.innerHTML = `<i class="fa-solid fa-user-check"></i> 연동 계정: <strong>${escapeHtml(camp.kstatLoginId || defaultSurveyor)}</strong>`;
+    }
+
+    // 슬롯 바인딩 버튼 UI 튜닝
+    const btnOpenBindSlots = document.getElementById('btn-open-bind-slots');
+    if (btnOpenBindSlots) {
+      if (isAssoc) {
+        btnOpenBindSlots.innerHTML = '<i class="fa-solid fa-bolt"></i> Kstat 상인회 슬롯 자동 바인딩 (가온박정순)';
+        btnOpenBindSlots.title = 'Kstat 상인회 관리자(2026070801)에서 8개 시장 슬롯을 1초 만에 자동 수집 및 바인딩';
+      } else {
+        btnOpenBindSlots.innerHTML = '<i class="fa-solid fa-bolt"></i> Kstat 슬롯 자동 바인딩';
+        btnOpenBindSlots.title = 'Kstat 관리자 list.php에서 슬롯을 1초 만에 자동 수집 및 바인딩';
+      }
+    }
+
+    // 결측치 외부 보강 버튼: 점포조사 전용
+    if (btnEnrichCampaign) {
+      btnEnrichCampaign.style.display = isAssoc ? 'none' : 'inline-flex';
+    }
 
     // 쿼터 DB 테이블 렌더링
     renderQuotaTable(camp.quotaDatabase || []);
@@ -124,22 +164,12 @@ async function initSurveyDetailPage() {
       const firstSlotUrl = camp.quotaDatabase?.[0]?.slotUrl;
       if (inputSurveyUrl) inputSurveyUrl.value = camp.guidelineConfig.surveyUrl || firstSlotUrl || '';
       if (inputSurveyTopic) inputSurveyTopic.value = camp.guidelineConfig.topic || '';
-      if (selectSurveyEngine) selectSurveyEngine.value = camp.guidelineConfig.engine || 'kstat_tapi';
-    }
-
-    // Kstat 조사원 연동 계정 바인딩
-    const inputKstatAccountId = document.getElementById('input-kstat-account-id');
-    const inputKstatAccountPw = document.getElementById('input-kstat-account-pw');
-    const badgeCurrentKstatAccount = document.getElementById('badge-current-kstat-account');
-    if (inputKstatAccountId) inputKstatAccountId.value = camp.kstatLoginId || '가온김영옥';
-    if (inputKstatAccountPw) inputKstatAccountPw.value = camp.kstatLoginPw || '1234';
-    if (badgeCurrentKstatAccount) {
-      badgeCurrentKstatAccount.innerHTML = `<i class="fa-solid fa-user-check"></i> 연동 계정: <strong>${escapeHtml(camp.kstatLoginId || '가온김영옥')}</strong>`;
+      if (selectSurveyEngine) selectSurveyEngine.value = isAssoc ? 'kstat_assoc' : (camp.guidelineConfig.engine || 'kstat_tapi');
     }
 
     // 버튼 상태 머신 갱신 (1번 검증 완료 및 배치 완료 제어)
     updateButtonStates();
-    updateGroupStatsUI();
+    if (!isAssoc) updateGroupStatsUI();
   }
 
   // -------------------------------------------------------------
@@ -329,15 +359,105 @@ async function initSurveyDetailPage() {
       }
     }
 
+    const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
+
+    // 테이블 헤더 동적 교체
+    const quotaTableHead = document.getElementById('quota-table-head');
+    if (quotaTableHead) {
+      if (isAssoc) {
+        quotaTableHead.innerHTML = `
+          <tr>
+            <th class="th-no">번호</th>
+            <th>시장코드</th>
+            <th>시장명</th>
+            <th>시장유형</th>
+            <th>상인회장</th>
+            <th>연락처</th>
+            <th>소재지 주소</th>
+            <th>Kstat 슬롯 URL</th>
+            <th class="th-status">진행 상태</th>
+          </tr>
+        `;
+      } else {
+        quotaTableHead.innerHTML = `
+          <tr>
+            <th class="th-no">번호</th>
+            <th class="th-company">상호</th>
+            <th class="th-ind">업종</th>
+            <th class="th-biznum">사업자번호</th>
+            <th class="th-ceo">대표자이름</th>
+            <th class="th-gender">성별</th>
+            <th class="th-age">나이</th>
+            <th class="th-phone">연락처</th>
+            <th class="th-opendate">개업연월</th>
+            <th class="th-address">주소</th>
+            <th class="th-items">취급품목</th>
+            <th class="th-main-products">주요품목</th>
+            <th class="th-status">진행 상태</th>
+          </tr>
+        `;
+      }
+    }
+
     if (total === 0) {
       quotaTableBody.innerHTML = `
         <tr>
-          <td colspan="13" class="empty-table-msg">
-            아직 구축된 사업자 DB가 없습니다.<br>
-            상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.
+          <td colspan="${isAssoc ? 9 : 13}" class="empty-table-msg">
+            ${isAssoc 
+              ? '아직 등록된 상인회 슬롯 DB가 없습니다.<br>상단의 <strong>[Kstat 상인회 슬롯 자동 바인딩]</strong> 버튼을 클릭하여 슬롯을 장착해 주세요.' 
+              : '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.'}
           </td>
         </tr>
       `;
+      return;
+    }
+
+    // [상인회 전용 9개 컬럼 테이블 렌더링]
+    if (isAssoc) {
+      quotaTableBody.innerHTML = db.map((item, idx) => {
+        const seq = item.index || item.seq || (idx + 1);
+        const st = item.quotaStatus || 'ready';
+        let statusHtml = '<span class="badge-status ready">대기</span>';
+
+        if (st === 'pilot_done') {
+          statusHtml = '<span class="badge-status pilot">검증완료</span>';
+        } else if (st === 'completed') {
+          statusHtml = '<span class="badge-status success">조사표 완료</span>';
+        } else if (st === 'running') {
+          statusHtml = '<span class="badge-status running">실행 중</span>';
+        } else if (st === 'error') {
+          statusHtml = '<span class="badge-status error">오류</span>';
+        }
+
+        let slotTag = '';
+        if (item.slotUrl) {
+          slotTag = `<div class="quota-slot-badge font-mono" title="${escapeHtml(item.slotUrl)}"><i class="fa-solid fa-link"></i> 슬롯 #${seq} (ranId: ${item.ranId || '-'})</div>`;
+        } else {
+          slotTag = `<div class="quota-slot-badge unmapped font-mono"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 미매핑</div>`;
+        }
+
+        const mName = item.marketName || item.companyName || '-';
+        const mCode = item.marketCode || '-';
+        const mType = item.marketType || '골목형상점가';
+        const lName = item.leaderName || item.ceoName || '-';
+        const phone = item.phone || item.assocPhone || item.leaderPhone || '-';
+        const addr = item.address || '-';
+        const addrShort = addr.length > 25 ? addr.slice(0, 25) + '...' : addr;
+
+        return `
+          <tr data-row-idx="${seq}">
+            <td class="text-center font-mono font-bold">${seq}</td>
+            <td class="text-center font-mono"><code>${escapeHtml(mCode)}</code></td>
+            <td><strong>${escapeHtml(mName)}</strong></td>
+            <td><span class="quota-ind-badge">${escapeHtml(mType)}</span></td>
+            <td><strong>${escapeHtml(lName)}</strong></td>
+            <td class="font-mono">${escapeHtml(phone)}</td>
+            <td title="${escapeHtml(addr)}">${escapeHtml(addrShort)}</td>
+            <td>${slotTag}</td>
+            <td class="text-center">${statusHtml}</td>
+          </tr>
+        `;
+      }).join('');
       return;
     }
 
@@ -759,7 +879,7 @@ async function initSurveyDetailPage() {
     storeSqmMax: 65,
     employeeFamily: 0,
     employeeFamilyMin: 0,
-    employeeFamilyMax: 2,
+    employeeFamilyMax: 0,
     employeeRegular: 0,
     employeeRegularMin: 0,
     employeeRegularMax: 2,
@@ -775,6 +895,7 @@ async function initSurveyDetailPage() {
     profitMarginRate: 25,
     salesChange: 'similar',
     dailyCustomers: 45,
+    nonLocalUnknownRate: 90,
     dailyBusinessHours: 11,
     monthlyBusinessDays: 26,
     creditCardRatio: 65,
@@ -947,12 +1068,276 @@ async function initSurveyDetailPage() {
     alert(`[${sourceMeta.name}]의 기준점 설정이 1번, 2번, 3번 그룹 전체에 일괄 복사되었습니다.\n우측의 [마스터 기준점 저장]을 눌러 서버에 최종 반영해 주세요.`);
   }
 
+  let assocPolicyState = null;
+
+  function renderAssocBlueprint(data) {
+    assocPolicyState = data.policy || data.blueprint?.defaultPolicy || {};
+
+    // 1. 점포조사 전용 3대 그룹 네비게이션 및 프리셋 툴바 숨김
+    const groupNav = document.querySelector('.blueprint-group-nav-container');
+    if (groupNav) groupNav.style.display = 'none';
+
+    const presetGroup = document.querySelector('.blueprint-preset-group');
+    if (presetGroup) presetGroup.style.display = 'none';
+
+    const tplPicker = document.querySelector('.blueprint-template-picker');
+    if (tplPicker) tplPicker.style.display = 'none';
+
+    // 2. 상단 헤더 문구 갱신
+    const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
+    if (titleEl) titleEl.textContent = '상인회 실태조사 기준점 및 정책 가이드라인 (25단계)';
+
+    const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
+    if (subtitleEl) subtitleEl.textContent = 'P1~P20 단계는 전년도(2024년) 실태조사 데이터와 100% 동일하게 자동 미러링되며, 2026 신규 정책 문항(F5~G4) 가이드라인을 설정합니다.';
+
+    if (badgeMasterStatus) {
+      badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> 상인회 25단계 블루프린트 활성 (전년도 미러링 + 정책 가이드)';
+      badgeMasterStatus.className = 'badge-status badge-blueprint ready';
+    }
+
+    if (!blueprintStageGrid) return;
+
+    // 3. 상인회 전용 카드 그리드 렌더링
+    blueprintStageGrid.innerHTML = `
+      <!-- 카드 1: 전년도 데이터 미러링 보장 안내 카드 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">A3 ~ F4</span>
+            <h3 class="blueprint-stage-title">전년도(2024년) 실태조사 1:1 자동 미러링 (P1~P20)</h3>
+          </div>
+          <div class="blueprint-card-badge-group">
+            <span class="badge-status success"><i class="fa-solid fa-lock"></i> 100% 전년도 일치 보장</span>
+          </div>
+        </div>
+        <div class="blueprint-stage-desc">
+          케이스탯 상인회 설문의 20개 핵심 영역(일반현황 A3~A10, 조직운영 B1~B7, 시설환경 C1~C4, 마케팅사업 D1~D5, 재정인력 E1~E3, 상인조직 F1~F4)은 원본 DOM에 로드된 2024년 전년도 확정 데이터를 2025년 기준에 무결점으로 1:1 자동 복제 주입합니다.
+        </div>
+        <div class="blueprint-field-list">
+          <div class="field-item flex-between py-8">
+            <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> A5 대표품목 결측치 자동 방어</span>
+            <span class="badge-status ready">종합소매 / 주력업종 Fallback 주입</span>
+          </div>
+          <div class="field-item flex-between py-8">
+            <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> A6 점포현황 숫자 검증 &amp; calculateA6 자동 계산</span>
+            <span class="badge-status ready">공란 0 채움 &amp; 합계 정규화</span>
+          </div>
+          <div class="field-item flex-between py-8">
+            <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> A8 평일/휴일 영업시간대 기본 선택</span>
+            <span class="badge-status ready">09:00 ~ 21:00 표준 주입</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 2: F5 빈점포 원인 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">F5 (P21)</span>
+            <h3 class="blueprint-stage-title">빈 점포 발생 핵심 원인</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">시장 내 빈 점포(공실)가 발생하는 가장 주된 요인을 설정합니다.</div>
+        <div class="p-14">
+          <select id="select-assoc-F5" class="figma-select w-full">
+            <option value="1" ${assocPolicyState.F5_emptyStoreReason === '1' ? 'selected' : ''}>1. 온라인 소비 확산 및 비대면 거래 증가</option>
+            <option value="2" ${assocPolicyState.F5_emptyStoreReason === '2' ? 'selected' : ''}>2. 인근 대형마트, 복합쇼핑몰, 인근 상권과의 경쟁 밀림</option>
+            <option value="3" ${assocPolicyState.F5_emptyStoreReason === '3' ? 'selected' : ''}>3. 과도하게 높은 임대료 및 권리금 조건</option>
+            <option value="4" ${assocPolicyState.F5_emptyStoreReason === '4' ? 'selected' : ''}>4. 상인의 고령화 및 가업 승계(후계자) 부족</option>
+            <option value="5" ${assocPolicyState.F5_emptyStoreReason === '5' ? 'selected' : ''}>5. 기타</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 카드 3: F6 빈점포 지원 정책 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">F6 (P21)</span>
+            <h3 class="blueprint-stage-title">시급한 빈 점포 정부 지원 정책</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">빈 점포 해결을 위해 정부 및 지자체에서 가장 시급히 지원해야 할 정책을 설정합니다.</div>
+        <div class="p-14">
+          <select id="select-assoc-F6" class="figma-select w-full">
+            <option value="1" ${assocPolicyState.F6_emptyStorePolicy === '1' ? 'selected' : ''}>1. 빈 점포를 공공 임대·매입하여 상인회에 재임대하는 제도</option>
+            <option value="2" ${assocPolicyState.F6_emptyStorePolicy === '2' ? 'selected' : ''}>2. 빈 점포를 활용하는 상인에 대한 금융 지원(융자, 보조금) 확대</option>
+            <option value="3" ${assocPolicyState.F6_emptyStorePolicy === '3' ? 'selected' : ''}>3. 빈 점포 공간 전환 컨설팅 및 시행 지원</option>
+            <option value="4" ${assocPolicyState.F6_emptyStorePolicy === '4' ? 'selected' : ''}>4. 공실 상가 소유주에게 임대료 인하를 유도하는 세제 혜택 등 인센티브 부여</option>
+            <option value="5" ${assocPolicyState.F6_emptyStorePolicy === '5' ? 'selected' : ''}>5. 빈 점포 파악 및 관리를 위한 통합 플랫폼 구축</option>
+            <option value="6" ${assocPolicyState.F6_emptyStorePolicy === '6' ? 'selected' : ''}>6. 기타</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 카드 4: G1 바가지요금 원인 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">G1 (P22)</span>
+            <h3 class="blueprint-stage-title">바가지요금 문제 발생 주요 원인</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">전통시장 내 바가지요금 논란이 발생하는 근본적인 원인을 설정합니다.</div>
+        <div class="p-14">
+          <select id="select-assoc-G1" class="figma-select w-full">
+            <option value="1" ${assocPolicyState.G1_overchargeReason === '1' ? 'selected' : ''}>1. 외부 관광객 대상 일시적 가격 인상 관행</option>
+            <option value="2" ${assocPolicyState.G1_overchargeReason === '2' ? 'selected' : ''}>2. 상인 간 가격 자율경쟁 및 통제 미흡</option>
+            <option value="3" ${assocPolicyState.G1_overchargeReason === '3' ? 'selected' : ''}>3. 원재료 가격 상승에 따른 임의 가격 인상</option>
+            <option value="4" ${assocPolicyState.G1_overchargeReason === '4' ? 'selected' : ''}>4. 일부 상인의 과도한 이윤추구 형태</option>
+            <option value="5" ${assocPolicyState.G1_overchargeReason === '5' ? 'selected' : ''}>5. 시장 차원의 관리·감독 부족</option>
+            <option value="6" ${assocPolicyState.G1_overchargeReason === '6' ? 'selected' : ''}>6. 기타</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 카드 5: G2 바가지요금 대응방안 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">G2 (P22)</span>
+            <h3 class="blueprint-stage-title">바가지요금 개선 대응 방안</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">바가지요금 근절과 시장 신뢰 회복을 위한 최선의 방안을 설정합니다.</div>
+        <div class="p-14">
+          <select id="select-assoc-G2" class="figma-select w-full">
+            <option value="1" ${assocPolicyState.G2_overchargeSolution === '1' ? 'selected' : ''}>1. 시장 차원의 자율관리 (상인회 중심 가격 가이드라인 운영)</option>
+            <option value="2" ${assocPolicyState.G2_overchargeSolution === '2' ? 'selected' : ''}>2. 지자체·정부의 점검 및 단속 강화</option>
+            <option value="3" ${assocPolicyState.G2_overchargeSolution === '3' ? 'selected' : ''}>3. 바가지요금 신고·공개 시스템 활성화</option>
+            <option value="4" ${assocPolicyState.G2_overchargeSolution === '4' ? 'selected' : ''}>4. 친절·가격교육 등 상인 대상 인식개선 교육</option>
+            <option value="5" ${assocPolicyState.G2_overchargeSolution === '5' ? 'selected' : ''}>5. 우수상점 인증제 등 인센티브 제공</option>
+            <option value="6" ${assocPolicyState.G2_overchargeSolution === '6' ? 'selected' : ''}>6. 기타</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 카드 6: G3 문화/체험/명물점포 육성 정책 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">G3 (P23)</span>
+            <h3 class="blueprint-stage-title">문화·체험 프로그램 및 명물점포 보유 현황</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">상설 프로그램, 명물점포, 야간조명, 관광연계, 커뮤니티 공간 보유 여부를 설정합니다.</div>
+        <div class="p-14 grid-2col gap-10">
+          <div class="form-group mb-8">
+            <label class="figma-label">상설 문화/체험 프로그램</label>
+            <select id="select-assoc-G3-prog" class="figma-select">
+              <option value="1" ${assocPolicyState.G3_program === '1' ? 'selected' : ''}>1. 있다</option>
+              <option value="2" ${assocPolicyState.G3_program === '2' ? 'selected' : ''}>2. 없다</option>
+            </select>
+          </div>
+          <div class="form-group mb-8">
+            <label class="figma-label">시장 내 명물/대표점포</label>
+            <select id="select-assoc-G3-famous" class="figma-select">
+              <option value="1" ${assocPolicyState.G3_famousStore === '1' ? 'selected' : ''}>1. 있다</option>
+              <option value="2" ${assocPolicyState.G3_famousStore === '2' ? 'selected' : ''}>2. 없다</option>
+            </select>
+          </div>
+          <div class="form-group mb-8">
+            <label class="figma-label">야간조명·야시장 인프라</label>
+            <select id="select-assoc-G3-night" class="figma-select">
+              <option value="1" ${assocPolicyState.G3_nightLight === '1' ? 'selected' : ''}>1. 있다</option>
+              <option value="2" ${assocPolicyState.G3_nightLight === '2' ? 'selected' : ''}>2. 없다</option>
+            </select>
+          </div>
+          <div class="form-group mb-8">
+            <label class="figma-label">인근 관광자원 연계 상품</label>
+            <select id="select-assoc-G3-tour" class="figma-select">
+              <option value="1" ${assocPolicyState.G3_tourLink === '1' ? 'selected' : ''}>1. 있다</option>
+              <option value="2" ${assocPolicyState.G3_tourLink === '2' ? 'selected' : ''}>2. 없다</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 7: G4 기후재해 대비 현황 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">G4 (P23)</span>
+            <h3 class="blueprint-stage-title">기후재해(폭염·한파·수해) 대비 시설</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">폭염/한파/수해 대비 점포별 냉난방 및 방재 시설 보유 현황을 설정합니다.</div>
+        <div class="p-14">
+          <div class="checkbox-grid">
+            <label class="custom-cb-label">
+              <input type="checkbox" id="cb-assoc-cooling-aircon" ${assocPolicyState.G4_cooling_aircon ? 'checked' : ''} />
+              <span>에어컨 / 냉방기기</span>
+            </label>
+            <label class="custom-cb-label">
+              <input type="checkbox" id="cb-assoc-cooling-fan" ${assocPolicyState.G4_cooling_fan ? 'checked' : ''} />
+              <span>선풍기 / 송풍기</span>
+            </label>
+            <label class="custom-cb-label">
+              <input type="checkbox" id="cb-assoc-cooling-arcade" ${assocPolicyState.G4_cooling_arcade ? 'checked' : ''} />
+              <span>아케이드 쿨링포그</span>
+            </label>
+            <label class="custom-cb-label">
+              <input type="checkbox" id="cb-assoc-heating-warmair" ${assocPolicyState.G4_heating_warmAir ? 'checked' : ''} />
+              <span>온풍기 / 난방기기</span>
+            </label>
+            <label class="custom-cb-label">
+              <input type="checkbox" id="cb-assoc-flood-pump" ${assocPolicyState.G4_flood_pump ? 'checked' : ''} />
+              <span>배수펌프 설비</span>
+            </label>
+            <label class="custom-cb-label">
+              <input type="checkbox" id="cb-assoc-flood-wall" ${assocPolicyState.G4_flood_wall ? 'checked' : ''} />
+              <span>차수판 / 물막이</span>
+            </label>
+          </div>
+        </div>
+      </section>
+    `;
+
+    // 4. 상인회 정책 요소 이벤트 리스너 바인딩
+    const bindAssocField = (elId, key, isCheck = false) => {
+      const el = document.getElementById(elId);
+      if (el) {
+        el.addEventListener('change', () => {
+          assocPolicyState[key] = isCheck ? el.checked : el.value;
+          markUnsaved();
+        });
+      }
+    };
+
+    bindAssocField('select-assoc-F5', 'F5_emptyStoreReason');
+    bindAssocField('select-assoc-F6', 'F6_emptyStorePolicy');
+    bindAssocField('select-assoc-G1', 'G1_overchargeReason');
+    bindAssocField('select-assoc-G2', 'G2_overchargeSolution');
+    bindAssocField('select-assoc-G3-prog', 'G3_program');
+    bindAssocField('select-assoc-G3-famous', 'G3_famousStore');
+    bindAssocField('select-assoc-G3-night', 'G3_nightLight');
+    bindAssocField('select-assoc-G3-tour', 'G3_tourLink');
+    bindAssocField('cb-assoc-cooling-aircon', 'G4_cooling_aircon', true);
+    bindAssocField('cb-assoc-cooling-fan', 'G4_cooling_fan', true);
+    bindAssocField('cb-assoc-cooling-arcade', 'G4_cooling_arcade', true);
+    bindAssocField('cb-assoc-heating-warmair', 'G4_heating_warmAir', true);
+    bindAssocField('cb-assoc-flood-pump', 'G4_flood_pump', true);
+    bindAssocField('cb-assoc-flood-wall', 'G4_flood_wall', true);
+  }
+
   async function loadBlueprint() {
     try {
       const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/blueprint`);
       if (!res.ok) throw new Error('블루프린트를 불러올 수 없습니다.');
       const data = await res.json();
       blueprintData = data.blueprint;
+
+      // 상인회 전용 블루프린트 분기 (완전 격리)
+      if (data.surveyType === 'kstat_assoc') {
+        renderAssocBlueprint(data);
+        return;
+      }
 
       if (data.groupBaselines) {
         groupBaselines = data.groupBaselines;
@@ -963,12 +1348,30 @@ async function initSurveyDetailPage() {
           group3: { ...currentBaseline, ...(data.baseline?.groups?.group3 || data.baseline || {}) }
         };
       }
+
+      // [A10_1] 가족 종사자 수: 1번(식품군), 2번(공산생활서비스군), 3번(외식음식점업군) 전 그룹 0명 기본 및 설정 보장
+      ['group1', 'group2', 'group3'].forEach(g => {
+        if (groupBaselines[g]) {
+          if (groupBaselines[g].employeeFamilyMin === 1 && groupBaselines[g].employeeFamilyMax === 1) {
+            groupBaselines[g].employeeFamily = 0;
+            groupBaselines[g].employeeFamilyMin = 0;
+            groupBaselines[g].employeeFamilyMax = 0;
+          }
+        }
+      });
+
       groupStats = data.groupStats || null;
 
       if (groupBaselines[activeGroup]) {
         currentBaseline = { ...groupBaselines[activeGroup] };
       } else if (data.baseline) {
         currentBaseline = { ...currentBaseline, ...data.baseline };
+      }
+
+      if (currentBaseline.employeeFamilyMin === 1 && currentBaseline.employeeFamilyMax === 1) {
+        currentBaseline.employeeFamily = 0;
+        currentBaseline.employeeFamilyMin = 0;
+        currentBaseline.employeeFamilyMax = 0;
       }
 
       updateGroupStatsUI();
@@ -1233,7 +1636,7 @@ async function initSurveyDetailPage() {
         `;
       // P2: 가족 종사자 수 (Min~Max 레인지)
       case 'A10_1':
-        return renderDualRangeControl('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, 1, 0, 2, '명');
+        return renderDualRangeControl('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, 1, 0, 0, '명');
       // P2: 상시 유급 종업원 수 (Min~Max 레인지)
       case 'A10_2':
         return renderDualRangeControl('paid-emp', 'employeeRegularMin', 'employeeRegularMax', 0, 10, 1, 0, 2, '명');
@@ -1321,6 +1724,17 @@ async function initSurveyDetailPage() {
             <span class="baseline-slider-val" id="val-daily-cust">${currentBaseline.dailyCustomers || 45}명</span>
           </div>
         `;
+      // P4: 지역 외 고객 비중
+      case 'B1C_1': {
+        const curUnknown = currentBaseline.nonLocalUnknownRate !== undefined ? String(currentBaseline.nonLocalUnknownRate) : '90';
+        return `
+          <select class="baseline-select" id="select-non-local-cust">
+            <option value="90" ${curUnknown === '90' ? 'selected' : ''}>약 90% 모름 (기본 권장)</option>
+            <option value="100" ${curUnknown === '100' ? 'selected' : ''}>100% 모름 체크</option>
+            <option value="0" ${curUnknown === '0' ? 'selected' : ''}>0% (전부 비중 입력)</option>
+          </select>
+        `;
+      }
       // P4: 일평균 영업 시간
       case 'B1D':
         return `
@@ -1990,6 +2404,7 @@ async function initSurveyDetailPage() {
     bindSlider('slider-margin', 'val-margin', 'profitMarginRate', '%', updateProfit);
     bindSelect('select-sales-change', 'salesChange');
     bindSlider('slider-daily-cust', 'val-daily-cust', 'dailyCustomers', '명');
+    bindSelect('select-non-local-cust', 'nonLocalUnknownRate');
     bindSlider('slider-biz-hours', 'val-biz-hours', 'dailyBusinessHours', '시간');
     bindSlider('slider-biz-days', 'val-biz-days', 'monthlyBusinessDays', '일');
 
@@ -2126,7 +2541,9 @@ async function initSurveyDetailPage() {
     btnPresetStandard.addEventListener('click', () => {
       applyPreset({
         storePyeong: 14,
-        employeeFamily: 1,
+        employeeFamily: 0,
+        employeeFamilyMin: 0,
+        employeeFamilyMax: 0,
         employeeRegular: 0,
         employeeTemp: 0,
         dailySales: 65,
@@ -2135,6 +2552,7 @@ async function initSurveyDetailPage() {
         profitMarginRate: 25,
         salesChange: 'similar',
         dailyCustomers: 45,
+        nonLocalUnknownRate: 90,
         dailyBusinessHours: 11,
         monthlyBusinessDays: 26,
         creditCardRatio: 65,
@@ -2176,7 +2594,9 @@ async function initSurveyDetailPage() {
     btnPresetGrowth.addEventListener('click', () => {
       applyPreset({
         storePyeong: 25,
-        employeeFamily: 1,
+        employeeFamily: 0,
+        employeeFamilyMin: 0,
+        employeeFamilyMax: 0,
         employeeRegular: 2,
         employeeTemp: 1,
         dailySales: 130,
@@ -2185,6 +2605,7 @@ async function initSurveyDetailPage() {
         profitMarginRate: 32,
         salesChange: 'increase',
         dailyCustomers: 90,
+        nonLocalUnknownRate: 90,
         dailyBusinessHours: 13,
         monthlyBusinessDays: 28,
         creditCardRatio: 70,
@@ -2226,7 +2647,9 @@ async function initSurveyDetailPage() {
     btnPresetTraditional.addEventListener('click', () => {
       applyPreset({
         storePyeong: 8,
-        employeeFamily: 1,
+        employeeFamily: 0,
+        employeeFamilyMin: 0,
+        employeeFamilyMax: 0,
         employeeRegular: 0,
         employeeTemp: 0,
         dailySales: 45,
@@ -2235,6 +2658,7 @@ async function initSurveyDetailPage() {
         profitMarginRate: 20,
         salesChange: 'decrease',
         dailyCustomers: 30,
+        nonLocalUnknownRate: 90,
         dailyBusinessHours: 10,
         monthlyBusinessDays: 25,
         creditCardRatio: 60,
@@ -2302,16 +2726,27 @@ async function initSurveyDetailPage() {
         btnSaveBaseline.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
       }
 
-      // 현재 편집 중인 기준점을 활성 그룹에 동기화
-      groupBaselines[activeGroup] = { ...currentBaseline };
+      const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
+
+      let payload;
+      if (isAssoc) {
+        payload = {
+          surveyType: 'kstat_assoc',
+          policy: assocPolicyState || {}
+        };
+      } else {
+        // 현재 편집 중인 기준점을 활성 그룹에 동기화
+        groupBaselines[activeGroup] = { ...currentBaseline };
+        payload = {
+          ...currentBaseline,
+          groups: groupBaselines
+        };
+      }
 
       const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/baseline`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...currentBaseline,
-          groups: groupBaselines
-        })
+        body: JSON.stringify(payload)
       });
 
       const result = await res.json();
@@ -2319,22 +2754,26 @@ async function initSurveyDetailPage() {
 
       if (btnSaveBaseline) {
         btnSaveBaseline.disabled = false;
-        btnSaveBaseline.innerHTML = '<i class="fa-solid fa-circle-check"></i> 마스터 기준점 &amp; 평가 가이드 저장 완료!';
+        btnSaveBaseline.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${isAssoc ? '상인회 정책 가이드라인 저장 완료!' : '마스터 기준점 &amp; 평가 가이드 저장 완료!'}`;
         btnSaveBaseline.className = 'btn-pill btn-pill-success';
       }
 
       if (badgeMasterStatus) {
-        badgeMasterStatus.innerHTML = '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 &amp; 평가 가이드 활성';
+        badgeMasterStatus.innerHTML = isAssoc 
+          ? '<i class="fa-solid fa-check-double"></i> 상인회 25단계 블루프린트 설정 완료'
+          : '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 &amp; 평가 가이드 활성';
         badgeMasterStatus.className = 'badge-status badge-blueprint ready';
       }
 
       if (showNotification) {
-        appendLog('success', '✓ 3개 업종 그룹별 마스터 기준점 및 조사원 평가 가이드(H1~H3)가 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.');
+        appendLog('success', isAssoc 
+          ? '✓ 상인회 25단계 정책 가이드라인(F5~G4)이 성공적으로 저장되었습니다.'
+          : '✓ 3개 업종 그룹별 마스터 기준점 및 조사원 평가 가이드(H1~H3)가 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.');
       }
 
       setTimeout(() => {
         if (btnSaveBaseline) {
-          btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 마스터 기준점 &amp; 조사원 평가 가이드 저장';
+          btnSaveBaseline.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${isAssoc ? '상인회 정책 가이드 저장' : '마스터 기준점 &amp; 조사원 평가 가이드 저장'}`;
           btnSaveBaseline.className = 'btn-pill btn-pill-primary';
         }
       }, 2500);
@@ -3095,18 +3534,26 @@ async function initSurveyDetailPage() {
 
   if (btnOpenBindSlots && modalBindSlots) {
     btnOpenBindSlots.addEventListener('click', () => {
+      const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
       modalBindSlots.classList.remove('hidden');
+
+      const defaultSurveyor = isAssoc ? '가온박정순' : '가온김영옥';
+      const defaultListUrl = isAssoc 
+        ? 'https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi'
+        : 'https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php?pridSel=2026070802&josa=tapi';
+      const defaultMarket = isAssoc ? '관악구' : '풍납시장';
+
       if (inputKstatLoginId) {
-        inputKstatLoginId.value = inputKstatAccountId?.value || currentCampaign?.kstatLoginId || '가온김영옥';
+        inputKstatLoginId.value = inputKstatAccountId?.value || currentCampaign?.kstatLoginId || defaultSurveyor;
       }
       if (inputKstatLoginPw) {
         inputKstatLoginPw.value = inputKstatAccountPw?.value || currentCampaign?.kstatLoginPw || '1234';
       }
-      if (inputKstatListUrl && !inputKstatListUrl.value) {
-        inputKstatListUrl.value = currentCampaign?.kstatListUrl || 'https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php?pridSel=2026070802&josa=tapi';
+      if (inputKstatListUrl) {
+        inputKstatListUrl.value = currentCampaign?.kstatListUrl || defaultListUrl;
       }
-      if (inputKstatMarketFilter && !inputKstatMarketFilter.value) {
-        inputKstatMarketFilter.value = '풍납시장';
+      if (inputKstatMarketFilter) {
+        inputKstatMarketFilter.value = isAssoc ? '' : (inputKstatMarketFilter.value || defaultMarket);
       }
     });
 
@@ -3116,7 +3563,9 @@ async function initSurveyDetailPage() {
 
     if (btnSubmitBindSlots) {
       btnSubmitBindSlots.addEventListener('click', async () => {
-        const loginId = (inputKstatLoginId?.value || '').trim() || '가온김영옥';
+        const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
+        const defaultSurveyor = isAssoc ? '가온박정순' : '가온김영옥';
+        const loginId = (inputKstatLoginId?.value || '').trim() || defaultSurveyor;
         const loginPw = (inputKstatLoginPw?.value || '').trim() || '1234';
         const listUrl = (inputKstatListUrl?.value || '').trim();
         const marketName = (inputKstatMarketFilter?.value || '').trim();
@@ -3129,8 +3578,13 @@ async function initSurveyDetailPage() {
         btnSubmitBindSlots.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 슬롯 스크랩 및 바인딩 중...';
 
         try {
-          appendLog('info', `[Kstat 슬롯] ${listUrl} (조사원: ${loginId}, 시장: ${marketName || '전체'}) 스크랩 및 바인딩 시작...`);
-          const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/bind-kstat-slots`, {
+          appendLog('info', `[${isAssoc ? '상인회 슬롯' : 'Kstat 슬롯'}] ${listUrl} (조사원: ${loginId}, 대상: ${marketName || '전체'}) 스크랩 및 바인딩 시작...`);
+          
+          const bindEndpoint = isAssoc 
+            ? `/api/campaigns/${encodeURIComponent(campId)}/bind-assoc-slots` 
+            : `/api/campaigns/${encodeURIComponent(campId)}/bind-kstat-slots`;
+
+          const res = await fetch(bindEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ listUrl, marketName, loginId, loginPw })

@@ -12,7 +12,7 @@
     "storePyeongMax": 20,
     "employeeFamily": 0,
     "employeeFamilyMin": 0,
-    "employeeFamilyMax": 2,
+    "employeeFamilyMax": 0,
     "employeeRegular": 0,
     "employeeRegularMin": 0,
     "employeeRegularMax": 2,
@@ -29,6 +29,7 @@
     "profitMarginRate": 25,
     "salesChange": "similar",
     "dailyCustomers": 45,
+    "nonLocalUnknownRate": 90,
     "dailyBusinessHours": 11,
     "monthlyBusinessDays": 26,
     "creditCardRatio": 65,
@@ -405,11 +406,19 @@
         },
         {
           "id": "B1C",
-          "label": "일평균 방문 고객 수",
+          "label": "1일 평균 구매 고객수",
           "type": "tunable",
           "baseline": "45 명",
           "range": "10~200 명",
           "note": "업종별 방문 고객 규모"
+        },
+        {
+          "id": "B1C_1",
+          "label": "지역 외 고객 비중",
+          "type": "tunable",
+          "baseline": "약 90% 모름 체크",
+          "range": "90% 모름 (권장) / 100% 모름 / 0% 직접입력",
+          "note": "약 90% 모름 체크(퍼센트 미입력), 10% 비중 분산 입력"
         },
         {
           "id": "B1D",
