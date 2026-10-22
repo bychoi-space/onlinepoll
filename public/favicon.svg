@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- 배경 그라데이션: 프리미엄 다크 슬레이트 -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#090d16" />
+    </linearGradient>
+
+    <!-- 설문 자동화 체크마크 & 'A' 융합 네온 그라데이션 -->
+    <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#60a5fa" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+
+    <!-- AI 인텔리전스 스파클 그라데이션 -->
+    <linearGradient id="sparkleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+
+    <!-- 은은한 네온 글로우 필터 -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- 둥근 스퀘어 베이스 (Squircle Card) -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bgGrad)" stroke="#38bdf8" stroke-width="1.8" stroke-opacity="0.35" />
+
+  <!-- 설문 조사 시트 라인 (3개의 스마트 응답 라인) -->
+  <rect x="13" y="16" width="18" height="3.5" rx="1.75" fill="#38bdf8" fill-opacity="0.4" />
+  <rect x="13" y="23" width="13" height="3.5" rx="1.75" fill="#60a5fa" fill-opacity="0.3" />
+  <rect x="13" y="30" width="10" height="3.5" rx="1.75" fill="#818cf8" fill-opacity="0.25" />
+
+  <!-- AI 스파클 (우측 상단 지능형 자동화의 빛) -->
+  <path d="M48 10 L49.5 15.5 L55 17 L49.5 18.5 L48 24 L46.5 18.5 L41 17 L46.5 15.5 Z" fill="url(#sparkleGrad)" filter="url(#neonGlow)" />
+  <circle cx="39" cy="11" r="1.2" fill="#34d399" fill-opacity="0.9" />
+
+  <!-- 핵심 심볼: AutoSurvey의 'A'와 완벽한 설문 완료 'Checkmark'가 역동적으로 결합된 볼드 패스 -->
+  <!-- A의 좌측 기둥과 우측으로 뻗어나가는 완주 체크 스트로크 -->
+  <path d="M16 45 L27 24 L34 38 L43 23 L51 35 L47 41 L42.5 34 L34 47 L26.5 35 L19.5 47 Z" fill="url(#neonGrad)" filter="url(#neonGlow)" />
+
+  <!-- 강력한 완료(Success Checkmark) 오버레이 -->
+  <path d="M21 40 L28 47 L48 22" fill="none" stroke="#22d3ee" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M21 40 L28 47 L48 22" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
