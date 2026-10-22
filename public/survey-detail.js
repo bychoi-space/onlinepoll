@@ -139,12 +139,23 @@ async function initSurveyDetailPage() {
       badgeCurrentKstatAccount.innerHTML = `<i class="fa-solid fa-user-check"></i> 연동 계정: <strong>${escapeHtml(camp.kstatLoginId || defaultSurveyor)}</strong>`;
     }
 
+    // STEP 2 헤더 문구 동적 커스터마이징 (상인회 vs 점포조사)
+    const step2TitleEl = document.querySelector('#section-master-blueprint .step-card-title');
+    const step2DescEl = document.querySelector('#section-master-blueprint .font-caption.text-dim');
+    if (isAssoc) {
+      if (step2TitleEl) step2TitleEl.textContent = '상인회 실태조사 기준점 및 가이드라인 검토 (25단계 전수)';
+      if (step2DescEl) step2DescEl.textContent = '케이스탯 상인회 실태조사 1~25단계 구조 및 기본 응답 규칙을 확인하고 조정합니다.';
+    } else {
+      if (step2TitleEl) step2TitleEl.textContent = '마스터 설문조사 & 조사원 평가 기준점 검토 (17단계 전수)';
+      if (step2DescEl) step2DescEl.textContent = '케이스탯 본 설문 1~16단계 및 조사원 평가 17단계 구조가 전수 복제되었습니다.';
+    }
+
     // 슬롯 바인딩 버튼 UI 튜닝
     const btnOpenBindSlots = document.getElementById('btn-open-bind-slots');
     if (btnOpenBindSlots) {
       if (isAssoc) {
-        btnOpenBindSlots.innerHTML = '<i class="fa-solid fa-bolt"></i> Kstat 상인회 슬롯 자동 바인딩 (가온박정순)';
-        btnOpenBindSlots.title = 'Kstat 상인회 관리자(2026070801)에서 8개 시장 슬롯을 1초 만에 자동 수집 및 바인딩';
+        btnOpenBindSlots.innerHTML = '<i class="fa-solid fa-rotate"></i> Kstat 상인회 슬롯 재바인딩';
+        btnOpenBindSlots.title = 'Kstat 상인회 관리자(2026070801)에서 슬롯을 다시 수집하여 동기화';
       } else {
         btnOpenBindSlots.innerHTML = '<i class="fa-solid fa-bolt"></i> Kstat 슬롯 자동 바인딩';
         btnOpenBindSlots.title = 'Kstat 관리자 list.php에서 슬롯을 1초 만에 자동 수집 및 바인딩';
@@ -320,46 +331,90 @@ async function initSurveyDetailPage() {
       }
     }
 
+    const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
+
+    // [점진적 워크플로우 공개 (Progressive Disclosure)]
+    // 쿼터가 0건일 때는 STEP 2(마스터 기준점) 및 STEP 3(실행 파이프라인)을 완전히 숨김 처리
+    const sectionMasterBlueprint = document.getElementById('section-master-blueprint');
+    const sectionExecution = document.getElementById('section-execution');
+    const jumpPills = document.querySelectorAll('.quick-jump-pill');
+
+    if (total === 0) {
+      if (sectionMasterBlueprint) sectionMasterBlueprint.classList.add('hidden');
+      if (sectionExecution) sectionExecution.classList.add('hidden');
+      // 상단 퀵 점프 바의 STEP 2, 3 비활성화
+      if (jumpPills && jumpPills.length >= 3) {
+        jumpPills[1].style.opacity = '0.35';
+        jumpPills[1].style.pointerEvents = 'none';
+        jumpPills[2].style.opacity = '0.35';
+        jumpPills[2].style.pointerEvents = 'none';
+      }
+    } else {
+      if (sectionMasterBlueprint) sectionMasterBlueprint.classList.remove('hidden');
+      if (sectionExecution) sectionExecution.classList.remove('hidden');
+      if (jumpPills && jumpPills.length >= 3) {
+        jumpPills[1].style.opacity = '1';
+        jumpPills[1].style.pointerEvents = 'auto';
+        jumpPills[2].style.opacity = '1';
+        jumpPills[2].style.pointerEvents = 'auto';
+      }
+    }
+
     // 쿼터 장착 여부에 따른 동적 툴바 전환 (불필요한 버튼 숨김)
     const quotaUnmountedGroup = document.getElementById('quota-unmounted-group');
     const quotaMountedGroup = document.getElementById('quota-mounted-group');
+    const assocBanner = document.getElementById('assoc-quota-init-banner');
+    const detailsMarketbz = document.getElementById('details-marketbz-direct') || document.querySelector('.marketbz-direct-details');
+    const btnEnrichCampaign = document.getElementById('btn-enrich-campaign-quota');
+    const btnToggleQuotaReplace = document.getElementById('btn-toggle-quota-replace');
+    const assocSurveyorBadgeName = document.getElementById('assoc-surveyor-badge-name');
+    const assocBtnSurveyorName = document.getElementById('assoc-btn-surveyor-name');
     const kstatAccountNameBadge = document.getElementById('kstat-account-name-badge');
     const execSlotCountLabel = document.getElementById('exec-slot-count-label');
     const execSurveyorLabel = document.getElementById('exec-surveyor-label');
 
-    if (quotaUnmountedGroup && quotaMountedGroup) {
-      if (total > 0) {
-        quotaUnmountedGroup.classList.add('hidden');
-        quotaMountedGroup.classList.remove('hidden');
-      } else {
-        quotaUnmountedGroup.classList.remove('hidden');
-        quotaMountedGroup.classList.add('hidden');
-      }
-    }
-
-    const currentSurveyor = currentCampaign?.kstatLoginId || '가온김영옥';
-    if (kstatAccountNameBadge) {
-      kstatAccountNameBadge.textContent = currentSurveyor;
-    }
-    if (execSurveyorLabel) {
-      execSurveyorLabel.textContent = currentSurveyor;
-    }
+    const currentSurveyor = currentCampaign?.kstatLoginId || (isAssoc ? '가온박정순' : '가온김영옥');
+    if (assocSurveyorBadgeName) assocSurveyorBadgeName.textContent = currentSurveyor;
+    if (assocBtnSurveyorName) assocBtnSurveyorName.textContent = currentSurveyor;
+    if (kstatAccountNameBadge) kstatAccountNameBadge.textContent = currentSurveyor;
+    if (execSurveyorLabel) execSurveyorLabel.textContent = currentSurveyor;
     if (execSlotCountLabel) {
       const slotPct = total > 0 ? Math.round((mappedSlots / total) * 100) : 0;
       execSlotCountLabel.textContent = `${mappedSlots}건 / ${total}건 (${slotPct}%)`;
     }
 
-    // 쿼터가 이미 구축/장착된 상태에서는 마켓비즈 직접 검색 아코디언 자동 숨김
-    const detailsMarketbz = document.getElementById('details-marketbz-direct') || document.querySelector('.marketbz-direct-details');
-    if (detailsMarketbz) {
-      if (total > 0) {
-        detailsMarketbz.style.display = 'none';
+    if (isAssoc) {
+      // 상인회 조사 캠페인 전용 툴바 제어
+      if (detailsMarketbz) detailsMarketbz.classList.add('hidden');
+      if (btnEnrichCampaign) btnEnrichCampaign.classList.add('hidden');
+      if (btnToggleQuotaReplace) btnToggleQuotaReplace.classList.add('hidden');
+
+      if (total === 0) {
+        // 쿼터 0건: 상인회 전용 슬롯 바인딩 히어로 카드 노출!
+        if (assocBanner) assocBanner.classList.remove('hidden');
+        if (quotaUnmountedGroup) quotaUnmountedGroup.classList.add('hidden');
+        if (quotaMountedGroup) quotaMountedGroup.classList.add('hidden');
       } else {
-        detailsMarketbz.style.display = 'block';
+        // 쿼터 장착 완료: 히어로 카드 숨기고, 상단 장착 툴바 노출
+        if (assocBanner) assocBanner.classList.add('hidden');
+        if (quotaUnmountedGroup) quotaUnmountedGroup.classList.add('hidden');
+        if (quotaMountedGroup) quotaMountedGroup.classList.remove('hidden');
+      }
+    } else {
+      // 점포조사 (B2B/B2C) 전용 툴바 제어
+      if (assocBanner) assocBanner.classList.add('hidden');
+      if (total > 0) {
+        if (quotaUnmountedGroup) quotaUnmountedGroup.classList.add('hidden');
+        if (quotaMountedGroup) quotaMountedGroup.classList.remove('hidden');
+        if (detailsMarketbz) detailsMarketbz.style.display = 'none';
+        if (btnEnrichCampaign) btnEnrichCampaign.classList.remove('hidden');
+        if (btnToggleQuotaReplace) btnToggleQuotaReplace.classList.remove('hidden');
+      } else {
+        if (quotaUnmountedGroup) quotaUnmountedGroup.classList.remove('hidden');
+        if (quotaMountedGroup) quotaMountedGroup.classList.add('hidden');
+        if (detailsMarketbz) detailsMarketbz.style.display = 'block';
       }
     }
-
-    const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
 
     // 테이블 헤더 동적 교체
     const quotaTableHead = document.getElementById('quota-table-head');
@@ -3532,30 +3587,61 @@ async function initSurveyDetailPage() {
   const inputKstatListUrl = document.getElementById('input-kstat-list-url');
   const inputKstatMarketFilter = document.getElementById('input-kstat-market-filter');
 
-  if (btnOpenBindSlots && modalBindSlots) {
-    btnOpenBindSlots.addEventListener('click', () => {
-      const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
-      modalBindSlots.classList.remove('hidden');
+  const openBindSlotsModal = () => {
+    if (!modalBindSlots) return;
+    const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
+    modalBindSlots.classList.remove('hidden');
 
-      const defaultSurveyor = isAssoc ? '가온박정순' : '가온김영옥';
-      const defaultListUrl = isAssoc 
-        ? 'https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi'
-        : 'https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php?pridSel=2026070802&josa=tapi';
-      const defaultMarket = isAssoc ? '관악구' : '풍납시장';
+    const defaultSurveyor = isAssoc ? '가온박정순' : '가온김영옥';
+    const defaultListUrl = isAssoc 
+      ? 'https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi'
+      : 'https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php?pridSel=2026070802&josa=tapi';
+    const defaultMarket = isAssoc ? '' : '풍납시장';
 
-      if (inputKstatLoginId) {
-        inputKstatLoginId.value = inputKstatAccountId?.value || currentCampaign?.kstatLoginId || defaultSurveyor;
-      }
-      if (inputKstatLoginPw) {
-        inputKstatLoginPw.value = inputKstatAccountPw?.value || currentCampaign?.kstatLoginPw || '1234';
-      }
-      if (inputKstatListUrl) {
-        inputKstatListUrl.value = currentCampaign?.kstatListUrl || defaultListUrl;
-      }
-      if (inputKstatMarketFilter) {
-        inputKstatMarketFilter.value = isAssoc ? '' : (inputKstatMarketFilter.value || defaultMarket);
-      }
+    // 모달 타이틀 및 설명문 동적 최적화
+    const modalTitleEl = modalBindSlots.querySelector('.bind-slots-title');
+    const modalDescEl = modalBindSlots.querySelector('.bind-slots-desc');
+    if (modalTitleEl) {
+      modalTitleEl.innerHTML = isAssoc 
+        ? '<i class="fa-solid fa-sitemap"></i> Kstat 상인회 실태조사 슬롯 자동 바인딩' 
+        : '<i class="fa-solid fa-link"></i> Kstat 관리자 슬롯 자동 바인딩';
+    }
+    if (modalDescEl) {
+      modalDescEl.innerHTML = isAssoc
+        ? '케이스탯 상인회 관리자(<code>2026070801</code>)에 접속하여 배정된 상인회 슬롯 목록을 1초 만에 전수 스크랩하여 <strong>조사 쿼터 DB로 자동 구축 및 1:1 바인딩</strong>합니다.'
+        : '케이스탯 관리자 리스트(<code>list.php</code>) URL을 입력하시면, 생성된 슬롯 목록을 1초 만에 전수 스크랩하여 <strong>[본 설문 URL]</strong>과 <strong>[조사원 평가 URL]</strong>을 현재 쿼터 DB에 1:1로 자동 장착합니다.';
+    }
+
+    if (inputKstatLoginId) {
+      inputKstatLoginId.value = inputKstatAccountId?.value || currentCampaign?.kstatLoginId || defaultSurveyor;
+    }
+    if (inputKstatLoginPw) {
+      inputKstatLoginPw.value = inputKstatAccountPw?.value || currentCampaign?.kstatLoginPw || '1234';
+    }
+    if (inputKstatListUrl) {
+      inputKstatListUrl.value = currentCampaign?.kstatListUrl || defaultListUrl;
+    }
+    if (inputKstatMarketFilter) {
+      inputKstatMarketFilter.value = isAssoc ? '' : (inputKstatMarketFilter.value || defaultMarket);
+      inputKstatMarketFilter.placeholder = isAssoc ? '비워둘 경우 전체 시장 슬롯 스크랩' : '예: 풍납시장 (비워둘 경우 전체 스크랩)';
+    }
+  };
+
+  if (btnOpenBindSlots) {
+    btnOpenBindSlots.addEventListener('click', openBindSlotsModal);
+  }
+
+  const btnAssocBindSlotsHero = document.getElementById('btn-assoc-bind-slots-hero');
+  if (btnAssocBindSlotsHero) {
+    btnAssocBindSlotsHero.addEventListener('click', openBindSlotsModal);
+  }
+
+  const btnToggleAssocAccount = document.getElementById('btn-toggle-assoc-account');
+  if (btnToggleAssocAccount && kstatAuthPanel) {
+    btnToggleAssocAccount.addEventListener('click', () => {
+      kstatAuthPanel.classList.toggle('hidden');
     });
+  }
 
     const closeModal = () => modalBindSlots.classList.add('hidden');
     if (btnCloseBindModal) btnCloseBindModal.addEventListener('click', closeModal);
