@@ -1381,6 +1381,11 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
 // [3-2] 2-Phase 실행: 2번 쿼터부터 고속 배치 가동
 // ==========================================
 app.post('/api/campaigns/:id/batch-run', async (req, res) => {
+  if (currentTask.isRunning) {
+    logger.warn('[배치 가동 차단] 이미 다른 설문 배치 또는 파일럿 작업이 가동 중입니다.');
+    return res.status(409).json({ error: '이미 다른 설문 작업이 가동 중입니다. 진행 중인 작업이 완료되거나 [배치 일시 정지] 후 다시 실행해 주세요.' });
+  }
+
   const campaign = CampaignStore.getCampaignById(req.params.id);
   if (!campaign) {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });

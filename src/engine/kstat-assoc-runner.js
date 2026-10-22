@@ -63,11 +63,24 @@ export async function runKstatAssocSurvey(options = {}) {
 
   try {
     // ==========================================
-    // 1. index.asp 접속
+    // 1. index.asp 접속 (재시도 및 domcontentloaded 안전 탐색)
     // ==========================================
     onProgress({ step: 'START', message: `"${marketName}" 설문 접속 중...` });
-    await page.goto(surveyUrl, { waitUntil: 'networkidle', timeout: 35000 });
-    await delay(1000);
+    let gotoOk = false;
+    for (let r = 0; r < 2; r++) {
+      try {
+        await page.goto(surveyUrl, { waitUntil: 'domcontentloaded', timeout: 35000 });
+        gotoOk = true;
+        break;
+      } catch (gErr) {
+        logger.warn(`[상인회 러너] "${marketName}" 설문 접속 1차 지연 (${gErr.message}) ➔ 재시도...`);
+        await delay(2000);
+      }
+    }
+    if (!gotoOk) {
+      await page.goto(surveyUrl, { waitUntil: 'load', timeout: 45000 });
+    }
+    await delay(1200);
     await captureStep('00_INDEX', '시작화면');
 
     if (page.url().includes('index.asp')) {
@@ -75,7 +88,7 @@ export async function runKstatAssocSurvey(options = {}) {
       const nextBtn = await page.$('#next, input[name="next"], button#next, .btn_next');
       if (nextBtn) {
         await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 }).catch(() => {}),
+          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {}),
           nextBtn.click().catch(() => {})
         ]);
         await delay(1200);
