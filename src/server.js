@@ -619,6 +619,7 @@ app.post('/api/campaigns/:id/bind-kstat-slots', async (req, res) => {
     loginId: effectiveLoginId,
     totalQuotas: quotaDb.length,
     quotaDatabase: quotaDb
+  });
 });
 
 // ==========================================
