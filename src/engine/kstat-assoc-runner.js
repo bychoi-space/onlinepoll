@@ -34,7 +34,8 @@ export async function runKstatAssocSurvey(options = {}) {
   }
 
   const marketName = assocData.marketName || '상인회';
-  logger.info(`[상인회 러너] 시작 ➔ 대상 시장: "${marketName}" (슬롯: #${quotaIndex}), 파일럿=${pilotMode}, URL=${surveyUrl}`);
+  const preserveExisting = (policy.preserveExistingInputs !== false && options.preserveExistingInputs !== false);
+  logger.info(`[상인회 러너] 시작 ➔ 대상 시장: "${marketName}" (슬롯: #${quotaIndex}), 파일럿=${pilotMode}, 기입력보존=${preserveExisting}, URL=${surveyUrl}`);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -69,12 +70,17 @@ export async function runKstatAssocSurvey(options = {}) {
     await delay(1000);
     await captureStep('00_INDEX', '시작화면');
 
-    onProgress({ step: 'INDEX', message: `설문 시작 버튼 클릭...` });
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 }).catch(() => {}),
-      page.click('#next')
-    ]);
-    await delay(1200);
+    if (page.url().includes('index.asp')) {
+      onProgress({ step: 'INDEX', message: `설문 시작 버튼 클릭...` });
+      const nextBtn = await page.$('#next, input[name="next"], button#next, .btn_next');
+      if (nextBtn) {
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 }).catch(() => {}),
+          nextBtn.click().catch(() => {})
+        ]);
+        await delay(1200);
+      }
+    }
 
     // ==========================================
     // 2. Q1.asp (기본정보 확인 및 입력)
@@ -82,7 +88,7 @@ export async function runKstatAssocSurvey(options = {}) {
     onProgress({ step: 'Q1', message: `Q1 기본정보 확인 및 상인회 정보 입력...` });
     
     // Q1_5: 응답자 성명, Q1_6: 연락처, Q1_8: 직위, Q1_10: 조사원 성명
-    await page.evaluate((data) => {
+    await page.evaluate(({ data, preserveExisting }) => {
       const respName = document.querySelector('#Q1_5');
       if (respName && (!respName.value || respName.value.trim() === '')) {
         respName.value = data.leaderName || '상인대표';
@@ -91,18 +97,21 @@ export async function runKstatAssocSurvey(options = {}) {
       if (respPhone && (!respPhone.value || respPhone.value.trim() === '')) {
         respPhone.value = data.leaderPhone || data.assocPhone || '010-0000-0000';
       }
-      // 직위: 1번 상인대표 라디오
-      const radioPos = document.querySelector('input[name="Q1_8"][value="1"]');
-      if (radioPos) {
-        radioPos.checked = true;
-        radioPos.dispatchEvent(new Event('change', { bubbles: true }));
+      // 직위: 이미 체크된 라디오가 있다면 보존, 없을 때만 1번 상인대표 체크
+      const curPos = document.querySelector('input[name="Q1_8"]:checked');
+      if (!preserveExisting || !curPos) {
+        const radioPos = document.querySelector('input[name="Q1_8"][value="1"]');
+        if (radioPos) {
+          radioPos.checked = true;
+          radioPos.dispatchEvent(new Event('change', { bubbles: true }));
+        }
       }
       // 조사원 성명
       const surveyor = document.querySelector('#Q1_10');
       if (surveyor && (!surveyor.value || surveyor.value.trim() === '')) {
         surveyor.value = '가온박정순';
       }
-    }, assocData);
+    }, { data: assocData, preserveExisting });
 
     await captureStep('01_Q1', 'Q1_기본정보');
     await delay(800);
@@ -188,13 +197,19 @@ export async function runKstatAssocSurvey(options = {}) {
 
         for (const f of page.frames()) {
           try {
-            await f.evaluate(({ f5, f6 }) => {
-              const rF5 = document.querySelector(`input[name="F5"][value="${f5}"]`) || document.querySelector('input[name="F5"][value="1"]') || (document.querySelector('input[name="F5"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
-              if (rF5) { rF5.checked = true; rF5.dispatchEvent(new Event('change', { bubbles: true })); }
+            await f.evaluate(({ f5, f6, preserveExisting }) => {
+              const curF5 = document.querySelector('input[name="F5"]:checked');
+              if (!preserveExisting || !curF5) {
+                const rF5 = document.querySelector(`input[name="F5"][value="${f5}"]`) || document.querySelector('input[name="F5"][value="1"]') || (document.querySelector('input[name="F5"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
+                if (rF5) { rF5.checked = true; rF5.dispatchEvent(new Event('change', { bubbles: true })); }
+              }
 
-              const rF6 = document.querySelector(`input[name="F6"][value="${f6}"]`) || document.querySelector('input[name="F6"][value="1"]') || (document.querySelector('input[name="F6"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
-              if (rF6) { rF6.checked = true; rF6.dispatchEvent(new Event('change', { bubbles: true })); }
-            }, { f5: f5Val, f6: f6Val });
+              const curF6 = document.querySelector('input[name="F6"]:checked');
+              if (!preserveExisting || !curF6) {
+                const rF6 = document.querySelector(`input[name="F6"][value="${f6}"]`) || document.querySelector('input[name="F6"][value="1"]') || (document.querySelector('input[name="F6"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
+                if (rF6) { rF6.checked = true; rF6.dispatchEvent(new Event('change', { bubbles: true })); }
+              }
+            }, { f5: f5Val, f6: f6Val, preserveExisting });
           } catch (_) {}
         }
 
@@ -227,13 +242,19 @@ export async function runKstatAssocSurvey(options = {}) {
 
         for (const f of page.frames()) {
           try {
-            await f.evaluate(({ g1, g2 }) => {
-              const rG1 = document.querySelector(`input[name="G1"][value="${g1}"]`) || document.querySelector('input[name="G1"][value="1"]') || (document.querySelector('input[name="G1"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
-              if (rG1) { rG1.checked = true; rG1.dispatchEvent(new Event('change', { bubbles: true })); }
+            await f.evaluate(({ g1, g2, preserveExisting }) => {
+              const curG1 = document.querySelector('input[name="G1"]:checked');
+              if (!preserveExisting || !curG1) {
+                const rG1 = document.querySelector(`input[name="G1"][value="${g1}"]`) || document.querySelector('input[name="G1"][value="1"]') || (document.querySelector('input[name="G1"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
+                if (rG1) { rG1.checked = true; rG1.dispatchEvent(new Event('change', { bubbles: true })); }
+              }
 
-              const rG2 = document.querySelector(`input[name="G2"][value="${g2}"]`) || document.querySelector('input[name="G2"][value="1"]') || (document.querySelector('input[name="G2"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
-              if (rG2) { rG2.checked = true; rG2.dispatchEvent(new Event('change', { bubbles: true })); }
-            }, { g1: g1Val, g2: g2Val });
+              const curG2 = document.querySelector('input[name="G2"]:checked');
+              if (!preserveExisting || !curG2) {
+                const rG2 = document.querySelector(`input[name="G2"][value="${g2}"]`) || document.querySelector('input[name="G2"][value="1"]') || (document.querySelector('input[name="G2"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
+                if (rG2) { rG2.checked = true; rG2.dispatchEvent(new Event('change', { bubbles: true })); }
+              }
+            }, { g1: g1Val, g2: g2Val, preserveExisting });
           } catch (_) {}
         }
 
@@ -263,34 +284,40 @@ export async function runKstatAssocSurvey(options = {}) {
 
         for (const f of page.frames()) {
           try {
-            await f.evaluate(() => {
-              // G3: 라디오 2번(없다) 선택 및 비고/인증수 0 채움
+            await f.evaluate(({ preserveExisting }) => {
+              // G3: 라디오가 이미 체크되어 있으면 보존, 없을 때만 2번(없다) 선택
               if (document.querySelector('input[name^="G3"]')) {
-                document.querySelectorAll('input[type="radio"][value="2"]').forEach(r => {
-                  r.checked = true;
-                  r.dispatchEvent(new Event('change', { bubbles: true }));
-                });
-                const numInp = document.querySelector('input[type="tel"], input[type="number"], input[name*="G3"]:not([type="radio"])');
-                if (numInp) {
-                  numInp.value = '0';
-                  numInp.dispatchEvent(new Event('input', { bubbles: true }));
-                  numInp.dispatchEvent(new Event('change', { bubbles: true }));
+                const g3Checked = document.querySelector('input[name^="G3"][type="radio"]:checked');
+                if (!preserveExisting || !g3Checked) {
+                  document.querySelectorAll('input[type="radio"][value="2"]').forEach(r => {
+                    r.checked = true;
+                    r.dispatchEvent(new Event('change', { bubbles: true }));
+                  });
+                  const numInp = document.querySelector('input[type="tel"], input[type="number"], input[name*="G3"]:not([type="radio"])');
+                  if (numInp && (!numInp.value || numInp.value.trim() === '')) {
+                    numInp.value = '0';
+                    numInp.dispatchEvent(new Event('input', { bubbles: true }));
+                    numInp.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
                 }
               }
 
-              // G4: 기타 체크박스 제외 일반 시설 체크
+              // G4: 체크박스가 이미 체크되어 있다면 보존, 없을 때만 일반 시설 체크
               if (document.querySelector('input[name^="G4"]')) {
-                document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                  if (!cb.name.includes('G4_1_7') && !cb.name.includes('G4_2_6') && 
-                      !cb.name.includes('G4_3_6') && !cb.name.includes('G4_4_6') &&
-                      !cb.id.includes('G4_1_7') && !cb.id.includes('G4_2_6') && 
-                      !cb.id.includes('G4_3_6') && !cb.id.includes('G4_4_6')) {
-                    cb.checked = true;
-                    cb.dispatchEvent(new Event('change', { bubbles: true }));
-                  }
-                });
+                const g4Checked = document.querySelectorAll('input[type="checkbox"][name^="G4"]:checked');
+                if (!preserveExisting || g4Checked.length === 0) {
+                  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    if (!cb.name.includes('G4_1_7') && !cb.name.includes('G4_2_6') && 
+                        !cb.name.includes('G4_3_6') && !cb.name.includes('G4_4_6') &&
+                        !cb.id.includes('G4_1_7') && !cb.id.includes('G4_2_6') && 
+                        !cb.id.includes('G4_3_6') && !cb.id.includes('G4_4_6')) {
+                      cb.checked = true;
+                      cb.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                  });
+                }
               }
-            });
+            }, { preserveExisting });
           } catch (_) {}
         }
 
@@ -319,7 +346,7 @@ export async function runKstatAssocSurvey(options = {}) {
       await syncAllChildFrames(page);
       await delay(600);
 
-      const mirrorResult = await mirrorPrevYearToCurrent(page);
+      const mirrorResult = await mirrorPrevYearToCurrent(page, { preserveExisting });
       logger.info(`[상인회 러너] [${stepName}] 미러링 완료: 라디오 ${mirrorResult.radios}건, 텍스트/숫자 ${mirrorResult.inputs}건, 셀렉트 ${mirrorResult.selects}건, 신규평가 ${mirrorResult.ratings}건`);
 
       await captureStep(stepName, `${stepName}_전년도비교`);
@@ -438,7 +465,7 @@ async function syncAllChildFrames(page) {
  * [핵심 미러링 엔진]
  * 전년도 응답 데이터(window.prevData 및 'P' 접두사 요소)를 읽어 2025년 기준 필드로 동일하게 복사 주입
  */
-async function mirrorPrevYearToCurrent(page) {
+async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
   let totalRadios = 0;
   let totalInputs = 0;
   let totalRatings = 0;
@@ -446,7 +473,7 @@ async function mirrorPrevYearToCurrent(page) {
   const frames = page.frames();
   for (const f of frames) {
     try {
-      const res = await f.evaluate(() => {
+      const res = await f.evaluate(({ preserveExisting }) => {
         let rCount = 0;
         let iCount = 0;
         let ratingCount = 0;
@@ -468,7 +495,11 @@ async function mirrorPrevYearToCurrent(page) {
               currKey = key.substring(1);
             }
 
-            // 1-1. 라디오 체크
+            // 1-1. 라디오 체크 (이미 체크되어 있으면 보존)
+            const hasChecked = document.querySelector(`input[type="radio"][name="${currKey}"]:checked`);
+            if (preserveExisting && hasChecked) {
+              return;
+            }
             const radio = document.querySelector(`input[type="radio"][name="${currKey}"][value="${val}"]`);
             if (radio) {
               radio.checked = true;
@@ -476,7 +507,11 @@ async function mirrorPrevYearToCurrent(page) {
               rCount++;
             }
 
-            // 1-2. 체크박스 체크
+            // 1-2. 체크박스 체크 (이미 체크되어 있다면 보존)
+            const hasCheckedCb = document.querySelector(`input[type="checkbox"][name="${currKey}"]:checked`);
+            if (preserveExisting && hasCheckedCb) {
+              return;
+            }
             const cb = document.querySelector(`input[type="checkbox"][name="${currKey}"][value="${val}"]`);
             if (cb) {
               cb.checked = true;
@@ -484,10 +519,13 @@ async function mirrorPrevYearToCurrent(page) {
               rCount++;
             }
 
-            // 1-3. 텍스트/숫자 인풋 입력 (TD3_1은 제외)
+            // 1-3. 텍스트/숫자 인풋 입력 (TD3_1은 제외, 이미 입력된 값이 있다면 보존)
             if (currKey === 'TD3_1' || currKey.startsWith('TD3')) return;
             const textInp = document.querySelector(`input[name="${currKey}"]:not([type="radio"]):not([type="checkbox"])`);
             if (textInp) {
+              if (preserveExisting && textInp.value && textInp.value.trim() !== '') {
+                return;
+              }
               textInp.value = val;
               textInp.dispatchEvent(new Event('input', { bubbles: true }));
               textInp.dispatchEvent(new Event('change', { bubbles: true }));
@@ -504,6 +542,9 @@ async function mirrorPrevYearToCurrent(page) {
         prevRadios.forEach(pRadio => {
           if (pRadio.checked) {
             const currName = pRadio.name.substring(1);
+            if (preserveExisting && document.querySelector(`input[type="radio"][name="${currName}"]:checked`)) {
+              return; // 이미 당해년도 라디오가 체크되어 있으면 기존 선택 유지
+            }
             const val = pRadio.value;
             const currRadio = document.querySelector(`input[type="radio"][name="${currName}"][value="${val}"]`);
             if (currRadio) {
@@ -521,6 +562,9 @@ async function mirrorPrevYearToCurrent(page) {
           if (currName === 'TD3_1' || currName.startsWith('TD3')) return; // D3 트랩 방어
           const currInp = document.querySelector(`input[name="${currName}"]`);
           if (currInp) {
+            if (preserveExisting && currInp.value && currInp.value.trim() !== '') {
+              return; // 이미 입력된 값 보존
+            }
             const valToSet = pInp.value && pInp.value.trim() !== '' ? pInp.value : '0';
             currInp.value = valToSet;
             currInp.dispatchEvent(new Event('input', { bubbles: true }));
@@ -560,6 +604,9 @@ async function mirrorPrevYearToCurrent(page) {
         let sCount = 0;
         const selects = Array.from(document.querySelectorAll('select:not([disabled])'));
         selects.forEach(sel => {
+          if (preserveExisting && sel.value && sel.value !== '' && sel.value !== '0') {
+            return; // 이미 선택된 유효값 보존
+          }
           if (!sel.value) {
             if (sel.name === 'A8_1_1') sel.value = '09';
             else if (sel.name === 'A8_1_2') sel.value = '0';
@@ -589,15 +636,19 @@ async function mirrorPrevYearToCurrent(page) {
         // A5: 전문시장 여부 (전년도 PA5와 완벽 일치)
         const radioA5 = document.querySelector('input[name="A5"]');
         if (radioA5) {
-          const pa5 = document.querySelector('input[name="PA5"]:checked')?.value || '2';
-          const targetA5 = document.querySelector(`input[name="A5"][value="${pa5}"]`) || document.querySelector('input[name="A5"][value="2"]');
-          if (targetA5) {
-            targetA5.checked = true;
-            targetA5.dispatchEvent(new Event('change', { bubbles: true }));
+          const curA5 = document.querySelector('input[name="A5"]:checked');
+          if (!curA5 || !preserveExisting) {
+            const pa5 = document.querySelector('input[name="PA5"]:checked')?.value || '2';
+            const targetA5 = document.querySelector(`input[name="A5"][value="${pa5}"]`) || document.querySelector('input[name="A5"][value="2"]');
+            if (targetA5) {
+              targetA5.checked = true;
+              targetA5.dispatchEvent(new Event('change', { bubbles: true }));
+            }
           }
+          const activeA5 = document.querySelector('input[name="A5"]:checked')?.value || '2';
           const ta5 = document.querySelector('#TA5_1, input[name="TA5_1"]');
           if (ta5) {
-            if (pa5 === '1') {
+            if (activeA5 === '1') {
               if (!ta5.value) ta5.value = '종합소매';
             } else {
               ta5.value = '';
@@ -639,14 +690,14 @@ async function mirrorPrevYearToCurrent(page) {
 
         // F1~F4: 빈점포 현황 안전망
         const f1_1 = document.querySelector('input[name="F1_1"]');
-        if (f1_1 && !f1_1.value) {
+        if (f1_1 && (!f1_1.value || f1_1.value.trim() === '')) {
           f1_1.value = '0';
           const f1_2 = document.querySelector('input[name="F1_2"]');
-          if (f1_2) f1_2.value = '0';
+          if (f1_2 && !f1_2.value) f1_2.value = '0';
           const f1_3 = document.querySelector('input[name="F1_3"]');
-          if (f1_3) f1_3.value = '0';
+          if (f1_3 && !f1_3.value) f1_3.value = '0';
           const f1_4 = document.querySelector('input[name="F1_4"]');
-          if (f1_4) f1_4.value = '0';
+          if (f1_4 && !f1_4.value) f1_4.value = '0';
           if (typeof window.calcF1_4 === 'function') window.calcF1_4();
         }
 
@@ -677,7 +728,7 @@ async function mirrorPrevYearToCurrent(page) {
         if (typeof window.calculateB2 === 'function') window.calculateB2();
 
         return { radios: rCount, inputs: iCount, selects: sCount, ratings: ratingCount };
-      });
+      }, { preserveExisting });
 
       totalRadios += res?.radios || 0;
       totalInputs += res?.inputs || 0;

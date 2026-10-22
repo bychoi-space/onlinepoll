@@ -21,7 +21,10 @@
     "G4_flood_pump": true,
     "G4_flood_wall": false,
     "G4_flood_activity_2025": true,
-    "G4_flood_activity_2026": true
+    "G4_flood_activity_2026": true,
+    "preserveExistingInputs": true,
+    "skipCompletedSlots": true,
+    "skipSlotIndices": ""
   },
   "sections": [
     {

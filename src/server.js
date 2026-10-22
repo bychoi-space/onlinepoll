@@ -1261,11 +1261,13 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
 
       if (isAssoc) {
         logger.info(`[상인회 파일럿 실행] 상인회 전용 러너 가동: "${targetBiz.marketName || targetBiz.companyName}"`);
+        const assocPol = campaign.assocPolicy || policy || {};
         result = await runKstatAssocSurvey({
           surveyUrl: targetUrl,
           assocData: targetBiz,
           quotaIndex: targetBiz.index || quotaIndex,
-          policy: policy || campaign.assocPolicy || {},
+          policy: assocPol,
+          preserveExistingInputs: (assocPol.preserveExistingInputs !== false),
           pilotMode: true,
           safetyGuard: true,
           reportDir: path.join(reportsDir, campaign.id, `assoc_item_${targetBiz.index || quotaIndex}`),
@@ -1387,16 +1389,29 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
   const { surveyUrl, policy = {}, startIndex = 1, safetyGuard = false } = req.body;
   const defaultUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
   const quotaDb = campaign.quotaDatabase || [];
+  const isAssoc = (campaign.surveyType === 'kstat_assoc');
+  const effectivePolicy = isAssoc ? (campaign.assocPolicy || policy || {}) : policy;
+
+  const skipCompletedSlots = (effectivePolicy.skipCompletedSlots !== false);
+  const skipSlotIndices = (effectivePolicy.skipSlotIndices || '')
+    .toString()
+    .split(/[\s,]+/)
+    .map(x => parseInt(x, 10))
+    .filter(x => !isNaN(x));
 
   const targets = quotaDb.filter(b => {
-    const idx = (b.index || b.seq);
+    const idx = (b.index || b.seq || b.slotIndex);
     if (idx < startIndex) return false;
+    if (skipSlotIndices.includes(idx)) return false; // 사용자가 건너뛰도록 지정한 특정 슬롯
     if (b.quotaStatus === 'completed') return false; // 이미 진짜 마감된 건 제외
+    if (skipCompletedSlots && (b.surveyCompleted === '완료' || b.surveyCompleted === true)) {
+      return false; // Kstat 상에서 이미 완료된 슬롯 건너뛰기
+    }
     if (safetyGuard && b.quotaStatus === 'pilot_done') return false; // 안전가드 모드에선 검증완료 제외
     return true; // 안전가드 OFF 모드에선 pilot_done도 포함하여 최종 제출 마감!
   });
   if (targets.length === 0) {
-    return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다.' });
+    return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다. (이미 완료되었거나 건너뛰기 규칙에 해당됨)' });
   }
 
   // 1:1 슬롯 매핑 엄격 검증: 대상 중 슬롯이 없는 항목이 단 하나라도 있으면 가동 차단!
@@ -1407,7 +1422,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     });
   }
 
-  logger.info(`[배치 자동화 가동] 캠페인 "${campaign.title}" 대상 ${targets.length}건 연속 실행 시작 (안전가드: ${safetyGuard ? 'ON' : 'OFF'})`);
+  logger.info(`[배치 자동화 가동] 캠페인 "${campaign.title}" 대상 ${targets.length}건 연속 실행 시작 (안전가드: ${safetyGuard ? 'ON' : 'OFF'}, 기입력보존: ${effectivePolicy.preserveExistingInputs !== false ? 'ON' : 'OFF'})`);
   currentTask.isRunning = true;
   currentTask.campaignId = campaign.id;
   CampaignStore.updateCampaign(campaign.id, { status: 'running' });
@@ -1443,7 +1458,6 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         });
 
         const slotInfo = biz.slotIndex ? ` [Kstat 슬롯 #${biz.slotIndex} ${biz.slotExtra || ''}]` : '';
-        const isAssoc = (campaign.surveyType === 'kstat_assoc');
         logger.info(`[배치 진행 ${i + 1}/${targets.length}] "${biz.marketName || biz.companyName}" (${biz.bizNumber || biz.regCode || ''})${slotInfo} 설문 자동화 시작...`);
 
         let result;
@@ -1452,7 +1466,8 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
             surveyUrl: bizUrl,
             assocData: biz,
             quotaIndex: biz.index || (i + startIndex),
-            policy: policy || campaign.assocPolicy || {},
+            policy: effectivePolicy,
+            preserveExistingInputs: (effectivePolicy.preserveExistingInputs !== false),
             pilotMode: safetyGuard,
             safetyGuard,
             reportDir: path.join(reportsDir, campaign.id, `assoc_item_${biz.index || (i + startIndex)}`),

@@ -72,6 +72,22 @@
   - 기존 점포조사 코드(`src/engine/kstat-runner.js`, `kstat-eval-runner.js`, `persona-builder.js`, `kstat_survey_blueprint.json`)는 상인회 전용 코드가 일체 침범하지 않고 100% 독립 격리 상태 유지.
   - 점포조사 12개 컬럼 쿼터 테이블, 3대 업종 그룹 마스터 기준점 UI/UX 완벽 보존 확인.
 
+### [TASK 5] 기입력 보존(Preserve Existing Inputs) 및 완료 슬롯 건너뛰기 규칙 구축 ✅ [완료]
+- **반영 내역**:
+  1. **설문 항목 단위 보존 (`preserveExistingInputs: true`)**:
+     - `Q1`: 기입력된 성명, 연락처, 조사원 성명 및 직위 라디오가 이미 체크된 경우 덮어쓰지 않고 100% 보존.
+     - `P1~P20` (`mirrorPrevYearToCurrent`): 당해년도 라디오, 체크박스, 텍스트/숫자 인풋, 셀렉트 박스에 이미 유효한 입력/선택값이 있을 때 전년도 값으로 덮어쓰지 않고 기존 입력값 유지 (빈 필드만 자동 입력).
+     - `P21~P23` (F5~G4 정책): 이미 사용자가 선택한 라디오/체크박스가 있다면 가이드 기본값으로 덮어쓰지 않고 기존 선택 보존.
+  2. **슬롯 단위 건너뛰기 (`skipCompletedSlots: true`, `skipSlotIndices`)**:
+     - Kstat 조사원 페이지에서 이미 '완료' 상태(`surveyCompleted`)이거나 로컬 완료된 슬롯을 배치 대상에서 자동 제외.
+     - 사용자가 지정한 슬롯 번호(`skipSlotIndices`, 예: "1, 2")를 배치 실행 대상에서 제외.
+  3. **UI/UX 및 블루프린트 연동**:
+     - STEP 2 상인회 정책 가이드 상단에 [기입력 항목 보존 및 슬롯 건너뛰기 규칙] 카드 배치.
+     - `kstat_assoc_blueprint.json` 및 캠페인 `assocPolicy`에 규칙 영구 저장 연동 완료.
+  4. **실전 E2E 완주 검증**:
+     - `scripts/test-assoc-preserve-existing.js` 헤드리스 E2E 테스트 100% 완주 통과 (`Success: true`).
+
+
 ---
 
 ## 4. 관련 파일 위치 정리

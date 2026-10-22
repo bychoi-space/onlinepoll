@@ -1154,6 +1154,59 @@ async function initSurveyDetailPage() {
 
     // 3. 상인회 전용 카드 그리드 렌더링
     blueprintStageGrid.innerHTML = `
+      <!-- 카드 0: 기입력 항목 보존 및 슬롯 건너뛰기 규칙 카드 -->
+      <section class="blueprint-card assoc-rule-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill assoc-rule-pill"><i class="fa-solid fa-forward-step"></i> 실행 규칙</span>
+            <h3 class="blueprint-stage-title">기입력 항목 보존 및 슬롯 건너뛰기 규칙</h3>
+          </div>
+          <div class="blueprint-card-badge-group">
+            <span class="badge-status ready"><i class="fa-solid fa-shield-halved"></i> 기입력 안전 보존</span>
+          </div>
+        </div>
+        <div class="blueprint-stage-desc">
+          설문 페이지(Kstat)에 사용자가 이미 입력해 둔 문항 또는 완료된 슬롯을 건너뛰고, 미입력된 빈 항목만 자동으로 채워 넣는 안전 실행 규칙입니다.
+        </div>
+        <div class="p-14">
+          <div class="form-group mb-12">
+            <label class="assoc-rule-item">
+              <input type="checkbox" id="cb-assoc-preserve-inputs" class="assoc-rule-cb" ${assocPolicyState.preserveExistingInputs !== false ? 'checked' : ''} />
+              <div>
+                <strong class="assoc-rule-title">기입력된 설문 항목 보존 (이미 입력된 항목 건너뛰기) [권장]</strong>
+                <div class="assoc-rule-desc">
+                  설문 문항 중 이미 라디오/체크박스가 선택되어 있거나 텍스트·숫자가 입력된 항목은 덮어쓰지 않고 기존 입력값을 100% 보존합니다. (비어있는 미응답 항목만 자동 입력)
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div class="form-group mb-12">
+            <label class="assoc-rule-item">
+              <input type="checkbox" id="cb-assoc-skip-completed" class="assoc-rule-cb" ${assocPolicyState.skipCompletedSlots !== false ? 'checked' : ''} />
+              <div>
+                <strong class="assoc-rule-title">Kstat 완료 슬롯 자동 건너뛰기 [권장]</strong>
+                <div class="assoc-rule-desc">
+                  케이스탯 조사원 목록에서 이미 설문 '완료' 상태로 등록된 슬롯은 배치 실행 대상에서 제외하고 자동으로 건너뜁니다.
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div class="form-group mb-0">
+            <label class="figma-label text-dim mb-8">
+              특정 슬롯 번호 건너뛰기 (선택 사항)
+            </label>
+            <input type="text" id="input-assoc-skip-indices" class="figma-input w-full" 
+                   placeholder="건너뛸 슬롯 번호를 쉼표로 입력 (예: 1, 2, 5)" 
+                   value="${escapeHtml(assocPolicyState.skipSlotIndices || '')}" />
+            <div class="assoc-rule-hint">
+              * 배치 자동화 가동 시 여기에 입력된 슬롯 번호는 실행을 건너뛰고 다음 슬롯으로 넘어갑니다.
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- 카드 1: 전년도 데이터 미러링 보장 안내 카드 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
@@ -1364,6 +1417,16 @@ async function initSurveyDetailPage() {
         });
       }
     };
+
+    bindAssocField('cb-assoc-preserve-inputs', 'preserveExistingInputs', true);
+    bindAssocField('cb-assoc-skip-completed', 'skipCompletedSlots', true);
+    const skipIdxInput = document.getElementById('input-assoc-skip-indices');
+    if (skipIdxInput) {
+      skipIdxInput.addEventListener('input', () => {
+        assocPolicyState.skipSlotIndices = skipIdxInput.value.trim();
+        markUnsaved();
+      });
+    }
 
     bindAssocField('select-assoc-F5', 'F5_emptyStoreReason');
     bindAssocField('select-assoc-F6', 'F6_emptyStorePolicy');
