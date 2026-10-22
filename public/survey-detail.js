@@ -3637,9 +3637,16 @@ async function initSurveyDetailPage() {
   }
 
   const btnToggleAssocAccount = document.getElementById('btn-toggle-assoc-account');
-  if (btnToggleAssocAccount && kstatAuthPanel) {
+  if (btnToggleAssocAccount) {
     btnToggleAssocAccount.addEventListener('click', () => {
-      kstatAuthPanel.classList.toggle('hidden');
+      const authPanel = document.getElementById('kstat-auth-panel');
+      if (authPanel) {
+        authPanel.classList.toggle('hidden');
+        if (!authPanel.classList.contains('hidden')) {
+          const idInput = document.getElementById('input-kstat-account-id');
+          if (idInput) idInput.focus();
+        }
+      }
     });
   }
 
