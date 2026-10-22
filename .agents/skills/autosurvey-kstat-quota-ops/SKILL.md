@@ -11,6 +11,10 @@ description: Comprehensive technical reference and operational guide for the Aut
 3. **No Local Daemons/Tunnels**: Never run background servers or tunnels on the user's local PC; production runs on GCP (`http://34.64.233.77:3000`).
 4. **No Deploy During Active Batch**: Always check `GET /api/survey/status` (`isRunning === false`) before running `git push origin main`.
 5. **No Runtime Overwrite & Untracked Campaigns DB**: `data/campaigns.json` is a runtime user state database and must NEVER be tracked by Git or overwritten during `git pull`. Always keep it excluded in `.gitignore` and untracked (`git rm --cached`). Before any `git pull`, verify no runtime data overwrite occurs.
+6. **Progressive Disclosure & User Journey Verification**: Analyze complete UX flow (Empty State ➔ Quota Binding ➔ Baseline ➔ Run) before development; hide posterior steps when quotas are 0; verify every button cited in guidance text actually exists in the DOM.
+7. **Frontend JS Syntax Check Before Deploy**: Never deploy frontend Vanilla JS without passing `node scripts/test_mock_browser.js` with 0 SyntaxError/ReferenceError.
+8. **Playwright `evaluate()` Single Object Argument**: Never pass multiple arguments to `page.evaluate()` or `frame.evaluate()`; always wrap in `{ key1, key2 }`. Never silence errors with empty `.catch(() => {})`.
+9. **Headless E2E Simulation (`Success: true`) Before Deploy**: When modifying survey automation runners, always verify a complete run (Step 1 to 15 Agree) on a real slot URL in terminal headless Playwright, confirming `Success: true` with zero unhandled alert traps.
 
 ---
 
@@ -117,6 +121,19 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
 ### 3.4 Surveyor Evaluation Engine & [H3] Random Selection Rule (`src/engine/kstat-eval-runner.js`)
 - **Single Page with 3 Sub-Frames**: P26042401BA / P1.asp contains `H1.asp` (청결위생 5문항 5점 척도), `H2.asp` (점포현황 4문항), and `H3.asp` (고객응대 서비스 4문항 5점 척도).
 - **[H3] 문항 응답 규칙**: 모든 [H3] 문항(`H3_1` ~ `H3_4` 및 동적 감지 라디오 그룹)은 `3. 보통`, `4. 양호`, `5. 매우양호` 항목 중에서 균등하게 무작위(Random) 선택 (`getRandomH3Rating`).
+
+### 3.5 Critical Alert Traps & Fail-Safe Injection Rules
+- **[B1-3] 지역 외 고객 비중 트랩 (`P4 / B1C.asp`)**:
+  - Alert 조건: `(!$("#B1C_9").is(":checked") && (parseFloat($("#B1C_1").val()||0) == 0))`.
+  - 해결 수칙:
+    1. 반드시 `f.evaluate(({ unknown, rate }) => { ... }, { unknown: isUnknown, rate: ... })` 로 **단일 객체 인수** 전달 (Playwright `Too many arguments` 예외 원천 차단).
+    2. 체크박스 조작 시 `if (!chk.checked) chk.click();` 로 네이티브 클릭 및 `B1C_NoneCheck(chk)` 동시 트리거.
+    3. Fail-safe: 모름 체크가 안 되어 있고 비중이 0이면 무조건 모름 체크 및 `rate=15` 자동 백업.
+- **[B5-2] 온누리상품권 가맹 시작 년도 트랩 (`P7 / B5B1.asp`, `B5B2.asp`)**:
+  - Alert 조건: `온누리상품권 가맹 시작 년도는 A5(현 사업장 영업시작일)의 년도보다 이전일 수 없습니다.`
+  - 해결 수칙: `joinYearVal = String(Math.min(2025, Math.max(openYear, onnuriYear, 2024)))` 로 A5 이상이면서 최소 2024년(또는 2025년 개업 시 2025년) 보장.
+- **네비게이션 컨텍스트 소멸 트랩 (`page.evaluate #next`)**:
+  - 페이지 이동 레이스 컨디션 시 `Execution context was destroyed` 예외를 방어하기 위해 `await page.evaluate(() => document.querySelector('#next')?.click()).catch(() => {});` 로 감싸서 진행.
 
 ## 4. Quota Address Auto-Healing & Enrichment
 - `hasCompleteAddress(addr, marketName)`: Validates road numbers (`(?:로|길)\s*[\d-]+`), building names with numbers, or valid lot numbers, while filtering out unit-only (`101호`), floor-only (`1층`), or brand numbers (`59피자`).
