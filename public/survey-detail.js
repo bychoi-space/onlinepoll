@@ -1169,7 +1169,7 @@ async function initSurveyDetailPage() {
           설문 페이지(Kstat)에 사용자가 이미 입력해 둔 문항 또는 완료된 슬롯을 건너뛰고, 미입력된 빈 항목만 자동으로 채워 넣는 안전 실행 규칙입니다.
         </div>
         <div class="p-14">
-          <div class="form-group mb-12">
+          <div class="assoc-rule-box">
             <label class="assoc-rule-item">
               <input type="checkbox" id="cb-assoc-preserve-inputs" class="assoc-rule-cb" ${assocPolicyState.preserveExistingInputs !== false ? 'checked' : ''} />
               <div>
@@ -1181,7 +1181,7 @@ async function initSurveyDetailPage() {
             </label>
           </div>
 
-          <div class="form-group mb-12">
+          <div class="assoc-rule-box">
             <label class="assoc-rule-item">
               <input type="checkbox" id="cb-assoc-skip-completed" class="assoc-rule-cb" ${assocPolicyState.skipCompletedSlots !== false ? 'checked' : ''} />
               <div>
@@ -1194,10 +1194,10 @@ async function initSurveyDetailPage() {
           </div>
 
           <div class="form-group mb-0">
-            <label class="figma-label text-dim mb-8">
+            <label class="assoc-rule-label-strong">
               특정 슬롯 번호 건너뛰기 (선택 사항)
             </label>
-            <input type="text" id="input-assoc-skip-indices" class="figma-input w-full" 
+            <input type="text" id="input-assoc-skip-indices" class="assoc-rule-input" 
                    placeholder="건너뛸 슬롯 번호를 쉼표로 입력 (예: 1, 2, 5)" 
                    value="${escapeHtml(assocPolicyState.skipSlotIndices || '')}" />
             <div class="assoc-rule-hint">
