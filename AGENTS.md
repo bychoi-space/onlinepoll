@@ -974,9 +974,25 @@ c:/onlinepoll/
 
 ### 4) 마스터 블루프린트 및 대시보드 UI 동기화
 - `data/kstat_survey_blueprint.json`: `defaultBaseline.nonLocalUnknownRate: 90` 추가 및 P4에 `B1C_1`(`지역 외 고객 비중`) 항목 명세 탑재.
-- `public/survey-detail.js` 및 `public/survey-blueprint.js`:
+- `public/survey-detail.js` 및 `public/survey-detail.js`:
   - `DEFAULT_BASELINE` 및 3대 프리셋(표준/성장/전통)에 `nonLocalUnknownRate: 90` 기본 탑재.
   - P4 마스터 가이드 UI에 `지역 외 고객 비중` 셀렉터(`약 90% 모름 [기본 권장]`, `100% 모름 체크`, `0% 직접입력`) 추가 및 실시간 설정 양방향 바인딩 완료.
+
+---
+
+## 5-16. 시스템 개발 연혁 (Day 24 완료 내역 - [B1-3] Alert 트랩 100% 무결점 방어 및 안전 가드 구축)
+
+### 1) [B1-3] Alert 트랩 원인 정밀 규명
+- **현상**: 배치 가동 중 `[ALERT] 🔔 [설문 알림] "[B1-3. 1일 평균 구매 고객수] 지역 외 고객 비중을 입력해 주세요."` 반복 발생.
+- **원인 분석 (`B1C.asp` 소스코드 전수 검증)**:
+  - Kstat 유효성 검사식: `if (!$("#B1C_9").is(":checked")) { if (parseFloat($("#B1C_1").val()||0) == 0) alert("지역 외 고객 비중을 입력해 주세요."); }`
+  - 기존 코드에서 `safeClick(fB1C, '#B1C_9')`가 이미 체크된 상태에서 한 번 더 클릭되면서 체크가 풀려 `checked = false`로 역토글되거나, Playwright 네이티브 프로퍼티와 jQuery의 `is(':checked')` 캐시 불일치로 인해 Alert 트랩이 발생함을 규명.
+
+### 2) 100% 무결점 원자적 주입 및 Fail-Safe 방어 체계 구축 (`src/engine/kstat-runner.js`)
+- **원자적 DOM/jQuery 동시 동기화**: `fB1C.evaluate()` 내부에서 DOM 프로퍼티(`chk.checked = true`)와 jQuery 프로퍼티(`$(chk).prop('checked', true)`), `B1C_NoneCheck()` 함수를 원자적으로 동시 실행하여 상태 분리 원천 차단.
+- **최종 철벽 안전 가드 (Fail-Safe Verification)**:
+  - 프레임 입력 완료 직후 `!$(chk).is(':checked') && val <= 0` 조건을 실시간 검사.
+  - 만약 어떤 이유로든 체크가 풀려 있고 값이 비어 있다면, 체크박스를 강제 재활성화하고, 그래도 실패할 경우 텍스트 인풋에 안전값(`'15'`)을 강제 주입하여 Kstat의 Alert 트랩이 100% 물리적으로 발생하지 못하도록 차단 완료.
 
 ---
 

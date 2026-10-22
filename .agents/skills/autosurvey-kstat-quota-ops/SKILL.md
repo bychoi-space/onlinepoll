@@ -75,7 +75,7 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
   - `B1BA` (`annualProfit`) and `B1BA_1` (`exactMarginRate` %) mathematically matched.
   - `B1BB=1` (영업이익 증가) -> spawns **`B1BC.asp`** (3-rank choices from `1..8`).
   - `B1BB=2` (영업이익 감소) -> spawns **`B1BD.asp`** (3-rank choices from `1..7`).
-  - `B1C` (1일 평균 구매 고객수) & **`B1C_9` (지역 외 고객 비중)**: 약 90%의 점포는 `B1C_9`('모름') 체크박스를 선택하고 `B1C_1`(퍼센트) 미입력(공란/disabled 유지), 나머지 10% 점포만 10~30% 비중 분산 입력.
+  - `B1C` (1일 평균 구매 고객수) & **`B1C_9` (지역 외 고객 비중)**: 약 90%의 점포는 `B1C_9`('모름') 체크박스를 선택하고 `B1C_1`(퍼센트) 미입력(공란/disabled 유지), 나머지 10% 점포만 10~30% 비중 분산 입력. **[CRITICAL ALERT TRAP 방어]** Kstat 검사식 `(!$("#B1C_9").is(":checked") && parseFloat($("#B1C_1").val()||0) == 0)`을 원천 차단하기 위해 `chk.checked = true`와 `$(chk).prop('checked', true)`를 원자적 동시 주입하고, 모름 미체크 시 `B1C_1`에 안전값('15')이 보장되도록 Fail-Safe 검증 필수.
   - `B1E` (월 평균 영업일수) clamped to `1..30` (`31` triggers alert).
 - **P5 (`B2`, `B2A`, `B3`)**:
   - `B2` 결제수단 취급 여부 점포별 자연 분산: `현금`(`B2_1=1`), `온누리`(`B2_2=1`), `신용카드`(`B2_5=1`) 필수 취급; `지역사랑상품권`(`B2_3`), `제로페이 모바일결제 등`(`B2_4`)은 점포별 취급(1)/미취급(2) 자연 분산 (기준점 가이드 `localPayMember`, `zeropayMember` 연동).

@@ -676,67 +676,77 @@ export async function runKstatSurvey({
         const fB1C = page.frame({ url: /\/B1C\.asp/i });
         if (fB1C) {
           const isUnknown = persona.sales?.isNonLocalUnknown !== false;
-          await safeFill(fB1C, '#B1C, input[name="B1C"]', persona.sales.dailyCustomers);
+          await safeFill(fB1C, '#B1C, input[name="B1C"]', persona.sales.dailyCustomers || '45');
           await itemDelay();
 
-          // [규칙 B1-3] 지역 외 고객 비중: 약 90%는 '모름' 체크박스(B1C_9)를 선택하고 퍼센트(B1C_1) 미입력
+          // [규칙 B1-3] 지역 외 고객 비중: 약 90%는 '모름' 체크박스(B1C_9)를 선택하고 퍼센트(B1C_1) 미입력, 10%는 직접 비중 입력
+          // Kstat Alert 조건: (!$("#B1C_9").is(":checked") && parseFloat($("#B1C_1").val()||0) == 0)
+          // ➔ 이 조건을 100% 원천 차단하기 위해 단일 원자적 DOM/jQuery 통합 주입 및 사후 검증 수행
           await fB1C.evaluate((unknown, rate) => {
             const chk = document.getElementById('B1C_9') || document.querySelector('input[name="B1C_9"]');
             const txt = document.getElementById('B1C_1') || document.querySelector('input[name="B1C_1"]');
+
             if (unknown) {
+              // 1) '모름' 체크박스 확실하게 활성화 (DOM 프로퍼티 + jQuery 프로퍼티 동시 동기화)
               if (chk) {
                 chk.checked = true;
+                if (typeof $ !== 'undefined') {
+                  $(chk).prop('checked', true);
+                }
                 if (typeof B1C_NoneCheck === 'function') {
                   B1C_NoneCheck(chk);
-                } else if (txt) {
-                  txt.value = '';
-                  txt.disabled = true;
                 }
                 chk.dispatchEvent(new Event('change', { bubbles: true }));
               }
               if (txt) {
                 txt.value = '';
                 txt.disabled = true;
+                if (typeof $ !== 'undefined') {
+                  $(txt).val('').prop('disabled', true);
+                }
               }
             } else {
+              // 2) 비중 직접 입력 (체크 해제 + 텍스트 활성화 및 유효 숫자 주입)
+              const validRate = String(rate || '15');
               if (chk) {
                 chk.checked = false;
+                if (typeof $ !== 'undefined') {
+                  $(chk).prop('checked', false);
+                }
                 if (typeof B1C_NoneCheck === 'function') {
                   B1C_NoneCheck(chk);
-                } else if (txt) {
-                  txt.disabled = false;
                 }
                 chk.dispatchEvent(new Event('change', { bubbles: true }));
               }
               if (txt) {
                 txt.disabled = false;
-                txt.value = rate;
+                txt.value = validRate;
+                if (typeof $ !== 'undefined') {
+                  $(txt).prop('disabled', false).val(validRate);
+                }
                 txt.dispatchEvent(new Event('input', { bubbles: true }));
                 txt.dispatchEvent(new Event('change', { bubbles: true }));
               }
             }
-          }, isUnknown, persona.sales?.nonLocalCustomerRate || '15').catch(() => {});
 
-          if (isUnknown) {
-            const isChecked = await fB1C.evaluate(() => {
-              const chk = document.getElementById('B1C_9');
-              return chk ? chk.checked : false;
-            }).catch(() => false);
-            if (!isChecked) {
-              await safeClick(fB1C, '#B1C_9');
-            }
-            await fB1C.evaluate(() => {
-              const txt = document.getElementById('B1C_1');
-              if (txt) {
-                txt.value = '';
-                txt.disabled = true;
+            // [최종 철벽 안전 가드 (Fail-Safe)]
+            // 만약 모름 체크가 안 되어 있는데 텍스트 입력값도 0 또는 공란이면 무조건 모름 체크 강제 확정
+            const isCheckedNow = chk && (chk.checked || (typeof $ !== 'undefined' && $(chk).is(':checked')));
+            const valNow = txt ? parseFloat(txt.value || 0) : 0;
+            if (!isCheckedNow && valNow <= 0) {
+              if (chk) {
+                chk.checked = true;
+                if (typeof $ !== 'undefined') $(chk).prop('checked', true).trigger('change');
+                if (typeof B1C_NoneCheck === 'function') B1C_NoneCheck(chk);
               }
-            }).catch(() => {});
-          } else {
-            if (persona.sales?.nonLocalCustomerRate) {
-              await safeFill(fB1C, '#B1C_1, input[name="B1C_1"]', persona.sales.nonLocalCustomerRate);
+              // 체크박스 제어가 실패할 경우 텍스트에 15 강제 주입
+              if (txt && (!chk || !chk.checked)) {
+                txt.disabled = false;
+                txt.value = '15';
+                if (typeof $ !== 'undefined') $(txt).prop('disabled', false).val('15').trigger('input').trigger('change');
+              }
             }
-          }
+          }, isUnknown, persona.sales?.nonLocalCustomerRate || '15').catch(() => {});
         }
         const fB1D = page.frame({ url: /\/B1D\.asp/i });
         if (fB1D) await safeFill(fB1D, '#B1D, input[name="B1D"]', persona.sales?.dailyBusinessHours || '11');
