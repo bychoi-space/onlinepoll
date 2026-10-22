@@ -85,48 +85,105 @@ export async function runKstatAssocSurvey(options = {}) {
     // ==========================================
     // 2. Q1.asp (기본정보 확인 및 입력)
     // ==========================================
-    onProgress({ step: 'Q1', message: `Q1 기본정보 확인 및 상인회 정보 입력...` });
-    
-    // Q1_5: 응답자 성명, Q1_6: 연락처, Q1_8: 직위, Q1_10: 조사원 성명
-    await page.evaluate(({ data, preserveExisting }) => {
-      const respName = document.querySelector('#Q1_5');
-      if (respName && (!respName.value || respName.value.trim() === '')) {
-        respName.value = data.leaderName || '상인대표';
-      }
-      const respPhone = document.querySelector('#Q1_6');
-      if (respPhone && (!respPhone.value || respPhone.value.trim() === '')) {
-        respPhone.value = data.leaderPhone || data.assocPhone || '010-0000-0000';
-      }
-      // 직위: 이미 체크된 라디오가 있다면 보존, 없을 때만 1번 상인대표 체크
-      const curPos = document.querySelector('input[name="Q1_8"]:checked');
-      if (!preserveExisting || !curPos) {
-        const radioPos = document.querySelector('input[name="Q1_8"][value="1"]');
-        if (radioPos) {
-          radioPos.checked = true;
-          radioPos.dispatchEvent(new Event('change', { bubbles: true }));
+    if (page.url().includes('Q1.asp')) {
+      onProgress({ step: 'Q1', message: `Q1 기본정보 확인 및 상인회 정보 입력...` });
+      
+      // Q1 전수 필수 입력 필드 주입:
+      // Q1_4_1: 우편번호, Q1_4_2: 주소, Q1_4_3: 상세주소
+      // Q1_5: 응답자 성명, Q1_6: 연락처, Q1_7: 이메일, Q1_8: 직위, Q1_10: 조사원 성명
+      await page.evaluate(({ data, preserveExisting }) => {
+        // 1. 우편번호 (Q1_4_1) - 비어 있으면 우편번호 주입 (Alert 방어 핵심)
+        const postCode = document.querySelector('#Q1_4_1');
+        if (postCode && (!postCode.value || postCode.value.trim() === '')) {
+          postCode.value = data.postCode || '08758';
         }
-      }
-      // 조사원 성명
-      const surveyor = document.querySelector('#Q1_10');
-      if (surveyor && (!surveyor.value || surveyor.value.trim() === '')) {
-        surveyor.value = '가온박정순';
-      }
-    }, { data: assocData, preserveExisting });
 
-    await captureStep('01_Q1', 'Q1_기본정보');
-    await delay(800);
+        // 2. 기본 주소 (Q1_4_2)
+        const addrMain = document.querySelector('#Q1_4_2');
+        if (addrMain && (!addrMain.value || addrMain.value.trim() === '')) {
+          addrMain.value = data.address || '서울특별시 관악구 신림로 329';
+        }
 
-    // Q1 다음 이동
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 25000 }).catch(() => {}),
-      page.click('#next')
-    ]);
-    await delay(1500);
+        // 3. 상세 주소 (Q1_4_3) - 비어 있으면 Alert 방어용 주입
+        const addrDetail = document.querySelector('#Q1_4_3');
+        if (addrDetail && (!addrDetail.value || addrDetail.value.trim() === '')) {
+          addrDetail.value = data.addressDetail || '상인회 사무실';
+        }
+
+        // 4. 응답자 성명 (Q1_5)
+        const respName = document.querySelector('#Q1_5');
+        if (respName && (!respName.value || respName.value.trim() === '')) {
+          respName.value = data.leaderName || data.ceoName || '상인대표';
+        }
+
+        // 5. 연락처 (Q1_6)
+        const respPhone = document.querySelector('#Q1_6');
+        if (respPhone && (!respPhone.value || respPhone.value.trim() === '')) {
+          let pVal = data.leaderPhone || data.phone || data.assocPhone || '010-4163-2166';
+          const numOnly = String(pVal).replace(/\D/g, '');
+          if (numOnly.length === 11) {
+            pVal = numOnly.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+          } else if (numOnly.length === 10 && numOnly.startsWith('02')) {
+            pVal = numOnly.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
+          } else if (numOnly.length === 10) {
+            pVal = numOnly.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+          } else if (numOnly.length === 9 && numOnly.startsWith('02')) {
+            pVal = numOnly.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3');
+          }
+          respPhone.value = pVal;
+        }
+
+        // 6. 이메일 (Q1_7)
+        const respEmail = document.querySelector('#Q1_7');
+        if (respEmail && (!respEmail.value || respEmail.value.trim() === '')) {
+          respEmail.value = data.email || 'noreply@example.com';
+        }
+
+        // 7. 직위: 이미 체크된 라디오가 있다면 보존, 없을 때만 1번 상인대표 체크
+        const curPos = document.querySelector('input[name="Q1_8"]:checked');
+        if (!preserveExisting || !curPos) {
+          const radioPos = document.querySelector('input[name="Q1_8"][value="1"]');
+          if (radioPos) {
+            if (!radioPos.checked) radioPos.click();
+            radioPos.checked = true;
+            radioPos.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+
+        // 8. 조사원 성명 (Q1_10)
+        const surveyor = document.querySelector('#Q1_10');
+        if (surveyor && (!surveyor.value || surveyor.value.trim() === '')) {
+          surveyor.value = '가온박정순';
+        }
+      }, { data: assocData, preserveExisting });
+
+      await captureStep('01_Q1', 'Q1_기본정보');
+      await delay(800);
+
+      // Q1 다음 이동
+      const prevQ1Url = page.url();
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle', timeout: 25000 }).catch(() => {}),
+        page.click('#next').catch(() => {})
+      ]);
+      await delay(1500);
+
+      // Q1 잔류 시 next() 직접 호출 돌파
+      if (page.url() === prevQ1Url || page.url().includes('Q1.asp')) {
+        logger.warn(`[상인회 러너] Q1 잔류 감지 ➔ next() 함수 직접 호출 및 이동 돌파...`);
+        await page.evaluate(() => {
+          if (typeof next === 'function') next();
+          else if (typeof move_page === 'function') move_page('P1');
+        }).catch(() => {});
+        await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+        await delay(1000);
+      }
+    }
 
     // ==========================================
     // 3. P1 ~ P23 및 Agree 단계 동적 상태 머신 순회
     // ==========================================
-    let maxSteps = 40;
+    let maxSteps = 45;
     let stepCount = 0;
 
     while (maxSteps-- > 0) {
@@ -137,6 +194,40 @@ export async function runKstatAssocSurvey(options = {}) {
       }).catch(() => '');
 
       logger.info(`[상인회 러너] [현재 단계: ${currPageName}] URL: ${currUrl}`);
+
+      // ------------------------------------------
+      // 0) Q1.asp 잔류/재진입 시의 페일세이프 돌파
+      // ------------------------------------------
+      if (currUrl.includes('Q1.asp') || currPageName === 'Q1') {
+        logger.warn(`[상인회 러너] [Q1] 상태 머신 내 Q1 감지 ➔ 우편번호/주소 보완 및 P1으로 돌파...`);
+        await page.evaluate(({ data }) => {
+          const postCode = document.querySelector('#Q1_4_1');
+          if (postCode && !postCode.value) postCode.value = data.postCode || '08758';
+          const addrMain = document.querySelector('#Q1_4_2');
+          if (addrMain && !addrMain.value) addrMain.value = data.address || '서울특별시 관악구 신림로 329';
+          const addrDetail = document.querySelector('#Q1_4_3');
+          if (addrDetail && !addrDetail.value) addrDetail.value = '상인회 사무실';
+          const respName = document.querySelector('#Q1_5');
+          if (respName && !respName.value) respName.value = data.leaderName || '상인대표';
+          const respPhone = document.querySelector('#Q1_6');
+          if (respPhone && !respPhone.value) respPhone.value = data.leaderPhone || '010-4163-2166';
+          const respEmail = document.querySelector('#Q1_7');
+          if (respEmail && !respEmail.value) respEmail.value = 'noreply@example.com';
+          const radioPos = document.querySelector('input[name="Q1_8"][value="1"]');
+          if (radioPos) {
+            if (!radioPos.checked) radioPos.click();
+            radioPos.checked = true;
+            radioPos.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          const surveyor = document.querySelector('#Q1_10');
+          if (surveyor && !surveyor.value) surveyor.value = '가온박정순';
+          if (typeof next === 'function') next();
+          else if (typeof move_page === 'function') move_page('P1');
+        }, { data: assocData }).catch(() => {});
+        await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+        await delay(1000);
+        continue;
+      }
 
       // ------------------------------------------
       // 1) Agree.asp 최종 동의 페이지 도달
@@ -159,10 +250,16 @@ export async function runKstatAssocSurvey(options = {}) {
         // 배치 완주 모드: 최종 동의 체크 후 제출 완료
         logger.info(`[상인회 배치 완주] "${marketName}" 최종 제출 진행...`);
         await page.evaluate(() => {
-          const radioAgree = document.querySelector('input[name="AGREE"][value="1"]') || document.querySelector('input[type="radio"][value="1"]');
+          const radioAgree = document.querySelector('input[name="AGREE"][value="Y"]') || 
+                             document.querySelector('#AGREE_1') || 
+                             document.querySelector('input[name="AGREE"][value="1"]') || 
+                             document.querySelector('input[type="radio"][value="Y"]') || 
+                             document.querySelector('input[type="radio"][value="1"]');
           if (radioAgree) {
+            if (!radioAgree.checked) radioAgree.click();
             radioAgree.checked = true;
             radioAgree.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') $(radioAgree).prop('checked', true).trigger('change');
           }
         });
 
@@ -185,6 +282,56 @@ export async function runKstatAssocSurvey(options = {}) {
       }
 
       // ------------------------------------------
+      // 2-0) P20 (F1 ~ F4: 빈 점포 현황 수치 주입)
+      // ------------------------------------------
+      if (currUrl.includes('P20') || currPageName === 'P20') {
+        onProgress({ step: 'P20', message: `[P20] F1~F4 빈 점포 수치 자동 응답 중...` });
+        await syncAllChildFrames(page);
+        await delay(600);
+
+        await mirrorPrevYearToCurrent(page, { preserveExisting });
+
+        // F1.asp 내부 F1_2(현재 영업중 점포수), F1_3(신규 빈점포수) 빈칸 방어 (Alert 원천 차단)
+        for (const f of page.frames()) {
+          try {
+            await f.evaluate(() => {
+              const f1_2 = document.querySelector('input[name="F1_2"]');
+              if (f1_2 && (!f1_2.value || f1_2.value.trim() === '')) {
+                f1_2.value = '0';
+                f1_2.dispatchEvent(new Event('input', { bubbles: true }));
+                f1_2.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const f1_3 = document.querySelector('input[name="F1_3"]');
+              if (f1_3 && (!f1_3.value || f1_3.value.trim() === '')) {
+                f1_3.value = '0';
+                f1_3.dispatchEvent(new Event('input', { bubbles: true }));
+                f1_3.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              if (typeof calcF1_4 === 'function') {
+                calcF1_4();
+              }
+            });
+          } catch (_) {}
+        }
+
+        await captureStep('P20', 'P20_빈점포수치');
+        await delay(800);
+        const prevUrl = page.url();
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.click('#next').catch(() => {})
+        ]);
+        await delay(600);
+
+        if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P20] 잔류 감지 ➔ move_page로 P21 돌파...`);
+          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P21'); }).catch(() => {});
+          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+        }
+        continue;
+      }
+
+      // ------------------------------------------
       // 2) P21 (F5, F6: 빈 점포 현황)
       // ------------------------------------------
       if (currUrl.includes('P21') || currPageName === 'P21') {
@@ -204,21 +351,31 @@ export async function runKstatAssocSurvey(options = {}) {
 
         logger.info(`[상인회 러너] [P21] 정책 답변: F5=${f5Val}${policy.F5_emptyStoreReason === 'random' ? ' (🎲 1~5 랜덤)' : ''}, F6=${f6Val}${policy.F6_emptyStorePolicy === 'random' ? ' (🎲 1~5 랜덤)' : ''}`);
 
-        for (const f of page.frames()) {
+        // F5 프레임
+        const f5Frame = page.frames().find(f => f.url().includes('F5.asp'));
+        if (f5Frame) {
           try {
-            await f.evaluate(({ f5, f6, preserveExisting }) => {
-              const curF5 = document.querySelector('input[name="F5"]:checked');
-              if (!preserveExisting || !curF5) {
-                const rF5 = document.querySelector(`input[name="F5"][value="${f5}"]`) || document.querySelector('input[name="F5"][value="1"]') || (document.querySelector('input[name="F5"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
-                if (rF5) { rF5.checked = true; rF5.dispatchEvent(new Event('change', { bubbles: true })); }
-              }
+            const hasChecked = await f5Frame.evaluate(() => !!document.querySelector('input[name="F5"]:checked'));
+            if (!preserveExisting || !hasChecked) {
+              const sel = `input[name="F5"][value="${f5Val}"]`;
+              await f5Frame.click(sel).catch(async () => {
+                await f5Frame.click('input[name="F5"][value="1"]').catch(() => {});
+              });
+            }
+          } catch (_) {}
+        }
 
-              const curF6 = document.querySelector('input[name="F6"]:checked');
-              if (!preserveExisting || !curF6) {
-                const rF6 = document.querySelector(`input[name="F6"][value="${f6}"]`) || document.querySelector('input[name="F6"][value="1"]') || (document.querySelector('input[name="F6"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
-                if (rF6) { rF6.checked = true; rF6.dispatchEvent(new Event('change', { bubbles: true })); }
-              }
-            }, { f5: f5Val, f6: f6Val, preserveExisting });
+        // F6 프레임
+        const f6Frame = page.frames().find(f => f.url().includes('F6.asp'));
+        if (f6Frame) {
+          try {
+            const hasChecked = await f6Frame.evaluate(() => !!document.querySelector('input[name="F6"]:checked'));
+            if (!preserveExisting || !hasChecked) {
+              const sel = `input[name="F6"][value="${f6Val}"]`;
+              await f6Frame.click(sel).catch(async () => {
+                await f6Frame.click('input[name="F6"][value="1"]').catch(() => {});
+              });
+            }
           } catch (_) {}
         }
 
@@ -232,6 +389,7 @@ export async function runKstatAssocSurvey(options = {}) {
         await delay(600);
 
         if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P21] 잔류 감지 ➔ move_page로 P22 돌파...`);
           await page.evaluate(() => { if (typeof move_page === 'function') move_page('P22'); }).catch(() => {});
           await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
         }
@@ -258,21 +416,31 @@ export async function runKstatAssocSurvey(options = {}) {
 
         logger.info(`[상인회 러너] [P22] 정책 답변: G1=${g1Val}${policy.G1_overchargeReason === 'random' ? ' (🎲 1~5 랜덤)' : ''}, G2=${g2Val}${policy.G2_overchargeSolution === 'random' ? ' (🎲 1~5 랜덤)' : ''}`);
 
-        for (const f of page.frames()) {
+        // G1 프레임
+        const g1Frame = page.frames().find(f => f.url().includes('G1.asp'));
+        if (g1Frame) {
           try {
-            await f.evaluate(({ g1, g2, preserveExisting }) => {
-              const curG1 = document.querySelector('input[name="G1"]:checked');
-              if (!preserveExisting || !curG1) {
-                const rG1 = document.querySelector(`input[name="G1"][value="${g1}"]`) || document.querySelector('input[name="G1"][value="1"]') || (document.querySelector('input[name="G1"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
-                if (rG1) { rG1.checked = true; rG1.dispatchEvent(new Event('change', { bubbles: true })); }
-              }
+            const hasChecked = await g1Frame.evaluate(() => !!document.querySelector('input[name="G1"]:checked'));
+            if (!preserveExisting || !hasChecked) {
+              const sel = `input[name="G1"][value="${g1Val}"]`;
+              await g1Frame.click(sel).catch(async () => {
+                await g1Frame.click('input[name="G1"][value="1"]').catch(() => {});
+              });
+            }
+          } catch (_) {}
+        }
 
-              const curG2 = document.querySelector('input[name="G2"]:checked');
-              if (!preserveExisting || !curG2) {
-                const rG2 = document.querySelector(`input[name="G2"][value="${g2}"]`) || document.querySelector('input[name="G2"][value="1"]') || (document.querySelector('input[name="G2"]') ? document.querySelector('input[type="radio"][value="1"]') : null);
-                if (rG2) { rG2.checked = true; rG2.dispatchEvent(new Event('change', { bubbles: true })); }
-              }
-            }, { g1: g1Val, g2: g2Val, preserveExisting });
+        // G2 프레임
+        const g2Frame = page.frames().find(f => f.url().includes('G2.asp'));
+        if (g2Frame) {
+          try {
+            const hasChecked = await g2Frame.evaluate(() => !!document.querySelector('input[name="G2"]:checked'));
+            if (!preserveExisting || !hasChecked) {
+              const sel = `input[name="G2"][value="${g2Val}"]`;
+              await g2Frame.click(sel).catch(async () => {
+                await g2Frame.click('input[name="G2"][value="1"]').catch(() => {});
+              });
+            }
           } catch (_) {}
         }
 
@@ -286,6 +454,7 @@ export async function runKstatAssocSurvey(options = {}) {
         await delay(600);
 
         if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P22] 잔류 감지 ➔ move_page로 P23 돌파...`);
           await page.evaluate(() => { if (typeof move_page === 'function') move_page('P23'); }).catch(() => {});
           await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
         }

@@ -81,6 +81,7 @@ async function initSurveyDetailPage() {
   const currentActiveStoreLabel = document.getElementById('current-active-store-label');
   const currentStorePulse = document.getElementById('current-store-pulse');
   const floatingMonitorDrawer = document.getElementById('floating-monitor-drawer');
+  const floatingMonitorLauncher = document.getElementById('floating-monitor-launcher');
   const btnToggleMonitor = document.getElementById('btn-toggle-monitor');
   const btnMinimizeMonitor = document.getElementById('btn-minimize-monitor');
   const btnQuickOpenMonitor = document.getElementById('btn-quick-open-monitor');
@@ -3820,12 +3821,20 @@ async function initSurveyDetailPage() {
   // 플로팅 모니터링 드로어 제어 함수 및 이벤트 리스너
   function openMonitorDrawer() {
     if (floatingMonitorDrawer) floatingMonitorDrawer.classList.add('is-open');
+    if (floatingMonitorLauncher) floatingMonitorLauncher.classList.add('hidden-by-drawer');
+    document.body.classList.add('monitor-drawer-open');
   }
   function closeMonitorDrawer() {
     if (floatingMonitorDrawer) floatingMonitorDrawer.classList.remove('is-open');
+    if (floatingMonitorLauncher) floatingMonitorLauncher.classList.remove('hidden-by-drawer');
+    document.body.classList.remove('monitor-drawer-open');
   }
   function toggleMonitorDrawer() {
-    if (floatingMonitorDrawer) floatingMonitorDrawer.classList.toggle('is-open');
+    if (floatingMonitorDrawer && floatingMonitorDrawer.classList.contains('is-open')) {
+      closeMonitorDrawer();
+    } else {
+      openMonitorDrawer();
+    }
   }
 
   if (btnToggleMonitor) btnToggleMonitor.addEventListener('click', toggleMonitorDrawer);
