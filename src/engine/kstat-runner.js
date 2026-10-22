@@ -207,33 +207,52 @@ async function autoFillUnansweredVisibleFrames(page, persona, biz) {
       else if (code === 'B1C') {
         const isUnknown = persona.sales?.isNonLocalUnknown !== false;
         await safeFill(f, '#B1C, input[name="B1C"]', persona.sales?.dailyCustomers || '45');
-        await f.evaluate((unknown, rate) => {
+        await f.evaluate(({ unknown, rate }) => {
           const chk = document.getElementById('B1C_9') || document.querySelector('input[name="B1C_9"]');
           const txt = document.getElementById('B1C_1') || document.querySelector('input[name="B1C_1"]');
           if (unknown) {
             if (chk) {
+              if (!chk.checked) chk.click();
               chk.checked = true;
+              if (typeof $ !== 'undefined') $(chk).prop('checked', true).trigger('change');
               if (typeof B1C_NoneCheck === 'function') B1C_NoneCheck(chk);
-              chk.dispatchEvent(new Event('change', { bubbles: true }));
             }
             if (txt) {
               txt.value = '';
               txt.disabled = true;
+              if (typeof $ !== 'undefined') $(txt).val('').prop('disabled', true);
             }
           } else {
+            const validRate = String(rate || '15');
             if (chk) {
+              if (chk.checked) chk.click();
               chk.checked = false;
+              if (typeof $ !== 'undefined') $(chk).prop('checked', false).trigger('change');
               if (typeof B1C_NoneCheck === 'function') B1C_NoneCheck(chk);
-              chk.dispatchEvent(new Event('change', { bubbles: true }));
             }
             if (txt) {
               txt.disabled = false;
-              txt.value = rate;
-              txt.dispatchEvent(new Event('input', { bubbles: true }));
-              txt.dispatchEvent(new Event('change', { bubbles: true }));
+              txt.value = validRate;
+              if (typeof $ !== 'undefined') $(txt).prop('disabled', false).val(validRate).trigger('input').trigger('change');
             }
           }
-        }, isUnknown, persona.sales?.nonLocalCustomerRate || '15').catch(() => {});
+
+          // [최종 철벽 안전 가드 (Fail-Safe)]
+          const isCheckedNow = chk && (chk.checked || (typeof $ !== 'undefined' && $(chk).is(':checked')));
+          const valNow = txt ? parseFloat(txt.value || 0) : 0;
+          if (!isCheckedNow && valNow <= 0) {
+            if (chk) {
+              chk.checked = true;
+              if (typeof $ !== 'undefined') $(chk).prop('checked', true).trigger('change');
+              if (typeof B1C_NoneCheck === 'function') B1C_NoneCheck(chk);
+            }
+            if (txt && (!chk || !chk.checked)) {
+              txt.disabled = false;
+              txt.value = '15';
+              if (typeof $ !== 'undefined') $(txt).prop('disabled', false).val('15').trigger('input').trigger('change');
+            }
+          }
+        }, { unknown: isUnknown, rate: persona.sales?.nonLocalCustomerRate || '15' }).catch(err => console.error('B1C evaluate error in autoFill:', err));
       }
       else if (code === 'B2A') {
         // [규칙 B2A] 현금, 온누리, 지역사랑, 제로페이, 신용카드 5대 결제수단 5% 단위 주입 보장
@@ -553,7 +572,7 @@ export async function runKstatSurvey({
 
       if (!stepName) {
         if (currentUrl.includes('index.asp') || currentUrl.includes('Survey.asp')) {
-          await page.evaluate(() => document.querySelector('#next')?.click());
+          await page.evaluate(() => document.querySelector('#next')?.click()).catch(() => {});
           continue;
         }
         break;
@@ -673,30 +692,29 @@ export async function runKstatSurvey({
           await selectRankCheckboxes(fB1BD, 'B1BD', persona.sales?.profitDecreaseReasons || [4, 5, 2]);
         }
 
-        const fB1C = page.frame({ url: /\/B1C\.asp/i });
+        const fB1C = page.frame('frame_B1C') || page.frames().find(f => f.name() === 'frame_B1C' || /\/B1C\.asp/i.test(f.url()));
         if (fB1C) {
           const isUnknown = persona.sales?.isNonLocalUnknown !== false;
           await safeFill(fB1C, '#B1C, input[name="B1C"]', persona.sales.dailyCustomers || '45');
           await itemDelay();
 
           // [규칙 B1-3] 지역 외 고객 비중: 약 90%는 '모름' 체크박스(B1C_9)를 선택하고 퍼센트(B1C_1) 미입력, 10%는 직접 비중 입력
-          // Kstat Alert 조건: (!$("#B1C_9").is(":checked") && parseFloat($("#B1C_1").val()||0) == 0)
-          // ➔ 이 조건을 100% 원천 차단하기 위해 단일 원자적 DOM/jQuery 통합 주입 및 사후 검증 수행
-          await fB1C.evaluate((unknown, rate) => {
+          // Playwright evaluate는 단일 객체 인자 { unknown, rate } 전달 필수 (다중 인자 전달 시 Too many arguments 예외 발생 원천 차단)
+          await fB1C.evaluate(({ unknown, rate }) => {
             const chk = document.getElementById('B1C_9') || document.querySelector('input[name="B1C_9"]');
             const txt = document.getElementById('B1C_1') || document.querySelector('input[name="B1C_1"]');
 
             if (unknown) {
               // 1) '모름' 체크박스 확실하게 활성화 (DOM 프로퍼티 + jQuery 프로퍼티 동시 동기화)
               if (chk) {
+                if (!chk.checked) chk.click();
                 chk.checked = true;
                 if (typeof $ !== 'undefined') {
-                  $(chk).prop('checked', true);
+                  $(chk).prop('checked', true).trigger('change');
                 }
                 if (typeof B1C_NoneCheck === 'function') {
                   B1C_NoneCheck(chk);
                 }
-                chk.dispatchEvent(new Event('change', { bubbles: true }));
               }
               if (txt) {
                 txt.value = '';
@@ -709,23 +727,21 @@ export async function runKstatSurvey({
               // 2) 비중 직접 입력 (체크 해제 + 텍스트 활성화 및 유효 숫자 주입)
               const validRate = String(rate || '15');
               if (chk) {
+                if (chk.checked) chk.click();
                 chk.checked = false;
                 if (typeof $ !== 'undefined') {
-                  $(chk).prop('checked', false);
+                  $(chk).prop('checked', false).trigger('change');
                 }
                 if (typeof B1C_NoneCheck === 'function') {
                   B1C_NoneCheck(chk);
                 }
-                chk.dispatchEvent(new Event('change', { bubbles: true }));
               }
               if (txt) {
                 txt.disabled = false;
                 txt.value = validRate;
                 if (typeof $ !== 'undefined') {
-                  $(txt).prop('disabled', false).val(validRate);
+                  $(txt).prop('disabled', false).val(validRate).trigger('input').trigger('change');
                 }
-                txt.dispatchEvent(new Event('input', { bubbles: true }));
-                txt.dispatchEvent(new Event('change', { bubbles: true }));
               }
             }
 
@@ -746,7 +762,7 @@ export async function runKstatSurvey({
                 if (typeof $ !== 'undefined') $(txt).prop('disabled', false).val('15').trigger('input').trigger('change');
               }
             }
-          }, isUnknown, persona.sales?.nonLocalCustomerRate || '15').catch(() => {});
+          }, { unknown: isUnknown, rate: persona.sales?.nonLocalCustomerRate || '15' }).catch(err => console.error('B1C evaluate error in P4:', err));
         }
         const fB1D = page.frame({ url: /\/B1D\.asp/i });
         if (fB1D) await safeFill(fB1D, '#B1D, input[name="B1D"]', persona.sales?.dailyBusinessHours || '11');
@@ -892,7 +908,10 @@ export async function runKstatSurvey({
         // 1차 동적 프레임(B5B1, B5C1, B5D1, B5F1, B5AB/B5B2~B5F2) 활성화 및 로딩 대기
         await syncDynamicFrames(page);
 
-        const joinYearVal = String(persona.onnuri?.joinYear || 2020);
+        const baseOpenYear = parseInt(biz.openYear || '2020', 10) || 2020;
+        let onnuriYearNum = parseInt(persona.onnuri?.joinYear || 2024, 10) || 2024;
+        // 온누리 가맹년도는 A5(영업시작년도) 이상이면서 최소 2024 보장 (미래 2025 개업 점포는 2025)
+        const joinYearVal = String(Math.min(2025, Math.max(baseOpenYear, onnuriYearNum, baseOpenYear >= 2025 ? 2025 : 2024)));
         const custVal = String(persona.onnuri?.monthlyCustomers || '5');
         const helpVal = String(persona.onnuri?.helpVal || '3');
         const incRateVal = String(persona.onnuri?.increaseRate || '15');
@@ -1198,7 +1217,7 @@ export async function runKstatSurvey({
       // 사람다운 다음 단계 검토 지연 후 클릭
       await preNextDelay();
       const prevUrl = page.url();
-      await page.evaluate(() => document.querySelector('#next')?.click());
+      await page.evaluate(() => document.querySelector('#next')?.click()).catch(() => {});
 
       // 페이지가 실제로 다음 단계로 넘어갈 때까지 대기
       let pageAdvanced = false;
