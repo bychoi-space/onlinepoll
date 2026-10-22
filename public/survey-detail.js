@@ -3705,7 +3705,6 @@ async function initSurveyDetailPage() {
         }
       });
     }
-  }
 
   // 플로팅 모니터링 드로어 제어 함수 및 이벤트 리스너
   function openMonitorDrawer() {
