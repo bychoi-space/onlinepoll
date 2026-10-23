@@ -1158,8 +1158,20 @@ async function initSurveyDetailPage() {
     const groupNav = document.querySelector('.blueprint-group-nav-container');
     if (groupNav) groupNav.style.display = 'none';
 
+    // 상인회 프리셋 버튼군을 헤더 우측 슬롯에 자연스럽게 일체화 배치
     const presetGroup = document.querySelector('.blueprint-preset-group');
-    if (presetGroup) presetGroup.style.display = 'none';
+    if (presetGroup) {
+      presetGroup.style.display = 'inline-flex';
+      presetGroup.innerHTML = `
+        <span class="font-caption font-bold text-dim mr-4"><i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i> 빠른 정책 가이드:</span>
+        <button type="button" class="btn-chip" id="btn-assoc-preset-random" title="F5, F6, G1, G2를 모두 1~5번 무작위 랜덤 답변으로 일괄 설정">
+          <i class="fa-solid fa-dice"></i> 🎲 1~5번 전 문항 랜덤 분산 일괄 적용
+        </button>
+        <button type="button" class="btn-chip" id="btn-assoc-preset-default" title="모든 정책 문항을 표준 1번 항목으로 초기화">
+          <i class="fa-solid fa-rotate-left"></i> 표준 1번 항목 일괄 초기화
+        </button>
+      `;
+    }
 
     const tplPicker = document.querySelector('.blueprint-template-picker');
     if (tplPicker) tplPicker.style.display = 'none';
@@ -1186,23 +1198,10 @@ async function initSurveyDetailPage() {
 
     if (!blueprintStageGrid) return;
 
-    // 3. 상인회 전용 카드 그리드 렌더링
+    // 3. 상인회 전용 카드 그리드 렌더링 (카드 0 전폭 ➔ 카드 1~14 2열 대칭 ➔ 카드 15 전폭)
     blueprintStageGrid.innerHTML = `
-      <!-- 상인회 전용 빠른 정책 가이드 프리셋 툴바 -->
-      <div class="assoc-preset-toolbar mb-16 flex-between">
-        <span class="font-caption text-dim"><i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i> 빠른 정책 가이드 설정:</span>
-        <div class="flex-center-gap-8">
-          <button type="button" class="btn-chip" id="btn-assoc-preset-random" title="F5, F6, G1, G2를 모두 1~5번 무작위 랜덤 답변으로 일괄 설정">
-            <i class="fa-solid fa-dice"></i> 🎲 1~5번 전 문항 랜덤 분산 일괄 적용
-          </button>
-          <button type="button" class="btn-chip" id="btn-assoc-preset-default" title="모든 정책 문항을 표준 1번 항목으로 초기화">
-            <i class="fa-solid fa-rotate-left"></i> 표준 1번 항목 일괄 초기화
-          </button>
-        </div>
-      </div>
-
-      <!-- 카드 0: 기입력 항목 보존 및 슬롯 건너뛰기 규칙 카드 -->
-      <section class="blueprint-card assoc-rule-card">
+      <!-- 카드 0: 기입력 항목 보존 및 슬롯 건너뛰기 규칙 카드 (그리드 상단 1열 전폭 배너) -->
+      <section class="blueprint-card assoc-rule-card full-width-card" style="grid-column: 1 / -1; width: 100%;">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
             <span class="blueprint-step-pill assoc-rule-pill"><i class="fa-solid fa-forward-step"></i> 실행 규칙</span>
@@ -1215,24 +1214,24 @@ async function initSurveyDetailPage() {
         <div class="blueprint-stage-desc">
           설문 페이지(Kstat)에 사용자가 이미 입력해 둔 문항 또는 완료된 슬롯을 건너뛰고, 미입력된 빈 항목만 자동으로 채워 넣는 안전 실행 규칙입니다.
         </div>
-        <div class="p-14">
-          <div class="assoc-rule-box">
+        <div class="p-14" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+          <div class="assoc-rule-box mb-0">
             <label class="assoc-rule-item">
               <input type="checkbox" id="cb-assoc-preserve-inputs" class="assoc-rule-cb" ${assocPolicyState.preserveExistingInputs !== false ? 'checked' : ''} />
               <div>
-                <strong class="assoc-rule-title">기입력된 설문 항목 보존 (이미 입력된 항목 건너뛰기) [권장]</strong>
+                <strong class="assoc-rule-title">기입력된 설문 항목 보존 [권장]</strong>
                 <div class="assoc-rule-desc">
-                  설문 문항 중 이미 라디오/체크박스가 선택되어 있거나 텍스트·숫자가 입력된 항목은 덮어쓰지 않고 기존 입력값을 100% 보존합니다. (비어있는 미응답 항목만 자동 입력)
+                  설문 문항 중 이미 라디오/체크박스가 선택되어 있거나 텍스트·숫자가 입력된 항목은 덮어쓰지 않고 기존 입력값을 100% 보존합니다.
                 </div>
               </div>
             </label>
           </div>
 
-          <div class="assoc-rule-box">
+          <div class="assoc-rule-box mb-0">
             <label class="assoc-rule-item">
               <input type="checkbox" id="cb-assoc-skip-completed" class="assoc-rule-cb" ${assocPolicyState.skipCompletedSlots !== false ? 'checked' : ''} />
               <div>
-                <strong class="assoc-rule-title">Kstat 완료 슬롯 자동 건너뛰기 [권장]</strong>
+                <strong class="assoc-rule-title">Kstat 완료 슬롯 건너뛰기 [권장]</strong>
                 <div class="assoc-rule-desc">
                   케이스탯 조사원 목록에서 이미 설문 '완료' 상태로 등록된 슬롯은 배치 실행 대상에서 제외하고 자동으로 건너뜁니다.
                 </div>
@@ -1240,15 +1239,15 @@ async function initSurveyDetailPage() {
             </label>
           </div>
 
-          <div class="form-group mb-0">
-            <label class="assoc-rule-label-strong">
+          <div class="assoc-rule-box mb-0 flex-column justify-center">
+            <label class="assoc-rule-label-strong mb-6">
               특정 슬롯 번호 건너뛰기 (선택 사항)
             </label>
             <input type="text" id="input-assoc-skip-indices" class="assoc-rule-input" 
-                   placeholder="건너뛸 슬롯 번호를 쉼표로 입력 (예: 1, 2, 5)" 
+                   placeholder="건너뛸 슬롯 번호 입력 (예: 1, 2, 5)" 
                    value="${escapeHtml(assocPolicyState.skipSlotIndices || '')}" />
-            <div class="assoc-rule-hint">
-              * 배치 자동화 가동 시 여기에 입력된 슬롯 번호는 실행을 건너뛰고 다음 슬롯으로 넘어갑니다.
+            <div class="assoc-rule-hint mt-4">
+              * 배치 자동화 가동 시 여기에 입력된 슬롯 번호는 실행을 건너뜁니다.
             </div>
           </div>
         </div>
@@ -1644,8 +1643,8 @@ async function initSurveyDetailPage() {
         </div>
       </section>
 
-      <!-- 카드 15: G4 기후재해 대비 현황 (보유 & 필요도 일부 미체크 규칙) -->
-      <section class="blueprint-card">
+      <!-- 카드 15: G4 기후재해 대비 현황 (보유 & 필요도 일부 미체크 규칙 - 하단 전폭 마감) -->
+      <section class="blueprint-card full-width-card" style="grid-column: 1 / -1; width: 100%;">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
             <span class="blueprint-step-pill">G4 (P23)</span>
