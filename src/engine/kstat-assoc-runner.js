@@ -296,6 +296,144 @@ export async function runKstatAssocSurvey(options = {}) {
       }
 
       // ------------------------------------------
+      // 1-0-0) P4 (A7 ~ A9: 시장 일반현황 & A8 평일/휴일 운영시간대 가이드)
+      // ------------------------------------------
+      if (currUrl.includes('P4') || currPageName === 'P4') {
+        onProgress({ step: 'P4', message: `[P4] A7~A9 일반현황 및 A8 운영시간대 정책 가이드 입력 중...` });
+        await syncAllChildFrames(page);
+        await delay(600);
+
+        // 1. A7, A7A, A7B, A9 등 일반 문항 전년도 1:1 미러링
+        await mirrorPrevYearToCurrent(page, { preserveExisting });
+
+        // 2. A8.asp (frame_A8): 운영시간 정책 가이드라인 반영
+        const a8Frame = page.frames().find(f => f.url().includes('A8.asp') || f.name() === 'frame_A8');
+        if (a8Frame) {
+          try {
+            const a8Mode = policy.A8_operatingHoursMode || 'standard';
+            const isNoTime = (a8Mode === 'no_time' || policy.A8_noTime === true);
+            let openH = policy.A8_openHour || '09';
+            let openM = policy.A8_openMinute || '0';
+            let closeH = policy.A8_closeHour || '21';
+            let closeM = policy.A8_closeMinute || '0';
+
+            if (a8Mode === 'traditional') {
+              openH = '06'; openM = '0'; closeH = '20'; closeM = '0';
+            } else if (a8Mode === 'night') {
+              openH = '11'; openM = '0'; closeH = '23'; closeM = '0';
+            } else if (a8Mode === 'standard') {
+              openH = '09'; openM = '0'; closeH = '21'; closeM = '0';
+            }
+
+            logger.info(`[상인회 러너] [P4 A8] 운영시간대 정책 주입: mode=${a8Mode}, noTime=${isNoTime}, 개점=${openH}:${openM}, 폐점=${closeH}:${closeM}`);
+
+            await a8Frame.evaluate(({ a8Mode, isNoTime, openH, openM, closeH, closeM, preserveExisting }) => {
+              const cbNoTime = document.querySelector('#A8_3, input[name="A8_3"]');
+
+              // A. 개점/폐점 시간 없음 모드
+              if (isNoTime) {
+                if (cbNoTime) {
+                  if (!cbNoTime.checked) cbNoTime.click();
+                  cbNoTime.checked = true;
+                  cbNoTime.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof noCheckBoxValue === 'function') noCheckBoxValue('A8_3', '3');
+                  if (typeof colorCheckbox === 'function') colorCheckbox('A8');
+                }
+                return;
+              }
+
+              // B. 시간 지정 모드: 먼저 A8_3 체크 해제
+              if (cbNoTime && cbNoTime.checked) {
+                cbNoTime.click();
+                cbNoTime.checked = false;
+                cbNoTime.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof noCheckBoxValue === 'function') noCheckBoxValue('A8_3', '3');
+                if (typeof colorCheckbox === 'function') colorCheckbox('A8');
+              }
+
+              // mirror 모드일 경우: 전년도(2024년) 필드 우선 읽기
+              let targetOpenH = openH;
+              let targetOpenM = openM;
+              let targetCloseH = closeH;
+              let targetCloseM = closeM;
+
+              if (a8Mode === 'mirror') {
+                const prevNoTime = document.querySelector('#PA8_3, input[name="PA8_3"]');
+                if (prevNoTime && prevNoTime.checked) {
+                  if (cbNoTime && !cbNoTime.checked) cbNoTime.click();
+                  cbNoTime.checked = true;
+                  cbNoTime.dispatchEvent(new Event('change', { bubbles: true }));
+                  return;
+                }
+                const pOpenH = document.querySelector('#PA8_1_1, select[name="PA8_1_1"]')?.value;
+                const pOpenM = document.querySelector('#PA8_1_2, select[name="PA8_1_2"]')?.value;
+                const pCloseH = document.querySelector('#PA8_2_1, select[name="PA8_2_1"]')?.value;
+                const pCloseM = document.querySelector('#PA8_2_2, select[name="PA8_2_2"]')?.value;
+                if (pOpenH && pOpenH !== '') targetOpenH = pOpenH;
+                if (pOpenM !== undefined && pOpenM !== '') targetOpenM = pOpenM;
+                if (pCloseH && pCloseH !== '') targetCloseH = pCloseH;
+                if (pCloseM !== undefined && pCloseM !== '') targetCloseM = pCloseM;
+              }
+
+              // 기입력 보존 옵션이 켜져 있고 이미 값이 채워져 있다면 보존
+              const curOpenH = document.querySelector('#A8_1_1')?.value;
+              const curCloseH = document.querySelector('#A8_2_1')?.value;
+              if (preserveExisting && curOpenH && curCloseH) {
+                return;
+              }
+
+              const setSelect = (id, val) => {
+                const sel = document.querySelector('#' + id) || document.querySelector(`select[name="${id}"]`);
+                if (sel) {
+                  sel.disabled = false;
+                  let matchedOption = Array.from(sel.options).find(o => o.value === String(val) || o.value === String(val).padStart(2, '0'));
+                  if (matchedOption) {
+                    sel.value = matchedOption.value;
+                  } else {
+                    sel.value = String(val);
+                  }
+                  sel.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(sel).val(sel.value).trigger('change');
+                }
+              };
+
+              setSelect('A8_1_1', targetOpenH);
+              setSelect('A8_1_2', targetOpenM);
+              setSelect('A8_2_1', targetCloseH);
+              setSelect('A8_2_2', targetCloseM);
+
+            }, {
+              a8Mode,
+              isNoTime,
+              openH,
+              openM,
+              closeH,
+              closeM,
+              preserveExisting
+            });
+          } catch (err) {
+            console.error('[P4 A8 frame 주입 오류]:', err);
+          }
+        }
+
+        await captureStep('P4', 'P4_일반현황및A8운영시간');
+        await delay(800);
+        const prevUrl = page.url();
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.click('#next').catch(() => {})
+        ]);
+        await delay(600);
+
+        if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P4] 잔류 감지 ➔ move_page로 P5 돌파...`);
+          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P5'); }).catch(() => {});
+          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+        }
+        continue;
+      }
+
+      // ------------------------------------------
       // 1-0) P5 (B1 ~ B4: 상인회 운영, 명칭, 대표자, 직원 현황)
       // ------------------------------------------
       if (currUrl.includes('P5') || currPageName === 'P5') {

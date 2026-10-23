@@ -1146,6 +1146,12 @@ async function initSurveyDetailPage() {
 
   function renderAssocBlueprint(data) {
     assocPolicyState = data.policy || data.blueprint?.defaultPolicy || {};
+    if (!assocPolicyState.A8_operatingHoursMode) assocPolicyState.A8_operatingHoursMode = 'standard';
+    if (!assocPolicyState.A8_openHour) assocPolicyState.A8_openHour = '09';
+    if (!assocPolicyState.A8_openMinute) assocPolicyState.A8_openMinute = '0';
+    if (!assocPolicyState.A8_closeHour) assocPolicyState.A8_closeHour = '21';
+    if (!assocPolicyState.A8_closeMinute) assocPolicyState.A8_closeMinute = '0';
+    if (assocPolicyState.A8_noTime === undefined) assocPolicyState.A8_noTime = false;
 
     // 0. STEP 2 부모 컨테이너 노출 100% 보장 (0건 쿼터/슬롯 상태에서도 상인회 가이드는 항상 노출)
     const bpSection = document.getElementById('section-master-blueprint');
@@ -1248,6 +1254,89 @@ async function initSurveyDetailPage() {
                    value="${escapeHtml(assocPolicyState.skipSlotIndices || '')}" />
             <div class="assoc-rule-hint mt-4">
               * 배치 자동화 가동 시 여기에 입력된 슬롯 번호는 실행을 건너뜁니다.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 신규 카드 A8: A8 전통시장·상점가 운영 시간대 가이드 (전폭 배너) -->
+      <section class="blueprint-card full-width-card" style="grid-column: 1 / -1; width: 100%;">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">A8 (P4)</span>
+            <h3 class="blueprint-stage-title">전통시장·상점가 운영 시간대 (개점 / 폐점)</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          전통시장·상점가 기준의 개점 시간 및 폐점 시간(24시간제 기준)을 설정합니다. (주간 표준 09:00~21:00 권장, 2024년 동일 계승, 야시장/새벽형 프리셋 또는 직접 시간대 설정)
+        </div>
+        <div class="p-14">
+          <!-- 1행: 운영 모드 선택 (프리셋) -->
+          <div class="form-group mb-12">
+            <label class="figma-label font-bold text-primary-color">운영 시간 정책 모드</label>
+            <select id="select-assoc-A8-mode" class="figma-select w-full">
+              <option value="standard" ${(!assocPolicyState.A8_operatingHoursMode || assocPolicyState.A8_operatingHoursMode === 'standard') ? 'selected' : ''}>[권장] 주간 표준 운영 (09:00 ~ 21:00 동일)</option>
+              <option value="mirror" ${assocPolicyState.A8_operatingHoursMode === 'mirror' ? 'selected' : ''}>2024년 시간대 1:1 동일 계승 (공란 시 09:00~21:00 적용)</option>
+              <option value="traditional" ${assocPolicyState.A8_operatingHoursMode === 'traditional' ? 'selected' : ''}>새벽 / 생계형 시장 (06:00 ~ 20:00)</option>
+              <option value="night" ${assocPolicyState.A8_operatingHoursMode === 'night' ? 'selected' : ''}>야시장 / 먹거리 골목 (11:00 ~ 23:00)</option>
+              <option value="no_time" ${assocPolicyState.A8_operatingHoursMode === 'no_time' ? 'selected' : ''}>개점/폐점 시간 없음 (24시간 자유 영업 / A8_3 체크)</option>
+              <option value="custom" ${assocPolicyState.A8_operatingHoursMode === 'custom' ? 'selected' : ''}>직접 개점·폐점 시간 지정 (아래 시간 선택)</option>
+            </select>
+          </div>
+
+          <!-- 2행: 세부 시간대 선택 영역 -->
+          <div id="wrap-assoc-A8-time-detail" class="grid-3col gap-10" style="align-items: flex-end;">
+            <!-- 개점 시간 -->
+            <div class="form-group mb-0">
+              <label class="figma-label">개점 시간 (A8_1)</label>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <select id="select-assoc-A8-open-hour" class="figma-select" style="flex: 1;">
+                  ${Array.from({ length: 24 }, (_, i) => {
+                    const val = String(i).padStart(2, '0');
+                    const sel = (assocPolicyState.A8_openHour === val || (!assocPolicyState.A8_openHour && val === '09')) ? 'selected' : '';
+                    return `<option value="${val}" ${sel}>${val}시</option>`;
+                  }).join('')}
+                </select>
+                <select id="select-assoc-A8-open-minute" class="figma-select" style="flex: 1;">
+                  <option value="0" ${assocPolicyState.A8_openMinute === '0' || !assocPolicyState.A8_openMinute ? 'selected' : ''}>00분</option>
+                  <option value="10" ${assocPolicyState.A8_openMinute === '10' ? 'selected' : ''}>10분</option>
+                  <option value="20" ${assocPolicyState.A8_openMinute === '20' ? 'selected' : ''}>20분</option>
+                  <option value="30" ${assocPolicyState.A8_openMinute === '30' ? 'selected' : ''}>30분</option>
+                  <option value="40" ${assocPolicyState.A8_openMinute === '40' ? 'selected' : ''}>40분</option>
+                  <option value="50" ${assocPolicyState.A8_openMinute === '50' ? 'selected' : ''}>50분</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 폐점 시간 -->
+            <div class="form-group mb-0">
+              <label class="figma-label">폐점 시간 (A8_2)</label>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <select id="select-assoc-A8-close-hour" class="figma-select" style="flex: 1;">
+                  ${Array.from({ length: 24 }, (_, i) => {
+                    const val = String(i).padStart(2, '0');
+                    const sel = (assocPolicyState.A8_closeHour === val || (!assocPolicyState.A8_closeHour && val === '21')) ? 'selected' : '';
+                    return `<option value="${val}" ${sel}>${val}시</option>`;
+                  }).join('')}
+                </select>
+                <select id="select-assoc-A8-close-minute" class="figma-select" style="flex: 1;">
+                  <option value="0" ${assocPolicyState.A8_closeMinute === '0' || !assocPolicyState.A8_closeMinute ? 'selected' : ''}>00분</option>
+                  <option value="10" ${assocPolicyState.A8_closeMinute === '10' ? 'selected' : ''}>10분</option>
+                  <option value="20" ${assocPolicyState.A8_closeMinute === '20' ? 'selected' : ''}>20분</option>
+                  <option value="30" ${assocPolicyState.A8_closeMinute === '30' ? 'selected' : ''}>30분</option>
+                  <option value="40" ${assocPolicyState.A8_closeMinute === '40' ? 'selected' : ''}>40분</option>
+                  <option value="50" ${assocPolicyState.A8_closeMinute === '50' ? 'selected' : ''}>50분</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 없음 체크박스 -->
+            <div class="form-group mb-0" style="padding-bottom: 6px;">
+              <label class="custom-cb-label" style="margin-bottom: 0;">
+                <input type="checkbox" id="cb-assoc-A8-no-time" ${assocPolicyState.A8_noTime ? 'checked' : ''} />
+                <span class="font-bold text-white">개점/폐점 시간 없음 (A8_3)</span>
+              </label>
             </div>
           </div>
         </div>
@@ -1727,6 +1816,101 @@ async function initSurveyDetailPage() {
       });
     }
 
+    // A8 운영시간 정책 연동
+    const selA8Mode = document.getElementById('select-assoc-A8-mode');
+    const openH = document.getElementById('select-assoc-A8-open-hour');
+    const openM = document.getElementById('select-assoc-A8-open-minute');
+    const closeH = document.getElementById('select-assoc-A8-close-hour');
+    const closeM = document.getElementById('select-assoc-A8-close-minute');
+    const cbA8NoTime = document.getElementById('cb-assoc-A8-no-time');
+
+    const syncA8UIFromMode = (mode) => {
+      if (mode === 'standard') {
+        if (openH) openH.value = '09';
+        if (openM) openM.value = '0';
+        if (closeH) closeH.value = '21';
+        if (closeM) closeM.value = '0';
+        if (cbA8NoTime) cbA8NoTime.checked = false;
+        assocPolicyState.A8_openHour = '09';
+        assocPolicyState.A8_openMinute = '0';
+        assocPolicyState.A8_closeHour = '21';
+        assocPolicyState.A8_closeMinute = '0';
+        assocPolicyState.A8_noTime = false;
+      } else if (mode === 'traditional') {
+        if (openH) openH.value = '06';
+        if (openM) openM.value = '0';
+        if (closeH) closeH.value = '20';
+        if (closeM) closeM.value = '0';
+        if (cbA8NoTime) cbA8NoTime.checked = false;
+        assocPolicyState.A8_openHour = '06';
+        assocPolicyState.A8_openMinute = '0';
+        assocPolicyState.A8_closeHour = '20';
+        assocPolicyState.A8_closeMinute = '0';
+        assocPolicyState.A8_noTime = false;
+      } else if (mode === 'night') {
+        if (openH) openH.value = '11';
+        if (openM) openM.value = '0';
+        if (closeH) closeH.value = '23';
+        if (closeM) closeM.value = '0';
+        if (cbA8NoTime) cbA8NoTime.checked = false;
+        assocPolicyState.A8_openHour = '11';
+        assocPolicyState.A8_openMinute = '0';
+        assocPolicyState.A8_closeHour = '23';
+        assocPolicyState.A8_closeMinute = '0';
+        assocPolicyState.A8_noTime = false;
+      } else if (mode === 'no_time') {
+        if (cbA8NoTime) cbA8NoTime.checked = true;
+        assocPolicyState.A8_noTime = true;
+      } else if (mode === 'mirror') {
+        if (cbA8NoTime) cbA8NoTime.checked = false;
+        assocPolicyState.A8_noTime = false;
+      }
+      const isNoTime = (mode === 'no_time' || (cbA8NoTime && cbA8NoTime.checked));
+      [openH, openM, closeH, closeM].forEach(el => {
+        if (el) el.disabled = isNoTime;
+      });
+    };
+
+    if (selA8Mode) {
+      selA8Mode.addEventListener('change', () => {
+        assocPolicyState.A8_operatingHoursMode = selA8Mode.value;
+        syncA8UIFromMode(selA8Mode.value);
+        markUnsaved();
+      });
+    }
+
+    [openH, openM, closeH, closeM].forEach(el => {
+      if (el) {
+        el.addEventListener('change', () => {
+          if (selA8Mode && selA8Mode.value !== 'custom') {
+            selA8Mode.value = 'custom';
+            assocPolicyState.A8_operatingHoursMode = 'custom';
+          }
+          if (openH) assocPolicyState.A8_openHour = openH.value;
+          if (openM) assocPolicyState.A8_openMinute = openM.value;
+          if (closeH) assocPolicyState.A8_closeHour = closeH.value;
+          if (closeM) assocPolicyState.A8_closeMinute = closeM.value;
+          markUnsaved();
+        });
+      }
+    });
+
+    if (cbA8NoTime) {
+      cbA8NoTime.addEventListener('change', () => {
+        assocPolicyState.A8_noTime = cbA8NoTime.checked;
+        if (cbA8NoTime.checked) {
+          if (selA8Mode) selA8Mode.value = 'no_time';
+          assocPolicyState.A8_operatingHoursMode = 'no_time';
+        } else {
+          if (selA8Mode) selA8Mode.value = 'standard';
+          assocPolicyState.A8_operatingHoursMode = 'standard';
+        }
+        syncA8UIFromMode(assocPolicyState.A8_operatingHoursMode);
+        markUnsaved();
+      });
+    }
+    syncA8UIFromMode(assocPolicyState.A8_operatingHoursMode || 'standard');
+
     bindAssocField('select-assoc-B5-assembly', 'B5_generalAssemblyCount');
     bindAssocField('select-assoc-C1-C2-need', 'C1_C2_needRating');
     bindAssocField('select-assoc-C3-ev-parking', 'C3_1_evParkingCount');
@@ -1799,6 +1983,11 @@ async function initSurveyDetailPage() {
             sel.dispatchEvent(new Event('change'));
           }
         });
+        const selA8 = document.getElementById('select-assoc-A8-mode');
+        if (selA8) {
+          selA8.value = 'standard';
+          selA8.dispatchEvent(new Event('change'));
+        }
         appendLog('info', '표준 정책 문항이 1번 항목으로 일괄 설정되었습니다.');
       });
     }
