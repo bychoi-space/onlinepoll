@@ -165,6 +165,40 @@
   8. **헤드리스 실전 E2E 완주 검증**:
      - `scripts/test-assoc-rules-e2e.js`를 통해 5번 슬롯(녹두S밸리골목형상점가)을 대상으로 실행하여, 네이버/사전 검색(녹두S밸리 착한 야시장) 연동 ➔ D1-2 ➔ D1-2-5(랜덤) ➔ E1(AI 없음) ➔ F1(0) ➔ F5~G2(기타 제외 랜덤) ➔ G4(일부 미체크)를 거쳐 Agree 최종 동의까지 100% 정상 완주 확인 (`Success: true`).
 
+### [TASK 9] A8 전통시장·상점가 운영 시간대 가이드 설정 및 Kstat 러너 연동 ✅ [완료]
+- **반영 내역**:
+  1. **A8 문항 DOM 구조 및 유효성 전수 분석**:
+     - `P4` 단계 내 `frame_A8` (`A8.asp`)에 위치.
+     - `A8_1_1`: 개점 시간(시, 00~23 select)
+     - `A8_1_2`: 개점 시간(분, 0~59 select)
+     - `A8_2_1`: 폐점 시간(시, 00~23 select)
+     - `A8_2_2`: 폐점 시간(분, 0~59 select)
+     - `A8_3`: 개점/폐점 시간 없음 (체크박스, value="3")
+     - Kstat 유효성 검사: `A8_3` 미체크 시 4개 시/분 셀렉트 필수 선택. 12시 이상일 시 24시간제 확인 Alert 자동 수락 처리.
+  2. **상인회 마스터 블루프린트(`data/kstat_assoc_blueprint.json`) 확장**:
+     - `A8_operatingHoursMode`: "standard" (표준 09:00~21:00 기본값)
+     - `A8_openHour`: "09", `A8_openMinute`: "0"
+     - `A8_closeHour`: "21", `A8_closeMinute`: "0"
+     - `A8_noTime`: false
+  3. **대시보드 UI 카드 렌더링 ([`public/survey-detail.js`](file:///c:/Users/sisun/onlinepoll/public/survey-detail.js))**:
+     - 카드 0(실행 규칙) 바로 아래에 **A8 전통시장·상점가 운영 시간대 가이드** 전폭(Full-width) 카드로 배치.
+     - B1~G4 14개 카드의 2열 7행 대칭 레이아웃을 100% 온전하게 보존.
+     - 6대 운영 정책 모드 제공:
+       - `standard`: `[권장] 주간 표준 운영 (09:00 ~ 21:00 동일)`
+       - `mirror`: `2024년 시간대 1:1 동일 계승 (공란 시 09:00~21:00 적용)`
+       - `traditional`: `새벽 / 생계형 시장 (06:00 ~ 20:00)`
+       - `night`: `야시장 / 먹거리 골목 (11:00 ~ 23:00)`
+       - `no_time`: `개점/폐점 시간 없음 (24시간 자유 영업 / A8_3 체크)`
+       - `custom`: `직접 개점·폐점 시간 지정`
+     - 상단 헤더의 [빠른 정책 가이드] 일괄 초기화 버튼과도 100% 양방향 연동.
+  4. **Kstat 상인회 실행 러너([`src/engine/kstat-assoc-runner.js`](file:///c:/Users/sisun/onlinepoll/src/engine/kstat-assoc-runner.js)) P4 주입 엔진 고도화**:
+     - P4 단계 처리 핸들러 신설: A7~A9 일반 문항은 1:1 미러링 수행, `frame_A8`은 가이드 정책 우선 적용.
+     - `no_time` 모드 시 `A8_3` 체크 및 `noCheckBoxValue`, `colorCheckbox` 네이티브 트리거.
+     - 시간대 모드 시 `A8_3` 체크 해제 후 `A8_1_1`, `A8_1_2`, `A8_2_1`, `A8_2_2`에 안전 주입 및 change/input 이벤트 발생.
+  5. **헤드리스 실전 E2E 완주 검증 및 원격 프로덕션 배포**:
+     - `scripts/test_p4_a8_e2e.js`: Playwright Headless로 P4 단계의 A8.asp에 운영시간 정책을 주입하고 `#next` 클릭 시 Alert 트랩 없이 `P5.asp`로 정상 이동 확인 (`Success: true`).
+     - 원격 GCP 프로덕션 실서버(`34.64.233.77:3000`)에 최신 코드 자동 배포(`v=20261023_assoc_a8_operating_hours`) 및 대상 캠페인(`camp_1792632384098`) 정책 DB 동기화 완료.
+
 ---
 
 ## 4. 관련 파일 위치 정리
@@ -175,6 +209,7 @@
 - 백엔드 라우터: [`src/server.js`](file:///c:/Users/sisun/onlinepoll/src/server.js)
 - 프론트 상세 화면: [`public/survey-detail.html`](file:///c:/Users/sisun/onlinepoll/public/survey-detail.html), [`public/survey-detail.js`](file:///c:/Users/sisun/onlinepoll/public/survey-detail.js)
 - 검증용 테스트 스크립트:
+  - `scripts/test_p4_a8_e2e.js` (P4 A8 운영시간 주입 E2E 실전 검증 스크립트)
   - `scripts/test-assoc-rules-e2e.js` (신규 규칙 실전 완주 E2E 검증 스크립트)
   - `scripts/test-assoc-pilot-run.js` (파일럿 실행 테스트)
   - `scripts/verify_merchant_assoc_integration.js` (모듈 통합 단위 테스트)
