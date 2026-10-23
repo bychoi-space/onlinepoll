@@ -88,15 +88,94 @@
      - `scripts/test-assoc-preserve-existing.js` 헤드리스 E2E 테스트 100% 완주 통과 (`Success: true`).
 
 
+### [TASK 6] B5-4 상인회 총회 실시 횟수 정책 가이드 구축 및 P6 미러링 트랩 해결 ✅ [완료]
+- **반영 내역**:
+  1. **B5-1 ~ B5-3 전년도 100% 강제 미러링 보장**:
+     - `PB5A` ➔ `B5A` (가입점포 수), `PB5B` ➔ `B5B` (월 상인회비), `PB5C` ➔ `B5C` (납부점포 수, B5A 이하 정합성 보장) 복사 및 이벤트 트리거.
+  2. **B5-4 상인회 총회 실시 횟수 정책 가이드 추가 (`B5_generalAssemblyCount`)**:
+     - 사용자가 STEP 2 가이드라인에서 **0회부터 10회까지 직접 선택**하거나, 슬롯별 **랜덤 분산(1~2회, 1~3회, 0~2회)**을 선택할 수 있는 전용 UI 카드 장착.
+     - `kstat_assoc_blueprint.json` 및 캠페인 `assocPolicy`와 양방향 영구 저장 연동.
+  3. **P6 연쇄 Alert 트랩 전수 해결**:
+     - `B5D` 공란 Alert, `B6A` 사무실 유무 Alert, `B6D` 팩스 유무 Alert, `B7A` 다른 상인회 유무 Alert 원천 차단 및 정식 `#next` 폼 제출(`form.submit()`) 보장.
+  4. **헤드리스 실전 E2E 완주 검증**:
+     - `scripts/test-p6-assembly-policy.js`로 0회, 3회 등 정책값에 따른 P6 ➔ P7 정식 통과 실측 완료 (`Result Success: true`).
+
+---
+
+### [TASK 7] 상인회 B1~B4, C1~C3 신규 규칙 업데이트 및 정책 가이드라인 확장 ✅ [완료]
+- **반영 내역**:
+  1. **B1 (운영여부 및 개설년도)**:
+     - 2024년 운영여부(`PB1`) 및 개설년도(`TPB1_1`) 확인.
+     - 2025년 `B1` 라디오 '운영 중'(`B1=1`) 체크 및 `TB1_1`에 전년도 개설년도 1:1 복사 주입.
+  2. **B2-1 (상인회명)**:
+     - 전년도 상인회명(`PB2A`)을 2025년 `B2A`로 1:1 복사 주입.
+     - 최소 2자 이상 보장 및 Kstat jQuery 검증(`.val(v).trigger('input').trigger('change')`) 동기화로 2자 미만 경고 Alert 원천 방지.
+  3. **B3 (상인회장 성명 및 연락처)**:
+     - 쿼터 DB 내 실존 상인회 데이터(`assocData.leaderName`, `assocData.leaderPhone`)를 `B3_1`(성명), `B3_2`(연락처)에 100% 매핑 주입.
+  4. **B4-1 (관리자/시장매니저)**:
+     - 2024년 합계(`PB4A_SUM`)가 0이거나 세부 인원이 모두 공란이면 2025년 `B4A_NONE`('없음') 체크박스 네이티브 클릭.
+     - 2024년에 인원 데이터가 있으면 업무명/인원 2025년 필드에 1:1 동일 입력.
+  5. **B5-4 (총회 실시 횟수 가이드라인)**:
+     - 대시보드 STEP 2 가이드라인에서 0~10회 직접 선택 및 랜덤 분산(0~2회, 1~2회, 1~3회) 기준 설정 기능 장착.
+  6. **C1 & C2 (고객편의시설 / 안전시설 1:1 복사 및 필요도 랜덤 체크)**:
+     - **C1 (고객편의시설 9개 문항)**: 2024년 '보유개수'(`PC1_x_2`)가 존재하면 2025년 '보유여부' 있음(`C1_x_1=1`) + 보유개수 동일 입력. 없으면 '보유여부' 없음(`C1_x_1=2`) 체크. '시설필요도'(`C1_x_3`)는 1~5 척도 중 랜덤 체크.
+     - **C2 (안전시설 18개 문항)**: 동일하게 2024년 보유개수 유무에 따라 2025년 있음/개수 복사 또는 없음 체크, '시설필요도'(`C2_x_3`) 1~5 척도 랜덤 체크.
+     - 공란 제로필(`mirrorPrevYearToCurrent`)이 C1/C2의 보유개수/없음 판정을 방해하지 않도록 정밀 격리.
+  7. **C3-1-3 (전기차 전용 주차 대수 가이드라인)**:
+     - 가이드라인에서 0~10대 직접 선택 및 랜덤(1~3대, 0~5대, 2~5대) 기준 설정 기능 장착 (`C3_1_evParkingCount`).
+  8. **C3-2-1, C3-2-2, C3-2-3 (주차장 형태, 소유주체, 관리주체 가이드라인)**:
+     - **C3-2-1 형태**: 부설주차장, 노상주차장, 노외주차장 중 단일 또는 복수 선택 기능 제공 (`C3_2_1_parkingType`).
+     - **C3-2-2 소유주체**: 상인회, 지자체, 개인 운영, 기타 중 선택 기능 제공 (`C3_2_2_owner`).
+     - **C3-2-3 관리주체**: 직접관리, 지자체, 시설관리공단 등 기관, 개인, 기타 중 선택 기능 제공 (`C3_2_3_manager`).
+     - STEP 2 UI 카드 렌더링, `kstat_assoc_blueprint.json` 기본값 정의, 캠페인 저장 및 실전 러너(`C3BA`, `C3BB`, `C3BC`) 완벽 주입 파이프라인 완성.
+  9. **헤드리스 실전 E2E 완주 검증**:
+     - `scripts/test-assoc-rules-e2e.js`를 통해 1단계(INDEX)부터 P5(B1~B4), P7(C1), P8(C2), P9(C3), P23을 거쳐 Agree 단계 안전 정지까지 Alert 트랩 0건으로 100% 정상 통과 (`Success: true`, 25개 스텝 스크린샷 전수 저장 확인).
+
+### [TASK 8] 상인회 D1, E1, F1, F5~F6, G1~G2, G4 신규 규칙 및 가이드 개선 ✅ [완료]
+- **반영 내역**:
+  1. **D1-1 (축제 및 이벤트 명칭 검색 조회 및 실시/미실시 판별)**:
+     - 시장명 기반 축제 조회 엔진([`src/utils/market-festival-finder.js`](file:///c:/Users/sisun/onlinepoll/src/utils/market-festival-finder.js)) 신설:
+       - 1차: 관악구/전국 전통시장 공식 축제명 사전(Dictionary) 매핑 (신원시장 달빛축제, 인헌시장 낙낙별길 축제, 관악신사시장 힐링 축제, 녹두S밸리 착한 야시장 등).
+       - 2차: 사전 미등록 시장 대상 실시간 네이버 검색엔진 쿼리를 통한 기사/블로그 축제·이벤트 명칭 자동 추출.
+     - 축제가 확인되면: `D1AA_2_1` = 1 (실시) 선택 + `D1AA_2_2` = 축제 명칭 입력 + 기여도(3 또는 4) 체크.
+     - 축제가 미확인되면: `D1AA_2_1` = 2 (미실시) 선택 + 명칭 공란 유지.
+     - D1AA 기타 항목 결측 방어(경품행사 등 미실시 자동 체크)로 Alert 원천 차단.
+  2. **D1-2 (온라인 배송 서비스 가이드라인 설정 기능)**:
+     - 대시보드 STEP 2 가이드라인에 [카드 5: D1-2. 온라인 배송 서비스 운영 여부] 카드 추가 (`D1_2_onlineDeliveryService`).
+     - 2: 온라인 배송 서비스 없음 (기본값) / 1: 온라인 배송 서비스 있음 중 선택 지원.
+     - `D1B.asp` 1:1 라디오 바인딩 및 `D1BA.asp` 결측 방어 장착.
+  3. **D1-2-5 (필요한 지원 항목 '기타' 제외 랜덤 입력)**:
+     - `D1BE.asp`에서 5번 기타를 배제하고 1~4번(디지털전문인력, 입점지원, 인프라구축, 디지털교육) 중 무작위 정수(`Math.floor(Math.random()*4)+1`) 선택.
+  4. **E1 (소방시설 현황 및 AI 지능형 출동 시스템 '없음' 처리)**:
+     - P17 `E1.asp`에서 7번 항목(AI 지능형 출동 시스템)은 무조건 2번('없음') 라디오 체크, 개수는 공란 처리, 시설필요도는 1~5점 척도 중 랜덤 체크.
+     - 1~6번 문항은 전년도 보유개수 유무에 따라 당해년도 있음+개수 복사 또는 없음 일괄 체크 및 시설필요도 랜덤 선택.
+  5. **F1 (빈 점포 개수 모두 '0' 주입)**:
+     - P20 `F1.asp`의 4대 필드(`F1_1`, `F1_2`, `F1_3`, `F1_4`)에 모두 `'0'`을 주입하고 `calcF1_4()` 계산 트리거.
+     - `F2.asp` 상태별 개수(`F2A_1~4`) 및 공실기간(`F2B`) 모두 `'0'` 입력, `F3.asp` 안전 체크박스 선택, `F4.asp` 합계 0 보장.
+  6. **F5, F6, G1, G2 ('기타' 제외 나머지 항목 중 랜덤 입력)**:
+     - 대시보드 UI 및 블루프린트 옵션을 '기타 제외 랜덤'으로 표준화.
+     - F5: 1~4 항목 중 랜덤 (5번 기타 제외).
+     - F6: 1~5 항목 중 랜덤 (6번 기타 제외).
+     - G1: 1~5 항목 중 랜덤 (6번 기타 제외).
+     - G2: 1~5 항목 중 랜덤 (6번 기타 제외).
+  7. **G4 (기후재해 대비 현황 보유/필요여부 랜덤하게 일부 미체크)**:
+     - P23 `G4.asp`에서 전체를 무조건 다 체크하던 방식을 개선.
+     - 각 시설 항목별로 보유여부(`_H`)는 약 60% 확률, 필요여부(`_N`)는 약 50% 확률로 체크하여 자연스러운 분산 응답 생성.
+     - 설문 유효성 검증 Alert 방지를 위해 카테고리별(냉방, 난방, 수해설비, 수해활동) 최소 1개 체크 강제 보장 및 기타(`_ETC`)는 체크 제외.
+  8. **헤드리스 실전 E2E 완주 검증**:
+     - `scripts/test-assoc-rules-e2e.js`를 통해 5번 슬롯(녹두S밸리골목형상점가)을 대상으로 실행하여, 네이버/사전 검색(녹두S밸리 착한 야시장) 연동 ➔ D1-2 ➔ D1-2-5(랜덤) ➔ E1(AI 없음) ➔ F1(0) ➔ F5~G2(기타 제외 랜덤) ➔ G4(일부 미체크)를 거쳐 Agree 최종 동의까지 100% 정상 완주 확인 (`Success: true`).
+
 ---
 
 ## 4. 관련 파일 위치 정리
 - 상인회 실행 러너: [`src/engine/kstat-assoc-runner.js`](file:///c:/Users/sisun/onlinepoll/src/engine/kstat-assoc-runner.js)
 - 상인회 슬롯 스크래퍼: [`src/engine/kstat-assoc-slot-scraper.js`](file:///c:/Users/sisun/onlinepoll/src/engine/kstat-assoc-slot-scraper.js)
+- 시장 축제 명칭 조회기: [`src/utils/market-festival-finder.js`](file:///c:/Users/sisun/onlinepoll/src/utils/market-festival-finder.js)
 - 상인회 마스터 블루프린트: [`data/kstat_assoc_blueprint.json`](file:///c:/Users/sisun/onlinepoll/data/kstat_assoc_blueprint.json)
 - 백엔드 라우터: [`src/server.js`](file:///c:/Users/sisun/onlinepoll/src/server.js)
 - 프론트 상세 화면: [`public/survey-detail.html`](file:///c:/Users/sisun/onlinepoll/public/survey-detail.html), [`public/survey-detail.js`](file:///c:/Users/sisun/onlinepoll/public/survey-detail.js)
 - 검증용 테스트 스크립트:
+  - `scripts/test-assoc-rules-e2e.js` (신규 규칙 실전 완주 E2E 검증 스크립트)
   - `scripts/test-assoc-pilot-run.js` (파일럿 실행 테스트)
-  - `scripts/test-full-e2e-assoc-runner.js` (E2E 스텝 테스트)
   - `scripts/verify_merchant_assoc_integration.js` (모듈 통합 단위 테스트)
+

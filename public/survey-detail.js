@@ -335,23 +335,41 @@ async function initSurveyDetailPage() {
     const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
 
     // [점진적 워크플로우 공개 (Progressive Disclosure)]
-    // 쿼터가 0건일 때는 STEP 2(마스터 기준점) 및 STEP 3(실행 파이프라인)을 완전히 숨김 처리
+    // 점포조사의 경우 쿼터가 0건일 때 STEP 2, 3을 숨기지만,
+    // 상인회 조사는 슬롯 바인딩 전이라도 가이드라인(B5-4, C3, D1, F5~G4 정책 등) 설정이 항상 화면에 노출되어야 함!
     const sectionMasterBlueprint = document.getElementById('section-master-blueprint');
     const sectionExecution = document.getElementById('section-execution');
     const jumpPills = document.querySelectorAll('.quick-jump-pill');
 
     if (total === 0) {
-      if (sectionMasterBlueprint) sectionMasterBlueprint.classList.add('hidden');
-      if (sectionExecution) sectionExecution.classList.add('hidden');
-      // 상단 퀵 점프 바의 STEP 2, 3 비활성화
-      if (jumpPills && jumpPills.length >= 3) {
-        jumpPills[1].style.opacity = '0.35';
-        jumpPills[1].style.pointerEvents = 'none';
-        jumpPills[2].style.opacity = '0.35';
-        jumpPills[2].style.pointerEvents = 'none';
+      if (isAssoc) {
+        if (sectionMasterBlueprint) {
+          sectionMasterBlueprint.classList.remove('hidden');
+          sectionMasterBlueprint.style.display = 'block';
+        }
+        if (sectionExecution) sectionExecution.classList.add('hidden');
+        if (jumpPills && jumpPills.length >= 3) {
+          jumpPills[1].style.opacity = '1';
+          jumpPills[1].style.pointerEvents = 'auto';
+          jumpPills[2].style.opacity = '0.35';
+          jumpPills[2].style.pointerEvents = 'none';
+        }
+      } else {
+        if (sectionMasterBlueprint) sectionMasterBlueprint.classList.add('hidden');
+        if (sectionExecution) sectionExecution.classList.add('hidden');
+        // 상단 퀵 점프 바의 STEP 2, 3 비활성화
+        if (jumpPills && jumpPills.length >= 3) {
+          jumpPills[1].style.opacity = '0.35';
+          jumpPills[1].style.pointerEvents = 'none';
+          jumpPills[2].style.opacity = '0.35';
+          jumpPills[2].style.pointerEvents = 'none';
+        }
       }
     } else {
-      if (sectionMasterBlueprint) sectionMasterBlueprint.classList.remove('hidden');
+      if (sectionMasterBlueprint) {
+        sectionMasterBlueprint.classList.remove('hidden');
+        sectionMasterBlueprint.style.display = 'block';
+      }
       if (sectionExecution) sectionExecution.classList.remove('hidden');
       if (jumpPills && jumpPills.length >= 3) {
         jumpPills[1].style.opacity = '1';
@@ -1129,7 +1147,14 @@ async function initSurveyDetailPage() {
   function renderAssocBlueprint(data) {
     assocPolicyState = data.policy || data.blueprint?.defaultPolicy || {};
 
-    // 1. 점포조사 전용 3대 그룹 네비게이션 및 프리셋 툴바 숨김
+    // 0. STEP 2 부모 컨테이너 노출 100% 보장 (0건 쿼터/슬롯 상태에서도 상인회 가이드는 항상 노출)
+    const bpSection = document.getElementById('section-master-blueprint');
+    if (bpSection) {
+      bpSection.classList.remove('hidden');
+      bpSection.style.display = 'block';
+    }
+
+    // 1. 점포조사 전용 3대 그룹 네비게이션, 프리셋 툴바, 템플릿 선택기, 범례 뱃지 숨김
     const groupNav = document.querySelector('.blueprint-group-nav-container');
     if (groupNav) groupNav.style.display = 'none';
 
@@ -1139,16 +1164,24 @@ async function initSurveyDetailPage() {
     const tplPicker = document.querySelector('.blueprint-template-picker');
     if (tplPicker) tplPicker.style.display = 'none';
 
-    // 2. 상단 헤더 문구 갱신
+    const legendWrap = document.querySelector('.blueprint-legend-inline');
+    if (legendWrap) legendWrap.style.display = 'none';
+
+    // 2. 상단 헤더 문구 & 액션 버튼 갱신
     const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
     if (titleEl) titleEl.textContent = '상인회 실태조사 기준점 및 정책 가이드라인 (25단계)';
 
     const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
-    if (subtitleEl) subtitleEl.textContent = 'P1~P20 단계는 전년도(2024년) 실태조사 데이터와 100% 동일하게 자동 미러링되며, 2026 신규 정책 문항(F5~G4) 가이드라인을 설정합니다.';
+    if (subtitleEl) subtitleEl.textContent = 'P1~P20 단계는 전년도(2024년) 실태조사 데이터와 100% 동일하게 자동 미러링되며, B5-4 총회, C3 전기차/주차장, D1-2 배송, 2026 신규 정책 문항(F5~G4) 가이드라인을 직접 설정합니다.';
 
     if (badgeMasterStatus) {
       badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> 상인회 25단계 블루프린트 활성 (전년도 미러링 + 정책 가이드)';
       badgeMasterStatus.className = 'badge-status badge-blueprint ready';
+    }
+
+    if (btnSaveBaseline) {
+      btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 상인회 정책 가이드 저장';
+      btnSaveBaseline.title = '상인회 25단계 정책 가이드라인 설정 저장';
     }
 
     if (!blueprintStageGrid) return;
@@ -1221,37 +1254,268 @@ async function initSurveyDetailPage() {
         </div>
       </section>
 
-      <!-- 카드 1: 전년도 데이터 미러링 보장 안내 카드 -->
+      <!-- 카드 1: B1~B4 조직운영 및 대표자 정보 자동 바인딩 카드 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
-            <span class="blueprint-step-pill">A3 ~ F4</span>
-            <h3 class="blueprint-stage-title">전년도(2024년) 실태조사 1:1 자동 미러링 (P1~P20)</h3>
+            <span class="blueprint-step-pill">B1 ~ B4 (P3~P5)</span>
+            <h3 class="blueprint-stage-title">상인회 조직현황 및 대표자 정보 자동 바인딩</h3>
           </div>
           <div class="blueprint-card-badge-group">
-            <span class="badge-status success"><i class="fa-solid fa-lock"></i> 100% 전년도 일치 보장</span>
+            <span class="badge-status success"><i class="fa-solid fa-lock"></i> 100% 무결점 바인딩</span>
           </div>
         </div>
         <div class="blueprint-stage-desc">
-          케이스탯 상인회 설문의 20개 핵심 영역(일반현황 A3~A10, 조직운영 B1~B7, 시설환경 C1~C4, 마케팅사업 D1~D5, 재정인력 E1~E3, 상인조직 F1~F4)은 원본 DOM에 로드된 2024년 전년도 확정 데이터를 2025년 기준에 무결점으로 1:1 자동 복제 주입합니다.
+          B1 운영중 체크 연도(2024년 동일), B2-1 상인회명(2024년 동일), B3 대표자 성명·연락처(쿼터 DB 연동), B4-1 등록연도(2024년 공란 시 없음 체크, 있으면 동일 입력)를 무결점으로 자동 주입합니다.
         </div>
         <div class="blueprint-field-list">
           <div class="field-item flex-between py-8">
-            <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> A5 대표품목 결측치 자동 방어</span>
-            <span class="badge-status ready">종합소매 / 주력업종 Fallback 주입</span>
+            <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> B1 운영 여부 및 체크 연도</span>
+            <span class="badge-status ready">2024년 운영 연도와 100% 동일 주입</span>
           </div>
           <div class="field-item flex-between py-8">
-            <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> A6 점포현황 숫자 검증 &amp; calculateA6 자동 계산</span>
-            <span class="badge-status ready">공란 0 채움 &amp; 합계 정규화</span>
+            <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> B2-1 시장·상점가 상인회명</span>
+            <span class="badge-status ready">2024년 상인회명과 100% 동일 계승</span>
           </div>
           <div class="field-item flex-between py-8">
-            <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> A8 평일/휴일 영업시간대 기본 선택</span>
-            <span class="badge-status ready">09:00 ~ 21:00 표준 주입</span>
+            <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> B3 상인회장 성명 및 대표 연락처</span>
+            <span class="badge-status ready">쿼터 등록 대표자 정보 1:1 바인딩</span>
+          </div>
+          <div class="field-item flex-between py-8">
+            <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> B4-1 법인 등기/등록연도</span>
+            <span class="badge-status ready">공란 시 '없음' 체크 / 기입력 시 동일 계승</span>
           </div>
         </div>
       </section>
 
-      <!-- 카드 2: F5 빈점포 원인 -->
+      <!-- 카드 2: B5-4 상인회 총회 실시 횟수 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">B5-4 (P6)</span>
+            <h3 class="blueprint-stage-title">2025년 기준 상인회 총회 실시 횟수</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">2025년 기준 상인회 총회(정기 및 임시 포함) 실시 횟수를 설정합니다. (0~10회 직접 선택 또는 슬롯별 랜덤 분산)</div>
+        <div class="p-14">
+          <select id="select-assoc-B5-assembly" class="figma-select w-full">
+            <option value="1" ${assocPolicyState.B5_generalAssemblyCount === '1' ? 'selected' : ''}>1회 (연간 정기총회 1회 기본값)</option>
+            <option value="2" ${assocPolicyState.B5_generalAssemblyCount === '2' ? 'selected' : ''}>2회 (정기총회 1회 + 임시총회 1회 권장)</option>
+            <option value="0" ${assocPolicyState.B5_generalAssemblyCount === '0' ? 'selected' : ''}>0회 (총회 미실시)</option>
+            <option value="3" ${assocPolicyState.B5_generalAssemblyCount === '3' ? 'selected' : ''}>3회</option>
+            <option value="4" ${assocPolicyState.B5_generalAssemblyCount === '4' ? 'selected' : ''}>4회</option>
+            <option value="5" ${assocPolicyState.B5_generalAssemblyCount === '5' ? 'selected' : ''}>5회</option>
+            <option value="6" ${assocPolicyState.B5_generalAssemblyCount === '6' ? 'selected' : ''}>6회</option>
+            <option value="7" ${assocPolicyState.B5_generalAssemblyCount === '7' ? 'selected' : ''}>7회</option>
+            <option value="8" ${assocPolicyState.B5_generalAssemblyCount === '8' ? 'selected' : ''}>8회</option>
+            <option value="9" ${assocPolicyState.B5_generalAssemblyCount === '9' ? 'selected' : ''}>9회</option>
+            <option value="10" ${assocPolicyState.B5_generalAssemblyCount === '10' ? 'selected' : ''}>10회</option>
+            <option value="random_1_2" ${assocPolicyState.B5_generalAssemblyCount === 'random_1_2' ? 'selected' : ''}>🎲 [1~2회 랜덤 분산] (슬롯별 무작위 자동 분산)</option>
+            <option value="random_1_3" ${assocPolicyState.B5_generalAssemblyCount === 'random_1_3' ? 'selected' : ''}>🎲 [1~3회 랜덤 분산] (슬롯별 무작위 자동 분산)</option>
+            <option value="random_0_2" ${assocPolicyState.B5_generalAssemblyCount === 'random_0_2' ? 'selected' : ''}>🎲 [0~2회 랜덤 분산] (슬롯별 무작위 자동 분산)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 카드 3: C1, C2 고객편의시설 및 상인편의시설 보유 & 필요도 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">C1, C2 (P8)</span>
+            <h3 class="blueprint-stage-title">고객·상인 편의시설 보유개수 및 필요도</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          C1(고객시설 11종) 및 C2(상인시설 10종)는 2024년 보유개수를 동일 계승(공란 시 없음 체크)하며, 시설 필요도 응답 방식을 설정합니다.
+        </div>
+        <div class="p-14">
+          <div class="form-group mb-12">
+            <label class="figma-label">보유개수 계승 규칙</label>
+            <div class="assoc-rule-box p-8">
+              <span class="font-caption text-white font-bold"><i class="fa-solid fa-circle-check text-success"></i> 2024년 보유개수 1:1 동일 입력 (보유개수 없으면 모두 '없음' 자동 선택)</span>
+            </div>
+          </div>
+          <div class="form-group mb-0">
+            <label class="figma-label">시설 필요도 체크 방식</label>
+            <select id="select-assoc-C1-C2-need" class="figma-select w-full">
+              <option value="random" ${(!assocPolicyState.C1_C2_needRating || assocPolicyState.C1_C2_needRating === 'random') ? 'selected' : ''}>🎲 [시설 필요도 랜덤 분산 (권장)] (일부 필요 / 일부 보통 자연 분산)</option>
+              <option value="need" ${assocPolicyState.C1_C2_needRating === 'need' ? 'selected' : ''}>모두 필요 (전 문항 1: 매우 필요 선택)</option>
+              <option value="none" ${assocPolicyState.C1_C2_needRating === 'none' ? 'selected' : ''}>모두 불필요 (전 문항 3: 불필요 선택)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 4: C3-1-3 전기차 전용 주차 대수 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">C3-1-3 (P9)</span>
+            <h3 class="blueprint-stage-title">전기차 전용 주차 대수</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">시장·상점가 주차장 내 전기차 전용 주차 구역 대수를 설정합니다. (0~10대 직접 지정 또는 슬롯별 랜덤 분산)</div>
+        <div class="p-14">
+          <select id="select-assoc-C3-ev-parking" class="figma-select w-full">
+            <option value="3" ${assocPolicyState.C3_1_evParkingCount === '3' ? 'selected' : ''}>3대 (표준 기본값)</option>
+            <option value="0" ${assocPolicyState.C3_1_evParkingCount === '0' ? 'selected' : ''}>0대 (미보유)</option>
+            <option value="1" ${assocPolicyState.C3_1_evParkingCount === '1' ? 'selected' : ''}>1대</option>
+            <option value="2" ${assocPolicyState.C3_1_evParkingCount === '2' ? 'selected' : ''}>2대</option>
+            <option value="4" ${assocPolicyState.C3_1_evParkingCount === '4' ? 'selected' : ''}>4대</option>
+            <option value="5" ${assocPolicyState.C3_1_evParkingCount === '5' ? 'selected' : ''}>5대</option>
+            <option value="6" ${assocPolicyState.C3_1_evParkingCount === '6' ? 'selected' : ''}>6대</option>
+            <option value="7" ${assocPolicyState.C3_1_evParkingCount === '7' ? 'selected' : ''}>7대</option>
+            <option value="8" ${assocPolicyState.C3_1_evParkingCount === '8' ? 'selected' : ''}>8대</option>
+            <option value="9" ${assocPolicyState.C3_1_evParkingCount === '9' ? 'selected' : ''}>9대</option>
+            <option value="10" ${assocPolicyState.C3_1_evParkingCount === '10' ? 'selected' : ''}>10대</option>
+            <option value="random_0_3" ${assocPolicyState.C3_1_evParkingCount === 'random_0_3' ? 'selected' : ''}>🎲 [0~3대 랜덤 분산] (슬롯별 무작위 자동 분산)</option>
+            <option value="random_1_5" ${assocPolicyState.C3_1_evParkingCount === 'random_1_5' ? 'selected' : ''}>🎲 [1~5대 랜덤 분산] (슬롯별 무작위 자동 분산)</option>
+            <option value="random_0_10" ${assocPolicyState.C3_1_evParkingCount === 'random_0_10' ? 'selected' : ''}>🎲 [0~10대 랜덤 분산] (슬롯별 무작위 자동 분산)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 카드 5: C3-2 주차장 형태, 소유주체, 관리주체 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">C3-2 (P9)</span>
+            <h3 class="blueprint-stage-title">주차장 형태 · 소유주체 · 관리주체</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">주차장 형태(부설/노상/노외), 소유주체(상인회/지자체 등), 관리주체(직접/지자체/공단 등)를 설정합니다.</div>
+        <div class="p-14 grid-3col gap-10">
+          <div class="form-group mb-8">
+            <label class="figma-label">C3-2-1 주차장 형태</label>
+            <select id="select-assoc-C3-type" class="figma-select w-full">
+              <option value="2" ${assocPolicyState.C3_2_1_parkingType === '2' ? 'selected' : ''}>노상주차장 (기본값 권장)</option>
+              <option value="1" ${assocPolicyState.C3_2_1_parkingType === '1' ? 'selected' : ''}>부설주차장</option>
+              <option value="3" ${assocPolicyState.C3_2_1_parkingType === '3' ? 'selected' : ''}>노외주차장</option>
+              <option value="1_2" ${assocPolicyState.C3_2_1_parkingType === '1_2' ? 'selected' : ''}>부설 + 노상 (중복)</option>
+              <option value="2_3" ${assocPolicyState.C3_2_1_parkingType === '2_3' ? 'selected' : ''}>노상 + 노외 (중복)</option>
+            </select>
+          </div>
+          <div class="form-group mb-8">
+            <label class="figma-label">C3-2-2 소유주체</label>
+            <select id="select-assoc-C3-owner" class="figma-select w-full">
+              <option value="2" ${assocPolicyState.C3_2_2_owner === '2' ? 'selected' : ''}>지자체 (기본값 권장)</option>
+              <option value="1" ${assocPolicyState.C3_2_2_owner === '1' ? 'selected' : ''}>상인회</option>
+              <option value="3" ${assocPolicyState.C3_2_2_owner === '3' ? 'selected' : ''}>개인 운영</option>
+              <option value="random" ${assocPolicyState.C3_2_2_owner === 'random' ? 'selected' : ''}>🎲 [상인회 / 지자체 / 개인 랜덤]</option>
+            </select>
+          </div>
+          <div class="form-group mb-8">
+            <label class="figma-label">C3-2-3 관리주체</label>
+            <select id="select-assoc-C3-manager" class="figma-select w-full">
+              <option value="2" ${assocPolicyState.C3_2_3_manager === '2' ? 'selected' : ''}>지자체 (기본값 권장)</option>
+              <option value="1" ${assocPolicyState.C3_2_3_manager === '1' ? 'selected' : ''}>직접관리 (상인회)</option>
+              <option value="3" ${assocPolicyState.C3_2_3_manager === '3' ? 'selected' : ''}>시설관리공단 등 기관</option>
+              <option value="4" ${assocPolicyState.C3_2_3_manager === '4' ? 'selected' : ''}>개인</option>
+              <option value="random" ${assocPolicyState.C3_2_3_manager === 'random' ? 'selected' : ''}>🎲 [직접 / 지자체 / 공단 등 랜덤]</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 6: D1-1 축제 및 이벤트 명칭 (네이버 검색 연동) -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">D1-1 (P11)</span>
+            <h3 class="blueprint-stage-title">시장 축제 및 이벤트 명칭 설정</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">시장별 축제·이벤트 유무 및 명칭을 설정합니다. (네이버 검색엔진 자동 감지 연동)</div>
+        <div class="p-14">
+          <div class="form-group mb-8">
+            <label class="figma-label">축제 확인 및 명칭 주입 방식</label>
+            <select id="select-assoc-D1-1-mode" class="figma-select w-full">
+              <option value="naver_auto" ${(!assocPolicyState.D1_1_festivalMode || assocPolicyState.D1_1_festivalMode === 'naver_auto') ? 'selected' : ''}>🔍 [네이버 검색엔진 실시간 연동 (축제 확인 시 명칭 자동입력, 미확인 시 미실시) [권장]]</option>
+              <option value="none" ${assocPolicyState.D1_1_festivalMode === 'none' ? 'selected' : ''}>2: 일괄 미실시 선택</option>
+              <option value="custom" ${assocPolicyState.D1_1_festivalMode === 'custom' ? 'selected' : ''}>1: 직접 축제명 고정 입력</option>
+            </select>
+          </div>
+          <div class="form-group mb-0" id="wrap-assoc-D1-1-custom" style="display: ${assocPolicyState.D1_1_festivalMode === 'custom' ? 'block' : 'none'};">
+            <label class="figma-label">고정 축제명 직접 입력</label>
+            <input type="text" id="input-assoc-D1-1-custom" class="assoc-rule-input" placeholder="예: 전통시장 가을 대축제, 야시장 먹거리 축제" value="${escapeHtml(assocPolicyState.D1_1_festivalCustomName || '')}" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 7: D1-2 온라인 배송 서비스 운영 여부 및 D1-2-5 취급 품목 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">D1-2 (P12)</span>
+            <h3 class="blueprint-stage-title">온라인 배송 서비스 운영 &amp; 주력 품목</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">시장·상점가 단위에서 온라인 배송 운영 여부 및 도입 시 주력 취급 품목을 설정합니다.</div>
+        <div class="p-14 grid-2col gap-10">
+          <div class="form-group mb-8">
+            <label class="figma-label">D1-2 온라인 배송 운영 여부</label>
+            <select id="select-assoc-D1-delivery" class="figma-select w-full">
+              <option value="2" ${assocPolicyState.D1_2_onlineDeliveryService === '2' ? 'selected' : ''}>2: 온라인 배송 서비스 없음 (기본값 권장)</option>
+              <option value="1" ${assocPolicyState.D1_2_onlineDeliveryService === '1' ? 'selected' : ''}>1: 온라인 배송 서비스 있음</option>
+            </select>
+          </div>
+          <div class="form-group mb-8">
+            <label class="figma-label">D1-2-5 주력 취급 품목 (배송 운영 시)</label>
+            <select id="select-assoc-D1-2-5-item" class="figma-select w-full">
+              <option value="random" ${(!assocPolicyState.D1_2_5_deliveryItem || assocPolicyState.D1_2_5_deliveryItem === 'random') ? 'selected' : ''}>🎲 [1~4번 항목 랜덤 답변 (기타 제외 기본값)]</option>
+              <option value="1" ${assocPolicyState.D1_2_5_deliveryItem === '1' ? 'selected' : ''}>1. 농산물 (채소, 과일 등)</option>
+              <option value="2" ${assocPolicyState.D1_2_5_deliveryItem === '2' ? 'selected' : ''}>2. 축산물 (정육, 육류 등)</option>
+              <option value="3" ${assocPolicyState.D1_2_5_deliveryItem === '3' ? 'selected' : ''}>3. 수산물 (생선, 건어물 등)</option>
+              <option value="4" ${assocPolicyState.D1_2_5_deliveryItem === '4' ? 'selected' : ''}>4. 가공식품 / 반찬류</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 8: E1 AI 지능형 출동 시스템 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">E1 (P16)</span>
+            <h3 class="blueprint-stage-title">스마트 기술 및 AI 지능형 출동 시스템</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">화재·보안 등 스마트 안전 기술 및 AI 지능형 출동 시스템 도입 여부를 설정합니다.</div>
+        <div class="p-14">
+          <select id="select-assoc-E1" class="figma-select w-full">
+            <option value="none" ${(!assocPolicyState.E1_aiSecuritySystem || assocPolicyState.E1_aiSecuritySystem === 'none') ? 'selected' : ''}>모두 '없음' (AI 지능형 출동 시스템 미도입 확정) [권장]</option>
+            <option value="random" ${assocPolicyState.E1_aiSecuritySystem === 'random' ? 'selected' : ''}>🎲 일부 시스템 도입 슬롯별 랜덤 분산</option>
+            <option value="all" ${assocPolicyState.E1_aiSecuritySystem === 'all' ? 'selected' : ''}>모두 '있음'</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 카드 9: F1 빈 점포 현황 숫자 입력 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">F1 (P20)</span>
+            <h3 class="blueprint-stage-title">빈 점포(공실) 현황 숫자 입력 기준</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">시장 내 빈 점포(공실) 발생 수치 입력 기준을 설정합니다. (공란 방지 및 계산함수 자동 연동)</div>
+        <div class="p-14">
+          <select id="select-assoc-F1" class="figma-select w-full">
+            <option value="zero" ${(!assocPolicyState.F1_emptyStoreCount || assocPolicyState.F1_emptyStoreCount === 'zero') ? 'selected' : ''}>모두 '0'건 (빈 점포 없음 완전 정상 운영 확정) [권장]</option>
+            <option value="mirror" ${assocPolicyState.F1_emptyStoreCount === 'mirror' ? 'selected' : ''}>전년도(2024년) 실태조사 공실 수치 그대로 계승</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 카드 10: F5 빈점포 원인 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
@@ -1260,20 +1524,19 @@ async function initSurveyDetailPage() {
           </div>
           <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
         </div>
-        <div class="blueprint-stage-desc">시장 내 빈 점포(공실)가 발생하는 가장 주된 요인을 설정합니다.</div>
+        <div class="blueprint-stage-desc">시장 내 빈 점포(공실)가 발생하는 가장 주된 요인을 설정합니다 ('기타' 제외 랜덤).</div>
         <div class="p-14">
           <select id="select-assoc-F5" class="figma-select w-full">
-            <option value="random" ${assocPolicyState.F5_emptyStoreReason === 'random' ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변] (슬롯별 무작위 자동 분산)</option>
+            <option value="random" ${(!assocPolicyState.F5_emptyStoreReason || assocPolicyState.F5_emptyStoreReason === 'random') ? 'selected' : ''}>🎲 [1~4 항목 랜덤 답변 (기타 제외 기본값)] (슬롯별 무작위 자동 분산)</option>
             <option value="1" ${assocPolicyState.F5_emptyStoreReason === '1' ? 'selected' : ''}>1. 온라인 소비 확산 및 비대면 거래 증가</option>
             <option value="2" ${assocPolicyState.F5_emptyStoreReason === '2' ? 'selected' : ''}>2. 인근 대형마트, 복합쇼핑몰, 인근 상권과의 경쟁 밀림</option>
             <option value="3" ${assocPolicyState.F5_emptyStoreReason === '3' ? 'selected' : ''}>3. 과도하게 높은 임대료 및 권리금 조건</option>
             <option value="4" ${assocPolicyState.F5_emptyStoreReason === '4' ? 'selected' : ''}>4. 상인의 고령화 및 가업 승계(후계자) 부족</option>
-            <option value="5" ${assocPolicyState.F5_emptyStoreReason === '5' ? 'selected' : ''}>5. 기타</option>
           </select>
         </div>
       </section>
 
-      <!-- 카드 3: F6 빈점포 지원 정책 -->
+      <!-- 카드 11: F6 빈점포 지원 정책 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
@@ -1282,21 +1545,20 @@ async function initSurveyDetailPage() {
           </div>
           <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
         </div>
-        <div class="blueprint-stage-desc">빈 점포 해결을 위해 정부 및 지자체에서 가장 시급히 지원해야 할 정책을 설정합니다.</div>
+        <div class="blueprint-stage-desc">빈 점포 해결을 위해 정부 및 지자체에서 가장 시급히 지원해야 할 정책을 설정합니다 ('기타' 제외 랜덤).</div>
         <div class="p-14">
           <select id="select-assoc-F6" class="figma-select w-full">
-            <option value="random" ${assocPolicyState.F6_emptyStorePolicy === 'random' ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변] (슬롯별 무작위 자동 분산)</option>
+            <option value="random" ${(!assocPolicyState.F6_emptyStorePolicy || assocPolicyState.F6_emptyStorePolicy === 'random') ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변 (기타 제외 기본값)] (슬롯별 무작위 자동 분산)</option>
             <option value="1" ${assocPolicyState.F6_emptyStorePolicy === '1' ? 'selected' : ''}>1. 빈 점포를 공공 임대·매입하여 상인회에 재임대하는 제도</option>
             <option value="2" ${assocPolicyState.F6_emptyStorePolicy === '2' ? 'selected' : ''}>2. 빈 점포를 활용하는 상인에 대한 금융 지원(융자, 보조금) 확대</option>
             <option value="3" ${assocPolicyState.F6_emptyStorePolicy === '3' ? 'selected' : ''}>3. 빈 점포 공간 전환 컨설팅 및 시행 지원</option>
             <option value="4" ${assocPolicyState.F6_emptyStorePolicy === '4' ? 'selected' : ''}>4. 공실 상가 소유주에게 임대료 인하를 유도하는 세제 혜택 등 인센티브 부여</option>
             <option value="5" ${assocPolicyState.F6_emptyStorePolicy === '5' ? 'selected' : ''}>5. 빈 점포 파악 및 관리를 위한 통합 플랫폼 구축</option>
-            <option value="6" ${assocPolicyState.F6_emptyStorePolicy === '6' ? 'selected' : ''}>6. 기타</option>
           </select>
         </div>
       </section>
 
-      <!-- 카드 4: G1 바가지요금 원인 -->
+      <!-- 카드 12: G1 바가지요금 원인 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
@@ -1305,21 +1567,20 @@ async function initSurveyDetailPage() {
           </div>
           <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
         </div>
-        <div class="blueprint-stage-desc">전통시장 내 바가지요금 논란이 발생하는 근본적인 원인을 설정합니다.</div>
+        <div class="blueprint-stage-desc">전통시장 내 바가지요금 논란이 발생하는 근본적인 원인을 설정합니다 ('기타' 제외 랜덤).</div>
         <div class="p-14">
           <select id="select-assoc-G1" class="figma-select w-full">
-            <option value="random" ${assocPolicyState.G1_overchargeReason === 'random' ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변] (슬롯별 무작위 자동 분산)</option>
+            <option value="random" ${(!assocPolicyState.G1_overchargeReason || assocPolicyState.G1_overchargeReason === 'random') ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변 (기타 제외 기본값)] (슬롯별 무작위 자동 분산)</option>
             <option value="1" ${assocPolicyState.G1_overchargeReason === '1' ? 'selected' : ''}>1. 외부 관광객 대상 일시적 가격 인상 관행</option>
             <option value="2" ${assocPolicyState.G1_overchargeReason === '2' ? 'selected' : ''}>2. 상인 간 가격 자율경쟁 및 통제 미흡</option>
             <option value="3" ${assocPolicyState.G1_overchargeReason === '3' ? 'selected' : ''}>3. 원재료 가격 상승에 따른 임의 가격 인상</option>
             <option value="4" ${assocPolicyState.G1_overchargeReason === '4' ? 'selected' : ''}>4. 일부 상인의 과도한 이윤추구 형태</option>
             <option value="5" ${assocPolicyState.G1_overchargeReason === '5' ? 'selected' : ''}>5. 시장 차원의 관리·감독 부족</option>
-            <option value="6" ${assocPolicyState.G1_overchargeReason === '6' ? 'selected' : ''}>6. 기타</option>
           </select>
         </div>
       </section>
 
-      <!-- 카드 5: G2 바가지요금 대응방안 -->
+      <!-- 카드 13: G2 바가지요금 대응방안 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
@@ -1328,21 +1589,20 @@ async function initSurveyDetailPage() {
           </div>
           <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
         </div>
-        <div class="blueprint-stage-desc">바가지요금 근절과 시장 신뢰 회복을 위한 최선의 방안을 설정합니다.</div>
+        <div class="blueprint-stage-desc">바가지요금 근절과 시장 신뢰 회복을 위한 최선의 방안을 설정합니다 ('기타' 제외 랜덤).</div>
         <div class="p-14">
           <select id="select-assoc-G2" class="figma-select w-full">
-            <option value="random" ${assocPolicyState.G2_overchargeSolution === 'random' ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변] (슬롯별 무작위 자동 분산)</option>
+            <option value="random" ${(!assocPolicyState.G2_overchargeSolution || assocPolicyState.G2_overchargeSolution === 'random') ? 'selected' : ''}>🎲 [1~5 항목 랜덤 답변 (기타 제외 기본값)] (슬롯별 무작위 자동 분산)</option>
             <option value="1" ${assocPolicyState.G2_overchargeSolution === '1' ? 'selected' : ''}>1. 시장 차원의 자율관리 (상인회 중심 가격 가이드라인 운영)</option>
             <option value="2" ${assocPolicyState.G2_overchargeSolution === '2' ? 'selected' : ''}>2. 지자체·정부의 점검 및 단속 강화</option>
             <option value="3" ${assocPolicyState.G2_overchargeSolution === '3' ? 'selected' : ''}>3. 바가지요금 신고·공개 시스템 활성화</option>
             <option value="4" ${assocPolicyState.G2_overchargeSolution === '4' ? 'selected' : ''}>4. 친절·가격교육 등 상인 대상 인식개선 교육</option>
             <option value="5" ${assocPolicyState.G2_overchargeSolution === '5' ? 'selected' : ''}>5. 우수상점 인증제 등 인센티브 제공</option>
-            <option value="6" ${assocPolicyState.G2_overchargeSolution === '6' ? 'selected' : ''}>6. 기타</option>
           </select>
         </div>
       </section>
 
-      <!-- 카드 6: G3 문화/체험/명물점포 육성 정책 -->
+      <!-- 카드 14: G3 문화/체험/명물점포 육성 정책 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
@@ -1384,17 +1644,39 @@ async function initSurveyDetailPage() {
         </div>
       </section>
 
-      <!-- 카드 7: G4 기후재해 대비 현황 -->
+      <!-- 카드 15: G4 기후재해 대비 현황 (보유 & 필요도 일부 미체크 규칙) -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
             <span class="blueprint-step-pill">G4 (P23)</span>
-            <h3 class="blueprint-stage-title">기후재해(폭염·한파·수해) 대비 시설</h3>
+            <h3 class="blueprint-stage-title">기후재해(폭염·한파·수해) 대비 시설 및 필요도 규칙</h3>
           </div>
           <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
         </div>
-        <div class="blueprint-stage-desc">폭염/한파/수해 대비 점포별 냉난방 및 방재 시설 보유 현황을 설정합니다.</div>
+        <div class="blueprint-stage-desc">
+          폭염/한파/수해 대비 냉난방 및 방재 시설 보유 여부와 필요도 분산 규칙을 설정합니다. (일부 미체크 자연 분산)
+        </div>
         <div class="p-14">
+          <div class="grid-2col gap-10 mb-14">
+            <div class="form-group mb-8">
+              <label class="figma-label font-bold text-primary-color">G4 시설 보유 여부 분산 규칙</label>
+              <select id="select-assoc-G4-ownership" class="figma-select w-full">
+                <option value="random_3_4" ${(!assocPolicyState.G4_facilityOwnershipRule || assocPolicyState.G4_facilityOwnershipRule === 'random_3_4') ? 'selected' : ''}>🎲 [필수 시설 3~4개 랜덤 보유 (자연 분산 기본값)]</option>
+                <option value="fixed" ${assocPolicyState.G4_facilityOwnershipRule === 'fixed' ? 'selected' : ''}>아래 체크박스 선택 시설만 고정 보유</option>
+                <option value="all" ${assocPolicyState.G4_facilityOwnershipRule === 'all' ? 'selected' : ''}>전수 보유</option>
+              </select>
+            </div>
+            <div class="form-group mb-8">
+              <label class="figma-label font-bold text-primary-color">G4 시설 필요도 분산 규칙 (일부 미체크)</label>
+              <select id="select-assoc-G4-requirement" class="figma-select w-full">
+                <option value="random_1_3" ${(!assocPolicyState.G4_facilityRequirementRule || assocPolicyState.G4_facilityRequirementRule === 'random_1_3') ? 'selected' : ''}>🎲 [미보유 시설 중심 1~3개 랜덤 필요 체크 (일부 미체크 분산 기본값)]</option>
+                <option value="all" ${assocPolicyState.G4_facilityRequirementRule === 'all' ? 'selected' : ''}>전수 필요 체크</option>
+                <option value="none" ${assocPolicyState.G4_facilityRequirementRule === 'none' ? 'selected' : ''}>필요 없음 (모두 미체크)</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="figma-label font-caption text-dim mb-6">표준 기준 시설 (고정 보유 선택 시 반영):</label>
           <div class="checkbox-grid">
             <label class="custom-cb-label">
               <input type="checkbox" id="cb-assoc-cooling-aircon" ${assocPolicyState.G4_cooling_aircon ? 'checked' : ''} />
@@ -1446,6 +1728,35 @@ async function initSurveyDetailPage() {
       });
     }
 
+    bindAssocField('select-assoc-B5-assembly', 'B5_generalAssemblyCount');
+    bindAssocField('select-assoc-C1-C2-need', 'C1_C2_needRating');
+    bindAssocField('select-assoc-C3-ev-parking', 'C3_1_evParkingCount');
+    bindAssocField('select-assoc-C3-type', 'C3_2_1_parkingType');
+    bindAssocField('select-assoc-C3-owner', 'C3_2_2_owner');
+    bindAssocField('select-assoc-C3-manager', 'C3_2_3_manager');
+
+    // D1-1 축제 모드 선택 토글
+    const selD1_1 = document.getElementById('select-assoc-D1-1-mode');
+    const wrapD1_1 = document.getElementById('wrap-assoc-D1-1-custom');
+    if (selD1_1) {
+      selD1_1.addEventListener('change', () => {
+        assocPolicyState.D1_1_festivalMode = selD1_1.value;
+        if (wrapD1_1) wrapD1_1.style.display = selD1_1.value === 'custom' ? 'block' : 'none';
+        markUnsaved();
+      });
+    }
+    const inputD1_1 = document.getElementById('input-assoc-D1-1-custom');
+    if (inputD1_1) {
+      inputD1_1.addEventListener('input', () => {
+        assocPolicyState.D1_1_festivalCustomName = inputD1_1.value.trim();
+        markUnsaved();
+      });
+    }
+
+    bindAssocField('select-assoc-D1-delivery', 'D1_2_onlineDeliveryService');
+    bindAssocField('select-assoc-D1-2-5-item', 'D1_2_5_deliveryItem');
+    bindAssocField('select-assoc-E1', 'E1_aiSecuritySystem');
+    bindAssocField('select-assoc-F1', 'F1_emptyStoreCount');
     bindAssocField('select-assoc-F5', 'F5_emptyStoreReason');
     bindAssocField('select-assoc-F6', 'F6_emptyStorePolicy');
     bindAssocField('select-assoc-G1', 'G1_overchargeReason');
@@ -1454,6 +1765,9 @@ async function initSurveyDetailPage() {
     bindAssocField('select-assoc-G3-famous', 'G3_famousStore');
     bindAssocField('select-assoc-G3-night', 'G3_nightLight');
     bindAssocField('select-assoc-G3-tour', 'G3_tourLink');
+
+    bindAssocField('select-assoc-G4-ownership', 'G4_facilityOwnershipRule');
+    bindAssocField('select-assoc-G4-requirement', 'G4_facilityRequirementRule');
     bindAssocField('cb-assoc-cooling-aircon', 'G4_cooling_aircon', true);
     bindAssocField('cb-assoc-cooling-fan', 'G4_cooling_fan', true);
     bindAssocField('cb-assoc-cooling-arcade', 'G4_cooling_arcade', true);
@@ -1501,6 +1815,11 @@ async function initSurveyDetailPage() {
       // 상인회 전용 블루프린트 분기 (완전 격리)
       const isAssocCampaign = (data.surveyType === 'kstat_assoc' || currentCampaign?.surveyType === 'kstat_assoc');
       if (isAssocCampaign) {
+        const bpSection = document.getElementById('section-master-blueprint');
+        if (bpSection) {
+          bpSection.classList.remove('hidden');
+          bpSection.style.display = 'block';
+        }
         renderAssocBlueprint(data);
         return;
       }

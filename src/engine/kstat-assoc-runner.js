@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
+import { findMarketFestival } from '../utils/market-festival-finder.js';
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -295,33 +296,1081 @@ export async function runKstatAssocSurvey(options = {}) {
       }
 
       // ------------------------------------------
-      // 2-0) P20 (F1 ~ F4: 빈 점포 현황 수치 주입)
+      // 1-0) P5 (B1 ~ B4: 상인회 운영, 명칭, 대표자, 직원 현황)
       // ------------------------------------------
-      if (currUrl.includes('P20') || currPageName === 'P20') {
-        onProgress({ step: 'P20', message: `[P20] F1~F4 빈 점포 수치 자동 응답 중...` });
+      if (currUrl.includes('P5') || currPageName === 'P5') {
+        onProgress({ step: 'P5', message: `[P5] B1~B4 상인회 조직현황(운영여부, 회장정보, 직원) 입력 중...` });
         await syncAllChildFrames(page);
         await delay(600);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
-        // F1.asp 내부 F1_2(현재 영업중 점포수), F1_3(신규 빈점포수) 빈칸 방어 (Alert 원천 차단)
+        // 1. B1.asp: 운영여부 및 개설년도 2024년과 동일하게 입력
+        const b1Frame = page.frames().find(f => f.url().includes('B1.asp'));
+        if (b1Frame) {
+          try {
+            await b1Frame.evaluate(({ preserveExisting }) => {
+              const pb1Val = document.querySelector('input[name="PB1"]:checked')?.value || '1';
+              const targetB1 = document.querySelector(`input[name="B1"][value="${pb1Val}"]`) || document.querySelector('input[name="B1"][value="1"]');
+              if (targetB1 && (!preserveExisting || !document.querySelector('input[name="B1"]:checked'))) {
+                if (!targetB1.checked) targetB1.click();
+                targetB1.checked = true;
+                targetB1.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(targetB1).prop('checked', true).trigger('change');
+              }
+
+              // 운영 중(1)인 경우 개설년도 2024년(TPB1_1)과 100% 동일하게 입력
+              const curB1 = document.querySelector('input[name="B1"]:checked')?.value || pb1Val;
+              if (curB1 === '1') {
+                const prevYear = document.querySelector('#TPB1_1')?.value || document.querySelector('input[name="TPB1_1"]')?.value || '2020';
+                const tb1 = document.querySelector('#TB1_1') || document.querySelector('input[name="TB1_1"]');
+                if (tb1) {
+                  tb1.value = prevYear.trim();
+                  tb1.dispatchEvent(new Event('input', { bubbles: true }));
+                  tb1.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(tb1).val(prevYear.trim()).trigger('input').trigger('change');
+                }
+              }
+            }, { preserveExisting });
+          } catch (err) {
+            console.error('[P5 B1 frame 주입 오류]:', err);
+          }
+        }
+
+        // 2. B2.asp: 상인회명 2024년(PB2A)과 동일하게 입력 (최소 2자 이상 보장 및 jQuery 동기화)
+        const b2Frame = page.frames().find(f => f.url().includes('B2.asp'));
+        if (b2Frame) {
+          try {
+            await b2Frame.evaluate(({ preserveExisting, marketName }) => {
+              const pb2a = document.querySelector('#PB2A')?.value || document.querySelector('input[name="PB2A"]')?.value || '';
+              const b2a = document.querySelector('#B2A') || document.querySelector('input[name="B2A"]');
+              const targetVal = (pb2a && pb2a.trim().length >= 2) ? pb2a.trim() : (marketName + ' 상인회');
+              if (b2a) {
+                b2a.value = targetVal;
+                b2a.dispatchEvent(new Event('input', { bubbles: true }));
+                b2a.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') {
+                  $('#B2A').val(targetVal).trigger('input').trigger('change');
+                }
+              }
+            }, { preserveExisting, marketName });
+          } catch (err) {
+            console.error('[P5 B2 frame 주입 오류]:', err);
+          }
+        }
+
+        // 3. B3.asp: 상인회장 성명, 연락처 쿼터에 있는 내용으로 입력
+        const b3Frame = page.frames().find(f => f.url().includes('B3.asp'));
+        if (b3Frame) {
+          try {
+            await b3Frame.evaluate(({ data, preserveExisting }) => {
+              const b3_1 = document.querySelector('#B3_1') || document.querySelector('input[name="B3_1"]');
+              if (b3_1 && (!preserveExisting || !b3_1.value || b3_1.value.trim() === '')) {
+                b3_1.value = data.leaderName || data.ceoName || '상인대표';
+                b3_1.dispatchEvent(new Event('input', { bubbles: true }));
+                b3_1.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+
+              const b3_2 = document.querySelector('#B3_2') || document.querySelector('input[name="B3_2"]');
+              if (b3_2 && (!preserveExisting || !b3_2.value || b3_2.value.trim() === '')) {
+                let pVal = data.leaderPhone || data.phone || data.assocPhone || '010-0000-0000';
+                const numOnly = String(pVal).replace(/\D/g, '');
+                if (numOnly.length === 11) {
+                  pVal = numOnly.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                } else if (numOnly.length === 10 && numOnly.startsWith('02')) {
+                  pVal = numOnly.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
+                } else if (numOnly.length === 10) {
+                  pVal = numOnly.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+                }
+                b3_2.value = pVal;
+                b3_2.dispatchEvent(new Event('input', { bubbles: true }));
+                b3_2.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            }, { data: assocData, preserveExisting });
+          } catch (err) {
+            console.error('[P5 B3 frame 주입 오류]:', err);
+          }
+        }
+
+        // 4. B4A.asp: B4-1 2024년이 공란이면 없음 체크, 내용이 있으면 동일하게 입력
+        const b4aFrame = page.frames().find(f => f.url().includes('B4A.asp'));
+        if (b4aFrame) {
+          try {
+            await b4aFrame.evaluate(({ preserveExisting }) => {
+              // B4-1: 공단 시장매니저
+              const pb4aSum = document.querySelector('#PB4A_SUM')?.value || '0';
+              const hasPb4aContent = (parseInt(pb4aSum, 10) > 0) || 
+                ['1', '2', '3'].some(idx => {
+                  const t = document.querySelector(`#PB4A_${idx}_1`)?.value;
+                  const c = document.querySelector(`#PB4A_${idx}_2`)?.value;
+                  return (t && t.trim() !== '') || (c && c.trim() !== '' && parseInt(c, 10) > 0);
+                });
+
+              const noneA = document.querySelector('#B4A_NONE, input[name="B4A_NONE"]');
+              if (!hasPb4aContent) {
+                // 2024년이 공란이면 없음 체크
+                if (noneA && !noneA.checked) {
+                  noneA.click();
+                  noneA.checked = true;
+                  noneA.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                ['1', '2', '3'].forEach(idx => {
+                  const f1 = document.querySelector(`#B4A_${idx}_1`);
+                  const f2 = document.querySelector(`#B4A_${idx}_2`);
+                  if (f1) { f1.value = ''; f1.disabled = true; }
+                  if (f2) { f2.value = ''; f2.disabled = true; }
+                });
+                const sumA = document.querySelector('#B4A_SUM');
+                if (sumA) sumA.value = '0';
+              } else {
+                // 2024년 내용이 있으면 동일하게 입력
+                if (noneA && noneA.checked) {
+                  noneA.click();
+                  noneA.checked = false;
+                  noneA.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                ['1', '2', '3'].forEach(idx => {
+                  const prevTask = document.querySelector(`#PB4A_${idx}_1`)?.value || '';
+                  const prevCount = document.querySelector(`#PB4A_${idx}_2`)?.value || '';
+                  const curTask = document.querySelector(`#B4A_${idx}_1`);
+                  const curCount = document.querySelector(`#B4A_${idx}_2`);
+                  if (curTask) {
+                    curTask.disabled = false;
+                    curTask.value = prevTask.trim();
+                    curTask.dispatchEvent(new Event('input', { bubbles: true }));
+                  }
+                  if (curCount) {
+                    curCount.disabled = false;
+                    curCount.value = prevCount.trim();
+                    curCount.dispatchEvent(new Event('input', { bubbles: true }));
+                  }
+                });
+                const sumA = document.querySelector('#B4A_SUM');
+                if (sumA) sumA.value = pb4aSum;
+              }
+
+              // B4-2 상근직원 동일 적용
+              const pb4bSum = document.querySelector('#PB4B_SUM')?.value || '0';
+              const hasPb4bContent = (parseInt(pb4bSum, 10) > 0) || 
+                ['1', '2', '3'].some(idx => {
+                  const t = document.querySelector(`#PB4B_${idx}_1`)?.value;
+                  const c = document.querySelector(`#PB4B_${idx}_2`)?.value;
+                  return (t && t.trim() !== '') || (c && c.trim() !== '' && parseInt(c, 10) > 0);
+                });
+
+              const noneB = document.querySelector('#B4B_NONE, input[name="B4B_NONE"]');
+              if (!hasPb4bContent) {
+                if (noneB && !noneB.checked) {
+                  noneB.click();
+                  noneB.checked = true;
+                  noneB.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              } else {
+                if (noneB && noneB.checked) {
+                  noneB.click();
+                  noneB.checked = false;
+                  noneB.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                ['1', '2', '3'].forEach(idx => {
+                  const prevTask = document.querySelector(`#PB4B_${idx}_1`)?.value || '';
+                  const prevCount = document.querySelector(`#PB4B_${idx}_2`)?.value || '';
+                  const curTask = document.querySelector(`#B4B_${idx}_1`);
+                  const curCount = document.querySelector(`#B4B_${idx}_2`);
+                  if (curTask) { curTask.disabled = false; curTask.value = prevTask.trim(); }
+                  if (curCount) { curCount.disabled = false; curCount.value = prevCount.trim(); }
+                });
+                const sumB = document.querySelector('#B4B_SUM');
+                if (sumB) sumB.value = pb4bSum;
+              }
+            }, { preserveExisting });
+          } catch (err) {
+            console.error('[P5 B4A frame 주입 오류]:', err);
+          }
+        }
+
+        await captureStep('P5', 'P5_상인회조직현황');
+        await delay(800);
+        const prevUrl = page.url();
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.click('#next').catch(() => {})
+        ]);
+        await delay(600);
+
+        if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P5] 잔류 감지 ➔ move_page로 P6 돌파...`);
+          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P6'); }).catch(() => {});
+          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+        }
+        continue;
+      }
+
+      // ------------------------------------------
+      // 1-1) P6 (B5 ~ B7: 상인회비 및 상인회 시설/인력 현황 전년도 미러링)
+      // ------------------------------------------
+      if (currUrl.includes('P6') || currPageName === 'P6') {
+        onProgress({ step: 'P6', message: `[P6] B5~B7 상인회비 및 시설/인력 현황 전년도 미러링 중...` });
+        await syncAllChildFrames(page);
+        await delay(600);
+
+        await mirrorPrevYearToCurrent(page, { preserveExisting });
+
+        // B5-4 상인회 총회 실시 횟수 결정 (정책 가이드 기준점: 0~10회 또는 랜덤 분산)
+        let assemblyCountVal = policy.B5_generalAssemblyCount || '1';
+        if (assemblyCountVal === 'random_1_2') {
+          assemblyCountVal = String(Math.floor(Math.random() * 2) + 1); // 1~2회
+        } else if (assemblyCountVal === 'random_1_3') {
+          assemblyCountVal = String(Math.floor(Math.random() * 3) + 1); // 1~3회
+        } else if (assemblyCountVal === 'random_0_2') {
+          assemblyCountVal = String(Math.floor(Math.random() * 3)); // 0~2회
+        } else if (assemblyCountVal === 'random') {
+          assemblyCountVal = String(Math.floor(Math.random() * 3) + 1);
+        }
+        logger.info(`[상인회 러너] [P6] B5-4 상인회 총회 실시 횟수 설정: ${assemblyCountVal}회 (정책 설정값: ${policy.B5_generalAssemblyCount || '1'})`);
+
+        // B5.asp (상인회비 B5-1, B5-2, B5-3 미러링 보장 및 B5-4 총회 필수값 주입)
+        const b5Frame = page.frames().find(f => f.url().includes('B5.asp'));
+        if (b5Frame) {
+          try {
+            await b5Frame.evaluate(({ preserveExisting, assemblyVal }) => {
+              // B5-1 가입점포 수
+              const pb5a = document.querySelector('#PB5A')?.value;
+              const b5a = document.querySelector('#B5A');
+              if (b5a && (!preserveExisting || !b5a.value || b5a.value.trim() === '')) {
+                b5a.value = (pb5a && pb5a.trim() !== '') ? pb5a.trim() : '40';
+                b5a.dispatchEvent(new Event('input', { bubbles: true }));
+                b5a.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+
+              // B5-2 월 상인회비 금액
+              const pb5b = document.querySelector('#PB5B')?.value;
+              const b5b = document.querySelector('#B5B');
+              if (b5b && (!preserveExisting || !b5b.value || b5b.value.trim() === '')) {
+                b5b.value = (pb5b && pb5b.trim() !== '') ? pb5b.trim() : '2';
+                b5b.dispatchEvent(new Event('input', { bubbles: true }));
+                b5b.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+
+              // B5-3 상인회비 납부점포 수 (B5A 이하 정합성 보장)
+              const pb5c = document.querySelector('#PB5C')?.value;
+              const b5c = document.querySelector('#B5C');
+              if (b5c && (!preserveExisting || !b5c.value || b5c.value.trim() === '')) {
+                const limitVal = parseInt(b5a?.value || '40', 10);
+                const rawVal = pb5c && pb5c.trim() !== '' ? parseInt(pb5c.trim(), 10) : limitVal;
+                b5c.value = String(Math.min(rawVal, limitVal));
+                b5c.dispatchEvent(new Event('input', { bubbles: true }));
+                b5c.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+
+              // B5-4 상인회 총회 실시 (사용자 정책값 0~10회 또는 랜덤 반영)
+              const b5d = document.querySelector('#B5D');
+              if (b5d && (!preserveExisting || !b5d.value || b5d.value.trim() === '')) {
+                b5d.value = String(assemblyVal);
+                b5d.dispatchEvent(new Event('input', { bubbles: true }));
+                b5d.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            }, { preserveExisting, assemblyVal: assemblyCountVal });
+          } catch (err) {
+            console.error('[P6 B5 frame 주입 오류]:', err);
+          }
+        }
+
+        // B6.asp (사무실 및 팩스 현황)
+        const b6Frame = page.frames().find(f => f.url().includes('B6.asp'));
+        if (b6Frame) {
+          try {
+            await b6Frame.evaluate(({ preserveExisting }) => {
+              // B6A: 사무실 유무 (전년도 PB6A 미러링 또는 기존값 보존, 없을 시 2번 무)
+              if (!preserveExisting || !document.querySelector('input[name="B6A"]:checked')) {
+                const pb6aVal = document.querySelector('input[name="PB6A"]:checked')?.value || '2';
+                const targetB6A = document.querySelector(`input[name="B6A"][value="${pb6aVal}"]`) || document.querySelector('input[name="B6A"][value="2"]');
+                if (targetB6A) {
+                  targetB6A.checked = true;
+                  targetB6A.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }
+
+              // 만약 B6A가 1(유)인 경우 전년도 주소 및 대표전화 미러링 보장
+              const curB6A = document.querySelector('input[name="B6A"]:checked')?.value;
+              if (curB6A === '1') {
+                ['B6B1', 'B6B2', 'B6B3', 'B6B4', 'B6C'].forEach(fName => {
+                  const prev = document.querySelector(`#P${fName}`)?.value;
+                  const curr = document.querySelector(`#${fName}`);
+                  if (curr && (!preserveExisting || !curr.value || curr.value.trim() === '')) {
+                    curr.value = prev || '';
+                    curr.dispatchEvent(new Event('input', { bubbles: true }));
+                    curr.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                });
+
+                // B6C 대표전화 유효성 검사 및 정규화 (validPhoneFormat 트랩 방어)
+                const curB6C = document.querySelector('#B6C');
+                if (curB6C) {
+                  let v = curB6C.value || document.querySelector('#PB6C')?.value || '02-878-5525';
+                  const digits = String(v).replace(/\D/g, '');
+                  let formatted = v;
+                  if (digits.length === 9 && digits.startsWith('02')) {
+                    formatted = digits.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3');
+                  } else if (digits.length === 10 && digits.startsWith('02')) {
+                    formatted = digits.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
+                  } else if (digits.length === 11) {
+                    formatted = digits.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                  } else if (digits.length === 10) {
+                    formatted = digits.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+                  } else if (digits.length === 8) {
+                    formatted = digits.replace(/(\d{4})(\d{4})/, '$1-$2');
+                  } else if (digits.length < 8) {
+                    formatted = '02-878-5525';
+                  }
+                  curB6C.value = formatted;
+                  if (typeof $ !== 'undefined') $('#B6C').val(formatted).trigger('input').trigger('change');
+                }
+              }
+
+              // B6D 팩스 유무 신규 라디오 공란 시 2(무) 기본 선택
+              if (!document.querySelector('input[name="B6D"]:checked')) {
+                const opt2 = document.querySelector('input[name="B6D"][value="2"]');
+                if (opt2) {
+                  opt2.checked = true;
+                  opt2.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }
+            }, { preserveExisting });
+          } catch (_) {}
+        }
+
+        // B7.asp (상근직원 현황)
+        const b7Frame = page.frames().find(f => f.url().includes('B7.asp'));
+        if (b7Frame) {
+          try {
+            await b7Frame.evaluate(({ preserveExisting }) => {
+              // B7A 상근직원 유무 라디오 공란 시 전년도 PB7A 또는 2(무) 기본 선택
+              if (!preserveExisting || !document.querySelector('input[name="B7A"]:checked')) {
+                const pb7aVal = document.querySelector('input[name="PB7A"]:checked')?.value || '2';
+                const opt = document.querySelector(`input[name="B7A"][value="${pb7aVal}"]`) || document.querySelector('input[name="B7A"][value="2"]');
+                if (opt) {
+                  opt.checked = true;
+                  opt.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }
+            }, { preserveExisting });
+          } catch (_) {}
+        }
+
+        await captureStep('P6', 'P6_상인회비및시설');
+        await delay(800);
+        const prevUrl = page.url();
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.click('#next').catch(() => {})
+        ]);
+        await delay(600);
+
+        if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P6] 잔류 감지 ➔ move_page로 P7 돌파...`);
+          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P7'); }).catch(() => {});
+          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+        }
+        continue;
+      }
+
+      // ------------------------------------------
+      // 1-2) P7 (C1: 편의시설 보유현황 및 시설필요도)
+      // ------------------------------------------
+      if (currUrl.includes('P7') || currPageName === 'P7') {
+        onProgress({ step: 'P7', message: `[P7] C1 편의시설 보유개수 및 시설필요도(랜덤) 자동 응답 중...` });
+        await delay(600);
+
+        await page.evaluate(({ preserveExisting }) => {
+          // 9개 항목 순회 (C1_1 ~ C1_9)
+          for (let idx = 1; idx <= 9; idx++) {
+            const prevCnt = document.querySelector(`input[name="PC1_${idx}_2"]`)?.value || '';
+            const hasPrev = prevCnt && prevCnt.trim() !== '' && parseInt(prevCnt.trim(), 10) > 0;
+
+            if (hasPrev) {
+              // 2024년에 '보유개수' 내용이 있으면 2025년에도 동일하게 입력
+              const optYes = document.querySelector(`input[name="C1_${idx}_1"][value="1"]`);
+              if (optYes) {
+                optYes.checked = true;
+                optYes.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const cntInp = document.querySelector(`input[name="C1_${idx}_2"]`);
+              if (cntInp) {
+                cntInp.disabled = false;
+                cntInp.value = prevCnt.trim();
+                cntInp.dispatchEvent(new Event('input', { bubbles: true }));
+                cntInp.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            } else {
+              // 2024년에 '보유개수' 내용이 없으면 2025년도에도 모두 '없음'으로 입력
+              const optNo = document.querySelector(`input[name="C1_${idx}_1"][value="2"]`);
+              if (optNo) {
+                optNo.checked = true;
+                optNo.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const cntInp = document.querySelector(`input[name="C1_${idx}_2"]`);
+              if (cntInp) {
+                cntInp.value = '';
+                cntInp.disabled = true;
+              }
+            }
+
+            // '시설필요도'는 랜덤으로 체크 (1~5 척도)
+            const needRadios = Array.from(document.querySelectorAll(`input[name="C1_${idx}_3"]`));
+            if (needRadios.length > 0) {
+              const curChecked = document.querySelector(`input[name="C1_${idx}_3"]:checked`);
+              if (!preserveExisting || !curChecked) {
+                const randVal = String(Math.floor(Math.random() * 5) + 1); // 1~5 랜덤
+                const targetRadio = document.querySelector(`input[name="C1_${idx}_3"][value="${randVal}"]`) || needRadios[0];
+                if (targetRadio) {
+                  targetRadio.checked = true;
+                  targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }
+            }
+
+            if (typeof window.toggleDependentFields === 'function') {
+              try { window.toggleDependentFields(idx); } catch (_) {}
+            }
+          }
+        }, { preserveExisting });
+
+        await captureStep('P7', 'P7_편의시설C1');
+        await delay(800);
+        const prevUrl = page.url();
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.click('#next').catch(() => {})
+        ]);
+        await delay(600);
+
+        if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P7] 잔류 감지 ➔ move_page로 P8 돌파...`);
+          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P8'); }).catch(() => {});
+          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+        }
+        continue;
+      }
+
+      // ------------------------------------------
+      // 1-3) P8 (C2: 안전/위생시설 보유현황 및 시설필요도)
+      // ------------------------------------------
+      if (currUrl.includes('P8') || currPageName === 'P8') {
+        onProgress({ step: 'P8', message: `[P8] C2 안전/위생시설 보유개수 및 시설필요도(랜덤) 자동 응답 중...` });
+        await delay(600);
+
+        await page.evaluate(({ preserveExisting }) => {
+          // 18개 항목 순회 (C2_1 ~ C2_18)
+          for (let idx = 1; idx <= 18; idx++) {
+            const prevCnt = document.querySelector(`input[name="PC2_${idx}_2"]`)?.value || '';
+            const hasPrev = prevCnt && prevCnt.trim() !== '' && parseInt(prevCnt.trim(), 10) > 0;
+
+            if (hasPrev) {
+              // 2024년에 '보유개수' 내용이 있으면 2025년에도 동일하게 입력
+              const optYes = document.querySelector(`input[name="C2_${idx}_1"][value="1"]`);
+              if (optYes) {
+                optYes.checked = true;
+                optYes.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const cntInp = document.querySelector(`input[name="C2_${idx}_2"]`);
+              if (cntInp) {
+                cntInp.disabled = false;
+                cntInp.value = prevCnt.trim();
+                cntInp.dispatchEvent(new Event('input', { bubbles: true }));
+                cntInp.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            } else {
+              // 2024년에 '보유개수' 내용이 없으면 2025년도에도 모두 '없음'으로 입력
+              const optNo = document.querySelector(`input[name="C2_${idx}_1"][value="2"]`);
+              if (optNo) {
+                optNo.checked = true;
+                optNo.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const cntInp = document.querySelector(`input[name="C2_${idx}_2"]`);
+              if (cntInp) {
+                cntInp.value = '';
+                cntInp.disabled = true;
+              }
+            }
+
+            // '시설필요도'는 랜덤으로 체크 (1~5 척도)
+            const needRadios = Array.from(document.querySelectorAll(`input[name="C2_${idx}_3"]`));
+            if (needRadios.length > 0) {
+              const curChecked = document.querySelector(`input[name="C2_${idx}_3"]:checked`);
+              if (!preserveExisting || !curChecked) {
+                const randVal = String(Math.floor(Math.random() * 5) + 1);
+                const targetRadio = document.querySelector(`input[name="C2_${idx}_3"][value="${randVal}"]`) || needRadios[0];
+                if (targetRadio) {
+                  targetRadio.checked = true;
+                  targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }
+            }
+
+            if (typeof window.toggleDependentFields === 'function') {
+              try { window.toggleDependentFields(idx); } catch (_) {}
+            }
+          }
+        }, { preserveExisting });
+
+        await captureStep('P8', 'P8_안전위생시설C2');
+        await delay(800);
+        const prevUrl = page.url();
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.click('#next').catch(() => {})
+        ]);
+        await delay(600);
+
+        if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P8] 잔류 감지 ➔ move_page로 P9 돌파...`);
+          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P9'); }).catch(() => {});
+          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+        }
+        continue;
+      }
+
+      // ------------------------------------------
+      // 1-4) P9 (C3: 주차장 보유현황, 전기차대수, 형태/소유/관리주체)
+      // ------------------------------------------
+      if (currUrl.includes('P9') || currPageName === 'P9') {
+        onProgress({ step: 'P9', message: `[P9] C3 주차시설 현황 및 정책 가이드 주입 중...` });
+        await syncAllChildFrames(page);
+        await delay(600);
+
+        await mirrorPrevYearToCurrent(page, { preserveExisting });
+
+        // C3-1-3 전기차 전용대수 계산 (가이드 정책: 0~10대 또는 랜덤 분산)
+        let evCountVal = policy.C3_1_evParkingCount || '3';
+        if (evCountVal === 'random_0_3') {
+          evCountVal = String(Math.floor(Math.random() * 4)); // 0~3
+        } else if (evCountVal === 'random_1_5') {
+          evCountVal = String(Math.floor(Math.random() * 5) + 1); // 1~5
+        } else if (evCountVal === 'random_0_10') {
+          evCountVal = String(Math.floor(Math.random() * 11)); // 0~10
+        } else if (evCountVal === 'random') {
+          evCountVal = String(Math.floor(Math.random() * 5) + 1);
+        }
+
+        // C3-2-1 주차장 형태 정책값 (기본 '2' 노상)
+        const parkingTypeVal = policy.C3_2_1_parkingType || '2';
+        // C3-2-2 소유주체 정책값 (기본 '2' 지자체)
+        let ownerVal = policy.C3_2_2_owner || '2';
+        if (ownerVal === 'random') {
+          ownerVal = String(Math.floor(Math.random() * 3) + 1); // 1~3
+        }
+        // C3-2-3 관리주체 정책값 (기본 '2' 지자체)
+        let managerVal = policy.C3_2_3_manager || '2';
+        if (managerVal === 'random') {
+          managerVal = String(Math.floor(Math.random() * 4) + 1); // 1~4
+        }
+
+        logger.info(`[상인회 러너] [P9] C3 정책 답변: 전기차대수=${evCountVal}대, 형태=${parkingTypeVal}, 소유주체=${ownerVal}, 관리주체=${managerVal}`);
+
+        // 0. C3.asp (시장·상점가 전용 주차장 보유여부 라디오)
+        const c3Frame = page.frames().find(f => f.url().includes('C3.asp') && !f.url().includes('C3A') && !f.url().includes('C3B') && !f.url().includes('C3C'));
+        if (c3Frame) {
+          try {
+            await c3Frame.evaluate(({ preserveExisting }) => {
+              const pc3Val = document.querySelector('input[name="PC3"]:checked')?.value || '1';
+              const targetC3 = document.querySelector(`input[name="C3"][value="${pc3Val}"]`) || document.querySelector('input[name="C3"][value="1"]');
+              if (targetC3) {
+                if (!targetC3.checked) targetC3.click();
+                targetC3.checked = true;
+                targetC3.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(targetC3).prop('checked', true).trigger('change');
+              }
+            }, { preserveExisting });
+          } catch (err) {
+            console.error('[P9 C3 frame 주입 오류]:', err);
+          }
+        }
+
+        // 1. C3AC.asp (C3-1-3 전기차 전용 주차 대수)
+        const c3acFrame = page.frames().find(f => f.url().includes('C3AC.asp'));
+        if (c3acFrame) {
+          try {
+            await c3acFrame.evaluate(({ evCountVal, preserveExisting }) => {
+              const inp = document.querySelector('#C3AC, input[name="C3AC"]');
+              if (inp && (!preserveExisting || !inp.value || inp.value.trim() === '')) {
+                inp.value = String(evCountVal);
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                inp.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            }, { evCountVal, preserveExisting });
+          } catch (err) {
+            console.error('[P9 C3AC frame 주입 오류]:', err);
+          }
+        }
+
+        // 2. C3BA.asp (C3-2-1 주차장 형태 ※ 중복선택 가능)
+        const c3baFrame = page.frames().find(f => f.url().includes('C3BA.asp'));
+        if (c3baFrame) {
+          try {
+            await c3baFrame.evaluate(({ parkingTypeVal, preserveExisting }) => {
+              const hasChecked = !!document.querySelector('input[type="checkbox"][name^="C3BA"]:checked');
+              if (!preserveExisting || !hasChecked) {
+                document.querySelectorAll('input[type="checkbox"][name^="C3BA"]').forEach(cb => { cb.checked = false; });
+                if (parkingTypeVal === '1_2') {
+                  const cb1 = document.querySelector('#C3BA_1, input[name="C3BA_1"]');
+                  const cb2 = document.querySelector('#C3BA_2, input[name="C3BA_2"]');
+                  if (cb1) { cb1.checked = true; cb1.dispatchEvent(new Event('change', { bubbles: true })); }
+                  if (cb2) { cb2.checked = true; cb2.dispatchEvent(new Event('change', { bubbles: true })); }
+                } else if (parkingTypeVal === '2_3') {
+                  const cb2 = document.querySelector('#C3BA_2, input[name="C3BA_2"]');
+                  const cb3 = document.querySelector('#C3BA_3, input[name="C3BA_3"]');
+                  if (cb2) { cb2.checked = true; cb2.dispatchEvent(new Event('change', { bubbles: true })); }
+                  if (cb3) { cb3.checked = true; cb3.dispatchEvent(new Event('change', { bubbles: true })); }
+                } else {
+                  const targetCb = document.querySelector(`#C3BA_${parkingTypeVal}, input[name="C3BA_${parkingTypeVal}"]`) || document.querySelector('#C3BA_2');
+                  if (targetCb) {
+                    targetCb.checked = true;
+                    targetCb.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                }
+              }
+            }, { parkingTypeVal, preserveExisting });
+          } catch (err) {
+            console.error('[P9 C3BA frame 주입 오류]:', err);
+          }
+        }
+
+        // 3. C3BB.asp (C3-2-2 소유주체)
+        const c3bbFrame = page.frames().find(f => f.url().includes('C3BB.asp'));
+        if (c3bbFrame) {
+          try {
+            await c3bbFrame.evaluate(({ ownerVal, preserveExisting }) => {
+              const hasChecked = !!document.querySelector('input[type="checkbox"][name^="C3BB"]:checked');
+              if (!preserveExisting || !hasChecked) {
+                document.querySelectorAll('input[type="checkbox"][name^="C3BB"]').forEach(cb => { cb.checked = false; });
+                const targetCb = document.querySelector(`#C3BB_${ownerVal}, input[name="C3BB_${ownerVal}"]`) || document.querySelector('#C3BB_2');
+                if (targetCb) {
+                  targetCb.checked = true;
+                  targetCb.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }
+            }, { ownerVal, preserveExisting });
+          } catch (err) {
+            console.error('[P9 C3BB frame 주입 오류]:', err);
+          }
+        }
+
+        // 4. C3BC.asp (C3-2-3 관리주체)
+        const c3bcFrame = page.frames().find(f => f.url().includes('C3BC.asp'));
+        if (c3bcFrame) {
+          try {
+            await c3bcFrame.evaluate(({ managerVal, preserveExisting }) => {
+              const hasChecked = !!document.querySelector('input[type="checkbox"][name^="C3BC"]:checked');
+              if (!preserveExisting || !hasChecked) {
+                document.querySelectorAll('input[type="checkbox"][name^="C3BC"]').forEach(cb => { cb.checked = false; });
+                const targetCb = document.querySelector(`#C3BC_${managerVal}, input[name="C3BC_${managerVal}"]`) || document.querySelector('#C3BC_2');
+                if (targetCb) {
+                  targetCb.checked = true;
+                  targetCb.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }
+            }, { managerVal, preserveExisting });
+          } catch (err) {
+            console.error('[P9 C3BC frame 주입 오류]:', err);
+          }
+        }
+
+        await captureStep('P9', 'P9_주차시설C3');
+        await delay(800);
+        const prevUrl = page.url();
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.click('#next').catch(() => {})
+        ]);
+        await delay(600);
+
+        if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P9] 잔류 감지 ➔ move_page로 P10 돌파...`);
+          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P10'); }).catch(() => {});
+          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+        }
+        continue;
+      }
+
+      // ------------------------------------------
+      // 1-5) P11 (D1: 공동마케팅 사업 및 D1-1 축제/이벤트 명칭 조회 주입)
+      // ------------------------------------------
+      if (currUrl.includes('P11') || currPageName === 'P11') {
+        onProgress({ step: 'P11', message: `[P11] D1 공동마케팅 및 D1-1 축제/이벤트 명칭 조회 주입 중...` });
+        await syncAllChildFrames(page);
+        await delay(600);
+
+        await mirrorPrevYearToCurrent(page, { preserveExisting });
+
+        // D1-1 축제 및 이벤트 명칭 조회 (네이버/사전 검색 기반)
+        const targetMarket = assocData.marketName || assocData.storeName || '';
+        let festivalResult = { hasFestival: false, festivalName: '' };
+        try {
+          festivalResult = await findMarketFestival(targetMarket);
+          logger.info(`[상인회 러너] [P11] D1-1 축제 조회 결과: 시장="${targetMarket}", 실시여부=${festivalResult.hasFestival}, 축제명="${festivalResult.festivalName}" (${festivalResult.source})`);
+        } catch (err) {
+          logger.warn(`[상인회 러너] [P11] 축제 조회 예외: ${err.message}`);
+        }
+
+        // D1.asp (D1 공동마케팅 사업 여부 라디오)
+        const d1Frame = page.frames().find(f => f.url().includes('D1.asp') && !f.url().includes('D1A') && !f.url().includes('D1B'));
+        if (d1Frame) {
+          try {
+            await d1Frame.evaluate(({ hasFestival, preserveExisting }) => {
+              const curChecked = document.querySelector('input[name="D1"]:checked');
+              if (!preserveExisting || !curChecked) {
+                const targetVal = hasFestival ? '1' : (document.querySelector('input[name="PD1"]:checked')?.value || '1');
+                const target = document.querySelector(`input[name="D1"][value="${targetVal}"]`) || document.querySelector('input[name="D1"][value="1"]');
+                if (target) {
+                  target.checked = true;
+                  target.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(target).prop('checked', true).trigger('change');
+                }
+              }
+            }, { hasFestival: festivalResult.hasFestival, preserveExisting });
+          } catch (err) {
+            console.error('[P11 D1 frame 주입 오류]:', err);
+          }
+        }
+
+        // D1AA.asp (D1-1 마케팅/홍보 세부 문항)
+        const d1aaFrame = page.frames().find(f => f.url().includes('D1AA.asp'));
+        if (d1aaFrame) {
+          try {
+            await d1aaFrame.evaluate(({ festivalInfo, preserveExisting }) => {
+              const curChecked = document.querySelector('input[name="D1AA_2_1"]:checked');
+              if (!preserveExisting || !curChecked) {
+                if (festivalInfo.hasFestival && festivalInfo.festivalName) {
+                  // 축제가 있으면 '실시선택 + 축제 및 이벤트 명칭' 입력
+                  const optYes = document.querySelector('#D1AA_2_1_1, input[name="D1AA_2_1"][value="1"]');
+                  if (optYes) {
+                    optYes.checked = true;
+                    optYes.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(optYes).prop('checked', true).trigger('change');
+                  }
+                  const nameInp = document.querySelector('#D1AA_2_2, input[name="D1AA_2_2"]');
+                  if (nameInp) {
+                    nameInp.disabled = false;
+                    nameInp.value = festivalInfo.festivalName;
+                    nameInp.dispatchEvent(new Event('input', { bubbles: true }));
+                    nameInp.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(nameInp).val(festivalInfo.festivalName).trigger('input').trigger('change');
+                  }
+                  // 매출향상 기여도 (3: 보통 또는 4: 기여함 체크)
+                  const rateRadio = document.querySelector('#D1AA_2_3_4, input[name="D1AA_2_3"][value="4"]') || document.querySelector('#D1AA_2_3_3, input[name="D1AA_2_3"][value="3"]');
+                  if (rateRadio) {
+                    rateRadio.checked = true;
+                    rateRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(rateRadio).prop('checked', true).trigger('change');
+                  }
+                } else {
+                  // 축제가 없으면 '미실시' 선택
+                  const optNo = document.querySelector('#D1AA_2_1_2, input[name="D1AA_2_1"][value="2"]');
+                  if (optNo) {
+                    optNo.checked = true;
+                    optNo.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(optNo).prop('checked', true).trigger('change');
+                  }
+                  const nameInp = document.querySelector('#D1AA_2_2, input[name="D1AA_2_2"]');
+                  if (nameInp) {
+                    nameInp.value = '';
+                    nameInp.disabled = true;
+                    nameInp.dispatchEvent(new Event('input', { bubbles: true }));
+                    nameInp.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                }
+              }
+
+              // 나머지 D1AA 항목들(경품행사 등) 미선택 시 2(미실시) 자동 선택 방어
+              for (let i = 1; i <= 13; i++) {
+                if (i === 2) continue; // 2번은 축제 문항
+                const chk = document.querySelector(`input[name="D1AA_${i}_1"]:checked`);
+                if (!chk) {
+                  const opt2 = document.querySelector(`input[name="D1AA_${i}_1"][value="2"]`);
+                  if (opt2) {
+                    opt2.checked = true;
+                    opt2.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                }
+              }
+            }, { festivalInfo: festivalResult, preserveExisting });
+          } catch (err) {
+            console.error('[P11 D1AA frame 주입 오류]:', err);
+          }
+        }
+
+        await captureStep('P11', 'P11_공동마케팅D1');
+        await delay(800);
+        const prevUrl = page.url();
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.click('#next').catch(() => {})
+        ]);
+        await delay(600);
+
+        if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P11] 잔류 감지 ➔ move_page로 P12 돌파...`);
+          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P12'); }).catch(() => {});
+          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+        }
+        continue;
+      }
+
+      // ------------------------------------------
+      // 1-6) P12 (D1-2: 온라인 배송 서비스 및 D1-2-5 지원항목)
+      // ------------------------------------------
+      if (currUrl.includes('P12') || currPageName === 'P12') {
+        onProgress({ step: 'P12', message: `[P12] D1-2 온라인 배송 서비스 및 D1-2-5 지원항목 정책 주입 중...` });
+        await syncAllChildFrames(page);
+        await delay(600);
+
+        await mirrorPrevYearToCurrent(page, { preserveExisting });
+
+        // D1-2 온라인 배송 서비스 정책값 (기본 '2' 없음)
+        const deliveryServiceVal = policy.D1_2_onlineDeliveryService || '2';
+        // D1-2-5 필요한 지원 항목: '기타' 제외 나머지(1~4) 중 랜덤
+        const randD1BEVal = String(Math.floor(Math.random() * 4) + 1);
+
+        logger.info(`[상인회 러너] [P12] D1-2 배송서비스=${deliveryServiceVal}, D1-2-5 지원항목=${randD1BEVal} (🎲 기타 제외 랜덤)`);
+
+        // D1B.asp (D1-2 배송 서비스 운영 여부 라디오)
+        const d1bFrame = page.frames().find(f => f.url().includes('D1B.asp'));
+        if (d1bFrame) {
+          try {
+            await d1bFrame.evaluate(({ deliveryVal, preserveExisting }) => {
+              const curChecked = document.querySelector('input[name="D1B"]:checked');
+              if (!preserveExisting || !curChecked) {
+                const target = document.querySelector(`input[name="D1B"][value="${deliveryVal}"]`) || document.querySelector('input[name="D1B"][value="2"]');
+                if (target) {
+                  target.checked = true;
+                  target.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(target).prop('checked', true).trigger('change');
+                }
+              }
+            }, { deliveryVal: deliveryServiceVal, preserveExisting });
+          } catch (err) {
+            console.error('[P12 D1B frame 주입 오류]:', err);
+          }
+        }
+
+        // D1BA.asp (D1-2-1 배송서비스 유형 결측 방어)
+        const d1baFrame = page.frames().find(f => f.url().includes('D1BA.asp'));
+        if (d1baFrame) {
+          try {
+            await d1baFrame.evaluate(() => {
+              const hasChecked = !!document.querySelector('input[type="checkbox"][name^="D1BA"]:checked');
+              if (!hasChecked) {
+                const cb = document.querySelector('#D1BA_1, input[name="D1BA_1"]');
+                if (cb) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+              }
+            });
+          } catch (_) {}
+        }
+
+        // D1BE.asp (D1-2-5 가장 필요한 지원 항목: 1~4번 중 랜덤, 5번 기타 제외)
+        const d1beFrame = page.frames().find(f => f.url().includes('D1BE.asp'));
+        if (d1beFrame) {
+          try {
+            await d1beFrame.evaluate(({ d1beVal, preserveExisting }) => {
+              const curChecked = document.querySelector('input[name="D1BE"]:checked');
+              if (!preserveExisting || !curChecked) {
+                const target = document.querySelector(`input[name="D1BE"][value="${d1beVal}"]`) || document.querySelector('input[name="D1BE"][value="1"]');
+                if (target) {
+                  target.checked = true;
+                  target.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(target).prop('checked', true).trigger('change');
+                }
+              }
+            }, { d1beVal: randD1BEVal, preserveExisting });
+          } catch (err) {
+            console.error('[P12 D1BE frame 주입 오류]:', err);
+          }
+        }
+
+        await captureStep('P12', 'P12_온라인배송D1B');
+        await delay(800);
+        const prevUrl = page.url();
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.click('#next').catch(() => {})
+        ]);
+        await delay(600);
+
+        if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P12] 잔류 감지 ➔ move_page로 P13 돌파...`);
+          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P13'); }).catch(() => {});
+          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+        }
+        continue;
+      }
+
+      // ------------------------------------------
+      // 1-7) P17 (E1: 화재예방 및 소방시설 현황, AI 지능형 출동 시스템 '없음' 처리)
+      // ------------------------------------------
+      if (currUrl.includes('P17') || currPageName === 'P17') {
+        onProgress({ step: 'P17', message: `[P17] E1 소방시설 보유현황 및 AI 지능형 출동시스템(없음) 응답 중...` });
+        await delay(600);
+
+        await page.evaluate(({ preserveExisting }) => {
+          // 1~6번 문항: 스프링클러, 소화전, 공용소화기, 경보기, 화재감지기, 가스감지기
+          for (let idx = 1; idx <= 6; idx++) {
+            const prevCnt = document.querySelector(`input[name="PE1_${idx}_2"]`)?.value || '';
+            const hasPrev = prevCnt && prevCnt.trim() !== '' && parseInt(prevCnt.trim(), 10) > 0;
+
+            if (hasPrev) {
+              const optYes = document.querySelector(`input[name="E1_${idx}_1"][value="1"]`);
+              if (optYes) {
+                optYes.checked = true;
+                optYes.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const cntInp = document.querySelector(`input[name="E1_${idx}_2"]`);
+              if (cntInp) {
+                cntInp.disabled = false;
+                cntInp.value = prevCnt.trim();
+                cntInp.dispatchEvent(new Event('input', { bubbles: true }));
+                cntInp.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            } else {
+              const optNo = document.querySelector(`input[name="E1_${idx}_1"][value="2"]`);
+              if (optNo) {
+                optNo.checked = true;
+                optNo.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const cntInp = document.querySelector(`input[name="E1_${idx}_2"]`);
+              if (cntInp) {
+                cntInp.value = '';
+                cntInp.disabled = true;
+              }
+            }
+
+            // 시설필요도 랜덤 체크 (1~5 척도)
+            const needRadios = Array.from(document.querySelectorAll(`input[name="E1_${idx}_3"]`));
+            if (needRadios.length > 0) {
+              const curChecked = document.querySelector(`input[name="E1_${idx}_3"]:checked`);
+              if (!preserveExisting || !curChecked) {
+                const randVal = String(Math.floor(Math.random() * 5) + 1);
+                const targetRadio = document.querySelector(`input[name="E1_${idx}_3"][value="${randVal}"]`) || needRadios[0];
+                if (targetRadio) {
+                  targetRadio.checked = true;
+                  targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }
+            }
+          }
+
+          // 7번 문항: AI 지능형 출동 시스템 (GIS 지리정보 기반 출동 및 대응 시스템)
+          // 규칙: 무조건 '없음' (2) 선택, 개수는 공란, 시설필요도는 랜덤 체크
+          const aiOptNo = document.querySelector('#E1_7_1_2, input[name="E1_7_1"][value="2"]');
+          if (aiOptNo) {
+            aiOptNo.checked = true;
+            aiOptNo.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') $(aiOptNo).prop('checked', true).trigger('change');
+          }
+          const aiCntInp = document.querySelector('#E1_7_2, input[name="E1_7_2"]');
+          if (aiCntInp) {
+            aiCntInp.value = '';
+            aiCntInp.disabled = true;
+          }
+          // AI 시설필요도 (1~5 척도 랜덤)
+          const aiNeedRadios = Array.from(document.querySelectorAll('input[name="E1_7_3"]'));
+          if (aiNeedRadios.length > 0) {
+            const randVal = String(Math.floor(Math.random() * 5) + 1);
+            const targetRadio = document.querySelector(`input[name="E1_7_3"][value="${randVal}"]`) || aiNeedRadios[2];
+            if (targetRadio) {
+              targetRadio.checked = true;
+              targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
+        }, { preserveExisting });
+
+        await captureStep('P17', 'P17_소방시설E1');
+        await delay(800);
+        const prevUrl = page.url();
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.click('#next').catch(() => {})
+        ]);
+        await delay(600);
+
+        if (page.url() === prevUrl) {
+          logger.warn(`[상인회 러너] [P17] 잔류 감지 ➔ move_page로 P18 돌파...`);
+          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P18'); }).catch(() => {});
+          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+        }
+        continue;
+      }
+
+      // ------------------------------------------
+      // 2-0) P20 (F1 ~ F4: 빈 점포 현황 수치 '0' 주입)
+      // ------------------------------------------
+      if (currUrl.includes('P20') || currPageName === 'P20') {
+        onProgress({ step: 'P20', message: `[P20] F1~F4 빈 점포 수치 '0' 자동 응답 중...` });
+        await syncAllChildFrames(page);
+        await delay(600);
+
+        await mirrorPrevYearToCurrent(page, { preserveExisting });
+
+        // F1.asp: 항목 모두 '0'으로 입력 및 calcF1_4 호출
+        const f1Frame = page.frames().find(f => f.url().includes('F1.asp'));
+        if (f1Frame) {
+          try {
+            await f1Frame.evaluate(() => {
+              ['F1_1', 'F1_2', 'F1_3', 'F1_4'].forEach(name => {
+                const inp = document.querySelector(`input[name="${name}"]`);
+                if (inp) {
+                  inp.value = '0';
+                  inp.dispatchEvent(new Event('input', { bubbles: true }));
+                  inp.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(inp).val('0').trigger('input').trigger('change');
+                }
+              });
+              if (typeof calcF1_4 === 'function') calcF1_4();
+            });
+          } catch (_) {}
+        }
+
+        // F2.asp: 빈점포 상태별 개수 모두 '0' 주입
+        const f2Frame = page.frames().find(f => f.url().includes('F2.asp'));
+        if (f2Frame) {
+          try {
+            await f2Frame.evaluate(() => {
+              ['F2A_1', 'F2A_2', 'F2A_3', 'F2A_4'].forEach(name => {
+                const inp = document.querySelector(`input[name="${name}"]`);
+                if (inp) {
+                  inp.value = '0';
+                  inp.dispatchEvent(new Event('input', { bubbles: true }));
+                  inp.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              });
+              for (let i = 1; i <= 4; i++) {
+                ['1', '2'].forEach(sub => {
+                  const bInp = document.querySelector(`input[name="F2B_${i}_${sub}"]`);
+                  if (bInp) {
+                    bInp.value = '0';
+                    bInp.dispatchEvent(new Event('input', { bubbles: true }));
+                    bInp.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                });
+              }
+            });
+          } catch (_) {}
+        }
+
+        // F3.asp & F4.asp 안전망
         for (const f of page.frames()) {
           try {
             await f.evaluate(() => {
-              const f1_2 = document.querySelector('input[name="F1_2"]');
-              if (f1_2 && (!f1_2.value || f1_2.value.trim() === '')) {
-                f1_2.value = '0';
-                f1_2.dispatchEvent(new Event('input', { bubbles: true }));
-                f1_2.dispatchEvent(new Event('change', { bubbles: true }));
+              const f3Checkboxes = document.querySelectorAll('input[type="checkbox"][name^="F3"]');
+              if (f3Checkboxes.length > 0) {
+                const hasChecked = Array.from(f3Checkboxes).some(c => c.checked);
+                if (!hasChecked) {
+                  const f3_2 = document.querySelector('#F3_2, input[name="F3_2"]') || document.querySelector('#F3_1, input[name="F3_1"]');
+                  if (f3_2) { f3_2.checked = true; f3_2.dispatchEvent(new Event('change', { bubbles: true })); }
+                }
               }
-              const f1_3 = document.querySelector('input[name="F1_3"]');
-              if (f1_3 && (!f1_3.value || f1_3.value.trim() === '')) {
-                f1_3.value = '0';
-                f1_3.dispatchEvent(new Event('input', { bubbles: true }));
-                f1_3.dispatchEvent(new Event('change', { bubbles: true }));
-              }
-              if (typeof calcF1_4 === 'function') {
-                calcF1_4();
+              const f4Inputs = document.querySelectorAll('input[name^="F4"]:not([readonly]):not([type="hidden"])');
+              if (f4Inputs.length > 0) {
+                f4Inputs.forEach(inp => { if (!inp.value) inp.value = '0'; });
               }
             });
           } catch (_) {}
@@ -345,24 +1394,25 @@ export async function runKstatAssocSurvey(options = {}) {
       }
 
       // ------------------------------------------
-      // 2) P21 (F5, F6: 빈 점포 현황)
+      // 2) P21 (F5, F6: 빈 점포 현황 - '기타' 제외 나머지 항목 중 랜덤 입력)
       // ------------------------------------------
       if (currUrl.includes('P21') || currPageName === 'P21') {
-        onProgress({ step: 'P21', message: `[P21] F5, F6 빈 점포 현황 정책 응답 중...` });
+        onProgress({ step: 'P21', message: `[P21] F5, F6 빈 점포 현황 정책 응답 ('기타' 제외 랜덤) 중...` });
         await syncAllChildFrames(page);
         await delay(600);
 
-        // 1~5 랜덤 분산 지원: 설정값이 'random'인 경우 1~5 중 무작위 정수 선택
-        let f5Val = policy.F5_emptyStoreReason || '1';
-        if (f5Val === 'random') {
-          f5Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위
+        // F5: 1~4 항목 중 랜덤 선택 (5번 기타 제외)
+        let f5Val = policy.F5_emptyStoreReason || 'random';
+        if (f5Val === 'random' || f5Val === '5') {
+          f5Val = String(Math.floor(Math.random() * 4) + 1); // 1~4 무작위
         }
-        let f6Val = policy.F6_emptyStorePolicy || '1';
-        if (f6Val === 'random') {
-          f6Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위 (6번 기타 제외)
+        // F6: 1~5 항목 중 랜덤 선택 (6번 기타 제외)
+        let f6Val = policy.F6_emptyStorePolicy || 'random';
+        if (f6Val === 'random' || f6Val === '6') {
+          f6Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위
         }
 
-        logger.info(`[상인회 러너] [P21] 정책 답변: F5=${f5Val}${policy.F5_emptyStoreReason === 'random' ? ' (🎲 1~5 랜덤)' : ''}, F6=${f6Val}${policy.F6_emptyStorePolicy === 'random' ? ' (🎲 1~5 랜덤)' : ''}`);
+        logger.info(`[상인회 러너] [P21] 정책 답변: F5=${f5Val} (🎲 기타 제외 랜덤), F6=${f6Val} (🎲 기타 제외 랜덤)`);
 
         // F5 프레임
         const f5Frame = page.frames().find(f => f.url().includes('F5.asp'));
@@ -410,24 +1460,25 @@ export async function runKstatAssocSurvey(options = {}) {
       }
 
       // ------------------------------------------
-      // 3) P22 (G1, G2: 바가지요금 현황)
+      // 3) P22 (G1, G2: 바가지요금 현황 - '기타' 제외 나머지 항목 중 랜덤 입력)
       // ------------------------------------------
       if (currUrl.includes('P22') || currPageName === 'P22') {
-        onProgress({ step: 'P22', message: `[P22] G1, G2 바가지요금 정책 응답 중...` });
+        onProgress({ step: 'P22', message: `[P22] G1, G2 바가지요금 정책 응답 ('기타' 제외 랜덤) 중...` });
         await syncAllChildFrames(page);
         await delay(600);
 
-        // 1~5 랜덤 분산 지원: 설정값이 'random'인 경우 1~5 중 무작위 정수 선택
-        let g1Val = policy.G1_overchargeReason || '1';
-        if (g1Val === 'random') {
-          g1Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위 (6번 기타 제외)
+        // G1: 1~5 항목 중 랜덤 선택 (6번 기타 제외)
+        let g1Val = policy.G1_overchargeReason || 'random';
+        if (g1Val === 'random' || g1Val === '6') {
+          g1Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위
         }
-        let g2Val = policy.G2_overchargeSolution || '1';
-        if (g2Val === 'random') {
-          g2Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위 (6번 기타 제외)
+        // G2: 1~5 항목 중 랜덤 선택 (6번 기타 제외)
+        let g2Val = policy.G2_overchargeSolution || 'random';
+        if (g2Val === 'random' || g2Val === '6') {
+          g2Val = String(Math.floor(Math.random() * 5) + 1); // 1~5 무작위
         }
 
-        logger.info(`[상인회 러너] [P22] 정책 답변: G1=${g1Val}${policy.G1_overchargeReason === 'random' ? ' (🎲 1~5 랜덤)' : ''}, G2=${g2Val}${policy.G2_overchargeSolution === 'random' ? ' (🎲 1~5 랜덤)' : ''}`);
+        logger.info(`[상인회 러너] [P22] 정책 답변: G1=${g1Val} (🎲 기타 제외 랜덤), G2=${g2Val} (🎲 기타 제외 랜덤)`);
 
         // G1 프레임
         const g1Frame = page.frames().find(f => f.url().includes('G1.asp'));
@@ -475,10 +1526,10 @@ export async function runKstatAssocSurvey(options = {}) {
       }
 
       // ------------------------------------------
-      // 4) P23 (G3, G4: 문화콘텐츠 및 기후재해 대비)
+      // 4) P23 (G3, G4: 문화콘텐츠 및 기후재해 대비 - G4 랜덤하게 일부 미체크)
       // ------------------------------------------
       if (currUrl.includes('P23') || currPageName === 'P23') {
-        onProgress({ step: 'P23', message: `[P23] G3, G4 문화 및 기후재해 시설 응답 중...` });
+        onProgress({ step: 'P23', message: `[P23] G3 문화 및 G4 기후재해 시설(랜덤 분산) 응답 중...` });
         await syncAllChildFrames(page);
         await delay(600);
 
@@ -502,19 +1553,82 @@ export async function runKstatAssocSurvey(options = {}) {
                 }
               }
 
-              // G4: 체크박스가 이미 체크되어 있다면 보존, 없을 때만 일반 시설 체크
+              // G4: '보유여부(_H)', '필요여부(_N)' 모두 체크하지 않고 랜덤하게 일부 미체크
+              // (단, 카테고리별 최소 1개는 체크하여 설문 유효성 통과 보장, 기타_ETC는 체크 제외)
               if (document.querySelector('input[name^="G4"]')) {
                 const g4Checked = document.querySelectorAll('input[type="checkbox"][name^="G4"]:checked');
                 if (!preserveExisting || g4Checked.length === 0) {
-                  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                    if (!cb.name.includes('G4_1_7') && !cb.name.includes('G4_2_6') && 
-                        !cb.name.includes('G4_3_6') && !cb.name.includes('G4_4_6') &&
-                        !cb.id.includes('G4_1_7') && !cb.id.includes('G4_2_6') && 
-                        !cb.id.includes('G4_3_6') && !cb.id.includes('G4_4_6')) {
-                      cb.checked = true;
-                      cb.dispatchEvent(new Event('change', { bubbles: true }));
+                  // G4-1 냉방 (1~6), G4-2 난방 (1~5), G4-3 수해 (1~5)
+                  const sections = [
+                    { prefix: 'G4_1', max: 6 },
+                    { prefix: 'G4_2', max: 5 },
+                    { prefix: 'G4_3', max: 5 }
+                  ];
+
+                  sections.forEach(sec => {
+                    let checkedH = 0;
+                    let checkedN = 0;
+
+                    for (let idx = 1; idx <= sec.max; idx++) {
+                      const cbH = document.querySelector(`input[type="checkbox"][name="${sec.prefix}_${idx}_H"]`);
+                      const cbN = document.querySelector(`input[type="checkbox"][name="${sec.prefix}_${idx}_N"]`);
+
+                      // 보유여부(_H): 60% 확률로 체크
+                      if (cbH) {
+                        const shouldCheckH = Math.random() < 0.60;
+                        if (shouldCheckH) {
+                          cbH.checked = true;
+                          cbH.dispatchEvent(new Event('change', { bubbles: true }));
+                          checkedH++;
+                        } else {
+                          cbH.checked = false;
+                        }
+                      }
+
+                      // 필요여부(_N): 50% 확률로 체크
+                      if (cbN) {
+                        const shouldCheckN = Math.random() < 0.50;
+                        if (shouldCheckN) {
+                          cbN.checked = true;
+                          cbN.dispatchEvent(new Event('change', { bubbles: true }));
+                          checkedN++;
+                        } else {
+                          cbN.checked = false;
+                        }
+                      }
+                    }
+
+                    // 안전망: 만약 모두 미체크된 경우 1번 항목 강제 체크
+                    if (checkedH === 0) {
+                      const firstH = document.querySelector(`input[type="checkbox"][name="${sec.prefix}_1_H"]`);
+                      if (firstH) { firstH.checked = true; firstH.dispatchEvent(new Event('change', { bubbles: true })); }
+                    }
+                    if (checkedN === 0) {
+                      const firstN = document.querySelector(`input[type="checkbox"][name="${sec.prefix}_1_N"]`);
+                      if (firstN) { firstN.checked = true; firstN.dispatchEvent(new Event('change', { bubbles: true })); }
                     }
                   });
+
+                  // G4-4 수해피해방지활동 (1~5)
+                  let checkedAct = 0;
+                  for (let idx = 1; idx <= 5; idx++) {
+                    const cb25 = document.querySelector(`input[type="checkbox"][name="G4_4_${idx}_Y25"]`);
+                    const cb26 = document.querySelector(`input[type="checkbox"][name="G4_4_${idx}_Y26"]`);
+                    if (cb25 && Math.random() < 0.65) {
+                      cb25.checked = true;
+                      cb25.dispatchEvent(new Event('change', { bubbles: true }));
+                      checkedAct++;
+                    }
+                    if (cb26 && Math.random() < 0.50) {
+                      cb26.checked = true;
+                      cb26.dispatchEvent(new Event('change', { bubbles: true }));
+                      checkedAct++;
+                    }
+                  }
+                  if (checkedAct === 0) {
+                    const firstAct = document.querySelector('input[type="checkbox"][name="G4_4_1_Y25"]');
+                    if (firstAct) { firstAct.checked = true; firstAct.dispatchEvent(new Event('change', { bubbles: true })); }
+                  }
                 }
               }
             }, { preserveExisting });
@@ -759,7 +1873,7 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
         const prevInputs = Array.from(document.querySelectorAll('input[name^="P"]:not([type="radio"]):not([type="checkbox"]):not([type="hidden"])'));
         prevInputs.forEach(pInp => {
           const currName = pInp.name.substring(1);
-          if (currName === 'TD3_1' || currName.startsWith('TD3')) return; // D3 트랩 방어
+          if (currName === 'TD3_1' || currName.startsWith('TD3') || currName.startsWith('C1_') || currName.startsWith('C2_') || currName.startsWith('D1AA_') || currName.startsWith('E1_') || currName.startsWith('F1_')) return; // D3, C1, C2, D1AA, E1, F1 트랩 방어
           const currInp = document.querySelector(`input[name="${currName}"]`);
           if (currInp) {
             if (preserveExisting && currInp.value && currInp.value.trim() !== '') {
@@ -888,6 +2002,16 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
           }
         }
 
+        // D3A: 정부지원사업 내용 (지원기관명, 사업명, 사업내용 결측 방어)
+        for (let gi = 1; gi <= 5; gi++) {
+          const aa = document.querySelector(`#D3AA_${gi}`);
+          const ab = document.querySelector(`#D3AB_${gi}`);
+          const ac = document.querySelector(`#D3AC_${gi}`);
+          if (aa && !aa.value) { aa.value = '소상공인시장진흥공단'; aa.dispatchEvent(new Event('input', { bubbles: true })); }
+          if (ab && !ab.value) { ab.value = '전통시장 활성화 지원사업'; ab.dispatchEvent(new Event('input', { bubbles: true })); }
+          if (ac && !ac.value) { ac.value = '시설현대화 및 마케팅 지원'; ac.dispatchEvent(new Event('input', { bubbles: true })); }
+        }
+
         // F1~F4: 빈점포 현황 안전망
         const f1_1 = document.querySelector('input[name="F1_1"]');
         if (f1_1 && (!f1_1.value || f1_1.value.trim() === '')) {
@@ -917,6 +2041,22 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
           });
           const f4e4 = document.querySelector('input[name="F4E_4"]');
           if (f4e4) f4e4.value = '0';
+        }
+        // B5: 상인회비 및 총회 실시
+        const b5d = document.querySelector('input[name="B5D"]');
+        if (b5d && (!b5d.value || b5d.value.trim() === '')) {
+          b5d.value = '1';
+          b5d.dispatchEvent(new Event('input', { bubbles: true }));
+          b5d.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // B6: 팩스 유무 신규 라디오
+        if (document.querySelector('input[name="B6D"]') && !document.querySelector('input[name="B6D"]:checked')) {
+          const opt2 = document.querySelector('input[name="B6D"][value="2"]');
+          if (opt2) {
+            opt2.checked = true;
+            opt2.dispatchEvent(new Event('change', { bubbles: true }));
+          }
         }
 
         // 자동 계산 함수 트리거
