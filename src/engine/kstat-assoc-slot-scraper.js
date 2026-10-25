@@ -137,8 +137,10 @@ export async function scrapeKstatAssocSlots(listUrl, options = {}) {
         address: s.address,
         office: s.office,
         zone: s.zone,
-        ranId: s.ran_id,
+        idSel: s.idSel || (s.kid ? String(Number(s.kid) + 1) : null),
         kid: s.kid,
+        gid: s.gid || '0',
+        ranId: s.ran_id,
         slotUrl: surveyUrl,
         evalUrl: evalUrl,
         quotaStatus: 'ready'

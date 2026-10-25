@@ -4458,6 +4458,37 @@ async function initSurveyDetailPage() {
     });
   }
 
+  // Kstat list.php 상태 실시간 동기화 버튼
+  const btnSyncKstatStatus = document.getElementById('btn-sync-kstat-status');
+  if (btnSyncKstatStatus) {
+    btnSyncKstatStatus.addEventListener('click', async () => {
+      if (!currentCampaign?.id) return;
+      const originalText = btnSyncKstatStatus.innerHTML;
+      btnSyncKstatStatus.disabled = true;
+      btnSyncKstatStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kstat 동기화 중...';
+      try {
+        const res = await fetch(`/api/campaigns/${currentCampaign.id}/sync-kstat-status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`✓ ${data.message}`);
+          appendLog('success', `[Kstat 상태 동기화] ${data.message}`);
+        } else {
+          alert(`동기화 실패: ${data.error || '알 수 없는 오류'}`);
+          appendLog('error', `[Kstat 상태 동기화 오류] ${data.error}`);
+        }
+      } catch (err) {
+        alert(`동기화 요청 오류: ${err.message}`);
+        appendLog('error', `[Kstat 상태 동기화 통신 오류] ${err.message}`);
+      } finally {
+        btnSyncKstatStatus.disabled = false;
+        btnSyncKstatStatus.innerHTML = originalText;
+      }
+    });
+  }
+
   // Kstat 슬롯 바인딩 모달 제어
   const btnOpenBindSlots = document.getElementById('btn-open-bind-slots');
   const modalBindSlots = document.getElementById('modal-bind-slots');

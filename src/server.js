@@ -26,6 +26,7 @@ import { scrapeKstatSlots } from './engine/kstat-slot-scraper.js';
 import { scrapeKstatAssocSlots } from './engine/kstat-assoc-slot-scraper.js';
 import { runKstatAssocSurvey } from './engine/kstat-assoc-runner.js';
 import { getIndustryGroupKey } from './engine/persona-builder.js';
+import { syncKstatSlotStatus, syncCampaignKstatSlots } from './engine/kstat-sync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -752,7 +753,9 @@ app.post('/api/campaigns/:id/bind-assoc-slots', async (req, res) => {
       office: s.office,
       zone: s.zone,
       ranId: s.ranId,
+      idSel: s.idSel || (s.kid ? String(Number(s.kid) + 1) : null),
       kid: s.kid,
+      gid: s.gid || '0',
       slotUrl: s.slotUrl,
       evalUrl: s.evalUrl,
       quotaStatus: 'ready'
@@ -782,6 +785,30 @@ app.post('/api/campaigns/:id/bind-assoc-slots', async (req, res) => {
     });
   } catch (err) {
     logger.error('[상인회 슬롯 바인딩 실패]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// [1-1] Kstat TAPI list.php 실시간 상태 동기화 API
+// ==========================================
+app.post('/api/campaigns/:id/sync-kstat-status', async (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  try {
+    logger.info(`[Kstat 상태 일괄 동기화 시작] 캠페인 "${campaign.title}" (${campaign.id})`);
+    const syncRes = await syncCampaignKstatSlots(campaign);
+    logger.success(`[Kstat 상태 일괄 동기화 완료] 총 ${syncRes.syncedCount}개 슬롯 동기화 성공`);
+    res.json({
+      success: true,
+      message: `총 ${syncRes.syncedCount}개 슬롯의 Kstat list.php 상태 동기화가 완료되었습니다.`,
+      details: syncRes
+    });
+  } catch (err) {
+    logger.error(`[Kstat 상태 동기화 오류] ${err.message}`);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1372,6 +1399,13 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
                 targetBiz.evalStatus = 'completed';
                 targetBiz.evalResults = evalResult.evalResults;
                 logger.success(`🎉 [파일럿 2단계 완료] "${targetBiz.marketName || targetBiz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
+                await syncKstatSlotStatus({
+                  pridSel: '2026070801',
+                  idSel: targetBiz.idSel,
+                  kid: targetBiz.kid,
+                  gid: targetBiz.gid,
+                  srt: 2
+                }).catch(() => {});
               }
             } catch (evalErr) {
               logger.warn(`[파일럿 평가 경고] 상인회 조사원 평가 연계 중 예외: ${evalErr.message}`);
@@ -1404,12 +1438,28 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
                 targetBiz.evalStatus = 'completed';
                 targetBiz.evalResults = evalResult.evalResults;
                 logger.success(`🎉 [파일럿 2단계 완료] "${targetBiz.companyName}" 조사원 평가 작성 100% 완료!`);
+                await syncKstatSlotStatus({
+                  pridSel: '2026070802',
+                  idSel: targetBiz.idSel,
+                  kid: targetBiz.kid,
+                  gid: targetBiz.gid,
+                  srt: 2
+                }).catch(() => {});
               }
             } catch (evalErr) {
               logger.warn(`[파일럿 평가 경고] 조사원 평가 연계 중 예외: ${evalErr.message}`);
             }
           }
         }
+
+        // 본설문 상태 동기화 (Kstat list.php 캐시 갱신)
+        await syncKstatSlotStatus({
+          pridSel: isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802'),
+          idSel: targetBiz.idSel,
+          kid: targetBiz.kid,
+          gid: targetBiz.gid,
+          srt: 1
+        }).catch(() => {});
 
         CampaignStore.updateCampaign(campaign.id, {
           quotaDatabase: quotaDb,
@@ -1620,6 +1670,13 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
                   biz.evalStatus = 'completed';
                   biz.evalResults = evalResult.evalResults;
                   logger.success(`🎉 [배치 #${biz.index || (i + startIndex)} 완료] "${biz.marketName || biz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
+                  await syncKstatSlotStatus({
+                    pridSel: '2026070801',
+                    idSel: biz.idSel,
+                    kid: biz.kid,
+                    gid: biz.gid,
+                    srt: 2
+                  }).catch(() => {});
                 }
               } catch (evalErr) {
                 logger.warn(`[배치 평가 경고] "${biz.marketName || biz.companyName}" 상인회 조사원 평가 연계 중 예외: ${evalErr.message}`);
@@ -1656,6 +1713,13 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
                   biz.evalStatus = 'completed';
                   biz.evalResults = evalResult.evalResults;
                   logger.success(`🎉 [배치 #${biz.index || (i + startIndex)} 완료] "${biz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
+                  await syncKstatSlotStatus({
+                    pridSel: '2026070802',
+                    idSel: biz.idSel,
+                    kid: biz.kid,
+                    gid: biz.gid,
+                    srt: 2
+                  }).catch(() => {});
                 }
               } catch (evalErr) {
                 logger.warn(`[배치 평가 경고] "${biz.companyName}" 조사원 평가 연계 중 예외: ${evalErr.message}`);
@@ -1664,6 +1728,15 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
               logger.success(`[배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" 본 설문 완료!`);
             }
           }
+
+          // 본설문 상태 동기화 (Kstat list.php 캐시 갱신)
+          await syncKstatSlotStatus({
+            pridSel: isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802'),
+            idSel: biz.idSel,
+            kid: biz.kid,
+            gid: biz.gid,
+            srt: 1
+          }).catch(() => {});
         } else {
           biz.quotaStatus = 'error';
           biz.error = result?.error || '설문 실행 오류';
