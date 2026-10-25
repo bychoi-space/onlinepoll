@@ -21,6 +21,7 @@ import * as CampaignStore from './models/campaign.js';
 import { exportBusinessesToExcel } from './utils/excel.js';
 import { runKstatSurvey } from './engine/kstat-runner.js';
 import { runKstatEvaluation } from './engine/kstat-eval-runner.js';
+import { runKstatAssocEvaluation } from './engine/kstat-assoc-eval-runner.js';
 import { scrapeKstatSlots } from './engine/kstat-slot-scraper.js';
 import { scrapeKstatAssocSlots } from './engine/kstat-assoc-slot-scraper.js';
 import { runKstatAssocSurvey } from './engine/kstat-assoc-runner.js';
@@ -1311,8 +1312,40 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
         targetBiz.pilotAt = new Date().toISOString();
         targetBiz.capturedSteps = result.capturedSteps;
 
-        // 조사원 평가항목 연계 실행 (점포조사 전용)
-        if (!isAssoc) {
+        // 조사원 평가항목 연계 실행 (점포조사 및 상인회조사 2단계 연계)
+        if (isAssoc) {
+          const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
+          if (evalUrl) {
+            logger.info(`[파일럿 2단계] "${targetBiz.marketName || targetBiz.companyName}" 상인회 조사원 평가 작성 자동 연계 시작...`);
+            try {
+              const evalResult = await runKstatAssocEvaluation({
+                evalUrl,
+                assocData: targetBiz,
+                guidelineConfig: {
+                  ...(campaign.guidelineConfig || {}),
+                  assocPolicy: campaign.assocPolicy || campaign.guidelineConfig?.assocPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline
+                },
+                reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`),
+                onProgress: (info) => {
+                  logger.info(`[파일럿 평가] ${info.message}`);
+                  logger.broadcast({
+                    type: 'PILOT_PROGRESS',
+                    campaignId: campaign.id,
+                    quotaIndex: targetBiz.index,
+                    ...info
+                  });
+                }
+              });
+              if (evalResult.success) {
+                targetBiz.evalStatus = 'completed';
+                targetBiz.evalResults = evalResult.evalResults;
+                logger.success(`🎉 [파일럿 2단계 완료] "${targetBiz.marketName || targetBiz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
+              }
+            } catch (evalErr) {
+              logger.warn(`[파일럿 평가 경고] 상인회 조사원 평가 연계 중 예외: ${evalErr.message}`);
+            }
+          }
+        } else {
           const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
           if (evalUrl) {
             logger.info(`[파일럿 2단계] "${targetBiz.companyName}" 조사원 평가항목 작성 자동 연계 시작...`);
@@ -1520,8 +1553,44 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           biz.completedAt = new Date().toISOString();
           biz.capturedSteps = result.capturedSteps;
 
-          // 2단계: 조사원 평가항목 작성 자동 연계 (점포조사 전용)
-          if (!isAssoc) {
+          // 2단계: 조사원 평가항목 작성 자동 연계 (점포조사 및 상인회조사 전수 지원)
+          if (isAssoc) {
+            const evalUrl = biz.evalUrl || (biz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${biz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
+            if (evalUrl) {
+              logger.info(`[배치 #${biz.index || (i + startIndex)} 2단계] "${biz.marketName || biz.companyName}" 상인회 조사원 평가 연계 시작...`);
+              try {
+                const evalResult = await runKstatAssocEvaluation({
+                  evalUrl,
+                  assocData: biz,
+                  guidelineConfig: {
+                    ...campaign.guidelineConfig,
+                    assocPolicy: campaign.assocPolicy || campaign.guidelineConfig?.assocPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline
+                  },
+                  reportDir: path.join(reportsDir, campaign.id, `item_${biz.index || (i + startIndex)}`),
+                  onProgress: (info) => {
+                    logger.info(`[배치 #${biz.index || (i + startIndex)}] [평가] ${info.message}`);
+                    logger.broadcast({
+                      type: 'BATCH_PROGRESS',
+                      campaignId: campaign.id,
+                      quotaIndex: biz.index || (i + startIndex),
+                      itemNumber: i + 1,
+                      totalItems: targets.length,
+                      ...info
+                    });
+                  }
+                });
+                if (evalResult.success) {
+                  biz.evalStatus = 'completed';
+                  biz.evalResults = evalResult.evalResults;
+                  logger.success(`🎉 [배치 #${biz.index || (i + startIndex)} 완료] "${biz.marketName || biz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
+                }
+              } catch (evalErr) {
+                logger.warn(`[배치 평가 경고] "${biz.marketName || biz.companyName}" 상인회 조사원 평가 연계 중 예외: ${evalErr.message}`);
+              }
+            } else {
+              logger.success(`[상인회 배치 ${i + 1}/${targets.length} 완료] "${biz.marketName || biz.companyName}" 본 설문 완료!`);
+            }
+          } else {
             const evalUrl = biz.evalUrl || (biz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${biz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
             if (evalUrl) {
               logger.info(`[배치 #${biz.index || (i + startIndex)} 2단계] "${biz.companyName}" 조사원 평가 작성 연계 시작...`);
@@ -1557,8 +1626,6 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
             } else {
               logger.success(`[배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" 본 설문 완료!`);
             }
-          } else {
-            logger.success(`[상인회 배치 ${i + 1}/${targets.length} 완료] "${biz.marketName || biz.companyName}" 본 설문 완료!`);
           }
         } else {
           biz.quotaStatus = 'error';

@@ -46,7 +46,20 @@
     "G4_flood_pump": true,
     "G4_flood_wall": false,
     "G4_flood_activity_2025": true,
-    "G4_flood_activity_2026": true
+    "G4_flood_activity_2026": true,
+    "eval_H1_1_cleanliness": 4,
+    "eval_H1_2_entrance": 4,
+    "eval_H1_3_parking": 3,
+    "eval_H1_4_floor": 4,
+    "eval_H1_jitter": true,
+    "eval_H2_1_specialStreet": "1",
+    "eval_H2_1_customText": "먹거리 및 패션 특화골목",
+    "eval_H2_2_specialProduct": "1",
+    "eval_H2_2_customText": "지역 대표 먹거리 및 신선식품",
+    "eval_H2_3_brandMark": "2",
+    "eval_H2_3_customText": "",
+    "eval_H2_4_brandUsage": "2",
+    "eval_H2_4_customText": ""
   },
   "sections": [
     {
@@ -195,6 +208,16 @@
       "key": "G4",
       "title": "G4. 기후재해 대비 현황 (P23)",
       "desc": "냉방시설(에어컨, 냉풍기, 아케이드 등), 난방시설(온풍기, 난로 등), 수해 방지 시설(배수펌프, 차수판 등) 보유 및 필요 여부"
+    },
+    {
+      "key": "EVAL_H1",
+      "title": "조사원 평가 - H1. 시장 환경 및 시설 평가 (1~5점 척도)",
+      "desc": "H1_1 청결위생, H1_2 입구통로 편의성, H1_3 주차편리성, H1_4 바닥상태 균일성에 대한 1~5점 점수 부여 (동일 점수 편중 방지 지터링 자동 적용)"
+    },
+    {
+      "key": "EVAL_H2",
+      "title": "조사원 평가 - H2. 시장 차별화 및 브랜드화 현황 (있다/없다 및 보충내용)",
+      "desc": "H2_1 특화거리 조성, H2_2 특산품 보유, H2_3 브랜드마크(BI) 보유, H2_4 브랜드 활용 홍보물 비치 여부 (있다=1 선택 시 보충설명 필수 기재, 없다=2 선택 시 비활성화)"
     }
   ]
 }

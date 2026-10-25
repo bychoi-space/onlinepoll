@@ -1173,6 +1173,22 @@ async function initSurveyDetailPage() {
     if (!assocPolicyState.A8_closeMinute) assocPolicyState.A8_closeMinute = '0';
     if (assocPolicyState.A8_noTime === undefined) assocPolicyState.A8_noTime = false;
 
+    // 조사원 평가 기본값 보정
+    if (assocPolicyState.eval_H1_1_cleanliness === undefined) assocPolicyState.eval_H1_1_cleanliness = 4;
+    if (assocPolicyState.eval_H1_2_entrance === undefined) assocPolicyState.eval_H1_2_entrance = 4;
+    if (assocPolicyState.eval_H1_3_parking === undefined) assocPolicyState.eval_H1_3_parking = 3;
+    if (assocPolicyState.eval_H1_4_floor === undefined) assocPolicyState.eval_H1_4_floor = 4;
+    if (assocPolicyState.eval_H1_jitter === undefined) assocPolicyState.eval_H1_jitter = true;
+
+    if (assocPolicyState.eval_H2_1_specialStreet === undefined) assocPolicyState.eval_H2_1_specialStreet = '1';
+    if (assocPolicyState.eval_H2_1_customText === undefined) assocPolicyState.eval_H2_1_customText = '먹거리 및 패션 특화골목';
+    if (assocPolicyState.eval_H2_2_specialProduct === undefined) assocPolicyState.eval_H2_2_specialProduct = '1';
+    if (assocPolicyState.eval_H2_2_customText === undefined) assocPolicyState.eval_H2_2_customText = '지역 대표 먹거리 및 신선식품';
+    if (assocPolicyState.eval_H2_3_brandMark === undefined) assocPolicyState.eval_H2_3_brandMark = '2';
+    if (assocPolicyState.eval_H2_3_customText === undefined) assocPolicyState.eval_H2_3_customText = '';
+    if (assocPolicyState.eval_H2_4_brandUsage === undefined) assocPolicyState.eval_H2_4_brandUsage = '2';
+    if (assocPolicyState.eval_H2_4_customText === undefined) assocPolicyState.eval_H2_4_customText = '';
+
     // 0. STEP 2 부모 컨테이너 노출 100% 보장 (0건 쿼터/슬롯 상태에서도 상인회 가이드는 항상 노출)
     const bpSection = document.getElementById('section-master-blueprint');
     if (bpSection) {
@@ -1813,6 +1829,160 @@ async function initSurveyDetailPage() {
           </div>
         </div>
       </section>
+
+      <!-- 카드 16: [조사원 평가] H1. 전통시장 환경 및 시설 수준 평가 (1~5점 척도) -->
+      <section class="blueprint-card full-width-card" style="grid-column: 1 / -1; width: 100%;">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill assoc-rule-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);"><i class="fa-solid fa-clipboard-check"></i> 조사원 평가 (H1)</span>
+            <h3 class="blueprint-stage-title">조사원 평가: 전통시장 환경 및 시설 수준 평가 (1~5점 척도)</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 조사원 평가 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          설문 완료 후 조사원이 직접 평가하는 4개 시설·환경 항목입니다. 1(매우 열악) ~ 5(매우 우수) 점수를 설정하며, <strong>응답 편중(동일 점수 몰림) 방지 지터링</strong>을 통해 Kstat 유효성 경고를 자동 방어합니다.
+        </div>
+        <div class="p-14">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;" class="mb-14">
+            <!-- H1_1 청결위생 -->
+            <div class="assoc-rule-box mb-0">
+              <label class="figma-label font-bold text-white mb-6">H1-1. 시장 전반의 청결 및 위생 상태</label>
+              <select id="select-assoc-eval-H1-1" class="figma-select w-full">
+                <option value="5" ${String(assocPolicyState.eval_H1_1_cleanliness) === '5' ? 'selected' : ''}>5점 - 매우 청결하고 쾌적함</option>
+                <option value="4" ${(String(assocPolicyState.eval_H1_1_cleanliness) === '4' || assocPolicyState.eval_H1_1_cleanliness === undefined) ? 'selected' : ''}>4점 - 전반적으로 양호함 (기본 권장)</option>
+                <option value="3" ${String(assocPolicyState.eval_H1_1_cleanliness) === '3' ? 'selected' : ''}>3점 - 보통 수준</option>
+                <option value="2" ${String(assocPolicyState.eval_H1_1_cleanliness) === '2' ? 'selected' : ''}>2점 - 다소 미흡함</option>
+                <option value="1" ${String(assocPolicyState.eval_H1_1_cleanliness) === '1' ? 'selected' : ''}>1점 - 매우 열악함</option>
+              </select>
+            </div>
+
+            <!-- H1_2 입구통로 -->
+            <div class="assoc-rule-box mb-0">
+              <label class="figma-label font-bold text-white mb-6">H1-2. 주 출입구 및 통행로 편의성</label>
+              <select id="select-assoc-eval-H1-2" class="figma-select w-full">
+                <option value="5" ${String(assocPolicyState.eval_H1_2_entrance) === '5' ? 'selected' : ''}>5점 - 매우 넓고 보행 편리</option>
+                <option value="4" ${(String(assocPolicyState.eval_H1_2_entrance) === '4' || assocPolicyState.eval_H1_2_entrance === undefined) ? 'selected' : ''}>4점 - 전반적으로 양호함 (기본 권장)</option>
+                <option value="3" ${String(assocPolicyState.eval_H1_2_entrance) === '3' ? 'selected' : ''}>3점 - 보통 수준</option>
+                <option value="2" ${String(assocPolicyState.eval_H1_2_entrance) === '2' ? 'selected' : ''}>2점 - 다소 혼잡·미흡함</option>
+                <option value="1" ${String(assocPolicyState.eval_H1_2_entrance) === '1' ? 'selected' : ''}>1점 - 통행 매우 불편</option>
+              </select>
+            </div>
+
+            <!-- H1_3 주차편리성 -->
+            <div class="assoc-rule-box mb-0">
+              <label class="figma-label font-bold text-white mb-6">H1-3. 고객 주차 및 이동 편리성</label>
+              <select id="select-assoc-eval-H1-3" class="figma-select w-full">
+                <option value="5" ${String(assocPolicyState.eval_H1_3_parking) === '5' ? 'selected' : ''}>5점 - 주차장 매우 편리</option>
+                <option value="4" ${String(assocPolicyState.eval_H1_3_parking) === '4' ? 'selected' : ''}>4점 - 양호한 편</option>
+                <option value="3" ${(String(assocPolicyState.eval_H1_3_parking) === '3' || assocPolicyState.eval_H1_3_parking === undefined) ? 'selected' : ''}>3점 - 보통 수준 (기본 권장)</option>
+                <option value="2" ${String(assocPolicyState.eval_H1_3_parking) === '2' ? 'selected' : ''}>2점 - 주차 다소 부족</option>
+                <option value="1" ${String(assocPolicyState.eval_H1_3_parking) === '1' ? 'selected' : ''}>1점 - 주차 공간 전무</option>
+              </select>
+            </div>
+
+            <!-- H1_4 바닥균일성 -->
+            <div class="assoc-rule-box mb-0">
+              <label class="figma-label font-bold text-white mb-6">H1-4. 시장 바닥 상태의 균일성</label>
+              <select id="select-assoc-eval-H1-4" class="figma-select w-full">
+                <option value="5" ${String(assocPolicyState.eval_H1_4_floor) === '5' ? 'selected' : ''}>5점 - 바닥 매우 평탄·균일</option>
+                <option value="4" ${(String(assocPolicyState.eval_H1_4_floor) === '4' || assocPolicyState.eval_H1_4_floor === undefined) ? 'selected' : ''}>4점 - 전반적으로 양호함 (기본 권장)</option>
+                <option value="3" ${String(assocPolicyState.eval_H1_4_floor) === '3' ? 'selected' : ''}>3점 - 보통 수준</option>
+                <option value="2" ${String(assocPolicyState.eval_H1_4_floor) === '2' ? 'selected' : ''}>2점 - 굴곡 및 파손 다소 있음</option>
+                <option value="1" ${String(assocPolicyState.eval_H1_4_floor) === '1' ? 'selected' : ''}>1점 - 바닥 매우 불량</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="assoc-rule-box mb-0">
+            <label class="assoc-rule-item">
+              <input type="checkbox" id="cb-assoc-eval-H1-jitter" class="assoc-rule-cb" ${assocPolicyState.eval_H1_jitter !== false ? 'checked' : ''} />
+              <div>
+                <strong class="assoc-rule-title text-success">4개 항목 응답 편중 방지 지터링(Jitter) 자동 적용 [권장]</strong>
+                <div class="assoc-rule-desc">
+                  Kstat 유효성 검사 <code>RadioArrayCnt("H1_1,H1_2,H1_3,H1_4", 99)</code>는 4개 문항에 동일한 점수가 입력되면 "응답 편중" 경고 팝업을 띄웁니다. 이를 방지하기 위해 점포별 시드 기반으로 ±1점의 자연스러운 분산을 자동 부여합니다.
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 17: [조사원 평가] H2. 전통시장 차별화 및 브랜드화 현황 (있다/없다 및 보충설명) -->
+      <section class="blueprint-card full-width-card" style="grid-column: 1 / -1; width: 100%;">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill assoc-rule-pill" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);"><i class="fa-solid fa-tags"></i> 조사원 평가 (H2)</span>
+            <h3 class="blueprint-stage-title">조사원 평가: 전통시장 차별화 및 브랜드화 현황</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 조사원 평가 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          특화거리, 특산품, 브랜드마크(BI), 홍보물 4개 항목의 보유 여부입니다. <strong>'있다(1)' 선택 시 보충설명이 필수로 입력</strong>되어야 하며, '없다(2)' 선택 시 보충설명 입력란은 자동으로 비활성화됩니다.
+        </div>
+        <div class="p-14">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+            <!-- H2_1 특화거리 -->
+            <div class="assoc-rule-box mb-0">
+              <label class="figma-label font-bold text-white mb-6">H2-1. 특화거리(골목) 조성 여부</label>
+              <select id="select-assoc-eval-H2-1" class="figma-select w-full mb-8">
+                <option value="1" ${(String(assocPolicyState.eval_H2_1_specialStreet) === '1' || assocPolicyState.eval_H2_1_specialStreet === undefined) ? 'selected' : ''}>1. 있다 (보충설명 필수)</option>
+                <option value="2" ${String(assocPolicyState.eval_H2_1_specialStreet) === '2' ? 'selected' : ''}>2. 없다</option>
+              </select>
+              <div id="wrap-assoc-eval-H2-1-text">
+                <label class="font-caption text-dim mb-4 block">보충설명 (H2_1_NOTE):</label>
+                <input type="text" id="input-assoc-eval-H2-1-text" class="figma-input w-full" 
+                       placeholder="예: 먹거리 및 패션 특화골목" 
+                       value="${escapeHtml(assocPolicyState.eval_H2_1_customText ?? '먹거리 및 패션 특화골목')}" />
+              </div>
+            </div>
+
+            <!-- H2_2 특산품 -->
+            <div class="assoc-rule-box mb-0">
+              <label class="figma-label font-bold text-white mb-6">H2-2. 대표 특산품 또는 자체 PB상품</label>
+              <select id="select-assoc-eval-H2-2" class="figma-select w-full mb-8">
+                <option value="1" ${(String(assocPolicyState.eval_H2_2_specialProduct) === '1' || assocPolicyState.eval_H2_2_specialProduct === undefined) ? 'selected' : ''}>1. 있다 (보충설명 필수)</option>
+                <option value="2" ${String(assocPolicyState.eval_H2_2_specialProduct) === '2' ? 'selected' : ''}>2. 없다</option>
+              </select>
+              <div id="wrap-assoc-eval-H2-2-text">
+                <label class="font-caption text-dim mb-4 block">보충설명 (H2_2_NOTE):</label>
+                <input type="text" id="input-assoc-eval-H2-2-text" class="figma-input w-full" 
+                       placeholder="예: 지역 대표 먹거리 및 신선식품" 
+                       value="${escapeHtml(assocPolicyState.eval_H2_2_customText ?? '지역 대표 먹거리 및 신선식품')}" />
+              </div>
+            </div>
+
+            <!-- H2_3 브랜드마크 -->
+            <div class="assoc-rule-box mb-0">
+              <label class="figma-label font-bold text-white mb-6">H2-3. 시장 고유 브랜드마크(BI/캐릭터)</label>
+              <select id="select-assoc-eval-H2-3" class="figma-select w-full mb-8">
+                <option value="2" ${(String(assocPolicyState.eval_H2_3_brandMark) === '2' || assocPolicyState.eval_H2_3_brandMark === undefined) ? 'selected' : ''}>2. 없다 (기본 권장)</option>
+                <option value="1" ${String(assocPolicyState.eval_H2_3_brandMark) === '1' ? 'selected' : ''}>1. 있다 (보충설명 필수)</option>
+              </select>
+              <div id="wrap-assoc-eval-H2-3-text" style="display: ${String(assocPolicyState.eval_H2_3_brandMark) === '1' ? 'block' : 'none'};">
+                <label class="font-caption text-dim mb-4 block">보충설명 (H2_3_NOTE):</label>
+                <input type="text" id="input-assoc-eval-H2-3-text" class="figma-input w-full" 
+                       placeholder="예: 시장 고유 캐릭터 및 로고" 
+                       value="${escapeHtml(assocPolicyState.eval_H2_3_customText ?? '')}" />
+              </div>
+            </div>
+
+            <!-- H2_4 홍보물 -->
+            <div class="assoc-rule-box mb-0">
+              <label class="figma-label font-bold text-white mb-6">H2-4. 브랜드 활용 안내판·홍보물 비치</label>
+              <select id="select-assoc-eval-H2-4" class="figma-select w-full mb-8">
+                <option value="2" ${(String(assocPolicyState.eval_H2_4_brandUsage) === '2' || assocPolicyState.eval_H2_4_brandUsage === undefined) ? 'selected' : ''}>2. 없다 (기본 권장)</option>
+                <option value="1" ${String(assocPolicyState.eval_H2_4_brandUsage) === '1' ? 'selected' : ''}>1. 있다 (보충설명 필수)</option>
+              </select>
+              <div id="wrap-assoc-eval-H2-4-text" style="display: ${String(assocPolicyState.eval_H2_4_brandUsage) === '1' ? 'block' : 'none'};">
+                <label class="font-caption text-dim mb-4 block">보충설명 (H2_4_NOTE):</label>
+                <input type="text" id="input-assoc-eval-H2-4-text" class="figma-input w-full" 
+                       placeholder="예: 시장 입구 안내 간판 및 리플릿" 
+                       value="${escapeHtml(assocPolicyState.eval_H2_4_customText ?? '')}" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     `;
 
     // 4. 상인회 정책 요소 이벤트 리스너 바인딩
@@ -1977,6 +2147,38 @@ async function initSurveyDetailPage() {
     bindAssocField('cb-assoc-heating-warmair', 'G4_heating_warmAir', true);
     bindAssocField('cb-assoc-flood-pump', 'G4_flood_pump', true);
     bindAssocField('cb-assoc-flood-wall', 'G4_flood_wall', true);
+
+    // H1 조사원 평가 바인딩
+    bindAssocField('select-assoc-eval-H1-1', 'eval_H1_1_cleanliness');
+    bindAssocField('select-assoc-eval-H1-2', 'eval_H1_2_entrance');
+    bindAssocField('select-assoc-eval-H1-3', 'eval_H1_3_parking');
+    bindAssocField('select-assoc-eval-H1-4', 'eval_H1_4_floor');
+    bindAssocField('cb-assoc-eval-H1-jitter', 'eval_H1_jitter', true);
+
+    // H2 조사원 평가 및 보충설명 연동
+    const setupH2Field = (idx, keySelect, keyText) => {
+      const sel = document.getElementById(`select-assoc-eval-H2-${idx}`);
+      const wrap = document.getElementById(`wrap-assoc-eval-H2-${idx}-text`);
+      const txt = document.getElementById(`input-assoc-eval-H2-${idx}-text`);
+      if (sel) {
+        sel.addEventListener('change', () => {
+          assocPolicyState[keySelect] = sel.value;
+          if (wrap) wrap.style.display = sel.value === '1' ? 'block' : 'none';
+          markUnsaved();
+        });
+      }
+      if (txt) {
+        txt.addEventListener('input', () => {
+          assocPolicyState[keyText] = txt.value.trim();
+          markUnsaved();
+        });
+      }
+    };
+
+    setupH2Field(1, 'eval_H2_1_specialStreet', 'eval_H2_1_customText');
+    setupH2Field(2, 'eval_H2_2_specialProduct', 'eval_H2_2_customText');
+    setupH2Field(3, 'eval_H2_3_brandMark', 'eval_H2_3_customText');
+    setupH2Field(4, 'eval_H2_4_brandUsage', 'eval_H2_4_customText');
 
     // 5. 상인회 빠른 정책 프리셋 버튼 리스너
     const btnAssocRandom = document.getElementById('btn-assoc-preset-random');
