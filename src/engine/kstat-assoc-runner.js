@@ -1500,17 +1500,18 @@ export async function runKstatAssocSurvey(options = {}) {
         for (const f of page.frames()) {
           try {
             await f.evaluate(({ isParking, evCountVal }) => {
-              // C3AA 주차장 수 (1 이상 필수)
+              // C3AA 주차장 수 (1 이상 99 이하 필수)
               const inpAA = document.querySelector('#C3AA, input[name="C3AA"]');
               if (inpAA) {
                 if (isParking) {
                   const prev = document.querySelector('#PC3AA')?.value || '1';
-                  const valAA = (prev && prev.trim() !== '' && prev.trim() !== '0') ? prev.trim() : '1';
+                  const parsedAA = parseInt((prev || '').trim(), 10);
+                  const safeAA = (!isNaN(parsedAA) && parsedAA > 0 && parsedAA <= 99) ? String(parsedAA) : '1';
                   inpAA.disabled = false;
-                  inpAA.value = valAA;
+                  inpAA.value = safeAA;
                   inpAA.dispatchEvent(new Event('input', { bubbles: true }));
                   inpAA.dispatchEvent(new Event('change', { bubbles: true }));
-                  if (typeof $ !== 'undefined') $(inpAA).val(valAA).trigger('input').trigger('change');
+                  if (typeof $ !== 'undefined') $(inpAA).val(safeAA).trigger('input').trigger('change');
                 } else {
                   inpAA.value = '';
                   inpAA.disabled = true;
@@ -1523,15 +1524,16 @@ export async function runKstatAssocSurvey(options = {}) {
               if (inpAB) {
                 if (isParking) {
                   const prev = document.querySelector('#PC3AB')?.value || '30';
-                  const valAB = (prev && prev.trim() !== '' && prev.trim() !== '0') ? prev.trim() : '30';
+                  const parsedAB = parseInt((prev || '').trim(), 10);
+                  const safeAB = (!isNaN(parsedAB) && parsedAB > 0 && parsedAB < 99999) ? String(parsedAB) : '30';
                   inpAB.disabled = false;
-                  inpAB.value = valAB;
+                  inpAB.value = safeAB;
                   inpAB.dispatchEvent(new Event('input', { bubbles: true }));
                   inpAB.dispatchEvent(new Event('change', { bubbles: true }));
-                  if (typeof $ !== 'undefined') $(inpAB).val(valAB).trigger('input').trigger('change');
+                  if (typeof $ !== 'undefined') $(inpAB).val(safeAB).trigger('input').trigger('change');
                 } else {
-                  inpAA.value = '';
-                  inpAA.disabled = true;
+                  inpAB.value = '';
+                  inpAB.disabled = true;
                   if (typeof $ !== 'undefined') $(inpAB).val('').prop('disabled', true);
                 }
               }
@@ -1666,6 +1668,32 @@ export async function runKstatAssocSurvey(options = {}) {
             }, { managerVal, preserveExisting });
           } catch (err) {
             console.error('[P9 C3BC frame 주입 오류]:', err);
+          }
+        }
+
+        // 5. C3C.asp (C3-3 주차 요금: 1 무료, 2 유료)
+        const c3cFrame = page.frames().find(f => f.url().includes('C3C.asp'));
+        if (c3cFrame) {
+          try {
+            await c3cFrame.evaluate(({ preserveExisting }) => {
+              const radios = Array.from(document.querySelectorAll('input[type="radio"]:not([disabled])'));
+              if (radios.length > 0) {
+                const hasChecked = radios.some(r => r.checked);
+                if (!preserveExisting || !hasChecked) {
+                  const targetRadio = document.querySelector('input[name="C3C"][value="1"]') || 
+                                      document.querySelector('input[type="radio"][value="1"]') || 
+                                      radios[0];
+                  if (targetRadio) {
+                    if (!targetRadio.checked) targetRadio.click();
+                    targetRadio.checked = true;
+                    targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(targetRadio).prop('checked', true).trigger('change');
+                  }
+                }
+              }
+            }, { preserveExisting });
+          } catch (err) {
+            console.error('[P9 C3C frame 주입 오류]:', err);
           }
         }
 
