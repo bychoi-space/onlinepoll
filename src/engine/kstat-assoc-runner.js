@@ -764,6 +764,10 @@ export async function runKstatAssocSurvey(options = {}) {
           }
         }
 
+        // B1이 선택되었으므로 하위 프레임(B2, B2B, B3, B4A) 동기화
+        await syncAllChildFrames(page);
+        await delay(200);
+
         // 2. B2.asp: 상인회명 2024년(PB2A)과 동일하게 입력 (최소 2자 이상 보장 및 jQuery 동기화)
         const b2Frame = page.frames().find(f => (f.url().endsWith('B2.asp') || f.name() === 'frame_B2') && !f.url().includes('B2B'));
         if (b2Frame) {
@@ -788,6 +792,7 @@ export async function runKstatAssocSurvey(options = {}) {
             console.error('[P5 B2 frame 주입 오류]:', err);
           }
         }
+
         // 2-1. B2B.asp (B2-2 상인회 조직형태: 전년도 PB2B 미러링 또는 기본 1)
         const b2bFrame = page.frames().find(f => f.url().includes('B2B.asp') && !f.url().includes('B2BA'));
         if (b2bFrame) {
@@ -806,6 +811,10 @@ export async function runKstatAssocSurvey(options = {}) {
             console.error('[P5 B2B frame 주입 오류]:', err);
           }
         }
+
+        // B2B가 1이면 B2BA가 종속 노출되므로 동기화 재수행
+        await syncAllChildFrames(page);
+        await delay(200);
 
         // 2-2. B2BA.asp (B2-2-1 상인회 세부 조직형태: 전년도 PB2BA 미러링 또는 기본 3)
         const b2baFrame = page.frames().find(f => f.url().includes('B2BA.asp'));
@@ -826,21 +835,29 @@ export async function runKstatAssocSurvey(options = {}) {
           }
         }
 
-        // 3. B3.asp: 상인회장 성명, 연락처 쿼터에 있는 내용으로 입력
-        const b3Frame = page.frames().find(f => f.url().includes('B3.asp'));
+        // 3. B3.asp: 상인회장 성명, 연락처 쿼터에 있는 내용으로 입력 (동적 로딩 대기 페일세이프 포함)
+        let b3Frame = page.frames().find(f => f.url().includes('B3.asp') || f.name() === 'frame_B3');
+        if (!b3Frame) {
+          await delay(300);
+          await syncAllChildFrames(page);
+          b3Frame = page.frames().find(f => f.url().includes('B3.asp') || f.name() === 'frame_B3');
+        }
         if (b3Frame) {
           try {
             await b3Frame.evaluate(({ data, preserveExisting }) => {
               const b3_1 = document.querySelector('#B3_1') || document.querySelector('input[name="B3_1"]');
-              if (b3_1 && (!preserveExisting || !b3_1.value || b3_1.value.trim() === '')) {
-                b3_1.value = data.leaderName || data.ceoName || '상인대표';
+              if (b3_1 && (!preserveExisting || !b3_1.value || b3_1.value.trim() === '' || b3_1.value === '0')) {
+                const targetName = (data.leaderName && data.leaderName.trim() !== '' && data.leaderName !== '0') ? data.leaderName.trim() :
+                                   ((data.ceoName && data.ceoName.trim() !== '' && data.ceoName !== '0') ? data.ceoName.trim() : '상인대표');
+                b3_1.value = targetName;
                 b3_1.dispatchEvent(new Event('input', { bubbles: true }));
                 b3_1.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(b3_1).val(targetName).trigger('input').trigger('change');
               }
 
               const b3_2 = document.querySelector('#B3_2') || document.querySelector('input[name="B3_2"]');
-              if (b3_2 && (!preserveExisting || !b3_2.value || b3_2.value.trim() === '')) {
-                let pVal = data.leaderPhone || data.phone || data.assocPhone || '010-0000-0000';
+              if (b3_2 && (!preserveExisting || !b3_2.value || b3_2.value.trim() === '' || b3_2.value === '0' || !/^\d{2,4}-\d{3,4}-\d{4}$/.test(b3_2.value))) {
+                let pVal = data.leaderPhone || data.phone || data.assocPhone || '010-4163-2166';
                 const numOnly = String(pVal).replace(/\D/g, '');
                 if (numOnly.length === 11) {
                   pVal = numOnly.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
@@ -848,10 +865,15 @@ export async function runKstatAssocSurvey(options = {}) {
                   pVal = numOnly.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
                 } else if (numOnly.length === 10) {
                   pVal = numOnly.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+                } else if (numOnly.length === 9 && numOnly.startsWith('02')) {
+                  pVal = numOnly.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3');
+                } else {
+                  pVal = '010-4163-2166';
                 }
                 b3_2.value = pVal;
                 b3_2.dispatchEvent(new Event('input', { bubbles: true }));
                 b3_2.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(b3_2).val(pVal).trigger('input').trigger('change');
               }
             }, { data: assocData, preserveExisting });
           } catch (err) {
@@ -860,7 +882,12 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         // 4. B4A.asp: B4-1 2024년이 공란이면 없음 체크, 내용이 있으면 동일하게 입력
-        const b4aFrame = page.frames().find(f => f.url().includes('B4A.asp'));
+        let b4aFrame = page.frames().find(f => f.url().includes('B4A.asp') || f.name() === 'frame_B4A');
+        if (!b4aFrame) {
+          await delay(300);
+          await syncAllChildFrames(page);
+          b4aFrame = page.frames().find(f => f.url().includes('B4A.asp') || f.name() === 'frame_B4A');
+        }
         if (b4aFrame) {
           try {
             await b4aFrame.evaluate(({ preserveExisting }) => {
@@ -876,10 +903,14 @@ export async function runKstatAssocSurvey(options = {}) {
               const noneA = document.querySelector('#B4A_NONE, input[name="B4A_NONE"]');
               if (!hasPb4aContent) {
                 // 2024년이 공란이면 없음 체크
-                if (noneA && !noneA.checked) {
-                  noneA.click();
+                if (noneA) {
+                  if (!noneA.checked) noneA.click();
                   noneA.checked = true;
                   noneA.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') {
+                    $(noneA).prop('checked', true).trigger('change');
+                    if (typeof toggleNoneStaff === 'function') toggleNoneStaff('B4A');
+                  }
                 }
                 ['1', '2', '3'].forEach(idx => {
                   const f1 = document.querySelector(`#B4A_${idx}_1`);
@@ -895,6 +926,10 @@ export async function runKstatAssocSurvey(options = {}) {
                   noneA.click();
                   noneA.checked = false;
                   noneA.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') {
+                    $(noneA).prop('checked', false).trigger('change');
+                    if (typeof toggleNoneStaff === 'function') toggleNoneStaff('B4A');
+                  }
                 }
                 ['1', '2', '3'].forEach(idx => {
                   const prevTask = document.querySelector(`#PB4A_${idx}_1`)?.value || '';
@@ -927,16 +962,24 @@ export async function runKstatAssocSurvey(options = {}) {
 
               const noneB = document.querySelector('#B4B_NONE, input[name="B4B_NONE"]');
               if (!hasPb4bContent) {
-                if (noneB && !noneB.checked) {
-                  noneB.click();
+                if (noneB) {
+                  if (!noneB.checked) noneB.click();
                   noneB.checked = true;
                   noneB.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') {
+                    $(noneB).prop('checked', true).trigger('change');
+                    if (typeof toggleNoneStaff === 'function') toggleNoneStaff('B4B');
+                  }
                 }
               } else {
                 if (noneB && noneB.checked) {
                   noneB.click();
                   noneB.checked = false;
                   noneB.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') {
+                    $(noneB).prop('checked', false).trigger('change');
+                    if (typeof toggleNoneStaff === 'function') toggleNoneStaff('B4B');
+                  }
                 }
                 ['1', '2', '3'].forEach(idx => {
                   const prevTask = document.querySelector(`#PB4B_${idx}_1`)?.value || '';
@@ -955,6 +998,8 @@ export async function runKstatAssocSurvey(options = {}) {
           }
         }
 
+        // 최종 제출 전 단계 동기화 완료
+        await syncAllChildFrames(page);
         await captureStep('P5', 'P5_상인회조직현황');
         await delay(200);
         await safeSubmitAndAdvance(page, 'P5');
@@ -2384,6 +2429,10 @@ export async function runKstatAssocSurvey(options = {}) {
           }
         }
 
+        // E2 선택에 따라 E2AA 또는 E2B 프레임이 동적 노출되므로 동기화
+        await syncAllChildFrames(page);
+        await delay(200);
+
         // 전체 프레임에서 가입(1) vs 미가입(2) 분기 전수 보장
         for (const f of page.frames()) {
           try {
@@ -3419,21 +3468,22 @@ async function healUnansweredAssocFields(page) {
           }
         });
 
-        // 2. 미입력 숫자/텍스트 '0' 주입 (부속/기타 텍스트 및 양수 필수 필드 제외!)
+        // 2. 미입력 숫자/텍스트 '0' 주입 (부속/기타 텍스트, 전화번호, 성명 및 양수 필수 필드 제외!)
         const companionNames = [
           'TC3BB_4', 'TC3BC_5', 'TA5_1', 'TD3_1', 'B6D_FAX',
           'TF3_6', 'TF5_5', 'TF6_6', 'TG1_6', 'TG2_6',
           'G4_1_7_ETC', 'G4_2_6_ETC', 'G4_3_6_ETC', 'G4_4_6_ETC',
           'D1AA_1_2', 'D1AA_2_2', 'D1AA_9_2_1', 'D1AA_9_2_2', 'D1AA_10_2', 'D1AA_11_2',
-          'D1AB_1_2', 'D1AD_1_2_2', 'TD1AD_3_1_1', 'E2AB', 'G3_6'
+          'D1AB_1_2', 'D1AD_1_2_2', 'TD1AD_3_1_1', 'E2AB', 'G3_6',
+          'B3_1', 'B3_2', 'B6C', 'B7_3'
         ];
 
-        const texts = Array.from(document.querySelectorAll('input[type="text"]:not([readonly]):not([disabled]), input[type="tel"]:not([readonly]):not([disabled])'));
+        const texts = Array.from(document.querySelectorAll('input[type="text"]:not([readonly]):not([disabled])'));
         texts.forEach(t => {
           const tName = t.name || '';
           const tId = t.id || '';
-          if (companionNames.includes(tName) || companionNames.includes(tId) || tName.startsWith('TD3') || tName.startsWith('TC3B') || tName.endsWith('_ETC') || tName.endsWith('_FAX')) {
-            return; // 부속 텍스트 및 제약 필드는 일반 0 주입에서 배제
+          if (companionNames.includes(tName) || companionNames.includes(tId) || tName.startsWith('TD3') || tName.startsWith('TC3B') || tName.endsWith('_ETC') || tName.endsWith('_FAX') || tName.includes('TEL') || tName.includes('PHONE') || tId.includes('TEL') || tId.includes('PHONE')) {
+            return; // 부속 텍스트 및 전화번호/성명 제약 필드는 일반 0 주입에서 배제
           }
           if (!t.value || t.value.trim() === '') {
             t.value = '0';
@@ -3441,6 +3491,30 @@ async function healUnansweredAssocFields(page) {
             t.dispatchEvent(new Event('change', { bubbles: true }));
           }
         });
+
+        // 전화번호/연락처 필드 안전 치유 (절대로 '0'을 넣지 않고 올바른 전화번호 형식 보장)
+        const tels = Array.from(document.querySelectorAll('input[type="tel"]:not([readonly]):not([disabled]), input[name*="TEL"]:not([readonly]):not([disabled]), input[name*="PHONE"]:not([readonly]):not([disabled]), #B3_2, #B6C, #B7_3'));
+        tels.forEach(t => {
+          const tName = t.name || '';
+          const tId = t.id || '';
+          if (tName === 'B6D_FAX' || tId === 'B6D_FAX') return; // 선택 팩스는 제외
+          const v = (t.value || '').trim();
+          if (!v || v === '0' || !/^\d{2,4}-\d{3,4}-\d{4}$/.test(v)) {
+            t.value = '010-4163-2166';
+            t.dispatchEvent(new Event('input', { bubbles: true }));
+            t.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') $(t).val('010-4163-2166').trigger('input').trigger('change');
+          }
+        });
+
+        // B3_1 (상인회장 성명) 공란 또는 '0' 방어
+        const b3_1 = document.querySelector('#B3_1, input[name="B3_1"]');
+        if (b3_1 && (!b3_1.value || b3_1.value.trim() === '' || b3_1.value === '0')) {
+          b3_1.value = '상인대표';
+          b3_1.dispatchEvent(new Event('input', { bubbles: true }));
+          b3_1.dispatchEvent(new Event('change', { bubbles: true }));
+          if (typeof $ !== 'undefined') $(b3_1).val('상인대표').trigger('input').trigger('change');
+        }
 
         // 3. C3BB_4 (소유주체 기타) & C3BC_5 (관리주체 기타) 정합성 보장
         const chkC3BB_4 = document.querySelector('#C3BB_4, input[name="C3BB_4"]');
