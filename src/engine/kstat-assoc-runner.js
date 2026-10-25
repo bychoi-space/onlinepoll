@@ -172,25 +172,24 @@ export async function runKstatAssocSurvey(options = {}) {
       }, { data: assocData, preserveExisting });
 
       await captureStep('01_Q1', 'Q1_기본정보');
-      await delay(800);
+      await delay(300);
 
-      // Q1 다음 이동
-      const prevQ1Url = page.url();
+      // Q1 다음 이동 (정식 저장 보장)
       await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle', timeout: 25000 }).catch(() => {}),
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 6000 }).catch(() => null),
         page.click('#next').catch(() => {})
       ]);
-      await delay(1500);
+      await delay(300);
 
       // Q1 잔류 시 next() 직접 호출 돌파
-      if (page.url() === prevQ1Url || page.url().includes('Q1.asp')) {
-        logger.warn(`[상인회 러너] Q1 잔류 감지 ➔ next() 함수 직접 호출 및 이동 돌파...`);
+      const afterQ1Step = await detectAssocCurrentStep(page);
+      if (afterQ1Step === 'Q1' || page.url().includes('Q1.asp')) {
+        logger.warn(`[상인회 러너] Q1 이동 미감지 ➔ next() 정식 호출 재시도...`);
         await page.evaluate(() => {
           if (typeof next === 'function') next();
-          else if (typeof move_page === 'function') move_page('P1');
         }).catch(() => {});
-        await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
-        await delay(1000);
+        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 }).catch(() => {});
+        await delay(300);
       }
     }
 
@@ -203,17 +202,15 @@ export async function runKstatAssocSurvey(options = {}) {
     while (maxSteps-- > 0) {
       stepCount++;
       const currUrl = page.url();
-      const currPageName = await page.evaluate(() => {
-        return document.querySelector('input[name="PageName"]')?.value || '';
-      }).catch(() => '');
+      const currPageName = await detectAssocCurrentStep(page);
 
-      logger.info(`[상인회 러너] [현재 단계: ${currPageName}] URL: ${currUrl}`);
+      logger.info(`[상인회 러너] [현재 단계: ${currPageName || '미감지'}] URL: ${currUrl}`);
 
       // ------------------------------------------
       // 0) Q1.asp 잔류/재진입 시의 페일세이프 돌파
       // ------------------------------------------
       if (currUrl.includes('Q1.asp') || currPageName === 'Q1') {
-        logger.warn(`[상인회 러너] [Q1] 상태 머신 내 Q1 감지 ➔ 우편번호/주소 보완 및 P1으로 돌파...`);
+        logger.warn(`[상인회 러너] [Q1] 상태 머신 내 Q1 감지 ➔ 우편번호/주소 보완 및 정식 저장 돌파...`);
         await page.evaluate(({ data }) => {
           const postCode = document.querySelector('#Q1_4_1');
           if (postCode && !postCode.value) postCode.value = data.postCode || '08758';
@@ -236,10 +233,67 @@ export async function runKstatAssocSurvey(options = {}) {
           const surveyor = document.querySelector('#Q1_10');
           if (surveyor && !surveyor.value) surveyor.value = '가온박정순';
           if (typeof next === 'function') next();
-          else if (typeof move_page === 'function') move_page('P1');
         }, { data: assocData }).catch(() => {});
-        await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
-        await delay(1000);
+        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 }).catch(() => {});
+        await delay(300);
+        continue;
+      }
+
+      // ------------------------------------------
+      // 0-1) P1 (A1, A2: 시장 개요 및 구역 면적)
+      // ------------------------------------------
+      if (currUrl.includes('P1.asp') || currPageName === 'P1') {
+        onProgress({ step: 'P1', message: `[P1] A1~A2 시장 개요 및 구역 면적 미러링 중...` });
+        await syncAllChildFrames(page);
+        await delay(200);
+
+        await mirrorPrevYearToCurrent(page, { preserveExisting });
+        await captureStep('P1', 'P1_시장개요A1A2');
+        await delay(200);
+
+        await safeSubmitAndAdvance(page, 'P1');
+        continue;
+      }
+
+      // ------------------------------------------
+      // 0-2) P2 (A3 ~ A5: 관리주체 및 A5 전문시장 여부 Alert 원천 차단)
+      // ------------------------------------------
+      if (currUrl.includes('P2.asp') || currPageName === 'P2') {
+        onProgress({ step: 'P2', message: `[P2] A3~A5 관리주체 및 A5 전문시장(아님=2) 안전 주입 중...` });
+        await syncAllChildFrames(page);
+        await delay(200);
+
+        await mirrorPrevYearToCurrent(page, { preserveExisting });
+
+        // A5 프레임 전용 Alert 원천 차단
+        for (const f of page.frames()) {
+          try {
+            await f.evaluate(() => {
+              const a3a = document.querySelector('input[name="A3A"]');
+              if (a3a && !document.querySelector('input[name="A3A"]:checked')) {
+                const opt1 = document.querySelector('input[name="A3A"][value="1"]') || a3a;
+                opt1.click(); opt1.checked = true; opt1.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const a5Radios = document.querySelectorAll('input[name="A5"]');
+              if (a5Radios.length > 0) {
+                const pa5 = document.querySelector('input[name="PA5"]:checked')?.value || '2';
+                const targetVal = pa5 === '1' ? '1' : '2';
+                const r = document.querySelector(`input[name="A5"][value="${targetVal}"]`) || document.querySelector('input[name="A5"][value="2"]');
+                if (r) { r.click(); r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
+                const ta5 = document.querySelector('#TA5_1, input[name="TA5_1"]');
+                if (ta5) {
+                  if (targetVal === '1') { ta5.disabled = false; ta5.value = '종합소매'; }
+                  else { ta5.value = ''; ta5.disabled = true; }
+                }
+              }
+            });
+          } catch (_) {}
+        }
+
+        await captureStep('P2', 'P2_관리주체A3A5');
+        await delay(200);
+
+        await safeSubmitAndAdvance(page, 'P2');
         continue;
       }
 
@@ -430,19 +484,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P3', 'P3_점포현황및업종현황');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P3] 잔류 감지 ➔ move_page로 P4 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P4'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P3');
         continue;
       }
 
@@ -457,19 +500,22 @@ export async function runKstatAssocSurvey(options = {}) {
         // 1. A7, A7A, A7B, A9 등 일반 문항 전년도 1:1 미러링
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
-        // 1-1. A7.asp (정기휴무일) 1:1 완벽 미러링 보장
+        // 1-1. A7.asp (정기휴무일) 1:1 완벽 미러링 보장 (A7 및 A7_1 동시 방어)
         const a7Frame = page.frames().find(f => f.url().includes('A7.asp') || f.name() === 'frame_A7');
         if (a7Frame) {
           try {
             await a7Frame.evaluate(() => {
-              const pa7Val = document.querySelector('input[name="PA7"]:checked')?.value || '2';
-              const targetA7 = document.querySelector(`input[name="A7"][value="${pa7Val}"]`) || document.querySelector('input[name="A7"][value="2"]');
-              if (targetA7) {
-                if (!targetA7.checked) targetA7.click();
-                targetA7.checked = true;
-                targetA7.dispatchEvent(new Event('change', { bubbles: true }));
-                if (typeof $ !== 'undefined') $(targetA7).prop('checked', true).trigger('change');
-              }
+              const pa7Val = document.querySelector('input[name="PA7"]:checked')?.value || document.querySelector('input[name="PA7_1"]:checked')?.value || '2';
+              const targetVal = pa7Val === '1' ? '1' : '2';
+              ['A7', 'A7_1'].forEach(name => {
+                const r = document.querySelector(`input[name="${name}"][value="${targetVal}"]`) || document.querySelector(`input[name="${name}"][value="2"]`);
+                if (r) {
+                  if (!r.checked) r.click();
+                  r.checked = true;
+                  r.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
+                }
+              });
             });
           } catch (_) {}
         }
@@ -611,27 +657,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P4', 'P4_일반현황및A8운영시간');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P4] 잔류 감지 ➔ 재시도 후 돌파...`);
-          // 재시도: A8/A9 보강 후 #next 다시 클릭
-          await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {}),
-            page.click('#next').catch(() => {})
-          ]);
-          await delay(600);
-          if (page.url() === prevUrl) {
-            await page.evaluate(() => { if (typeof move_page === 'function') move_page('P5'); }).catch(() => {});
-            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-          }
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P4');
         continue;
       }
 
@@ -869,26 +896,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P5', 'P5_상인회조직현황');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P5] 잔류 감지 ➔ 재시도 후 돌파...`);
-          await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {}),
-            page.click('#next').catch(() => {})
-          ]);
-          await delay(600);
-          if (page.url() === prevUrl) {
-            await page.evaluate(() => { if (typeof move_page === 'function') move_page('P6'); }).catch(() => {});
-            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-          }
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P5');
         continue;
       }
 
@@ -1069,26 +1078,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P6', 'P6_상인회비및시설');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P6] 잔류 감지 ➔ 재시도 후 돌파...`);
-          await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {}),
-            page.click('#next').catch(() => {})
-          ]);
-          await delay(600);
-          if (page.url() === prevUrl) {
-            await page.evaluate(() => { if (typeof move_page === 'function') move_page('P7'); }).catch(() => {});
-            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-          }
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P6');
         continue;
       }
 
@@ -1154,19 +1145,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }, { preserveExisting });
 
         await captureStep('P7', 'P7_편의시설C1');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P7] 잔류 감지 ➔ move_page로 P8 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P8'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P7');
         continue;
       }
 
@@ -1232,19 +1212,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }, { preserveExisting });
 
         await captureStep('P8', 'P8_안전위생시설C2');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P8] 잔류 감지 ➔ move_page로 P9 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P9'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P8');
         continue;
       }
 
@@ -1438,26 +1407,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P9', 'P9_주차시설C3');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P9] 잔류 감지 ➔ 재시도 후 돌파...`);
-          await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {}),
-            page.click('#next').catch(() => {})
-          ]);
-          await delay(600);
-          if (page.url() === prevUrl) {
-            await page.evaluate(() => { if (typeof move_page === 'function') move_page('P10'); }).catch(() => {});
-            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-          }
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P9');
         continue;
       }
 
@@ -1577,26 +1528,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P11', 'P11_공동마케팅D1');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P11] 잔류 감지 ➔ 재시도 후 돌파...`);
-          await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {}),
-            page.click('#next').catch(() => {})
-          ]);
-          await delay(600);
-          if (page.url() === prevUrl) {
-            await page.evaluate(() => { if (typeof move_page === 'function') move_page('P12'); }).catch(() => {});
-            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-          }
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P11');
         continue;
       }
 
@@ -1682,26 +1615,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P12', 'P12_온라인배송D1B');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P12] 잔류 감지 ➔ 재시도 후 돌파...`);
-          await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {}),
-            page.click('#next').catch(() => {})
-          ]);
-          await delay(600);
-          if (page.url() === prevUrl) {
-            await page.evaluate(() => { if (typeof move_page === 'function') move_page('P13'); }).catch(() => {});
-            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-          }
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P12');
         continue;
       }
 
@@ -1739,19 +1654,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P13', 'P13_결제수단D2');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P13] 잔류 감지 ➔ move_page로 P14 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P14'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P13');
         continue;
       }
 
@@ -1848,19 +1752,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P14', 'P14_지원사업D3');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P14] 잔류 감지 ➔ move_page로 P15 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P15'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P14');
         continue;
       }
 
@@ -1928,19 +1821,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P15', 'P15_상권협력D4');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P15] 잔류 감지 ➔ move_page로 P16 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P16'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P15');
         continue;
       }
 
@@ -2015,19 +1897,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P16', 'P16_교육컨설팅D5');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P16] 잔류 감지 ➔ move_page로 P17 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P17'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P16');
         continue;
       }
 
@@ -2111,19 +1982,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }, { preserveExisting });
 
         await captureStep('P17', 'P17_소방시설E1');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P17] 잔류 감지 ➔ move_page로 P18 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P18'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P17');
         continue;
       }
 
@@ -2197,19 +2057,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P18', 'P18_화재공제E2');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P18] 잔류 감지 ➔ move_page로 P19 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P19'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P18');
         continue;
       }
 
@@ -2241,19 +2090,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }, { preserveExisting });
 
         await captureStep('P19', 'P19_안전관리E3');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P19] 잔류 감지 ➔ move_page로 P20 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P20'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P19');
         continue;
       }
 
@@ -2334,19 +2172,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P20', 'P20_빈점포수치');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P20] 잔류 감지 ➔ move_page로 P21 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P21'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P20');
         continue;
       }
 
@@ -2356,7 +2183,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P21') || currPageName === 'P21') {
         onProgress({ step: 'P21', message: `[P21] F5, F6 빈 점포 현황 정책 응답 ('기타' 제외 랜덤) 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         // F5: 1~4 항목 중 랜덤 선택 (5번 기타 제외)
         let f5Val = policy.F5_emptyStoreReason || 'random';
@@ -2400,19 +2227,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P21', 'P21_빈점포현황');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P21] 잔류 감지 ➔ move_page로 P22 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P22'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P21');
         continue;
       }
 
@@ -2422,7 +2238,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P22') || currPageName === 'P22') {
         onProgress({ step: 'P22', message: `[P22] G1, G2 바가지요금 정책 응답 ('기타' 제외 랜덤) 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         // G1: 1~5 항목 중 랜덤 선택 (6번 기타 제외)
         let g1Val = policy.G1_overchargeReason || 'random';
@@ -2466,19 +2282,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P22', 'P22_바가지요금');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          logger.warn(`[상인회 러너] [P22] 잔류 감지 ➔ move_page로 P23 돌파...`);
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('P23'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P22');
         continue;
       }
 
@@ -2488,7 +2293,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P23') || currPageName === 'P23') {
         onProgress({ step: 'P23', message: `[P23] G3 문화 및 G4 기후재해 시설(랜덤 분산) 응답 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         for (const f of page.frames()) {
           try {
@@ -2515,7 +2320,6 @@ export async function runKstatAssocSurvey(options = {}) {
               if (document.querySelector('input[name^="G4"]')) {
                 const g4Checked = document.querySelectorAll('input[type="checkbox"][name^="G4"]:checked');
                 if (!preserveExisting || g4Checked.length === 0) {
-                  // G4-1 냉방 (1~6), G4-2 난방 (1~5), G4-3 수해 (1~5)
                   const sections = [
                     { prefix: 'G4_1', max: 6 },
                     { prefix: 'G4_2', max: 5 },
@@ -2530,7 +2334,6 @@ export async function runKstatAssocSurvey(options = {}) {
                       const cbH = document.querySelector(`input[type="checkbox"][name="${sec.prefix}_${idx}_H"]`);
                       const cbN = document.querySelector(`input[type="checkbox"][name="${sec.prefix}_${idx}_N"]`);
 
-                      // 보유여부(_H): 60% 확률로 체크
                       if (cbH) {
                         const shouldCheckH = Math.random() < 0.60;
                         if (shouldCheckH) {
@@ -2542,7 +2345,6 @@ export async function runKstatAssocSurvey(options = {}) {
                         }
                       }
 
-                      // 필요여부(_N): 50% 확률로 체크
                       if (cbN) {
                         const shouldCheckN = Math.random() < 0.50;
                         if (shouldCheckN) {
@@ -2555,7 +2357,6 @@ export async function runKstatAssocSurvey(options = {}) {
                       }
                     }
 
-                    // 안전망: 만약 모두 미체크된 경우 1번 항목 강제 체크
                     if (checkedH === 0) {
                       const firstH = document.querySelector(`input[type="checkbox"][name="${sec.prefix}_1_H"]`);
                       if (firstH) { firstH.checked = true; firstH.dispatchEvent(new Event('change', { bubbles: true })); }
@@ -2566,7 +2367,6 @@ export async function runKstatAssocSurvey(options = {}) {
                     }
                   });
 
-                  // G4-4 수해피해방지활동 (1~5)
                   let checkedAct = 0;
                   for (let idx = 1; idx <= 5; idx++) {
                     const cb25 = document.querySelector(`input[type="checkbox"][name="G4_4_${idx}_Y25"]`);
@@ -2593,18 +2393,8 @@ export async function runKstatAssocSurvey(options = {}) {
         }
 
         await captureStep('P23', 'P23_문화기후시설');
-        await delay(800);
-        const prevUrl = page.url();
-        await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
-          page.click('#next').catch(() => {})
-        ]);
-        await delay(600);
-
-        if (page.url() === prevUrl) {
-          await page.evaluate(() => { if (typeof move_page === 'function') move_page('Agree'); }).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-        }
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P23');
         continue;
       }
 
@@ -2615,34 +2405,15 @@ export async function runKstatAssocSurvey(options = {}) {
       onProgress({ step: stepName, message: `[${stepName}] 전년도 비교 문항 자동 응답(Mirroring) 중...` });
 
       await syncAllChildFrames(page);
-      await delay(600);
+      await delay(200);
 
       const mirrorResult = await mirrorPrevYearToCurrent(page, { preserveExisting });
       logger.info(`[상인회 러너] [${stepName}] 미러링 완료: 라디오 ${mirrorResult.radios}건, 텍스트/숫자 ${mirrorResult.inputs}건, 셀렉트 ${mirrorResult.selects}건, 신규평가 ${mirrorResult.ratings}건`);
 
       await captureStep(stepName, `${stepName}_전년도비교`);
-      await delay(600);
+      await delay(200);
 
-      const prevUrlForNav = page.url();
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => null),
-        page.click('#next').catch(() => {})
-      ]);
-      await delay(800);
-
-      // 페이지 이동 여부 확인 (잔류 시 move_page 보정)
-      if (page.url() === prevUrlForNav) {
-        logger.warn(`[상인회 러너] [${stepName}] 페이지 잔류 감지 ➔ move_page로 다음 단계 자동 돌파...`);
-        const match = currPageName.match(/P(\d+)/);
-        if (match) {
-          const nextP = 'P' + (parseInt(match[1], 10) + 1);
-          await page.evaluate((target) => {
-            if (typeof move_page === 'function') move_page(target);
-          }, nextP).catch(() => {});
-          await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-          await delay(800);
-        }
-      }
+      await safeSubmitAndAdvance(page, stepName);
     }
 
   } catch (err) {
@@ -2655,7 +2426,74 @@ export async function runKstatAssocSurvey(options = {}) {
 }
 
 /**
- * 페이지 내 모든 iframe 로딩 동기화 헬퍼 (merge-template 완전 대기)
+ * [상인회 조사 전용] 현재 진행 중인 단계(P1~P23, Q1, Agree)를 100% 감지하는 고도화 탐색기
+ */
+async function detectAssocCurrentStep(page) {
+  // 1. 모든 하위 프레임 순회하여 P\d+ 또는 Agree 감지
+  for (const f of page.frames()) {
+    const fUrl = f.url() || '';
+    const m = fUrl.match(/(P\d+|Q1|Agree)\.asp/i);
+    if (m) return m[1].toUpperCase();
+
+    try {
+      const pVal = await f.evaluate(() => document.querySelector('input[name="PageName"]')?.value);
+      if (pVal && pVal.match(/^(P\d+|Q1|Agree)$/i)) {
+        return pVal.toUpperCase();
+      }
+    } catch (_) {}
+  }
+  // 2. 메인 페이지 URL 매칭
+  const mainM = page.url().match(/(P\d+|Q1|Agree)\.asp/i);
+  if (mainM) return mainM[1].toUpperCase();
+
+  return '';
+}
+
+/**
+ * [상인회 조사 핵심 안전망] 정식 폼 저장(Submit) 보장 및 초고속 이동 헬퍼
+ * - move_page로 저장 없이 건너뛰는 행위를 원천 금지
+ * - domcontentloaded(3.5초)로 대기 시간 대폭 단축
+ * - 미이동(Alert 발생 등) 시 자동 필드 치유 후 정식 next() 재실행
+ */
+async function safeSubmitAndAdvance(page, stepName) {
+  const prevStep = await detectAssocCurrentStep(page) || stepName;
+  const prevUrl = page.url();
+
+  // 1차: #next 클릭 및 빠른 네비게이션 대기
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 3500 }).catch(() => null),
+    page.click('#next').catch(() => {})
+  ]);
+  await delay(250);
+
+  let currentStep = await detectAssocCurrentStep(page);
+  let currentUrl = page.url();
+
+  // 만약 단계가 바뀌지 않았다면 (Alert 발생 또는 미입력으로 인한 폼 잔류)
+  if (currentStep === prevStep && currentUrl === prevUrl) {
+    logger.warn(`[상인회 러너] [${stepName}] 폼 이동 미감지 (Alert 발생 가능성) ➔ 미응답 필드 자동 치유 후 정식 저장 재시도...`);
+    
+    // 2차: 미응답 필드 자동 보완
+    await healUnansweredAssocFields(page);
+    await delay(200);
+
+    // 3차: 정식 next() 또는 #next 재클릭
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 4500 }).catch(() => null),
+      page.evaluate(() => {
+        if (typeof next === 'function') next();
+        else {
+          const btn = document.querySelector('#next, input[name="next"], button#next');
+          if (btn) btn.click();
+        }
+      }).catch(() => {})
+    ]);
+    await delay(250);
+  }
+}
+
+/**
+ * 페이지 내 모든 iframe 로딩 동기화 헬퍼 (초고속 최적화)
  */
 async function syncAllChildFrames(page) {
   try {
@@ -2684,8 +2522,8 @@ async function syncAllChildFrames(page) {
       });
     }).catch(() => {});
 
-    // 2. 모든 iframe이 about:blank를 벗어나 실제 HTML/DOM 요소를 렌더링할 때까지 대기
-    for (let w = 0; w < 30; w++) {
+    // 2. 모든 iframe 렌더링 확인 (최대 10회 = 약 1.5초로 단축)
+    for (let w = 0; w < 10; w++) {
       const allReady = await page.evaluate(() => {
         const iframes = Array.from(document.querySelectorAll('iframe'));
         if (iframes.length === 0) return true;
@@ -2697,21 +2535,21 @@ async function syncAllChildFrames(page) {
             if (href === 'about:blank' || href === '') return false;
             return doc.readyState === 'complete';
           } catch (_) {
-            return true; // CORS 등으로 차단된 외부 iframe은 통과
+            return true;
           }
         });
       }).catch(() => true);
 
       if (allReady) break;
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(150);
     }
   } catch (_) {}
 
-  // 프레임 로딩 대기
+  // 프레임 로딩 대기 (timeout 800ms로 단축)
   const frames = page.frames();
   for (const f of frames) {
     if (f !== page.mainFrame()) {
-      await f.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
+      await f.waitForLoadState('domcontentloaded', { timeout: 800 }).catch(() => {});
     }
   }
 }
