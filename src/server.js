@@ -226,10 +226,21 @@ app.get('/api/campaigns/:id', (req, res) => {
 
 // 캠페인 정보 수정 (1차/2차 설정 저장)
 app.put('/api/campaigns/:id', (req, res) => {
-  const updated = CampaignStore.updateCampaign(req.params.id, req.body);
-  if (!updated) {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
   }
+
+  // kstatLoginId가 변경되었을 때 quotaDatabase 각 항목의 surveyorAccount도 함께 동기화
+  if (req.body.kstatLoginId && Array.isArray(campaign.quotaDatabase)) {
+    const newSurveyor = String(req.body.kstatLoginId).trim();
+    campaign.quotaDatabase.forEach(q => {
+      q.surveyorAccount = newSurveyor;
+    });
+    req.body.quotaDatabase = campaign.quotaDatabase;
+  }
+
+  const updated = CampaignStore.updateCampaign(req.params.id, req.body);
   res.json(updated);
 });
 
@@ -716,11 +727,14 @@ app.post('/api/campaigns/:id/bind-assoc-slots', async (req, res) => {
       return res.status(400).json({ error: '추출된 상인회 슬롯이 없습니다.' });
     }
 
+    const targetSurveyor = (loginId || campaign.kstatLoginId || '가온이강윤').trim();
+
     // 쿼터 DB로 상인회 슬롯 등록
     const quotaDb = targetSlots.map((s, idx) => ({
       seq: idx + 1,
       index: idx + 1,
       slotIndex: idx + 1,
+      surveyorAccount: targetSurveyor,
       marketCode: s.marketCode,
       regNumber: s.regNumber,
       marketName: s.marketName,
@@ -747,8 +761,8 @@ app.post('/api/campaigns/:id/bind-assoc-slots', async (req, res) => {
     const updatePayload = {
       surveyType: 'kstat_assoc',
       quotaDatabase: quotaDb,
-      kstatLoginId: loginId || '가온박정순',
-      kstatLoginPw: loginPw || '1234',
+      kstatLoginId: targetSurveyor,
+      kstatLoginPw: loginPw || campaign.kstatLoginPw || '1234',
       kstatListUrl: listUrl || 'https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi'
     };
 
@@ -1285,6 +1299,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
           assocData: targetBiz,
           quotaIndex: targetBiz.index || quotaIndex,
           policy: assocPol,
+          surveyorAccount: targetBiz.surveyorAccount || campaign.kstatLoginId || '가온이강윤',
           preserveExistingInputs: (assocPol.preserveExistingInputs !== false),
           pilotMode: true,
           safetyGuard: true,
@@ -1522,6 +1537,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
             assocData: biz,
             quotaIndex: biz.index || (i + startIndex),
             policy: effectivePolicy,
+            surveyorAccount: biz.surveyorAccount || campaign.kstatLoginId || '가온이강윤',
             preserveExistingInputs: (effectivePolicy.preserveExistingInputs !== false),
             pilotMode: safetyGuard,
             safetyGuard,

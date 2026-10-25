@@ -131,7 +131,7 @@ async function initSurveyDetailPage() {
     }
 
     // 조사원 연동 계정 바인딩
-    const defaultSurveyor = isAssoc ? '가온박정순' : '가온김영옥';
+    const defaultSurveyor = isAssoc ? (camp.kstatLoginId || '가온이강윤') : '가온김영옥';
     const inputKstatAccountId = document.getElementById('input-kstat-account-id');
     const inputKstatAccountPw = document.getElementById('input-kstat-account-pw');
     const badgeCurrentKstatAccount = document.getElementById('badge-current-kstat-account');
@@ -412,7 +412,7 @@ async function initSurveyDetailPage() {
     const execSlotCountLabel = document.getElementById('exec-slot-count-label');
     const execSurveyorLabel = document.getElementById('exec-surveyor-label');
 
-    const currentSurveyor = currentCampaign?.kstatLoginId || (isAssoc ? '가온박정순' : '가온김영옥');
+    const currentSurveyor = currentCampaign?.kstatLoginId || (isAssoc ? '가온이강윤' : '가온김영옥');
     if (assocSurveyorBadgeName) assocSurveyorBadgeName.textContent = currentSurveyor;
     if (assocBtnSurveyorName) assocBtnSurveyorName.textContent = currentSurveyor;
     if (kstatAccountNameBadge) kstatAccountNameBadge.textContent = currentSurveyor;
@@ -462,6 +462,7 @@ async function initSurveyDetailPage() {
         quotaTableHead.innerHTML = `
           <tr>
             <th class="th-no">번호</th>
+            <th>조사원계정</th>
             <th>시장코드</th>
             <th>시장명</th>
             <th>시장유형</th>
@@ -496,7 +497,7 @@ async function initSurveyDetailPage() {
     if (total === 0) {
       quotaTableBody.innerHTML = `
         <tr>
-          <td colspan="${isAssoc ? 9 : 13}" class="empty-table-msg">
+          <td colspan="${isAssoc ? 10 : 13}" class="empty-table-msg">
             ${isAssoc 
               ? '아직 등록된 상인회 슬롯 DB가 없습니다.<br>상단의 <strong>[Kstat 상인회 슬롯 자동 바인딩]</strong> 버튼을 클릭하여 슬롯을 장착해 주세요.' 
               : '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.'}
@@ -506,7 +507,7 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    // [상인회 전용 9개 컬럼 테이블 렌더링]
+    // [상인회 전용 10개 컬럼 테이블 렌더링]
     if (isAssoc) {
       quotaTableBody.innerHTML = db.map((item, idx) => {
         const seq = item.index || item.seq || (idx + 1);
@@ -530,6 +531,7 @@ async function initSurveyDetailPage() {
           slotTag = `<div class="quota-slot-badge unmapped font-mono"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 미매핑</div>`;
         }
 
+        const surveyor = item.surveyorAccount || item.surveyorName || currentCampaign?.kstatLoginId || currentSurveyor || '가온이강윤';
         const mName = item.marketName || item.companyName || '-';
         const mCode = item.marketCode || '-';
         const mType = item.marketType || '골목형상점가';
@@ -541,6 +543,7 @@ async function initSurveyDetailPage() {
         return `
           <tr data-row-idx="${seq}">
             <td class="text-center font-mono font-bold">${seq}</td>
+            <td class="text-center font-bold text-nowrap"><span class="badge-status ready font-mono text-primary-color"><i class="fa-solid fa-id-badge"></i> ${escapeHtml(surveyor)}</span></td>
             <td class="text-center font-mono"><code>${escapeHtml(mCode)}</code></td>
             <td><strong>${escapeHtml(mName)}</strong></td>
             <td><span class="quota-ind-badge">${escapeHtml(mType)}</span></td>
@@ -4435,12 +4438,18 @@ async function initSurveyDetailPage() {
         if (currentCampaign) {
           currentCampaign.kstatLoginId = loginId;
           currentCampaign.kstatLoginPw = loginPw;
+          if (Array.isArray(currentCampaign.quotaDatabase)) {
+            currentCampaign.quotaDatabase.forEach(q => {
+              q.surveyorAccount = loginId;
+            });
+          }
         }
         if (badgeCurrentKstatAccount) {
           badgeCurrentKstatAccount.innerHTML = `<i class="fa-solid fa-user-check"></i> 연동 계정: <strong>${escapeHtml(loginId)}</strong>`;
         }
         appendLog('success', `✓ Kstat 조사원 계정(${loginId})이 저장되었습니다.`);
         alert(`✓ Kstat 조사원 계정(${loginId})이 성공적으로 저장되었습니다.`);
+        await loadCampaign();
       } catch (err) {
         alert('계정 저장 오류: ' + err.message);
       } finally {
@@ -4465,7 +4474,7 @@ async function initSurveyDetailPage() {
     const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
     modalBindSlots.classList.remove('hidden');
 
-    const defaultSurveyor = isAssoc ? '가온박정순' : '가온김영옥';
+    const defaultSurveyor = isAssoc ? (currentCampaign?.kstatLoginId || '가온이강윤') : '가온김영옥';
     const defaultListUrl = isAssoc 
       ? 'https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi'
       : 'https://survey.kstat.co.kr/kstat_survey/survey/2026070802/list.php?pridSel=2026070802&josa=tapi';
@@ -4530,7 +4539,7 @@ async function initSurveyDetailPage() {
     if (btnSubmitBindSlots) {
       btnSubmitBindSlots.addEventListener('click', async () => {
         const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
-        const defaultSurveyor = isAssoc ? '가온박정순' : '가온김영옥';
+        const defaultSurveyor = isAssoc ? (currentCampaign?.kstatLoginId || '가온이강윤') : '가온김영옥';
         const loginId = (inputKstatLoginId?.value || '').trim() || defaultSurveyor;
         const loginPw = (inputKstatLoginPw?.value || '').trim() || '1234';
         const listUrl = (inputKstatListUrl?.value || '').trim();

@@ -36,7 +36,20 @@ export async function runKstatAssocSurvey(options = {}) {
 
   const marketName = assocData.marketName || '상인회';
   const preserveExisting = (policy.preserveExistingInputs !== false && options.preserveExistingInputs !== false);
-  logger.info(`[상인회 러너] 시작 ➔ 대상 시장: "${marketName}" (슬롯: #${quotaIndex}), 파일럿=${pilotMode}, 기입력보존=${preserveExisting}, URL=${surveyUrl}`);
+  const effectiveSurveyor = (
+    options.surveyorAccount ||
+    options.surveyorName ||
+    options.kstatLoginId ||
+    assocData.surveyorAccount ||
+    assocData.surveyorName ||
+    assocData.kstatLoginId ||
+    policy.surveyorAccount ||
+    policy.surveyorName ||
+    policy.kstatLoginId ||
+    guidelineConfig.kstatLoginId ||
+    '가온이강윤'
+  ).trim();
+  logger.info(`[상인회 러너] 시작 ➔ 대상 시장: "${marketName}" (슬롯: #${quotaIndex}, 조사원: "${effectiveSurveyor}"), 파일럿=${pilotMode}, 기입력보존=${preserveExisting}, URL=${surveyUrl}`);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -105,7 +118,7 @@ export async function runKstatAssocSurvey(options = {}) {
       // Q1 전수 필수 입력 필드 주입:
       // Q1_4_1: 우편번호, Q1_4_2: 주소, Q1_4_3: 상세주소
       // Q1_5: 응답자 성명, Q1_6: 연락처, Q1_7: 이메일, Q1_8: 직위, Q1_10: 조사원 성명
-      await page.evaluate(({ data, preserveExisting }) => {
+      await page.evaluate(({ data, preserveExisting, surveyorAccount }) => {
         // 1. 우편번호 (Q1_4_1) - 비어 있으면 우편번호 주입 (Alert 방어 핵심)
         const postCode = document.querySelector('#Q1_4_1');
         if (postCode && (!postCode.value || postCode.value.trim() === '')) {
@@ -164,12 +177,26 @@ export async function runKstatAssocSurvey(options = {}) {
           }
         }
 
-        // 8. 조사원 성명 (Q1_10)
+        // 8. 조사원 성명 (Q1_10) - 쿼터표/캠페인에 저장된 실제 조사원 계정 동적 주입 및 readonly 해제
         const surveyor = document.querySelector('#Q1_10');
-        if (surveyor && (!surveyor.value || surveyor.value.trim() === '')) {
-          surveyor.value = '가온박정순';
+        if (surveyor) {
+          try {
+            surveyor.readOnly = false;
+            surveyor.disabled = false;
+            surveyor.removeAttribute('readonly');
+            surveyor.removeAttribute('disabled');
+          } catch (_) {}
+          const targetSurveyor = (surveyorAccount || data.surveyorAccount || data.surveyorName || data.kstatLoginId || '').trim();
+          if (targetSurveyor) {
+            surveyor.value = targetSurveyor;
+            surveyor.dispatchEvent(new Event('input', { bubbles: true }));
+            surveyor.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') {
+              try { $(surveyor).val(targetSurveyor).trigger('input').trigger('change'); } catch (_) {}
+            }
+          }
         }
-      }, { data: assocData, preserveExisting });
+      }, { data: assocData, preserveExisting, surveyorAccount: effectiveSurveyor });
 
       await captureStep('01_Q1', 'Q1_기본정보');
       await delay(300);
@@ -236,7 +263,7 @@ export async function runKstatAssocSurvey(options = {}) {
       // ------------------------------------------
       if (currUrl.includes('Q1.asp') || currPageName === 'Q1') {
         logger.warn(`[상인회 러너] [Q1] 상태 머신 내 Q1 감지 ➔ 우편번호/주소 보완 및 정식 저장 돌파...`);
-        await page.evaluate(({ data }) => {
+        await page.evaluate(({ data, surveyorAccount }) => {
           const postCode = document.querySelector('#Q1_4_1');
           if (postCode && !postCode.value) postCode.value = data.postCode || '08758';
           const addrMain = document.querySelector('#Q1_4_2');
@@ -256,9 +283,22 @@ export async function runKstatAssocSurvey(options = {}) {
             radioPos.dispatchEvent(new Event('change', { bubbles: true }));
           }
           const surveyor = document.querySelector('#Q1_10');
-          if (surveyor && !surveyor.value) surveyor.value = '가온박정순';
+          if (surveyor) {
+            try {
+              surveyor.readOnly = false;
+              surveyor.disabled = false;
+              surveyor.removeAttribute('readonly');
+              surveyor.removeAttribute('disabled');
+            } catch (_) {}
+            const targetSurveyor = (surveyorAccount || data.surveyorAccount || data.surveyorName || data.kstatLoginId || '').trim();
+            if (targetSurveyor) {
+              surveyor.value = targetSurveyor;
+              surveyor.dispatchEvent(new Event('input', { bubbles: true }));
+              surveyor.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
           if (typeof next === 'function') next();
-        }, { data: assocData }).catch(() => {});
+        }, { data: assocData, surveyorAccount: effectiveSurveyor }).catch(() => {});
         await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 }).catch(() => {});
         await delay(300);
         continue;
