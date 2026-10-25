@@ -91,7 +91,8 @@ async function initSurveyDetailPage() {
   const btnClearLogs = document.getElementById('btn-clear-logs');
   const terminalLogs = document.getElementById('terminal-logs');
   const currentStepLabel = document.getElementById('current-step-label');
-  const timelineChips = document.querySelectorAll('.step-chip');
+  const timelineStepperTitle = document.getElementById('timeline-stepper-title');
+  let timelineChips = document.querySelectorAll('.step-chip');
 
   let currentCampaign = null;
 
@@ -149,6 +150,25 @@ async function initSurveyDetailPage() {
     } else {
       if (step2TitleEl) step2TitleEl.textContent = '마스터 설문조사 & 조사원 평가 기준점 검토 (17단계 전수)';
       if (step2DescEl) step2DescEl.textContent = '케이스탯 본 설문 1~16단계 및 조사원 평가 17단계 구조가 전수 복제되었습니다.';
+    }
+
+    // 실시간 모니터링 레이어 타임라인 칩 & 제목 동적 렌더링 (상인회 25단계 vs 점포조사 15단계)
+    renderTimelineChips(isAssoc);
+
+    // STEP 3 캡처 버튼 문구 동적화
+    const btnViewPilotCaptures = document.getElementById('btn-view-pilot-captures');
+    if (btnViewPilotCaptures) {
+      btnViewPilotCaptures.textContent = isAssoc ? '25단계 캡처 전체보기' : '15단계 캡처 전체보기';
+    }
+
+    // 대상 설문 요약 스트립 동적화
+    const labelExecTargetMarket = document.getElementById('label-exec-target-market');
+    if (labelExecTargetMarket) {
+      labelExecTargetMarket.textContent = isAssoc ? '2026 전통시장 및 상점가 실태조사 (상인회)' : '2026 전통시장 및 점포경영 실태조사';
+    }
+    const badgeBlueprintStatus = document.getElementById('badge-blueprint-status');
+    if (badgeBlueprintStatus) {
+      badgeBlueprintStatus.innerHTML = isAssoc ? '<i class="fa-solid fa-check-double"></i> 25단계 기준점 연동 완료' : '<i class="fa-solid fa-check-double"></i> 17단계 기준점 연동 완료';
     }
 
     // 슬롯 바인딩 버튼 UI 튜닝
@@ -3925,14 +3945,45 @@ async function initSurveyDetailPage() {
   // ------------------------------------------------------------------------
   // 6. 실시간 타임라인 칩 제어
   // ------------------------------------------------------------------------
+  function renderTimelineChips(isAssoc) {
+    const strip = document.getElementById('timeline-chips-strip');
+    if (!strip) return;
+
+    if (timelineStepperTitle) {
+      timelineStepperTitle.textContent = isAssoc ? '상인회 실태조사 타임라인 (25단계)' : '점포경영 실태조사 타임라인 (15단계)';
+    }
+
+    const steps = isAssoc ? [
+      'Q1',
+      'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10',
+      'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20',
+      'P21', 'P22', 'P23',
+      'Agree'
+    ] : [
+      'Q1',
+      'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10',
+      'P11', 'P12', 'P13', 'P14',
+      'Agree'
+    ];
+
+    strip.innerHTML = steps.map(step => {
+      const isFinal = (step.toLowerCase() === 'agree');
+      return `<span class="step-chip${isFinal ? ' step-chip-final' : ''}" data-step="${step}">${step}</span>`;
+    }).join('');
+
+    timelineChips = strip.querySelectorAll('.step-chip');
+  }
+
   function setTimelineStep(stepName) {
     if (!stepName) return;
-    if (currentStepLabel) currentStepLabel.textContent = stepName;
+    const cleanStep = String(stepName).trim();
+    if (currentStepLabel) currentStepLabel.textContent = cleanStep;
     let found = false;
 
-    timelineChips.forEach(chip => {
+    const chips = document.querySelectorAll('#timeline-chips-strip .step-chip');
+    chips.forEach(chip => {
       const s = chip.dataset.step;
-      if (s === stepName) {
+      if (s && s.toLowerCase() === cleanStep.toLowerCase()) {
         chip.className = 'step-chip active';
         found = true;
         try {
@@ -3947,8 +3998,9 @@ async function initSurveyDetailPage() {
   }
 
   function resetTimelineChips() {
-    timelineChips.forEach(chip => chip.className = 'step-chip');
-    currentStepLabel.textContent = '시작 대기';
+    const chips = document.querySelectorAll('#timeline-chips-strip .step-chip');
+    chips.forEach(chip => chip.className = 'step-chip');
+    if (currentStepLabel) currentStepLabel.textContent = '시작 대기';
   }
 
   const kstFormatter = new Intl.DateTimeFormat('ko-KR', {
