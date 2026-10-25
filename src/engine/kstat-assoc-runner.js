@@ -201,29 +201,34 @@ export async function runKstatAssocSurvey(options = {}) {
 
     while (maxSteps-- > 0) {
       stepCount++;
-      const currUrl = page.url();
-      const currPageName = await detectAssocCurrentStep(page);
+
+      // Survey.asp 리디렉션 과도기 완전 안정화 대기
+      if (page.url().includes('Survey.asp')) {
+        const sWait = Date.now();
+        while (page.url().includes('Survey.asp') && Date.now() - sWait < 4500) {
+          const stp = await detectAssocCurrentStep(page);
+          if (stp) break;
+          await delay(200);
+        }
+      }
+
+      let currUrl = page.url();
+      let currPageName = await detectAssocCurrentStep(page);
+
+      // 만약 미감지 상태라면 1초 후 재확인
+      if (!currPageName) {
+        await delay(1000);
+        currUrl = page.url();
+        currPageName = await detectAssocCurrentStep(page);
+      }
 
       logger.info(`[상인회 러너] [현재 단계: ${currPageName || '미감지'}] URL: ${currUrl}`);
 
-      // ------------------------------------------
-      // 0-0) Survey.asp 리디렉션 및 과도기 상태 페일세이프 돌파
-      // ------------------------------------------
-      if (currUrl.includes('Survey.asp') && !currPageName) {
-        logger.info(`[상인회 러너] [Survey.asp 감지] 페이지 전환 대기 및 #next 확인 중...`);
-        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 2500 }).catch(() => {});
-        const recheckStep = await detectAssocCurrentStep(page);
-        if (recheckStep) {
-          continue;
-        }
-        const nextBtn = await page.$('#next, input[name="next"], button#next');
-        if (nextBtn) {
-          await Promise.all([
-            page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 4000 }).catch(() => {}),
-            nextBtn.click().catch(() => {})
-          ]);
-          continue;
-        }
+      // 여전히 미감지 상태이고 Survey.asp에 머물러 있다면 액션 없이 추가 대기
+      if (!currPageName && currUrl.includes('Survey.asp')) {
+        logger.warn(`[상인회 러너] Survey.asp 과도기 대기 중...`);
+        await delay(1500);
+        continue;
       }
 
       // ------------------------------------------
@@ -1569,6 +1574,72 @@ export async function runKstatAssocSurvey(options = {}) {
       }
 
       // ------------------------------------------
+      // 1-4-2) P10 (C4: 고객지원 및 마케팅 시설 보유현황 및 시설필요도)
+      // ------------------------------------------
+      if (currUrl.includes('P10') || currPageName === 'P10') {
+        onProgress({ step: 'P10', message: `[P10] C4 고객지원/마케팅시설 보유개수 및 시설필요도(랜덤) 자동 응답 중...` });
+        await delay(200);
+
+        await page.evaluate(({ preserveExisting }) => {
+          // 5개 항목 순회 (C4_1 ~ C4_5)
+          for (let idx = 1; idx <= 5; idx++) {
+            const prevCnt = document.querySelector(`input[name="PC4_${idx}_2"]`)?.value || '';
+            const hasPrev = prevCnt && prevCnt.trim() !== '' && parseInt(prevCnt.trim(), 10) > 0;
+
+            if (hasPrev) {
+              const optYes = document.querySelector(`input[name="C4_${idx}_1"][value="1"]`);
+              if (optYes) {
+                optYes.checked = true;
+                optYes.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const cntInp = document.querySelector(`input[name="C4_${idx}_2"]`);
+              if (cntInp) {
+                cntInp.disabled = false;
+                cntInp.value = prevCnt.trim();
+                cntInp.dispatchEvent(new Event('input', { bubbles: true }));
+                cntInp.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            } else {
+              const optNo = document.querySelector(`input[name="C4_${idx}_1"][value="2"]`);
+              if (optNo) {
+                optNo.checked = true;
+                optNo.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const cntInp = document.querySelector(`input[name="C4_${idx}_2"]`);
+              if (cntInp) {
+                cntInp.value = '';
+                cntInp.disabled = true;
+              }
+            }
+
+            // '시설필요도'는 항상 필수 응답 (1~5 척도)
+            const needRadios = Array.from(document.querySelectorAll(`input[name="C4_${idx}_3"]`));
+            if (needRadios.length > 0) {
+              const curChecked = document.querySelector(`input[name="C4_${idx}_3"]:checked`);
+              if (!preserveExisting || !curChecked) {
+                const randVal = String(Math.floor(Math.random() * 5) + 1);
+                const targetRadio = document.querySelector(`input[name="C4_${idx}_3"][value="${randVal}"]`) || needRadios[2] || needRadios[0];
+                if (targetRadio) {
+                  targetRadio.checked = true;
+                  targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(targetRadio).prop('checked', true).trigger('change');
+                }
+              }
+            }
+
+            if (typeof window.toggleDependentFields === 'function') {
+              try { window.toggleDependentFields(idx); } catch (_) {}
+            }
+          }
+        }, { preserveExisting });
+
+        await captureStep('P10', 'P10_고객지원마케팅시설C4');
+        await delay(200);
+        await safeSubmitAndAdvance(page, 'P10');
+        continue;
+      }
+
+      // ------------------------------------------
       // 1-5) P11 (D1: 공동마케팅 사업 및 D1-1 축제/이벤트 명칭 조회 주입)
       // ------------------------------------------
       if (currUrl.includes('P11') || currPageName === 'P11') {
@@ -1922,20 +1993,22 @@ export async function runKstatAssocSurvey(options = {}) {
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
-        const d2Frame = page.frames().find(f => f.url().includes('D2.asp') || f.name() === 'frame_D2');
-        if (d2Frame) {
+        for (const f of page.frames()) {
           try {
-            await d2Frame.evaluate(({ preserveExisting }) => {
-              for (let i = 1; i <= 3; i++) {
-                const cur = document.querySelector(`input[name="D2_${i}"]:checked`);
-                if (!preserveExisting || !cur) {
-                  const prevVal = document.querySelector(`input[name="PD2_${i}"]:checked`)?.value || '1';
-                  const targetRadio = document.querySelector(`input[name="D2_${i}"][value="${prevVal}"]`) || document.querySelector(`input[name="D2_${i}"][value="1"]`);
-                  if (targetRadio) {
-                    if (!targetRadio.checked) targetRadio.click();
-                    targetRadio.checked = true;
-                    targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
-                    if (typeof $ !== 'undefined') $(targetRadio).prop('checked', true).trigger('change');
+            await f.evaluate(({ preserveExisting }) => {
+              for (let i = 1; i <= 5; i++) {
+                const radios = document.querySelectorAll(`input[name="D2_${i}"]`);
+                if (radios.length > 0) {
+                  const cur = document.querySelector(`input[name="D2_${i}"]:checked`);
+                  if (!preserveExisting || !cur) {
+                    const prevVal = document.querySelector(`input[name="PD2_${i}"]:checked`)?.value || '1';
+                    const targetRadio = document.querySelector(`input[name="D2_${i}"][value="${prevVal}"]`) || radios[0];
+                    if (targetRadio) {
+                      if (!targetRadio.checked) targetRadio.click();
+                      targetRadio.checked = true;
+                      targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                      if (typeof $ !== 'undefined') $(targetRadio).prop('checked', true).trigger('change');
+                    }
                   }
                 }
               }
@@ -2572,31 +2645,35 @@ export async function runKstatAssocSurvey(options = {}) {
 
         logger.info(`[상인회 러너] [P22] 정책 답변: G1=${g1Val} (🎲 기타 제외 랜덤), G2=${g2Val} (🎲 기타 제외 랜덤)`);
 
-        // G1 프레임
-        const g1Frame = page.frames().find(f => f.url().includes('G1.asp'));
-        if (g1Frame) {
+        // G1, G2 전체 프레임 안전 주입 (네이티브 click 및 change 이벤트 트리거)
+        for (const f of page.frames()) {
           try {
-            const hasChecked = await g1Frame.evaluate(() => !!document.querySelector('input[name="G1"]:checked'));
-            if (!preserveExisting || !hasChecked) {
-              const sel = `input[name="G1"][value="${g1Val}"]`;
-              await g1Frame.click(sel).catch(async () => {
-                await g1Frame.click('input[name="G1"][value="1"]').catch(() => {});
-              });
-            }
-          } catch (_) {}
-        }
-
-        // G2 프레임
-        const g2Frame = page.frames().find(f => f.url().includes('G2.asp'));
-        if (g2Frame) {
-          try {
-            const hasChecked = await g2Frame.evaluate(() => !!document.querySelector('input[name="G2"]:checked'));
-            if (!preserveExisting || !hasChecked) {
-              const sel = `input[name="G2"][value="${g2Val}"]`;
-              await g2Frame.click(sel).catch(async () => {
-                await g2Frame.click('input[name="G2"][value="1"]').catch(() => {});
-              });
-            }
+            await f.evaluate(({ g1Val, g2Val, preserveExisting }) => {
+              if (document.querySelector('input[name="G1"]')) {
+                const cur1 = document.querySelector('input[name="G1"]:checked');
+                if (!preserveExisting || !cur1) {
+                  const r1 = document.querySelector(`input[name="G1"][value="${g1Val}"]`) || document.querySelector('input[name="G1"][value="1"]');
+                  if (r1) {
+                    if (!r1.checked) r1.click();
+                    r1.checked = true;
+                    r1.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(r1).prop('checked', true).trigger('change');
+                  }
+                }
+              }
+              if (document.querySelector('input[name="G2"]')) {
+                const cur2 = document.querySelector('input[name="G2"]:checked');
+                if (!preserveExisting || !cur2) {
+                  const r2 = document.querySelector(`input[name="G2"][value="${g2Val}"]`) || document.querySelector('input[name="G2"][value="1"]');
+                  if (r2) {
+                    if (!r2.checked) r2.click();
+                    r2.checked = true;
+                    r2.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(r2).prop('checked', true).trigger('change');
+                  }
+                }
+              }
+            }, { g1Val, g2Val, preserveExisting });
           } catch (_) {}
         }
 
@@ -2735,7 +2812,12 @@ export async function runKstatAssocSurvey(options = {}) {
       // ------------------------------------------
       // 5) P1 ~ P20: 일반 전년도 비교 문항 단계
       // ------------------------------------------
-      const stepName = currPageName || `P${stepCount}`;
+      if (!currPageName) {
+        logger.warn(`[상인회 러너] 단계를 식별할 수 없어 안전 대기합니다. URL: ${currUrl}`);
+        await delay(1500);
+        continue;
+      }
+      const stepName = currPageName;
       onProgress({ step: stepName, message: `[${stepName}] 전년도 비교 문항 자동 응답(Mirroring) 중...` });
 
       await syncAllChildFrames(page);
@@ -2763,15 +2845,29 @@ export async function runKstatAssocSurvey(options = {}) {
  * [상인회 조사 전용] 현재 진행 중인 단계(P1~P23, Q1, Agree)를 100% 감지하는 고도화 탐색기
  */
 async function detectAssocCurrentStep(page) {
-  // Survey.asp 리디렉션 처리 대기
+  // 1. Survey.asp 리디렉션 처리 대기: Survey.asp에서 실제 step 페이지로의 전환 대기
   if (page.url().includes('Survey.asp')) {
-    await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 2500 }).catch(() => {});
+    const startWait = Date.now();
+    while (page.url().includes('Survey.asp') && Date.now() - startWait < 4500) {
+      try {
+        const pVal = await page.evaluate(() => document.querySelector('input[name="PageName"]')?.value);
+        if (pVal && pVal.match(/^(P\d+|Q1|Agree)$/i)) {
+          return pVal.toUpperCase();
+        }
+      } catch (_) {}
+      await page.waitForTimeout(200).catch(() => {});
+    }
   }
-  // 1. Agree 또는 Q1 메인 URL 직접 매칭
+
+  // 2. Agree 또는 Q1 메인 URL 직접 매칭
   if (page.url().includes('Agree.asp')) return 'AGREE';
   if (page.url().includes('Q1.asp')) return 'Q1';
 
-  // 2. 모든 하위 프레임 순회하여 P\d+ 또는 Agree 감지
+  // 3. 메인 페이지 URL 매칭
+  const mainM = page.url().match(/(P\d+|Q1|Agree)\.asp/i);
+  if (mainM) return mainM[1].toUpperCase();
+
+  // 4. 모든 하위 프레임 및 메인 프레임 순회하여 P\d+ 또는 Agree 감지
   for (const f of page.frames()) {
     const fUrl = f.url() || '';
     const m = fUrl.match(/(P\d+|Q1|Agree)\.asp/i);
@@ -2784,9 +2880,6 @@ async function detectAssocCurrentStep(page) {
       }
     } catch (_) {}
   }
-  // 3. 메인 페이지 URL 매칭
-  const mainM = page.url().match(/(P\d+|Q1|Agree)\.asp/i);
-  if (mainM) return mainM[1].toUpperCase();
 
   return '';
 }
@@ -2794,7 +2887,7 @@ async function detectAssocCurrentStep(page) {
 /**
  * [상인회 조사 핵심 안전망] 정식 폼 저장(Submit) 보장 및 초고속 이동 헬퍼
  * - move_page로 저장 없이 건너뛰는 행위를 원천 금지
- * - domcontentloaded(3.5초)로 대기 시간 대폭 단축
+ * - Survey.asp 경유 시 다음 실태조사 페이지(Pxx.asp 또는 Agree)로 완전 전환될 때까지 능동 대기
  * - 미이동(Alert 발생 등) 시 자동 필드 치유 후 정식 next() 재실행
  */
 async function safeSubmitAndAdvance(page, stepName) {
@@ -2804,9 +2897,17 @@ async function safeSubmitAndAdvance(page, stepName) {
   // 1차: #next 클릭 및 빠른 네비게이션 대기
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 3500 }).catch(() => null),
-    page.click('#next').catch(() => {})
+    page.click('#next', { timeout: 3000 }).catch(() => {})
   ]);
   await delay(250);
+
+  // 1-1차: Survey.asp 경유 시 실제 후속 페이지로 전환될 때까지 능동 대기
+  const startWait = Date.now();
+  while (page.url().includes('Survey.asp') && Date.now() - startWait < 5500) {
+    const pVal = await detectAssocCurrentStep(page);
+    if (pVal && pVal !== prevStep) break;
+    await delay(200);
+  }
 
   let currentStep = await detectAssocCurrentStep(page);
   let currentUrl = page.url();
@@ -2831,6 +2932,14 @@ async function safeSubmitAndAdvance(page, stepName) {
       }).catch(() => {})
     ]);
     await delay(250);
+
+    // 3-1차: Survey.asp 경유 재전환 대기
+    const reWait = Date.now();
+    while (page.url().includes('Survey.asp') && Date.now() - reWait < 5500) {
+      const pVal = await detectAssocCurrentStep(page);
+      if (pVal && pVal !== prevStep) break;
+      await delay(200);
+    }
   }
 }
 
