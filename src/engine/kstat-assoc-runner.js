@@ -478,6 +478,41 @@ export async function runKstatAssocSurvey(options = {}) {
               };
             });
             logger.info(`[상인회 러너] [P3 A6A 업종별 점포 주입 완료]: 전년도합계=${a6aResult.pSum} ➔ 금년도합계=${a6aResult.sum}`);
+
+            // 3. A6 vs A6A 합계 정합성 전수 보장 (영업 점포 수 + 노점 수 = 업종별 점포 수 합계)
+            if (a6Frame && a6aResult && a6aResult.sum) {
+              await a6Frame.evaluate(({ targetSum }) => {
+                const numSum = parseInt(targetSum || '0', 10);
+                if (numSum > 0) {
+                  const n_own = parseInt(document.querySelector('#A6_1_1')?.value || '0', 10);
+                  const n_rent = parseInt(document.querySelector('#A6_1_2')?.value || '0', 10);
+                  const n_street = parseInt(document.querySelector('#A6_3')?.value || '0', 10);
+                  const currentTotal = n_own + n_rent + n_street;
+
+                  if (currentTotal !== numSum) {
+                    const newRent = Math.max(0, numSum - n_own - n_street);
+                    const rentInp = document.querySelector('#A6_1_2');
+                    if (rentInp) {
+                      rentInp.value = String(newRent);
+                      rentInp.dispatchEvent(new Event('input', { bubbles: true }));
+                      rentInp.dispatchEvent(new Event('change', { bubbles: true }));
+                      if (typeof $ !== 'undefined') $(rentInp).val(String(newRent)).trigger('input').trigger('change');
+                    }
+                    if (typeof calculateA6 === 'function') {
+                      calculateA6();
+                    } else {
+                      const newBiz = n_own + newRent;
+                      const bInp = document.querySelector('#A6_1');
+                      if (bInp) bInp.value = String(newBiz);
+                      const tInp = document.querySelector('#A6_4');
+                      const n_empty = parseInt(document.querySelector('#A6_2_1')?.value || '0', 10);
+                      const n_etc = parseInt(document.querySelector('#A6_2_2')?.value || '0', 10);
+                      if (tInp) tInp.value = String(newBiz + n_empty + n_etc + n_street);
+                    }
+                  }
+                }
+              }, { targetSum: a6aResult.sum });
+            }
           } catch (err) {
             console.error('[P3 A6A frame 주입 오류]:', err);
           }
@@ -1057,23 +1092,80 @@ export async function runKstatAssocSurvey(options = {}) {
           } catch (_) {}
         }
 
-        // B7.asp (상근직원 현황)
+        // B7.asp (B7-1 다른 상인회 유무 및 B7-2 세부 정보)
         const b7Frame = page.frames().find(f => f.url().includes('B7.asp'));
         if (b7Frame) {
           try {
-            await b7Frame.evaluate(({ preserveExisting }) => {
-              // B7A 상근직원 유무 라디오 공란 시 전년도 PB7A 또는 2(무) 기본 선택
-              if (!preserveExisting || !document.querySelector('input[name="B7A"]:checked')) {
-                const pb7aVal = document.querySelector('input[name="PB7A"]:checked')?.value || '2';
-                const opt = document.querySelector(`input[name="B7A"][value="${pb7aVal}"]`) || document.querySelector('input[name="B7A"][value="2"]');
-                if (opt) {
-                  if (!opt.checked) opt.click();
-                  opt.checked = true;
-                  opt.dispatchEvent(new Event('change', { bubbles: true }));
-                  if (typeof $ !== 'undefined') $(opt).prop('checked', true).trigger('change');
+            const mName = assocData.marketName || '상인회';
+            const mPhone = assocData.leaderPhone || assocData.phone || '010-4163-2166';
+            await b7Frame.evaluate(({ preserveExisting, mName, mPhone }) => {
+              // B7A: 1(있음), 2(없음). 기본값은 2(없음), 전년도 PB7A가 1이면 1 유지
+              const pb7aVal = document.querySelector('input[name="PB7A"]:checked')?.value || '2';
+              const curB7A = document.querySelector('input[name="B7A"]:checked')?.value;
+              const targetB7A = (preserveExisting && curB7A) ? curB7A : pb7aVal;
+
+              const opt = document.querySelector(`input[name="B7A"][value="${targetB7A}"]`) || document.querySelector('input[name="B7A"][value="2"]');
+              if (opt) {
+                if (!opt.checked) opt.click();
+                opt.checked = true;
+                opt.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(opt).prop('checked', true).trigger('change');
+              }
+
+              // toggleB7A 실행
+              if (typeof window.toggleB7A === 'function') {
+                window.toggleB7A();
+              }
+
+              const isOtherAssoc = (document.querySelector('input[name="B7A"]:checked')?.value === '1');
+              if (isOtherAssoc) {
+                // 상인회 1의 4대 필수정보 (상인회명, 회장명, 연락처, 개설년도) 주입
+                const f1 = document.querySelector('#B7B_1_1');
+                const f2 = document.querySelector('#B7B_1_2');
+                const f3 = document.querySelector('#B7B_1_3');
+                const f4 = document.querySelector('#B7B_1_4');
+
+                const p1 = document.querySelector('#PB7B_1_1')?.value?.trim();
+                const p2 = document.querySelector('#PB7B_1_2')?.value?.trim();
+                const p3 = document.querySelector('#PB7B_1_3')?.value?.trim();
+                const p4 = document.querySelector('#PB7B_1_4')?.value?.trim();
+
+                const setF = (el, val) => {
+                  if (el) {
+                    el.disabled = false;
+                    el.value = val;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(el).val(val).trigger('input').trigger('change');
+                  }
+                };
+
+                setF(f1, p1 || (mName + ' 번영회'));
+                setF(f2, p2 || '부회장');
+                // 연락처 유효 형식 정규화
+                let phoneVal = p3 || mPhone || '010-4163-2166';
+                const digits = String(phoneVal).replace(/\D/g, '');
+                if (digits.length === 11) phoneVal = digits.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                else if (digits.length === 10 && digits.startsWith('02')) phoneVal = digits.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
+                else if (digits.length === 10) phoneVal = digits.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+                else if (digits.length === 9 && digits.startsWith('02')) phoneVal = digits.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3');
+                else phoneVal = '010-4163-2166';
+                setF(f3, phoneVal);
+                setF(f4, p4 || '2020');
+              } else {
+                // 없음(2)인 경우 모든 B7B 인풋 비활성화 및 초기화
+                for (let i = 1; i <= 3; i++) {
+                  for (let j = 1; j <= 4; j++) {
+                    const el = document.querySelector(`#B7B_${i}_${j}`);
+                    if (el) {
+                      el.value = '';
+                      el.disabled = true;
+                      if (typeof $ !== 'undefined') $(el).val('').prop('disabled', true);
+                    }
+                  }
                 }
               }
-            }, { preserveExisting });
+            }, { preserveExisting, mName, mPhone });
           } catch (_) {}
         }
 
@@ -1281,18 +1373,21 @@ export async function runKstatAssocSurvey(options = {}) {
         for (const f of page.frames()) {
           try {
             await f.evaluate(({ isParking, evCountVal }) => {
-              // C3AA 주차장 수
+              // C3AA 주차장 수 (1 이상 필수)
               const inpAA = document.querySelector('#C3AA, input[name="C3AA"]');
               if (inpAA) {
                 if (isParking) {
                   const prev = document.querySelector('#PC3AA')?.value || '1';
+                  const valAA = (prev && prev.trim() !== '' && prev.trim() !== '0') ? prev.trim() : '1';
                   inpAA.disabled = false;
-                  inpAA.value = (prev && prev.trim() !== '' && prev.trim() !== '0') ? prev.trim() : '1';
+                  inpAA.value = valAA;
                   inpAA.dispatchEvent(new Event('input', { bubbles: true }));
                   inpAA.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(inpAA).val(valAA).trigger('input').trigger('change');
                 } else {
                   inpAA.value = '';
                   inpAA.disabled = true;
+                  if (typeof $ !== 'undefined') $(inpAA).val('').prop('disabled', true);
                 }
               }
 
@@ -1301,13 +1396,16 @@ export async function runKstatAssocSurvey(options = {}) {
               if (inpAB) {
                 if (isParking) {
                   const prev = document.querySelector('#PC3AB')?.value || '30';
+                  const valAB = (prev && prev.trim() !== '' && prev.trim() !== '0') ? prev.trim() : '30';
                   inpAB.disabled = false;
-                  inpAB.value = (prev && prev.trim() !== '' && prev.trim() !== '0') ? prev.trim() : '30';
+                  inpAB.value = valAB;
                   inpAB.dispatchEvent(new Event('input', { bubbles: true }));
                   inpAB.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(inpAB).val(valAB).trigger('input').trigger('change');
                 } else {
-                  inpAB.value = '';
-                  inpAB.disabled = true;
+                  inpAA.value = '';
+                  inpAA.disabled = true;
+                  if (typeof $ !== 'undefined') $(inpAB).val('').prop('disabled', true);
                 }
               }
 
@@ -1378,6 +1476,25 @@ export async function runKstatAssocSurvey(options = {}) {
                   if (typeof $ !== 'undefined') $(targetCb).prop('checked', true).trigger('change');
                 }
               }
+
+              // [C3-2-2 소유주체 기타(C3BB_4 vs TC3BB_4) 엄격한 정합성 보장 - Alert 트랩 원천 차단]
+              const chk4 = document.querySelector('#C3BB_4, input[name="C3BB_4"]');
+              const txt4 = document.querySelector('#TC3BB_4, input[name="TC3BB_4"]');
+              if (chk4 && chk4.checked) {
+                if (txt4 && (!txt4.value || txt4.value.trim() === '' || txt4.value === '0')) {
+                  txt4.value = '공동소유';
+                  txt4.dispatchEvent(new Event('input', { bubbles: true }));
+                  txt4.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(txt4).val('공동소유').trigger('input').trigger('change');
+                }
+              } else {
+                if (txt4) {
+                  txt4.value = '';
+                  txt4.dispatchEvent(new Event('input', { bubbles: true }));
+                  txt4.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(txt4).val('').trigger('input').trigger('change');
+                }
+              }
             }, { ownerVal, preserveExisting });
           } catch (err) {
             console.error('[P9 C3BB frame 주입 오류]:', err);
@@ -1398,6 +1515,25 @@ export async function runKstatAssocSurvey(options = {}) {
                   targetCb.checked = true;
                   targetCb.dispatchEvent(new Event('change', { bubbles: true }));
                   if (typeof $ !== 'undefined') $(targetCb).prop('checked', true).trigger('change');
+                }
+              }
+
+              // [C3-2-3 관리주체 기타(C3BC_5 vs TC3BC_5) 엄격한 정합성 보장 - Alert 트랩 원천 차단]
+              const chk5 = document.querySelector('#C3BC_5, input[name="C3BC_5"]');
+              const txt5 = document.querySelector('#TC3BC_5, input[name="TC3BC_5"]');
+              if (chk5 && chk5.checked) {
+                if (txt5 && (!txt5.value || txt5.value.trim() === '' || txt5.value === '0')) {
+                  txt5.value = '위탁관리';
+                  txt5.dispatchEvent(new Event('input', { bubbles: true }));
+                  txt5.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(txt5).val('위탁관리').trigger('input').trigger('change');
+                }
+              } else {
+                if (txt5) {
+                  txt5.value = '';
+                  txt5.dispatchEvent(new Event('input', { bubbles: true }));
+                  txt5.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(txt5).val('').trigger('input').trigger('change');
                 }
               }
             }, { managerVal, preserveExisting });
@@ -1571,23 +1707,71 @@ export async function runKstatAssocSurvey(options = {}) {
           }
         }
 
-        // D1BA.asp (D1-2-1 배송서비스 유형 결측 방어)
-        // D1BA.asp (D1-2-1 배송서비스 유형 결측 방어: 전체 프레임 안전망 전수 적용)
+        // P12 배송서비스 하위 전 문항 완벽 지원 (D1BA, D1BB, D1BBA, D1BC, D1BD, D1BE)
         for (const f of page.frames()) {
           try {
             await f.evaluate(() => {
+              // 1. D1BA (배송서비스 유형 체크박스)
               const d1baCbs = document.querySelectorAll('input[type="checkbox"][name^="D1BA"]');
-              if (d1baCbs.length > 0) {
-                const hasChecked = Array.from(d1baCbs).some(c => c.checked);
-                if (!hasChecked) {
-                  const cb = document.querySelector('#D1BA_1, input[name="D1BA_1"]') || d1baCbs[0];
-                  if (cb) {
-                    if (!cb.checked) cb.click();
-                    cb.checked = true;
-                    cb.dispatchEvent(new Event('change', { bubbles: true }));
-                    if (typeof $ !== 'undefined') $(cb).prop('checked', true).trigger('change');
-                  }
+              if (d1baCbs.length > 0 && !Array.from(d1baCbs).some(c => c.checked)) {
+                const cb = document.querySelector('#D1BA_1, input[name="D1BA_1"]') || d1baCbs[0];
+                if (cb) {
+                  if (!cb.checked) cb.click();
+                  cb.checked = true;
+                  cb.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(cb).prop('checked', true).trigger('change');
                 }
+              }
+
+              // 2. D1BB (운영 주체 라디오: 1 상인회 직접, 2 개별점포, 3 기타)
+              const d1bbRadios = document.querySelectorAll('input[name="D1BB"]');
+              if (d1bbRadios.length > 0 && !document.querySelector('input[name="D1BB"]:checked')) {
+                const r = document.querySelector('input[name="D1BB"][value="1"]') || d1bbRadios[0];
+                if (r) {
+                  if (!r.checked) r.click();
+                  r.checked = true;
+                  r.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
+                }
+              }
+              const curD1BB = document.querySelector('input[name="D1BB"]:checked')?.value;
+              const td1bb = document.querySelector('#TD1BB_3, input[name="TD1BB_3"]');
+              if (td1bb) {
+                if (curD1BB === '3') { if (!td1bb.value) td1bb.value = '기타 운영'; }
+                else { td1bb.value = ''; }
+              }
+
+              // 3. D1BBA (D1-2-2-1 상인회 운영 시 운영 방식 체크박스)
+              const d1bbaCbs = document.querySelectorAll('input[type="checkbox"][name^="D1BBA"]');
+              if (d1bbaCbs.length > 0 && !Array.from(d1bbaCbs).some(c => c.checked)) {
+                const cb = document.querySelector('#D1BBA_1, input[name="D1BBA_1"]') || d1bbaCbs[0];
+                if (cb) {
+                  if (!cb.checked) cb.click();
+                  cb.checked = true;
+                  cb.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(cb).prop('checked', true).trigger('change');
+                }
+              }
+
+              // 4. D1BC (취급 품목 체크박스)
+              const d1bcCbs = document.querySelectorAll('input[type="checkbox"][name^="D1BC"]');
+              if (d1bcCbs.length > 0 && !Array.from(d1bcCbs).some(c => c.checked)) {
+                const cb = document.querySelector('#D1BC_1, input[name="D1BC_1"]') || d1bcCbs[0];
+                if (cb) {
+                  if (!cb.checked) cb.click();
+                  cb.checked = true;
+                  cb.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(cb).prop('checked', true).trigger('change');
+                }
+              }
+
+              // 5. D1BD (일평균 배송건수)
+              const d1bd = document.querySelector('#D1BD, input[name="D1BD"]');
+              if (d1bd && (!d1bd.value || d1bd.value.trim() === '' || d1bd.value === '0')) {
+                d1bd.value = '15';
+                d1bd.dispatchEvent(new Event('input', { bubbles: true }));
+                d1bd.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(d1bd).val('15').trigger('input').trigger('change');
               }
             });
           } catch (_) {}
@@ -1721,6 +1905,7 @@ export async function runKstatAssocSurvey(options = {}) {
                     el.value = val;
                     el.dispatchEvent(new Event('input', { bubbles: true }));
                     el.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(el).val(val).trigger('input').trigger('change');
                   }
                 };
                 setVal('D3AA_1', getP('PD3AA_1') || '소상공인시장진흥공단');
@@ -2661,7 +2846,7 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
         prevInputs.forEach(pInp => {
           let currName = pInp.name.substring(1);
           if (pInp.name.startsWith('TP')) currName = 'T' + pInp.name.substring(2);
-          if (currName === 'TD3_1' || currName.startsWith('TD3') || currName.startsWith('C1_') || currName.startsWith('C2_') || currName.startsWith('D1AA_') || currName.startsWith('E1_') || currName.startsWith('F1_')) return; // D3, C1, C2, D1AA, E1, F1 트랩 방어
+          if (currName === 'TD3_1' || currName.startsWith('TD3') || currName.startsWith('C1_') || currName.startsWith('C2_') || currName.startsWith('D1AA_') || currName.startsWith('E1_') || currName.startsWith('F1_') || currName.startsWith('TC3B') || currName.endsWith('_ETC') || currName.endsWith('_FAX')) return; // D3, C1, C2, D1AA, E1, F1, C3BB/C3BC 기타 트랩 방어
           const currInp = document.querySelector(`input[name="${currName}"]`) || document.querySelector('#' + currName);
           if (currInp) {
             const pVal = pInp.value !== undefined && pInp.value !== null ? pInp.value.trim() : '';
@@ -2951,11 +3136,19 @@ async function healUnansweredAssocFields(page) {
           }
         });
 
-        // 2. 미입력 숫자/텍스트 '0' 주입 (TD3_1은 반드시 제외!)
+        // 2. 미입력 숫자/텍스트 '0' 주입 (부속/기타 텍스트 인풋 제외 및 전용 정합성 처리!)
+        const companionNames = [
+          'TC3BB_4', 'TC3BC_5', 'TA5_1', 'TD3_1', 'B6D_FAX',
+          'TF3_6', 'TF5_5', 'TF6_6', 'TG1_6', 'TG2_6',
+          'G4_1_7_ETC', 'G4_2_6_ETC', 'G4_3_6_ETC', 'G4_4_6_ETC'
+        ];
+
         const texts = Array.from(document.querySelectorAll('input[type="text"]:not([readonly]):not([disabled]), input[type="tel"]:not([readonly]):not([disabled])'));
         texts.forEach(t => {
-          if (t.name === 'TD3_1' || t.id === 'TD3_1' || t.name?.startsWith('TD3')) {
-            return; // D3=2일 때 TD3_1에 0 주입 금지!
+          const tName = t.name || '';
+          const tId = t.id || '';
+          if (companionNames.includes(tName) || companionNames.includes(tId) || tName.startsWith('TD3') || tName.startsWith('TC3B') || tName.endsWith('_ETC') || tName.endsWith('_FAX')) {
+            return; // 부속 텍스트는 일반 0 주입에서 배제하고 아래 전용 정합성 로직에서 처리
           }
           if (!t.value || t.value.trim() === '') {
             t.value = '0';
@@ -2964,26 +3157,74 @@ async function healUnansweredAssocFields(page) {
           }
         });
 
-        // 3. D3 체크 상태 재확인
+        // 3. C3BB_4 (소유주체 기타) & C3BC_5 (관리주체 기타) 정합성 보장
+        const chkC3BB_4 = document.querySelector('#C3BB_4, input[name="C3BB_4"]');
+        const txtC3BB_4 = document.querySelector('#TC3BB_4, input[name="TC3BB_4"]');
+        if (chkC3BB_4 && chkC3BB_4.checked) {
+          if (txtC3BB_4 && (!txtC3BB_4.value || txtC3BB_4.value.trim() === '' || txtC3BB_4.value === '0')) txtC3BB_4.value = '공동소유';
+        } else if (txtC3BB_4) {
+          txtC3BB_4.value = '';
+        }
+
+        const chkC3BC_5 = document.querySelector('#C3BC_5, input[name="C3BC_5"]');
+        const txtC3BC_5 = document.querySelector('#TC3BC_5, input[name="TC3BC_5"]');
+        if (chkC3BC_5 && chkC3BC_5.checked) {
+          if (txtC3BC_5 && (!txtC3BC_5.value || txtC3BC_5.value.trim() === '' || txtC3BC_5.value === '0')) txtC3BC_5.value = '위탁관리';
+        } else if (txtC3BC_5) {
+          txtC3BC_5.value = '';
+        }
+
+        // 4. D3 체크 상태 재확인
         const radioD3 = document.querySelector('input[name="D3"]');
         if (radioD3) {
           const curD3 = document.querySelector('input[name="D3"]:checked')?.value;
-          if (curD3 === '2') {
-            const td3 = document.querySelector('#TD3_1, input[name="TD3_1"]');
-            if (td3) td3.value = '';
+          const td3 = document.querySelector('#TD3_1, input[name="TD3_1"]');
+          if (td3) {
+            if (curD3 === '2') td3.value = '';
+            else if (curD3 === '1' && (!td3.value || td3.value.trim() === '' || td3.value === '0')) td3.value = '1';
           }
         }
 
-        // 4. A5 전문시장 재확인
+        // 5. A5 전문시장 재확인
         const radioA5 = document.querySelector('input[name="A5"]');
         if (radioA5) {
           const curA5 = document.querySelector('input[name="A5"]:checked')?.value;
           const ta5 = document.querySelector('#TA5_1, input[name="TA5_1"]');
           if (ta5) {
-            if (curA5 === '1' && !ta5.value) ta5.value = '종합소매';
+            if (curA5 === '1' && (!ta5.value || ta5.value.trim() === '')) ta5.value = '종합소매';
             else if (curA5 === '2') ta5.value = '';
           }
         }
+
+        // 6. B6D 팩스 재확인
+        const radioB6D = document.querySelector('input[name="B6D"]');
+        if (radioB6D) {
+          const curB6D = document.querySelector('input[name="B6D"]:checked')?.value;
+          const b6dFax = document.querySelector('#B6D_FAX, input[name="B6D_FAX"]');
+          if (b6dFax) {
+            if (curB6D === '2') b6dFax.value = '';
+            else if (curB6D === '1' && (!b6dFax.value || b6dFax.value.trim() === '')) b6dFax.value = '02-853-7472';
+          }
+        }
+
+        // 7. F3/F5/F6/G1/G2 기타 항목 정합성
+        [
+          { chk: 'F3_6', txt: 'TF3_6', val: '기타 사업' },
+          { chk: 'F5_5', txt: 'TF5_5', val: '기타 사유' },
+          { chk: 'F6_6', txt: 'TF6_6', val: '기타 대책' },
+          { chk: 'G1_6', txt: 'TG1_6', val: '기타 원인' },
+          { chk: 'G2_6', txt: 'TG2_6', val: '기타 방안' }
+        ].forEach(item => {
+          const c = document.querySelector(`input[name="${item.chk}"]`);
+          const t = document.querySelector(`#${item.txt}, input[name="${item.txt}"]`);
+          if (c && t) {
+            if (c.checked) {
+              if (!t.value || t.value.trim() === '' || t.value === '0') t.value = item.val;
+            } else {
+              t.value = '';
+            }
+          }
+        });
 
         // 5. 미선택 셀렉트 기본 선택
         const selects = Array.from(document.querySelectorAll('select:not([disabled])'));
