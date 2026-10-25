@@ -251,8 +251,19 @@ export async function runKstatAssocSurvey(options = {}) {
 
       logger.info(`[상인회 러너] [현재 단계: ${currPageName || '미감지'}] URL: ${currUrl}`);
 
-      // 여전히 미감지 상태이고 Survey.asp에 머물러 있다면 액션 없이 추가 대기
+      // 여전히 미감지 상태이고 Survey.asp에 머물러 있다면 에러 페이지 여부 즉시 판별 및 대기
       if (!currPageName && currUrl.includes('Survey.asp')) {
+        const isServerErr = await page.evaluate(() => {
+          const t = document.body?.innerText || '';
+          return t.includes('사용자가 너무많아') || t.includes('서비스가 지연') || t.includes('오류가 발생');
+        }).catch(() => false);
+
+        if (isServerErr) {
+          logger.error(`[상인회 러너] 🚨 Kstat 서버 지연/오류 페이지 감지 ("사용자가 너무많아 서비스가 지연되고 있습니다")`);
+          await captureStep('KSTAT_SERVER_ERR', '서버오류페이지');
+          throw new Error('Kstat 설문 서버 일시적 지연/오류 ("사용자가 너무많아 서비스가 지연되고 있습니다")');
+        }
+
         logger.warn(`[상인회 러너] Survey.asp 과도기 대기 중...`);
         await delay(1500);
         continue;
@@ -1296,10 +1307,12 @@ export async function runKstatAssocSurvey(options = {}) {
           // 9개 항목 순회 (C1_1 ~ C1_9)
           for (let idx = 1; idx <= 9; idx++) {
             const prevCnt = document.querySelector(`input[name="PC1_${idx}_2"]`)?.value || '';
-            const hasPrev = prevCnt && prevCnt.trim() !== '' && parseInt(prevCnt.trim(), 10) > 0;
+            const prevHave = document.querySelector(`input[name="PC1_${idx}_1"]:checked`)?.value;
+            const rawNum = parseInt((prevCnt || '').trim(), 10);
+            const isHave = (prevHave === '1') || (!isNaN(rawNum) && rawNum > 0);
 
-            if (hasPrev) {
-              // 2024년에 '보유개수' 내용이 있으면 2025년에도 동일하게 입력
+            if (isHave) {
+              // 2024년에 '보유개수' 내용이 있으면 2025년에도 동일하게 입력 (999999999 모름 코드는 1로 안전 보정)
               const optYes = document.querySelector(`input[name="C1_${idx}_1"][value="1"]`);
               if (optYes) {
                 optYes.checked = true;
@@ -1308,7 +1321,8 @@ export async function runKstatAssocSurvey(options = {}) {
               const cntInp = document.querySelector(`input[name="C1_${idx}_2"]`);
               if (cntInp) {
                 cntInp.disabled = false;
-                cntInp.value = prevCnt.trim();
+                const safeCnt = (!isNaN(rawNum) && rawNum > 0 && rawNum < 99999) ? String(rawNum) : '1';
+                cntInp.value = safeCnt;
                 cntInp.dispatchEvent(new Event('input', { bubbles: true }));
                 cntInp.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -1363,10 +1377,12 @@ export async function runKstatAssocSurvey(options = {}) {
           // 18개 항목 순회 (C2_1 ~ C2_18)
           for (let idx = 1; idx <= 18; idx++) {
             const prevCnt = document.querySelector(`input[name="PC2_${idx}_2"]`)?.value || '';
-            const hasPrev = prevCnt && prevCnt.trim() !== '' && parseInt(prevCnt.trim(), 10) > 0;
+            const prevHave = document.querySelector(`input[name="PC2_${idx}_1"]:checked`)?.value;
+            const rawNum = parseInt((prevCnt || '').trim(), 10);
+            const isHave = (prevHave === '1') || (!isNaN(rawNum) && rawNum > 0);
 
-            if (hasPrev) {
-              // 2024년에 '보유개수' 내용이 있으면 2025년에도 동일하게 입력
+            if (isHave) {
+              // 2024년에 '보유개수' 내용이 있으면 2025년에도 동일하게 입력 (999999999 모름 코드는 1로 안전 보정)
               const optYes = document.querySelector(`input[name="C2_${idx}_1"][value="1"]`);
               if (optYes) {
                 optYes.checked = true;
@@ -1375,7 +1391,8 @@ export async function runKstatAssocSurvey(options = {}) {
               const cntInp = document.querySelector(`input[name="C2_${idx}_2"]`);
               if (cntInp) {
                 cntInp.disabled = false;
-                cntInp.value = prevCnt.trim();
+                const safeCnt = (!isNaN(rawNum) && rawNum > 0 && rawNum < 99999) ? String(rawNum) : '1';
+                cntInp.value = safeCnt;
                 cntInp.dispatchEvent(new Event('input', { bubbles: true }));
                 cntInp.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -1669,9 +1686,11 @@ export async function runKstatAssocSurvey(options = {}) {
           // 5개 항목 순회 (C4_1 ~ C4_5)
           for (let idx = 1; idx <= 5; idx++) {
             const prevCnt = document.querySelector(`input[name="PC4_${idx}_2"]`)?.value || '';
-            const hasPrev = prevCnt && prevCnt.trim() !== '' && parseInt(prevCnt.trim(), 10) > 0;
+            const prevHave = document.querySelector(`input[name="PC4_${idx}_1"]:checked`)?.value;
+            const rawNum = parseInt((prevCnt || '').trim(), 10);
+            const isHave = (prevHave === '1') || (!isNaN(rawNum) && rawNum > 0);
 
-            if (hasPrev) {
+            if (isHave) {
               const optYes = document.querySelector(`input[name="C4_${idx}_1"][value="1"]`);
               if (optYes) {
                 optYes.checked = true;
@@ -1680,7 +1699,8 @@ export async function runKstatAssocSurvey(options = {}) {
               const cntInp = document.querySelector(`input[name="C4_${idx}_2"]`);
               if (cntInp) {
                 cntInp.disabled = false;
-                cntInp.value = prevCnt.trim();
+                const safeCnt = (!isNaN(rawNum) && rawNum > 0 && rawNum < 99999) ? String(rawNum) : '1';
+                cntInp.value = safeCnt;
                 cntInp.dispatchEvent(new Event('input', { bubbles: true }));
                 cntInp.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -2921,6 +2941,11 @@ export async function runKstatAssocSurvey(options = {}) {
       await safeSubmitAndAdvance(page, stepName);
     }
 
+    // while 루프 정상 종료 실패 시 (maxSteps 바닥남)
+    logger.error(`[상인회 러너 오류] "${marketName}": 최대 탐색 단계(maxSteps: 45)를 초과하여 최종 완료(Agree)에 도달하지 못했습니다.`);
+    await captureStep('TIMEOUT_MAX_STEPS', '단계초과화면');
+    throw new Error(`[상인회 러너] 최대 탐색 단계(maxSteps: 45)를 초과하여 최종 완료(Agree)에 도달하지 못했습니다. (마지막 단계: ${currPageName || '미감지'}, URL: ${page.url()})`);
+
   } catch (err) {
     logger.error(`[상인회 러너 오류] "${marketName}":`, err);
     await captureStep('ERROR', '오류발생화면');
@@ -3210,11 +3235,16 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
             // [사용자 절대 대원칙]: 2024년도 내용이 있으면, 그 내용을 똑같이 2025년도에 1:1 동일 입력!
             // 전년도에 유효한 값이 존재할 경우, 금년도가 공란이거나 기본값 '0'이면 무조건 전년도 값으로 덮어써서 복사!
             if (pVal !== '' && pVal !== '0') {
+              let safeVal = pVal;
+              const pNum = parseInt(pVal, 10);
+              if (!isNaN(pNum) && pNum >= 99999) {
+                safeVal = '1';
+              }
               if (!preserveExisting || cVal === '' || cVal === '0') {
-                currInp.value = pVal;
+                currInp.value = safeVal;
                 currInp.dispatchEvent(new Event('input', { bubbles: true }));
                 currInp.dispatchEvent(new Event('change', { bubbles: true }));
-                if (typeof $ !== 'undefined') $(currInp).val(pVal).trigger('input').trigger('change');
+                if (typeof $ !== 'undefined') $(currInp).val(safeVal).trigger('input').trigger('change');
                 iCount++;
                 return;
               }

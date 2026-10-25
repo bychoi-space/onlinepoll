@@ -1531,57 +1531,61 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         logger.info(`[배치 진행 ${i + 1}/${targets.length}] "${biz.marketName || biz.companyName}" (${biz.bizNumber || biz.regCode || ''})${slotInfo} 설문 자동화 시작...`);
 
         let result;
-        if (isAssoc) {
-          result = await runKstatAssocSurvey({
-            surveyUrl: bizUrl,
-            assocData: biz,
-            quotaIndex: biz.index || (i + startIndex),
-            policy: effectivePolicy,
-            surveyorAccount: biz.surveyorAccount || campaign.kstatLoginId || '가온이강윤',
-            preserveExistingInputs: (effectivePolicy.preserveExistingInputs !== false),
-            pilotMode: safetyGuard,
-            safetyGuard,
-            reportDir: path.join(reportsDir, campaign.id, `assoc_item_${biz.index || (i + startIndex)}`),
-            onProgress: (info) => {
-              logger.info(`[상인회 배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
-              logger.broadcast({
-                type: 'BATCH_PROGRESS',
-                campaignId: campaign.id,
-                quotaIndex: biz.index || (i + startIndex),
-                itemNumber: i + 1,
-                totalItems: targets.length,
-                ...info
-              });
-            }
-          });
-        } else {
-          result = await runKstatSurvey({
-            surveyUrl: bizUrl,
-            bizData: biz,
-            quotaIndex: biz.index || (i + startIndex),
-            guidelineConfig: {
-              ...campaign.guidelineConfig,
-              masterBaseline: campaign.masterBaseline
-            },
-            policy,
-            pilotMode: safetyGuard,
-            safetyGuard,
-            reportDir: path.join(reportsDir, campaign.id, `item_${biz.index || (i + startIndex)}`),
-            onProgress: (info) => {
-              logger.info(`[배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
-              logger.broadcast({
-                type: 'BATCH_PROGRESS',
-                campaignId: campaign.id,
-                quotaIndex: biz.index || (i + startIndex),
-                itemNumber: i + 1,
-                totalItems: targets.length,
-                ...info
-              });
-            }
-          });
+        try {
+          if (isAssoc) {
+            result = await runKstatAssocSurvey({
+              surveyUrl: bizUrl,
+              assocData: biz,
+              quotaIndex: biz.index || (i + startIndex),
+              policy: effectivePolicy,
+              surveyorAccount: biz.surveyorAccount || campaign.kstatLoginId || '가온이강윤',
+              preserveExistingInputs: (effectivePolicy.preserveExistingInputs !== false),
+              pilotMode: safetyGuard,
+              safetyGuard,
+              reportDir: path.join(reportsDir, campaign.id, `assoc_item_${biz.index || (i + startIndex)}`),
+              onProgress: (info) => {
+                logger.info(`[상인회 배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
+                logger.broadcast({
+                  type: 'BATCH_PROGRESS',
+                  campaignId: campaign.id,
+                  quotaIndex: biz.index || (i + startIndex),
+                  itemNumber: i + 1,
+                  totalItems: targets.length,
+                  ...info
+                });
+              }
+            });
+          } else {
+            result = await runKstatSurvey({
+              surveyUrl: bizUrl,
+              bizData: biz,
+              quotaIndex: biz.index || (i + startIndex),
+              guidelineConfig: {
+                ...campaign.guidelineConfig,
+                masterBaseline: campaign.masterBaseline
+              },
+              policy,
+              pilotMode: safetyGuard,
+              safetyGuard,
+              reportDir: path.join(reportsDir, campaign.id, `item_${biz.index || (i + startIndex)}`),
+              onProgress: (info) => {
+                logger.info(`[배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
+                logger.broadcast({
+                  type: 'BATCH_PROGRESS',
+                  campaignId: campaign.id,
+                  quotaIndex: biz.index || (i + startIndex),
+                  itemNumber: i + 1,
+                  totalItems: targets.length,
+                  ...info
+                });
+              }
+            });
+          }
+        } catch (itemErr) {
+          result = { success: false, error: itemErr.message };
         }
 
-        if (result.success) {
+        if (result?.success) {
           biz.quotaStatus = safetyGuard ? 'pilot_done' : 'completed';
           biz.completedAt = new Date().toISOString();
           biz.capturedSteps = result.capturedSteps;
@@ -1612,7 +1616,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
                     });
                   }
                 });
-                if (evalResult.success) {
+                if (evalResult?.success) {
                   biz.evalStatus = 'completed';
                   biz.evalResults = evalResult.evalResults;
                   logger.success(`🎉 [배치 #${biz.index || (i + startIndex)} 완료] "${biz.marketName || biz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
@@ -1648,7 +1652,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
                     });
                   }
                 });
-                if (evalResult.success) {
+                if (evalResult?.success) {
                   biz.evalStatus = 'completed';
                   biz.evalResults = evalResult.evalResults;
                   logger.success(`🎉 [배치 #${biz.index || (i + startIndex)} 완료] "${biz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
@@ -1662,7 +1666,8 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           }
         } else {
           biz.quotaStatus = 'error';
-          logger.error(`[배치 ${i + 1}/${targets.length} 실패] "${biz.companyName}": ${result.error}`);
+          biz.error = result?.error || '설문 실행 오류';
+          logger.error(`[배치 ${i + 1}/${targets.length} 실패] "${biz.marketName || biz.companyName}": ${result?.error || '설문 실행 오류'}`);
         }
 
         CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
@@ -1748,14 +1753,15 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
         }
       });
 
-      if (result.success) {
+      if (result?.success) {
         targetBiz.quotaStatus = 'pilot_done';
         targetBiz.pilotAt = new Date().toISOString();
         targetBiz.capturedSteps = result.capturedSteps;
-        logger.success(`[개별 쿼터 테스트 성공] "${targetBiz.companyName}" 완주 완료!`);
+        logger.success(`[개별 쿼터 테스트 성공] "${targetBiz.marketName || targetBiz.companyName}" 완주 완료!`);
       } else {
         targetBiz.quotaStatus = 'error';
-        logger.error(`[개별 쿼터 테스트 실패] "${targetBiz.companyName}": ${result.error}`);
+        targetBiz.error = result?.error || '테스트 오류';
+        logger.error(`[개별 쿼터 테스트 실패] "${targetBiz.marketName || targetBiz.companyName}": ${result?.error || '테스트 오류'}`);
       }
 
       CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
