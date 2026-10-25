@@ -207,6 +207,26 @@ export async function runKstatAssocSurvey(options = {}) {
       logger.info(`[상인회 러너] [현재 단계: ${currPageName || '미감지'}] URL: ${currUrl}`);
 
       // ------------------------------------------
+      // 0-0) Survey.asp 리디렉션 및 과도기 상태 페일세이프 돌파
+      // ------------------------------------------
+      if (currUrl.includes('Survey.asp') && !currPageName) {
+        logger.info(`[상인회 러너] [Survey.asp 감지] 페이지 전환 대기 및 #next 확인 중...`);
+        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 2500 }).catch(() => {});
+        const recheckStep = await detectAssocCurrentStep(page);
+        if (recheckStep) {
+          continue;
+        }
+        const nextBtn = await page.$('#next, input[name="next"], button#next');
+        if (nextBtn) {
+          await Promise.all([
+            page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 4000 }).catch(() => {}),
+            nextBtn.click().catch(() => {})
+          ]);
+          continue;
+        }
+      }
+
+      // ------------------------------------------
       // 0) Q1.asp 잔류/재진입 시의 페일세이프 돌파
       // ------------------------------------------
       if (currUrl.includes('Q1.asp') || currPageName === 'Q1') {
@@ -355,7 +375,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P3') || currPageName === 'P3') {
         onProgress({ step: 'P3', message: `[P3] A6 점포현황 및 A6A 업종별 점포현황 2024년 데이터 1:1 동일 입력 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         // 1. frame_A6 (A6.asp): 영업점포(자기소유+임차), 비영업점포(빈점포+기타), 노점 1:1 동일 주입
         const a6Frame = page.frames().find(f => f.url().includes('A6.asp') || f.name() === 'frame_A6');
@@ -530,7 +550,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P4') || currPageName === 'P4') {
         onProgress({ step: 'P4', message: `[P4] A7~A9 일반현황 및 A8 운영시간대 정책 가이드 입력 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         // 1. A7, A7A, A7B, A9 등 일반 문항 전년도 1:1 미러링
         await mirrorPrevYearToCurrent(page, { preserveExisting });
@@ -703,7 +723,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P5') || currPageName === 'P5') {
         onProgress({ step: 'P5', message: `[P5] B1~B4 상인회 조직현황(운영여부, 회장정보, 직원) 입력 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -942,7 +962,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P6') || currPageName === 'P6') {
         onProgress({ step: 'P6', message: `[P6] B5~B7 상인회비 및 시설/인력 현황 전년도 미러링 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -1180,7 +1200,7 @@ export async function runKstatAssocSurvey(options = {}) {
       // ------------------------------------------
       if (currUrl.includes('P7') || currPageName === 'P7') {
         onProgress({ step: 'P7', message: `[P7] C1 편의시설 보유개수 및 시설필요도(랜덤) 자동 응답 중...` });
-        await delay(600);
+        await delay(200);
 
         await page.evaluate(({ preserveExisting }) => {
           // 9개 항목 순회 (C1_1 ~ C1_9)
@@ -1247,7 +1267,7 @@ export async function runKstatAssocSurvey(options = {}) {
       // ------------------------------------------
       if (currUrl.includes('P8') || currPageName === 'P8') {
         onProgress({ step: 'P8', message: `[P8] C2 안전/위생시설 보유개수 및 시설필요도(랜덤) 자동 응답 중...` });
-        await delay(600);
+        await delay(200);
 
         await page.evaluate(({ preserveExisting }) => {
           // 18개 항목 순회 (C2_1 ~ C2_18)
@@ -1315,7 +1335,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P9') || currPageName === 'P9') {
         onProgress({ step: 'P9', message: `[P9] C3 주차시설 현황 및 정책 가이드 주입 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -1554,7 +1574,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P11') || currPageName === 'P11') {
         onProgress({ step: 'P11', message: `[P11] D1 공동마케팅 및 D1-1 축제/이벤트 명칭 조회 주입 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -1570,20 +1590,28 @@ export async function runKstatAssocSurvey(options = {}) {
 
         // D1.asp (D1 공동마케팅 사업 여부 라디오)
         const d1Frame = page.frames().find(f => f.url().includes('D1.asp') && !f.url().includes('D1A') && !f.url().includes('D1B'));
+        let isMarketingActive = false;
         if (d1Frame) {
           try {
-            await d1Frame.evaluate(({ hasFestival, preserveExisting }) => {
+            isMarketingActive = await d1Frame.evaluate(({ hasFestival, preserveExisting }) => {
               const curChecked = document.querySelector('input[name="D1"]:checked');
-              if (!preserveExisting || !curChecked) {
-                const targetVal = hasFestival ? '1' : (document.querySelector('input[name="PD1"]:checked')?.value || '1');
-                const target = document.querySelector(`input[name="D1"][value="${targetVal}"]`) || document.querySelector('input[name="D1"][value="1"]');
-                if (target) {
-                  if (!target.checked) target.click();
-                  target.checked = true;
-                  target.dispatchEvent(new Event('change', { bubbles: true }));
-                  if (typeof $ !== 'undefined') $(target).prop('checked', true).trigger('change');
-                }
+              let targetVal = '2'; // 기본값 미실시
+              if (curChecked) {
+                targetVal = curChecked.value;
+              } else {
+                const pd1Val = document.querySelector('input[name="PD1"]:checked')?.value;
+                if (pd1Val) targetVal = pd1Val;
+                else targetVal = hasFestival ? '1' : '2';
               }
+
+              const target = document.querySelector(`input[name="D1"][value="${targetVal}"]`) || document.querySelector('input[name="D1"][value="2"]');
+              if (target) {
+                if (!target.checked) target.click();
+                target.checked = true;
+                target.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(target).prop('checked', true).trigger('change');
+              }
+              return targetVal === '1';
             }, { hasFestival: festivalResult.hasFestival, preserveExisting });
           } catch (err) {
             console.error('[P11 D1 frame 주입 오류]:', err);
@@ -1595,70 +1623,150 @@ export async function runKstatAssocSurvey(options = {}) {
           const fUrl = f.url();
           if (fUrl.includes('D1A') || f.name().startsWith('frame_D1A')) {
             try {
-              await f.evaluate(({ preserveExisting, festivalInfo }) => {
-                const radioNames = new Set(Array.from(document.querySelectorAll('input[type="radio"]')).map(r => r.name));
-                radioNames.forEach(name => {
-                  if (name.startsWith('P')) return;
-
-                  // 축제 문항(D1AA_2_1)
-                  if (name === 'D1AA_2_1') {
-                    if (!preserveExisting || !document.querySelector(`input[name="${name}"]:checked`)) {
-                      const tVal = (festivalInfo.hasFestival && festivalInfo.festivalName) ? '1' : '2';
-                      const r = document.querySelector(`input[name="${name}"][value="${tVal}"]`) || document.querySelector(`input[name="${name}"][value="2"]`);
-                      if (r) {
-                        if (!r.checked) r.click();
-                        r.checked = true;
-                        r.dispatchEvent(new Event('change', { bubbles: true }));
-                        if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
-                      }
-                      const nameInp = document.querySelector('#D1AA_2_2, input[name="D1AA_2_2"]');
-                      if (nameInp) {
-                        if (tVal === '1') {
-                          nameInp.disabled = false;
-                          nameInp.value = festivalInfo.festivalName;
-                        } else {
-                          nameInp.value = '';
-                          nameInp.disabled = true;
-                        }
-                        nameInp.dispatchEvent(new Event('input', { bubbles: true }));
-                      }
-                      const rateRadio = document.querySelector('#D1AA_2_3_3, input[name="D1AA_2_3"][value="3"]');
-                      if (rateRadio && tVal === '1') {
-                        rateRadio.checked = true;
-                        rateRadio.dispatchEvent(new Event('change', { bubbles: true }));
-                      }
+              await f.evaluate(({ isMarketingActive, festivalInfo }) => {
+                // 1. D1AA.asp (축제/홍보/마케팅)
+                if (location.href.includes('D1AA.asp') || window.name === 'frame_D1AA') {
+                  const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+                  items.forEach(idx => {
+                    const prevVal = document.querySelector(`input[name="PD1AA_${idx}_1"]:checked`)?.value;
+                    const curVal = document.querySelector(`input[name="D1AA_${idx}_1"]:checked`)?.value;
+                    // 축제(2) 문항은 festivalInfo 반영, 그 외는 전년도 값 우선 (전년도 없으면 2 미실시)
+                    let active = false;
+                    if (idx === 2) {
+                      active = isMarketingActive && (festivalInfo.hasFestival || curVal === '1' || prevVal === '1');
+                    } else {
+                      active = isMarketingActive && ((curVal === '1') || (prevVal === '1'));
                     }
-                    return;
-                  }
 
-                  // 만족도 라디오(_3)인 경우
-                  if (name.endsWith('_3')) {
-                    const cur = document.querySelector(`input[name="${name}"]:checked`);
-                    if (!cur) {
-                      const opt3 = document.querySelector(`input[name="${name}"][value="3"]`) || document.querySelector(`input[name="${name}"][value="4"]`);
-                      if (opt3) {
-                        opt3.checked = true;
-                        opt3.dispatchEvent(new Event('change', { bubbles: true }));
-                      }
-                    }
-                    return;
-                  }
-
-                  // 일반 실시/미실시(_1)인 경우
-                  const cur = document.querySelector(`input[name="${name}"]:checked`);
-                  if (!preserveExisting || !cur) {
-                    const prevRadio = document.querySelector(`input[name="P${name}"]:checked`);
-                    const tVal = prevRadio ? prevRadio.value : '2';
-                    const r = document.querySelector(`input[name="${name}"][value="${tVal}"]`) || document.querySelector(`input[name="${name}"][value="2"]`);
+                    const targetChoice = active ? '1' : '2';
+                    const r = document.querySelector(`input[name="D1AA_${idx}_1"][value="${targetChoice}"]`) || document.querySelector(`input[name="D1AA_${idx}_1"][value="2"]`);
                     if (r) {
                       if (!r.checked) r.click();
                       r.checked = true;
                       r.dispatchEvent(new Event('change', { bubbles: true }));
                       if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
                     }
+
+                    if (active) {
+                      // 상세 내용 주입 (1 이상의 숫자 또는 유효 텍스트)
+                      if (idx === 1) { // 경품행사 (1 이상 숫자 필수)
+                        const t = document.querySelector('#D1AA_1_2, input[name="D1AA_1_2"]');
+                        if (t && (!t.value || parseInt(t.value, 10) < 1)) { t.value = '2'; t.dispatchEvent(new Event('input', { bubbles: true })); }
+                      } else if (idx === 2) { // 축제 (명칭 필수)
+                        const t = document.querySelector('#D1AA_2_2, input[name="D1AA_2_2"]');
+                        if (t && !t.value) { t.value = festivalInfo.festivalName || '고객감사 대축제'; t.dispatchEvent(new Event('input', { bubbles: true })); }
+                      } else if (idx === 9) { // LED 광고판 (보유개수 >= 1, 설치연도 1900~2026)
+                        const t1 = document.querySelector('#D1AA_9_2_1, input[name="D1AA_9_2_1"]');
+                        const t2 = document.querySelector('#D1AA_9_2_2, input[name="D1AA_9_2_2"]');
+                        if (t1 && (!t1.value || parseInt(t1.value, 10) < 1)) { t1.value = '1'; t1.dispatchEvent(new Event('input', { bubbles: true })); }
+                        if (t2 && (!t2.value || parseInt(t2.value, 10) < 1900)) { t2.value = '2024'; t2.dispatchEvent(new Event('input', { bubbles: true })); }
+                      } else if (idx === 10) { // 특산품판매장
+                        const t = document.querySelector('#D1AA_10_2, input[name="D1AA_10_2"]');
+                        if (t && !t.value) { t.value = '특산품 상설 판매장'; t.dispatchEvent(new Event('input', { bubbles: true })); }
+                      } else if (idx === 11) { // 자판기 (1 이상 숫자 필수)
+                        const t = document.querySelector('#D1AA_11_2, input[name="D1AA_11_2"]');
+                        if (t && (!t.value || parseInt(t.value, 10) < 1)) { t.value = '1'; t.dispatchEvent(new Event('input', { bubbles: true })); }
+                      }
+
+                      // 기여도 라디오(_3) 1~5 체크 보장
+                      const rateRadio = document.querySelector(`input[name="D1AA_${idx}_3"]:checked`) || document.querySelector(`input[name="D1AA_${idx}_3"][value="3"]`) || document.querySelector(`input[name="D1AA_${idx}_3"][value="4"]`);
+                      if (rateRadio) {
+                        rateRadio.checked = true;
+                        rateRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                        if (typeof $ !== 'undefined') $(rateRadio).prop('checked', true).trigger('change');
+                      }
+                    }
+                  });
+                }
+
+                // 2. D1AB.asp (공동구매/공간임대)
+                if (location.href.includes('D1AB.asp') || window.name === 'frame_D1AB') {
+                  [1, 2, 3].forEach(idx => {
+                    const prevVal = document.querySelector(`input[name="PD1AB_${idx}_1"]:checked`)?.value;
+                    const curVal = document.querySelector(`input[name="D1AB_${idx}_1"]:checked`)?.value;
+                    const active = isMarketingActive && ((curVal === '1') || (prevVal === '1'));
+                    const targetChoice = active ? '1' : '2';
+                    const r = document.querySelector(`input[name="D1AB_${idx}_1"][value="${targetChoice}"]`) || document.querySelector(`input[name="D1AB_${idx}_1"][value="2"]`);
+                    if (r) {
+                      if (!r.checked) r.click();
+                      r.checked = true;
+                      r.dispatchEvent(new Event('change', { bubbles: true }));
+                      if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
+                    }
+                    if (active) {
+                      if (idx === 1) { // 구매 횟수 >= 1
+                        const t = document.querySelector('#D1AB_1_2, input[name="D1AB_1_2"]');
+                        if (t && (!t.value || parseInt(t.value, 10) < 1)) { t.value = '2'; t.dispatchEvent(new Event('input', { bubbles: true })); }
+                      }
+                      const rate = document.querySelector(`input[name="D1AB_${idx}_3"]:checked`) || document.querySelector(`input[name="D1AB_${idx}_3"][value="3"]`);
+                      if (rate) { rate.checked = true; rate.dispatchEvent(new Event('change', { bubbles: true })); }
+                    }
+                  });
+                }
+
+                // 3. D1AC.asp (전용홈페이지/쇼핑몰/모바일앱)
+                if (location.href.includes('D1AC.asp') || window.name === 'frame_D1AC') {
+                  [1, 2, 3].forEach(idx => {
+                    const prevVal = document.querySelector(`input[name="PD1AC_${idx}_1"]:checked`)?.value;
+                    const curVal = document.querySelector(`input[name="D1AC_${idx}_1"]:checked`)?.value;
+                    const active = isMarketingActive && ((curVal === '1') || (prevVal === '1'));
+                    const targetChoice = active ? '1' : '2';
+                    const r = document.querySelector(`input[name="D1AC_${idx}_1"][value="${targetChoice}"]`) || document.querySelector(`input[name="D1AC_${idx}_1"][value="2"]`);
+                    if (r) {
+                      if (!r.checked) r.click();
+                      r.checked = true;
+                      r.dispatchEvent(new Event('change', { bubbles: true }));
+                      if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
+                    }
+                    if (active) {
+                      const t = document.querySelector(`#D1AC_${idx}_2, input[name="D1AC_${idx}_2"]`);
+                      if (t && !t.value) {
+                        t.value = (idx === 3) ? '온누리장터' : 'https://market.example.com';
+                        t.dispatchEvent(new Event('input', { bubbles: true }));
+                      }
+                      const rate = document.querySelector(`input[name="D1AC_${idx}_3"]:checked`) || document.querySelector(`input[name="D1AC_${idx}_3"][value="3"]`);
+                      if (rate) { rate.checked = true; rate.dispatchEvent(new Event('change', { bubbles: true })); }
+                    }
+                  });
+                }
+
+                // 4. D1AD.asp (공용 배송센터)
+                if (location.href.includes('D1AD.asp') || window.name === 'frame_D1AD') {
+                  const prevVal = document.querySelector('input[name="PD1AD_1_1"]:checked')?.value;
+                  const curVal = document.querySelector('input[name="D1AD_1_1"]:checked')?.value;
+                  const active = isMarketingActive && ((curVal === '1') || (prevVal === '1'));
+                  const targetChoice = active ? '1' : '2';
+                  const r = document.querySelector(`input[name="D1AD_1_1"][value="${targetChoice}"]`) || document.querySelector('input[name="D1AD_1_1"][value="2"]');
+                  if (r) {
+                    if (!r.checked) r.click();
+                    r.checked = true;
+                    r.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
                   }
-                });
-              }, { preserveExisting, festivalInfo: festivalResult });
+                  if (active) {
+                    // 운영형태 체크박스 (1: 자체)
+                    const cb1 = document.querySelector('#D1AD_1_2_1, input[name="D1AD_1_2_1"]');
+                    if (cb1 && !cb1.checked) { cb1.click(); cb1.checked = true; cb1.dispatchEvent(new Event('change', { bubbles: true })); }
+                    // 월평균 건수 >= 1
+                    const tCnt = document.querySelector('#D1AD_1_2_2, input[name="D1AD_1_2_2"]');
+                    if (tCnt && (!tCnt.value || parseInt(tCnt.value, 10) < 1)) { tCnt.value = '20'; tCnt.dispatchEvent(new Event('input', { bubbles: true })); }
+                    // 기여도 라디오
+                    const rate = document.querySelector('input[name="D1AD_1_3"][value="3"]');
+                    if (rate && !document.querySelector('input[name="D1AD_1_3"]:checked')) { rate.click(); rate.checked = true; rate.dispatchEvent(new Event('change', { bubbles: true })); }
+                    // 형태 라디오
+                    const rForm = document.querySelector('input[name="D1AD_2_1"][value="1"]');
+                    if (rForm && !document.querySelector('input[name="D1AD_2_1"]:checked')) { rForm.click(); rForm.checked = true; rForm.dispatchEvent(new Event('change', { bubbles: true })); }
+                    // 배송수단 체크박스 및 대수
+                    const mCb = document.querySelector('#D1AD_3_1_1, input[name="D1AD_3_1_1"]');
+                    if (mCb && !mCb.checked) { mCb.click(); mCb.checked = true; mCb.dispatchEvent(new Event('change', { bubbles: true })); }
+                    const mTxt = document.querySelector('#TD1AD_3_1_1, input[name="TD1AD_3_1_1"]');
+                    if (mTxt && (!mTxt.value || parseInt(mTxt.value, 10) < 1)) { mTxt.value = '2'; mTxt.dispatchEvent(new Event('input', { bubbles: true })); }
+                    // 수수료 라디오 (2: 무료)
+                    const feeR = document.querySelector('input[name="D1AD_4_1"][value="2"]');
+                    if (feeR && !document.querySelector('input[name="D1AD_4_1"]:checked')) { feeR.click(); feeR.checked = true; feeR.dispatchEvent(new Event('change', { bubbles: true })); }
+                  }
+                }
+              }, { isMarketingActive, festivalInfo: festivalResult });
             } catch (_) {}
           }
         }
@@ -1675,7 +1783,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P12') || currPageName === 'P12') {
         onProgress({ step: 'P12', message: `[P12] D1-2 온라인 배송 서비스 및 D1-2-5 지원항목 정책 주입 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -1810,7 +1918,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P13') || currPageName === 'P13') {
         onProgress({ step: 'P13', message: `[P13] D2 결제수단 가맹현황 2024년 데이터 1:1 미러링 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -1849,7 +1957,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P14') || currPageName === 'P14') {
         onProgress({ step: 'P14', message: `[P14] D3 정부/지자체 지원사업 2024년 데이터 1:1 미러링 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -1948,7 +2056,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P15') || currPageName === 'P15') {
         onProgress({ step: 'P15', message: `[P15] D4 타 상권 협력활동 2024년 데이터 1:1 미러링 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -2017,7 +2125,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P16') || currPageName === 'P16') {
         onProgress({ step: 'P16', message: `[P16] D5 상인 교육/컨설팅 2024년 데이터 1:1 미러링 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -2092,7 +2200,7 @@ export async function runKstatAssocSurvey(options = {}) {
       // ------------------------------------------
       if (currUrl.includes('P17') || currPageName === 'P17') {
         onProgress({ step: 'P17', message: `[P17] E1 소방시설 보유현황 및 AI 지능형 출동시스템(없음) 응답 중...` });
-        await delay(600);
+        await delay(200);
 
         await page.evaluate(({ preserveExisting }) => {
           // 1~6번 문항: 스프링클러, 소화전, 공용소화기, 경보기, 화재감지기, 가스감지기
@@ -2178,7 +2286,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P18') || currPageName === 'P18') {
         onProgress({ step: 'P18', message: `[P18] E2 화재공제/보험 가입현황 2024년 데이터 1:1 미러링 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -2203,11 +2311,12 @@ export async function runKstatAssocSurvey(options = {}) {
           }
         }
 
-        // 전체 프레임에서 가입(1)인 경우에만 보험료 라디오 체크 및 보상액 주입
+        // 전체 프레임에서 가입(1) vs 미가입(2) 분기 전수 보장
         for (const f of page.frames()) {
           try {
             await f.evaluate(({ isInsured }) => {
               if (isInsured) {
+                // 가입(1): E2AA(보험료 납부주체) 및 E2AB(보상액 >= 1) 필수
                 const curAA = document.querySelector('input[name="E2AA"]:checked');
                 if (!curAA) {
                   const prevAA = document.querySelector('input[name="PE2AA"]:checked')?.value || '2';
@@ -2216,6 +2325,7 @@ export async function runKstatAssocSurvey(options = {}) {
                     if (!r.checked) r.click();
                     r.checked = true;
                     r.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
                   }
                 }
                 const inpAB = document.querySelector('#E2AB, input[name="E2AB"]');
@@ -2226,20 +2336,33 @@ export async function runKstatAssocSurvey(options = {}) {
                   inpAB.dispatchEvent(new Event('input', { bubbles: true }));
                   inpAB.dispatchEvent(new Event('change', { bubbles: true }));
                 }
+              } else {
+                // 미가입(2): E2B(미가입 사유 1~3 필수, 4 기타 제외)
                 const curB = document.querySelector('input[name="E2B"]:checked');
                 if (!curB) {
-                  const prevB = document.querySelector('input[name="PE2B"]:checked')?.value || '3';
-                  const r = document.querySelector(`input[name="E2B"][value="${prevB}"]`) || document.querySelector('input[name="E2B"][value="3"]');
+                  const prevB = document.querySelector('input[name="PE2B"]:checked')?.value;
+                  const targetB = (prevB && prevB !== '4') ? prevB : '1';
+                  const r = document.querySelector(`input[name="E2B"][value="${targetB}"]`) || document.querySelector('input[name="E2B"][value="1"]');
                   if (r) {
                     if (!r.checked) r.click();
                     r.checked = true;
                     r.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
                   }
                 }
+                const te2b = document.querySelector('#TE2B_4, input[name="TE2B_4"]');
+                if (te2b) te2b.value = '';
               }
             }, { isInsured });
           } catch (_) {}
         }
+
+        // 동적 조건부 노출 카운트 동기화 (Alert 방어)
+        await page.evaluate(() => {
+          if (typeof updateStepView === 'function') {
+            try { updateStepView(); } catch (_) {}
+          }
+        }).catch(() => {});
 
         await captureStep('P18', 'P18_화재공제E2');
         await delay(200);
@@ -2253,7 +2376,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P19') || currPageName === 'P19') {
         onProgress({ step: 'P19', message: `[P19] E3 안전관리 실태 2024년 데이터 1:1 미러링 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -2286,7 +2409,7 @@ export async function runKstatAssocSurvey(options = {}) {
       if (currUrl.includes('P20') || currPageName === 'P20') {
         onProgress({ step: 'P20', message: `[P20] F1~F4 빈 점포 수치 '0' 자동 응답 중...` });
         await syncAllChildFrames(page);
-        await delay(600);
+        await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
@@ -2342,15 +2465,26 @@ export async function runKstatAssocSurvey(options = {}) {
             await f.evaluate(() => {
               const f3Checkboxes = document.querySelectorAll('input[type="checkbox"][name^="F3"]');
               if (f3Checkboxes.length > 0) {
-                const hasChecked = Array.from(f3Checkboxes).some(c => c.checked);
+                const f3_6 = document.querySelector('#F3_6, input[name="F3_6"]');
+                if (f3_6) f3_6.checked = false;
+                const tf3_6 = document.querySelector('#TF3_6, input[name="TF3_6"]');
+                if (tf3_6) tf3_6.value = '';
+
+                const hasChecked = Array.from(f3Checkboxes).filter(c => c.name !== 'F3_6').some(c => c.checked);
                 if (!hasChecked) {
                   const f3_2 = document.querySelector('#F3_2, input[name="F3_2"]') || document.querySelector('#F3_1, input[name="F3_1"]');
-                  if (f3_2) { f3_2.checked = true; f3_2.dispatchEvent(new Event('change', { bubbles: true })); }
+                  if (f3_2) {
+                    if (!f3_2.checked) f3_2.click();
+                    f3_2.checked = true;
+                    f3_2.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
                 }
               }
               const f4Inputs = document.querySelectorAll('input[name^="F4"]:not([readonly]):not([type="hidden"])');
               if (f4Inputs.length > 0) {
                 f4Inputs.forEach(inp => { if (!inp.value) inp.value = '0'; });
+                const f4Total = document.querySelector('#F4E_4, input[name="F4E_4"]');
+                if (f4Total) f4Total.value = '0';
               }
             });
           } catch (_) {}
@@ -2487,15 +2621,22 @@ export async function runKstatAssocSurvey(options = {}) {
               if (document.querySelector('input[name^="G3"]')) {
                 const g3Checked = document.querySelector('input[name^="G3"][type="radio"]:checked');
                 if (!preserveExisting || !g3Checked) {
-                  document.querySelectorAll('input[type="radio"][value="2"]').forEach(r => {
-                    r.checked = true;
-                    r.dispatchEvent(new Event('change', { bubbles: true }));
+                  ['G3_1', 'G3_2', 'G3_3', 'G3_4', 'G3_5'].forEach(name => {
+                    const r2 = document.querySelector(`input[name="${name}"][value="2"]`);
+                    if (r2) {
+                      if (!r2.checked) r2.click();
+                      r2.checked = true;
+                      r2.dispatchEvent(new Event('change', { bubbles: true }));
+                      if (typeof $ !== 'undefined') $(r2).prop('checked', true).trigger('change');
+                    }
                   });
-                  const numInp = document.querySelector('input[type="tel"], input[type="number"], input[name*="G3"]:not([type="radio"])');
+                  // G3_6 우수상점 개수는 필수 숫자 필드 (0 주입)
+                  const numInp = document.querySelector('#G3_6, input[name="G3_6"], input[type="tel"], input[type="number"]');
                   if (numInp && (!numInp.value || numInp.value.trim() === '')) {
                     numInp.value = '0';
                     numInp.dispatchEvent(new Event('input', { bubbles: true }));
                     numInp.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(numInp).val('0').trigger('input').trigger('change');
                   }
                 }
               }
@@ -2572,6 +2713,14 @@ export async function runKstatAssocSurvey(options = {}) {
                     if (firstAct) { firstAct.checked = true; firstAct.dispatchEvent(new Event('change', { bubbles: true })); }
                   }
                 }
+
+                // G4 기타(_ETC) 체크박스 해제 및 텍스트 공란 보장
+                ['G4_1_7_ETC', 'G4_2_6_ETC', 'G4_3_6_ETC', 'G4_4_6_ETC'].forEach(name => {
+                  const cb = document.querySelector(`input[name="${name}"]`);
+                  if (cb) cb.checked = false;
+                  const txt = document.querySelector(`input[name="T${name}"]`) || document.querySelector(`#T${name}`);
+                  if (txt) txt.value = '';
+                });
               }
             }, { preserveExisting });
           } catch (_) {}
@@ -2614,7 +2763,15 @@ export async function runKstatAssocSurvey(options = {}) {
  * [상인회 조사 전용] 현재 진행 중인 단계(P1~P23, Q1, Agree)를 100% 감지하는 고도화 탐색기
  */
 async function detectAssocCurrentStep(page) {
-  // 1. 모든 하위 프레임 순회하여 P\d+ 또는 Agree 감지
+  // Survey.asp 리디렉션 처리 대기
+  if (page.url().includes('Survey.asp')) {
+    await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 2500 }).catch(() => {});
+  }
+  // 1. Agree 또는 Q1 메인 URL 직접 매칭
+  if (page.url().includes('Agree.asp')) return 'AGREE';
+  if (page.url().includes('Q1.asp')) return 'Q1';
+
+  // 2. 모든 하위 프레임 순회하여 P\d+ 또는 Agree 감지
   for (const f of page.frames()) {
     const fUrl = f.url() || '';
     const m = fUrl.match(/(P\d+|Q1|Agree)\.asp/i);
@@ -2627,7 +2784,7 @@ async function detectAssocCurrentStep(page) {
       }
     } catch (_) {}
   }
-  // 2. 메인 페이지 URL 매칭
+  // 3. 메인 페이지 URL 매칭
   const mainM = page.url().match(/(P\d+|Q1|Agree)\.asp/i);
   if (mainM) return mainM[1].toUpperCase();
 
@@ -2888,13 +3045,22 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
         Object.keys(groups).forEach(gName => {
           const isChecked = groups[gName].some(r => r.checked);
           if (!isChecked) {
-            // 1번(상인회, 유, 만족) 최우선, 3번(보통) 차선
-            const opt1 = groups[gName].find(r => r.value === '1');
-            const opt3 = groups[gName].find(r => r.value === '3');
-            const target = opt1 || opt3 || groups[gName][0];
+            const vals = groups[gName].map(r => r.value);
+            let target;
+            if (vals.includes('1') && vals.includes('2') && vals.length === 2) {
+              // 2지선다(유/무): 2(무/없음)가 안전 (1 선택 시 추가 상세문항 Alert 방어)
+              target = groups[gName].find(r => r.value === '2') || groups[gName][0];
+            } else if (vals.length >= 4) {
+              // 4점/5점 만족도/척도: 3(보통) 또는 4(만족)
+              target = groups[gName].find(r => r.value === '3') || groups[gName].find(r => r.value === '4') || groups[gName][0];
+            } else {
+              target = groups[gName].find(r => r.value === '1') || groups[gName][0];
+            }
             if (target) {
+              if (!target.checked) target.click();
               target.checked = true;
               target.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof $ !== 'undefined') $(target).prop('checked', true).trigger('change');
               ratingCount++;
             }
           }
@@ -3117,7 +3283,7 @@ async function healUnansweredAssocFields(page) {
   for (const f of frames) {
     try {
       await f.evaluate(() => {
-        // 1. 미선택 라디오: 1번(상인회/만족/유) 우선, 3번(보통) 차선
+        // 1. 미선택 라디오: 2지선다는 2(무/없음) 우선, 척도형은 3(보통) 또는 4(만족)
         const radios = Array.from(document.querySelectorAll('input[type="radio"]:not([disabled])'));
         const groups = {};
         radios.forEach(r => {
@@ -3126,21 +3292,31 @@ async function healUnansweredAssocFields(page) {
         });
         Object.keys(groups).forEach(gName => {
           if (!groups[gName].some(r => r.checked)) {
-            const opt1 = groups[gName].find(r => r.value === '1');
-            const opt3 = groups[gName].find(r => r.value === '3');
-            const first = opt1 || opt3 || groups[gName][0];
-            if (first) {
-              first.checked = true;
-              first.dispatchEvent(new Event('change', { bubbles: true }));
+            const vals = groups[gName].map(r => r.value);
+            let target;
+            if (vals.includes('1') && vals.includes('2') && vals.length === 2) {
+              target = groups[gName].find(r => r.value === '2') || groups[gName][0];
+            } else if (vals.length >= 4) {
+              target = groups[gName].find(r => r.value === '3') || groups[gName].find(r => r.value === '4') || groups[gName][0];
+            } else {
+              target = groups[gName].find(r => r.value === '1') || groups[gName][0];
+            }
+            if (target) {
+              if (!target.checked) target.click();
+              target.checked = true;
+              target.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof $ !== 'undefined') $(target).prop('checked', true).trigger('change');
             }
           }
         });
 
-        // 2. 미입력 숫자/텍스트 '0' 주입 (부속/기타 텍스트 인풋 제외 및 전용 정합성 처리!)
+        // 2. 미입력 숫자/텍스트 '0' 주입 (부속/기타 텍스트 및 양수 필수 필드 제외!)
         const companionNames = [
           'TC3BB_4', 'TC3BC_5', 'TA5_1', 'TD3_1', 'B6D_FAX',
           'TF3_6', 'TF5_5', 'TF6_6', 'TG1_6', 'TG2_6',
-          'G4_1_7_ETC', 'G4_2_6_ETC', 'G4_3_6_ETC', 'G4_4_6_ETC'
+          'G4_1_7_ETC', 'G4_2_6_ETC', 'G4_3_6_ETC', 'G4_4_6_ETC',
+          'D1AA_1_2', 'D1AA_2_2', 'D1AA_9_2_1', 'D1AA_9_2_2', 'D1AA_10_2', 'D1AA_11_2',
+          'D1AB_1_2', 'D1AD_1_2_2', 'TD1AD_3_1_1', 'E2AB', 'G3_6'
         ];
 
         const texts = Array.from(document.querySelectorAll('input[type="text"]:not([readonly]):not([disabled]), input[type="tel"]:not([readonly]):not([disabled])'));
@@ -3148,7 +3324,7 @@ async function healUnansweredAssocFields(page) {
           const tName = t.name || '';
           const tId = t.id || '';
           if (companionNames.includes(tName) || companionNames.includes(tId) || tName.startsWith('TD3') || tName.startsWith('TC3B') || tName.endsWith('_ETC') || tName.endsWith('_FAX')) {
-            return; // 부속 텍스트는 일반 0 주입에서 배제하고 아래 전용 정합성 로직에서 처리
+            return; // 부속 텍스트 및 제약 필드는 일반 0 주입에서 배제
           }
           if (!t.value || t.value.trim() === '') {
             t.value = '0';
