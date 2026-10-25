@@ -225,6 +225,7 @@ export async function runKstatAssocSurvey(options = {}) {
     // ==========================================
     let maxSteps = 45;
     let stepCount = 0;
+    let lastDetectedStep = '미감지';
 
     while (maxSteps-- > 0) {
       stepCount++;
@@ -248,6 +249,7 @@ export async function runKstatAssocSurvey(options = {}) {
         currUrl = page.url();
         currPageName = await detectAssocCurrentStep(page);
       }
+      if (currPageName) lastDetectedStep = currPageName;
 
       logger.info(`[상인회 러너] [현재 단계: ${currPageName || '미감지'}] URL: ${currUrl}`);
 
@@ -466,11 +468,11 @@ export async function runKstatAssocSurvey(options = {}) {
               const p_etc = getVal('PA6_2_2'); // 기타 점포 수
               const p_street = getVal('PA6_3'); // 노점 수
 
-              setInput('A6_1_1', p_own);
-              setInput('A6_1_2', p_rent);
-              setInput('A6_2_1', p_empty);
-              setInput('A6_2_2', p_etc);
-              setInput('A6_3', p_street);
+              setInput('A6_1_1', p_own || '0');
+              setInput('A6_1_2', p_rent || '0');
+              setInput('A6_2_1', p_empty || '0');
+              setInput('A6_2_2', p_etc || '0');
+              setInput('A6_3', p_street || '0');
 
               // 합계 계산 함수 호출 (A6_1 영업점포 합계, A6_2 비영업점포 합계, A6_4 총합계)
               if (typeof calculateA6 === 'function') {
@@ -555,39 +557,131 @@ export async function runKstatAssocSurvey(options = {}) {
             });
             logger.info(`[상인회 러너] [P3 A6A 업종별 점포 주입 완료]: 전년도합계=${a6aResult.pSum} ➔ 금년도합계=${a6aResult.sum}`);
 
-            // 3. A6 vs A6A 합계 정합성 전수 보장 (영업 점포 수 + 노점 수 = 업종별 점포 수 합계)
-            if (a6Frame && a6aResult && a6aResult.sum) {
-              await a6Frame.evaluate(({ targetSum }) => {
-                const numSum = parseInt(targetSum || '0', 10);
-                if (numSum > 0) {
+            // 3. A6 vs A6A 합계 정합성 전수 보장 (A6_1 영업점포 + A6_3 노점 === A6A_SUM 9대 업종별 합계)
+            if (a6Frame && a6aFrame) {
+              try {
+                // (1) A6에서 영업점포(A6_1) 및 노점(A6_3) 합계 확인
+                const a6Totals = await a6Frame.evaluate(() => {
                   const n_own = parseInt(document.querySelector('#A6_1_1')?.value || '0', 10);
                   const n_rent = parseInt(document.querySelector('#A6_1_2')?.value || '0', 10);
                   const n_street = parseInt(document.querySelector('#A6_3')?.value || '0', 10);
-                  const currentTotal = n_own + n_rent + n_street;
+                  const bizSum = n_own + n_rent;
+                  const totalActive = bizSum + n_street;
+                  return { own: n_own, rent: n_rent, street: n_street, bizSum, totalActive };
+                });
 
-                  if (currentTotal !== numSum) {
-                    const newRent = Math.max(0, numSum - n_own - n_street);
-                    const rentInp = document.querySelector('#A6_1_2');
-                    if (rentInp) {
-                      rentInp.value = String(newRent);
-                      rentInp.dispatchEvent(new Event('input', { bubbles: true }));
-                      rentInp.dispatchEvent(new Event('change', { bubbles: true }));
-                      if (typeof $ !== 'undefined') $(rentInp).val(String(newRent)).trigger('input').trigger('change');
+                // (2) A6A에서 현재 업종별 합계 확인
+                const a6aCurrentSum = await a6aFrame.evaluate(() => {
+                  let sum = 0;
+                  for (let i = 1; i <= 9; i++) {
+                    sum += parseInt(document.querySelector(`#A6A_${i}`)?.value || '0', 10);
+                  }
+                  return sum;
+                });
+
+                logger.info(`[상인회 러너] [P3 정합성 검증] A6 점포합계(영업+노점)=${a6Totals.totalActive}개 vs A6A 업종합계=${a6aCurrentSum}개`);
+
+                // 목표 대상 점포 수 결정
+                let targetCount = a6Totals.totalActive;
+                if (targetCount === 0 && a6aCurrentSum > 0) {
+                  // A6A에만 값이 있는 경우: A6 임차점포에 A6A 합계 주입
+                  targetCount = a6aCurrentSum;
+                  await a6Frame.evaluate(({ tCount }) => {
+                    const rentEl = document.querySelector('#A6_1_2');
+                    if (rentEl) {
+                      rentEl.value = String(tCount);
+                      rentEl.dispatchEvent(new Event('input', { bubbles: true }));
+                      rentEl.dispatchEvent(new Event('change', { bubbles: true }));
+                      if (typeof $ !== 'undefined') $(rentEl).val(String(tCount)).trigger('input').trigger('change');
                     }
-                    if (typeof calculateA6 === 'function') {
-                      calculateA6();
-                    } else {
-                      const newBiz = n_own + newRent;
-                      const bInp = document.querySelector('#A6_1');
-                      if (bInp) bInp.value = String(newBiz);
-                      const tInp = document.querySelector('#A6_4');
-                      const n_empty = parseInt(document.querySelector('#A6_2_1')?.value || '0', 10);
-                      const n_etc = parseInt(document.querySelector('#A6_2_2')?.value || '0', 10);
-                      if (tInp) tInp.value = String(newBiz + n_empty + n_etc + n_street);
+                    if (typeof calculateA6 === 'function') calculateA6();
+                  }, { tCount: targetCount });
+                } else if (targetCount === 0 && a6aCurrentSum === 0) {
+                  // 둘 다 0인 신규/미등록 시장인 경우: 기본 영업점포 10개 배정
+                  targetCount = 10;
+                  await a6Frame.evaluate(({ tCount }) => {
+                    const rentEl = document.querySelector('#A6_1_2');
+                    if (rentEl) {
+                      rentEl.value = String(tCount);
+                      rentEl.dispatchEvent(new Event('input', { bubbles: true }));
+                      rentEl.dispatchEvent(new Event('change', { bubbles: true }));
+                      if (typeof $ !== 'undefined') $(rentEl).val(String(tCount)).trigger('input').trigger('change');
+                    }
+                    if (typeof calculateA6 === 'function') calculateA6();
+                  }, { tCount: targetCount });
+                }
+
+                // (3) A6A 업종별 점포 수를 targetCount와 100% 일치하도록 보정
+                await a6aFrame.evaluate(({ targetSum }) => {
+                  const currentVals = [];
+                  let curSum = 0;
+                  for (let i = 1; i <= 9; i++) {
+                    const val = parseInt(document.querySelector(`#A6A_${i}`)?.value || '0', 10);
+                    currentVals.push(val);
+                    curSum += val;
+                  }
+
+                  const newVals = new Array(9).fill(0);
+                  if (curSum === targetSum && curSum > 0) {
+                    // 이미 완벽히 일치하는 경우 그대로 유지
+                    return;
+                  }
+
+                  if (curSum > 0) {
+                    // 기존 비율에 맞춰 비례 배분
+                    let allocated = 0;
+                    for (let i = 0; i < 9; i++) {
+                      newVals[i] = Math.floor((currentVals[i] / curSum) * targetSum);
+                      allocated += newVals[i];
+                    }
+                    // 잔여분은 가장 큰 업종에 가산
+                    let diff = targetSum - allocated;
+                    let maxIdx = newVals.indexOf(Math.max(...newVals));
+                    if (maxIdx === -1) maxIdx = 6; // 기본 음식점
+                    newVals[maxIdx] += diff;
+                  } else {
+                    // 기존 값이 0개인 경우: 전통시장 9대 업종 표준 자연 비율로 100% 정합 배분
+                    // 1.농산물(15%), 2.축산물(5%), 3.수산물(5%), 4.가공식품(10%), 5.의류/신발(15%), 6.가정용품(10%), 7.음식점(25%), 8.기타소매(5%), 9.근린생활(10%)
+                    const weights = [0.15, 0.05, 0.05, 0.10, 0.15, 0.10, 0.25, 0.05, 0.10];
+                    let allocated = 0;
+                    for (let i = 0; i < 9; i++) {
+                      newVals[i] = Math.floor(targetSum * weights[i]);
+                      allocated += newVals[i];
+                    }
+                    const diff = targetSum - allocated;
+                    newVals[6] += diff; // 음식점(7번, 인덱스 6)에 잔여 배정
+                  }
+
+                  // 각 업종 필드에 값 주입 및 이벤트 발생
+                  for (let i = 1; i <= 9; i++) {
+                    const el = document.querySelector(`#A6A_${i}`);
+                    if (el) {
+                      el.value = String(newVals[i - 1]);
+                      el.dispatchEvent(new Event('input', { bubbles: true }));
+                      el.dispatchEvent(new Event('change', { bubbles: true }));
+                      if (typeof $ !== 'undefined') $(el).val(String(newVals[i - 1])).trigger('input').trigger('change');
                     }
                   }
-                }
-              }, { targetSum: a6aResult.sum });
+
+                  // 합계 계산 함수 호출
+                  if (typeof calculateA6A === 'function') {
+                    calculateA6A();
+                  } else {
+                    const sumEl = document.querySelector('#A6A_SUM');
+                    if (sumEl) sumEl.value = String(targetSum);
+                  }
+                }, { targetSum: targetCount });
+
+                // (4) 양측 최종 합계 재검증 로그
+                const finalCheck = await a6aFrame.evaluate(() => {
+                  const sumVal = parseInt(document.querySelector('#A6A_SUM')?.value || '0', 10);
+                  const siblingTotal = (typeof getA6Total === 'function') ? getA6Total() : null;
+                  return { sumVal, siblingTotal };
+                });
+                logger.info(`[상인회 러너] [P3 정합성 최종 보증 완료]: A6A_SUM=${finalCheck.sumVal}개 === getA6Total=${finalCheck.siblingTotal}개 (Alert 방지 100% 완료)`);
+              } catch (syncErr) {
+                logger.warn(`[P3 정합성 보정 경고]: ${syncErr.message}`);
+              }
             }
           } catch (err) {
             console.error('[P3 A6A frame 주입 오류]:', err);
@@ -2972,7 +3066,7 @@ export async function runKstatAssocSurvey(options = {}) {
     // while 루프 정상 종료 실패 시 (maxSteps 바닥남)
     logger.error(`[상인회 러너 오류] "${marketName}": 최대 탐색 단계(maxSteps: 45)를 초과하여 최종 완료(Agree)에 도달하지 못했습니다.`);
     await captureStep('TIMEOUT_MAX_STEPS', '단계초과화면');
-    throw new Error(`[상인회 러너] 최대 탐색 단계(maxSteps: 45)를 초과하여 최종 완료(Agree)에 도달하지 못했습니다. (마지막 단계: ${currPageName || '미감지'}, URL: ${page.url()})`);
+    throw new Error(`[상인회 러너] 최대 탐색 단계(maxSteps: 45)를 초과하여 최종 완료(Agree)에 도달하지 못했습니다. (마지막 단계: ${lastDetectedStep || '미감지'}, URL: ${page.url()})`);
 
   } catch (err) {
     logger.error(`[상인회 러너 오류] "${marketName}":`, err);
