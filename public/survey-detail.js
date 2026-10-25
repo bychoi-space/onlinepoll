@@ -1180,9 +1180,9 @@ async function initSurveyDetailPage() {
     if (assocPolicyState.eval_H1_4_floor === undefined) assocPolicyState.eval_H1_4_floor = 4;
     if (assocPolicyState.eval_H1_jitter === undefined) assocPolicyState.eval_H1_jitter = true;
 
-    if (assocPolicyState.eval_H2_1_specialStreet === undefined) assocPolicyState.eval_H2_1_specialStreet = '1';
+    if (assocPolicyState.eval_H2_1_specialStreet === undefined) assocPolicyState.eval_H2_1_specialStreet = '2';
     if (assocPolicyState.eval_H2_1_customText === undefined) assocPolicyState.eval_H2_1_customText = '먹거리 및 패션 특화골목';
-    if (assocPolicyState.eval_H2_2_specialProduct === undefined) assocPolicyState.eval_H2_2_specialProduct = '1';
+    if (assocPolicyState.eval_H2_2_specialProduct === undefined) assocPolicyState.eval_H2_2_specialProduct = '2';
     if (assocPolicyState.eval_H2_2_customText === undefined) assocPolicyState.eval_H2_2_customText = '지역 대표 먹거리 및 신선식품';
     if (assocPolicyState.eval_H2_3_brandMark === undefined) assocPolicyState.eval_H2_3_brandMark = '2';
     if (assocPolicyState.eval_H2_3_customText === undefined) assocPolicyState.eval_H2_3_customText = '';

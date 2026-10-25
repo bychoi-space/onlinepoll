@@ -250,7 +250,7 @@ export async function runKstatAssocEvaluation({
         code: 'H2_1',
         noteCode: 'H2_1_NOTE',
         title: '특화거리',
-        choice: String(policy.eval_H2_1_specialStreet ?? '1'),
+        choice: String(policy.eval_H2_1_specialStreet ?? '2'),
         text: policy.eval_H2_1_customText ?? '먹거리 및 패션 특화골목'
       },
       {
@@ -258,7 +258,7 @@ export async function runKstatAssocEvaluation({
         code: 'H2_2',
         noteCode: 'H2_2_NOTE',
         title: '특산품',
-        choice: String(policy.eval_H2_2_specialProduct ?? '1'),
+        choice: String(policy.eval_H2_2_specialProduct ?? '2'),
         text: policy.eval_H2_2_customText ?? '지역 대표 먹거리 및 신선식품'
       },
       {

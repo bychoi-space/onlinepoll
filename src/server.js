@@ -326,10 +326,10 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
           F6_emptyStorePolicy: '1',
           G1_overchargeReason: '1',
           G2_overchargeSolution: '1',
-          G3_program: '1',
-          G3_famousStore: '1',
-          G3_nightLight: '1',
-          G3_tourLink: '1',
+          G3_program: '2',
+          G3_famousStore: '2',
+          G3_nightLight: '2',
+          G3_tourLink: '2',
           G3_communitySpace: '1',
           G3_certifiedStoreCount: '0',
           G4_cooling_aircon: true,
@@ -339,14 +339,31 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
           G4_flood_pump: true,
           G4_flood_wall: false,
           G4_flood_activity_2025: true,
-          G4_flood_activity_2026: true
+          G4_flood_activity_2026: true,
+          eval_H1_1_cleanliness: 4,
+          eval_H1_2_entrance: 4,
+          eval_H1_3_parking: 3,
+          eval_H1_4_floor: 4,
+          eval_H1_jitter: true,
+          eval_H2_1_specialStreet: '2',
+          eval_H2_1_customText: '먹거리 및 패션 특화골목',
+          eval_H2_2_specialProduct: '2',
+          eval_H2_2_customText: '지역 대표 먹거리 및 신선식품',
+          eval_H2_3_brandMark: '2',
+          eval_H2_3_customText: '',
+          eval_H2_4_brandUsage: '2',
+          eval_H2_4_customText: ''
         }
       };
     }
+    const effectivePolicy = {
+      ...(assocBlueprint.defaultPolicy || {}),
+      ...(campaign.assocPolicy || {})
+    };
     return res.json({
       surveyType: 'kstat_assoc',
       blueprint: assocBlueprint,
-      policy: campaign.assocPolicy || assocBlueprint.defaultPolicy,
+      policy: effectivePolicy,
       campaignTitle: campaign.title,
       slotCount: (campaign.quotaDatabase || []).length
     });

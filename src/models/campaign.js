@@ -80,11 +80,43 @@ export function getCampaignById(id) {
  */
 export function createCampaign(data = {}) {
   const campaigns = getAllCampaigns();
+  const isAssoc = (data.surveyType === 'kstat_assoc');
+
+  let defaultAssocPolicy = null;
+  if (isAssoc) {
+    const assocBpPath = path.join(dataDir, 'kstat_assoc_blueprint.json');
+    if (fs.existsSync(assocBpPath)) {
+      try {
+        const bp = JSON.parse(fs.readFileSync(assocBpPath, 'utf-8'));
+        defaultAssocPolicy = bp.defaultPolicy;
+      } catch (_) {}
+    }
+    if (!defaultAssocPolicy) {
+      defaultAssocPolicy = {
+        preserveExistingInputs: true,
+        skipCompletedSlots: true,
+        eval_H1_1_cleanliness: 4,
+        eval_H1_2_entrance: 4,
+        eval_H1_3_parking: 3,
+        eval_H1_4_floor: 4,
+        eval_H1_jitter: true,
+        eval_H2_1_specialStreet: '2',
+        eval_H2_1_customText: '먹거리 및 패션 특화골목',
+        eval_H2_2_specialProduct: '2',
+        eval_H2_2_customText: '지역 대표 먹거리 및 신선식품',
+        eval_H2_3_brandMark: '2',
+        eval_H2_3_customText: '',
+        eval_H2_4_brandUsage: '2',
+        eval_H2_4_customText: ''
+      };
+    }
+  }
+
   const newCampaign = {
     id: 'camp_' + Date.now(),
-    title: data.title || '새로운 설문조사 캠페인',
+    title: data.title || (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인'),
     description: data.description || '',
-    quotaType: data.quotaType || 'b2c',
+    quotaType: data.quotaType || (isAssoc ? 'b2b' : 'b2c'),
     surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc'
     status: 'ready',
     createdAt: new Date().toISOString(),
@@ -105,7 +137,14 @@ export function createCampaign(data = {}) {
       iterations: 1,
       headless: true
     },
-    results: []
+    results: [],
+    ...(isAssoc ? {
+      assocPolicy: {
+        ...(defaultAssocPolicy || {}),
+        ...(data.assocPolicy || {})
+      },
+      hasMasterBlueprint: true
+    } : {})
   };
 
   campaigns.unshift(newCampaign);
