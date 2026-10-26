@@ -893,6 +893,57 @@ async function initSurveyDetailPage() {
     });
   }
 
+  const btnDirectExcelUpload = document.getElementById('btn-direct-excel-upload');
+  const inputDirectExcelUpload = document.getElementById('input-direct-excel-upload');
+  if (btnDirectExcelUpload && inputDirectExcelUpload) {
+    btnDirectExcelUpload.addEventListener('click', () => inputDirectExcelUpload.click());
+    inputDirectExcelUpload.addEventListener('change', async (e) => {
+      const fileObj = e.target.files && e.target.files[0];
+      if (!fileObj) return;
+      try {
+        btnDirectExcelUpload.disabled = true;
+        btnDirectExcelUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Excel 업로드 중...';
+        const fileBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('파일 읽기에 실패했습니다.'));
+          reader.readAsDataURL(fileObj);
+        });
+        const marketName = fileObj.name.replace(/\.[^/.]+$/, '').trim() || '업로드시장';
+        const res = await fetch('/api/quota/upload-excel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `2026_${marketName}_엑셀업로드_조사쿼터`,
+            marketName,
+            fileName: fileObj.name,
+            fileBase64,
+            autoEnrich: true,
+            campaignId: campId
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Excel 업로드 실패');
+        appendLog('success', data.message);
+        await loadSavedQuotas();
+        if (data.campaign) {
+          currentCampaign = data.campaign;
+          renderCampaignDetails(currentCampaign);
+        } else {
+          await loadCampaign();
+        }
+        alert(data.message);
+      } catch (err) {
+        alert('Excel 쿼터 업로드 오류: ' + err.message);
+        appendLog('error', `Excel 쿼터 업로드 오류: ${err.message}`);
+      } finally {
+        btnDirectExcelUpload.disabled = false;
+        btnDirectExcelUpload.innerHTML = '<i class="fa-solid fa-file-excel text-success-color"></i> Excel 쿼터 업로드';
+        inputDirectExcelUpload.value = '';
+      }
+    });
+  }
+
   if (btnEnrichCampaign) {
     btnEnrichCampaign.addEventListener('click', async () => {
       if (!currentCampaign || !currentCampaign.quotaDatabase || currentCampaign.quotaDatabase.length === 0) {

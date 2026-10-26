@@ -100,7 +100,24 @@ export function getMasterDBStatus() {
 }
 
 /**
- * 마스터 DB에서 시장 검색 (정확도 높은 지능형 매칭)
+ * 시장명 동의어/유사표기 정규화 헬퍼
+ * - '잠실역지하센터', '잠실역지하상가', '잠실역지하쇼핑센터' 등을 동일 표준키로 정규화
+ */
+function normalizeMarketSynonym(str = '') {
+  return String(str || '')
+    .replace(/\s+/g, '')
+    .replace(/지하쇼핑센터|지하도상점가|지하도상가|지하상점가|지하상가|지하센터/g, '지하센터')
+    .replace(/쇼핑센터/g, '센터');
+}
+
+function extractMarketCoreKey(str = '') {
+  return normalizeMarketSynonym(str)
+    .replace(/\(.*?\)/g, '')
+    .replace(/골목형상점가|전통시장|종합시장|중앙시장|상점가|지하센터|센터|시장|상가|몰/g, '');
+}
+
+/**
+ * 마스터 DB에서 시장 검색 (정확도 높은 지능형 매칭 + 동의어/축약어 매칭)
  */
 export function findMarketInMasterDB(marketName = '', regionCode = '', districtCode = '') {
   const db = getMasterDB();
@@ -110,31 +127,44 @@ export function findMarketInMasterDB(marketName = '', regionCode = '', districtC
   if (!rawQuery) return null;
 
   const cleanQuery = rawQuery.replace(/\s+/g, '');
+  const synQuery = normalizeMarketSynonym(rawQuery);
+  const coreQuery = extractMarketCoreKey(rawQuery);
 
   // 1차: 완전 일치
   if (db.markets[rawQuery]) {
     return db.markets[rawQuery];
   }
 
-  // 2차: 공백 제거 일치
+  // 2차: 공백 제거 일치 또는 동의어 정규화 완전 일치 (예: '잠실역지하센터' === '잠실역지하쇼핑센터')
   for (const [mName, mData] of Object.entries(db.markets)) {
-    if (mName.replace(/\s+/g, '') === cleanQuery) {
+    const cleanName = mName.replace(/\s+/g, '');
+    if (cleanName === cleanQuery || normalizeMarketSynonym(mName) === synQuery) {
       return mData;
     }
   }
 
-  // 3차: 지능형 스코어링 매칭 (접두사 일치, 형태소 유사도, 지역/구 일치)
+  // 3차: 지능형 스코어링 매칭 (접두사 일치, 동의어 포함, 형태소 유사도, 지역/구 일치)
   const scoredCandidates = [];
   for (const [mName, mData] of Object.entries(db.markets)) {
     const cleanName = mName.replace(/\s+/g, '');
+    const synName = normalizeMarketSynonym(mName);
+    const coreName = extractMarketCoreKey(mName);
     let score = 0;
 
-    // 접두사 일치 ('도농상점가' startsWith '도농') -> 최고 점수 (포항죽도농산물시장 등의 오매칭 원천 차단)
-    if (cleanName.startsWith(cleanQuery)) {
+    // 접두사 일치 ('도농상점가' startsWith '도농') -> 최고 점수
+    if (cleanName.startsWith(cleanQuery) || synName.startsWith(synQuery)) {
       score += 100;
-    } else if (cleanQuery.startsWith(cleanName)) {
+    } else if (cleanQuery.startsWith(cleanName) || synQuery.startsWith(synName)) {
       score += 90;
-    } else if (cleanName.includes(cleanQuery) || cleanQuery.includes(cleanName)) {
+    } else if (coreQuery.length >= 2 && coreName === coreQuery) {
+      score += 85;
+    } else if (
+      cleanName.includes(cleanQuery) ||
+      cleanQuery.includes(cleanName) ||
+      synName.includes(synQuery) ||
+      synQuery.includes(synName) ||
+      (coreQuery.length >= 2 && (coreName.includes(coreQuery) || coreQuery.includes(coreName)))
+    ) {
       score += 40;
     } else {
       continue;
@@ -149,7 +179,7 @@ export function findMarketInMasterDB(marketName = '', regionCode = '', districtC
     }
 
     // 검색어 길이 대비 시장명 길이 차이 페널티 (유사도 반영)
-    const lenDiff = Math.abs(cleanName.length - cleanQuery.length);
+    const lenDiff = Math.abs(synName.length - synQuery.length);
     score -= Math.min(lenDiff, 20);
 
     scoredCandidates.push({ data: mData, score, cleanName });
@@ -574,51 +604,55 @@ export async function getStratifiedMarketMerchants({
     logger.info(`[Onnuri Master DB] "${market.marketName}" 층화 추출 가맹점 풀 로드 (전체 정상가맹 ${rawPool.length}건 중 개업기준 충족 ${validMerchants.length}건)`);
   } else {
     // 2. 외부 공인 플랫폼 폴백
-    const body = new URLSearchParams({
-      SEARCH_LCLGV_CD: regionCode,
-      SEARCH_SGG_CD: districtCode,
-      SEARCH_MRKT_NM: marketName.trim(),
-      SEARCH_TYPE: '1',
-      SEARCH_WORD: '',
-      pageIndex: '1',
-      recordCountPerPage: '500'
-    });
-
-    const res = await fetch(`${ONNURI_BASE_URL}/afms/afm/common/selectFrcsData.do`, {
-      method: 'POST',
-      headers: DEFAULT_HEADERS,
-      body: body.toString()
-    });
-
-    if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
-    const data = await res.json();
-    const rawList = data.list || [];
-
-    const seenBiz = new Set();
-    for (const item of rawList) {
-      if (marketName && item.MRKT_NM && !item.MRKT_NM.includes(marketName.trim()) && !marketName.trim().includes(item.MRKT_NM)) continue;
-      if (item.AFFL_STTS_SE !== '정상가맹') continue;
-      if (!isWithinMaxOpenYear(item.FRCS_REG_YMD, maxOpenYear)) continue;
-
-      const rawBizNo = (item.FRCS_ENBRNO || '').replace(/\D/g, '');
-      if (rawBizNo.length !== 10 || seenBiz.has(rawBizNo)) continue;
-
-      seenBiz.add(rawBizNo);
-      validMerchants.push({
-        marketName: item.MRKT_NM || marketName,
-        companyName: item.ACTL_FRCS_NM || '가맹점명 미기재',
-        bizNumber: formatBizNumber(rawBizNo),
-        rawBizNumber: rawBizNo,
-        merchantCode: item.FRCS_CD || '',
-        category: '소상공인/전통시장',
-        industry: item.TPBIZ_NM || '전통시장소매',
-        subIndustry: item.TPBIZ_NM || '도소매업',
-        address: (item.ADDR || '').trim(),
-        regDate: item.FRCS_REG_YMD || '',
-        status: item.AFFL_STTS_SE || '정상가맹',
-        paperAccepted: item.KNPP_HNDL_YN === 'Y' ? 'Y' : 'N',
-        digitalAccepted: item.MOBL_HNDL_YN === 'Y' ? 'Y' : 'N'
+    try {
+      const body = new URLSearchParams({
+        SEARCH_LCLGV_CD: regionCode,
+        SEARCH_SGG_CD: districtCode,
+        SEARCH_MRKT_NM: marketName.trim(),
+        SEARCH_TYPE: '1',
+        SEARCH_WORD: '',
+        pageIndex: '1',
+        recordCountPerPage: '500'
       });
+
+      const res = await fetch(`${ONNURI_BASE_URL}/afms/afm/common/selectFrcsData.do`, {
+        method: 'POST',
+        headers: DEFAULT_HEADERS,
+        body: body.toString()
+      });
+
+      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+      const data = await res.json();
+      const rawList = data.list || [];
+
+      const seenBiz = new Set();
+      for (const item of rawList) {
+        if (marketName && item.MRKT_NM && !item.MRKT_NM.includes(marketName.trim()) && !marketName.trim().includes(item.MRKT_NM)) continue;
+        if (item.AFFL_STTS_SE !== '정상가맹') continue;
+        if (!isWithinMaxOpenYear(item.FRCS_REG_YMD, maxOpenYear)) continue;
+
+        const rawBizNo = (item.FRCS_ENBRNO || '').replace(/\D/g, '');
+        if (rawBizNo.length !== 10 || seenBiz.has(rawBizNo)) continue;
+
+        seenBiz.add(rawBizNo);
+        validMerchants.push({
+          marketName: item.MRKT_NM || marketName,
+          companyName: item.ACTL_FRCS_NM || '가맹점명 미기재',
+          bizNumber: formatBizNumber(rawBizNo),
+          rawBizNumber: rawBizNo,
+          merchantCode: item.FRCS_CD || '',
+          category: '소상공인/전통시장',
+          industry: item.TPBIZ_NM || '전통시장소매',
+          subIndustry: item.TPBIZ_NM || '도소매업',
+          address: (item.ADDR || '').trim(),
+          regDate: item.FRCS_REG_YMD || '',
+          status: item.AFFL_STTS_SE || '정상가맹',
+          paperAccepted: item.KNPP_HNDL_YN === 'Y' ? 'Y' : 'N',
+          digitalAccepted: item.MOBL_HNDL_YN === 'Y' ? 'Y' : 'N'
+        });
+      }
+    } catch (extErr) {
+      throw new Error(`입력하신 "${marketName}" 시장을 온누리 마스터 DB에서 찾을 수 없습니다. 시/군/구 선택 후 공인 시장 목록에서 선택하거나 [Excel 쿼터 업로드]를 이용해 주세요.`);
     }
   }
 

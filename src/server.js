@@ -18,7 +18,7 @@ if (fs.existsSync('.env') && typeof process.loadEnvFile === 'function') {
 import crypto from 'crypto';
 import { logger } from './utils/logger.js';
 import * as CampaignStore from './models/campaign.js';
-import { exportBusinessesToExcel } from './utils/excel.js';
+import { exportBusinessesToExcel, generateQuotaTemplateBuffer, parseExcelQuotaBuffer } from './utils/excel.js';
 import { runKstatSurvey } from './engine/kstat-runner.js';
 import { runKstatEvaluation } from './engine/kstat-eval-runner.js';
 import { runKstatAssocEvaluation } from './engine/kstat-assoc-eval-runner.js';
@@ -97,7 +97,7 @@ function authGate(req, res, next) {
 
 // 미들웨어 등록
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 app.use(authGate); // 모든 정적 파일 및 API 보호
 app.use(express.static(path.join(rootDir, 'public')));
 // 리포트 및 쿼터 디렉터리 준비
@@ -2174,6 +2174,149 @@ app.post('/api/quota/generate', async (req, res) => {
 });
 
 // 파일 다운로드 (Excel, JSON)
+// 업로드용 표준 엑셀 양식(.xlsx) 다운로드 API
+app.get('/api/quota/template', (req, res) => {
+  try {
+    const buffer = generateQuotaTemplateBuffer();
+    const downloadName = encodeURIComponent('AutoSurvey_조사쿼터_표준양식.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${downloadName}`);
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).json({ error: '양식 생성 실패: ' + err.message });
+  }
+});
+
+// 사용자 Excel(.xlsx/.xls/.csv) 쿼터 파일 업로드 및 정식 쿼터 DB 등록 API
+app.post('/api/quota/upload-excel', async (req, res) => {
+  try {
+    const {
+      title = '',
+      marketName = '',
+      fileName = 'uploaded_quota.xlsx',
+      fileBase64 = '',
+      autoEnrich = true,
+      campaignId = null
+    } = req.body || {};
+
+    if (!fileBase64) {
+      return res.status(400).json({ error: '업로드할 엑셀 파일 데이터가 없습니다.' });
+    }
+
+    const base64Clean = String(fileBase64).replace(/^data:.*?;base64,/, '');
+    const buffer = Buffer.from(base64Clean, 'base64');
+
+    const inferredMarket = (marketName || '').trim() || path.basename(fileName, path.extname(fileName)).replace(/[^가-힣a-zA-Z0-9_\-\s]/g, '').trim() || '업로드시장';
+    const parsedData = parseExcelQuotaBuffer(buffer, {
+      defaultMarketName: inferredMarket,
+      autoEnrich: autoEnrich !== false
+    });
+
+    const finalMarketName = parsedData[0]?.marketName || inferredMarket;
+    const finalTitle = (title || '').trim() || `2026_${finalMarketName}_업종별${parsedData.length}개_조사쿼터`;
+
+    const columns = [
+      { key: 'companyName', label: '상호' },
+      { key: 'industry', label: '업종' },
+      { key: 'bizNumber', label: '사업자번호' },
+      { key: 'ceoName', label: '대표자이름' },
+      { key: 'ceoGender', label: '성별' },
+      { key: 'ceoAge', label: '나이' },
+      { key: 'phone', label: '연락처' },
+      { key: 'openDate', label: '개업연월' },
+      { key: 'address', label: '주소' },
+      { key: 'handledItems', label: '취급품목' },
+      { key: 'mainProducts', label: '주요품목' },
+      { key: 'marketName', label: '시장명' }
+    ];
+
+    const timestamp = Date.now();
+    const cleanTitle = finalTitle.replace(/[^가-힣a-zA-Z0-9_\-]/g, '_');
+    const filenameBase = `quota_onnuri_${cleanTitle}_${timestamp}`;
+    const jsonFileName = `${filenameBase}.json`;
+    const excelFileName = `${filenameBase}.xlsx`;
+    const jsonFilePath = path.join(quotasDir, jsonFileName);
+    const excelFilePath = path.join(quotasDir, excelFileName);
+
+    const quotaMeta = {
+      title: finalTitle,
+      type: 'ONNURI_HYBRID',
+      source: 'EXCEL_UPLOAD',
+      marketName: finalMarketName,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      targetTotal: parsedData.length,
+      count: parsedData.length,
+      mbzFailedCount: 0,
+      isComplete: true,
+      requestParams: {
+        title: finalTitle,
+        marketName: finalMarketName,
+        targetCount: parsedData.length,
+        samplingMode: 'excel_upload',
+        autoEnrich: autoEnrich !== false
+      },
+      candidates: parsedData,
+      columns,
+      data: parsedData
+    };
+
+    fs.writeFileSync(jsonFilePath, JSON.stringify(quotaMeta, null, 2), 'utf-8');
+    exportBusinessesToExcel({
+      data: parsedData,
+      columns,
+      filePath: excelFilePath
+    });
+
+    let updatedCampaign = null;
+    if (campaignId) {
+      const targetCamp = CampaignStore.getCampaignById(campaignId);
+      if (targetCamp) {
+        const quotaDb = parsedData.map((row, i) => ({
+          index: i + 1,
+          seq: i + 1,
+          ...row,
+          quotaStatus: 'ready',
+          surveyorAccount: targetCamp.kstatLoginId || '가온김영옥'
+        }));
+        updatedCampaign = CampaignStore.updateCampaign(campaignId, {
+          quotaDatabase: quotaDb,
+          quotaSourceFile: jsonFileName
+        });
+        logger.broadcast({
+          type: 'QUOTA_UPDATED',
+          campaignId,
+          quotaDatabase: quotaDb
+        });
+      }
+    }
+
+    logger.success(`[Excel 쿼터 업로드 완료] "${finalTitle}" (${parsedData.length}개 사업자 행) -> ${jsonFileName}`);
+
+    res.json({
+      success: true,
+      message: `Excel 파일에서 ${parsedData.length}개 점포 쿼터를 성공적으로 등록했습니다!`,
+      title: finalTitle,
+      type: 'ONNURI_HYBRID',
+      marketName: finalMarketName,
+      count: parsedData.length,
+      targetTotal: parsedData.length,
+      mbzFailedCount: 0,
+      isComplete: true,
+      columns,
+      data: parsedData,
+      jsonFileName,
+      excelFileName,
+      jsonDownloadUrl: `/api/quota/download/${jsonFileName}`,
+      excelDownloadUrl: `/api/quota/download/${excelFileName}`,
+      campaign: updatedCampaign
+    });
+  } catch (err) {
+    logger.error('[Excel 쿼터 업로드 오류]', err);
+    res.status(400).json({ error: 'Excel 쿼터 업로드 실패: ' + err.message });
+  }
+});
+
 app.get('/api/quota/download/:filename', (req, res) => {
   const filename = req.params.filename;
   // 디렉터리 트래버설 방지

@@ -12,6 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabOnnuri = document.getElementById('tab-mode-onnuri');
   const sectionMarketBz = document.getElementById('section-marketbz-mode');
   const sectionOnnuri = document.getElementById('section-onnuri-mode');
+  const tabExcel = document.getElementById('tab-mode-excel');
+  const sectionExcel = document.getElementById('section-excel-mode');
+  const inputExcelMarket = document.getElementById('excel-market-name');
+  const inputExcelFile = document.getElementById('input-excel-quota-file');
 
   // 공통 & 마켓비즈 인풋
   const inputTitle = document.getElementById('quota-title');
@@ -183,6 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
       btnGenerate.innerHTML = `<i class="fa-solid fa-rotate-right"></i> 실패/중단 지점부터 쿼터 이어하기 업데이트 (기존 데이터 보존)`;
     } else if (mode === 'onnuri') {
       btnGenerate.innerHTML = '<i class="fa-solid fa-store"></i> 온누리 ➔ 마켓비즈 연계 쿼터 만들기 (JSON & Excel)';
+    } else if (mode === 'excel') {
+      btnGenerate.innerHTML = '<i class="fa-solid fa-file-arrow-up"></i> 선택한 Excel 파일로 조사 쿼터 즉시 등록 (JSON & Excel)';
     } else {
       btnGenerate.innerHTML = '<i class="fa-solid fa-bolt"></i> 마켓비즈 조사 쿼터 만들기 (JSON & Excel)';
     }
@@ -219,7 +225,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (selectResumeQuota) selectResumeQuota.value = '';
       selectQuotaForResume('');
     }
-    if (mode === 'marketbz') {
+    if (tabExcel) tabExcel.classList.toggle('active', mode === 'excel');
+    if (sectionExcel) sectionExcel.classList.toggle('hidden', mode !== 'excel');
+    if (mode === 'excel') {
+      tabOnnuri.classList.remove('active');
+      tabMarketBz.classList.remove('active');
+      sectionOnnuri.classList.add('hidden');
+      sectionMarketBz.classList.add('hidden');
+      if (!preserveResume) {
+        const mkt = (inputExcelMarket && inputExcelMarket.value.trim()) || '전통시장';
+        inputTitle.value = `2026_${mkt}_엑셀업로드_조사쿼터`;
+      }
+    } else if (mode === 'marketbz') {
       tabMarketBz.classList.add('active');
       tabOnnuri.classList.remove('active');
 
@@ -247,6 +264,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   tabMarketBz.addEventListener('click', () => switchMode('marketbz'));
   tabOnnuri.addEventListener('click', () => switchMode('onnuri'));
+  if (tabExcel) tabExcel.addEventListener('click', () => switchMode('excel'));
+  if (inputExcelMarket) {
+    inputExcelMarket.addEventListener('input', () => {
+      if (inputCurrentMode.value === 'excel') {
+        inputTitle.value = `2026_${inputExcelMarket.value.trim() || '전통시장'}_엑셀업로드_조사쿼터`;
+      }
+    });
+  }
+  if (inputExcelFile) {
+    inputExcelFile.addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) {
+        const baseName = f.name.replace(/\.[^/.]+$/, '').trim();
+        if (inputExcelMarket && !inputExcelMarket.value.trim()) {
+          inputExcelMarket.value = baseName;
+        }
+        if (inputCurrentMode.value === 'excel') {
+          const mkt = (inputExcelMarket && inputExcelMarket.value.trim()) || baseName;
+          inputTitle.value = `2026_${mkt}_엑셀업로드_조사쿼터`;
+        }
+      }
+    });
+  }
 
   inputOnnuriMarket.addEventListener('input', () => {
     if (inputCurrentMode.value === 'onnuri') {
@@ -888,6 +928,28 @@ document.addEventListener('DOMContentLoaded', () => {
         btnGenerate.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${resumeFileName ? '실패 지점부터 이어하기 업데이트 진행 중...' : '온누리 1차 수집 & 마켓비즈 2차 실시간 저장 진행 중...'}`;
         appendLog('info', `[온누리 연계 쿼터 ${resumeFileName ? '이어하기' : '생성'}] 시장: "${marketName}", 모드: ${samplingMode}, 목표: ${totalCount}개 가맹점${resumeFileName ? `, 대상파일: ${resumeFileName}` : ''}`);
 
+      } else if (mode === 'excel') {
+        const fileObj = inputExcelFile && inputExcelFile.files ? inputExcelFile.files[0] : null;
+        if (!fileObj) {
+          throw new Error('업로드할 Excel(.xlsx, .xls, .csv) 파일을 먼저 선택해 주세요.');
+        }
+        const fileBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('파일 읽기에 실패했습니다.'));
+          reader.readAsDataURL(fileObj);
+        });
+        const marketName = (inputExcelMarket && inputExcelMarket.value.trim()) || fileObj.name.replace(/\.[^/.]+$/, '').trim() || '업로드시장';
+        endpoint = '/api/quota/upload-excel';
+        payload = {
+          title,
+          marketName,
+          fileName: fileObj.name,
+          fileBase64,
+          autoEnrich
+        };
+        btnGenerate.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Excel 파일 파싱 및 12대 표준 쿼터 DB 등록 중...`;
+        appendLog('info', `[Excel 쿼터 업로드] 파일: "${fileObj.name}", 시장명: "${marketName}" 업로드 처리 중...`);
       } else {
         // 마켓비즈 단독
         const keyword = inputKeyword.value.trim() || '소프트웨어';

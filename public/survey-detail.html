@@ -167,6 +167,13 @@
               </div>
             </div>
             <div class="quota-action-buttons">
+              <input type="file" id="input-direct-excel-upload" accept=".xlsx,.xls,.csv" class="hidden" />
+              <button type="button" id="btn-direct-excel-upload" class="btn-pill btn-pill-secondary" title="Excel(.xlsx/.csv) 파일로 쿼터를 즉시 업로드하여 장착합니다">
+                <i class="fa-solid fa-file-excel text-success-color"></i> Excel 쿼터 업로드
+              </button>
+              <a href="/api/quota/template" class="btn-pill btn-pill-secondary" download title="12대 표준 컬럼 엑셀 양식 다운로드">
+                <i class="fa-solid fa-download"></i> 엑셀 양식
+              </a>
               <a href="quota-builder.html" class="btn-pill btn-pill-secondary">
                 <i class="fa-solid fa-plus"></i> 새 쿼터 생성기
               </a>
@@ -752,7 +759,7 @@
     </div>
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261025_kstat_sync_v1"></script>
+  <script type="module" src="survey-detail.js?v=20261026_excel_upload_v1"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>
