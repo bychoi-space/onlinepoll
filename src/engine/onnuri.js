@@ -331,6 +331,16 @@ export function isHouseholdSubstituteMerchant(companyName = '') {
   return HOUSEHOLD_SUBSTITUTE_KEYWORDS.some(kw => cName.includes(kw));
 }
 
+function cleanMerchantName(name = '') {
+  return String(name || '')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .trim();
+}
+
 /**
  * 3. 특정 시장의 온누리상품권 가맹점 목록 조회 (마스터 DB 우선 ➔ 외부 API 폴백)
  */
@@ -350,7 +360,10 @@ export async function getMarketMerchants({
   const market = findMarketInMasterDB(marketName, regionCode, districtCode);
   if (market && Array.isArray(market.merchants) && market.merchants.length > 0) {
     logger.info(`[Onnuri Master DB] "${market.marketName}" 마스터 DB 캐시 적중 (${market.merchants.length}개 가맹점)`);
-    let list = market.merchants.map(m => ({ ...m }));
+    let list = market.merchants.map(m => ({
+      ...m,
+      companyName: cleanMerchantName(m.companyName)
+    }));
     if (statusFilter === 'ACTIVE') {
       list = list.filter(m => m.status === '정상가맹');
     }
@@ -362,6 +375,16 @@ export async function getMarketMerchants({
     if (maxOpenYear && maxOpenYear !== 'all') {
       list = list.filter(m => isWithinMaxOpenYear(m.regDate, maxOpenYear));
     }
+    // 사업자등록번호 중복 제거 (동일 사업자가 지류/모바일 등으로 중복 등재된 경우 1건으로 정규화)
+    const seenBiz = new Set();
+    list = list.filter(m => {
+      const rawBiz = (m.rawBizNumber || '').replace(/\D/g, '');
+      if (rawBiz.length === 10) {
+        if (seenBiz.has(rawBiz)) return false;
+        seenBiz.add(rawBiz);
+      }
+      return true;
+    });
     const primary = list.slice(0, limit).map((m, idx) => ({ seq: idx + 1, ...m }));
     if (includeReservePool) {
       return {
@@ -395,12 +418,18 @@ export async function getMarketMerchants({
     const data = await res.json();
     const rawList = data.list || [];
 
+    const seenBiz = new Set();
     let filtered = rawList.filter(item => {
       if (marketName && item.MRKT_NM && !item.MRKT_NM.includes(marketName.trim()) && !marketName.trim().includes(item.MRKT_NM)) return false;
       if (statusFilter === 'ACTIVE' && item.AFFL_STTS_SE !== '정상가맹') return false;
       if (paymentFilter === 'PAPER' && item.KNPP_HNDL_YN !== 'Y') return false;
       if (paymentFilter === 'DIGITAL' && item.MOBL_HNDL_YN !== 'Y') return false;
       if (maxOpenYear && maxOpenYear !== 'all' && !isWithinMaxOpenYear(item.FRCS_REG_YMD, maxOpenYear)) return false;
+      const rawBizNo = (item.FRCS_ENBRNO || '').replace(/\D/g, '');
+      if (rawBizNo.length === 10) {
+        if (seenBiz.has(rawBizNo)) return false;
+        seenBiz.add(rawBizNo);
+      }
       return true;
     }).map((item, idx) => {
       const rawBizNo = item.FRCS_ENBRNO || '';
@@ -408,7 +437,7 @@ export async function getMarketMerchants({
         seq: idx + 1,
         source: 'ONNURI_PLATFORM',
         marketName: item.MRKT_NM || marketName,
-        companyName: item.ACTL_FRCS_NM || '가맹점명 미기재',
+        companyName: cleanMerchantName(item.ACTL_FRCS_NM || '가맹점명 미기재'),
         bizNumber: formatBizNumber(rawBizNo),
         rawBizNumber: rawBizNo.replace(/\D/g, ''),
         merchantCode: item.FRCS_CD || '',
@@ -465,15 +494,18 @@ export async function getMarketIndustryStats({
     const standardCategories = standardCategoriesTemplate();
     let householdSubstitutes = 0;
     let validYearCount = 0;
+    const seenValidBiz = new Set();
 
     for (const m of market.merchants) {
       const tp = (m.industry || '').trim();
       const isActive = m.status === '정상가맹';
-      const hasBiz = (m.rawBizNumber || '').length === 10;
+      const rawBiz = (m.rawBizNumber || '').replace(/\D/g, '');
+      const hasBiz = rawBiz.length === 10;
       const withinYear = isWithinMaxOpenYear(m.regDate, maxOpenYear);
-      const cName = m.companyName || '';
-
-      if (isActive && hasBiz && withinYear) {
+      const cName = cleanMerchantName(m.companyName || '');
+      const isUniqueValidBiz = isActive && hasBiz && withinYear && !seenValidBiz.has(rawBiz);
+      if (isUniqueValidBiz) {
+        seenValidBiz.add(rawBiz);
         validYearCount++;
       }
 
@@ -481,18 +513,18 @@ export async function getMarketIndustryStats({
         if (cat.onnuriKey === tp) {
           cat.count++;
           if (isActive) cat.active++;
-          if (isActive && hasBiz && withinYear) cat.withBiz++;
+          if (isUniqueValidBiz) cat.withBiz++;
         }
       }
 
-      if (isActive && hasBiz && withinYear && tp === '기타소매업') {
+      if (isUniqueValidBiz && tp === '기타소매업') {
         if (isHouseholdSubstituteMerchant(cName)) {
           householdSubstitutes++;
         }
       }
     }
 
-    logger.info(`[Onnuri Master DB] "${market.marketName}" 업종 통계 인메모리 반환 (전체 ${market.merchants.length}건 / 조건충족 ${validYearCount}건, 소요 0.001초)`);
+    logger.info(`[Onnuri Master DB] "${market.marketName}" 업종 통계 인메모리 반환 (전체 ${market.merchants.length}건 / 고유가용 ${validYearCount}건, 소요 0.001초)`);
     return {
       source: 'MASTER_DB',
       marketName: market.marketName,
@@ -531,6 +563,7 @@ export async function getMarketIndustryStats({
     const standardCategories = standardCategoriesTemplate();
     let householdSubstitutes = 0;
     let validYearCount = 0;
+    const seenValidBiz = new Set();
 
     rawList.forEach(item => {
       if (marketName && item.MRKT_NM && !item.MRKT_NM.includes(marketName.trim()) && !marketName.trim().includes(item.MRKT_NM)) return;
@@ -540,9 +573,11 @@ export async function getMarketIndustryStats({
       const rawBiz = (item.FRCS_ENBRNO || '').replace(/\D/g, '');
       const hasBiz = rawBiz.length === 10;
       const withinYear = isWithinMaxOpenYear(item.FRCS_REG_YMD, maxOpenYear);
-      const cName = item.ACTL_FRCS_NM || '';
+      const cName = cleanMerchantName(item.ACTL_FRCS_NM || '');
+      const isUniqueValidBiz = isActive && hasBiz && withinYear && !seenValidBiz.has(rawBiz);
 
-      if (isActive && hasBiz && withinYear) {
+      if (isUniqueValidBiz) {
+        seenValidBiz.add(rawBiz);
         validYearCount++;
       }
 
@@ -550,11 +585,11 @@ export async function getMarketIndustryStats({
         if (cat.onnuriKey === tp) {
           cat.count++;
           if (isActive) cat.active++;
-          if (isActive && hasBiz && withinYear) cat.withBiz++;
+          if (isUniqueValidBiz) cat.withBiz++;
         }
       }
 
-      if (isActive && hasBiz && withinYear && tp === '기타소매업') {
+      if (isUniqueValidBiz && tp === '기타소매업') {
         if (isHouseholdSubstituteMerchant(cName)) {
           householdSubstitutes++;
         }
@@ -597,11 +632,18 @@ export async function getStratifiedMarketMerchants({
   // 1. 마스터 DB 우선 확인
   const market = findMarketInMasterDB(marketName, regionCode, districtCode);
   if (market && Array.isArray(market.merchants) && market.merchants.length > 0) {
-    const rawPool = market.merchants.filter(m => m.status === '정상가맹' && (m.rawBizNumber || '').length === 10);
+    const seenBiz = new Set();
+    const rawPool = market.merchants.filter(m => {
+      const rawBiz = (m.rawBizNumber || '').replace(/\D/g, '');
+      if (m.status !== '정상가맹' || rawBiz.length !== 10) return false;
+      if (seenBiz.has(rawBiz)) return false;
+      seenBiz.add(rawBiz);
+      return true;
+    });
     validMerchants = rawPool
       .filter(m => isWithinMaxOpenYear(m.regDate, maxOpenYear))
-      .map(m => ({ ...m }));
-    logger.info(`[Onnuri Master DB] "${market.marketName}" 층화 추출 가맹점 풀 로드 (전체 정상가맹 ${rawPool.length}건 중 개업기준 충족 ${validMerchants.length}건)`);
+      .map(m => ({ ...m, companyName: cleanMerchantName(m.companyName) }));
+    logger.info(`[Onnuri Master DB] "${market.marketName}" 층화 추출 가맹점 풀 로드 (전체 고유 정상가맹 ${rawPool.length}건 중 개업기준 충족 ${validMerchants.length}건)`);
   } else {
     // 2. 외부 공인 플랫폼 폴백
     try {
@@ -637,7 +679,7 @@ export async function getStratifiedMarketMerchants({
         seenBiz.add(rawBizNo);
         validMerchants.push({
           marketName: item.MRKT_NM || marketName,
-          companyName: item.ACTL_FRCS_NM || '가맹점명 미기재',
+          companyName: cleanMerchantName(item.ACTL_FRCS_NM || '가맹점명 미기재'),
           bizNumber: formatBizNumber(rawBizNo),
           rawBizNumber: rawBizNo,
           merchantCode: item.FRCS_CD || '',

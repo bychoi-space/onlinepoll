@@ -2006,12 +2006,12 @@ app.post('/api/quota/generate', async (req, res) => {
     baseFields = ['companyName', 'bizNumber', 'ceoName', 'address', 'industry'],
     customFields = [],
     autoEnrich = true,
-    maxOpenYear = 2025,
+    maxOpenYear = 'all',
     resumeFileName = null
   } = req.body;
 
   const count = Math.max(parseInt(targetCount, 10) || 1, 1);
-  const parsedMaxYear = maxOpenYear === 'all' ? null : (parseInt(maxOpenYear, 10) || 2025);
+  const parsedMaxYear = (!maxOpenYear || maxOpenYear === 'all') ? null : (parseInt(maxOpenYear, 10) || null);
 
   const columns = [];
   baseFields.forEach(f => {
@@ -2370,14 +2370,14 @@ app.get('/api/onnuri/markets', async (req, res) => {
 
 // 온누리상품권 전통시장 실시간 업종별 통계 API
 app.get('/api/onnuri/market-stats', async (req, res) => {
-  const { regionCode = '01', districtCode = '', marketName = '', maxOpenYear = '2025' } = req.query;
+  const { regionCode = '01', districtCode = '', marketName = '', maxOpenYear = 'all' } = req.query;
   if (!marketName || !marketName.trim()) {
     return res.status(400).json({ error: '시장명을 입력해 주세요.' });
   }
 
   try {
     const { getMarketIndustryStats } = await import('./engine/onnuri.js');
-    const parsedMaxYear = maxOpenYear === 'all' ? null : (parseInt(maxOpenYear, 10) || 2025);
+    const parsedMaxYear = (!maxOpenYear || maxOpenYear === 'all') ? null : (parseInt(maxOpenYear, 10) || null);
     const stats = await getMarketIndustryStats({
       regionCode,
       districtCode,
@@ -2446,7 +2446,7 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
     enableSmartFallback = true,
     customFields = [],
     autoEnrich = true,
-    maxOpenYear = 2025,
+    maxOpenYear = 'all',
     resumeFileName = null
   } = req.body;
 
@@ -2455,7 +2455,7 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
   }
 
   const count = Math.max(1, Math.min(parseInt(targetCount) || 10, 900));
-  const parsedMaxYear = maxOpenYear === 'all' ? null : (parseInt(maxOpenYear, 10) || 2025);
+  const parsedMaxYear = (!maxOpenYear || maxOpenYear === 'all') ? null : (parseInt(maxOpenYear, 10) || null);
 
   // 온누리 하이브리드 표준 컬럼 정의: [상호] [업종] [사업자번호] [대표자이름] [성별] [나이] [연락처] [개업연월] [주소] [취급품목] [주요품목]
   const baseColumnDefs = [

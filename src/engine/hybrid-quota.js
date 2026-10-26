@@ -757,10 +757,11 @@ export async function buildHybridOnnuriQuota({
             pendingMerchants.push(replacement);
             onnuriList.push(replacement);
             logger.warn(`[Hybrid Quota] "${merchant.companyName}" 개업연도(${yr}년)가 상한(${maxOpenYear}년 이하) 초과로 제외 ➔ 예비 후보 "${replacement.companyName}" 자동 충원`);
+            continue;
           } else {
-            logger.warn(`[Hybrid Quota] "${merchant.companyName}" 개업연도(${yr}년)가 상한(${maxOpenYear}년 이하) 초과로 제외 (추가 예비 후보 없음)`);
+            logger.warn(`[Hybrid Quota] "${merchant.companyName}" 개업연도(${yr}년)가 상한(${maxOpenYear}년 이하)을 초과하나, 상점가 내 추가 예비 후보가 없어 누락 방지를 위해 표본에 유지합니다.`);
           }
-          continue;
+          // 예비 후보가 없는 소규모 상점가에서는 점포 누락 방지를 위해 continue 하지 않음
         }
       }
 
@@ -778,7 +779,7 @@ export async function buildHybridOnnuriQuota({
       // 모든 주소를 100% 공인 도로명주소로 정규화 및 보강
       try {
         finalAddress = await ensureRoadAddress({
-          companyName: merchant.companyName,
+          companyName: String(merchant.companyName || '').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").trim(),
           marketName: merchant.marketName || marketName,
           address: finalAddress,
           bizNumber: merchant.bizNumber
@@ -793,7 +794,7 @@ export async function buildHybridOnnuriQuota({
         source: 'ONNURI_MARKETBZ_HYBRID',
         mbzStatus: mbzFetchStatus, // 'ok' | 'failed' (마켓비즈 연결 실패 시 이어하기에서 재조회)
         marketName: merchant.marketName || marketName || '풍납시장',
-        companyName: merchant.companyName,
+        companyName: String(merchant.companyName || '').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").trim(),
         industry: merchant.targetCategory || merchant.industry || null,
         bizNumber: merchant.bizNumber || null,
         rawBizNumber: merchant.rawBizNumber || (merchant.bizNumber ? merchant.bizNumber.replace(/\D/g, '') : null),

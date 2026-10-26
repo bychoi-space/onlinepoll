@@ -475,6 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentSamplingMode = 'stratified'; // 'stratified' | 'simple'
   let currentMarketStats = null;
+  let wasAutoAllocatedForSmallMarket = false;
   const industryCounts = {
     '농산물': 2,
     '축산물': 2,
@@ -506,7 +507,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const total = getStratifiedTotal();
     if (stratifiedTotalBadge) {
       stratifiedTotalBadge.textContent = `${total}개 설정 완료`;
-      stratifiedTotalBadge.className = total === 24 ? 'badge-total-match' : 'badge-total-mismatch';
+      const smallValidCnt = currentMarketStats && currentMarketStats.validYearCount !== undefined ? currentMarketStats.validYearCount : 0;
+      const isMatched = total === 24 || (smallValidCnt > 0 && smallValidCnt <= 24 && total === smallValidCnt);
+      stratifiedTotalBadge.className = isMatched ? 'badge-total-match' : 'badge-total-mismatch';
     }
     updateQuotaTitle();
   }
@@ -523,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mName = inputOnnuriMarket.value.trim() || '풍납시장';
     const rCode = selectOnnuriRegion.value || '01';
     const dCode = selectOnnuriDistrict.value || '01018';
-    const maxOpenYear = selectMaxOpenYearEl ? selectMaxOpenYearEl.value : '2025';
+    const maxOpenYear = selectMaxOpenYearEl ? selectMaxOpenYearEl.value : 'all';
 
     if (marketStatsStatus) marketStatsStatus.textContent = `${mName} 실시간 조회 중...`;
 
@@ -532,6 +535,22 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error('조회 실패');
       const stats = await res.json();
       currentMarketStats = stats;
+      const validCntForAlloc = stats.validYearCount !== undefined ? stats.validYearCount : (stats.totalRawCount || 0);
+      const isResumeActive = Boolean(inputResumeFileName && inputResumeFileName.value && inputResumeFileName.value.trim());
+      if (!isResumeActive && stats.categories) {
+        if (validCntForAlloc > 0 && validCntForAlloc <= 24) {
+          const cats = stats.categories;
+          STANDARD_INDUSTRIES.forEach(ind => {
+            const stock = cats[ind.key] ? (cats[ind.key].withBiz || 0) : 0;
+            industryCounts[ind.key] = Math.min(100, stock);
+          });
+          wasAutoAllocatedForSmallMarket = true;
+        } else if (validCntForAlloc > 24 && wasAutoAllocatedForSmallMarket) {
+          const preset = { '농산물': 2, '축산물': 2, '수산물': 2, '가공식품': 3, '의류신발': 2, '가정용품': 3, '음식점업': 4, '기타소매': 3, '근린상권': 3 };
+          Object.assign(industryCounts, preset);
+          wasAutoAllocatedForSmallMarket = false;
+        }
+      }
       renderMarketStats(stats);
       renderStratifiedTable();
       updateStratifiedTotal();
@@ -541,8 +560,8 @@ document.addEventListener('DOMContentLoaded', () => {
         marketStatsStatus.textContent = `${mName} (${yearLabel} 가용 ${validCnt}건 / 전체 ${stats.totalRawCount || 0}건)`;
 
         // [소규모 상점가 지능형 지원] 가용 가맹점이 24개 미만인 경우 실보유 전량 추출 유도 안내
-        if (validCnt > 0 && validCnt < 24) {
-          appendLog('info', `[💡 소규모 상점가 감지] "${mName}"은 공인 가용 점포가 총 ${validCnt}개입니다. 24개 미만 구역이므로 상단 [전량추출] 버튼을 누르면 실보유 수량에 100% 맞춰 자동 세팅됩니다.`);
+        if (!isResumeActive && validCnt > 0 && validCnt <= 24) {
+          appendLog('info', `[💡 소규모 상점가 자동 전량배분] "${mName}"의 공인 가용 점포 총 ${validCnt}개 전량이 업종별로 100% 자동 세팅되었습니다.`);
         }
       }
     } catch (err) {
@@ -887,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkAutoEnrich = document.getElementById('check-auto-enrich');
     const autoEnrich = checkAutoEnrich ? checkAutoEnrich.checked : true;
     const selectMaxOpenYear = document.getElementById('max-open-year');
-    const maxOpenYear = selectMaxOpenYear ? selectMaxOpenYear.value : '2025';
+    const maxOpenYear = selectMaxOpenYear ? selectMaxOpenYear.value : 'all';
     const resumeFileName = inputResumeFileName && inputResumeFileName.value ? inputResumeFileName.value.trim() : null;
 
     try {
