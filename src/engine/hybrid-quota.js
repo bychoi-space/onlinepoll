@@ -285,6 +285,30 @@ export function splitHandledAndMainProducts({
     }
   }
 
+  // 1글자 단어(떡, 꽃, 옷, 쌀, 차 등) 2글자 이상 보정 Fail-Safe (Kstat 1순위 검증 통과 보장)
+  if (finalWord && finalWord.length < 2) {
+    const singleCharMap = {
+      '떡': '떡류',
+      '꽃': '화훼',
+      '옷': '의류',
+      '쌀': '곡물',
+      '차': '차류',
+      '닭': '계육',
+      '빵': '제과',
+      '약': '의약품',
+      '책': '서적',
+      '술': '주류',
+      '회': '활어',
+      '밥': '한식',
+      '면': '면류',
+      '죽': '한식',
+      '장': '장류',
+      '김': '해조류'
+    };
+    finalWord = singleCharMap[finalWord] || (finalWord + '류');
+    if (finalWord.length < 2) finalWord = inferCategoryFallback();
+  }
+
   return { handledItems, mainProducts: finalWord };
 }
 

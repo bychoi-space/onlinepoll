@@ -10,6 +10,42 @@ import fs from 'fs';
 import path from 'path';
 import { generateQuotaPersona } from './persona-builder.js';
 
+/**
+ * Kstat Q1_9_1 취급품목 1순위 전용 정규화 헬퍼 (최소 2글자 이상 보장)
+ * - Kstat 검증식: if ($("#Q1_9_1").val().trim().length < 2) alert('[1순위] 내용을 좀 더 자세히 응답해 주십시오.') 원천 차단
+ */
+export function sanitizeKstatHandledItem(rawItem, fallbackCategory = '소매업') {
+  let str = String(rawItem || '').trim();
+  if (!str) str = String(fallbackCategory || '소매업').trim();
+
+  const singleCharMap = {
+    '떡': '떡류',
+    '꽃': '화훼',
+    '옷': '의류',
+    '쌀': '곡물',
+    '차': '차류',
+    '닭': '계육',
+    '빵': '제과',
+    '약': '의약품',
+    '책': '서적',
+    '술': '주류',
+    '회': '활어',
+    '밥': '한식',
+    '면': '면류',
+    '죽': '한식',
+    '장': '장류',
+    '김': '해조류'
+  };
+
+  if (str.length < 2) {
+    str = singleCharMap[str] || (str ? str + '류' : (fallbackCategory || '소매업'));
+  }
+  if (str.length < 2) {
+    str = (fallbackCategory && fallbackCategory.length >= 2) ? fallbackCategory : '소매업';
+  }
+  return str;
+}
+
 // DOM 클릭 안전 유틸 (사람다운 지연 포함, hidden input 오매칭 원천 차단)
 async function safeClick(frame, selector) {
   try {
@@ -435,7 +471,7 @@ export async function runKstatSurvey({
       .replace(/\s+/g, ' ')
       .trim(),
     addressDetail: bizData.addressDetail || '1층',
-    handledItems: bizData.mainProducts || bizData.handledItems || bizData.industry || '소매업',
+    handledItems: sanitizeKstatHandledItem(bizData.mainProducts || bizData.handledItems || bizData.industry, '소매업'),
     industry: bizData.industry || bizData.handledItems || '소매업'
   };
 
@@ -527,7 +563,20 @@ export async function runKstatSurvey({
       // Kstat 공식 규칙: @Q1_7 = 7(음식점업), 9(근린생활서비스) -> Q1_8 보기 4(서비스업) / 그 외 1~6, 8 -> Q1_8 보기 2(소매업)
       const q18Val = persona.industryMeta.q1_8_val || (q17Val === '7' || q17Val === '9' ? '4' : '2');
       await safeClick(page, `#Q1_8_${q18Val}`);
-      await safeFill(page, '#Q1_9_1', biz.handledItems);
+
+      // 취급품목 1순위: Kstat 최소 2글자 이상 강제 유효성 검사 원천 방어 (1글자 입력 시 Alert 차단)
+      const safeItem1 = sanitizeKstatHandledItem(biz.handledItems || persona.industryMeta?.categoryName, '소매업');
+      await safeFill(page, '#Q1_9_1', safeItem1);
+
+      // Q1_9_2(2순위), Q1_9_3(3순위)가 존재하고 1글자일 경우 동일하게 Alert 방어
+      await page.evaluate(() => {
+        ['#Q1_9_2', '#Q1_9_3'].forEach(sel => {
+          const el = document.querySelector(sel);
+          if (el && el.value && el.value.trim().length === 1) {
+            el.value = el.value.trim() + '류';
+          }
+        });
+      }).catch(err => console.error('Q1_9_2/3 방어 오류:', err));
 
       await itemDelay();
       await safeFill(page, '#Q1_10', biz.ceoName);
