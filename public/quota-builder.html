@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
   <link rel="stylesheet" href="campaign.css">
-  <link rel="stylesheet" href="custom-styles.css">
+  <link rel="stylesheet" href="custom-styles.css?v=20261026_02">
 </head>
 <body>
 
@@ -170,10 +170,22 @@
             <div class="qb-field-group mt-10">
               <label for="onnuri-market-name" class="qb-label">전통시장 / 상점가명 <span class="required">*</span></label>
               <div class="qb-inline-input-row">
-                <input type="text" id="onnuri-market-name" class="figma-input qb-input" value="" placeholder="예: 풍납시장, 다산역 로데오 상점가, 덕소상점가 등" />
+                <input type="text" id="onnuri-market-name" class="figma-input qb-input" list="onnuri-market-datalist" value="" placeholder="예: 풍납시장, 다산역 로데오 상점가, 덕소상점가 등" />
+                <datalist id="onnuri-market-datalist"></datalist>
                 <button type="button" id="btn-scan-market-stats" class="qb-btn-scan">
                   <i class="fa-solid fa-chart-pie"></i> 현황조회
                 </button>
+              </div>
+            </div>
+
+            <!-- 특정 시/군/구 공인 상점가·전통시장 원클릭 빠른 선택 칩 영역 -->
+            <div id="district-quick-markets-wrap" class="district-quick-markets-wrap hidden mt-8">
+              <div class="quick-markets-header">
+                <span class="quick-markets-title"><i class="fa-solid fa-location-dot text-primary-color"></i> <strong id="quick-district-name">남양주시</strong> 공인 상점가·시장 바로 선택:</span>
+                <span id="quick-markets-count" class="quick-markets-count-badge">0개</span>
+              </div>
+              <div id="district-quick-markets" class="quick-markets-chips-list">
+                <!-- JS 동적 렌더링 -->
               </div>
             </div>
 
@@ -214,6 +226,7 @@
                 <h5 class="qb-allocation-title"><i class="fa-solid fa-sliders"></i> 업종별 쿼터 배분 설정</h5>
                 <div class="qb-preset-bar">
                   <button type="button" id="btn-preset-24" class="qb-btn-chip">24개 표준</button>
+                  <button type="button" id="btn-preset-all-stock" class="qb-btn-chip btn-chip-highlight" title="시장 실보유 전량 추출"><i class="fa-solid fa-boxes-stacked"></i> 전량추출</button>
                   <button type="button" id="btn-preset-equal" class="qb-btn-chip">균등</button>
                   <button type="button" id="btn-preset-proportional" class="qb-btn-chip">비례</button>
                   <button type="button" id="btn-preset-reset" class="qb-btn-chip">초기화</button>
@@ -254,13 +267,13 @@
             </div>
             <div class="qb-field-group">
               <select id="max-open-year" class="figma-select qb-input">
-                <option value="2025" selected>2025년 이하 개업 (권장 - 2026년 설문 유효성 통과 규격)</option>
-                <option value="2024">2024년 이하 개업 (1년 이상 정상영업 소상공인)</option>
-                <option value="2023">2023년 이하 개업 (2년 이상 업력)</option>
-                <option value="all">제한 없음 (전체 개업연도 허용)</option>
+                <option value="all" selected>제한 없음 (전체 온누리 가맹점 100% 수용 - 권장)</option>
+                <option value="2026">2026년 이하 등록 (최신 신규 가맹점 포함)</option>
+                <option value="2025">2025년 이하 등록 (1년 이상 업력 필터)</option>
+                <option value="2024">2024년 이하 등록 (2년 이상 업력 필터)</option>
               </select>
               <p class="qb-helper-text">
-                1차로 기준연도 이하 개업 점포를 우선 선발하며, 시장 내 목표 수량 부족 시 누락 없이 정원을 채웁니다.
+                온누리 가맹점 등록일 기준이며, 상세 개업연월은 2단계 마켓비즈에서 1:1 매칭되어 100% 정합성을 보장합니다.
               </p>
             </div>
             <div class="qb-enrich-toggle-box mt-10">
@@ -436,7 +449,7 @@
     </div>
   </main>
 
-  <script type="module" src="quota-builder.js?v=20261016_11"></script>
+  <script type="module" src="quota-builder.js?v=20261026_02"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

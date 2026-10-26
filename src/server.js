@@ -2213,6 +2213,18 @@ app.get('/api/onnuri/districts', async (req, res) => {
   }
 });
 
+// 온누리상품권 특정 시/군/구(또는 시/도)의 공인 전통시장·상점가 목록 API
+app.get('/api/onnuri/markets', async (req, res) => {
+  const { regionCode = '', districtCode = '' } = req.query;
+  try {
+    const { getMarketsByDistrict } = await import('./engine/onnuri.js');
+    const markets = getMarketsByDistrict(regionCode, districtCode);
+    res.json(markets);
+  } catch (err) {
+    res.status(500).json({ error: '시장 목록 조회 실패: ' + err.message });
+  }
+});
+
 // 온누리상품권 전통시장 실시간 업종별 통계 API
 app.get('/api/onnuri/market-stats', async (req, res) => {
   const { regionCode = '01', districtCode = '', marketName = '', maxOpenYear = '2025' } = req.query;
@@ -2299,7 +2311,7 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
     return res.status(400).json({ error: '대상 전통시장명을 입력해 주세요 (예: 풍납시장)' });
   }
 
-  const count = Math.max(1, Math.min(parseInt(targetCount) || 10, 100));
+  const count = Math.max(1, Math.min(parseInt(targetCount) || 10, 900));
   const parsedMaxYear = maxOpenYear === 'all' ? null : (parseInt(maxOpenYear, 10) || 2025);
 
   // 온누리 하이브리드 표준 컬럼 정의: [상호] [업종] [사업자번호] [대표자이름] [성별] [나이] [연락처] [개업연월] [주소] [취급품목] [주요품목]

@@ -4164,7 +4164,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .qb-left-card .input-stepper {
-  width: 34px !important;
+  width: 40px !important;
   height: 28px !important;
   font-size: 12.5px !important;
 }
@@ -6090,6 +6090,118 @@ body.monitor-drawer-open .floating-monitor-launcher {
   margin-top: 5px !important;
   line-height: 1.4;
 }
+
+/* ==========================================================================
+   [신규] 시/군/구 공인 상점가·전통시장 원클릭 빠른 선택 칩 & 전량 추출 스타일
+   ========================================================================== */
+.district-quick-markets-wrap {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+}
+
+.district-quick-markets-wrap:hover {
+  border-color: #38bdf8;
+  background: #f0f9ff;
+}
+
+.quick-markets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.quick-markets-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quick-markets-title strong {
+  color: #0284c7;
+}
+
+.quick-markets-count-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.quick-markets-chips-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.quick-market-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.quick-market-chip:hover {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
+}
+
+.quick-market-chip:hover .chip-cnt {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.quick-market-chip.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+  font-weight: 700;
+}
+
+.quick-market-chip .chip-cnt {
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.btn-chip-highlight {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  font-weight: 700 !important;
+}
+
+.btn-chip-highlight:hover {
+  background: linear-gradient(135deg, #0369a1, #1d4ed8) !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3) !important;
+}
+
 
 
 

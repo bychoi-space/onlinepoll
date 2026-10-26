@@ -123,33 +123,74 @@ export function findMarketInMasterDB(marketName = '', regionCode = '', districtC
     }
   }
 
-  // 3차: 키워드 상호 포함 매칭 ('풍납전통시장' vs '풍납시장' 등)
-  const candidates = [];
+  // 3차: 지능형 스코어링 매칭 (접두사 일치, 형태소 유사도, 지역/구 일치)
+  const scoredCandidates = [];
   for (const [mName, mData] of Object.entries(db.markets)) {
     const cleanName = mName.replace(/\s+/g, '');
-    if (cleanName.includes(cleanQuery) || cleanQuery.includes(cleanName)) {
-      candidates.push(mData);
+    let score = 0;
+
+    // 접두사 일치 ('도농상점가' startsWith '도농') -> 최고 점수 (포항죽도농산물시장 등의 오매칭 원천 차단)
+    if (cleanName.startsWith(cleanQuery)) {
+      score += 100;
+    } else if (cleanQuery.startsWith(cleanName)) {
+      score += 90;
+    } else if (cleanName.includes(cleanQuery) || cleanQuery.includes(cleanName)) {
+      score += 40;
+    } else {
+      continue;
     }
+
+    // 지역/구 코드 일치 가중치
+    if (districtCode && mData.districtCode === districtCode) {
+      score += 50;
+    }
+    if (regionCode && mData.regionCode === regionCode) {
+      score += 20;
+    }
+
+    // 검색어 길이 대비 시장명 길이 차이 페널티 (유사도 반영)
+    const lenDiff = Math.abs(cleanName.length - cleanQuery.length);
+    score -= Math.min(lenDiff, 20);
+
+    scoredCandidates.push({ data: mData, score, cleanName });
   }
 
-  if (candidates.length === 1) {
-    return candidates[0];
-  }
-
-  // 복수 후보 중 지역/구 코드 일치하는 항목 우선순위
-  if (candidates.length > 1) {
-    if (districtCode) {
-      const matchDist = candidates.find(c => c.districtCode === districtCode);
-      if (matchDist) return matchDist;
-    }
-    if (regionCode) {
-      const matchReg = candidates.find(c => c.regionCode === regionCode);
-      if (matchReg) return matchReg;
-    }
-    return candidates[0];
+  if (scoredCandidates.length > 0) {
+    scoredCandidates.sort((a, b) => b.score - a.score);
+    return scoredCandidates[0].data;
   }
 
   return null;
+}
+
+/**
+ * 특정 시/군/구(또는 시/도)의 시장·상점가 목록 조회 (가맹점 수 내림차순 정렬)
+ */
+export function getMarketsByDistrict(regionCode = '', districtCode = '') {
+  const db = getMasterDB();
+  if (!db || !db.markets) return [];
+
+  const list = [];
+  for (const [mName, mData] of Object.entries(db.markets)) {
+    if (regionCode && mData.regionCode && mData.regionCode !== regionCode) continue;
+    if (districtCode && mData.districtCode && mData.districtCode !== districtCode) continue;
+
+    const count = mData.merchantCount || (Array.isArray(mData.merchants) ? mData.merchants.length : 0);
+    list.push({
+      marketName: mData.marketName,
+      regionCode: mData.regionCode,
+      regionName: mData.regionName || '',
+      districtCode: mData.districtCode,
+      districtName: mData.districtName || '',
+      merchantCount: count
+    });
+  }
+
+  // 가맹점 수 내림차순 정렬 (동점 시 가나다순)
+  return list.sort((a, b) => {
+    if (b.merchantCount !== a.merchantCount) return b.merchantCount - a.merchantCount;
+    return a.marketName.localeCompare(b.marketName, 'ko');
+  });
 }
 
 /**

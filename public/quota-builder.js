@@ -23,6 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectOnnuriDistrict = document.getElementById('onnuri-district');
   const inputOnnuriMarket = document.getElementById('onnuri-market-name');
   const inputOnnuriCount = document.getElementById('onnuri-quota-count');
+  const datalistOnnuriMarkets = document.getElementById('onnuri-market-datalist');
+  const wrapQuickMarkets = document.getElementById('district-quick-markets-wrap');
+  const listQuickMarkets = document.getElementById('district-quick-markets');
+  const labelQuickDistrictName = document.getElementById('quick-district-name');
+  const badgeQuickMarketsCount = document.getElementById('quick-markets-count');
 
   // [신규] 층화 표본 추출 및 업종별 쿼터 엘리먼트
   const btnScanMarketStats = document.getElementById('btn-scan-market-stats');
@@ -36,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const stratifiedTotalBadge = document.getElementById('stratified-total-badge');
   const checkSmartFallback = document.getElementById('check-smart-fallback');
   const btnPreset24 = document.getElementById('btn-preset-24');
+  const btnPresetAllStock = document.getElementById('btn-preset-all-stock');
   const btnPresetEqual = document.getElementById('btn-preset-equal');
   const btnPresetProportional = document.getElementById('btn-preset-proportional');
   const btnPresetReset = document.getElementById('btn-preset-reset');
@@ -269,6 +275,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  async function loadOnnuriMarketsForDistrict(regionCode, districtCode, districtName = '') {
+    if (!regionCode || !districtCode) {
+      if (wrapQuickMarkets) wrapQuickMarkets.classList.add('hidden');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/onnuri/markets?regionCode=${encodeURIComponent(regionCode)}&districtCode=${encodeURIComponent(districtCode)}`);
+      const markets = await res.json();
+      if (!Array.isArray(markets)) return;
+
+      // 1. datalist 갱신 (자동완성 제안)
+      if (datalistOnnuriMarkets) {
+        datalistOnnuriMarkets.innerHTML = markets.map(m => `
+          <option value="${escapeHtml(m.marketName)}">${escapeHtml(m.marketName)} (공인 가맹점 ${m.merchantCount}개)</option>
+        `).join('');
+      }
+
+      // 2. 상점가 빠른 원클릭 선택 칩 렌더링
+      if (wrapQuickMarkets && listQuickMarkets) {
+        if (markets.length > 0) {
+          wrapQuickMarkets.classList.remove('hidden');
+          if (labelQuickDistrictName) labelQuickDistrictName.textContent = districtName || '해당 지역';
+          if (badgeQuickMarketsCount) badgeQuickMarketsCount.textContent = `${markets.length}개 상점가·시장`;
+
+          listQuickMarkets.innerHTML = markets.map(m => {
+            const isSelected = inputOnnuriMarket && inputOnnuriMarket.value.trim() === m.marketName;
+            return `
+              <button type="button" class="quick-market-chip ${isSelected ? 'active' : ''}" data-name="${escapeHtml(m.marketName)}" title="${escapeHtml(m.marketName)} (클릭 시 자동 입력 및 현황조회)">
+                <span>${escapeHtml(m.marketName)}</span>
+                <span class="chip-cnt">${m.merchantCount}개</span>
+              </button>
+            `;
+          }).join('');
+
+          // 칩 클릭 이벤트: 입력창에 이름 대입 후 즉시 현황조회 실행
+          listQuickMarkets.querySelectorAll('.quick-market-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const name = btn.getAttribute('data-name');
+              if (inputOnnuriMarket) {
+                inputOnnuriMarket.value = name;
+                updateQuotaTitle();
+              }
+              listQuickMarkets.querySelectorAll('.quick-market-chip').forEach(c => c.classList.remove('active'));
+              btn.classList.add('active');
+              fetchMarketStats();
+            });
+          });
+        } else {
+          wrapQuickMarkets.classList.add('hidden');
+        }
+      }
+    } catch (err) {
+      console.warn('온누리 시장 목록 로드 실패:', err);
+    }
+  }
+
   async function loadOnnuriDistricts(regionCode) {
     try {
       const res = await fetch(`/api/onnuri/districts?regionCode=${regionCode}`);
@@ -278,6 +341,12 @@ document.addEventListener('DOMContentLoaded', () => {
       selectOnnuriDistrict.innerHTML = districts.map(d => `
         <option value="${escapeHtml(d.code)}" ${d.name.includes('송파') ? 'selected' : ''}>${escapeHtml(d.name)}</option>
       `).join('');
+
+      // 선택된 시군구의 시장/상점가 목록 즉시 로드
+      const selectedDist = districts.find(d => d.name.includes('송파')) || districts[0];
+      if (selectedDist) {
+        await loadOnnuriMarketsForDistrict(regionCode, selectedDist.code, selectedDist.name);
+      }
     } catch (err) {
       appendLog('error', `온누리 시군구 목록 로드 실패: ${err.message}`);
     }
@@ -285,6 +354,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   selectOnnuriRegion.addEventListener('change', (e) => {
     loadOnnuriDistricts(e.target.value);
+  });
+
+  selectOnnuriDistrict.addEventListener('change', (e) => {
+    const rCode = selectOnnuriRegion.value;
+    const dCode = e.target.value;
+    const selectedOption = e.target.options[e.target.selectedIndex];
+    const dName = selectedOption ? selectedOption.textContent : '';
+    loadOnnuriMarketsForDistrict(rCode, dCode, dName);
   });
 
   // ==========================================
@@ -422,6 +499,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const validCnt = stats.validYearCount !== undefined ? stats.validYearCount : (stats.totalRawCount || 0);
         const yearLabel = maxOpenYear === 'all' ? '전체' : `${maxOpenYear}년 이하`;
         marketStatsStatus.textContent = `${mName} (${yearLabel} 가용 ${validCnt}건 / 전체 ${stats.totalRawCount || 0}건)`;
+
+        // [소규모 상점가 지능형 지원] 가용 가맹점이 24개 미만인 경우 실보유 전량 추출 유도 안내
+        if (validCnt > 0 && validCnt < 24) {
+          appendLog('info', `[💡 소규모 상점가 감지] "${mName}"은 공인 가용 점포가 총 ${validCnt}개입니다. 24개 미만 구역이므로 상단 [전량추출] 버튼을 누르면 실보유 수량에 100% 맞춰 자동 세팅됩니다.`);
+        }
       }
     } catch (err) {
       if (marketStatsStatus) marketStatsStatus.textContent = '통계 조회 오류';
@@ -480,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="stratified-col-input">
             <div class="stepper-control">
               <button type="button" class="btn-stepper btn-minus" data-key="${ind.key}">-</button>
-              <input type="text" class="input-stepper" data-key="${ind.key}" value="${val}" readonly />
+              <input type="text" class="input-stepper" data-key="${ind.key}" value="${val}" />
               <button type="button" class="btn-stepper btn-plus" data-key="${ind.key}">+</button>
             </div>
           </div>
@@ -503,10 +585,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
+    stratifiedGridTable.querySelectorAll('.input-stepper').forEach(inp => { inp.addEventListener('change', () => { const k = inp.getAttribute('data-key'); const parsed = parseInt(inp.value, 10); industryCounts[k] = isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed)); renderStratifiedTable(); updateStratifiedTotal(); }); });
     stratifiedGridTable.querySelectorAll('.btn-plus').forEach(btn => {
       btn.addEventListener('click', () => {
         const k = btn.getAttribute('data-key');
-        if (industryCounts[k] < 50) {
+        if (industryCounts[k] < 100) {
           industryCounts[k]++;
           renderStratifiedTable();
           updateStratifiedTotal();
@@ -523,6 +606,25 @@ document.addEventListener('DOMContentLoaded', () => {
       renderStratifiedTable();
       updateStratifiedTotal();
       appendLog('info', '24개 표준 쿼터 프리셋이 적용되었습니다 (합계 24개).');
+    });
+  }
+
+  if (btnPresetAllStock) {
+    btnPresetAllStock.addEventListener('click', () => {
+      if (!currentMarketStats || !currentMarketStats.categories) {
+        alert('먼저 시장 현황 조회를 완료해 주세요.');
+        return;
+      }
+      const cats = currentMarketStats.categories;
+      let totalAll = 0;
+      STANDARD_INDUSTRIES.forEach(ind => {
+        const stock = cats[ind.key] ? (cats[ind.key].withBiz || 0) : 0;
+        industryCounts[ind.key] = Math.min(100, stock);
+        totalAll += industryCounts[ind.key];
+      });
+      renderStratifiedTable();
+      updateStratifiedTotal();
+      appendLog('info', `[전량 추출 적용] 현재 상점가 실보유 가용 점포 총 ${totalAll}개가 100% 배분되었습니다.`);
     });
   }
 
