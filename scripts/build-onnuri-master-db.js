@@ -110,7 +110,7 @@ export async function buildMasterDB(options = {}) {
   }
 
   // 전통시장 + 일반상점가 + 골목형상점가 + 로데오 + 지하쇼핑센터/몰 키워드 전수 스캔
-  const SEARCH_KEYWORDS = ['시장', '상점', '상가', '골목', '로데오', '센터', '지하', '몰'];
+  const SEARCH_KEYWORDS = ['시장', '상점', '상가', '골목', '로데오', '센터', '지하', '몰', '타운', '프라자', '벨포스트'];
 
   // 대상 지역 필터링
   let targetRegions = regions;

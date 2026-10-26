@@ -1,8 +1,13 @@
 import { execSync, spawn } from 'child_process';
+import crypto from 'crypto';
+
+const AUTH_COOKIE = 'autosurvey_auth=' + crypto.createHmac('sha256', 'autosurvey_secure_salt_2026').update('2265').digest('hex');
 
 async function checkIsRunning() {
   try {
-    const res = await fetch('http://127.0.0.1:3000/api/survey/status');
+    const res = await fetch('http://127.0.0.1:3000/api/survey/status', {
+      headers: { Cookie: AUTH_COOKIE }
+    });
     if (!res.ok) return { isRunning: false };
     return await res.json();
   } catch (_) {

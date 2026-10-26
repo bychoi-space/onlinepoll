@@ -113,7 +113,7 @@ function normalizeMarketSynonym(str = '') {
 function extractMarketCoreKey(str = '') {
   return normalizeMarketSynonym(str)
     .replace(/\(.*?\)/g, '')
-    .replace(/골목형상점가|전통시장|종합시장|중앙시장|상점가|지하센터|센터|시장|상가|몰/g, '');
+    .replace(/(골목형상점가|전통시장|종합시장|상점가|지하센터|센터|시장|상가|몰)$/g, '');
 }
 
 /**
@@ -130,18 +130,26 @@ export function findMarketInMasterDB(marketName = '', regionCode = '', districtC
   const synQuery = normalizeMarketSynonym(rawQuery);
   const coreQuery = extractMarketCoreKey(rawQuery);
 
-  // 1차: 완전 일치
+  // 1차: 완전 일치 (단, 지역 코드가 지정된 경우 동일 지역 우선 확인)
   if (db.markets[rawQuery]) {
-    return db.markets[rawQuery];
+    const exact = db.markets[rawQuery];
+    if (!regionCode || !exact.regionCode || exact.regionCode === regionCode) {
+      return exact;
+    }
   }
 
   // 2차: 공백 제거 일치 또는 동의어 정규화 완전 일치 (예: '잠실역지하센터' === '잠실역지하쇼핑센터')
+  let fallbackExact = null;
   for (const [mName, mData] of Object.entries(db.markets)) {
     const cleanName = mName.replace(/\s+/g, '');
-    if (cleanName === cleanQuery || normalizeMarketSynonym(mName) === synQuery) {
-      return mData;
+    if (cleanName === cleanQuery || (synQuery.length >= 2 && normalizeMarketSynonym(mName) === synQuery)) {
+      if (!regionCode || !mData.regionCode || mData.regionCode === regionCode) {
+        return mData;
+      }
+      if (!fallbackExact) fallbackExact = mData;
     }
   }
+  if (fallbackExact) return fallbackExact;
 
   // 3차: 지능형 스코어링 매칭 (접두사 일치, 동의어 포함, 형태소 유사도, 지역/구 일치)
   const scoredCandidates = [];
@@ -149,32 +157,46 @@ export function findMarketInMasterDB(marketName = '', regionCode = '', districtC
     const cleanName = mName.replace(/\s+/g, '');
     const synName = normalizeMarketSynonym(mName);
     const coreName = extractMarketCoreKey(mName);
-    let score = 0;
+    if (cleanName.length < 2 || cleanQuery.length < 2) continue;
 
-    // 접두사 일치 ('도농상점가' startsWith '도농') -> 최고 점수
-    if (cleanName.startsWith(cleanQuery) || synName.startsWith(synQuery)) {
+    // 지역(시/도)이 명시된 경우 타 시/도의 부분 일치 후보가 오매칭되는 것을 원천 차단
+    const isSameRegion = !regionCode || !mData.regionCode || mData.regionCode === regionCode;
+    const isSameDistrict = Boolean(districtCode && mData.districtCode === districtCode);
+
+    let score = 0;
+    const canCompareCore = coreQuery.length >= 2 && coreName.length >= 2;
+
+    // 접두사 일치 ('벨포스트(구 에리어식스)' startsWith '벨포스트', '도농상점가' startsWith '도농') -> 최고 점수
+    if (cleanName.startsWith(cleanQuery) || (synQuery.length >= 2 && synName.startsWith(synQuery))) {
       score += 100;
-    } else if (cleanQuery.startsWith(cleanName) || synQuery.startsWith(synName)) {
+    } else if (cleanQuery.startsWith(cleanName) || (synName.length >= 2 && synQuery.startsWith(synName))) {
       score += 90;
-    } else if (coreQuery.length >= 2 && coreName === coreQuery) {
+    } else if (canCompareCore && coreName === coreQuery) {
       score += 85;
     } else if (
-      cleanName.includes(cleanQuery) ||
-      cleanQuery.includes(cleanName) ||
-      synName.includes(synQuery) ||
-      synQuery.includes(synName) ||
-      (coreQuery.length >= 2 && (coreName.includes(coreQuery) || coreQuery.includes(coreName)))
+      isSameRegion && (
+        cleanName.includes(cleanQuery) ||
+        cleanQuery.includes(cleanName) ||
+        (synQuery.length >= 2 && synName.length >= 2 && (synName.includes(synQuery) || synQuery.includes(synName))) ||
+        (canCompareCore && (coreName.includes(coreQuery) || coreQuery.includes(coreName)))
+      )
     ) {
       score += 40;
     } else {
       continue;
     }
 
+    // 타 시/도 후보인 경우 핵심어 완전 일치(score >= 85) 이상만 허용하고 감점 적용
+    if (!isSameRegion) {
+      if (score < 85) continue;
+      score -= 40;
+    }
+
     // 지역/구 코드 일치 가중치
-    if (districtCode && mData.districtCode === districtCode) {
+    if (isSameDistrict) {
       score += 50;
     }
-    if (regionCode && mData.regionCode === regionCode) {
+    if (isSameRegion && regionCode) {
       score += 20;
     }
 
@@ -182,7 +204,9 @@ export function findMarketInMasterDB(marketName = '', regionCode = '', districtC
     const lenDiff = Math.abs(synName.length - synQuery.length);
     score -= Math.min(lenDiff, 20);
 
-    scoredCandidates.push({ data: mData, score, cleanName });
+    if (score >= 30) {
+      scoredCandidates.push({ data: mData, score, cleanName });
+    }
   }
 
   if (scoredCandidates.length > 0) {
