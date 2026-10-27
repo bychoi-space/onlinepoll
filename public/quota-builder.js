@@ -81,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const panelResumeSelector = document.getElementById('panel-resume-selector');
   const resumeStatusHint = document.getElementById('resume-status-hint');
   const btnResumeFailedQuota = document.getElementById('btn-resume-failed-quota');
+  const panelPolicyEnrich = document.getElementById('panel-policy-enrich');
+  const panelColumnSettings = document.getElementById('panel-column-settings');
 
   const customFields = [];
   let lastCreatedQuota = null;
@@ -245,6 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
       sectionOnnuri.classList.add('hidden');
       sectionMarketBz.classList.add('hidden');
       if (sectionExcel) sectionExcel.classList.add('hidden');
+      if (panelPolicyEnrich) panelPolicyEnrich.classList.add('hidden');
+      if (panelColumnSettings) panelColumnSettings.classList.add('hidden');
+      if (panelResumeSelector) panelResumeSelector.classList.add('hidden');
       if (!preserveResume) {
         inputTitle.value = '2026_경기도_소상공인패널_54개_메트릭스쿼터';
       }
@@ -253,6 +258,9 @@ document.addEventListener('DOMContentLoaded', () => {
       tabMarketBz.classList.remove('active');
       sectionOnnuri.classList.add('hidden');
       sectionMarketBz.classList.add('hidden');
+      if (panelPolicyEnrich) panelPolicyEnrich.classList.add('hidden');
+      if (panelColumnSettings) panelColumnSettings.classList.add('hidden');
+      if (panelResumeSelector) panelResumeSelector.classList.add('hidden');
       if (!preserveResume) {
         const mkt = (inputExcelMarket && inputExcelMarket.value.trim()) || '전통시장';
         inputTitle.value = `2026_${mkt}_엑셀업로드_조사쿼터`;
@@ -265,6 +273,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       sectionMarketBz.classList.remove('hidden');
       sectionOnnuri.classList.add('hidden');
+      if (panelPolicyEnrich) panelPolicyEnrich.classList.add('hidden');
+      if (panelColumnSettings) panelColumnSettings.classList.remove('hidden');
+      if (panelResumeSelector) panelResumeSelector.classList.remove('hidden');
 
       if (!preserveResume) inputTitle.value = '2026_소프트웨어_사업자_조사쿼터';
     } else {
@@ -275,6 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       sectionMarketBz.classList.add('hidden');
       sectionOnnuri.classList.remove('hidden');
+      if (panelPolicyEnrich) panelPolicyEnrich.classList.remove('hidden');
+      if (panelColumnSettings) panelColumnSettings.classList.remove('hidden');
+      if (panelResumeSelector) panelResumeSelector.classList.remove('hidden');
 
       if (!preserveResume) {
         updateQuotaTitle();
