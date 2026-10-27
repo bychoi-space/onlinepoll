@@ -27,6 +27,7 @@ import { scrapeKstatAssocSlots } from './engine/kstat-assoc-slot-scraper.js';
 import { runKstatAssocSurvey } from './engine/kstat-assoc-runner.js';
 import { getIndustryGroupKey } from './engine/persona-builder.js';
 import { syncKstatSlotStatus, syncCampaignKstatSlots } from './engine/kstat-sync.js';
+import { scrapeMetrixSlots } from './engine/metrix-slot-scraper.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -946,7 +947,7 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
 
   try {
     const quotaMeta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
-    const businesses = quotaMeta.data || [];
+    const businesses = quotaMeta.data || quotaMeta.rows || [];
 
     const campTitle = title || quotaMeta.title || `새 설문조사 (${path.basename(safeFilename, '.json')})`;
 
@@ -2664,6 +2665,60 @@ app.post('/api/quota/generate-onnuri', async (req, res) => {
   }
 });
 
+// 메트릭스(Metrix GetData) 조사 시스템 실시간 쿼터 동기화 API
+app.post('/api/quota/sync-metrix', async (req, res) => {
+  const {
+    title = '2026_경기도_소상공인패널_54개_메트릭스쿼터',
+    surveyUrl = 'https://survey.metrix.co.kr/Contact/?SNUM=622',
+    loginId = '강영미',
+    loginPw = '5254'
+  } = req.body;
+
+  if (!surveyUrl || !surveyUrl.trim()) {
+    return res.status(400).json({ error: '메트릭스 설문조사 URL을 입력해 주세요.' });
+  }
+
+  const snumMatch = surveyUrl.match(/SNUM=(\d+)/i);
+  const snum = snumMatch ? snumMatch[1] : '622';
+
+  logger.info(`[Metrix 쿼터 동기화] 시작: SNUM=${snum}, 계정="${loginId}", URL="${surveyUrl}"`);
+
+  try {
+    const result = await scrapeMetrixSlots({
+      snum,
+      loginId: (loginId || '강영미').trim(),
+      loginPw: (loginPw || '5254').trim(),
+      title: title.trim(),
+      surveyUrl: surveyUrl.trim()
+    });
+
+    const jsonFileName = result.jsonFileName || path.basename(result.savedJsonPath);
+    const excelFileName = result.excelFileName || path.basename(result.savedXlsxPath);
+
+    logger.success(`[Metrix 쿼터 동기화] 완료: 총 ${result.totalCount}개 대상체 쿼터 확보 (${jsonFileName})`);
+
+    return res.json({
+      success: true,
+      message: `메트릭스(SNUM ${snum}) 시스템에서 총 ${result.totalCount}개 대상체 쿼터가 성공적으로 동기화되었습니다!`,
+      title: title.trim(),
+      type: 'METRIX_PANEL',
+      count: result.totalCount,
+      targetTotal: result.totalCount,
+      isComplete: true,
+      columns: result.quotaDbData.columns,
+      data: result.quotaDbData.data,
+      rows: result.quotaDbData.rows,
+      jsonFileName,
+      excelFileName,
+      jsonDownloadUrl: `/api/quota/download/${jsonFileName}`,
+      excelDownloadUrl: `/api/quota/download/${excelFileName}`
+    });
+  } catch (err) {
+    logger.error(`[Metrix 쿼터 동기화] 오류 발생: ${err.message}`);
+    return res.status(500).json({ error: `메트릭스 쿼터 동기화 실패: ${err.message}` });
+  }
+});
+
 // [쿼터 관리 허브 API]
 // 1. 생성된 쿼터 목록 조회 (업종별 분포 및 통계 포함)
 app.get('/api/quota/list', (req, res) => {
@@ -2673,7 +2728,7 @@ app.get('/api/quota/list', (req, res) => {
       const content = JSON.parse(fs.readFileSync(path.join(quotasDir, f), 'utf-8'));
       const excelName = f.replace('.json', '.xlsx');
       const hasExcel = fs.existsSync(path.join(quotasDir, excelName));
-      const data = content.data || [];
+      const data = content.data || content.rows || [];
 
       // 업종별 표본 분포 실시간 집계
       const industryDist = {};

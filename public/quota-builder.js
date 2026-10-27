@@ -16,6 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const sectionExcel = document.getElementById('section-excel-mode');
   const inputExcelMarket = document.getElementById('excel-market-name');
   const inputExcelFile = document.getElementById('input-excel-quota-file');
+  const tabMetrix = document.getElementById('tab-mode-metrix');
+  const sectionMetrix = document.getElementById('section-metrix-mode');
+  const inputMetrixUrl = document.getElementById('metrix-survey-url');
+  const inputMetrixId = document.getElementById('metrix-login-id');
+  const inputMetrixPw = document.getElementById('metrix-login-pw');
 
   // 공통 & 마켓비즈 인풋
   const inputTitle = document.getElementById('quota-title');
@@ -186,6 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resumeFile) {
       btnGenerate.innerHTML = `<i class="fa-solid fa-rotate-right"></i> 실패/중단 지점부터 쿼터 이어하기 업데이트 (기존 데이터 보존)`;
     } else if (mode === 'onnuri') {
+      } else if (mode === 'metrix') {
+      btnGenerate.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 메트릭스 패널 쿼터 실시간 동기화 (JSON & Excel)';
+    } else if (mode === 'onnuri') {
       btnGenerate.innerHTML = '<i class="fa-solid fa-store"></i> 온누리 ➔ 마켓비즈 연계 쿼터 만들기 (JSON & Excel)';
     } else if (mode === 'excel') {
       btnGenerate.innerHTML = '<i class="fa-solid fa-file-arrow-up"></i> 선택한 Excel 파일로 조사 쿼터 즉시 등록 (JSON & Excel)';
@@ -227,7 +235,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (tabExcel) tabExcel.classList.toggle('active', mode === 'excel');
     if (sectionExcel) sectionExcel.classList.toggle('hidden', mode !== 'excel');
-    if (mode === 'excel') {
+    if (tabMetrix) tabMetrix.classList.toggle('active', mode === 'metrix');
+    if (sectionMetrix) sectionMetrix.classList.toggle('hidden', mode !== 'metrix');
+
+    if (mode === 'metrix') {
+      tabOnnuri.classList.remove('active');
+      tabMarketBz.classList.remove('active');
+      if (tabExcel) tabExcel.classList.remove('active');
+      sectionOnnuri.classList.add('hidden');
+      sectionMarketBz.classList.add('hidden');
+      if (sectionExcel) sectionExcel.classList.add('hidden');
+      if (!preserveResume) {
+        inputTitle.value = '2026_경기도_소상공인패널_54개_메트릭스쿼터';
+      }
+    } else if (mode === 'excel') {
       tabOnnuri.classList.remove('active');
       tabMarketBz.classList.remove('active');
       sectionOnnuri.classList.add('hidden');
@@ -239,6 +260,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (mode === 'marketbz') {
       tabMarketBz.classList.add('active');
       tabOnnuri.classList.remove('active');
+      if (tabMetrix) tabMetrix.classList.remove('active');
+      if (sectionMetrix) sectionMetrix.classList.add('hidden');
 
       sectionMarketBz.classList.remove('hidden');
       sectionOnnuri.classList.add('hidden');
@@ -247,6 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       tabOnnuri.classList.add('active');
       tabMarketBz.classList.remove('active');
+      if (tabMetrix) tabMetrix.classList.remove('active');
+      if (sectionMetrix) sectionMetrix.classList.add('hidden');
 
       sectionMarketBz.classList.add('hidden');
       sectionOnnuri.classList.remove('hidden');
@@ -265,6 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
   tabMarketBz.addEventListener('click', () => switchMode('marketbz'));
   tabOnnuri.addEventListener('click', () => switchMode('onnuri'));
   if (tabExcel) tabExcel.addEventListener('click', () => switchMode('excel'));
+  if (tabMetrix) tabMetrix.addEventListener('click', () => switchMode('metrix'));
   if (inputExcelMarket) {
     inputExcelMarket.addEventListener('input', () => {
       if (inputCurrentMode.value === 'excel') {
@@ -947,6 +973,21 @@ document.addEventListener('DOMContentLoaded', () => {
         btnGenerate.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${resumeFileName ? '실패 지점부터 이어하기 업데이트 진행 중...' : '온누리 1차 수집 & 마켓비즈 2차 실시간 저장 진행 중...'}`;
         appendLog('info', `[온누리 연계 쿼터 ${resumeFileName ? '이어하기' : '생성'}] 시장: "${marketName}", 모드: ${samplingMode}, 목표: ${totalCount}개 가맹점${resumeFileName ? `, 대상파일: ${resumeFileName}` : ''}`);
 
+      } else if (mode === 'metrix') {
+        const surveyUrl = (inputMetrixUrl && inputMetrixUrl.value.trim()) || 'https://survey.metrix.co.kr/Contact/?SNUM=622';
+        const loginId = (inputMetrixId && inputMetrixId.value.trim()) || '강영미';
+        const loginPw = (inputMetrixPw && inputMetrixPw.value.trim()) || '5254';
+
+        endpoint = '/api/quota/sync-metrix';
+        payload = {
+          title,
+          surveyUrl,
+          loginId,
+          loginPw
+        };
+
+        btnGenerate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Metrix 조사원 로그인 및 54개 쿼터 동기화 중...';
+        appendLog('info', `[Metrix 쿼터 동기화] URL: "${surveyUrl}", 조사원: "${loginId}" 실시간 수집 시작...`);
       } else if (mode === 'excel') {
         const fileObj = inputExcelFile && inputExcelFile.files ? inputExcelFile.files[0] : null;
         if (!fileObj) {

@@ -79,6 +79,9 @@
           <button type="button" id="tab-mode-marketbz" class="segmented-mode-item">
             <i class="fa-solid fa-building"></i> 마켓비즈 단독
           </button>
+          <button type="button" id="tab-mode-metrix" class="segmented-mode-item">
+            <i class="fa-solid fa-clipboard-check"></i> 메트릭스 패널 연동
+          </button>
         </div>
 
         <form id="quota-builder-form">
@@ -147,6 +150,38 @@
               <input type="file" id="input-excel-quota-file" class="figma-input qb-input" accept=".xlsx,.xls,.csv" />
               <p class="qb-helper-text">
                 <strong>[지원 컬럼]</strong> 상호, 업종, 사업자번호, 대표자이름, 성별, 나이, 연락처, 개업연월, 주소, 취급품목, 주요품목 (일부 항목이 비어 있어도 자동 보강 옵션이 215인 대표자 풀과 품목 추론으로 빈칸 없이 완성합니다.)
+              </p>
+            </div>
+          </div>
+
+          <!-- [모드 4] 메트릭스(Metrix GetData) 설문조사 연계 설정 영역 -->
+          <div id="section-metrix-mode" class="qb-sub-panel hidden">
+            <div class="qb-sub-header">
+              <h4 class="qb-sub-title"><i class="fa-solid fa-network-wired text-primary-color"></i> 메트릭스(Metrix) 조사 시스템 연동</h4>
+              <span class="qb-btn-chip btn-chip-highlight">
+                <i class="fa-solid fa-shield-halved"></i> 공인 세션 연계
+              </span>
+            </div>
+            <div class="qb-field-group">
+              <label for="metrix-survey-url" class="qb-label">조사 시스템 URL <span class="required">*</span></label>
+              <input type="url" id="metrix-survey-url" class="figma-input qb-input" value="https://survey.metrix.co.kr/Contact/?SNUM=622" placeholder="https://survey.metrix.co.kr/Contact/?SNUM=622" />
+              <p class="qb-helper-text">
+                조사 프로젝트 번호(SNUM)가 포함된 Metrix GetData 관리자 또는 컨택 페이지 URL을 입력합니다.
+              </p>
+            </div>
+            <div class="qb-grid-2col mt-10">
+              <div class="qb-field-group">
+                <label for="metrix-login-id" class="qb-label">조사원 아이디 <span class="required">*</span></label>
+                <input type="text" id="metrix-login-id" class="figma-input qb-input" value="강영미" placeholder="예: 강영미" />
+              </div>
+              <div class="qb-field-group">
+                <label for="metrix-login-pw" class="qb-label">조사원 비밀번호 <span class="required">*</span></label>
+                <input type="password" id="metrix-login-pw" class="figma-input qb-input" value="5254" placeholder="비밀번호 입력" />
+              </div>
+            </div>
+            <div class="qb-notice-box mt-10">
+              <p class="qb-helper-text mb-0">
+                <strong><i class="fa-solid fa-circle-info text-primary-color"></i> 자동 동기화 메커니즘</strong>: 지정된 조사원 계정으로 안전하게 로그인한 후, 할당된 전체 대상체(UID, 상호, 대표자명, 연락처, 사업자번호, 주소, 진행상태 등)를 즉시 실시간 동기화하여 JSON 및 Excel 쿼터 파일로 생성합니다.
               </p>
             </div>
           </div>
@@ -473,7 +508,7 @@
     </div>
   </main>
 
-  <script type="module" src="quota-builder.js?v=20261026_04"></script>
+  <script type="module" src="quota-builder.js?v=20261027_01"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>
