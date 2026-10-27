@@ -1,0 +1,76 @@
+{
+  "surveyId": "metrix_panel_2026",
+  "title": "2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622)",
+  "description": "메트릭스(Metrix GetData) 경기도 소상공인 실존 패널 54개 대상체 전용 마스터 블루프린트입니다. 사업체 일반현황(A1~A15), 최근 3개년 경영실적, 비용/결제 비율, 고용 및 정책 만족도, 최종 동의서 및 증빙 제출 가이드라인을 정의합니다.",
+  "version": "1.0.0",
+  "defaultPolicy": {
+    "safetyStopAtReview": true,
+    "preserveExistingInputs": true,
+    "skipCompletedSlots": true,
+    "skipSlotUids": "",
+    "operating_openHour": "09",
+    "operating_closeHour": "20",
+    "operating_closedDays": "1",
+    "operating_closedDayOfWeek": "7",
+    "sales_trend2025": "maintain",
+    "cost_materialRatio": 70,
+    "cost_rentRatio": 15,
+    "cost_taxRatio": 10,
+    "cost_otherRatio": 5,
+    "payment_cardRatio": 70,
+    "payment_mobileRatio": 20,
+    "payment_cashRatio": 10,
+    "debt_bankRatio": 80,
+    "debt_policyRatio": 20,
+    "debt_reasonRank1": "1",
+    "debt_reasonRank2": "2",
+    "lease_type": "monthly_deposit",
+    "lease_deposit": 2000,
+    "lease_monthlyRent": 80,
+    "employee_owner": 1,
+    "employee_family": 0,
+    "employee_regular": 0,
+    "satisfaction_mode": "mixed_3_4",
+    "desired_support_rank1": "1",
+    "desired_support_rank2": "2",
+    "open_ended_comment": "지속되는 고물가로 인해 원재료비 및 공공요금 부담이 큽니다. 경기신용보증재단 저금리 특례보증 대출 한도 확대와 상환 거치기간 연장, 점포 시설개선 지원이 지속되었으면 합니다.",
+    "evidence_sign_image": "data/sample_metrix_sign.png"
+  },
+  "sections": [
+    {
+      "key": "RULES",
+      "title": "안전 실행 규칙",
+      "desc": "98% 최종 검토 전 안전 대기, 기입력 항목 보존, 완료 슬롯 건너뛰기"
+    },
+    {
+      "key": "OPERATING",
+      "title": "영업 현황 기준 (문8-1, 문8-2)",
+      "desc": "개점/폐점 시각, 정기 휴무 빈도 및 휴무 요일"
+    },
+    {
+      "key": "FINANCIAL",
+      "title": "경영실적 & 영업비용 밸런서 (문10, 문11-1)",
+      "desc": "2025년 경영실적 추세 및 6대 영업비용 항목별 비율(합계 100%)"
+    },
+    {
+      "key": "PAYMENT_DEBT",
+      "title": "결제수단 & 부채 구조 (문14, 문15)",
+      "desc": "고객 결제수단 비중, 대출 기관 유형 및 차입 사유 1/2순위"
+    },
+    {
+      "key": "PREMISES_LABOR",
+      "title": "사업장 임대차 & 고용 인력 (문16, 문31)",
+      "desc": "점유 형태(보증부 월세 등) 및 상시 종사자 수"
+    },
+    {
+      "key": "POLICY_EVAL",
+      "title": "정책 만족도 & 지원사업 가이드 (문50~문67)",
+      "desc": "5점 척도 만족도 가중치 및 경기도 희망 지원정책 1/2순위"
+    },
+    {
+      "key": "OPEN_ENDED",
+      "title": "주관식 코멘트 & 증빙 서류 (CHECK1)",
+      "desc": "경영 애로사항 주관식 텍스트 및 간판사진 업로드 파일"
+    }
+  ]
+}

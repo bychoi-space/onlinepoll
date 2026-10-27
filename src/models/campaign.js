@@ -81,6 +81,7 @@ export function getCampaignById(id) {
 export function createCampaign(data = {}) {
   const campaigns = getAllCampaigns();
   const isAssoc = (data.surveyType === 'kstat_assoc');
+  const isMetrix = (data.surveyType === 'metrix_panel');
 
   let defaultAssocPolicy = null;
   if (isAssoc) {
@@ -112,12 +113,23 @@ export function createCampaign(data = {}) {
     }
   }
 
+  let defaultMetrixPolicy = null;
+  if (isMetrix) {
+    const metrixBpPath = path.join(dataDir, 'metrix_survey_blueprint.json');
+    if (fs.existsSync(metrixBpPath)) {
+      try {
+        const bp = JSON.parse(fs.readFileSync(metrixBpPath, 'utf-8'));
+        defaultMetrixPolicy = bp.defaultPolicy;
+      } catch (_) {}
+    }
+  }
+
   const newCampaign = {
     id: 'camp_' + Date.now(),
-    title: data.title || (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인'),
+    title: data.title || (isMetrix ? '2026 메트릭스 경기도 소상공인 패널조사' : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인')),
     description: data.description || '',
-    quotaType: data.quotaType || (isAssoc ? 'b2b' : 'b2c'),
-    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc'
+    quotaType: data.quotaType || (isAssoc || isMetrix ? 'b2b' : 'b2c'),
+    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc' | 'metrix_panel'
     status: 'ready',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -142,6 +154,13 @@ export function createCampaign(data = {}) {
       assocPolicy: {
         ...(defaultAssocPolicy || {}),
         ...(data.assocPolicy || {})
+      },
+      hasMasterBlueprint: true
+    } : {}),
+    ...(isMetrix ? {
+      metrixPolicy: {
+        ...(defaultMetrixPolicy || {}),
+        ...(data.metrixPolicy || {})
       },
       hasMasterBlueprint: true
     } : {})

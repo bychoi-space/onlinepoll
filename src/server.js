@@ -382,6 +382,31 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
     });
   }
 
+  // 메트릭스 패널조사 전용 블루프린트 분기 (완전 격리)
+  if (campaign.surveyType === 'metrix_panel') {
+    const metrixBlueprintPath = path.join(dataDir, 'metrix_survey_blueprint.json');
+    let metrixBlueprint = null;
+    if (fs.existsSync(metrixBlueprintPath)) {
+      try {
+        metrixBlueprint = JSON.parse(fs.readFileSync(metrixBlueprintPath, 'utf-8'));
+      } catch (err) {
+        console.error('메트릭스 블루프린트 파일 파싱 실패:', err);
+      }
+    }
+    const effectivePolicy = {
+      ...(metrixBlueprint?.defaultPolicy || {}),
+      ...(campaign.metrixPolicy || {})
+    };
+    return res.json({
+      surveyType: 'metrix_panel',
+      blueprint: metrixBlueprint,
+      policy: effectivePolicy,
+      campaignTitle: campaign.title,
+      slotCount: (campaign.quotaDatabase || []).length,
+      hasCustomBaseline: !!campaign.metrixPolicy
+    });
+  }
+
   const blueprintPath = path.join(dataDir, 'kstat_survey_blueprint.json');
   if (!fs.existsSync(blueprintPath)) {
     return res.status(404).json({ error: '마스터 설문 블루프린트 파일이 존재하지 않습니다.' });
@@ -491,19 +516,23 @@ app.post('/api/campaigns/:id/baseline', (req, res) => {
 
   const baseline = req.body;
   const isAssoc = (campaign.surveyType === 'kstat_assoc');
+  const isMetrix = (campaign.surveyType === 'metrix_panel');
 
   CampaignStore.updateCampaign(campaign.id, {
     masterBaseline: baseline,
     hasMasterBlueprint: true,
-    ...(isAssoc ? { assocPolicy: baseline.policy || baseline } : {})
+    ...(isAssoc ? { assocPolicy: baseline.policy || baseline } : {}),
+    ...(isMetrix ? { metrixPolicy: baseline.policy || baseline } : {})
   });
 
-  logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점'}이 저장되었습니다! 🎯`);
+  logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점')}이 저장되었습니다! 🎯`);
   res.json({
     success: true,
-    message: isAssoc 
-      ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
-      : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 1~24번 전체 배치 자동화를 가동할 수 있습니다.',
+    message: isMetrix
+      ? '메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+      : (isAssoc 
+        ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
+        : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.'),
     baseline
   });
 });
@@ -951,12 +980,18 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
 
     const campTitle = title || quotaMeta.title || `새 설문조사 (${path.basename(safeFilename, '.json')})`;
 
+    const isMetrix = (quotaMeta.type === 'METRIX_PANEL');
+    const isAssoc = (quotaMeta.type === 'KSTAT_ASSOC');
+
     const newCamp = CampaignStore.createCampaign({
       title: campTitle,
-      description: quotaMeta.marketName 
-        ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
-        : `${quotaMeta.keyword || '사업주'} 대상 설문조사`,
-      quotaType: 'b2b'
+      description: isMetrix
+        ? '메트릭스 경기도 소상공인 사업체패널 3차조사'
+        : (quotaMeta.marketName 
+          ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
+          : `${quotaMeta.keyword || '사업주'} 대상 설문조사`),
+      quotaType: 'b2b',
+      surveyType: isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store')
     });
 
     const quotaDb = businesses.map((b, idx) => ({
