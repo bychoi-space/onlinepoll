@@ -28,6 +28,7 @@ import { runKstatAssocSurvey } from './engine/kstat-assoc-runner.js';
 import { getIndustryGroupKey } from './engine/persona-builder.js';
 import { syncKstatSlotStatus, syncCampaignKstatSlots } from './engine/kstat-sync.js';
 import { scrapeMetrixSlots } from './engine/metrix-slot-scraper.js';
+import { runMetrixSurvey } from './engine/metrix-runner.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1321,11 +1322,14 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
     return res.status(400).json({ error: '1번 쿼터 사업자를 찾을 수 없습니다.' });
   }
 
-  // 1:1 슬롯 매핑 엄격 검증: slotUrl이 없으면 차단
-  const targetUrl = targetBiz.slotUrl || targetBiz.surveyUrl;
+  // 1:1 슬롯 매핑 엄격 검증: slotUrl 또는 surveyUrl 없으면 차단
+  const isMetrixCampaign = (campaign.surveyType === 'metrix_panel');
+  const targetUrl = targetBiz.surveyUrl || targetBiz.slotUrl;
   if (!targetUrl) {
     return res.status(400).json({
-      error: `[${targetBiz.companyName}] 1번 쿼터에 케이스탯 전용 설문 슬롯 URL(slotUrl)이 매핑되지 않았습니다. 상단의 [슬롯 1:1 매핑]을 먼저 완료해 주세요.`
+      error: isMetrixCampaign
+        ? `[${targetBiz.companyName}] 1번 쿼터에 메트릭스 설문 참여 URL(surveyUrl)이 존재하지 않습니다.`
+        : `[${targetBiz.companyName}] 1번 쿼터에 케이스탯 전용 설문 슬롯 URL(slotUrl)이 매핑되지 않았습니다. 상단의 [슬롯 1:1 매핑]을 먼저 완료해 주세요.`
     });
   }
 
@@ -1352,9 +1356,31 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
   (async () => {
     try {
       const isAssoc = (campaign.surveyType === 'kstat_assoc');
+      const isMetrix = (campaign.surveyType === 'metrix_panel');
       let result;
 
-      if (isAssoc) {
+      if (isMetrix) {
+        logger.info(`[메트릭스 파일럿 실행] 메트릭스 전용 러너 가동: "${targetBiz.companyName}" (UID: ${targetBiz.uid})`);
+        const metrixPol = campaign.metrixPolicy || policy || {};
+        result = await runMetrixSurvey({
+          surveyUrl: targetUrl,
+          slotData: targetBiz,
+          policy: metrixPol,
+          quotaIndex: targetBiz.index || quotaIndex,
+          pilotMode: true,
+          safetyGuard: true,
+          reportDir: path.join(reportsDir, campaign.id, `metrix_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || ''}`),
+          onProgress: (info) => {
+            logger.info(`[메트릭스 파일럿 - ${info.step}] ${info.message}`);
+            logger.broadcast({
+              type: 'PILOT_PROGRESS',
+              campaignId: campaign.id,
+              quotaIndex: targetBiz.index,
+              ...info
+            });
+          }
+        });
+      } else if (isAssoc) {
         logger.info(`[상인회 파일럿 실행] 상인회 전용 러너 가동: "${targetBiz.marketName || targetBiz.companyName}"`);
         const assocPol = campaign.assocPolicy || policy || {};
         result = await runKstatAssocSurvey({
@@ -1403,9 +1429,17 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
       }
 
       if (result.success) {
-        targetBiz.quotaStatus = 'pilot_done';
-        targetBiz.pilotAt = new Date().toISOString();
-        targetBiz.capturedSteps = result.capturedSteps;
+        if (isMetrix) {
+          targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? '진행중(98%)' : 'pilot_done';
+          targetBiz.status = (result.status === 'stopped_at_review') ? '진행중(98%)' : '완료';
+          targetBiz.pilotAt = new Date().toISOString();
+          targetBiz.capturedSteps = result.capturedSteps;
+          logger.success(`🎉 [메트릭스 파일럿 성공] "${targetBiz.companyName}" (UID: ${targetBiz.uid}) 메트릭스 설문 시뮬레이션 완료 (${targetBiz.quotaStatus})!`);
+        } else {
+          targetBiz.quotaStatus = 'pilot_done';
+          targetBiz.pilotAt = new Date().toISOString();
+          targetBiz.capturedSteps = result.capturedSteps;
+        }
 
         // 조사원 평가항목 연계 실행 (점포조사 및 상인회조사 2단계 연계)
         if (isAssoc) {
@@ -1546,7 +1580,8 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
   const defaultUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
   const quotaDb = campaign.quotaDatabase || [];
   const isAssoc = (campaign.surveyType === 'kstat_assoc');
-  const effectivePolicy = isAssoc ? (campaign.assocPolicy || policy || {}) : policy;
+  const isMetrix = (campaign.surveyType === 'metrix_panel');
+  const effectivePolicy = isMetrix ? (campaign.metrixPolicy || policy || {}) : (isAssoc ? (campaign.assocPolicy || policy || {}) : policy);
 
   const skipCompletedSlots = (effectivePolicy.skipCompletedSlots !== false);
   const skipSlotIndices = (effectivePolicy.skipSlotIndices || '')
@@ -1555,26 +1590,41 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     .map(x => parseInt(x, 10))
     .filter(x => !isNaN(x));
 
+  const skipSlotUids = (effectivePolicy.skipSlotUids || '')
+    .toString()
+    .split(/[\s,]+/)
+    .map(x => x.trim())
+    .filter(Boolean);
+
   const targets = quotaDb.filter(b => {
-    const idx = (b.index || b.seq || b.slotIndex);
+    const idx = (b.index || b.seq || b.slotIndex || 1);
     if (idx < startIndex) return false;
-    if (skipSlotIndices.includes(idx)) return false; // 사용자가 건너뛰도록 지정한 특정 슬롯
-    if (b.quotaStatus === 'completed') return false; // 이미 진짜 마감된 건 제외
-    if (skipCompletedSlots && (b.surveyCompleted === '완료' || b.surveyCompleted === true)) {
-      return false; // Kstat 상에서 이미 완료된 슬롯 건너뛰기
+    if (skipSlotIndices.includes(idx)) return false; // 사용자가 건너뛰도록 지정한 특정 순번
+    if (isMetrix && b.uid && skipSlotUids.includes(String(b.uid))) return false; // 건너뛸 UID
+    if (b.quotaStatus === 'completed' || b.status === '완료') return false; // 이미 마감된 건 제외
+    if (skipCompletedSlots && (b.surveyCompleted === '완료' || b.surveyCompleted === true || b.status === '완료')) {
+      return false; // 완료된 슬롯 건너뛰기
     }
-    if (safetyGuard && b.quotaStatus === 'pilot_done') return false; // 안전가드 모드에선 검증완료 제외
-    return true; // 안전가드 OFF 모드에선 pilot_done도 포함하여 최종 제출 마감!
+    if (isMetrix) {
+      if (safetyGuard && (b.quotaStatus === '진행중(98%)' || b.status === '진행중(98%)')) {
+        return false; // 이미 98% 안전 대기 상태인 항목 건너뛰기
+      }
+    } else {
+      if (safetyGuard && b.quotaStatus === 'pilot_done') return false; // 안전가드 모드에선 검증완료 제외
+    }
+    return true;
   });
   if (targets.length === 0) {
-    return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다. (이미 완료되었거나 건너뛰기 규칙에 해당됨)' });
+    return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다. (이미 완료되었거나 98% 안전 대기 상태임)' });
   }
 
-  // 1:1 슬롯 매핑 엄격 검증: 대상 중 슬롯이 없는 항목이 단 하나라도 있으면 가동 차단!
+  // 1:1 슬롯 매핑 엄격 검증
   const unmapped = targets.filter(b => !b.slotUrl && !b.surveyUrl);
   if (unmapped.length > 0) {
     return res.status(400).json({
-      error: `실행 대상 쿼터 ${targets.length}건 중 ${unmapped.length}건에 케이스탯 슬롯 URL(slotUrl)이 매핑되지 않았습니다. 상단의 [슬롯 1:1 매핑]을 통해 모든 쿼터에 슬롯을 매칭한 후 가동해 주세요.`
+      error: isMetrix
+        ? `실행 대상 패널 ${targets.length}건 중 ${unmapped.length}건에 설문 URL(surveyUrl)이 누락되었습니다.`
+        : `실행 대상 쿼터 ${targets.length}건 중 ${unmapped.length}건에 케이스탯 슬롯 URL(slotUrl)이 매핑되지 않았습니다. 상단의 [슬롯 1:1 매핑]을 통해 모든 쿼터에 슬롯을 매칭한 후 가동해 주세요.`
     });
   }
 
@@ -1618,7 +1668,28 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
 
         let result;
         try {
-          if (isAssoc) {
+          if (isMetrix) {
+            result = await runMetrixSurvey({
+              surveyUrl: bizUrl,
+              slotData: biz,
+              policy: effectivePolicy,
+              quotaIndex: biz.index || (i + startIndex),
+              pilotMode: false,
+              safetyGuard,
+              reportDir: path.join(reportsDir, campaign.id, `metrix_item_${biz.index || (i + startIndex)}_${biz.uid || ''}`),
+              onProgress: (info) => {
+                logger.info(`[메트릭스 배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
+                logger.broadcast({
+                  type: 'BATCH_PROGRESS',
+                  campaignId: campaign.id,
+                  quotaIndex: biz.index || (i + startIndex),
+                  itemNumber: i + 1,
+                  totalItems: targets.length,
+                  ...info
+                });
+              }
+            });
+          } else if (isAssoc) {
             result = await runKstatAssocSurvey({
               surveyUrl: bizUrl,
               assocData: biz,
@@ -1672,9 +1743,17 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         }
 
         if (result?.success) {
-          biz.quotaStatus = safetyGuard ? 'pilot_done' : 'completed';
-          biz.completedAt = new Date().toISOString();
-          biz.capturedSteps = result.capturedSteps;
+          if (isMetrix) {
+            biz.quotaStatus = (result.status === 'stopped_at_review') ? '진행중(98%)' : (safetyGuard ? '진행중(98%)' : 'completed');
+            biz.status = (result.status === 'stopped_at_review') ? '진행중(98%)' : (safetyGuard ? '진행중(98%)' : '완료');
+            biz.completedAt = new Date().toISOString();
+            biz.capturedSteps = result.capturedSteps;
+            logger.success(`🎉 [메트릭스 배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" (UID: ${biz.uid}) ${biz.quotaStatus} 달성!`);
+          } else {
+            biz.quotaStatus = safetyGuard ? 'pilot_done' : 'completed';
+            biz.completedAt = new Date().toISOString();
+            biz.capturedSteps = result.capturedSteps;
+          }
 
           // 2단계: 조사원 평가항목 작성 자동 연계 (점포조사 및 상인회조사 전수 지원)
           if (isAssoc) {

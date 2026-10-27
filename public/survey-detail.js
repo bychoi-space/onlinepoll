@@ -199,7 +199,7 @@ async function initSurveyDetailPage() {
       }
     }
 
-    // 메트릭스 모드 시 Kstat 전용 버튼 숨김
+    // 메트릭스 모드 시 Kstat 전용 버튼 숨김 및 STEP 3 스트립 갱신
     if (isMetrix) {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
       const btnSyncKstat = document.getElementById('btn-sync-kstat-status');
@@ -208,6 +208,53 @@ async function initSurveyDetailPage() {
       const kstatPill = document.getElementById('badge-kstat-account-pill');
       if (kstatPill) {
         kstatPill.innerHTML = '<i class="fa-solid fa-user-check text-primary-color"></i> <span>조사원: <strong>강영미</strong> (SNUM 622)</span>';
+      }
+
+      // STEP 3 스트립 갱신
+      const badgeExec = document.getElementById('badge-exec-engine');
+      if (badgeExec) {
+        badgeExec.className = 'badge-status ready font-bold';
+        badgeExec.textContent = '메트릭스 GetData (SNUM 622)';
+      }
+      const labelMarket = document.getElementById('label-exec-target-market');
+      if (labelMarket) {
+        labelMarket.textContent = camp.title || '2026 경기도 소상공인 사업체패널 3차조사';
+      }
+      const labelSurveyor = document.getElementById('exec-surveyor-label');
+      if (labelSurveyor) {
+        labelSurveyor.textContent = '강영미';
+      }
+      const slotCountLabel = document.getElementById('exec-slot-count-label');
+      if (slotCountLabel) {
+        slotCountLabel.textContent = `${(camp.quotaDatabase || []).length}건 바인딩 완료`;
+      }
+      const badgeBp = document.getElementById('badge-blueprint-status');
+      if (badgeBp) {
+        badgeBp.className = 'badge-status badge-blueprint ready';
+        badgeBp.innerHTML = '<i class="fa-solid fa-shield-halved text-success"></i> 98% 안전 대기 가이드 연동 완료';
+      }
+
+      // STEP 3 카드 설명 및 버튼 텍스트 최적화
+      const titleBatch = document.getElementById('title-batch-automation');
+      if (titleBatch) titleBatch.textContent = '메트릭스 패널 54개 순차 배치 자동화 (98% 안전 대기)';
+      const descBatch = document.getElementById('desc-batch-automation');
+      if (descBatch) {
+        descBatch.textContent = '설정된 영업시간, 비용 비율, 100% 밸런서, 전자서명 및 간판사진을 주입하여 최종 제출 직전(98% 안전 대기)까지 안전하게 순차 진행합니다.';
+      }
+      const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
+      if (safetyGuardToggle) {
+        safetyGuardToggle.textContent = '최종 제출 직전 98% 안전 대기 (권장: 검토/수정 가능 상태 보존)';
+      }
+      if (checkSafetyGuard) {
+        checkSafetyGuard.checked = true; // 기본값 98% 안전 대기 보장
+      }
+
+      // 1번 단일 파일럿 버튼 표시
+      if (btnPilot) {
+        btnPilot.classList.remove('d-none');
+        btnPilot.className = 'btn-action-secondary font-bold';
+        btnPilot.style.display = 'inline-flex';
+        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 단일 파일럿 검증 (98%)';
       }
     } else {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'inline-flex';
@@ -315,31 +362,60 @@ async function initSurveyDetailPage() {
         }
       }
 
-      // 2) 레거시 1번 단일 검증 버튼 (호환용)
+      // 2) 1번 단일 검증 버튼 (호환용)
+      const isMetrix = (currentCampaign.surveyType === 'metrix_panel');
       if (btnPilot) {
-        btnPilot.disabled = firstDone;
-        btnPilot.textContent = firstDone ? '1번 쿼터 검증 완료' : '1번 단일 검증';
+        if (isMetrix) {
+          const firstDoneMetrix = firstQuota && (firstQuota.quotaStatus === '진행중(98%)' || firstQuota.status === '진행중(98%)' || firstQuota.quotaStatus === 'completed' || firstQuota.status === '완료');
+          btnPilot.disabled = firstDoneMetrix;
+          btnPilot.innerHTML = firstDoneMetrix 
+            ? '<i class="fa-solid fa-check text-warning"></i> 1번 파일럿 완료 (98%)' 
+            : '<i class="fa-solid fa-flask"></i> 1번 단일 파일럿 검증 (98%)';
+        } else {
+          btnPilot.disabled = firstDone;
+          btnPilot.textContent = firstDone ? '1번 쿼터 검증 완료' : '1번 단일 검증';
+        }
       }
 
       // 3) 단일 통합 배치 자동화 버튼 상태
-      const allCompleted = quotaDb.length > 0 && quotaDb.every(b => b.quotaStatus === 'completed');
-      if (allCompleted) {
-        btnBatch.disabled = true;
-        btnBatch.innerHTML = '<i class="fa-solid fa-circle-check"></i> 전체 배치 자동화 최종 마감 완료 (100%)';
-        if (btnRunAllBatchBottom) {
-          btnRunAllBatchBottom.disabled = true;
-          btnRunAllBatchBottom.textContent = '전체 배치 마감 완료 (100%)';
+      if (isMetrix) {
+        const all98OrDone = quotaDb.length > 0 && quotaDb.every(b => 
+          b.quotaStatus === 'completed' || b.status === '완료' || b.quotaStatus === '진행중(98%)' || b.status === '진행중(98%)'
+        );
+        if (all98OrDone) {
+          btnBatch.disabled = false;
+          btnBatch.className = 'btn-action-secondary flex-1 font-bold';
+          btnBatch.innerHTML = '<i class="fa-solid fa-check-double text-success"></i> 전체 패널 98% 안전 대기 완료 (재실행 가능)';
+        } else {
+          btnBatch.disabled = false;
+          btnBatch.className = 'btn-action-success flex-1 font-bold';
+          const doneCount = quotaDb.filter(b => b.quotaStatus === '진행중(98%)' || b.status === '진행중(98%)' || b.quotaStatus === 'completed' || b.status === '완료').length;
+          if (doneCount > 0) {
+            btnBatch.innerHTML = `<i class="fa-solid fa-play"></i> 잔여 패널 순차 배치 계속 가동 (${doneCount}/${quotaDb.length} 완료)`;
+          } else {
+            btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 전체 패널 순차 배치 자동화 시작 (98%)';
+          }
         }
       } else {
-        btnBatch.disabled = false;
-        if (firstDone) {
-          btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 미완료 슬롯 순차 배치 자동화 계속 가동';
+        const allCompleted = quotaDb.length > 0 && quotaDb.every(b => b.quotaStatus === 'completed');
+        if (allCompleted) {
+          btnBatch.disabled = true;
+          btnBatch.innerHTML = '<i class="fa-solid fa-circle-check"></i> 전체 배치 자동화 최종 마감 완료 (100%)';
+          if (btnRunAllBatchBottom) {
+            btnRunAllBatchBottom.disabled = true;
+            btnRunAllBatchBottom.textContent = '전체 배치 마감 완료 (100%)';
+          }
         } else {
-          btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 전체 배치 자동화 시작';
-        }
-        if (btnRunAllBatchBottom) {
-          btnRunAllBatchBottom.disabled = false;
-          btnRunAllBatchBottom.innerHTML = '<i class="fa-solid fa-rocket"></i> 이 기준점으로 전체 배치 가동';
+          btnBatch.disabled = false;
+          if (firstDone) {
+            btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 미완료 슬롯 순차 배치 자동화 계속 가동';
+          } else {
+            btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 전체 배치 자동화 시작';
+          }
+          if (btnRunAllBatchBottom) {
+            btnRunAllBatchBottom.disabled = false;
+            btnRunAllBatchBottom.innerHTML = '<i class="fa-solid fa-rocket"></i> 이 기준점으로 전체 배치 가동';
+          }
         }
       }
     }
@@ -357,9 +433,9 @@ async function initSurveyDetailPage() {
     let mappedSlots = 0;
 
     db.forEach(item => {
-      const st = item.quotaStatus || 'ready';
-      if (st === 'pilot_done') pilot++;
-      else if (st === 'completed') completed++;
+      const st = item.quotaStatus || item.status || 'ready';
+      if (st === 'pilot_done' || st === '진행중(98%)' || String(st).includes('98%')) pilot++;
+      else if (st === 'completed' || st === '완료') completed++;
       else ready++;
 
       if (item.slotUrl || item.surveyUrl) mappedSlots++;
@@ -565,11 +641,13 @@ async function initSurveyDetailPage() {
         let statusHtml = '<span class="badge-status ready">대기</span>';
 
         if (st === '완료' || st === 'completed') {
-          statusHtml = '<span class="badge-status success">완료</span>';
+          statusHtml = '<span class="badge-status success"><i class="fa-solid fa-check"></i> 완료</span>';
         } else if (st === '진행중' || st === 'running') {
-          statusHtml = '<span class="badge-status running">진행중</span>';
+          statusHtml = '<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 진행중</span>';
+        } else if (st === '진행중(98%)' || String(st).includes('98%')) {
+          statusHtml = '<span class="badge-status warning font-bold" style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);"><i class="fa-solid fa-shield-halved"></i> 98% 검토대기</span>';
         } else if (st === 'pilot_done') {
-          statusHtml = '<span class="badge-status pilot">검증대기</span>';
+          statusHtml = '<span class="badge-status pilot"><i class="fa-solid fa-flask"></i> 검증대기</span>';
         } else if (st === 'error') {
           statusHtml = '<span class="badge-status error">오류</span>';
         }
@@ -4548,12 +4626,17 @@ async function initSurveyDetailPage() {
     }
 
     const firstBiz = quotaDb[0];
-    const firstSlot = firstBiz?.slotUrl || firstBiz?.surveyUrl;
+    const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
+    const firstSlot = firstBiz?.surveyUrl || firstBiz?.slotUrl;
 
-    // 1번 쿼터 슬롯 1:1 매핑 엄격 검증
+    // 1번 쿼터 슬롯 매핑 검증
     if (!firstSlot) {
-      alert(`⚠️ 1번 쿼터 [${firstBiz?.companyName || '1번 점포'}]에 케이스탯 전용 설문 슬롯 URL이 매핑되지 않았습니다.\n\n중복 설문 방지를 위해 모든 쿼터에 고유 슬롯이 매핑되어야 합니다.\n상단의 [🔗 케이스탯 슬롯 1:1 매핑] 버튼을 눌러 슬롯을 매칭한 후 파일럿 검증을 진행해 주세요.`);
-      if (typeof window.openSlotModal === 'function') window.openSlotModal();
+      if (isMetrix) {
+        alert(`⚠️ 1번 쿼터 [${firstBiz?.companyName || '1번 사업체'}]에 메트릭스 설문 URL(surveyUrl)이 존재하지 않습니다.`);
+      } else {
+        alert(`⚠️ 1번 쿼터 [${firstBiz?.companyName || '1번 점포'}]에 케이스탯 전용 설문 슬롯 URL이 매핑되지 않았습니다.\n\n중복 설문 방지를 위해 모든 쿼터에 고유 슬롯이 매핑되어야 합니다.\n상단의 [🔗 케이스탯 슬롯 1:1 매핑] 버튼을 눌러 슬롯을 매칭한 후 파일럿 검증을 진행해 주세요.`);
+        if (typeof window.openSlotModal === 'function') window.openSlotModal();
+      }
       return;
     }
 
@@ -4564,7 +4647,11 @@ async function initSurveyDetailPage() {
       setRunningState(true);
       openMonitorDrawer();
       resetTimelineChips();
-      appendLog('info', `🎯 [1번 단일 검증 시작] "${firstBiz.companyName}" 점포로 Q1부터 Agree.asp까지 안전 완주를 진행합니다... (슬롯: #${firstBiz.slotIndex || 1})`);
+      if (isMetrix) {
+        appendLog('info', `🎯 [메트릭스 1번 파일럿 시작] "${firstBiz.companyName}" (UID: ${firstBiz.uid}) 98% 안전 대기 완주를 진행합니다...`);
+      } else {
+        appendLog('info', `🎯 [1번 단일 검증 시작] "${firstBiz.companyName}" 점포로 Q1부터 Agree.asp까지 안전 완주를 진행합니다... (슬롯: #${firstBiz.slotIndex || 1})`);
+      }
 
       // 기준점 자동 저장
       await saveBaseline(false);
@@ -4595,31 +4682,48 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    const firstQuota = quotaDb.find(b => b.index === 1);
-    const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed');
+    const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
+    const firstQuota = quotaDb.find(b => b.index === 1) || quotaDb[0];
+    const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed' || firstQuota.quotaStatus === '진행중(98%)' || firstQuota.status === '진행중(98%)');
     const startIdx = firstDone ? 2 : 1;
 
-    // 1:1 슬롯 매핑 전수 엄격 검증: 대상 중 슬롯이 없는 항목이 단 하나라도 있으면 가동 차단!
+    // 1:1 슬롯 매핑 전수 검증
     const targets = quotaDb.filter(b => (b.index || b.seq) >= startIdx);
     const unmappedTargets = targets.filter(b => !b.slotUrl && !b.surveyUrl);
     if (unmappedTargets.length > 0) {
-      alert(`⚠️ 쿼터와 케이스탯 슬롯이 1:1로 매핑되지 않았습니다!\n(실행 대상 ${targets.length}개 점포 중 ${unmappedTargets.length}개 슬롯 누락)\n\n슬롯이 매핑되지 않은 상태로 실행하면 동일한 설문지에 중복 제출되는 치명적인 오류가 발생합니다.\n상단의 [🔗 케이스탯 슬롯 1:1 매핑] 버튼을 눌러 모든 쿼터에 1:1 슬롯을 매칭한 후 배치를 가동해 주세요.`);
-      if (typeof window.openSlotModal === 'function') window.openSlotModal();
+      if (isMetrix) {
+        alert(`⚠️ 실행 대상 패널 ${targets.length}건 중 ${unmappedTargets.length}건에 설문 참여 URL(surveyUrl)이 누락되었습니다.`);
+      } else {
+        alert(`⚠️ 쿼터와 케이스탯 슬롯이 1:1로 매핑되지 않았습니다!\n(실행 대상 ${targets.length}개 점포 중 ${unmappedTargets.length}개 슬롯 누락)\n\n슬롯이 매핑되지 않은 상태로 실행하면 동일한 설문지에 중복 제출되는 치명적인 오류가 발생합니다.\n상단의 [🔗 케이스탯 슬롯 1:1 매핑] 버튼을 눌러 모든 쿼터에 1:1 슬롯을 매칭한 후 배치를 가동해 주세요.`);
+        if (typeof window.openSlotModal === 'function') window.openSlotModal();
+      }
       return;
     }
 
-    let surveyUrl = targets[0]?.slotUrl || inputSurveyUrl.value.trim();
-    const safetyGuard = checkSafetyGuard ? checkSafetyGuard.checked : false;
-    const confirmMsg = safetyGuard
-      ? `${targets.length}개 대상 슬롯에 대해 배치 자동화를 시작합니다. (각 점포/상인회별 1:1 슬롯, 최종 동의 단계 안전 대기)`
-      : `⚠️ 주의: 최종 제출 안전가드가 해제되어 있습니다!\n${targets.length}건의 설문이 각 점포별 1:1 슬롯으로 실제 최종 제출 마감됩니다. 계속하시겠습니까?`;
+    let surveyUrl = targets[0]?.slotUrl || targets[0]?.surveyUrl || inputSurveyUrl.value.trim();
+    const safetyGuard = checkSafetyGuard ? checkSafetyGuard.checked : true;
+    
+    let confirmMsg;
+    if (isMetrix) {
+      confirmMsg = safetyGuard
+        ? `[메트릭스 패널 54개 대상]\n잔여 ${targets.length}개 사업체에 대해 배치 자동화를 시작합니다.\n\n🛡️ [최종 제출 직전 98% 안전 대기 원칙 적용]\n전 문항 답변, 전자서명 및 간판사진 업로드가 완료된 후 최종 제출 직전(Step 119)에서 정지되어 사용자가 직접 검토/수정할 수 있습니다.\n\n계속 진행하시겠습니까?`
+        : `⚠️ 경고: 최종 제출 안전가드가 해제되어 있습니다!\n잔여 ${targets.length}개 사업체가 실제로 최종 제출(100% 완료) 마감 처리됩니다. 계속하시겠습니까?`;
+    } else {
+      confirmMsg = safetyGuard
+        ? `${targets.length}개 대상 슬롯에 대해 배치 자동화를 시작합니다. (각 점포/상인회별 1:1 슬롯, 최종 동의 단계 안전 대기)`
+        : `⚠️ 주의: 최종 제출 안전가드가 해제되어 있습니다!\n${targets.length}건의 설문이 각 점포별 1:1 슬롯으로 실제 최종 제출 마감됩니다. 계속하시겠습니까?`;
+    }
 
     if (!confirm(confirmMsg)) return;
 
     try {
       setRunningState(true);
       openMonitorDrawer();
-      appendLog('info', `🚀 [배치 가동 시작] ${startIdx}번 쿼터부터 ${targets.length}건 1:1 슬롯 고속 자동화 연속 실행을 시작합니다...`);
+      if (isMetrix) {
+        appendLog('info', `🚀 [메트릭스 배치 가동 시작] ${startIdx}번 패널부터 ${targets.length}건 순차 자동화 실행을 시작합니다... (98% 안전 대기: ${safetyGuard ? 'ON' : 'OFF'})`);
+      } else {
+        appendLog('info', `🚀 [배치 가동 시작] ${startIdx}번 쿼터부터 ${targets.length}건 1:1 슬롯 고속 자동화 연속 실행을 시작합니다...`);
+      }
 
       // 1. 기준점 저장 보장
       await saveBaseline(false);
