@@ -23,7 +23,7 @@
   <!-- CSS Stylesheets -->
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
-  <link rel="stylesheet" href="campaign.css">
+  <link rel="stylesheet" href="campaign.css?v=20261027_filter_v1">
   <link rel="stylesheet" href="custom-styles.css">
 </head>
 <body>
@@ -96,6 +96,70 @@
             <span class="metric-label">완료된 설문</span>
             <strong class="metric-value" id="stat-completed-campaigns">0건</strong>
           </div>
+        </div>
+      </section>
+
+      <!-- [신규] 카테고리 필터 (전통시장/상인회/소상공인) 및 스마트 검색/자동완성 바 -->
+      <section class="campaign-filter-search-section mb-24">
+        <div class="campaign-filter-search-bar">
+          
+          <!-- 좌측: 카테고리 3대 탭 (전체 / 전통시장 / 상인회 / 소상공인) -->
+          <div class="filter-tabs-group" role="tablist">
+            <button type="button" class="filter-tab-pill active" data-category="all" id="filter-cat-all">
+              <i class="fa-solid fa-layer-group"></i>
+              <span>전체</span>
+              <span class="filter-count-badge" id="badge-filter-all">0</span>
+            </button>
+            <button type="button" class="filter-tab-pill" data-category="traditional" id="filter-cat-traditional">
+              <i class="fa-solid fa-store text-amber"></i>
+              <span>전통시장</span>
+              <span class="filter-count-badge" id="badge-filter-traditional">0</span>
+            </button>
+            <button type="button" class="filter-tab-pill" data-category="assoc" id="filter-cat-assoc">
+              <i class="fa-solid fa-sitemap text-sky"></i>
+              <span>상인회</span>
+              <span class="filter-count-badge" id="badge-filter-assoc">0</span>
+            </button>
+            <button type="button" class="filter-tab-pill" data-category="smallbiz" id="filter-cat-smallbiz">
+              <i class="fa-solid fa-building-user text-purple"></i>
+              <span>소상공인</span>
+              <span class="filter-count-badge" id="badge-filter-smallbiz">0</span>
+            </button>
+          </div>
+
+          <!-- 우측: 상태 필터 + 스마트 검색 & 자동완성 -->
+          <div class="search-and-status-controls">
+            <!-- 상태 빠른 필터 -->
+            <div class="status-quick-filter">
+              <button type="button" class="status-chip active" data-status="all">전체 상태</button>
+              <button type="button" class="status-chip" data-status="active"><span class="status-dot-sm ready"></span>진행·대기중</button>
+              <button type="button" class="status-chip" data-status="completed"><span class="status-dot-sm completed"></span>완료만</button>
+            </div>
+
+            <!-- 검색 입력창 & 자동완성 드롭다운 -->
+            <div class="campaign-search-box">
+              <div class="search-input-wrapper">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="input-campaign-search" class="campaign-search-input" placeholder="캠페인명, 시장명, 쿼터수 검색..." autocomplete="off" />
+                <button type="button" id="btn-clear-campaign-search" class="btn-clear-search d-none" title="검색어 지우기">&times;</button>
+                <span class="search-kbd-hint" title="검색 단축키: 슬래시(/)"><kbd>/</kbd></span>
+              </div>
+              <!-- Floating Autocomplete Dropdown List -->
+              <div id="campaign-autocomplete-dropdown" class="autocomplete-dropdown hidden"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 현재 필터/검색 활성화 상태 요약 스트립 -->
+        <div class="filter-status-info-bar d-none" id="filter-status-info-bar">
+          <span class="filter-info-text">
+            <i class="fa-solid fa-filter text-primary-color"></i>
+            <span id="filter-info-label">필터 적용 결과: <strong>0건</strong></span>
+          </span>
+          <button type="button" id="btn-reset-filters" class="btn-reset-filters">
+            <i class="fa-solid fa-rotate-left"></i> 필터 및 검색어 초기화
+          </button>
         </div>
       </section>
 
@@ -226,7 +290,7 @@
     </div>
   </div>
 
-  <script type="module" src="campaign-list.js"></script>
+  <script type="module" src="campaign-list.js?v=20261027_filter_v1"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>
