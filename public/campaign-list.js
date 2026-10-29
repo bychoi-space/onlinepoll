@@ -62,14 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const statCompleted = document.getElementById('stat-completed-campaigns');
 
   // [신규] 카테고리 필터 탭 & 뱃지
-  const filterCatPills = document.querySelectorAll('.filter-tab-pill');
+  const filterCatPills = document.querySelectorAll('.filter-tab-pill:not(.quota-filter-tab-pill)');
   const badgeFilterAll = document.getElementById('badge-filter-all');
   const badgeFilterTraditional = document.getElementById('badge-filter-traditional');
   const badgeFilterAssoc = document.getElementById('badge-filter-assoc');
   const badgeFilterSmallbiz = document.getElementById('badge-filter-smallbiz');
 
   // [신규] 상태 필터 & 검색 요소
-  const statusChips = document.querySelectorAll('.status-chip');
+  const statusChips = document.querySelectorAll('.status-chip:not(.quota-mode-chip)');
   const inputSearch = document.getElementById('input-campaign-search');
   const btnClearSearch = document.getElementById('btn-clear-campaign-search');
   const autocompleteDropdown = document.getElementById('campaign-autocomplete-dropdown');
@@ -586,16 +586,20 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.campaign-search-box')) {
       if (autocompleteDropdown) autocompleteDropdown.classList.add('hidden');
+      const qDropdown = document.getElementById('quota-autocomplete-dropdown');
+      if (qDropdown) qDropdown.classList.add('hidden');
     }
   });
 
-  // 단축키 '/' 키 누르면 검색창으로 즉시 포커스
+  // 단축키 '/' 키 누르면 현재 활성 탭의 검색창으로 즉시 포커스
   window.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement !== inputSearch && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+    if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
       e.preventDefault();
-      if (inputSearch) {
-        inputSearch.focus();
-        inputSearch.select();
+      const isQuotaTabActive = sectionQuotas && !sectionQuotas.classList.contains('hidden');
+      const targetInput = isQuotaTabActive ? document.getElementById('input-quota-search') : inputSearch;
+      if (targetInput && document.activeElement !== targetInput) {
+        targetInput.focus();
+        targetInput.select();
       }
     }
   });
@@ -620,14 +624,333 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-    // ------------------------------------------------------------------------
-  // 3. 조사 쿼터 보관함 (Quota Library) 관련 로직
+  // ------------------------------------------------------------------------
+  // 3. 조사 쿼터 보관함 (Quota Library) 관련 로직 (필터 + 스마트 검색 + 자동완성)
   // ------------------------------------------------------------------------
   const quotaContainer = document.getElementById('quota-list-container');
   const statTotalQuotas = document.getElementById('stat-total-quotas');
   const statTotalMerchants = document.getElementById('stat-total-quota-merchants');
   const statStratifiedQuotas = document.getElementById('stat-stratified-quotas');
   const statExcelSync = document.getElementById('stat-excel-sync-rate');
+
+  // 조사 쿼터 보관함 전용 필터 탭 & 배지 & 검색 요소
+  const quotaFilterCatPills = document.querySelectorAll('.quota-filter-tab-pill');
+  const badgeQuotaFilterAll = document.getElementById('badge-quota-filter-all');
+  const badgeQuotaFilterTraditional = document.getElementById('badge-quota-filter-traditional');
+  const badgeQuotaFilterAssoc = document.getElementById('badge-quota-filter-assoc');
+  const badgeQuotaFilterSmallbiz = document.getElementById('badge-quota-filter-smallbiz');
+
+  const quotaModeChips = document.querySelectorAll('.quota-mode-chip');
+  const inputQuotaSearch = document.getElementById('input-quota-search');
+  const btnClearQuotaSearch = document.getElementById('btn-clear-quota-search');
+  const quotaAutocompleteDropdown = document.getElementById('quota-autocomplete-dropdown');
+  const quotaFilterStatusInfoBar = document.getElementById('quota-filter-status-info-bar');
+  const quotaFilterInfoLabel = document.getElementById('quota-filter-info-label');
+  const btnResetQuotaFilters = document.getElementById('btn-reset-quota-filters');
+
+  let allQuotas = [];
+  let currentQuotaCategory = 'all'; // 'all' | 'traditional' | 'assoc' | 'smallbiz'
+  let currentQuotaMode = 'all';     // 'all' | 'stratified' | 'simple'
+  let currentQuotaSearchQuery = '';
+  let selectedQuotaAutocompleteIdx = -1;
+
+  function getQuotaCategory(q) {
+    const type = String(q.type || '').toUpperCase();
+    const title = String(q.title || '').toLowerCase();
+    const fileName = String(q.fileName || '').toLowerCase();
+    const market = String(q.marketName || '').toLowerCase();
+
+    if (type === 'METRIX_PANEL' || title.includes('소상공인') || title.includes('메트릭스') || fileName.includes('metrix')) {
+      return 'smallbiz';
+    }
+    if (type === 'KSTAT_ASSOC' || title.includes('상인회') || fileName.includes('assoc') || market.includes('상인회')) {
+      return 'assoc';
+    }
+    return 'traditional';
+  }
+
+  function isQuotaStratified(q) {
+    return Boolean(q.industryDistribution && Object.keys(q.industryDistribution).length >= 5);
+  }
+
+  function getFilteredQuotas() {
+    return allQuotas.filter(q => {
+      const cat = getQuotaCategory(q);
+
+      // 1. 카테고리 필터 (전통시장 / 상인회 / 소상공인)
+      if (currentQuotaCategory !== 'all' && cat !== currentQuotaCategory) {
+        return false;
+      }
+
+      // 2. 수집 방식 필터 (전체 / 층화 표본 / 단순·엑셀)
+      const stratified = isQuotaStratified(q);
+      if (currentQuotaMode === 'stratified' && !stratified) return false;
+      if (currentQuotaMode === 'simple' && stratified) return false;
+
+      // 3. 검색어 필터 (제목, 시장/상점가명, 파일명, 키워드, 업종명, 표본수, 카테고리명)
+      if (currentQuotaSearchQuery) {
+        const kw = currentQuotaSearchQuery.toLowerCase();
+        const title = String(q.title || '').toLowerCase();
+        const marketName = String(q.marketName || '').toLowerCase();
+        const fileName = String(q.fileName || '').toLowerCase();
+        const keyword = String(q.keyword || '').toLowerCase();
+        const countStr = `${q.count || 0}건 ${q.count || 0}개`;
+        const catMeta = getCategoryMeta(cat);
+        const catName = catMeta.label.toLowerCase();
+        const industries = Object.keys(q.industryDistribution || {}).join(' ').toLowerCase();
+
+        const isMatch =
+          title.includes(kw) ||
+          marketName.includes(kw) ||
+          fileName.includes(kw) ||
+          keyword.includes(kw) ||
+          countStr.includes(kw) ||
+          catName.includes(kw) ||
+          industries.includes(kw);
+
+        if (!isMatch) return false;
+      }
+
+      return true;
+    });
+  }
+
+  function updateQuotaCategoryCounts() {
+    let countTraditional = 0;
+    let countAssoc = 0;
+    let countSmallbiz = 0;
+
+    allQuotas.forEach(q => {
+      const cat = getQuotaCategory(q);
+      if (cat === 'traditional') countTraditional++;
+      else if (cat === 'assoc') countAssoc++;
+      else if (cat === 'smallbiz') countSmallbiz++;
+    });
+
+    if (badgeQuotaFilterAll) badgeQuotaFilterAll.textContent = allQuotas.length;
+    if (badgeQuotaFilterTraditional) badgeQuotaFilterTraditional.textContent = countTraditional;
+    if (badgeQuotaFilterAssoc) badgeQuotaFilterAssoc.textContent = countAssoc;
+    if (badgeQuotaFilterSmallbiz) badgeQuotaFilterSmallbiz.textContent = countSmallbiz;
+  }
+
+  function applyQuotaFiltersAndRender() {
+    const filtered = getFilteredQuotas();
+    renderQuotas(filtered);
+
+    const isFiltered = (currentQuotaCategory !== 'all' || currentQuotaMode !== 'all' || !!currentQuotaSearchQuery);
+    if (quotaFilterStatusInfoBar) {
+      if (isFiltered) {
+        quotaFilterStatusInfoBar.classList.remove('d-none');
+        let filterDesc = [];
+        if (currentQuotaCategory !== 'all') {
+          const catMeta = getCategoryMeta(currentQuotaCategory);
+          filterDesc.push(`카테고리: ${catMeta.label}`);
+        }
+        if (currentQuotaMode === 'stratified') filterDesc.push('방식: 층화 표본');
+        else if (currentQuotaMode === 'simple') filterDesc.push('방식: 단순·엑셀');
+        if (currentQuotaSearchQuery) filterDesc.push(`검색어: "${currentQuotaSearchQuery}"`);
+
+        if (quotaFilterInfoLabel) {
+          quotaFilterInfoLabel.innerHTML = `필터 적용 결과: <strong>${filtered.length}개</strong> (전체 ${allQuotas.length}개 중) &nbsp;•&nbsp; <span class="text-dim">[${filterDesc.join(', ')}]</span>`;
+        }
+      } else {
+        quotaFilterStatusInfoBar.classList.add('d-none');
+      }
+    }
+  }
+
+  function resetAllQuotaFilters() {
+    currentQuotaCategory = 'all';
+    currentQuotaMode = 'all';
+    currentQuotaSearchQuery = '';
+    if (inputQuotaSearch) inputQuotaSearch.value = '';
+    if (btnClearQuotaSearch) btnClearQuotaSearch.classList.add('d-none');
+    if (quotaAutocompleteDropdown) quotaAutocompleteDropdown.classList.add('hidden');
+
+    quotaFilterCatPills.forEach(p => {
+      p.classList.toggle('active', p.getAttribute('data-quota-category') === 'all');
+    });
+    quotaModeChips.forEach(c => {
+      c.classList.toggle('active', c.getAttribute('data-quota-mode') === 'all');
+    });
+
+    applyQuotaFiltersAndRender();
+  }
+
+  quotaFilterCatPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      quotaFilterCatPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentQuotaCategory = pill.getAttribute('data-quota-category') || 'all';
+      applyQuotaFiltersAndRender();
+    });
+  });
+
+  quotaModeChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      quotaModeChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      currentQuotaMode = chip.getAttribute('data-quota-mode') || 'all';
+      applyQuotaFiltersAndRender();
+    });
+  });
+
+  if (btnResetQuotaFilters) {
+    btnResetQuotaFilters.addEventListener('click', resetAllQuotaFilters);
+  }
+
+  // 쿼터 통계 카드 클릭 시 빠른 필터링 연동
+  if (statStratifiedQuotas && typeof statStratifiedQuotas.closest === 'function') {
+    const card = statStratifiedQuotas.closest('.metric-card');
+    if (card) {
+      card.style.cursor = 'pointer';
+      card.title = '클릭하여 층화 표본 쿼터만 필터링';
+      card.addEventListener('click', () => {
+        quotaModeChips.forEach(c => {
+          c.classList.toggle('active', c.getAttribute('data-quota-mode') === 'stratified');
+        });
+        currentQuotaMode = 'stratified';
+        applyQuotaFiltersAndRender();
+      });
+    }
+  }
+  if (statTotalQuotas && typeof statTotalQuotas.closest === 'function') {
+    const card = statTotalQuotas.closest('.metric-card');
+    if (card) {
+      card.style.cursor = 'pointer';
+      card.title = '클릭하여 전체 쿼터 목록 보기';
+      card.addEventListener('click', () => {
+        resetAllQuotaFilters();
+      });
+    }
+  }
+
+  function renderQuotaAutocomplete(query) {
+    if (!quotaAutocompleteDropdown) return;
+    if (!query || !query.trim()) {
+      quotaAutocompleteDropdown.classList.add('hidden');
+      quotaAutocompleteDropdown.innerHTML = '';
+      return;
+    }
+
+    const kw = query.trim().toLowerCase();
+    const matches = allQuotas.filter(q => {
+      const cat = getQuotaCategory(q);
+      const catMeta = getCategoryMeta(cat);
+      const title = String(q.title || '').toLowerCase();
+      const marketName = String(q.marketName || '').toLowerCase();
+      const industries = Object.keys(q.industryDistribution || {}).join(' ').toLowerCase();
+      return title.includes(kw) || marketName.includes(kw) || catMeta.label.toLowerCase().includes(kw) || industries.includes(kw);
+    }).slice(0, 8);
+
+    if (matches.length === 0) {
+      quotaAutocompleteDropdown.innerHTML = `
+        <div class="autocomplete-empty">
+          <i class="fa-solid fa-magnifying-glass mb-8"></i>
+          <div>"<strong>${escapeHtml(query)}</strong>" 에 일치하는 조사 쿼터가 없습니다.</div>
+        </div>
+      `;
+      quotaAutocompleteDropdown.classList.remove('hidden');
+      return;
+    }
+
+    selectedQuotaAutocompleteIdx = -1;
+    quotaAutocompleteDropdown.innerHTML = `
+      <div class="autocomplete-list">
+        ${matches.map((q, idx) => {
+          const cat = getQuotaCategory(q);
+          const catMeta = getCategoryMeta(cat);
+          const isStrat = isQuotaStratified(q);
+          return `
+            <div class="autocomplete-item" data-filename="${escapeHtml(q.fileName)}" data-idx="${idx}">
+              <div class="autocomplete-item-left">
+                <span class="badge-category ${catMeta.class}"><i class="fa-solid ${catMeta.icon}"></i> ${catMeta.label}</span>
+                <span class="autocomplete-item-title" title="${escapeHtml(q.title)}">${highlightQuery(escapeHtml(q.title), query)}</span>
+              </div>
+              <div class="autocomplete-item-right">
+                <span class="font-caption text-dim font-mono">${q.count || 0}건</span>
+                <span class="badge-status ${isStrat ? 'completed' : 'ready'}">${isStrat ? '층화' : '단순·엑셀'}</span>
+                <a href="quota-detail.html?file=${encodeURIComponent(q.fileName)}" class="text-primary-color font-bold font-caption ml-4" title="쿼터 상세 바로 열기"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div class="autocomplete-footer">
+        <span><i class="fa-solid fa-bolt text-warning"></i> 상위 ${matches.length}건 표시 (클릭 시 선택)</span>
+        <span><kbd>ESC</kbd> 닫기</span>
+      </div>
+    `;
+    quotaAutocompleteDropdown.classList.remove('hidden');
+
+    quotaAutocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('a')) return;
+        const fname = item.getAttribute('data-filename');
+        const selectedQuota = allQuotas.find(q => q.fileName === fname);
+        if (selectedQuota && inputQuotaSearch) {
+          inputQuotaSearch.value = selectedQuota.title;
+          currentQuotaSearchQuery = selectedQuota.title;
+          if (btnClearQuotaSearch) btnClearQuotaSearch.classList.remove('d-none');
+          quotaAutocompleteDropdown.classList.add('hidden');
+          applyQuotaFiltersAndRender();
+        }
+      });
+    });
+  }
+
+  if (inputQuotaSearch) {
+    inputQuotaSearch.addEventListener('input', () => {
+      currentQuotaSearchQuery = inputQuotaSearch.value.trim();
+      if (btnClearQuotaSearch) {
+        btnClearQuotaSearch.classList.toggle('d-none', !currentQuotaSearchQuery);
+      }
+      applyQuotaFiltersAndRender();
+      renderQuotaAutocomplete(currentQuotaSearchQuery);
+    });
+
+    inputQuotaSearch.addEventListener('keydown', (e) => {
+      if (!quotaAutocompleteDropdown) return;
+      const items = quotaAutocompleteDropdown.querySelectorAll('.autocomplete-item');
+      if (items.length > 0 && !quotaAutocompleteDropdown.classList.contains('hidden')) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedQuotaAutocompleteIdx = Math.min(items.length - 1, selectedQuotaAutocompleteIdx + 1);
+          items.forEach((it, i) => it.classList.toggle('is-selected', i === selectedQuotaAutocompleteIdx));
+          items[selectedQuotaAutocompleteIdx]?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedQuotaAutocompleteIdx = Math.max(0, selectedQuotaAutocompleteIdx - 1);
+          items.forEach((it, i) => it.classList.toggle('is-selected', i === selectedQuotaAutocompleteIdx));
+          items[selectedQuotaAutocompleteIdx]?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter') {
+          if (selectedQuotaAutocompleteIdx >= 0 && items[selectedQuotaAutocompleteIdx]) {
+            e.preventDefault();
+            items[selectedQuotaAutocompleteIdx].click();
+          }
+        } else if (e.key === 'Escape') {
+          quotaAutocompleteDropdown.classList.add('hidden');
+        }
+      }
+    });
+
+    inputQuotaSearch.addEventListener('focus', () => {
+      if (inputQuotaSearch.value.trim()) {
+        renderQuotaAutocomplete(inputQuotaSearch.value.trim());
+      }
+    });
+  }
+
+  if (btnClearQuotaSearch) {
+    btnClearQuotaSearch.addEventListener('click', () => {
+      if (inputQuotaSearch) inputQuotaSearch.value = '';
+      currentQuotaSearchQuery = '';
+      btnClearQuotaSearch.classList.add('d-none');
+      if (quotaAutocompleteDropdown) quotaAutocompleteDropdown.classList.add('hidden');
+      if (inputQuotaSearch) inputQuotaSearch.focus();
+      applyQuotaFiltersAndRender();
+    });
+  }
 
   async function loadQuotas() {
     try {
@@ -640,26 +963,28 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/quota/list');
       if (!res.ok) throw new Error('쿼터 목록을 가져오지 못했습니다.');
       const quotas = await res.json();
-      updateQuotaStats(quotas);
-      renderQuotas(quotas);
+      allQuotas = Array.isArray(quotas) ? quotas : [];
+      updateQuotaStats(allQuotas);
+      updateQuotaCategoryCounts();
+      applyQuotaFiltersAndRender();
     } catch (err) {
       quotaContainer.innerHTML = `<div class="empty-state"><p>쿼터 목록 로드 실패: ${err.message}</p></div>`;
     }
   }
 
   function updateQuotaStats(quotas) {
-    statTotalQuotas.textContent = `${quotas.length}개`;
+    if (statTotalQuotas) statTotalQuotas.textContent = `${quotas.length}개`;
     const totalCount = quotas.reduce((sum, q) => sum + (q.count || 0), 0);
-    statTotalMerchants.textContent = `${totalCount}건`;
-    const stratifiedCount = quotas.filter(q => q.industryDistribution && Object.keys(q.industryDistribution).length >= 5).length;
-    statStratifiedQuotas.textContent = `${stratifiedCount}개`;
+    if (statTotalMerchants) statTotalMerchants.textContent = `${totalCount}건`;
+    const stratifiedCount = quotas.filter(q => isQuotaStratified(q)).length;
+    if (statStratifiedQuotas) statStratifiedQuotas.textContent = `${stratifiedCount}개`;
     const withExcel = quotas.filter(q => q.excelFileName).length;
     const rate = quotas.length > 0 ? Math.round((withExcel / quotas.length) * 100) : 100;
-    statExcelSync.textContent = `${rate}%`;
+    if (statExcelSync) statExcelSync.textContent = `${rate}%`;
   }
 
   function renderQuotas(quotas) {
-    if (quotas.length === 0) {
+    if (allQuotas.length === 0) {
       quotaContainer.innerHTML = `
         <div class="empty-state empty-state-card">
           <i class="fa-solid fa-database empty-state-icon"></i>
@@ -672,10 +997,28 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    if (quotas.length === 0) {
+      quotaContainer.innerHTML = `
+        <div class="empty-state empty-state-card">
+          <i class="fa-solid fa-filter-circle-xmark empty-state-icon"></i>
+          <p class="empty-state-text">선택하신 조건(카테고리/수집방식/검색어)에 일치하는 조사 쿼터가 없습니다.</p>
+          <button class="btn-pill btn-pill-secondary mt-14" id="btn-empty-reset-quota-filters">
+            <i class="fa-solid fa-rotate-left"></i> 필터 및 검색어 초기화
+          </button>
+        </div>
+      `;
+      const btnEmptyReset = document.getElementById('btn-empty-reset-quota-filters');
+      if (btnEmptyReset) btnEmptyReset.addEventListener('click', resetAllQuotaFilters);
+      return;
+    }
+
     quotaContainer.innerHTML = quotas.map(q => {
+      const cat = getQuotaCategory(q);
+      const catMeta = getCategoryMeta(cat);
       const dateStr = q.createdAt ? new Date(q.createdAt).toLocaleDateString('ko-KR') : '-';
-      const marketName = q.marketName || '일반 사업자';
-      const isStratified = q.industryDistribution && Object.keys(q.industryDistribution).length >= 5;
+      const marketName = q.marketName || (cat === 'smallbiz' ? '경기도 소상공인 패널' : (cat === 'assoc' ? '전통시장 상인회' : '일반 사업자'));
+      const isStratified = isQuotaStratified(q);
+      const isExcelUpload = (q.requestParams?.samplingMode === 'excel_upload' || String(q.title || '').includes('엑셀업로드'));
 
       // 업종 칩 렌더링
       let industryChipsHtml = '';
@@ -688,28 +1031,33 @@ document.addEventListener('DOMContentLoaded', () => {
         industryChipsHtml = `
           <div class="quota-industry-chips">
             ${Object.entries(q.industryDistribution).map(([ind, cnt]) => `
-              <span class="quota-ind-badge">${iconMap[ind] || '🏷️'} ${escapeHtml(ind)} ${cnt}</span>
+              <span class="quota-ind-badge">${iconMap[ind] || '🏷️'} ${highlightQuery(escapeHtml(ind), currentQuotaSearchQuery)} ${cnt}</span>
             `).join('')}
           </div>
         `;
       } else {
         industryChipsHtml = `
           <div class="quota-industry-chips">
-            <span class="quota-ind-badge">단일 업종 / 키워드: ${escapeHtml(q.keyword || '전체')}</span>
+            <span class="quota-ind-badge">단일 업종 / 키워드: ${highlightQuery(escapeHtml(q.keyword || '전체'), currentQuotaSearchQuery)}</span>
           </div>
         `;
       }
+
+      const modeBadgeText = isStratified ? '9대 업종 층화 표본' : (isExcelUpload ? '엑셀 업로드 표본' : '단순 순차 수집');
 
       return `
         <div class="campaign-card quota-card" data-filename="${escapeHtml(q.fileName)}">
           <div>
             <div class="campaign-card-header">
-              <span class="badge-quota-type b2b"><i class="fa-solid fa-shop"></i> ${escapeHtml(marketName)}</span>
+              <div class="flex-center-gap-6 flex-wrap">
+                <span class="badge-category ${catMeta.class}"><i class="fa-solid ${catMeta.icon}"></i> ${catMeta.label}</span>
+                <span class="badge-quota-type b2b"><i class="fa-solid fa-shop"></i> ${highlightQuery(escapeHtml(marketName), currentQuotaSearchQuery)}</span>
+              </div>
               <span class="badge-status ${isStratified ? 'success' : 'ready'}">
-                ${isStratified ? '9대 업종 층화 표본' : '단순 순차 수집'}
+                ${modeBadgeText}
               </span>
             </div>
-            <h3 class="campaign-title">${escapeHtml(q.title)}</h3>
+            <h3 class="campaign-title">${highlightQuery(escapeHtml(q.title), currentQuotaSearchQuery)}</h3>
             <div class="quota-chips-container mt-8 mb-12">
               ${industryChipsHtml}
             </div>
