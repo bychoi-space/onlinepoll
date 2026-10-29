@@ -272,6 +272,8 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     const minReg = Math.max(0, parseInt(mb.employeeRegularMin, 10));
     const maxReg = Math.max(minReg, parseInt(mb.employeeRegularMax, 10));
     employeeRegular = randBetween(minReg, maxReg);
+  } else if (mb.employeeRegular !== undefined && parseInt(mb.employeeRegular, 10) === 0) {
+    employeeRegular = 0;
   } else if (isAutoEmp) {
     const baseRegular = mb.employeeRegular !== undefined ? parseInt(mb.employeeRegular, 10) : 0;
     if (annualSales < 125 || dailySales < 50) {
@@ -298,6 +300,8 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     const minTmp = Math.max(0, parseInt(mb.employeeTempMin, 10));
     const maxTmp = Math.max(minTmp, parseInt(mb.employeeTempMax, 10));
     employeeTemp = randBetween(minTmp, maxTmp);
+  } else if (mb.employeeTemp !== undefined && parseInt(mb.employeeTemp, 10) === 0) {
+    employeeTemp = 0;
   } else if (isAutoEmp) {
     const baseTemp = mb.employeeTemp !== undefined ? parseInt(mb.employeeTemp, 10) : 0;
     if (annualSales < 125 || dailySales < 50) {

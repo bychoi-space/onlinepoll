@@ -1200,10 +1200,10 @@ async function initSurveyDetailPage() {
     employeeFamilyMax: 0,
     employeeRegular: 0,
     employeeRegularMin: 0,
-    employeeRegularMax: 2,
+    employeeRegularMax: 0,
     employeeTemp: 0,
     employeeTempMin: 0,
-    employeeTempMax: 1,
+    employeeTempMax: 0,
     dailySales: 65,
     dailySalesMin: 30,
     dailySalesMax: 80,
@@ -3241,7 +3241,8 @@ async function initSurveyDetailPage() {
         `;
       } else if (field.id === 'B4_2') {
         const tax = currentBaseline.costTaxRatio || 10;
-        const labor = (currentBaseline.employeeRegular > 0 ? (currentBaseline.costLaborRatio || 25) : 0);
+        const hasPaidEmp = (currentBaseline.employeeRegularMax !== undefined ? currentBaseline.employeeRegularMax : (currentBaseline.employeeRegular || 0)) > 0;
+        const labor = (hasPaidEmp ? (currentBaseline.costLaborRatio || 25) : 0);
         const rent = currentBaseline.costRentRatio || 20;
         const raw = Math.max(10, 100 - tax - labor - rent);
         controlHtml = `
@@ -3297,14 +3298,16 @@ async function initSurveyDetailPage() {
     const minPercent = Math.max(0, Math.min(100, ((curMin - minBound) / (maxBound - minBound)) * 100));
     const maxPercent = Math.max(0, Math.min(100, ((curMax - minBound) / (maxBound - minBound)) * 100));
     const widthPercent = Math.max(0, maxPercent - minPercent);
+    const minZ = (curMin === curMax && curMin >= maxBound) ? 4 : 3;
+    const maxZ = (curMin === curMax && curMin >= maxBound) ? 3 : 4;
 
     return `
       <div class="baseline-range-container">
         <div class="dual-slider-track-wrap">
           <div class="dual-slider-track"></div>
           <div class="dual-slider-highlight" id="highlight-${idPrefix}" style="left:${minPercent}%;width:${widthPercent}%;"></div>
-          <input type="range" class="dual-slider-thumb thumb-min" id="range-min-${idPrefix}" min="${minBound}" max="${maxBound}" step="${step}" value="${curMin}" />
-          <input type="range" class="dual-slider-thumb thumb-max" id="range-max-${idPrefix}" min="${minBound}" max="${maxBound}" step="${step}" value="${curMax}" />
+          <input type="range" class="dual-slider-thumb thumb-min" id="range-min-${idPrefix}" min="${minBound}" max="${maxBound}" step="${step}" value="${curMin}" style="z-index:${minZ};" />
+          <input type="range" class="dual-slider-thumb thumb-max" id="range-max-${idPrefix}" min="${minBound}" max="${maxBound}" step="${step}" value="${curMax}" style="z-index:${maxZ};" />
         </div>
         <div class="range-display-badge" id="badge-${idPrefix}">
           <span class="range-badge-min font-mono font-bold" id="badge-min-${idPrefix}">${curMin}</span>
@@ -3385,10 +3388,10 @@ async function initSurveyDetailPage() {
         return renderDualRangeControl('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, 1, 0, 0, '명');
       // P2: 상시 유급 종업원 수 (Min~Max 레인지)
       case 'A10_2':
-        return renderDualRangeControl('paid-emp', 'employeeRegularMin', 'employeeRegularMax', 0, 10, 1, 0, 2, '명');
+        return renderDualRangeControl('paid-emp', 'employeeRegularMin', 'employeeRegularMax', 0, 10, 1, 0, 0, '명');
       // P2: 임시/일용 종업원 수 (Min~Max 레인지)
       case 'A10_3':
-        return renderDualRangeControl('temp-emp', 'employeeTempMin', 'employeeTempMax', 0, 5, 1, 0, 1, '명');
+        return renderDualRangeControl('temp-emp', 'employeeTempMin', 'employeeTempMax', 0, 5, 1, 0, 0, '명');
       // P2: 매출 연동 고용 규칙
       case 'RULE_EMP_SALES': {
         const curRule = currentBaseline.empSalesLink || 'auto';
@@ -4055,7 +4058,8 @@ async function initSurveyDetailPage() {
 
     const updateRawCost = () => {
       const tax = currentBaseline.costTaxRatio || 10;
-      const labor = (currentBaseline.employeeRegular > 0 ? (currentBaseline.costLaborRatio || 25) : 0);
+      const hasPaidEmp = (currentBaseline.employeeRegularMax !== undefined ? currentBaseline.employeeRegularMax : (currentBaseline.employeeRegular || 0)) > 0;
+      const labor = (hasPaidEmp ? (currentBaseline.costLaborRatio || 25) : 0);
       const rent = currentBaseline.costRentRatio || 20;
       const raw = Math.max(10, 100 - tax - labor - rent);
       currentBaseline.costRawRatio = raw;
@@ -4088,16 +4092,26 @@ async function initSurveyDetailPage() {
         if (elBadgeMax) elBadgeMax.textContent = maxVal;
       };
 
-      const syncValues = () => {
+      const updateThumbZIndex = (minVal, maxVal) => {
+        if (minVal === maxVal && minVal >= maxBound) {
+          elMin.style.zIndex = '4';
+          elMax.style.zIndex = '3';
+        } else {
+          elMin.style.zIndex = '3';
+          elMax.style.zIndex = '4';
+        }
+      };
+
+      const syncValues = (source) => {
         let minVal = parseFloat(elMin.value);
         let maxVal = parseFloat(elMax.value);
         if (minVal > maxVal) {
-          if (document.activeElement === elMin) {
-            minVal = maxVal;
-            elMin.value = minVal;
-          } else {
+          if (source === 'min') {
             maxVal = minVal;
             elMax.value = maxVal;
+          } else {
+            minVal = maxVal;
+            elMin.value = minVal;
           }
         }
         currentBaseline[minKey] = minVal;
@@ -4107,13 +4121,40 @@ async function initSurveyDetailPage() {
           groupBaselines[activeGroup][maxKey] = maxVal;
         }
         updateVisuals(minVal, maxVal);
+        updateThumbZIndex(minVal, maxVal);
         if (typeof onSync === 'function') onSync(minVal, maxVal);
       };
 
-      elMin.addEventListener('input', syncValues);
-      elMax.addEventListener('input', syncValues);
-      elMin.addEventListener('change', () => { syncValues(); markUnsaved(); });
-      elMax.addEventListener('change', () => { syncValues(); markUnsaved(); });
+      elMin.addEventListener('input', () => syncValues('min'));
+      elMax.addEventListener('input', () => syncValues('max'));
+      elMin.addEventListener('change', () => { syncValues('min'); markUnsaved(); });
+      elMax.addEventListener('change', () => { syncValues('max'); markUnsaved(); });
+
+      const wrapEl = elMin.closest('.dual-slider-track-wrap');
+      if (wrapEl) {
+        wrapEl.addEventListener('pointerdown', (e) => {
+          if (e.target === elMin || e.target === elMax) return;
+          const rect = wrapEl.getBoundingClientRect();
+          if (!rect.width) return;
+          const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          const stepVal = parseFloat(elMin.step) || 1;
+          const rawVal = minBound + ratio * (maxBound - minBound);
+          const snapped = Math.max(minBound, Math.min(maxBound, Math.round((rawVal - minBound) / stepVal) * stepVal + minBound));
+          const curMin = parseFloat(elMin.value);
+          const curMax = parseFloat(elMax.value);
+          if (curMin === curMax || Math.abs(snapped - curMin) <= Math.abs(snapped - curMax)) {
+            elMin.value = snapped;
+            if (curMin === curMax && snapped < curMax) {
+              elMax.value = snapped;
+            }
+            syncValues('min');
+          } else {
+            elMax.value = snapped;
+            syncValues('max');
+          }
+          markUnsaved();
+        });
+      }
     };
 
     // Q1: 응답자 자격
@@ -4135,9 +4176,19 @@ async function initSurveyDetailPage() {
       }
     });
     bindSlider('slider-pyeong', 'val-pyeong', 'storePyeong', '평', updateSqm);
-    bindDualRange('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, '명');
-    bindDualRange('paid-emp', 'employeeRegularMin', 'employeeRegularMax', 0, 10, '명', updateRawCost);
-    bindDualRange('temp-emp', 'employeeTempMin', 'employeeTempMax', 0, 5, '명');
+    bindDualRange('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, '명', (min, max) => {
+      currentBaseline.employeeFamily = max;
+      if (groupBaselines[activeGroup]) groupBaselines[activeGroup].employeeFamily = max;
+    });
+    bindDualRange('paid-emp', 'employeeRegularMin', 'employeeRegularMax', 0, 10, '명', (min, max) => {
+      currentBaseline.employeeRegular = max;
+      if (groupBaselines[activeGroup]) groupBaselines[activeGroup].employeeRegular = max;
+      updateRawCost();
+    });
+    bindDualRange('temp-emp', 'employeeTempMin', 'employeeTempMax', 0, 5, '명', (min, max) => {
+      currentBaseline.employeeTemp = max;
+      if (groupBaselines[activeGroup]) groupBaselines[activeGroup].employeeTemp = max;
+    });
     bindSelect('select-emp-sales-link', 'empSalesLink');
 
     // P3: 매출 & 영업개월수 & 분기 패턴
@@ -4291,7 +4342,11 @@ async function initSurveyDetailPage() {
         employeeFamilyMin: 0,
         employeeFamilyMax: 0,
         employeeRegular: 0,
+        employeeRegularMin: 0,
+        employeeRegularMax: 0,
         employeeTemp: 0,
+        employeeTempMin: 0,
+        employeeTempMax: 0,
         dailySales: 65,
         annualSales: 180,
         quarterPattern: 'even',
@@ -4344,7 +4399,11 @@ async function initSurveyDetailPage() {
         employeeFamilyMin: 0,
         employeeFamilyMax: 0,
         employeeRegular: 2,
+        employeeRegularMin: 0,
+        employeeRegularMax: 2,
         employeeTemp: 1,
+        employeeTempMin: 0,
+        employeeTempMax: 1,
         dailySales: 130,
         annualSales: 280,
         quarterPattern: 'h2',
@@ -4397,7 +4456,11 @@ async function initSurveyDetailPage() {
         employeeFamilyMin: 0,
         employeeFamilyMax: 0,
         employeeRegular: 0,
+        employeeRegularMin: 0,
+        employeeRegularMax: 0,
         employeeTemp: 0,
+        employeeTempMin: 0,
+        employeeTempMax: 0,
         dailySales: 45,
         annualSales: 120,
         quarterPattern: 'even',
