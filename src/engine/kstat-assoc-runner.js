@@ -380,6 +380,75 @@ export async function runKstatAssocSurvey(options = {}) {
       // ------------------------------------------
       if (currUrl.includes('Agree.asp') || currPageName === 'Agree') {
         onProgress({ step: 'AGREE', message: `Agree 최종 동의 단계 도달.` });
+
+        // [안전장치] 중간 단계 점프(NextPage) 등으로 P3를 건너뛴 경우에도 A6/A6A 전년도 데이터가 100% 반영되도록 보장
+        try {
+          const p3SyncRes = await page.evaluate(async () => {
+            const parseJsObj = (str) => {
+              const out = {};
+              if (!str) return out;
+              const re = /'([^']+)'\s*:\s*'([^']*)'/g;
+              let m;
+              while ((m = re.exec(str)) !== null) {
+                out[m[1]] = m[2];
+              }
+              return out;
+            };
+            const idKey = document.querySelector('input[name="IDKey"]')?.value || document.querySelector('input[name="VC_ID"]')?.value || '';
+            if (!idKey) return { skipped: true, reason: 'no_idKey' };
+
+            const body = new URLSearchParams({ IDKey: idKey, VC_ID: idKey, ResType: 'TAPI', PVALUE: '2' }).toString();
+            const [rA6, rA6A] = await Promise.all([
+              fetch('A6.asp', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body }),
+              fetch('A6A.asp', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body })
+            ]);
+            const [htmlA6, htmlA6A] = await Promise.all([rA6.text(), rA6A.text()]);
+            const prevA6 = parseJsObj(htmlA6.match(/var\s+prevData\s*=\s*(\{[\s\S]*?\});/)?.[1]);
+            const currA6 = parseJsObj(htmlA6.match(/var\s+currData\s*=\s*(\{[\s\S]*?\});/)?.[1]);
+            const prevA6A = parseJsObj(htmlA6A.match(/var\s+prevData\s*=\s*(\{[\s\S]*?\});/)?.[1]);
+            const currA6A = parseJsObj(htmlA6A.match(/var\s+currData\s*=\s*(\{[\s\S]*?\});/)?.[1]);
+
+            const hasPrev = (prevA6.PA6_4 && prevA6.PA6_4 !== '' && prevA6.PA6_4 !== '0') || (prevA6A.PA6A_SUM && prevA6A.PA6A_SUM !== '' && prevA6A.PA6A_SUM !== '0');
+            if (!hasPrev) return { skipped: true, reason: 'no_prevData' };
+
+            const a6Keys = ['1', '1_1', '1_2', '2', '2_1', '2_2', '3', '4'];
+            const a6aKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'SUM'];
+            const has4DigitPrev = a6Keys.some(k => k !== '1' && k !== '2' && k !== '4' && String(prevA6['PA6_' + k] || '').length > 3);
+            if (has4DigitPrev && currA6.A6_4 && currA6.A6_4 !== '0') return { skipped: true, reason: 'maxlength3_adjusted' };
+            const a6Match = a6Keys.every(k => (currA6['A6_' + k] || '') === (prevA6['PA6_' + k] || '0'));
+            const a6aMatch = a6aKeys.every(k => (currA6A['A6A_' + k] || '') === (prevA6A['PA6A_' + k] || '0'));
+            if (a6Match && a6aMatch) return { skipped: true, reason: 'already_matched' };
+
+            const payload = new URLSearchParams({
+              Var: 'A6_1,A6_1_1,A6_1_2,A6_2,A6_2_1,A6_2_2,A6_3,A6_4,A6A_1,A6A_2,A6A_3,A6A_4,A6A_5,A6A_6,A6A_7,A6A_8,A6A_9,A6A_SUM',
+              PageName: 'Agree',
+              PAGE: 'P3',
+              NextPage: 'Agree',
+              IDKey: idKey,
+              VC_ID: idKey,
+              ResType: 'TAPI',
+              PVALUE: '3'
+            });
+            for (const k of a6Keys) {
+              payload.set('A6_' + k, prevA6['PA6_' + k] !== undefined && prevA6['PA6_' + k] !== '' ? prevA6['PA6_' + k] : '0');
+            }
+            for (const k of a6aKeys) {
+              payload.set('A6A_' + k, prevA6A['PA6A_' + k] !== undefined && prevA6A['PA6A_' + k] !== '' ? prevA6A['PA6A_' + k] : '0');
+            }
+            await fetch('Survey.asp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: payload.toString()
+            });
+            return { synced: true, a6Total: payload.get('A6_4'), a6aSum: payload.get('A6A_SUM') };
+          });
+          if (p3SyncRes && p3SyncRes.synced) {
+            logger.info(`[상인회 러너] [Agree 진입 전 P3(A6/A6a) 자동 복구 완료]: A6 총합계=${p3SyncRes.a6Total}, A6a 합계=${p3SyncRes.a6aSum}`);
+          }
+        } catch (syncErr) {
+          logger.warn(`[상인회 러너] Agree 진입 전 P3 검증 경고: ${syncErr.message}`);
+        }
+
         await captureStep('24_AGREE', '최종동의화면');
 
         if (pilotMode && safetyGuard) {
@@ -440,13 +509,30 @@ export async function runKstatAssocSurvey(options = {}) {
         if (a6Frame) {
           try {
             const a6Result = await a6Frame.evaluate(() => {
+              // <script> 내부의 var prevData = { ... } 지역 변수까지 직접 파싱하여 누락 원천 차단
+              const scriptPrevData = {};
+              try {
+                const allScripts = Array.from(document.scripts).map(s => s.textContent || '').join('\n');
+                const m = allScripts.match(/var\s+prevData\s*=\s*(\{[\s\S]*?\});/);
+                if (m && m[1]) {
+                  const re = /'([^']+)'\s*:\s*'([^']*)'/g;
+                  let kv;
+                  while ((kv = re.exec(m[1])) !== null) {
+                    scriptPrevData[kv[1]] = kv[2];
+                  }
+                }
+              } catch (_) {}
+
               const getVal = (pId) => {
+                if (scriptPrevData[pId] !== undefined && String(scriptPrevData[pId]).trim() !== '') {
+                  return String(scriptPrevData[pId]).trim();
+                }
+                if (typeof prevData !== 'undefined' && prevData && prevData[pId] !== undefined && String(prevData[pId]).trim() !== '') {
+                  return String(prevData[pId]).trim();
+                }
                 const el = document.querySelector('#' + pId) || document.querySelector(`input[name="${pId}"]`);
                 if (el && el.value !== undefined && el.value !== null && el.value.trim() !== '') {
                   return el.value.trim();
-                }
-                if (typeof prevData !== 'undefined' && prevData && prevData[pId] !== undefined) {
-                  return String(prevData[pId]).trim();
                 }
                 return '';
               };
@@ -454,7 +540,12 @@ export async function runKstatAssocSurvey(options = {}) {
               const setInput = (id, val) => {
                 const el = document.querySelector('#' + id) || document.querySelector(`input[name="${id}"]`);
                 if (el) {
-                  el.value = (val !== '' && val !== null && val !== undefined) ? String(val) : '0';
+                  let strVal = (val !== '' && val !== null && val !== undefined) ? String(val).trim() : '0';
+                  const maxLen = parseInt(el.getAttribute('maxlength') || '0', 10);
+                  if (maxLen === 3 && strVal.length > 3 && !isNaN(parseInt(strVal, 10))) {
+                    strVal = '999';
+                  }
+                  el.value = strVal;
                   el.dispatchEvent(new Event('input', { bubbles: true }));
                   el.dispatchEvent(new Event('change', { bubbles: true }));
                   if (typeof $ !== 'undefined') $(el).val(el.value).trigger('input').trigger('change');
@@ -514,13 +605,29 @@ export async function runKstatAssocSurvey(options = {}) {
         if (a6aFrame) {
           try {
             const a6aResult = await a6aFrame.evaluate(() => {
+              const scriptPrevData = {};
+              try {
+                const allScripts = Array.from(document.scripts).map(s => s.textContent || '').join('\n');
+                const m = allScripts.match(/var\s+prevData\s*=\s*(\{[\s\S]*?\});/);
+                if (m && m[1]) {
+                  const re = /'([^']+)'\s*:\s*'([^']*)'/g;
+                  let kv;
+                  while ((kv = re.exec(m[1])) !== null) {
+                    scriptPrevData[kv[1]] = kv[2];
+                  }
+                }
+              } catch (_) {}
+
               const getVal = (pId) => {
+                if (scriptPrevData[pId] !== undefined && String(scriptPrevData[pId]).trim() !== '') {
+                  return String(scriptPrevData[pId]).trim();
+                }
+                if (typeof prevData !== 'undefined' && prevData && prevData[pId] !== undefined && String(prevData[pId]).trim() !== '') {
+                  return String(prevData[pId]).trim();
+                }
                 const el = document.querySelector('#' + pId) || document.querySelector(`input[name="${pId}"]`);
                 if (el && el.value !== undefined && el.value !== null && el.value.trim() !== '') {
                   return el.value.trim();
-                }
-                if (typeof prevData !== 'undefined' && prevData && prevData[pId] !== undefined) {
-                  return String(prevData[pId]).trim();
                 }
                 return '';
               };
@@ -528,7 +635,12 @@ export async function runKstatAssocSurvey(options = {}) {
               const setInput = (id, val) => {
                 const el = document.querySelector('#' + id) || document.querySelector(`input[name="${id}"]`);
                 if (el) {
-                  el.value = (val !== '' && val !== null && val !== undefined) ? String(val) : '0';
+                  let strVal = (val !== '' && val !== null && val !== undefined) ? String(val).trim() : '0';
+                  const maxLen = parseInt(el.getAttribute('maxlength') || '0', 10);
+                  if (maxLen === 3 && strVal.length > 3 && !isNaN(parseInt(strVal, 10))) {
+                    strVal = '999';
+                  }
+                  el.value = strVal;
                   el.dispatchEvent(new Event('input', { bubbles: true }));
                   el.dispatchEvent(new Event('change', { bubbles: true }));
                   if (typeof $ !== 'undefined') $(el).val(el.value).trigger('input').trigger('change');
@@ -706,10 +818,11 @@ export async function runKstatAssocSurvey(options = {}) {
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
         // 1-1. A7.asp (정기휴무일) 1:1 완벽 미러링 보장 (A7 및 A7_1 동시 방어)
+        let a7TargetVal = '2';
         const a7Frame = page.frames().find(f => f.url().includes('A7.asp') || f.name() === 'frame_A7');
         if (a7Frame) {
           try {
-            await a7Frame.evaluate(() => {
+            a7TargetVal = await a7Frame.evaluate(() => {
               const pa7Val = document.querySelector('input[name="PA7"]:checked')?.value || document.querySelector('input[name="PA7_1"]:checked')?.value || '2';
               const targetVal = pa7Val === '1' ? '1' : '2';
               ['A7', 'A7_1'].forEach(name => {
@@ -721,8 +834,51 @@ export async function runKstatAssocSurvey(options = {}) {
                   if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
                 }
               });
+              return targetVal;
             });
-          } catch (_) {}
+          } catch (err) {
+            console.error('[P4 A7 frame 주입 오류]:', err);
+          }
+        }
+
+        // A7=1(정기휴일 있음) 선택 시 FLOW_RULES에 의해 A7A(정기휴무일 텍스트), A7B(정기휴무 요일 체크박스) 프레임이 활성화됨
+        await page.evaluate(() => {
+          if (typeof updateStepView === 'function') {
+            try { updateStepView(); } catch (_) {}
+          }
+        }).catch(err => console.error('[P4 updateStepView 경고]:', err));
+
+        if (a7TargetVal === '1') {
+          await syncAllChildFrames(page);
+          const a7aFrame = page.frames().find(f => f.url().includes('A7A.asp') || f.name() === 'frame_A7A');
+          if (a7aFrame) {
+            await a7aFrame.evaluate(() => {
+              const inp = document.querySelector('#A7A, input[name="A7A"]');
+              if (inp && (!inp.value || inp.value.trim() === '' || inp.value.trim() === '0')) {
+                inp.value = '둘째, 넷째주';
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(inp).val('둘째, 넷째주').trigger('input').trigger('change');
+              }
+            }).catch(err => console.error('[P4 A7A 주입 오류]:', err));
+          }
+
+          const a7bFrame = page.frames().find(f => f.url().includes('A7B.asp') || f.name() === 'frame_A7B');
+          if (a7bFrame) {
+            await a7bFrame.evaluate(() => {
+              const cbs = Array.from(document.querySelectorAll('input[type="checkbox"][name^="A7B_"]'));
+              if (cbs.length > 0 && !cbs.some(c => c.checked)) {
+                const sun = document.querySelector('#A7B_7, input[name="A7B_7"]') || cbs[cbs.length - 1];
+                if (sun) {
+                  if (!sun.checked) sun.click();
+                  sun.checked = true;
+                  sun.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(sun).prop('checked', true).trigger('change');
+                  if (typeof colorCheckbox === 'function') colorCheckbox('A7B');
+                }
+              }
+            }).catch(err => console.error('[P4 A7B 주입 오류]:', err));
+          }
         }
 
         // 2. A8.asp (frame_A8): 운영시간 정책 가이드라인 반영
@@ -3200,22 +3356,45 @@ async function syncAllChildFrames(page) {
       if (typeof processFrameLoadQueue === 'function' && !window.IS_FRAME_QUEUE_RUNNING) {
         try { processFrameLoadQueue(); } catch (_) {}
       }
-      // data-src가 남아있지만 about:blank 인 프레임 강제 src 할당
+      // [중요] Kstat merge-template.js의 POST 타겟 iframe은 로드 완료(data-merge-loaded="1") 후에도
+      // f.src 프로퍼티가 'about:blank'로 유지됨. 따라서 POST 로딩이 완료/진행 중인 프레임에
+      // f.src = dSrc(GET 요청)를 덮어쓰면 IDKey가 유실되어 prevData/currData가 모두 빈칸으로 초기화됨!
       document.querySelectorAll('iframe').forEach(f => {
+        const isLoaded = f.getAttribute('data-merge-loaded') === '1';
+        const isLoading = f.getAttribute('data-merge-loading') === '1';
+        if (isLoaded || isLoading) return;
+
+        let docHref = 'about:blank';
+        try {
+          const doc = f.contentDocument || f.contentWindow?.document;
+          if (doc && doc.location && doc.location.href) {
+            docHref = String(doc.location.href);
+          }
+        } catch (_) {}
+        if (docHref && docHref !== 'about:blank' && !docHref.endsWith('about:blank')) return;
+
+        if (typeof ensureFrameLoaded === 'function' && f.id) {
+          try {
+            ensureFrameLoaded(f.id);
+            return;
+          } catch (_) {}
+        }
+
         const dSrc = f.getAttribute('data-src');
         if (dSrc && (f.src === 'about:blank' || !f.src || f.src.endsWith('about:blank'))) {
           f.src = dSrc;
         }
       });
-    }).catch(() => {});
+    }).catch(err => console.error('[syncAllChildFrames evaluate 경고]:', err));
 
-    // 2. 모든 iframe 렌더링 확인 (최대 10회 = 약 1.5초로 단축)
-    for (let w = 0; w < 10; w++) {
+    // 2. 모든 iframe 렌더링 확인 (data-merge-loading 해제 및 문서 readyState === 'complete' 보장)
+    for (let w = 0; w < 20; w++) {
       const allReady = await page.evaluate(() => {
         const iframes = Array.from(document.querySelectorAll('iframe'));
         if (iframes.length === 0) return true;
         return iframes.every(f => {
           try {
+            if (f.getAttribute('data-merge-loading') === '1') return false;
             const doc = f.contentDocument || f.contentWindow?.document;
             if (!doc || !doc.body) return false;
             const href = String(doc.location?.href || '').toLowerCase();
@@ -3230,6 +3409,15 @@ async function syncAllChildFrames(page) {
       if (allReady) break;
       await page.waitForTimeout(150);
     }
+
+    await page.evaluate(() => {
+      if (typeof updateStepView === 'function') {
+        try { updateStepView(); } catch (_) {}
+      }
+      if (typeof updateNextButtonEnabledState === 'function') {
+        try { updateNextButtonEnabledState(); } catch (_) {}
+      }
+    }).catch(() => {});
   } catch (_) {}
 
   // 프레임 로딩 대기 (timeout 800ms로 단축)
@@ -3259,9 +3447,27 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
         let ratingCount = 0;
 
         // ============================================================
-        // 1. window.currData 및 window.prevData 최우선 주입 (가장 정확)
+        // 1. script 내부 var prevData / var currData 및 window.prevData 최우선 주입 (가장 정확)
         // ============================================================
-        const mergedData = Object.assign({}, window.prevData || {}, window.currData || {});
+        const scriptPrev = {};
+        const scriptCurr = {};
+        try {
+          const allScripts = Array.from(document.scripts).map(s => s.textContent || '').join('\n');
+          const prevM = allScripts.match(/var\s+prevData\s*=\s*(\{[\s\S]*?\});/);
+          if (prevM && prevM[1]) {
+            const re = /'([^']+)'\s*:\s*'([^']*)'/g;
+            let kv;
+            while ((kv = re.exec(prevM[1])) !== null) scriptPrev[kv[1]] = kv[2];
+          }
+          const currM = allScripts.match(/var\s+currData\s*=\s*(\{[\s\S]*?\});/);
+          if (currM && currM[1]) {
+            const re = /'([^']+)'\s*:\s*'([^']*)'/g;
+            let kv;
+            while ((kv = re.exec(currM[1])) !== null) scriptCurr[kv[1]] = kv[2];
+          }
+        } catch (_) {}
+
+        const mergedData = Object.assign({}, scriptPrev, window.prevData || {}, scriptCurr, window.currData || {});
 
         if (Object.keys(mergedData).length > 0) {
           Object.keys(mergedData).forEach(key => {
@@ -3282,8 +3488,10 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
             }
             const radio = document.querySelector(`input[type="radio"][name="${currKey}"][value="${val}"]`);
             if (radio) {
+              if (!radio.checked) radio.click();
               radio.checked = true;
               radio.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof $ !== 'undefined') $(radio).prop('checked', true).trigger('change');
               rCount++;
             }
 
@@ -3294,8 +3502,10 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
             }
             const cb = document.querySelector(`input[type="checkbox"][name="${currKey}"][value="${val}"]`);
             if (cb) {
+              if (!cb.checked) cb.click();
               cb.checked = true;
               cb.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof $ !== 'undefined') $(cb).prop('checked', true).trigger('change');
               rCount++;
             }
 
@@ -3576,7 +3786,28 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
           const hasChecked = Array.from(f3Checkboxes).some(c => c.checked);
           if (!hasChecked) {
             const f3_1 = document.querySelector('#F3_1, input[name="F3_1"]');
-            if (f3_1) { f3_1.checked = true; f3_1.dispatchEvent(new Event('change', { bubbles: true })); }
+            if (f3_1) { if (!f3_1.checked) f3_1.click(); f3_1.checked = true; f3_1.dispatchEvent(new Event('change', { bubbles: true })); }
+          }
+        }
+
+        // A7A(정기휴무일 텍스트) 및 A7B(정기휴무 요일 체크박스) 안전망
+        const a7aInp = document.querySelector('#A7A, input[name="A7A"]');
+        if (a7aInp && (!a7aInp.value || a7aInp.value.trim() === '' || a7aInp.value.trim() === '0')) {
+          a7aInp.value = '둘째, 넷째주';
+          a7aInp.dispatchEvent(new Event('input', { bubbles: true }));
+          a7aInp.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        const a7bCheckboxes = document.querySelectorAll('input[type="checkbox"][name^="A7B_"]');
+        if (a7bCheckboxes.length > 0) {
+          const hasA7bChecked = Array.from(a7bCheckboxes).some(c => c.checked);
+          if (!hasA7bChecked) {
+            const a7b_7 = document.querySelector('#A7B_7, input[name="A7B_7"]') || a7bCheckboxes[a7bCheckboxes.length - 1];
+            if (a7b_7) {
+              if (!a7b_7.checked) a7b_7.click();
+              a7b_7.checked = true;
+              a7b_7.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof colorCheckbox === 'function') colorCheckbox('A7B');
+            }
           }
         }
 
@@ -3785,6 +4016,24 @@ async function healUnansweredAssocFields(page) {
             sel.dispatchEvent(new Event('change', { bubbles: true }));
           }
         });
+
+        // 5-1. A7A 및 A7B(정기휴무 요일 체크박스) 미응답 치유
+        const a7aInp = document.querySelector('#A7A, input[name="A7A"]');
+        if (a7aInp && (!a7aInp.value || a7aInp.value.trim() === '' || a7aInp.value.trim() === '0')) {
+          a7aInp.value = '둘째, 넷째주';
+          a7aInp.dispatchEvent(new Event('input', { bubbles: true }));
+          a7aInp.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        const a7bCbs = Array.from(document.querySelectorAll('input[type="checkbox"][name^="A7B_"]'));
+        if (a7bCbs.length > 0 && !a7bCbs.some(c => c.checked)) {
+          const sun = document.querySelector('#A7B_7, input[name="A7B_7"]') || a7bCbs[a7bCbs.length - 1];
+          if (sun) {
+            if (!sun.checked) sun.click();
+            sun.checked = true;
+            sun.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof colorCheckbox === 'function') colorCheckbox('A7B');
+          }
+        }
 
         // 6. 자동 계산 재실행
         if (typeof window.calculateA6 === 'function') window.calculateA6();
