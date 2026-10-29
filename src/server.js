@@ -26,7 +26,7 @@ import { scrapeKstatSlots } from './engine/kstat-slot-scraper.js';
 import { scrapeKstatAssocSlots } from './engine/kstat-assoc-slot-scraper.js';
 import { runKstatAssocSurvey } from './engine/kstat-assoc-runner.js';
 import { getIndustryGroupKey } from './engine/persona-builder.js';
-import { syncKstatSlotStatus, syncCampaignKstatSlots } from './engine/kstat-sync.js';
+import { syncKstatSlotStatus, syncCampaignKstatSlots, saveKstatSlotProgressStatus, bulkUpdateKstatAccountProgress } from './engine/kstat-sync.js';
 import { scrapeMetrixSlots } from './engine/metrix-slot-scraper.js';
 import { runMetrixSurvey } from './engine/metrix-runner.js';
 
@@ -654,6 +654,9 @@ app.post('/api/campaigns/:id/bind-kstat-slots', async (req, res) => {
       q.evalUrl = matchedSlot.evalUrl;
       q.surveyCompleted = matchedSlot.surveyCompleted;
       q.evalCompleted = matchedSlot.evalCompleted;
+      q.idSel = matchedSlot.idSel;
+      q.kid = matchedSlot.kid;
+      q.gid = matchedSlot.gid || '0';
       q.kstatMeta = { idSel: matchedSlot.idSel, kid: matchedSlot.kid, gid: matchedSlot.gid, mkCode: matchedSlot.mkCode, regNum: matchedSlot.regNum };
       boundCount++;
     }
@@ -674,6 +677,9 @@ app.post('/api/campaigns/:id/bind-kstat-slots', async (req, res) => {
       q.evalUrl = s.evalUrl;
       q.surveyCompleted = s.surveyCompleted;
       q.evalCompleted = s.evalCompleted;
+      q.idSel = s.idSel;
+      q.kid = s.kid;
+      q.gid = s.gid || '0';
       q.kstatMeta = { idSel: s.idSel, kid: s.kid, gid: s.gid, mkCode: s.mkCode, regNum: s.regNum };
       boundCount++;
     }
@@ -821,7 +827,7 @@ app.post('/api/campaigns/:id/bind-assoc-slots', async (req, res) => {
 });
 
 // ==========================================
-// [1-1] Kstat TAPI list.php 실시간 상태 동기화 API
+// [1-1] Kstat TAPI list.php 실시간 상태 동기화 및 [조사 진행상태] '조사완료' 자동 저장 API
 // ==========================================
 app.post('/api/campaigns/:id/sync-kstat-status', async (req, res) => {
   const campaign = CampaignStore.getCampaignById(req.params.id);
@@ -832,14 +838,39 @@ app.post('/api/campaigns/:id/sync-kstat-status', async (req, res) => {
   try {
     logger.info(`[Kstat 상태 일괄 동기화 시작] 캠페인 "${campaign.title}" (${campaign.id})`);
     const syncRes = await syncCampaignKstatSlots(campaign);
-    logger.success(`[Kstat 상태 일괄 동기화 완료] 총 ${syncRes.syncedCount}개 슬롯 동기화 성공`);
+    const progCount = syncRes.progressUpdateSummary?.updatedCount || 0;
+    const bothCount = syncRes.progressUpdateSummary?.bothCompletedCount || 0;
+    logger.success(`[Kstat 상태 일괄 동기화 완료] 총 ${syncRes.syncedCount}개 슬롯 동기화 및 ${progCount}건 [조사 진행상태: 조사완료] 신규 저장 성공 (둘다완료 총 ${bothCount}건)`);
     res.json({
       success: true,
-      message: `총 ${syncRes.syncedCount}개 슬롯의 Kstat list.php 상태 동기화가 완료되었습니다.`,
+      message: `총 ${syncRes.syncedCount}개 슬롯 상태 동기화 및 [조사표+평가 완료] ${bothCount}건 중 ${progCount}건의 [조사 진행상태]를 '조사완료'로 저장했습니다.`,
       details: syncRes
     });
   } catch (err) {
     logger.error(`[Kstat 상태 동기화 오류] ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Kstat 조사원 계정 단위 [조사 진행상태] '조사완료' 일괄 변경 API
+app.post('/api/kstat/bulk-complete-progress', async (req, res) => {
+  try {
+    const { loginId, loginPw = '1234', pridSel = '2026070802' } = req.body || {};
+    if (!loginId) {
+      return res.status(400).json({ error: '조사원 로그인 계정(loginId)을 입력해 주세요.' });
+    }
+    const result = await bulkUpdateKstatAccountProgress({
+      loginId: String(loginId).trim(),
+      loginPw: String(loginPw || '1234').trim(),
+      pridSel: String(pridSel || '2026070802').trim()
+    });
+    res.json({
+      success: true,
+      message: `[${loginId}] 조사표+평가 둘다완료 ${result.bothCompletedCount}건 중 ${result.updatedCount}건을 '조사완료'로 신규 저장했습니다. (기존 완료: ${result.alreadyCompletedCount}건)`,
+      ...result
+    });
+  } catch (err) {
+    logger.error(`[Kstat 일괄 진행상태 저장 오류] ${err.message}`);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1471,9 +1502,9 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
                 logger.success(`🎉 [파일럿 2단계 완료] "${targetBiz.marketName || targetBiz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
                 await syncKstatSlotStatus({
                   pridSel: '2026070801',
-                  idSel: targetBiz.idSel,
-                  kid: targetBiz.kid,
-                  gid: targetBiz.gid,
+                  idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
+                  kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
+                  gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
                   srt: 2
                 }).catch(() => {});
               }
@@ -1510,9 +1541,9 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
                 logger.success(`🎉 [파일럿 2단계 완료] "${targetBiz.companyName}" 조사원 평가 작성 100% 완료!`);
                 await syncKstatSlotStatus({
                   pridSel: '2026070802',
-                  idSel: targetBiz.idSel,
-                  kid: targetBiz.kid,
-                  gid: targetBiz.gid,
+                  idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
+                  kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
+                  gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
                   srt: 2
                 }).catch(() => {});
               }
@@ -1523,13 +1554,32 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
         }
 
         // 본설문 상태 동기화 (Kstat list.php 캐시 갱신)
+        const targetPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
         await syncKstatSlotStatus({
-          pridSel: isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802'),
-          idSel: targetBiz.idSel,
-          kid: targetBiz.kid,
-          gid: targetBiz.gid,
+          pridSel: targetPridSel,
+          idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
+          kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
+          gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
           srt: 1
         }).catch(() => {});
+
+        // [조사표 작성: 완료] + [조사원 평가항목 작성: 완료] 동시 충족 시 Kstat [조사 진행상태] 자동으로 '조사완료'(1) 저장
+        if (!isMetrix && targetBiz.evalStatus === 'completed') {
+          const effLoginId = targetBiz.surveyorAccount || campaign.kstatLoginId || (isAssoc ? '가온박정순' : '가온김영옥');
+          const effLoginPw = campaign.kstatLoginPw || '1234';
+          const progRes = await saveKstatSlotProgressStatus({
+            pridSel: targetPridSel,
+            idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
+            kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
+            gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
+            ranId: targetBiz.ranId || targetBiz.ran_id,
+            loginId: effLoginId,
+            loginPw: effLoginPw
+          }).catch(() => ({ success: false }));
+          if (progRes?.success) {
+            targetBiz.kstatProgressSaved = true;
+          }
+        }
 
         CampaignStore.updateCampaign(campaign.id, {
           quotaDatabase: quotaDb,
@@ -1787,9 +1837,9 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
                   logger.success(`🎉 [배치 #${biz.index || (i + startIndex)} 완료] "${biz.marketName || biz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
                   await syncKstatSlotStatus({
                     pridSel: '2026070801',
-                    idSel: biz.idSel,
-                    kid: biz.kid,
-                    gid: biz.gid,
+                    idSel: biz.idSel || biz.kstatMeta?.idSel,
+                    kid: biz.kid || biz.kstatMeta?.kid,
+                    gid: biz.gid || biz.kstatMeta?.gid || '0',
                     srt: 2
                   }).catch(() => {});
                 }
@@ -1830,9 +1880,9 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
                   logger.success(`🎉 [배치 #${biz.index || (i + startIndex)} 완료] "${biz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
                   await syncKstatSlotStatus({
                     pridSel: '2026070802',
-                    idSel: biz.idSel,
-                    kid: biz.kid,
-                    gid: biz.gid,
+                    idSel: biz.idSel || biz.kstatMeta?.idSel,
+                    kid: biz.kid || biz.kstatMeta?.kid,
+                    gid: biz.gid || biz.kstatMeta?.gid || '0',
                     srt: 2
                   }).catch(() => {});
                 }
@@ -1845,13 +1895,32 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           }
 
           // 본설문 상태 동기화 (Kstat list.php 캐시 갱신)
+          const batchPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
           await syncKstatSlotStatus({
-            pridSel: isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802'),
-            idSel: biz.idSel,
-            kid: biz.kid,
-            gid: biz.gid,
+            pridSel: batchPridSel,
+            idSel: biz.idSel || biz.kstatMeta?.idSel,
+            kid: biz.kid || biz.kstatMeta?.kid,
+            gid: biz.gid || biz.kstatMeta?.gid || '0',
             srt: 1
           }).catch(() => {});
+
+          // [조사표 작성: 완료] + [조사원 평가항목 작성: 완료] 동시 충족 시 Kstat [조사 진행상태] 자동으로 '조사완료'(1) 저장
+          if (!isMetrix && biz.evalStatus === 'completed') {
+            const effLoginId = biz.surveyorAccount || campaign.kstatLoginId || (isAssoc ? '가온박정순' : '가온김영옥');
+            const effLoginPw = campaign.kstatLoginPw || '1234';
+            const progRes = await saveKstatSlotProgressStatus({
+              pridSel: batchPridSel,
+              idSel: biz.idSel || biz.kstatMeta?.idSel,
+              kid: biz.kid || biz.kstatMeta?.kid,
+              gid: biz.gid || biz.kstatMeta?.gid || '0',
+              ranId: biz.ranId || biz.ran_id,
+              loginId: effLoginId,
+              loginPw: effLoginPw
+            }).catch(() => ({ success: false }));
+            if (progRes?.success) {
+              biz.kstatProgressSaved = true;
+            }
+          }
         } else {
           biz.quotaStatus = 'error';
           biz.error = result?.error || '설문 실행 오류';
@@ -1946,6 +2015,59 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
         targetBiz.pilotAt = new Date().toISOString();
         targetBiz.capturedSteps = result.capturedSteps;
         logger.success(`[개별 쿼터 테스트 성공] "${targetBiz.marketName || targetBiz.companyName}" 완주 완료!`);
+
+        const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
+        if (evalUrl) {
+          try {
+            const evalResult = await runKstatEvaluation({
+              evalUrl,
+              bizData: targetBiz,
+              guidelineConfig: {
+                ...(campaign.guidelineConfig || {}),
+                masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
+              },
+              reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`)
+            });
+            if (evalResult?.success) {
+              targetBiz.evalStatus = 'completed';
+              targetBiz.evalResults = evalResult.evalResults;
+              await syncKstatSlotStatus({
+                pridSel: '2026070802',
+                idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
+                kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
+                gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
+                srt: 2
+              }).catch(() => {});
+            }
+          } catch (evalErr) {
+            logger.warn(`[개별 쿼터 평가 경고] ${evalErr.message}`);
+          }
+        }
+
+        await syncKstatSlotStatus({
+          pridSel: '2026070802',
+          idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
+          kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
+          gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
+          srt: 1
+        }).catch(() => {});
+
+        if (targetBiz.evalStatus === 'completed') {
+          const effLoginId = targetBiz.surveyorAccount || campaign.kstatLoginId || '가온김영옥';
+          const effLoginPw = campaign.kstatLoginPw || '1234';
+          const progRes = await saveKstatSlotProgressStatus({
+            pridSel: '2026070802',
+            idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
+            kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
+            gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
+            ranId: targetBiz.ranId || targetBiz.ran_id,
+            loginId: effLoginId,
+            loginPw: effLoginPw
+          }).catch(() => ({ success: false }));
+          if (progRes?.success) {
+            targetBiz.kstatProgressSaved = true;
+          }
+        }
       } else {
         targetBiz.quotaStatus = 'error';
         targetBiz.error = result?.error || '테스트 오류';
