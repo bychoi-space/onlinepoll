@@ -117,8 +117,9 @@ export async function runKstatAssocSurvey(options = {}) {
       
       // Q1 전수 필수 입력 필드 주입:
       // Q1_4_1: 우편번호, Q1_4_2: 주소, Q1_4_3: 상세주소
-      // Q1_5: 응답자 성명, Q1_6: 연락처, Q1_7: 이메일, Q1_8: 직위, Q1_10: 조사원 성명
-      await page.evaluate(({ data, preserveExisting, surveyorAccount }) => {
+      // Q1_5: 응답자 성명, Q1_6: 연락처, Q1_7: 이메일, Q1_8: 직위
+      // [절대 규칙] Q1_10(조사원 명)은 실제 페이지에서 잠금(disabled/readonly) 처리된 항목이므로 절대 값을 입력하지 않으며, 기존 입력값이 있으면 즉시 삭제(공란 유지)한다.
+      await page.evaluate(({ data, preserveExisting }) => {
         // 1. 우편번호 (Q1_4_1) - 비어 있으면 우편번호 주입 (Alert 방어 핵심)
         const postCode = document.querySelector('#Q1_4_1');
         if (postCode && (!postCode.value || postCode.value.trim() === '')) {
@@ -160,10 +161,10 @@ export async function runKstatAssocSurvey(options = {}) {
           respPhone.value = pVal;
         }
 
-        // 6. 이메일 (Q1_7)
+        // 6. 이메일 (Q1_7) - 데이터가 있을 때만 입력 (Kstat next()가 빈 값 자동 처리)
         const respEmail = document.querySelector('#Q1_7');
-        if (respEmail && (!respEmail.value || respEmail.value.trim() === '')) {
-          respEmail.value = data.email || 'noreply@example.com';
+        if (respEmail && (!respEmail.value || respEmail.value.trim() === '') && data.email) {
+          respEmail.value = data.email;
         }
 
         // 7. 직위: 이미 체크된 라디오가 있다면 보존, 없을 때만 1번 상인대표 체크
@@ -177,26 +178,16 @@ export async function runKstatAssocSurvey(options = {}) {
           }
         }
 
-        // 8. 조사원 성명 (Q1_10) - 쿼터표/캠페인에 저장된 실제 조사원 계정 동적 주입 및 readonly 해제
+        // 8. 조사원 명 (Q1_10) - [절대 규칙] 절대 입력 금지 및 기존 입력값 발견 시 즉시 삭제(공란 초기화)
         const surveyor = document.querySelector('#Q1_10');
         if (surveyor) {
-          try {
-            surveyor.readOnly = false;
-            surveyor.disabled = false;
-            surveyor.removeAttribute('readonly');
-            surveyor.removeAttribute('disabled');
-          } catch (_) {}
-          const targetSurveyor = (surveyorAccount || data.surveyorAccount || data.surveyorName || data.kstatLoginId || '').trim();
-          if (targetSurveyor) {
-            surveyor.value = targetSurveyor;
-            surveyor.dispatchEvent(new Event('input', { bubbles: true }));
-            surveyor.dispatchEvent(new Event('change', { bubbles: true }));
-            if (typeof $ !== 'undefined') {
-              try { $(surveyor).val(targetSurveyor).trigger('input').trigger('change'); } catch (_) {}
-            }
+          surveyor.value = '';
+          if (typeof $ !== 'undefined') {
+            try { $(surveyor).val(''); } catch (_) {}
           }
+          surveyor.readOnly = true;
         }
-      }, { data: assocData, preserveExisting, surveyorAccount: effectiveSurveyor });
+      }, { data: assocData, preserveExisting });
 
       await captureStep('01_Q1', 'Q1_기본정보');
       await delay(300);
@@ -276,7 +267,7 @@ export async function runKstatAssocSurvey(options = {}) {
       // ------------------------------------------
       if (currUrl.includes('Q1.asp') || currPageName === 'Q1') {
         logger.warn(`[상인회 러너] [Q1] 상태 머신 내 Q1 감지 ➔ 우편번호/주소 보완 및 정식 저장 돌파...`);
-        await page.evaluate(({ data, surveyorAccount }) => {
+        await page.evaluate(({ data }) => {
           const postCode = document.querySelector('#Q1_4_1');
           if (postCode && !postCode.value) postCode.value = data.postCode || '08758';
           const addrMain = document.querySelector('#Q1_4_2');
@@ -288,30 +279,24 @@ export async function runKstatAssocSurvey(options = {}) {
           const respPhone = document.querySelector('#Q1_6');
           if (respPhone && !respPhone.value) respPhone.value = data.leaderPhone || '010-4163-2166';
           const respEmail = document.querySelector('#Q1_7');
-          if (respEmail && !respEmail.value) respEmail.value = 'noreply@example.com';
+          if (respEmail && !respEmail.value && data.email) respEmail.value = data.email;
           const radioPos = document.querySelector('input[name="Q1_8"][value="1"]');
           if (radioPos) {
             if (!radioPos.checked) radioPos.click();
             radioPos.checked = true;
             radioPos.dispatchEvent(new Event('change', { bubbles: true }));
           }
+          // [절대 규칙] Q1_10(조사원 명) 절대 입력 금지 및 공란 초기화
           const surveyor = document.querySelector('#Q1_10');
           if (surveyor) {
-            try {
-              surveyor.readOnly = false;
-              surveyor.disabled = false;
-              surveyor.removeAttribute('readonly');
-              surveyor.removeAttribute('disabled');
-            } catch (_) {}
-            const targetSurveyor = (surveyorAccount || data.surveyorAccount || data.surveyorName || data.kstatLoginId || '').trim();
-            if (targetSurveyor) {
-              surveyor.value = targetSurveyor;
-              surveyor.dispatchEvent(new Event('input', { bubbles: true }));
-              surveyor.dispatchEvent(new Event('change', { bubbles: true }));
+            surveyor.value = '';
+            if (typeof $ !== 'undefined') {
+              try { $(surveyor).val(''); } catch (_) {}
             }
+            surveyor.readOnly = true;
           }
           if (typeof next === 'function') next();
-        }, { data: assocData, surveyorAccount: effectiveSurveyor }).catch(() => {});
+        }, { data: assocData }).catch(() => {});
         await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 }).catch(() => {});
         await delay(300);
         continue;
@@ -584,6 +569,45 @@ export async function runKstatAssocSurvey(options = {}) {
           }
         } catch (facSyncErr) {
           logger.warn(`[상인회 러너] Agree 진입 전 시설필요도 검증 경고: ${facSyncErr.message}`);
+        }
+
+        // [안전장치 3] Q1.asp의 Q1_10(조사원 명)에 값이 남아있는 경우 100% 공란으로 삭제 보장
+        try {
+          const q1CleanRes = await page.evaluate(async () => {
+            const idKey = document.querySelector('input[name="IDKey"]')?.value || document.querySelector('input[name="VC_ID"]')?.value || '';
+            if (!idKey) return { skipped: true };
+            const dlRes = await fetch('DataLoad.asp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({ VARS: 'Q1_10', IDKEY: idKey }).toString()
+            });
+            const dlTxt = await dlRes.text();
+            const val = dlTxt.split('∏')[1]?.split('⇔')[0] || '';
+            if (!val || val.trim() === '') return { skipped: true };
+
+            const payload = new URLSearchParams({
+              Var: 'Q1_10',
+              Q1_10: '',
+              PageName: 'Agree',
+              PAGE: 'Q1',
+              NextPage: 'Agree',
+              IDKey: idKey,
+              VC_ID: idKey,
+              ResType: 'TAPI',
+              PVALUE: '3'
+            });
+            await fetch('Survey.asp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: payload.toString()
+            });
+            return { cleaned: true, oldVal: val };
+          });
+          if (q1CleanRes && q1CleanRes.cleaned) {
+            logger.info(`[상인회 러너] [Agree 진입 전 Q1_10(조사원 명) 삭제 완료]: "${q1CleanRes.oldVal}" ➔ ""`);
+          }
+        } catch (q1CleanErr) {
+          logger.warn(`[상인회 러너] Agree 진입 전 Q1_10 검증 경고: ${q1CleanErr.message}`);
         }
 
         await captureStep('24_AGREE', '최종동의화면');
