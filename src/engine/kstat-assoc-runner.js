@@ -449,6 +449,143 @@ export async function runKstatAssocSurvey(options = {}) {
           logger.warn(`[상인회 러너] Agree 진입 전 P3 검증 경고: ${syncErr.message}`);
         }
 
+        // [안전장치 2] 중간 단계 점프(NextPage) 또는 기존 저장분으로 인해 P7(C1), P8(C2), P10(C4), P17(E1)의
+        // '시설필요도'(_3) 항목에 '매우 불필요(1)', '불필요(2)' 또는 미응답('')이 남아있는 경우
+        // '보통(3)', '필요(4)', '매우 필요(5)' 중 하나로 100% 자동 치유 보장
+        try {
+          const needRatingPolicy = policy.C1_C2_needRating || 'random';
+          const facilitySyncRes = await page.evaluate(async ({ needRatingPolicy }) => {
+            const parseJsObj = (str) => {
+              const out = {};
+              if (!str) return out;
+              const re = /'([^']+)'\s*:\s*'([^']*)'/g;
+              let m;
+              while ((m = re.exec(str)) !== null) {
+                out[m[1]] = m[2];
+              }
+              return out;
+            };
+            const pickFacilityNeedVal = () => {
+              if (needRatingPolicy === 'need_3') return '3';
+              if (needRatingPolicy === 'need_4') return '4';
+              if (needRatingPolicy === 'need' || needRatingPolicy === 'need_5') return '5';
+              const allowed = ['3', '4', '5']; // 3: 보통, 4: 필요, 5: 매우 필요 ('1: 매우 불필요', '2: 불필요' 체크 금지)
+              return allowed[Math.floor(Math.random() * allowed.length)];
+            };
+
+            const idKey = document.querySelector('input[name="IDKey"]')?.value || document.querySelector('input[name="VC_ID"]')?.value || '';
+            if (!idKey) return { skipped: true, reason: 'no_idKey' };
+
+            const targets = [
+              { pName: 'P7', prefix: 'C1', count: 9 },
+              { pName: 'P8', prefix: 'C2', count: 18 },
+              { pName: 'P10', prefix: 'C4', count: 5 },
+              { pName: 'P17', prefix: 'E1', count: 7 }
+            ];
+            const body = new URLSearchParams({ IDKey: idKey, VC_ID: idKey, ResType: 'TAPI', PVALUE: '2' }).toString();
+            const syncedPages = [];
+
+            for (const t of targets) {
+              const res = await fetch(`${t.pName}.asp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body
+              });
+              const html = await res.text();
+              const doc = new DOMParser().parseFromString(html, 'text/html');
+              const varStr = doc.querySelector('input[name="Var"]')?.value || '';
+              if (!varStr) continue;
+              const varList = varStr.split(',').map(s => s.trim()).filter(Boolean);
+              const prevData = parseJsObj(html.match(/var\s+prevData\s*=\s*(\{[\s\S]*?\});/)?.[1]);
+              const currData = parseJsObj(html.match(/var\s+currData\s*=\s*(\{[\s\S]*?\});/)?.[1]);
+
+              let needsSync = false;
+              const payload = new URLSearchParams({
+                Var: varStr,
+                PageName: 'Agree',
+                PAGE: t.pName,
+                NextPage: 'Agree',
+                IDKey: idKey,
+                VC_ID: idKey,
+                ResType: 'TAPI',
+                PVALUE: '3'
+              });
+
+              for (const k of varList) {
+                payload.set(k, currData[k] !== undefined ? currData[k] : '');
+              }
+
+              for (let idx = 1; idx <= t.count; idx++) {
+                const k1 = `${t.prefix}_${idx}_1`;
+                const k2 = `${t.prefix}_${idx}_2`;
+                const k3 = `${t.prefix}_${idx}_3`;
+
+                // 1) 보유여부(_1) 및 보유개수(_2) 미응답 시 전년도 기준 복원 (E1_7 AI는 항상 없음=2)
+                if (t.prefix === 'E1' && idx === 7) {
+                  if (payload.get(k1) !== '2') {
+                    payload.set(k1, '2');
+                    if (varList.includes(k2)) payload.set(k2, '');
+                    needsSync = true;
+                  }
+                } else if (!payload.get(k1)) {
+                  const prevHave = prevData[`P${k1}`] || '';
+                  const prevCnt = prevData[`P${k2}`] || '';
+                  const rawNum = parseInt((prevCnt || '').trim(), 10);
+                  const isHave = (prevHave === '1') || (!isNaN(rawNum) && rawNum > 0);
+                  if (isHave) {
+                    payload.set(k1, '1');
+                    if (varList.includes(k2)) {
+                      const safeCnt = (!isNaN(rawNum) && rawNum > 0 && rawNum < 99999) ? String(rawNum) : '1';
+                      payload.set(k2, safeCnt);
+                    }
+                    if (t.prefix === 'C2' && idx === 15) {
+                      if (varList.includes('C2_15_2_1')) payload.set('C2_15_2_1', prevData.PC2_15_2_1 || '1');
+                      if (varList.includes('C2_15_2_2')) payload.set('C2_15_2_2', prevData.PC2_15_2_2 || '0');
+                    } else if (t.prefix === 'C2' && (idx === 16 || idx === 17)) {
+                      const subKey = `C2_${idx}_2_1`;
+                      if (varList.includes(subKey)) payload.set(subKey, prevData[`P${subKey}`] || '1');
+                    }
+                  } else {
+                    payload.set(k1, '2');
+                    if (varList.includes(k2)) payload.set(k2, '');
+                  }
+                  needsSync = true;
+                }
+
+                // 2) 시설필요도(_3): '1'(매우 불필요), '2'(불필요), 또는 미응답('')이면 3/4/5 중 하나로 즉시 교정
+                const curNeed = payload.get(k3) || '';
+                const isForbidden = !['3', '4', '5'].includes(curNeed);
+                const isPolicyMismatch =
+                  (needRatingPolicy === 'need_3' && curNeed !== '3') ||
+                  (needRatingPolicy === 'need_4' && curNeed !== '4') ||
+                  ((needRatingPolicy === 'need' || needRatingPolicy === 'need_5') && curNeed !== '5');
+
+                if (isForbidden || isPolicyMismatch) {
+                  payload.set(k3, pickFacilityNeedVal());
+                  needsSync = true;
+                }
+              }
+
+              if (needsSync) {
+                await fetch('Survey.asp', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: payload.toString()
+                });
+                syncedPages.push(t.pName);
+              }
+            }
+
+            return { synced: syncedPages.length > 0, syncedPages };
+          }, { needRatingPolicy });
+
+          if (facilitySyncRes && facilitySyncRes.synced) {
+            logger.info(`[상인회 러너] [Agree 진입 전 시설필요도(3/4/5 규칙) 자동 보정 완료]: ${facilitySyncRes.syncedPages.join(', ')}`);
+          }
+        } catch (facSyncErr) {
+          logger.warn(`[상인회 러너] Agree 진입 전 시설필요도 검증 경고: ${facSyncErr.message}`);
+        }
+
         await captureStep('24_AGREE', '최종동의화면');
 
         if (pilotMode && safetyGuard) {
@@ -1550,10 +1687,19 @@ export async function runKstatAssocSurvey(options = {}) {
       // 1-2) P7 (C1: 편의시설 보유현황 및 시설필요도)
       // ------------------------------------------
       if (currUrl.includes('P7') || currPageName === 'P7') {
-        onProgress({ step: 'P7', message: `[P7] C1 편의시설 보유개수 및 시설필요도(랜덤) 자동 응답 중...` });
+        onProgress({ step: 'P7', message: `[P7] C1 편의시설 보유개수 및 시설필요도(보통/필요/매우필요 중 선택) 자동 응답 중...` });
         await delay(200);
 
-        await page.evaluate(({ preserveExisting }) => {
+        const needRatingPolicy = policy.C1_C2_needRating || 'random';
+        await page.evaluate(({ preserveExisting, needRatingPolicy }) => {
+          const pickFacilityNeedVal = () => {
+            if (needRatingPolicy === 'need_3') return '3';
+            if (needRatingPolicy === 'need_4') return '4';
+            if (needRatingPolicy === 'need' || needRatingPolicy === 'need_5') return '5';
+            const allowed = ['3', '4', '5']; // 3: 보통, 4: 필요, 5: 매우 필요 ('1: 매우 불필요', '2: 불필요' 체크 금지)
+            return allowed[Math.floor(Math.random() * allowed.length)];
+          };
+
           // 9개 항목 순회 (C1_1 ~ C1_9)
           for (let idx = 1; idx <= 9; idx++) {
             const prevCnt = document.querySelector(`input[name="PC1_${idx}_2"]`)?.value || '';
@@ -1565,6 +1711,7 @@ export async function runKstatAssocSurvey(options = {}) {
               // 2024년에 '보유개수' 내용이 있으면 2025년에도 동일하게 입력 (999999999 모름 코드는 1로 안전 보정)
               const optYes = document.querySelector(`input[name="C1_${idx}_1"][value="1"]`);
               if (optYes) {
+                if (!optYes.checked) optYes.click();
                 optYes.checked = true;
                 optYes.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -1580,6 +1727,7 @@ export async function runKstatAssocSurvey(options = {}) {
               // 2024년에 '보유개수' 내용이 없으면 2025년도에도 모두 '없음'으로 입력
               const optNo = document.querySelector(`input[name="C1_${idx}_1"][value="2"]`);
               if (optNo) {
+                if (!optNo.checked) optNo.click();
                 optNo.checked = true;
                 optNo.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -1590,16 +1738,21 @@ export async function runKstatAssocSurvey(options = {}) {
               }
             }
 
-            // '시설필요도'는 랜덤으로 체크 (1~5 척도)
+            // [규칙] '시설필요도'는 '매우 불필요(1)'와 '불필요(2)'를 절대 체크하지 않고, '보통(3)', '필요(4)', '매우 필요(5)' 셋 중에서만 응답
             const needRadios = Array.from(document.querySelectorAll(`input[name="C1_${idx}_3"]`));
             if (needRadios.length > 0) {
               const curChecked = document.querySelector(`input[name="C1_${idx}_3"]:checked`);
-              if (!preserveExisting || !curChecked) {
-                const randVal = String(Math.floor(Math.random() * 5) + 1); // 1~5 랜덤
-                const targetRadio = document.querySelector(`input[name="C1_${idx}_3"][value="${randVal}"]`) || needRadios[0];
+              const isForbiddenVal = curChecked && (curChecked.value === '1' || curChecked.value === '2');
+              if (!preserveExisting || !curChecked || isForbiddenVal) {
+                const randVal = pickFacilityNeedVal();
+                const targetRadio = document.querySelector(`input[name="C1_${idx}_3"][value="${randVal}"]`) ||
+                                    document.querySelector(`input[name="C1_${idx}_3"][value="3"]`) ||
+                                    needRadios[2];
                 if (targetRadio) {
+                  if (!targetRadio.checked) targetRadio.click();
                   targetRadio.checked = true;
                   targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(targetRadio).prop('checked', true).trigger('change');
                 }
               }
             }
@@ -1608,7 +1761,7 @@ export async function runKstatAssocSurvey(options = {}) {
               try { window.toggleDependentFields(idx); } catch (_) {}
             }
           }
-        }, { preserveExisting });
+        }, { preserveExisting, needRatingPolicy });
 
         await captureStep('P7', 'P7_편의시설C1');
         await delay(200);
@@ -1620,10 +1773,19 @@ export async function runKstatAssocSurvey(options = {}) {
       // 1-3) P8 (C2: 안전/위생시설 보유현황 및 시설필요도)
       // ------------------------------------------
       if (currUrl.includes('P8') || currPageName === 'P8') {
-        onProgress({ step: 'P8', message: `[P8] C2 안전/위생시설 보유개수 및 시설필요도(랜덤) 자동 응답 중...` });
+        onProgress({ step: 'P8', message: `[P8] C2 안전/위생시설 보유개수 및 시설필요도(보통/필요/매우필요 중 선택) 자동 응답 중...` });
         await delay(200);
 
-        await page.evaluate(({ preserveExisting }) => {
+        const needRatingPolicy = policy.C1_C2_needRating || 'random';
+        await page.evaluate(({ preserveExisting, needRatingPolicy }) => {
+          const pickFacilityNeedVal = () => {
+            if (needRatingPolicy === 'need_3') return '3';
+            if (needRatingPolicy === 'need_4') return '4';
+            if (needRatingPolicy === 'need' || needRatingPolicy === 'need_5') return '5';
+            const allowed = ['3', '4', '5']; // 3: 보통, 4: 필요, 5: 매우 필요 ('1: 매우 불필요', '2: 불필요' 체크 금지)
+            return allowed[Math.floor(Math.random() * allowed.length)];
+          };
+
           // 18개 항목 순회 (C2_1 ~ C2_18)
           for (let idx = 1; idx <= 18; idx++) {
             const prevCnt = document.querySelector(`input[name="PC2_${idx}_2"]`)?.value || '';
@@ -1635,6 +1797,7 @@ export async function runKstatAssocSurvey(options = {}) {
               // 2024년에 '보유개수' 내용이 있으면 2025년에도 동일하게 입력 (999999999 모름 코드는 1로 안전 보정)
               const optYes = document.querySelector(`input[name="C2_${idx}_1"][value="1"]`);
               if (optYes) {
+                if (!optYes.checked) optYes.click();
                 optYes.checked = true;
                 optYes.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -1650,6 +1813,7 @@ export async function runKstatAssocSurvey(options = {}) {
               // 2024년에 '보유개수' 내용이 없으면 2025년도에도 모두 '없음'으로 입력
               const optNo = document.querySelector(`input[name="C2_${idx}_1"][value="2"]`);
               if (optNo) {
+                if (!optNo.checked) optNo.click();
                 optNo.checked = true;
                 optNo.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -1660,16 +1824,21 @@ export async function runKstatAssocSurvey(options = {}) {
               }
             }
 
-            // '시설필요도'는 랜덤으로 체크 (1~5 척도)
+            // [규칙] '시설필요도'는 '매우 불필요(1)'와 '불필요(2)'를 절대 체크하지 않고, '보통(3)', '필요(4)', '매우 필요(5)' 셋 중에서만 응답
             const needRadios = Array.from(document.querySelectorAll(`input[name="C2_${idx}_3"]`));
             if (needRadios.length > 0) {
               const curChecked = document.querySelector(`input[name="C2_${idx}_3"]:checked`);
-              if (!preserveExisting || !curChecked) {
-                const randVal = String(Math.floor(Math.random() * 5) + 1);
-                const targetRadio = document.querySelector(`input[name="C2_${idx}_3"][value="${randVal}"]`) || needRadios[0];
+              const isForbiddenVal = curChecked && (curChecked.value === '1' || curChecked.value === '2');
+              if (!preserveExisting || !curChecked || isForbiddenVal) {
+                const randVal = pickFacilityNeedVal();
+                const targetRadio = document.querySelector(`input[name="C2_${idx}_3"][value="${randVal}"]`) ||
+                                    document.querySelector(`input[name="C2_${idx}_3"][value="3"]`) ||
+                                    needRadios[2];
                 if (targetRadio) {
+                  if (!targetRadio.checked) targetRadio.click();
                   targetRadio.checked = true;
                   targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(targetRadio).prop('checked', true).trigger('change');
                 }
               }
             }
@@ -1678,7 +1847,7 @@ export async function runKstatAssocSurvey(options = {}) {
               try { window.toggleDependentFields(idx); } catch (_) {}
             }
           }
-        }, { preserveExisting });
+        }, { preserveExisting, needRatingPolicy });
 
         await captureStep('P8', 'P8_안전위생시설C2');
         await delay(200);
@@ -1957,10 +2126,19 @@ export async function runKstatAssocSurvey(options = {}) {
       // 1-4-2) P10 (C4: 고객지원 및 마케팅 시설 보유현황 및 시설필요도)
       // ------------------------------------------
       if (currUrl.includes('P10') || currPageName === 'P10') {
-        onProgress({ step: 'P10', message: `[P10] C4 고객지원/마케팅시설 보유개수 및 시설필요도(랜덤) 자동 응답 중...` });
+        onProgress({ step: 'P10', message: `[P10] C4 고객지원/마케팅시설 보유개수 및 시설필요도(보통/필요/매우필요 중 선택) 자동 응답 중...` });
         await delay(200);
 
-        await page.evaluate(({ preserveExisting }) => {
+        const needRatingPolicy = policy.C1_C2_needRating || 'random';
+        await page.evaluate(({ preserveExisting, needRatingPolicy }) => {
+          const pickFacilityNeedVal = () => {
+            if (needRatingPolicy === 'need_3') return '3';
+            if (needRatingPolicy === 'need_4') return '4';
+            if (needRatingPolicy === 'need' || needRatingPolicy === 'need_5') return '5';
+            const allowed = ['3', '4', '5']; // 3: 보통, 4: 필요, 5: 매우 필요 ('1: 매우 불필요', '2: 불필요' 체크 금지)
+            return allowed[Math.floor(Math.random() * allowed.length)];
+          };
+
           // 5개 항목 순회 (C4_1 ~ C4_5)
           for (let idx = 1; idx <= 5; idx++) {
             const prevCnt = document.querySelector(`input[name="PC4_${idx}_2"]`)?.value || '';
@@ -1971,6 +2149,7 @@ export async function runKstatAssocSurvey(options = {}) {
             if (isHave) {
               const optYes = document.querySelector(`input[name="C4_${idx}_1"][value="1"]`);
               if (optYes) {
+                if (!optYes.checked) optYes.click();
                 optYes.checked = true;
                 optYes.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -1985,6 +2164,7 @@ export async function runKstatAssocSurvey(options = {}) {
             } else {
               const optNo = document.querySelector(`input[name="C4_${idx}_1"][value="2"]`);
               if (optNo) {
+                if (!optNo.checked) optNo.click();
                 optNo.checked = true;
                 optNo.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -1995,14 +2175,18 @@ export async function runKstatAssocSurvey(options = {}) {
               }
             }
 
-            // '시설필요도'는 항상 필수 응답 (1~5 척도)
+            // [규칙] '시설필요도'는 '매우 불필요(1)'와 '불필요(2)'를 절대 체크하지 않고, '보통(3)', '필요(4)', '매우 필요(5)' 셋 중에서만 응답
             const needRadios = Array.from(document.querySelectorAll(`input[name="C4_${idx}_3"]`));
             if (needRadios.length > 0) {
               const curChecked = document.querySelector(`input[name="C4_${idx}_3"]:checked`);
-              if (!preserveExisting || !curChecked) {
-                const randVal = String(Math.floor(Math.random() * 5) + 1);
-                const targetRadio = document.querySelector(`input[name="C4_${idx}_3"][value="${randVal}"]`) || needRadios[2] || needRadios[0];
+              const isForbiddenVal = curChecked && (curChecked.value === '1' || curChecked.value === '2');
+              if (!preserveExisting || !curChecked || isForbiddenVal) {
+                const randVal = pickFacilityNeedVal();
+                const targetRadio = document.querySelector(`input[name="C4_${idx}_3"][value="${randVal}"]`) ||
+                                    document.querySelector(`input[name="C4_${idx}_3"][value="3"]`) ||
+                                    needRadios[2];
                 if (targetRadio) {
+                  if (!targetRadio.checked) targetRadio.click();
                   targetRadio.checked = true;
                   targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
                   if (typeof $ !== 'undefined') $(targetRadio).prop('checked', true).trigger('change');
@@ -2014,7 +2198,7 @@ export async function runKstatAssocSurvey(options = {}) {
               try { window.toggleDependentFields(idx); } catch (_) {}
             }
           }
-        }, { preserveExisting });
+        }, { preserveExisting, needRatingPolicy });
 
         await captureStep('P10', 'P10_고객지원마케팅시설C4');
         await delay(200);
@@ -2655,10 +2839,19 @@ export async function runKstatAssocSurvey(options = {}) {
       // 1-7) P17 (E1: 화재예방 및 소방시설 현황, AI 지능형 출동 시스템 '없음' 처리)
       // ------------------------------------------
       if (currUrl.includes('P17') || currPageName === 'P17') {
-        onProgress({ step: 'P17', message: `[P17] E1 소방시설 보유현황 및 AI 지능형 출동시스템(없음) 응답 중...` });
+        onProgress({ step: 'P17', message: `[P17] E1 소방시설 보유현황, 시설필요도(보통/필요/매우필요 중 선택) 및 AI 출동시스템(없음) 응답 중...` });
         await delay(200);
 
-        await page.evaluate(({ preserveExisting }) => {
+        const needRatingPolicy = policy.C1_C2_needRating || 'random';
+        await page.evaluate(({ preserveExisting, needRatingPolicy }) => {
+          const pickFacilityNeedVal = () => {
+            if (needRatingPolicy === 'need_3') return '3';
+            if (needRatingPolicy === 'need_4') return '4';
+            if (needRatingPolicy === 'need' || needRatingPolicy === 'need_5') return '5';
+            const allowed = ['3', '4', '5']; // 3: 보통, 4: 필요, 5: 매우 필요 ('1: 매우 불필요', '2: 불필요' 체크 금지)
+            return allowed[Math.floor(Math.random() * allowed.length)];
+          };
+
           // 1~6번 문항: 스프링클러, 소화전, 공용소화기, 경보기, 화재감지기, 가스감지기
           for (let idx = 1; idx <= 6; idx++) {
             const prevCnt = document.querySelector(`input[name="PE1_${idx}_2"]`)?.value || '';
@@ -2667,6 +2860,7 @@ export async function runKstatAssocSurvey(options = {}) {
             if (hasPrev) {
               const optYes = document.querySelector(`input[name="E1_${idx}_1"][value="1"]`);
               if (optYes) {
+                if (!optYes.checked) optYes.click();
                 optYes.checked = true;
                 optYes.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -2680,6 +2874,7 @@ export async function runKstatAssocSurvey(options = {}) {
             } else {
               const optNo = document.querySelector(`input[name="E1_${idx}_1"][value="2"]`);
               if (optNo) {
+                if (!optNo.checked) optNo.click();
                 optNo.checked = true;
                 optNo.dispatchEvent(new Event('change', { bubbles: true }));
               }
@@ -2690,25 +2885,31 @@ export async function runKstatAssocSurvey(options = {}) {
               }
             }
 
-            // 시설필요도 랜덤 체크 (1~5 척도)
+            // [규칙] '시설필요도'는 '매우 불필요(1)'와 '불필요(2)'를 절대 체크하지 않고, '보통(3)', '필요(4)', '매우 필요(5)' 셋 중에서만 응답
             const needRadios = Array.from(document.querySelectorAll(`input[name="E1_${idx}_3"]`));
             if (needRadios.length > 0) {
               const curChecked = document.querySelector(`input[name="E1_${idx}_3"]:checked`);
-              if (!preserveExisting || !curChecked) {
-                const randVal = String(Math.floor(Math.random() * 5) + 1);
-                const targetRadio = document.querySelector(`input[name="E1_${idx}_3"][value="${randVal}"]`) || needRadios[0];
+              const isForbiddenVal = curChecked && (curChecked.value === '1' || curChecked.value === '2');
+              if (!preserveExisting || !curChecked || isForbiddenVal) {
+                const randVal = pickFacilityNeedVal();
+                const targetRadio = document.querySelector(`input[name="E1_${idx}_3"][value="${randVal}"]`) ||
+                                    document.querySelector(`input[name="E1_${idx}_3"][value="3"]`) ||
+                                    needRadios[2];
                 if (targetRadio) {
+                  if (!targetRadio.checked) targetRadio.click();
                   targetRadio.checked = true;
                   targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(targetRadio).prop('checked', true).trigger('change');
                 }
               }
             }
           }
 
           // 7번 문항: AI 지능형 출동 시스템 (GIS 지리정보 기반 출동 및 대응 시스템)
-          // 규칙: 무조건 '없음' (2) 선택, 개수는 공란, 시설필요도는 랜덤 체크
+          // 규칙: 무조건 '없음' (2) 선택, 개수는 공란, 시설필요도는 '보통(3)', '필요(4)', '매우 필요(5)' 셋 중에서 선택
           const aiOptNo = document.querySelector('#E1_7_1_2, input[name="E1_7_1"][value="2"]');
           if (aiOptNo) {
+            if (!aiOptNo.checked) aiOptNo.click();
             aiOptNo.checked = true;
             aiOptNo.dispatchEvent(new Event('change', { bubbles: true }));
             if (typeof $ !== 'undefined') $(aiOptNo).prop('checked', true).trigger('change');
@@ -2718,17 +2919,25 @@ export async function runKstatAssocSurvey(options = {}) {
             aiCntInp.value = '';
             aiCntInp.disabled = true;
           }
-          // AI 시설필요도 (1~5 척도 랜덤)
+          // AI 시설필요도 ('보통(3)', '필요(4)', '매우 필요(5)' 셋 중에서만 선택)
           const aiNeedRadios = Array.from(document.querySelectorAll('input[name="E1_7_3"]'));
           if (aiNeedRadios.length > 0) {
-            const randVal = String(Math.floor(Math.random() * 5) + 1);
-            const targetRadio = document.querySelector(`input[name="E1_7_3"][value="${randVal}"]`) || aiNeedRadios[2];
-            if (targetRadio) {
-              targetRadio.checked = true;
-              targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            const curAiChecked = document.querySelector('input[name="E1_7_3"]:checked');
+            const isAiForbidden = curAiChecked && (curAiChecked.value === '1' || curAiChecked.value === '2');
+            if (!preserveExisting || !curAiChecked || isAiForbidden) {
+              const randVal = pickFacilityNeedVal();
+              const targetRadio = document.querySelector(`input[name="E1_7_3"][value="${randVal}"]`) ||
+                                  document.querySelector('input[name="E1_7_3"][value="3"]') ||
+                                  aiNeedRadios[2];
+              if (targetRadio) {
+                if (!targetRadio.checked) targetRadio.click();
+                targetRadio.checked = true;
+                targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(targetRadio).prop('checked', true).trigger('change');
+              }
             }
           }
-        }, { preserveExisting });
+        }, { preserveExisting, needRatingPolicy });
 
         await captureStep('P17', 'P17_소방시설E1');
         await delay(200);
@@ -3481,12 +3690,19 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
               currKey = key.substring(1);
             }
 
-            // 1-1. 라디오 체크 (이미 체크되어 있으면 보존)
+            // 1-1. 라디오 체크 (이미 체크되어 있으면 보존, 단 시설필요도 _3 항목이 1 또는 2로 되어 있으면 3/4/5로 교정)
+            const isFacilityNeedKey = /^(C1|C2|C4|E1)_\d+_3$/.test(currKey);
             const hasChecked = document.querySelector(`input[type="radio"][name="${currKey}"]:checked`);
-            if (preserveExisting && hasChecked) {
+            const isForbiddenChecked = isFacilityNeedKey && hasChecked && (hasChecked.value === '1' || hasChecked.value === '2');
+            if (preserveExisting && hasChecked && !isForbiddenChecked) {
               return;
             }
-            const radio = document.querySelector(`input[type="radio"][name="${currKey}"][value="${val}"]`);
+            let safeRadioVal = String(val);
+            if (isFacilityNeedKey && (safeRadioVal === '1' || safeRadioVal === '2')) {
+              const allowed = ['3', '4', '5'];
+              safeRadioVal = allowed[Math.floor(Math.random() * allowed.length)];
+            }
+            const radio = document.querySelector(`input[type="radio"][name="${currKey}"][value="${safeRadioVal}"]`);
             if (radio) {
               if (!radio.checked) radio.click();
               radio.checked = true;
@@ -3538,10 +3754,17 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
           if (pRadio.checked) {
             let currName = pRadio.name.substring(1);
             if (pRadio.name.startsWith('TP')) currName = 'T' + pRadio.name.substring(2);
-            if (preserveExisting && document.querySelector(`input[type="radio"][name="${currName}"]:checked`)) {
+            const isFacilityNeed = /^(C1|C2|C4|E1)_\d+_3$/.test(currName);
+            const curChecked = document.querySelector(`input[type="radio"][name="${currName}"]:checked`);
+            const isForbidden = isFacilityNeed && curChecked && (curChecked.value === '1' || curChecked.value === '2');
+            if (preserveExisting && curChecked && !isForbidden) {
               return; // 이미 당해년도 라디오가 체크되어 있으면 기존 선택 유지
             }
-            const val = pRadio.value;
+            let val = pRadio.value;
+            if (isFacilityNeed && (val === '1' || val === '2')) {
+              const allowed = ['3', '4', '5'];
+              val = allowed[Math.floor(Math.random() * allowed.length)];
+            }
             const currRadio = document.querySelector(`input[type="radio"][name="${currName}"][value="${val}"]`);
             if (currRadio) {
               if (!currRadio.checked) currRadio.click();
@@ -3603,16 +3826,22 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
         });
 
         Object.keys(groups).forEach(gName => {
-          const isChecked = groups[gName].some(r => r.checked);
-          if (!isChecked) {
+          const curChecked = groups[gName].find(r => r.checked);
+          const isFacilityNeed = /^(C1|C2|C4|E1)_\d+_3$/.test(gName);
+          const isForbiddenNeed = isFacilityNeed && curChecked && (curChecked.value === '1' || curChecked.value === '2');
+          if (!curChecked || isForbiddenNeed) {
             const vals = groups[gName].map(r => r.value);
             let target;
             if (vals.includes('1') && vals.includes('2') && vals.length === 2) {
               // 2지선다(유/무): 2(무/없음)가 안전 (1 선택 시 추가 상세문항 Alert 방어)
               target = groups[gName].find(r => r.value === '2') || groups[gName][0];
-            } else if (vals.length >= 4) {
-              // 4점/5점 만족도/척도: 3(보통) 또는 4(만족)
-              target = groups[gName].find(r => r.value === '3') || groups[gName].find(r => r.value === '4') || groups[gName][0];
+            } else if (vals.length >= 4 || isFacilityNeed) {
+              // 5점 척도(시설필요도 등): '매우 불필요(1)'와 '불필요(2)'를 절대 체크하지 않고 '보통(3)', '필요(4)', '매우 필요(5)' 중에서만 선택
+              const validHighVals = ['3', '4', '5'].filter(v => vals.includes(v));
+              const pickVal = validHighVals.length > 0
+                ? validHighVals[Math.floor(Math.random() * validHighVals.length)]
+                : '3';
+              target = groups[gName].find(r => r.value === pickVal) || groups[gName].find(r => r.value === '3') || groups[gName].find(r => r.value === '4') || groups[gName][2];
             } else {
               target = groups[gName].find(r => r.value === '1') || groups[gName][0];
             }
@@ -3872,13 +4101,20 @@ async function healUnansweredAssocFields(page) {
           groups[r.name].push(r);
         });
         Object.keys(groups).forEach(gName => {
-          if (!groups[gName].some(r => r.checked)) {
+          const curChecked = groups[gName].find(r => r.checked);
+          const isFacilityNeed = /^(C1|C2|C4|E1)_\d+_3$/.test(gName);
+          const isForbiddenNeed = isFacilityNeed && curChecked && (curChecked.value === '1' || curChecked.value === '2');
+          if (!curChecked || isForbiddenNeed) {
             const vals = groups[gName].map(r => r.value);
             let target;
             if (vals.includes('1') && vals.includes('2') && vals.length === 2) {
               target = groups[gName].find(r => r.value === '2') || groups[gName][0];
-            } else if (vals.length >= 4) {
-              target = groups[gName].find(r => r.value === '3') || groups[gName].find(r => r.value === '4') || groups[gName][0];
+            } else if (vals.length >= 4 || isFacilityNeed) {
+              const validHighVals = ['3', '4', '5'].filter(v => vals.includes(v));
+              const pickVal = validHighVals.length > 0
+                ? validHighVals[Math.floor(Math.random() * validHighVals.length)]
+                : '3';
+              target = groups[gName].find(r => r.value === pickVal) || groups[gName].find(r => r.value === '3') || groups[gName].find(r => r.value === '4') || groups[gName][2];
             } else {
               target = groups[gName].find(r => r.value === '1') || groups[gName][0];
             }

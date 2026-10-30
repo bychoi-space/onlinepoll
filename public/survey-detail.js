@@ -2281,17 +2281,17 @@ async function initSurveyDetailPage() {
         </div>
       </section>
 
-      <!-- 카드 3: C1, C2 고객편의시설 및 상인편의시설 보유 & 필요도 -->
+      <!-- 카드 3: C1, C2, C4, E1 시설 보유개수 및 시설필요도 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
-            <span class="blueprint-step-pill">C1, C2 (P8)</span>
-            <h3 class="blueprint-stage-title">고객·상인 편의시설 보유개수 및 필요도</h3>
+            <span class="blueprint-step-pill">C1·C2·C4·E1 (P7·8·10·17)</span>
+            <h3 class="blueprint-stage-title">고객·안전·마케팅·소방시설 보유개수 및 시설필요도</h3>
           </div>
           <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 정책 가이드</span>
         </div>
         <div class="blueprint-stage-desc">
-          C1(고객시설 11종) 및 C2(상인시설 10종)는 2024년 보유개수를 동일 계승(공란 시 없음 체크)하며, 시설 필요도 응답 방식을 설정합니다.
+          C1(편의시설 9종), C2(안전·위생시설 18종), C4(마케팅시설 5종), E1(소방시설 7종)은 2024년 보유개수를 동일 계승하며, <strong>'시설필요도'는 '매우 불필요'·'불필요'를 체크하지 않고 '보통', '필요', '매우 필요' 셋 중에서 하나로 응답</strong>합니다.
         </div>
         <div class="p-14">
           <div class="form-group mb-12">
@@ -2301,11 +2301,12 @@ async function initSurveyDetailPage() {
             </div>
           </div>
           <div class="form-group mb-0">
-            <label class="figma-label">시설 필요도 체크 방식</label>
+            <label class="figma-label">시설 필요도 체크 방식 ('매우 불필요' · '불필요' 체크 금지)</label>
             <select id="select-assoc-C1-C2-need" class="figma-select w-full">
-              <option value="random" ${(!assocPolicyState.C1_C2_needRating || assocPolicyState.C1_C2_needRating === 'random') ? 'selected' : ''}>🎲 [시설 필요도 랜덤 분산 (권장)] (일부 필요 / 일부 보통 자연 분산)</option>
-              <option value="need" ${assocPolicyState.C1_C2_needRating === 'need' ? 'selected' : ''}>모두 필요 (전 문항 1: 매우 필요 선택)</option>
-              <option value="none" ${assocPolicyState.C1_C2_needRating === 'none' ? 'selected' : ''}>모두 불필요 (전 문항 3: 불필요 선택)</option>
+              <option value="random" ${(!assocPolicyState.C1_C2_needRating || assocPolicyState.C1_C2_needRating === 'random' || assocPolicyState.C1_C2_needRating === 'none') ? 'selected' : ''}>🎲 ['보통' · '필요' · '매우 필요' 중 랜덤 선택 (권장)] (매우 불필요·불필요 제외)</option>
+              <option value="need_3" ${assocPolicyState.C1_C2_needRating === 'need_3' ? 'selected' : ''}>전 문항 '보통(3)' 선택</option>
+              <option value="need_4" ${assocPolicyState.C1_C2_needRating === 'need_4' ? 'selected' : ''}>전 문항 '필요(4)' 선택</option>
+              <option value="need" ${(assocPolicyState.C1_C2_needRating === 'need' || assocPolicyState.C1_C2_needRating === 'need_5') ? 'selected' : ''}>전 문항 '매우 필요(5)' 선택</option>
             </select>
           </div>
         </div>
