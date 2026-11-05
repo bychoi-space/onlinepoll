@@ -116,13 +116,17 @@ async function initSurveyDetailPage() {
 
     const isAssoc = (camp.surveyType === 'kstat_assoc');
     const isMetrix = (camp.surveyType === 'metrix_panel');
+    const isKona = (camp.surveyType === 'kona_youth');
 
     // 배지 상태
     statusBadge.className = `badge-status ${camp.status || 'ready'}`;
     statusBadge.textContent = camp.status === 'running' ? '실행 중' : (camp.status === 'completed' ? '완료' : '준비 완료');
 
     if (quotaBadge) {
-      if (isMetrix) {
+      if (isKona) {
+        quotaBadge.className = 'badge-quota-type b2c';
+        quotaBadge.textContent = '청소년 만족도 (40문항/53단계)';
+      } else if (isMetrix) {
         quotaBadge.className = 'badge-quota-type metrix';
         quotaBadge.textContent = '메트릭스 패널 (120단계)';
       } else if (isAssoc) {
@@ -135,7 +139,7 @@ async function initSurveyDetailPage() {
     }
 
     // 조사원 연동 계정 바인딩
-    const defaultSurveyor = isAssoc ? (camp.kstatLoginId || '가온이강윤') : '가온김영옥';
+    const defaultSurveyor = isKona ? '코나체인(익명)' : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : '가온김영옥');
     const inputKstatAccountId = document.getElementById('input-kstat-account-id');
     const inputKstatAccountPw = document.getElementById('input-kstat-account-pw');
     const badgeCurrentKstatAccount = document.getElementById('badge-current-kstat-account');
@@ -145,10 +149,13 @@ async function initSurveyDetailPage() {
       badgeCurrentKstatAccount.innerHTML = `<i class="fa-solid fa-user-check"></i> 연동 계정: <strong>${escapeHtml(camp.kstatLoginId || defaultSurveyor)}</strong>`;
     }
 
-    // STEP 2 헤더 문구 동적 커스터마이징 (상인회 vs 점포조사)
+    // STEP 2 헤더 문구 동적 커스터마이징 (상인회 vs 점포조사 vs 코나 청소년)
     const step2TitleEl = document.querySelector('#section-master-blueprint .step-card-title');
     const step2DescEl = document.querySelector('#section-master-blueprint .font-caption.text-dim');
-    if (isAssoc) {
+    if (isKona) {
+      if (step2TitleEl) step2TitleEl.textContent = '화성특례시 만족도 청소년 설문조사 기준점 및 응답 규칙 (40문항/53단계 전수)';
+      if (step2DescEl) step2DescEl.textContent = '코나체인 리서치 청소년 설문 1~40번 문항(조건부 하위 문항 포함 총 53단계) 확률 분포 및 제출 직전 스크린샷 규칙을 확인합니다.';
+    } else if (isAssoc) {
       if (step2TitleEl) step2TitleEl.textContent = '상인회 실태조사 기준점 및 가이드라인 검토 (25단계 전수)';
       if (step2DescEl) step2DescEl.textContent = '케이스탯 상인회 실태조사 1~25단계 구조 및 기본 응답 규칙을 확인하고 조정합니다.';
     } else {
@@ -162,29 +169,33 @@ async function initSurveyDetailPage() {
     // STEP 3 캡처 버튼 문구 동적화
     const btnViewPilotCaptures = document.getElementById('btn-view-pilot-captures');
     if (btnViewPilotCaptures) {
-      btnViewPilotCaptures.textContent = isAssoc ? '25단계 캡처 전체보기' : '15단계 캡처 전체보기';
+      btnViewPilotCaptures.textContent = isKona ? '제출 직전 캡처 보기' : (isAssoc ? '25단계 캡처 전체보기' : '15단계 캡처 전체보기');
     }
 
     // 대상 설문 요약 스트립 동적화
     const labelExecTargetMarket = document.getElementById('label-exec-target-market');
     if (labelExecTargetMarket) {
-      labelExecTargetMarket.textContent = isMetrix
-        ? '2026 경기도 소상공인 사업체패널조사 (메트릭스 SNUM 622)'
-        : (isAssoc ? '2026 전통시장 및 상점가 실태조사 (상인회)' : '2026 전통시장 및 점포경영 실태조사');
+      labelExecTargetMarket.textContent = isKona
+        ? '2026 화성특례시 만족도 청소년 설문조사 (코나체인 Event 2085)'
+        : (isMetrix
+          ? '2026 경기도 소상공인 사업체패널조사 (메트릭스 SNUM 622)'
+          : (isAssoc ? '2026 전통시장 및 상점가 실태조사 (상인회)' : '2026 전통시장 및 점포경영 실태조사'));
     }
     const badgeBlueprintStatus = document.getElementById('badge-blueprint-status');
     if (badgeBlueprintStatus) {
-      badgeBlueprintStatus.innerHTML = isMetrix
-        ? '<i class="fa-solid fa-check-double"></i> 120단계 기준점 연동 완료'
-        : (isAssoc ? '<i class="fa-solid fa-check-double"></i> 25단계 기준점 연동 완료' : '<i class="fa-solid fa-check-double"></i> 17단계 기준점 연동 완료');
+      badgeBlueprintStatus.innerHTML = isKona
+        ? '<i class="fa-solid fa-check-double"></i> 40문항/53단계 기준점 연동 완료'
+        : (isMetrix
+          ? '<i class="fa-solid fa-check-double"></i> 120단계 기준점 연동 완료'
+          : (isAssoc ? '<i class="fa-solid fa-check-double"></i> 25단계 기준점 연동 완료' : '<i class="fa-solid fa-check-double"></i> 17단계 기준점 연동 완료'));
     }
     const badgeExecEngine = document.getElementById('badge-exec-engine');
     if (badgeExecEngine) {
-      badgeExecEngine.textContent = isMetrix ? '메트릭스 패널 전용' : (isAssoc ? '케이스탯 상인회 전용' : '케이스탯 TAPI 전용');
+      badgeExecEngine.textContent = isKona ? '코나체인 리서치 전용' : (isMetrix ? '메트릭스 패널 전용' : (isAssoc ? '케이스탯 상인회 전용' : '케이스탯 TAPI 전용'));
     }
     const execSurveyorLabel = document.getElementById('exec-surveyor-label');
     if (execSurveyorLabel) {
-      execSurveyorLabel.textContent = isMetrix ? (camp.loginId || '강영미') : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : (camp.kstatLoginId || '가온김영옥'));
+      execSurveyorLabel.textContent = isKona ? '동탄구 청소년 (6001~6103)' : (isMetrix ? (camp.loginId || '강영미') : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : (camp.kstatLoginId || '가온김영옥')));
     }
 
     // 슬롯 바인딩 버튼 UI 튜닝
@@ -199,9 +210,68 @@ async function initSurveyDetailPage() {
       }
     }
 
-    // 메트릭스 모드 시 Kstat 전용 버튼 숨김 및 STEP 3 스트립 갱신
-    if (isMetrix) {
+    // 코나체인 청소년 또는 메트릭스 모드 시 Kstat 전용 버튼 숨김 및 STEP 3 스트립 갱신
+    const btnOpenSlotModalToolbar = document.getElementById('btn-open-slot-modal');
+    const btnOpenCampaignAddMerchant = document.getElementById('btn-open-campaign-add-merchant');
+    if (isKona) {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
+      if (btnOpenSlotModalToolbar) btnOpenSlotModalToolbar.style.display = 'none';
+      if (btnOpenCampaignAddMerchant) btnOpenCampaignAddMerchant.style.display = 'none';
+      const btnSyncKstat = document.getElementById('btn-sync-kstat-status');
+      if (btnSyncKstat) btnSyncKstat.style.display = 'none';
+      if (btnEnrichCampaign) btnEnrichCampaign.style.display = 'none';
+      const kstatPill = document.getElementById('badge-kstat-account-pill');
+      if (kstatPill) {
+        kstatPill.innerHTML = '<i class="fa-solid fa-camera text-primary-color"></i> <span>방식: <strong>단일 URL 재진입 &amp; 제출 직전 캡처</strong> (IDX 6001~6103)</span>';
+      }
+
+      const badgeExec = document.getElementById('badge-exec-engine');
+      if (badgeExec) {
+        badgeExec.className = 'badge-status ready font-bold';
+        badgeExec.textContent = '코나체인 리서치 (Event 2085)';
+      }
+      const labelMarket = document.getElementById('label-exec-target-market');
+      if (labelMarket) {
+        labelMarket.textContent = camp.title || '화성특례시 만족도 청소년 설문조사';
+      }
+      const labelSurveyor = document.getElementById('exec-surveyor-label');
+      if (labelSurveyor) {
+        labelSurveyor.textContent = '동탄1~9동 청소년';
+      }
+      const slotCountLabel = document.getElementById('exec-slot-count-label');
+      if (slotCountLabel) {
+        slotCountLabel.textContent = `${(camp.quotaDatabase || []).length}명 명단 장착 완료`;
+      }
+      const badgeBp = document.getElementById('badge-blueprint-status');
+      if (badgeBp) {
+        badgeBp.className = 'badge-status badge-blueprint ready';
+        badgeBp.innerHTML = '<i class="fa-solid fa-camera text-success"></i> 40문항 규칙 &amp; 제출 직전 캡처 연동 완료';
+      }
+
+      const titleBatch = document.getElementById('title-batch-automation');
+      if (titleBatch) titleBatch.textContent = '화성특례시 청소년 설문 102명(6002~6103) 순차 배치 자동화';
+      const descBatch = document.getElementById('desc-batch-automation');
+      if (descBatch) {
+        descBatch.textContent = '매 회차 깨끗한 브라우저 세션으로 코나체인 설문에 진입하여 1~40번(하위 포함 53단계) 응답을 주입하고, 제출하기 직전 스크린샷을 저장한 뒤 제출합니다.';
+      }
+      const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
+      if (safetyGuardToggle) {
+        safetyGuardToggle.textContent = '제출 직전 안전 대기 (체크 해제 시 제출 직전 스크린샷 촬영 후 실제 최종 제출 완료)';
+      }
+      if (checkSafetyGuard) {
+        checkSafetyGuard.checked = false;
+      }
+
+      if (btnPilot) {
+        btnPilot.classList.remove('d-none');
+        btnPilot.className = 'btn-action-secondary font-bold';
+        btnPilot.style.display = 'inline-flex';
+        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 항목 파일럿 검증 (제출 보류)';
+      }
+    } else if (isMetrix) {
+      if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
+      if (btnOpenSlotModalToolbar) btnOpenSlotModalToolbar.style.display = 'none';
+      if (btnOpenCampaignAddMerchant) btnOpenCampaignAddMerchant.style.display = 'none';
       const btnSyncKstat = document.getElementById('btn-sync-kstat-status');
       if (btnSyncKstat) btnSyncKstat.style.display = 'none';
       if (btnEnrichCampaign) btnEnrichCampaign.style.display = 'none';
@@ -258,6 +328,10 @@ async function initSurveyDetailPage() {
       }
     } else {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'inline-flex';
+      if (btnOpenSlotModalToolbar) btnOpenSlotModalToolbar.style.display = 'inline-flex';
+      if (btnOpenCampaignAddMerchant) {
+        btnOpenCampaignAddMerchant.style.display = isAssoc ? 'none' : 'inline-flex';
+      }
       const btnSyncKstat = document.getElementById('btn-sync-kstat-status');
       if (btnSyncKstat) btnSyncKstat.style.display = 'inline-flex';
       if (btnEnrichCampaign) {
@@ -364,8 +438,12 @@ async function initSurveyDetailPage() {
 
       // 2) 1번 단일 검증 버튼 (호환용)
       const isMetrix = (currentCampaign.surveyType === 'metrix_panel');
+      const isKona = (currentCampaign.surveyType === 'kona_youth');
       if (btnPilot) {
-        if (isMetrix) {
+        if (isKona) {
+          btnPilot.disabled = false;
+          btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 항목 파일럿 검증 (제출 보류)';
+        } else if (isMetrix) {
           const firstDoneMetrix = firstQuota && (firstQuota.quotaStatus === '진행중(98%)' || firstQuota.status === '진행중(98%)' || firstQuota.quotaStatus === 'completed' || firstQuota.status === '완료');
           btnPilot.disabled = firstDoneMetrix;
           btnPilot.innerHTML = firstDoneMetrix 
@@ -378,7 +456,18 @@ async function initSurveyDetailPage() {
       }
 
       // 3) 단일 통합 배치 자동화 버튼 상태
-      if (isMetrix) {
+      if (isKona) {
+        const allCompleted = quotaDb.length > 0 && quotaDb.every(b => b.quotaStatus === 'completed' || b.status === '완료');
+        if (allCompleted) {
+          btnBatch.disabled = true;
+          btnBatch.innerHTML = '<i class="fa-solid fa-circle-check"></i> 전체 103명 배치 자동화 최종 마감 완료 (100%)';
+        } else {
+          btnBatch.disabled = false;
+          btnBatch.className = 'btn-action-success flex-1 font-bold';
+          const doneCount = quotaDb.filter(b => b.quotaStatus === 'completed' || b.status === '완료').length;
+          btnBatch.innerHTML = `<i class="fa-solid fa-play"></i> 미완료 청소년 명단 순차 배치 가동 (${doneCount}/${quotaDb.length} 완료)`;
+        }
+      } else if (isMetrix) {
         const all98OrDone = quotaDb.length > 0 && quotaDb.every(b => 
           b.quotaStatus === 'completed' || b.status === '완료' || b.quotaStatus === '진행중(98%)' || b.status === '진행중(98%)'
         );
@@ -562,11 +651,26 @@ async function initSurveyDetailPage() {
     }
 
     const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
+    const isKona = (currentCampaign?.surveyType === 'kona_youth');
 
     // 테이블 헤더 동적 교체
     const quotaTableHead = document.getElementById('quota-table-head');
     if (quotaTableHead) {
-      if (isMetrix) {
+      if (isKona) {
+        quotaTableHead.innerHTML = `
+          <tr>
+            <th class="th-no">번호</th>
+            <th>응답자 IDX</th>
+            <th>거주 행정동 (5번 하위)</th>
+            <th>학교급 (4번)</th>
+            <th>성별 (3번)</th>
+            <th>만나이 (2번)</th>
+            <th>거주 구 (5번)</th>
+            <th>설문 접근 URL</th>
+            <th class="th-status">진행 상태</th>
+          </tr>
+        `;
+      } else if (isMetrix) {
         quotaTableHead.innerHTML = `
           <tr>
             <th class="th-no">번호</th>
@@ -633,6 +737,44 @@ async function initSurveyDetailPage() {
       return;
     }
 
+    // [코나체인 화성특례시 청소년 설문 전용 9개 컬럼 테이블 렌더링]
+    if (isKona) {
+      quotaTableBody.innerHTML = db.map((item, idx) => {
+        const seq = item.index || item.seq || (idx + 1);
+        const st = item.quotaStatus || item.status || 'ready';
+        let statusHtml = '<span class="badge-status ready">대기</span>';
+
+        if (st === '완료' || st === 'completed') {
+          statusHtml = '<span class="badge-status success"><i class="fa-solid fa-check"></i> 제출 완료</span>';
+        } else if (st === '진행중' || st === 'running') {
+          statusHtml = '<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 진행중</span>';
+        } else if (st === 'pilot_done') {
+          statusHtml = '<span class="badge-status pilot"><i class="fa-solid fa-camera"></i> 캡처·검증완료</span>';
+        } else if (st === 'error') {
+          statusHtml = '<span class="badge-status error">오류</span>';
+        }
+
+        const surveyUrl = item.surveyUrl || item.slotUrl || 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL';
+        const genderStr = item.gender || item.ceoGender || '-';
+        const schoolStr = item.schoolLevel === '고' ? '고등학생 (고)' : (item.schoolLevel === '중' ? '중학생 (중)' : (item.schoolLevel || '-'));
+
+        return `
+          <tr data-row-idx="${seq}">
+            <td class="text-center font-mono font-bold">${seq}</td>
+            <td class="text-center font-mono font-bold text-primary-color">${escapeHtml(item.idx || item.uid || '-')}</td>
+            <td><strong>${escapeHtml(item.dong || '-')}</strong></td>
+            <td class="text-center"><span class="badge-main-product">${escapeHtml(schoolStr)}</span></td>
+            <td class="text-center"><span class="badge-gender ${genderStr.includes('여') ? 'female' : 'male'}">${escapeHtml(genderStr)}</span></td>
+            <td class="text-center font-mono"><strong>만 ${escapeHtml(item.age || item.ceoAge || '-')}세</strong></td>
+            <td class="text-center"><span class="quota-ind-badge">${escapeHtml(item.gu || '동탄구')}</span></td>
+            <td class="text-center"><a href="${escapeHtml(surveyUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small"><i class="fa-solid fa-arrow-up-right-from-square"></i> 설문 링크</a></td>
+            <td class="text-center">${statusHtml}</td>
+          </tr>
+        `;
+      }).join('');
+      return;
+    }
+
     // [메트릭스 패널 전용 13개 컬럼 테이블 렌더링]
     if (isMetrix) {
       quotaTableBody.innerHTML = db.map((item, idx) => {
@@ -696,9 +838,9 @@ async function initSurveyDetailPage() {
 
         let slotTag = '';
         if (item.slotUrl) {
-          slotTag = `<div class="quota-slot-badge font-mono" title="${escapeHtml(item.slotUrl)}"><i class="fa-solid fa-link"></i> 슬롯 #${seq} (ranId: ${item.ranId || '-'})</div>`;
+          slotTag = `<div class="quota-slot-badge font-mono" data-slot-seq="${seq}" title="클릭하여 슬롯 URL 직접 수정 (${escapeHtml(item.slotUrl)})"><i class="fa-solid fa-link"></i> 슬롯 #${seq} (ranId: ${escapeHtml(item.ranId || '-')})</div>`;
         } else {
-          slotTag = `<div class="quota-slot-badge unmapped font-mono"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 미매핑</div>`;
+          slotTag = `<div class="quota-slot-badge unmapped font-mono" data-slot-seq="${seq}" title="케이스탯 슬롯 미매핑 (클릭하여 슬롯 URL 입력)"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 미매핑 (클릭)</div>`;
         }
 
         const surveyor = item.surveyorAccount || item.surveyorName || currentCampaign?.kstatLoginId || currentSurveyor || '가온이강윤';
@@ -759,9 +901,10 @@ async function initSurveyDetailPage() {
       let slotTag = '';
       if (item.slotUrl) {
         const slotLabel = item.slotIndex ? `슬롯 #${item.slotIndex} ${escapeHtml(item.slotExtra || '')}` : '슬롯 매핑됨';
-        slotTag = `<div class="quota-slot-badge font-mono" title="${escapeHtml(item.slotUrl)}"><i class="fa-solid fa-link"></i> ${slotLabel}</div>`;
+        const kidSuffix = item.ranId ? ` (${escapeHtml(item.ranId)})` : '';
+        slotTag = `<div class="quota-slot-badge font-mono" data-slot-seq="${seq}" title="클릭하여 이 점포의 슬롯 URL 확인/수정: ${escapeHtml(item.slotUrl)}"><i class="fa-solid fa-link"></i> ${slotLabel}${kidSuffix}</div>`;
       } else {
-        slotTag = `<div class="quota-slot-badge unmapped font-mono cursor-pointer" onclick="window.openSlotModal()" title="케이스탯 슬롯 미매핑 (클릭하여 1:1 매핑)"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 미매핑</div>`;
+        slotTag = `<div class="quota-slot-badge unmapped font-mono" data-slot-seq="${seq}" title="클릭하여 이 점포의 슬롯 URL 직접 입력/매핑"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 미매핑 (클릭하여 입력)</div>`;
       }
 
       return `
@@ -841,6 +984,16 @@ async function initSurveyDetailPage() {
   // 3-1. 쿼터 테이블 인라인 편집 (대표자이름, 성별, 나이, 주요품목 등 전체 지원) 및 실시간 동기화
   // ------------------------------------------------------------------------
   quotaTableBody.addEventListener('click', (e) => {
+    const slotBadge = e.target.closest('.quota-slot-badge');
+    if (slotBadge) {
+      e.stopPropagation();
+      const targetSeq = parseInt(slotBadge.getAttribute('data-slot-seq'), 10) || null;
+      if (typeof window.openSlotModal === 'function') {
+        window.openSlotModal(targetSeq);
+      }
+      return;
+    }
+
     const cell = e.target.closest('.editable-quota-cell');
     if (!cell || cell.querySelector('input, select')) return;
 
@@ -3055,12 +3208,83 @@ async function initSurveyDetailPage() {
     }
   }
 
+  function renderKonaBlueprint(data) {
+    const bpSection = document.getElementById('section-master-blueprint');
+    if (bpSection) {
+      bpSection.classList.remove('hidden');
+      bpSection.style.display = 'block';
+    }
+
+    const groupNav = document.querySelector('.blueprint-group-nav-container');
+    if (groupNav) groupNav.style.display = 'none';
+
+    const presetGroup = document.querySelector('.blueprint-preset-group');
+    if (presetGroup) presetGroup.style.display = 'none';
+
+    const tplPicker = document.querySelector('.blueprint-template-picker');
+    if (tplPicker) tplPicker.style.display = 'none';
+
+    const legendWrap = document.querySelector('.blueprint-legend-inline');
+    if (legendWrap) legendWrap.style.display = 'none';
+
+    const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
+    if (titleEl) titleEl.textContent = '화성특례시 만족도 청소년 설문조사 기준점 및 응답 규칙 (40문항 / 하위 포함 53단계)';
+
+    const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
+    if (subtitleEl) subtitleEl.textContent = '코나체인 리서치 청소년 설문(Event 2085)의 문항별 확률 분포, 조건부 분기 및 제출 직전 스크린샷 캡처 규칙이 탑재되어 있습니다.';
+
+    if (badgeMasterStatus) {
+      badgeMasterStatus.innerHTML = '<i class="fa-solid fa-camera"></i> 40문항 규칙 &amp; 제출 직전 캡처 활성';
+      badgeMasterStatus.className = 'badge-status badge-blueprint ready';
+    }
+
+    if (btnSaveBaseline) {
+      btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 청소년 설문 기준 가이드 저장';
+    }
+
+    if (!blueprintStageGrid) return;
+    const stages = data.blueprint?.stages || [];
+    blueprintStageGrid.innerHTML = stages.map(st => `
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">${escapeHtml(st.step)}</span>
+            <h3 class="blueprint-stage-title">${escapeHtml(st.title)}</h3>
+          </div>
+          <div class="blueprint-card-badge-group">
+            <span class="blueprint-asp-tag font-mono">${escapeHtml(st.aspFile || '')}</span>
+            <span class="${getBadgeClass(st.badge)}">${getBadgeLabel(st.badge)}</span>
+          </div>
+        </div>
+        <div class="blueprint-stage-desc">${escapeHtml(st.description || '')}</div>
+        <div class="blueprint-field-list">
+          ${(st.fields || []).map(f => `
+            <div class="blueprint-field-item">
+              <div class="blueprint-field-top">
+                <span class="blueprint-field-code font-mono">${escapeHtml(f.id)}</span>
+                <span class="blueprint-field-label font-bold">${escapeHtml(f.label)}</span>
+              </div>
+              <div class="blueprint-field-rule text-dim font-caption mt-4">${escapeHtml(f.rule || '')}</div>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+    `).join('');
+  }
+
   async function loadBlueprint() {
     try {
       const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/blueprint`);
       if (!res.ok) throw new Error('블루프린트를 불러올 수 없습니다.');
       const data = await res.json();
       blueprintData = data.blueprint;
+
+      // 코나체인 화성특례시 청소년 설문 전용 블루프린트 분기 (완전 격리)
+      const isKonaCampaign = (data.surveyType === 'kona_youth' || currentCampaign?.surveyType === 'kona_youth');
+      if (isKonaCampaign) {
+        renderKonaBlueprint(data);
+        return;
+      }
 
       // 상인회 전용 블루프린트 분기 (완전 격리)
       const isAssocCampaign = (data.surveyType === 'kstat_assoc' || currentCampaign?.surveyType === 'kstat_assoc');
@@ -4538,9 +4762,15 @@ async function initSurveyDetailPage() {
 
       const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
       const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
+      const isKona = (currentCampaign?.surveyType === 'kona_youth');
 
       let payload;
-      if (isMetrix) {
+      if (isKona) {
+        payload = {
+          surveyType: 'kona_youth',
+          policy: currentCampaign?.masterBaseline?.policy || {}
+        };
+      } else if (isMetrix) {
         syncMetrixInputsToState();
         payload = {
           surveyType: 'metrix_panel',
@@ -4571,28 +4801,32 @@ async function initSurveyDetailPage() {
 
       if (btnSaveBaseline) {
         btnSaveBaseline.disabled = false;
-        btnSaveBaseline.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${isAssoc ? '상인회 정책 가이드라인 저장 완료!' : '마스터 기준점 &amp; 평가 가이드 저장 완료!'}`;
+        btnSaveBaseline.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${isKona ? '청소년 설문 기준 가이드 저장 완료!' : (isAssoc ? '상인회 정책 가이드라인 저장 완료!' : '마스터 기준점 &amp; 평가 가이드 저장 완료!')}`;
         btnSaveBaseline.className = 'btn-pill btn-pill-success';
       }
 
       if (badgeMasterStatus) {
-        badgeMasterStatus.innerHTML = isAssoc 
-          ? '<i class="fa-solid fa-check-double"></i> 상인회 25단계 블루프린트 설정 완료'
-          : '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 &amp; 평가 가이드 활성';
+        badgeMasterStatus.innerHTML = isKona
+          ? '<i class="fa-solid fa-camera"></i> 40문항 규칙 &amp; 제출 직전 캡처 활성'
+          : (isAssoc 
+            ? '<i class="fa-solid fa-check-double"></i> 상인회 25단계 블루프린트 설정 완료'
+            : '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 &amp; 평가 가이드 활성');
         badgeMasterStatus.className = 'badge-status badge-blueprint ready';
       }
 
       if (showNotification) {
-        appendLog('success', isMetrix
-          ? '✓ 메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-          : (isAssoc 
-            ? '✓ 상인회 25단계 정책 가이드라인(F5~G4)이 성공적으로 저장되었습니다.'
-            : '✓ 3개 업종 그룹별 마스터 기준점 및 조사원 평가 가이드(H1~H3)가 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.'));
+        appendLog('success', isKona
+          ? '✓ 화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+          : (isMetrix
+            ? '✓ 메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+            : (isAssoc 
+              ? '✓ 상인회 25단계 정책 가이드라인(F5~G4)이 성공적으로 저장되었습니다.'
+              : '✓ 3개 업종 그룹별 마스터 기준점 및 조사원 평가 가이드(H1~H3)가 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.')));
       }
 
       setTimeout(() => {
         if (btnSaveBaseline) {
-          btnSaveBaseline.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${isAssoc ? '상인회 정책 가이드 저장' : '마스터 기준점 &amp; 조사원 평가 가이드 저장'}`;
+          btnSaveBaseline.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${isKona ? '청소년 설문 기준 가이드 저장' : (isAssoc ? '상인회 정책 가이드 저장' : '마스터 기준점 &amp; 조사원 평가 가이드 저장')}`;
           btnSaveBaseline.className = 'btn-pill btn-pill-primary';
         }
       }, 2500);
@@ -4689,9 +4923,13 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    const firstBiz = quotaDb[0];
     const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
-    const firstSlot = firstBiz?.surveyUrl || firstBiz?.slotUrl;
+    const isKona = (currentCampaign?.surveyType === 'kona_youth');
+    const firstBiz = isKona
+      ? (quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
+      : quotaDb[0];
+    const firstSlot = firstBiz?.surveyUrl || firstBiz?.slotUrl || (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '');
+    const targetPilotIdx = firstBiz?.index || firstBiz?.seq || 1;
 
     // 1번 쿼터 슬롯 매핑 검증
     if (!firstSlot) {
@@ -4711,7 +4949,9 @@ async function initSurveyDetailPage() {
       setRunningState(true);
       openMonitorDrawer();
       resetTimelineChips();
-      if (isMetrix) {
+      if (isKona) {
+        appendLog('info', `🎯 [코나 청소년 파일럿 시작] "${firstBiz.companyName}" (IDX: ${firstBiz.idx}) 1~40번 입력 및 제출 직전 캡처 검증을 진행합니다...`);
+      } else if (isMetrix) {
         appendLog('info', `🎯 [메트릭스 1번 파일럿 시작] "${firstBiz.companyName}" (UID: ${firstBiz.uid}) 98% 안전 대기 완주를 진행합니다...`);
       } else {
         appendLog('info', `🎯 [1번 단일 검증 시작] "${firstBiz.companyName}" 점포로 Q1부터 Agree.asp까지 안전 완주를 진행합니다... (슬롯: #${firstBiz.slotIndex || 1})`);
@@ -4725,7 +4965,7 @@ async function initSurveyDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           surveyUrl,
-          quotaIndex: 1
+          quotaIndex: targetPilotIdx
         })
       });
 
@@ -4747,13 +4987,16 @@ async function initSurveyDetailPage() {
     }
 
     const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
+    const isKona = (currentCampaign?.surveyType === 'kona_youth');
     const firstQuota = quotaDb.find(b => b.index === 1) || quotaDb[0];
-    const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed' || firstQuota.quotaStatus === '진행중(98%)' || firstQuota.status === '진행중(98%)');
-    const startIdx = firstDone ? 2 : 1;
+    const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed' || firstQuota.status === '완료' || firstQuota.quotaStatus === '진행중(98%)' || firstQuota.status === '진행중(98%)');
+    const startIdx = isKona ? 1 : (firstDone ? 2 : 1);
 
     // 1:1 슬롯 매핑 전수 검증
-    const targets = quotaDb.filter(b => (b.index || b.seq) >= startIdx);
-    const unmappedTargets = targets.filter(b => !b.slotUrl && !b.surveyUrl);
+    const targets = isKona
+      ? quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료')
+      : quotaDb.filter(b => (b.index || b.seq) >= startIdx);
+    const unmappedTargets = isKona ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
     if (unmappedTargets.length > 0) {
       if (isMetrix) {
         alert(`⚠️ 실행 대상 패널 ${targets.length}건 중 ${unmappedTargets.length}건에 설문 참여 URL(surveyUrl)이 누락되었습니다.`);
@@ -4764,11 +5007,15 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    let surveyUrl = targets[0]?.slotUrl || targets[0]?.surveyUrl || inputSurveyUrl.value.trim();
+    let surveyUrl = targets[0]?.slotUrl || targets[0]?.surveyUrl || inputSurveyUrl.value.trim() || 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL';
     const safetyGuard = checkSafetyGuard ? checkSafetyGuard.checked : true;
     
     let confirmMsg;
-    if (isMetrix) {
+    if (isKona) {
+      confirmMsg = safetyGuard
+        ? `[화성특례시 청소년 설문조사]\n미완료 ${targets.length}명(IDX ${targets[0]?.idx}~${targets[targets.length - 1]?.idx})에 대해 제출 직전 안전 대기(캡처만 수행) 모드로 배치를 시작하시겠습니까?`
+        : `[화성특례시 청소년 설문조사]\n미완료 ${targets.length}명(IDX ${targets[0]?.idx}~${targets[targets.length - 1]?.idx})에 대해 배치 자동화를 시작합니다.\n\n📸 매 회차 제출 직전 스크린샷을 자동 촬영·보관한 후 실제 제출(제출하기 클릭)을 완료합니다. 계속하시겠습니까?`;
+    } else if (isMetrix) {
       confirmMsg = safetyGuard
         ? `[메트릭스 패널 54개 대상]\n잔여 ${targets.length}개 사업체에 대해 배치 자동화를 시작합니다.\n\n🛡️ [최종 제출 직전 98% 안전 대기 원칙 적용]\n전 문항 답변, 전자서명 및 간판사진 업로드가 완료된 후 최종 제출 직전(Step 119)에서 정지되어 사용자가 직접 검토/수정할 수 있습니다.\n\n계속 진행하시겠습니까?`
         : `⚠️ 경고: 최종 제출 안전가드가 해제되어 있습니다!\n잔여 ${targets.length}개 사업체가 실제로 최종 제출(100% 완료) 마감 처리됩니다. 계속하시겠습니까?`;
@@ -4783,7 +5030,9 @@ async function initSurveyDetailPage() {
     try {
       setRunningState(true);
       openMonitorDrawer();
-      if (isMetrix) {
+      if (isKona) {
+        appendLog('info', `🚀 [코나 청소년 배치 가동 시작] 미완료 ${targets.length}건 순차 자동화 실행을 시작합니다... (제출 직전 캡처 + ${safetyGuard ? '제출 보류' : '실제 최종 제출'})`);
+      } else if (isMetrix) {
         appendLog('info', `🚀 [메트릭스 배치 가동 시작] ${startIdx}번 패널부터 ${targets.length}건 순차 자동화 실행을 시작합니다... (98% 안전 대기: ${safetyGuard ? 'ON' : 'OFF'})`);
       } else {
         appendLog('info', `🚀 [배치 가동 시작] ${startIdx}번 쿼터부터 ${targets.length}건 1:1 슬롯 고속 자동화 연속 실행을 시작합니다...`);
@@ -4832,14 +5081,16 @@ async function initSurveyDetailPage() {
   }
 
   // ------------------------------------------------------------------------
-  // 6-1. 케이스탯 슬롯 1:1 매칭 모달 및 스마트 파서 (Modal Slot Controller)
+  // 6-1. 케이스탯 슬롯 1:1 매칭 모달 (행별 직접 입력 & 대량 파싱) 및 점포 수동 추가 제어
   // ------------------------------------------------------------------------
   const modalSlotMapping = document.getElementById('modal-slot-mapping');
   const btnOpenSlotModal = document.getElementById('btn-open-slot-modal');
+  const kpiSlotChip = document.getElementById('kpi-slot-chip');
   const btnCloseSlotModal = document.getElementById('btn-close-slot-modal');
   const btnCancelSlotModal = document.getElementById('btn-cancel-slot-modal');
   const textareaBulkSlots = document.getElementById('textarea-bulk-slots');
   const btnParseSlots = document.getElementById('btn-parse-slots');
+  const btnParseSlotsUnmapped = document.getElementById('btn-parse-slots-unmapped');
   const btnClearSlots = document.getElementById('btn-clear-slots');
   const slotParseStatusMsg = document.getElementById('slot-parse-status-msg');
   const slotMatchSummaryBadge = document.getElementById('slot-match-summary-badge');
@@ -4849,14 +5100,39 @@ async function initSurveyDetailPage() {
 
   let parsedSlotsState = [];
 
-  // 스마트 슬롯 URL 파서
+  function normalizeSingleSlotInput(rawVal, idx = 0) {
+    const trimmed = String(rawVal || '').trim();
+    if (!trimmed) {
+      return { slotUrl: '', ranId: null, slotIndex: idx + 1, slotExtra: '' };
+    }
+    const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
+    const urlMatch = trimmed.match(/(https?:\/\/[^\s"'<>]+index\.asp\?[^\s"'<>]+)/i);
+    let finalUrl = urlMatch ? urlMatch[1] : trimmed;
+
+    // KID 코드만 단독 입력한 경우 정식 URL로 자동 보완
+    if (!/^https?:\/\//i.test(finalUrl) && /^[A-Za-z0-9_-]{6,20}$/.test(finalUrl)) {
+      finalUrl = isAssoc
+        ? `https://kstat.surveys.kr/2026/P26042401A/index.asp?KID=${finalUrl}&type=tapi&prid=2026070801&mnid=900001364&srt=1`
+        : `https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=${finalUrl}&type=tapi&prid=2026070802&mnid=900001346&srt=1`;
+    }
+
+    const kidMatch = finalUrl.match(/[?&]KID=([A-Za-z0-9_-]+)/i);
+    const extraMatch = trimmed.match(/\(([0-9]+)\)추가/i);
+    return {
+      slotUrl: finalUrl,
+      ranId: kidMatch ? kidMatch[1] : null,
+      slotIndex: idx + 1,
+      slotExtra: extraMatch ? extraMatch[0] : `(${idx})추가`
+    };
+  }
+
+  // 스마트 슬롯 URL 파서 (URL, list.php 소스, KID 단독 줄바꿈 모두 지원)
   function parseBulkSlotInput(rawText) {
     if (!rawText || !rawText.trim()) return [];
 
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
     const slots = [];
 
-    // 정규식 1: 케이스탯 index.asp URL 패턴
     const urlRegex = /(https?:\/\/[^\s"'<>]+index\.asp\?[^\s"'<>]+)/gi;
     const kidRegex = /[?&]KID=([A-Za-z0-9_-]+)/i;
     const extraRegex = /\(([0-9]+)\)추가/i;
@@ -4878,17 +5154,14 @@ async function initSurveyDetailPage() {
       }
     }
 
-    // fallback: URL 직접 줄바꿈 입력
+    // fallback: URL 직접 줄바꿈 또는 KID 코드 단독 줄바꿈 입력
     if (slots.length === 0) {
       lines.forEach((line, idx) => {
-        if (line.startsWith('http://') || line.startsWith('https://')) {
-          const kidMatch = line.match(kidRegex);
-          slots.push({
-            slotUrl: line,
-            ranId: kidMatch ? kidMatch[1] : null,
-            slotExtra: `(${idx})추가`,
-            slotIndex: idx + 1
-          });
+        if (line.startsWith('http://') || line.startsWith('https://') || /^[A-Za-z0-9_-]{6,20}$/.test(line)) {
+          const norm = normalizeSingleSlotInput(line, idx);
+          if (norm.slotUrl) {
+            slots.push(norm);
+          }
         }
       });
     }
@@ -4896,10 +5169,32 @@ async function initSurveyDetailPage() {
     return slots;
   }
 
-  function renderSlotPreviewTable() {
+  function updateSlotSummaryUI() {
     const quotaDb = currentCampaign?.quotaDatabase || [];
     const total = quotaDb.length;
-    let matchedCount = 0;
+    const matchedCount = parsedSlotsState.filter(s => s && s.slotUrl && String(s.slotUrl).trim() !== '').length;
+
+    if (slotMatchSummaryBadge) {
+      slotMatchSummaryBadge.textContent = `매칭 완료: ${matchedCount} / ${total} 점포`;
+      if (matchedCount === total && total > 0) {
+        slotMatchSummaryBadge.className = 'slot-summary-badge success';
+        if (slotParseStatusMsg) {
+          slotParseStatusMsg.className = 'slot-parse-msg success';
+          slotParseStatusMsg.innerHTML = `<i class="fa-solid fa-circle-check"></i> 전체 <strong>${total}개 점포</strong>에 슬롯 URL이 1:1로 매칭되었습니다. 하단의 [1:1 슬롯 매핑 적용 및 저장]을 눌러주세요.`;
+        }
+      } else {
+        slotMatchSummaryBadge.className = 'slot-summary-badge warning';
+        if (slotParseStatusMsg) {
+          slotParseStatusMsg.className = 'slot-parse-msg warning';
+          slotParseStatusMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> 전체 <strong>${total}개 점포</strong> 중 <strong>${matchedCount}개</strong> 매칭됨 (미매핑 <strong>${Math.max(0, total - matchedCount)}개</strong> — 표의 입력칸에 직접 붙여넣거나 상단에서 파싱하세요)`;
+        }
+      }
+    }
+  }
+
+  function renderSlotPreviewTable(focusSeq = null) {
+    const quotaDb = currentCampaign?.quotaDatabase || [];
+    const total = quotaDb.length;
 
     if (total === 0) {
       if (slotPreviewTbody) slotPreviewTbody.innerHTML = '<tr><td colspan="6" class="empty-table-msg">쿼터 점포가 없습니다.</td></tr>';
@@ -4911,55 +5206,117 @@ async function initSurveyDetailPage() {
       slotPreviewTbody.innerHTML = quotaDb.map((item, idx) => {
         const seq = item.index || item.seq || (idx + 1);
         const parsedSlot = parsedSlotsState[idx] || {};
-        const url = parsedSlot.slotUrl || item.slotUrl || '';
+        const url = parsedSlot.slotUrl !== undefined ? parsedSlot.slotUrl : (item.slotUrl || '');
+        const ranId = parsedSlot.ranId || item.ranId || (url.match(/[?&]KID=([A-Za-z0-9_-]+)/i)?.[1] || '');
         const slotExtra = parsedSlot.slotExtra || item.slotExtra || (url ? `(${idx})추가` : '-');
-        const isMatched = !!url;
-        if (isMatched) matchedCount++;
+        const isMatched = Boolean(url && String(url).trim());
+        const isFocused = (focusSeq && Number(focusSeq) === Number(seq));
 
         return `
-          <tr class="slot-preview-row ${isMatched ? 'row-matched' : 'row-unmatched'}">
+          <tr class="slot-preview-row ${isMatched ? 'row-matched' : 'row-unmatched'}${isFocused ? ' row-focused' : ''}" data-row-idx="${idx}" data-seq="${seq}">
             <td class="text-center font-mono font-bold col-seq">${seq}</td>
-            <td class="col-company"><strong class="company-name-highlight">${escapeHtml(item.companyName || '-')}</strong></td>
-            <td class="text-center col-ind"><span class="quota-ind-badge">${escapeHtml(getIndustryBadgeText(item.industry || item.handledItems))}</span></td>
-            <td class="col-ceo"><span class="ceo-name-highlight">${escapeHtml(item.ceoName || '-')}</span></td>
-            <td class="text-center font-mono col-slot-label">
-              ${isMatched ? `<span class="badge-slot-matched font-mono font-bold">슬롯 #${idx + 1} ${escapeHtml(slotExtra)}</span>` : '<span class="badge-slot-empty">-</span>'}
+            <td class="col-company"><strong class="company-name-highlight">${escapeHtml(item.companyName || item.marketName || '-')}</strong></td>
+            <td class="text-center col-ind"><span class="quota-ind-badge">${escapeHtml(getIndustryBadgeText(item.industry || item.handledItems || item.marketType))}</span></td>
+            <td class="col-ceo"><span class="ceo-name-highlight">${escapeHtml(item.ceoName || item.leaderName || '-')}</span></td>
+            <td class="text-center font-mono col-slot-label" id="slot-label-cell-${idx}">
+              ${isMatched
+                ? `<span class="badge-slot-matched font-mono font-bold">슬롯 #${idx + 1} ${escapeHtml(ranId ? `(${ranId})` : slotExtra)}</span>`
+                : '<span class="badge-slot-unmapped"><i class="fa-solid fa-triangle-exclamation"></i> 미매핑</span>'}
             </td>
             <td class="font-mono col-slot-url">
-              ${isMatched 
-                ? `<div class="slot-url-text font-mono break-all" title="${escapeHtml(url)}">${escapeHtml(url)}</div>` 
-                : '<span class="badge-slot-unmapped"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 URL 미지정</span>'}
+              <div class="slot-url-input-wrap">
+                <input
+                  type="text"
+                  class="slot-row-url-input ${isMatched ? '' : 'is-empty'}"
+                  data-row-idx="${idx}"
+                  data-seq="${seq}"
+                  value="${escapeHtml(url)}"
+                  placeholder="https://kstat.surveys.kr/...index.asp?KID=... 또는 KID 코드 직접 입력"
+                />
+                <button type="button" class="btn-clear-row-slot" data-row-idx="${idx}" title="이 점포의 슬롯 URL 지우기">&times;</button>
+              </div>
             </td>
           </tr>
         `;
       }).join('');
-    }
 
-    if (slotMatchSummaryBadge) {
-      slotMatchSummaryBadge.textContent = `매칭 완료: ${matchedCount} / ${total} 점포`;
-      if (matchedCount === total && total > 0) {
-        slotMatchSummaryBadge.className = 'slot-summary-badge success';
-        if (slotParseStatusMsg) {
-          slotParseStatusMsg.className = 'slot-parse-msg success';
-          slotParseStatusMsg.innerHTML = `<i class="fa-solid fa-circle-check"></i> 전체 <strong>${total}개 점포</strong>에 슬롯 URL이 1:1로 매칭되었습니다. 저장을 진행해 주세요.`;
-        }
-      } else {
-        slotMatchSummaryBadge.className = 'slot-summary-badge warning';
-        if (slotParseStatusMsg) {
-          slotParseStatusMsg.className = 'slot-parse-msg warning';
-          slotParseStatusMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> 전체 <strong>${total}개 점포</strong> 중 <strong>${matchedCount}개</strong>만 매칭되었습니다. (<strong>${total - matchedCount}개</strong> 누락)`;
-        }
+      // 개별 행 입력 이벤트 바인딩
+      slotPreviewTbody.querySelectorAll('.slot-row-url-input').forEach(input => {
+        const handleRowInput = () => {
+          const rIdx = parseInt(input.getAttribute('data-row-idx'), 10);
+          const norm = normalizeSingleSlotInput(input.value, rIdx);
+          if (parsedSlotsState[rIdx]) {
+            parsedSlotsState[rIdx].slotUrl = norm.slotUrl;
+            parsedSlotsState[rIdx].ranId = norm.ranId;
+            parsedSlotsState[rIdx].slotIndex = norm.slotIndex;
+            parsedSlotsState[rIdx].slotExtra = norm.slotExtra;
+          }
+          const isMatched = Boolean(norm.slotUrl);
+          input.classList.toggle('is-empty', !isMatched);
+          const tr = input.closest('.slot-preview-row');
+          if (tr) {
+            tr.classList.toggle('row-matched', isMatched);
+            tr.classList.toggle('row-unmatched', !isMatched);
+          }
+          const labelCell = document.getElementById(`slot-label-cell-${rIdx}`);
+          if (labelCell) {
+            labelCell.innerHTML = isMatched
+              ? `<span class="badge-slot-matched font-mono font-bold">슬롯 #${rIdx + 1} ${escapeHtml(norm.ranId ? `(${norm.ranId})` : norm.slotExtra)}</span>`
+              : '<span class="badge-slot-unmapped"><i class="fa-solid fa-triangle-exclamation"></i> 미매핑</span>';
+          }
+          updateSlotSummaryUI();
+        };
+
+        input.addEventListener('input', handleRowInput);
+        input.addEventListener('change', () => {
+          const rIdx = parseInt(input.getAttribute('data-row-idx'), 10);
+          const norm = normalizeSingleSlotInput(input.value, rIdx);
+          if (norm.slotUrl && input.value.trim() !== norm.slotUrl) {
+            input.value = norm.slotUrl;
+          }
+          handleRowInput();
+        });
+      });
+
+      // 개별 행 비우기 버튼 이벤트 바인딩
+      slotPreviewTbody.querySelectorAll('.btn-clear-row-slot').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const rIdx = parseInt(btn.getAttribute('data-row-idx'), 10);
+          const rowInput = slotPreviewTbody.querySelector(`.slot-row-url-input[data-row-idx="${rIdx}"]`);
+          if (rowInput) {
+            rowInput.value = '';
+            rowInput.dispatchEvent(new Event('input'));
+            rowInput.focus();
+          }
+        });
+      });
+
+      if (focusSeq) {
+        setTimeout(() => {
+          const targetInput = slotPreviewTbody.querySelector(`.slot-row-url-input[data-seq="${focusSeq}"]`);
+          if (targetInput) {
+            try {
+              targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (_) {}
+            targetInput.focus();
+            targetInput.select();
+          }
+        }, 80);
       }
     }
+
+    updateSlotSummaryUI();
   }
 
-  function openSlotModal() {
+  function openSlotModal(focusSeq = null) {
     if (!currentCampaign) return;
     const quotaDb = currentCampaign.quotaDatabase || [];
     if (quotaDb.length === 0) {
       alert('캠페인에 등록된 쿼터가 없습니다. 먼저 쿼터를 불러와 주세요.');
       return;
     }
+
+    const targetSeq = (typeof focusSeq === 'number' || typeof focusSeq === 'string') ? parseInt(focusSeq, 10) : null;
 
     parsedSlotsState = quotaDb.map((item, idx) => ({
       index: item.index || item.seq || (idx + 1),
@@ -4974,11 +5331,16 @@ async function initSurveyDetailPage() {
     }));
 
     const existingUrls = parsedSlotsState.filter(s => s.slotUrl).map(s => s.slotUrl);
-    if (existingUrls.length > 0 && textareaBulkSlots && !textareaBulkSlots.value.trim()) {
+    if (existingUrls.length > 0 && textareaBulkSlots) {
       textareaBulkSlots.value = existingUrls.join('\n');
     }
 
-    renderSlotPreviewTable();
+    // 기존에 이미 완료/검증완료된 점포가 있으면 실수로 초기화되지 않도록 체크박스 기본 해제 보장
+    if (checkResetQuotaStatus) {
+      checkResetQuotaStatus.checked = false;
+    }
+
+    renderSlotPreviewTable(targetSeq);
     if (modalSlotMapping) modalSlotMapping.classList.add('is-open');
   }
 
@@ -4988,7 +5350,8 @@ async function initSurveyDetailPage() {
     if (modalSlotMapping) modalSlotMapping.classList.remove('is-open');
   }
 
-  if (btnOpenSlotModal) btnOpenSlotModal.addEventListener('click', openSlotModal);
+  if (btnOpenSlotModal) btnOpenSlotModal.addEventListener('click', () => openSlotModal());
+  if (kpiSlotChip) kpiSlotChip.addEventListener('click', () => openSlotModal());
   if (btnCloseSlotModal) btnCloseSlotModal.addEventListener('click', closeSlotModal);
   if (btnCancelSlotModal) btnCancelSlotModal.addEventListener('click', closeSlotModal);
 
@@ -4996,14 +5359,14 @@ async function initSurveyDetailPage() {
     btnParseSlots.addEventListener('click', () => {
       const text = textareaBulkSlots ? textareaBulkSlots.value.trim() : '';
       if (!text) {
-        alert('슬롯 URL을 입력해주세요.');
+        alert('상단 대량 입력창에 슬롯 URL(또는 KID 코드)을 입력해주세요.');
         if (textareaBulkSlots) textareaBulkSlots.focus();
         return;
       }
 
       const extracted = parseBulkSlotInput(text);
       if (extracted.length === 0) {
-        alert('입력된 텍스트에서 케이스탯 설문 URL을 찾을 수 없습니다.\n올바른 index.asp?KID=... 형태의 URL인지 확인해주세요.');
+        alert('입력된 텍스트에서 케이스탯 설문 URL을 찾을 수 없습니다.\n올바른 index.asp?KID=... 형태의 URL 또는 KID 코드인지 확인해주세요.');
         return;
       }
 
@@ -5024,6 +5387,63 @@ async function initSurveyDetailPage() {
       });
 
       renderSlotPreviewTable();
+    });
+  }
+
+  // [미매핑 점포에만 채우기] 버튼: 이미 매핑된 점포의 슬롯은 유지하고, 빈칸(미매핑) 점포에만 신규 슬롯을 순차 배정
+  if (btnParseSlotsUnmapped) {
+    btnParseSlotsUnmapped.addEventListener('click', () => {
+      const text = textareaBulkSlots ? textareaBulkSlots.value.trim() : '';
+      if (!text) {
+        alert('미매핑 점포에 채워 넣을 케이스탯 슬롯 URL을 상단 입력창에 붙여넣어 주세요.');
+        if (textareaBulkSlots) textareaBulkSlots.focus();
+        return;
+      }
+
+      const extracted = parseBulkSlotInput(text);
+      if (extracted.length === 0) {
+        alert('입력된 텍스트에서 케이스탯 설문 URL을 찾을 수 없습니다.');
+        return;
+      }
+
+      const existingUrls = new Set(
+        parsedSlotsState
+          .filter(s => s.slotUrl && s.slotUrl.trim())
+          .map(s => s.slotUrl.trim())
+      );
+      const existingRanIds = new Set(
+        parsedSlotsState
+          .filter(s => s.ranId)
+          .map(s => s.ranId)
+      );
+
+      // 이미 다른 점포에 매핑된 슬롯은 제외하고 신규 슬롯만 필터링
+      const availableNewSlots = extracted.filter(s => {
+        if (existingUrls.has(s.slotUrl)) return false;
+        if (s.ranId && existingRanIds.has(s.ranId)) return false;
+        return true;
+      });
+
+      if (availableNewSlots.length === 0) {
+        alert('입력된 URL 중 아직 매핑되지 않은 신규 슬롯이 없습니다. (모두 이미 매핑되어 있습니다)');
+        return;
+      }
+
+      let fillCursor = 0;
+      let filledCount = 0;
+      parsedSlotsState.forEach((slotItem, idx) => {
+        if ((!slotItem.slotUrl || !slotItem.slotUrl.trim()) && fillCursor < availableNewSlots.length) {
+          const nextSlot = availableNewSlots[fillCursor++];
+          slotItem.slotUrl = nextSlot.slotUrl;
+          slotItem.ranId = nextSlot.ranId;
+          slotItem.slotIndex = idx + 1;
+          slotItem.slotExtra = nextSlot.slotExtra || `(${idx})추가`;
+          filledCount++;
+        }
+      });
+
+      renderSlotPreviewTable();
+      alert(`미매핑 점포 ${filledCount}곳에 신규 슬롯 URL을 순서대로 채웠습니다. 하단 [1:1 슬롯 매핑 적용 및 저장]을 눌러 확정해 주세요.`);
     });
   }
 
@@ -5053,17 +5473,17 @@ async function initSurveyDetailPage() {
       const validSlots = parsedSlotsState.filter(s => s.slotUrl && s.slotUrl.trim() !== '');
 
       if (validSlots.length === 0) {
-        alert('매핑할 슬롯 URL이 없습니다. 대량 입력창에 슬롯 URL을 입력하고 [자동 파싱]을 먼저 진행해주세요.');
+        alert('매핑할 슬롯 URL이 없습니다. 아래 표의 각 점포 URL 입력칸에 슬롯 URL을 입력하거나 상단 대량 입력창에서 파싱해 주세요.');
         return;
       }
 
       if (validSlots.length < total) {
-        if (!confirm(`⚠️ 전체 ${total}개 점포 중 ${validSlots.length}개 점포만 슬롯이 지정되어 있습니다.\n일부 점포의 슬롯이 누락되면 배치 자동화가 차단될 수 있습니다. 이대로 저장하시겠습니까?`)) {
+        if (!confirm(`⚠️ 전체 ${total}개 점포 중 ${validSlots.length}개 점포에 슬롯이 지정되었습니다. (미매핑 ${total - validSlots.length}개)\n이대로 슬롯 매핑을 저장하시겠습니까?`)) {
           return;
         }
       }
 
-      const resetStatus = checkResetQuotaStatus ? checkResetQuotaStatus.checked : true;
+      const resetStatus = checkResetQuotaStatus ? checkResetQuotaStatus.checked : false;
 
       try {
         btnSubmitSlotMapping.disabled = true;
@@ -5091,6 +5511,102 @@ async function initSurveyDetailPage() {
         btnSubmitSlotMapping.disabled = false;
         btnSubmitSlotMapping.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 1:1 슬롯 매핑 적용 및 저장';
       }
+    });
+  }
+
+  // ------------------------------------------------------------------------
+  // 6-2. 설문 작업실 내 [점포 수동 추가 & 슬롯 즉시 매핑] 모달 제어
+  // ------------------------------------------------------------------------
+  const modalCampaignAddMerchant = document.getElementById('modal-campaign-add-merchant');
+  const btnOpenCampaignAddMerchant = document.getElementById('btn-open-campaign-add-merchant');
+  const btnCloseCampaignAddModal = document.getElementById('btn-close-campaign-add-modal');
+  const btnCancelCampaignAddModal = document.getElementById('btn-cancel-campaign-add-modal');
+  const formCampaignAddMerchant = document.getElementById('form-campaign-add-merchant');
+
+  const openCampaignAddMerchantModal = () => {
+    if (!modalCampaignAddMerchant) return;
+    modalCampaignAddMerchant.classList.add('is-open');
+    const nameInput = document.getElementById('camp-add-company-name');
+    if (nameInput) nameInput.focus();
+  };
+  const closeCampaignAddMerchantModal = () => {
+    if (modalCampaignAddMerchant) modalCampaignAddMerchant.classList.remove('is-open');
+  };
+
+  if (btnOpenCampaignAddMerchant) btnOpenCampaignAddMerchant.addEventListener('click', openCampaignAddMerchantModal);
+  if (btnCloseCampaignAddModal) btnCloseCampaignAddModal.addEventListener('click', closeCampaignAddMerchantModal);
+  if (btnCancelCampaignAddModal) btnCancelCampaignAddModal.addEventListener('click', closeCampaignAddMerchantModal);
+
+  if (formCampaignAddMerchant) {
+    formCampaignAddMerchant.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentCampaign) return;
+      if (!Array.isArray(currentCampaign.quotaDatabase)) {
+        currentCampaign.quotaDatabase = [];
+      }
+
+      const companyName = document.getElementById('camp-add-company-name')?.value.trim() || '';
+      const industry = document.getElementById('camp-add-industry')?.value.trim() || '기타소매';
+      const bizNumber = document.getElementById('camp-add-biz-number')?.value.trim() || '';
+      const ceoName = document.getElementById('camp-add-ceo-name')?.value.trim() || null;
+      const ceoGender = document.getElementById('camp-add-ceo-gender')?.value.trim() || null;
+      const ceoAgeRaw = document.getElementById('camp-add-ceo-age')?.value.trim() || '';
+      const ceoAge = ceoAgeRaw ? parseInt(ceoAgeRaw, 10) : null;
+      const phone = document.getElementById('camp-add-phone')?.value.trim() || null;
+      const openDate = document.getElementById('camp-add-open-date')?.value.trim() || null;
+      const address = document.getElementById('camp-add-address')?.value.trim() || null;
+      const handledItems = document.getElementById('camp-add-handled-items')?.value.trim() || industry;
+      const mainProducts = document.getElementById('camp-add-main-products')?.value.trim() || null;
+      const rawSlotUrl = document.getElementById('camp-add-slot-url')?.value.trim() || '';
+
+      const nextIdx = currentCampaign.quotaDatabase.length + 1;
+      const slotMeta = rawSlotUrl ? normalizeSingleSlotInput(rawSlotUrl, nextIdx - 1) : null;
+      const marketName = currentCampaign.quotaConfig?.marketName || currentCampaign.quotaDatabase[0]?.marketName || '전통시장';
+
+      const newMerchant = {
+        index: nextIdx,
+        seq: nextIdx,
+        source: 'MANUAL_USER_ADDED',
+        marketName,
+        companyName,
+        industry: industry || extractStandardIndustry(handledItems),
+        bizNumber,
+        ceoName,
+        ceoGender,
+        ceoAge,
+        phone,
+        openDate,
+        address,
+        handledItems,
+        mainProducts,
+        status: '정상가맹',
+        paperAccepted: 'Y',
+        digitalAccepted: 'Y',
+        quotaStatus: 'ready',
+        usedAt: null,
+        ...(slotMeta && slotMeta.slotUrl ? {
+          slotUrl: slotMeta.slotUrl,
+          surveyUrl: slotMeta.slotUrl,
+          evalUrl: slotMeta.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${slotMeta.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null,
+          ranId: slotMeta.ranId,
+          slotIndex: slotMeta.slotIndex,
+          slotExtra: slotMeta.slotExtra
+        } : {})
+      };
+
+      currentCampaign.quotaDatabase.push(newMerchant);
+      closeCampaignAddMerchantModal();
+      formCampaignAddMerchant.reset();
+
+      renderQuotaTable(currentCampaign.quotaDatabase);
+      updateButtonStates();
+      updateGroupStatsUI();
+      await autoSaveCampaignQuotas();
+
+      const slotMsg = (slotMeta && slotMeta.slotUrl)
+        ? `\n(케이스탯 슬롯 #${nextIdx}${slotMeta.ranId ? ` [KID: ${slotMeta.ranId}]` : ''} 1:1 매핑 완료)`
+        : `\n(슬롯 URL은 표의 [슬롯 미매핑] 배지 또는 상단 [슬롯 수동 매핑] 버튼에서 언제든 입력할 수 있습니다)`;
+      alert(`새 점포 "${companyName}" (#${nextIdx})가 캠페인 및 원본 쿼터(Excel)에 추가되었습니다!${slotMsg}`);
     });
   }
 

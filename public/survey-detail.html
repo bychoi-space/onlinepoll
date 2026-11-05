@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
   <link rel="stylesheet" href="campaign.css">
-  <link rel="stylesheet" href="custom-styles.css?v=20261022_q1_drawer_fix">
+  <link rel="stylesheet" href="custom-styles.css?v=20261105_manual_slot_ux">
 </head>
 <body>
 
@@ -185,6 +185,12 @@
             <div class="quota-mounted-primary-actions flex-center-gap-10">
               <button type="button" id="btn-open-bind-slots" class="btn-pill btn-pill-accent font-bold" title="Kstat 관리자 list.php에서 슬롯을 1초 만에 자동 수집 및 바인딩">
                 <i class="fa-solid fa-bolt"></i> Kstat 슬롯 자동 바인딩
+              </button>
+              <button type="button" id="btn-open-slot-modal" class="btn-pill btn-pill-secondary font-bold" title="개별 점포 슬롯 URL 직접 입력 또는 대량 붙여넣기로 1:1 수동 매핑">
+                <i class="fa-solid fa-link text-primary-color"></i> 슬롯 수동 매핑
+              </button>
+              <button type="button" id="btn-open-campaign-add-merchant" class="btn-pill btn-pill-secondary font-bold" title="새 점포(사업자)와 슬롯 URL을 현재 캠페인 및 쿼터에 수동 추가">
+                <i class="fa-solid fa-plus text-success-color"></i> 점포 수동 추가
               </button>
               <button type="button" id="btn-sync-kstat-status" class="btn-pill btn-pill-secondary font-bold" title="Kstat TAPI list.php의 진행 상태를 실시간 동기화하여 '완료'로 즉시 갱신합니다">
                 <i class="fa-solid fa-arrows-rotate"></i> Kstat 상태 동기화
@@ -636,8 +642,8 @@
         <div class="slot-mapping-alert mb-16">
           <i class="fa-solid fa-circle-info"></i>
           <div>
-            조사 쿼터의 각 점포와 케이스탯 TAPI 전용 고유 설문 URL을 1:1로 매칭합니다.<br>
-            <strong>슬롯이 매핑되지 않은 상태에서는 중복 설문 방지를 위해 파일럿 및 배치 실행이 차단됩니다.</strong>
+            하단 표의 <strong>[매칭될 케이스탯 설문 URL]</strong> 입력칸에 개별 점포의 슬롯 URL(또는 KID 코드)을 직접 입력·수정하거나, 상단 대량 입력창에 붙여넣어 일괄 매핑할 수 있습니다.<br>
+            <strong>저장 시 본 설문 URL과 조사원 평가 URL이 동시에 자동 매핑되며, 원본 쿼터(JSON/Excel)에도 즉시 동기화됩니다.</strong>
           </div>
         </div>
 
@@ -645,27 +651,30 @@
         <div class="form-group mb-16">
           <div class="flex-between mb-8">
             <label class="slot-mapping-label m-0">
-              케이스탯 슬롯 URL 대량 입력 (1줄에 1개씩 또는 관리자 목록 붙여넣기)
+              케이스탯 슬롯 URL 대량 붙여넣기 (선택 — 1줄에 1개씩 또는 list.php 텍스트)
             </label>
             <div class="flex-center-gap-8">
-              <button type="button" id="btn-parse-slots" class="btn-parse-sparkle">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> 자동 파싱 & 매칭 미리보기
+              <button type="button" id="btn-parse-slots-unmapped" class="btn-parse-sparkle" title="이미 매핑된 점포는 유지하고, 미매핑(빈칸) 점포에만 순서대로 슬롯을 채웁니다">
+                <i class="fa-solid fa-plus-circle"></i> 미매핑 점포에만 채우기
+              </button>
+              <button type="button" id="btn-parse-slots" class="btn-parse-sparkle" title="1번 점포부터 순서대로 전체 슬롯을 매칭합니다">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 전체 1:1 자동 파싱
               </button>
               <button type="button" id="btn-clear-slots" class="btn-clear-trash">
-                <i class="fa-solid fa-trash"></i> 비우기
+                <i class="fa-solid fa-trash"></i> 전체 비우기
               </button>
             </div>
           </div>
-          <textarea id="textarea-bulk-slots" class="slot-bulk-textarea" rows="6" placeholder="예시:&#10;https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=1&#10;https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=VCnUfCY6K&type=tapi&prid=2026070802&mnid=900001346&srt=1&#10;(케이스탯 list.php 소스 또는 텍스트를 그대로 붙여넣어도 자동으로 추출됩니다)"></textarea>
+          <textarea id="textarea-bulk-slots" class="slot-bulk-textarea" rows="4" placeholder="예시:&#10;https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=1&#10;(수동 추가한 점포 1~2개만 매핑할 때는 바로 아래 표의 URL 입력칸에 직접 붙여넣으셔도 됩니다)"></textarea>
           <div class="slot-status-bar">
-            <span class="slot-parse-msg warning" id="slot-parse-status-msg"><i class="fa-solid fa-circle-info"></i> 슬롯 URL을 입력하거나 붙여넣어 주세요.</span>
+            <span class="slot-parse-msg warning" id="slot-parse-status-msg"><i class="fa-solid fa-circle-info"></i> 아래 표에서 점포별 슬롯 URL을 직접 입력하거나 상단에서 일괄 파싱해 주세요.</span>
             <span class="slot-summary-badge warning" id="slot-match-summary-badge">매칭: 0 / 0 점포</span>
           </div>
         </div>
 
-        <!-- 2단계: 1:1 매칭 미리보기 테이블 -->
+        <!-- 2단계: 1:1 매칭 미리보기 및 개별 직접 편집 테이블 -->
         <div class="form-group mb-16">
-          <label class="slot-mapping-label mb-8">1:1 매칭 미리보기 (쿼터 순번 ➔ 슬롯 매칭 결과)</label>
+          <label class="slot-mapping-label mb-8">점포별 1:1 슬롯 직접 입력 및 매칭 확인 (개별 행 수정 가능)</label>
           <div class="table-scroll-container slot-preview-table-container">
             <table class="slot-preview-table">
               <thead>
@@ -674,13 +683,13 @@
                   <th class="th-company">쿼터 상호</th>
                   <th class="th-ind">업종</th>
                   <th class="th-ceo">대표자</th>
-                  <th class="th-slot-label">슬롯 라벨</th>
-                  <th class="th-slot-url">매칭될 케이스탯 설문 URL (slotUrl)</th>
+                  <th class="th-slot-label">슬롯 라벨 (KID)</th>
+                  <th class="th-slot-url">매칭될 케이스탯 설문 URL (직접 입력/수정 가능)</th>
                 </tr>
               </thead>
               <tbody id="slot-preview-tbody">
                 <tr>
-                  <td colspan="6" class="empty-table-msg">대량 입력창에 슬롯 URL을 넣고 [자동 파싱 & 매칭 미리보기]를 눌러주세요.</td>
+                  <td colspan="6" class="empty-table-msg">점포 목록을 불러오는 중입니다...</td>
                 </tr>
               </tbody>
             </table>
@@ -690,10 +699,10 @@
         <!-- 옵션: 상태 초기화 -->
         <div class="form-group mb-8">
           <label class="custom-cb-label">
-            <input type="checkbox" id="check-reset-quota-status" checked />
-            <span class="font-bold text-white">슬롯 매핑 저장 시, 기존 실행 상태를 '대기(ready)'로 초기화하여 재실행 준비하기</span>
+            <input type="checkbox" id="check-reset-quota-status" />
+            <span class="font-bold text-white">전체 점포의 실행 상태를 '대기(ready)'로 강제 초기화하기 (주의: 체크 해제 시 기존 완료 점포 상태 보존)</span>
           </label>
-          <p class="font-caption text-dim m-0 pl-24">이전에 단일 URL로 실행되었거나 오류 상태인 점포들을 깨끗하게 초기화합니다.</p>
+          <p class="font-caption text-dim m-0 pl-24">수동 추가한 점포의 슬롯만 매핑할 때는 체크를 해제해 두시면 기존에 완료된 점포들의 상태가 그대로 유지됩니다.</p>
         </div>
 
       </div>
@@ -704,6 +713,105 @@
           <i class="fa-solid fa-floppy-disk"></i> 1:1 슬롯 매핑 적용 및 저장
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 설문 작업실 내 점포 수동 추가 & 슬롯 즉시 매핑 모달 -->
+  <!-- ======================================================== -->
+  <div class="modal-overlay figma-modal-backdrop" id="modal-campaign-add-merchant">
+    <div class="modal-card figma-modal-dialog">
+      <div class="modal-header flex-between mb-16">
+        <h3 class="font-card-title m-0"><i class="fa-solid fa-shop text-primary-color"></i> 새 점포(사업자) 수동 추가 &amp; 슬롯 매핑</h3>
+        <button type="button" class="btn-close" id="btn-close-campaign-add-modal">&times;</button>
+      </div>
+      <form id="form-campaign-add-merchant">
+        <div class="grid-3col mb-12">
+          <div class="form-group">
+            <label for="camp-add-company-name" class="figma-label">상호 <span class="required">*</span></label>
+            <input type="text" id="camp-add-company-name" class="figma-input" required placeholder="예: 풍납수산" />
+          </div>
+          <div class="form-group">
+            <label for="camp-add-industry" class="figma-label">업종 <span class="required">*</span></label>
+            <select id="camp-add-industry" class="figma-input">
+              <option value="농산물">🌾 농산물</option>
+              <option value="축산물">🥩 축산물</option>
+              <option value="수산물">🐟 수산물</option>
+              <option value="가공식품">🍱 가공식품</option>
+              <option value="의류신발">👗 의류신발</option>
+              <option value="가정용품">🏠 가정용품</option>
+              <option value="음식점업">🍽️ 음식점업</option>
+              <option value="기타소매">🛒 기타소매</option>
+              <option value="근린상권">💈 근린상권</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="camp-add-biz-number" class="figma-label">사업자번호(10자리) <span class="required">*</span></label>
+            <input type="text" id="camp-add-biz-number" class="figma-input" required placeholder="000-00-00000" />
+          </div>
+        </div>
+
+        <div class="grid-3col mb-12">
+          <div class="form-group">
+            <label for="camp-add-ceo-name" class="figma-label">대표자이름</label>
+            <input type="text" id="camp-add-ceo-name" class="figma-input" placeholder="예: 홍길동" />
+          </div>
+          <div class="form-group">
+            <label for="camp-add-ceo-gender" class="figma-label">성별</label>
+            <select id="camp-add-ceo-gender" class="figma-input">
+              <option value="">- 미지정 -</option>
+              <option value="남">남</option>
+              <option value="여">여</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="camp-add-ceo-age" class="figma-label">나이</label>
+            <input type="number" id="camp-add-ceo-age" class="figma-input" placeholder="예: 52" min="20" max="99" />
+          </div>
+        </div>
+
+        <div class="grid-2col mb-12">
+          <div class="form-group">
+            <label for="camp-add-phone" class="figma-label">연락처</label>
+            <input type="text" id="camp-add-phone" class="figma-input" placeholder="예: 02-414-1234" />
+          </div>
+          <div class="form-group">
+            <label for="camp-add-open-date" class="figma-label">개업연월 (2025년 이하)</label>
+            <input type="text" id="camp-add-open-date" class="figma-input" placeholder="예: 2018.05.12" />
+          </div>
+        </div>
+
+        <div class="form-group mb-12">
+          <label for="camp-add-address" class="figma-label">주소</label>
+          <input type="text" id="camp-add-address" class="figma-input" placeholder="예: 서울특별시 송파구 바람드리길 22" />
+        </div>
+
+        <div class="grid-2col mb-12">
+          <div class="form-group">
+            <label for="camp-add-handled-items" class="figma-label">취급품목 <span class="required">*</span></label>
+            <input type="text" id="camp-add-handled-items" class="figma-input" required placeholder="예: 수산물" />
+          </div>
+          <div class="form-group">
+            <label for="camp-add-main-products" class="figma-label">주요품목</label>
+            <input type="text" id="camp-add-main-products" class="figma-input" placeholder="예: 활어회" />
+          </div>
+        </div>
+
+        <div class="form-group mb-20">
+          <label for="camp-add-slot-url" class="figma-label">
+            <i class="fa-solid fa-link text-primary-color"></i> 케이스탯 설문 슬롯 URL 또는 KID 코드 (선택 — 입력 시 즉시 1:1 매핑)
+          </label>
+          <input type="text" id="camp-add-slot-url" class="figma-input font-mono" placeholder="예: https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8... 또는 KID 코드" />
+          <p class="font-caption text-dim m-0 mt-4">입력해 두시면 본 설문 URL과 조사원 평가 URL이 자동으로 생성·매핑되며, 비워두신 후 나중에 [슬롯 수동 매핑]에서 입력하셔도 됩니다.</p>
+        </div>
+
+        <div class="modal-actions flex-end gap-10">
+          <button type="button" class="btn-pill btn-pill-secondary" id="btn-cancel-campaign-add-modal">취소</button>
+          <button type="submit" class="btn-pill btn-pill-primary">
+            <i class="fa-solid fa-plus"></i> 점포 추가 및 동기화 저장
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -759,7 +867,7 @@
     </div>
   </div>
 
-  <script type="module" src="survey-detail.js?v=20261030_assoc_facility_need_345"></script>
+  <script type="module" src="survey-detail.js?v=20261105_manual_slot_ux"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

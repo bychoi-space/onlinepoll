@@ -29,6 +29,7 @@ import { getIndustryGroupKey } from './engine/persona-builder.js';
 import { syncKstatSlotStatus, syncCampaignKstatSlots, saveKstatSlotProgressStatus, bulkUpdateKstatAccountProgress } from './engine/kstat-sync.js';
 import { scrapeMetrixSlots } from './engine/metrix-slot-scraper.js';
 import { runMetrixSurvey } from './engine/metrix-runner.js';
+import { runKonaSurvey } from './engine/kona-runner.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -253,7 +254,7 @@ app.delete('/api/campaigns/:id', (req, res) => {
   res.json({ message: '캠페인이 삭제되었습니다.' });
 });
 
-// 캠페인 쿼터 DB 업데이트 (대표자 성별, 나이 등 인라인 수정 및 보관 파일 동기화)
+// 캠페인 쿼터 DB 업데이트 (대표자 성별, 나이, 점포 수동 추가, 개별 슬롯 URL 수정 및 보관 파일 동기화)
 app.put('/api/campaigns/:id/quota', (req, res) => {
   const campaign = CampaignStore.getCampaignById(req.params.id);
   if (!campaign) {
@@ -265,6 +266,33 @@ app.put('/api/campaigns/:id/quota', (req, res) => {
     return res.status(400).json({ error: 'quotaDatabase는 배열이어야 합니다.' });
   }
 
+  const isAssoc = (campaign.surveyType === 'kstat_assoc');
+  quotaDatabase.forEach((item, idx) => {
+    item.index = idx + 1;
+    item.seq = idx + 1;
+    if (item.slotUrl && String(item.slotUrl).trim()) {
+      let cleanUrl = String(item.slotUrl).trim();
+      if (!/^https?:\/\//i.test(cleanUrl) && /^[A-Za-z0-9_-]{6,20}$/.test(cleanUrl)) {
+        cleanUrl = isAssoc
+          ? `https://kstat.surveys.kr/2026/P26042401A/index.asp?KID=${cleanUrl}&type=tapi&prid=2026070801&mnid=900001364&srt=1`
+          : `https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=${cleanUrl}&type=tapi&prid=2026070802&mnid=900001346&srt=1`;
+      }
+      item.slotUrl = cleanUrl;
+      item.surveyUrl = cleanUrl;
+      const kidMatch = cleanUrl.match(/[?&]KID=([^&#\s]+)/i);
+      if (kidMatch) {
+        item.ranId = kidMatch[1];
+        if (!item.evalUrl) {
+          item.evalUrl = isAssoc
+            ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${item.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2`
+            : `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${item.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2`;
+        }
+      }
+      if (!item.slotIndex) item.slotIndex = idx + 1;
+      if (!item.slotExtra) item.slotExtra = `(${idx})추가`;
+    }
+  });
+
   // 1. 캠페인 쿼터 DB 갱신
   CampaignStore.updateCampaign(campaign.id, { quotaDatabase });
   logger.broadcast({
@@ -272,28 +300,79 @@ app.put('/api/campaigns/:id/quota', (req, res) => {
     quotaDatabase
   });
 
-  // 2. 연관된 쿼터 파일(JSON & XLSX) 동기화
+  // 2. 연관된 쿼터 파일(JSON & XLSX) 동기화 (수동 추가 점포 및 슬롯 URL 포함)
   try {
     const quotaFiles = fs.readdirSync(quotasDir).filter(f => f.endsWith('.json'));
+    const linkedQuotaFile = campaign.quotaConfig?.quotaFileName || campaign.quotaSourceFile || null;
     for (const qf of quotaFiles) {
       const qPath = path.join(quotasDir, qf);
       const qContent = JSON.parse(fs.readFileSync(qPath, 'utf-8'));
       if (Array.isArray(qContent.data) && qContent.data.length > 0) {
         let matched = false;
+        const syncKeys = [
+          'companyName', 'industry', 'bizNumber', 'ceoName', 'ceoGender', 'ceoAge',
+          'phone', 'openDate', 'address', 'handledItems', 'mainProducts',
+          'slotUrl', 'surveyUrl', 'evalUrl', 'slotIndex', 'slotExtra', 'ranId'
+        ];
         qContent.data.forEach(qItem => {
           const matchedCampItem = quotaDatabase.find(c => 
             (c.bizNumber && c.bizNumber === qItem.bizNumber) ||
             (c.companyName && c.companyName === qItem.companyName)
           );
           if (matchedCampItem) {
-            const syncKeys = ['companyName', 'industry', 'bizNumber', 'ceoName', 'ceoGender', 'ceoAge', 'phone', 'openDate', 'address', 'handledItems', 'mainProducts'];
             syncKeys.forEach(k => {
               if (matchedCampItem[k] !== undefined) qItem[k] = matchedCampItem[k];
             });
             matched = true;
           }
         });
+
+        // 현재 캠페인과 직접 연결된 쿼터 파일인 경우, 캠페인에서 수동 추가된 신규 점포도 원본 쿼터 파일에 반영
+        const isLinkedFile = (linkedQuotaFile && qf === linkedQuotaFile) ||
+          (!linkedQuotaFile && qContent.marketName && campaign.quotaConfig?.marketName === qContent.marketName);
+        if (isLinkedFile) {
+          quotaDatabase.forEach(cItem => {
+            const existsInFile = qContent.data.some(qItem =>
+              (qItem.bizNumber && qItem.bizNumber === cItem.bizNumber) ||
+              (qItem.companyName && qItem.companyName === cItem.companyName)
+            );
+            if (!existsInFile && cItem.companyName) {
+              const newSeq = qContent.data.length + 1;
+              qContent.data.push({
+                seq: newSeq,
+                source: cItem.source || 'MANUAL_USER_ADDED',
+                marketName: cItem.marketName || qContent.marketName || '전통시장',
+                companyName: cItem.companyName,
+                industry: cItem.industry || '기타소매',
+                bizNumber: cItem.bizNumber || '',
+                ceoName: cItem.ceoName || null,
+                ceoGender: cItem.ceoGender || null,
+                ceoAge: cItem.ceoAge || null,
+                phone: cItem.phone || null,
+                openDate: cItem.openDate || null,
+                address: cItem.address || null,
+                handledItems: cItem.handledItems || cItem.industry || '기타소매',
+                mainProducts: cItem.mainProducts || null,
+                status: cItem.status || '정상가맹',
+                paperAccepted: cItem.paperAccepted || 'Y',
+                digitalAccepted: cItem.digitalAccepted || 'Y',
+                ...(cItem.slotUrl ? {
+                  slotUrl: cItem.slotUrl,
+                  surveyUrl: cItem.surveyUrl || cItem.slotUrl,
+                  evalUrl: cItem.evalUrl || null,
+                  slotIndex: cItem.slotIndex || newSeq,
+                  slotExtra: cItem.slotExtra || `(${newSeq - 1})추가`,
+                  ranId: cItem.ranId || null
+                } : {})
+              });
+              matched = true;
+            }
+          });
+        }
+
         if (matched) {
+          qContent.count = qContent.data.length;
+          qContent.updatedAt = new Date().toISOString();
           fs.writeFileSync(qPath, JSON.stringify(qContent, null, 2), 'utf-8');
           const xlsxPath = path.join(quotasDir, qf.replace('.json', '.xlsx'));
           exportBusinessesToExcel({
@@ -310,7 +389,7 @@ app.put('/api/campaigns/:id/quota', (req, res) => {
   }
 
   logger.success(`[캠페인 쿼터 갱신] "${campaign.title}" 쿼터 DB ${quotaDatabase.length}건 저장 완료!`);
-  res.json({ success: true, message: '쿼터 DB가 성공적으로 업데이트되었습니다.', count: quotaDatabase.length });
+  res.json({ success: true, message: '쿼터 DB가 성공적으로 업데이트되었습니다.', count: quotaDatabase.length, quotaDatabase });
 });
 
 // 마스터 설문 블루프린트 조회 API
@@ -405,6 +484,31 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
       campaignTitle: campaign.title,
       slotCount: (campaign.quotaDatabase || []).length,
       hasCustomBaseline: !!campaign.metrixPolicy
+    });
+  }
+
+  // 코나체인 화성특례시 청소년 설문조사 전용 블루프린트 분기 (완전 격리)
+  if (campaign.surveyType === 'kona_youth') {
+    const konaBlueprintPath = path.join(dataDir, 'kona_youth_blueprint.json');
+    let konaBlueprint = null;
+    if (fs.existsSync(konaBlueprintPath)) {
+      try {
+        konaBlueprint = JSON.parse(fs.readFileSync(konaBlueprintPath, 'utf-8'));
+      } catch (err) {
+        console.error('코나체인 블루프린트 파일 파싱 실패:', err);
+      }
+    }
+    const effectivePolicy = {
+      ...(konaBlueprint?.defaultPolicy || {}),
+      ...(campaign.konaPolicy || {})
+    };
+    return res.json({
+      surveyType: 'kona_youth',
+      blueprint: konaBlueprint,
+      policy: effectivePolicy,
+      campaignTitle: campaign.title,
+      slotCount: (campaign.quotaDatabase || []).length,
+      hasCustomBaseline: !!campaign.konaPolicy
     });
   }
 
@@ -536,22 +640,26 @@ app.post('/api/campaigns/:id/baseline', (req, res) => {
   const baseline = req.body;
   const isAssoc = (campaign.surveyType === 'kstat_assoc');
   const isMetrix = (campaign.surveyType === 'metrix_panel');
+  const isKona = (campaign.surveyType === 'kona_youth');
 
   CampaignStore.updateCampaign(campaign.id, {
     masterBaseline: baseline,
     hasMasterBlueprint: true,
     ...(isAssoc ? { assocPolicy: baseline.policy || baseline } : {}),
-    ...(isMetrix ? { metrixPolicy: baseline.policy || baseline } : {})
+    ...(isMetrix ? { metrixPolicy: baseline.policy || baseline } : {}),
+    ...(isKona ? { konaPolicy: baseline.policy || baseline } : {})
   });
 
-  logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점')}이 저장되었습니다! 🎯`);
+  logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isKona ? '코나체인 청소년 설문 기준 가이드' : (isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점'))}이 저장되었습니다! 🎯`);
   res.json({
     success: true,
-    message: isMetrix
-      ? '메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-      : (isAssoc 
-        ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
-        : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.'),
+    message: isKona
+      ? '화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+      : (isMetrix
+        ? '메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+        : (isAssoc 
+          ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
+          : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.')),
     baseline
   });
 });
@@ -1032,22 +1140,25 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
 
     const isMetrix = (quotaMeta.type === 'METRIX_PANEL');
     const isAssoc = (quotaMeta.type === 'KSTAT_ASSOC');
+    const isKona = (quotaMeta.type === 'KONA_YOUTH' || quotaMeta.surveyType === 'kona_youth');
 
     const newCamp = CampaignStore.createCampaign({
       title: campTitle,
-      description: isMetrix
-        ? '메트릭스 경기도 소상공인 사업체패널 3차조사'
-        : (quotaMeta.marketName 
-          ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
-          : `${quotaMeta.keyword || '사업주'} 대상 설문조사`),
-      quotaType: 'b2b',
-      surveyType: isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store')
+      description: isKona
+        ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치플랫폼)'
+        : (isMetrix
+          ? '메트릭스 경기도 소상공인 사업체패널 3차조사'
+          : (quotaMeta.marketName 
+            ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
+            : `${quotaMeta.keyword || '사업주'} 대상 설문조사`)),
+      quotaType: isKona ? 'b2c' : 'b2b',
+      surveyType: isKona ? 'kona_youth' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))
     });
 
     const quotaDb = businesses.map((b, idx) => ({
       index: idx + 1,
       ...b,
-      quotaStatus: 'ready',
+      quotaStatus: b.quotaStatus || (b.status === '완료' ? 'completed' : 'ready'),
       usedAt: null
     }));
 
@@ -1235,7 +1346,7 @@ app.post('/api/campaigns/:id/bind-slots', async (req, res) => {
       return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
     }
 
-    const { slots = [], resetStatus = true } = req.body;
+    const { slots = [], resetStatus = false } = req.body;
     if (!Array.isArray(slots) || slots.length === 0) {
       return res.status(400).json({ error: '매핑할 슬롯 데이터 목록이 없습니다.' });
     }
@@ -1245,20 +1356,60 @@ app.post('/api/campaigns/:id/bind-slots', async (req, res) => {
       return res.status(400).json({ error: '캠페인에 등록된 쿼터 데이터가 없습니다.' });
     }
 
+    const isAssoc = (campaign.surveyType === 'kstat_assoc');
     let mappedCount = 0;
     const usedSlotUrls = new Set();
-    quotaDb.forEach((biz, idx) => {
-      let slot = slots.find(s => (s.index === (biz.index || biz.seq || idx + 1)) || (s.seq === (biz.index || biz.seq || idx + 1)));
-      if (!slot || (slot.slotUrl && usedSlotUrls.has(String(slot.slotUrl).trim()))) {
+    const usedRanIds = new Set();
+
+    for (let idx = 0; idx < quotaDb.length; idx++) {
+      const biz = quotaDb[idx];
+      const rowNum = biz.index || biz.seq || idx + 1;
+      let slot = slots.find(s => Number(s.index || s.seq) === Number(rowNum));
+      if (!slot) {
         slot = slots[idx];
       }
-      if (slot && slot.slotUrl && !usedSlotUrls.has(String(slot.slotUrl).trim())) {
-        const cleanUrl = String(slot.slotUrl).trim();
-        usedSlotUrls.add(cleanUrl);
-        biz.slotUrl = cleanUrl;
-        biz.slotIndex = slot.slotIndex || (idx + 1);
-        biz.slotExtra = slot.slotExtra || (slot.extraLabel || `(${idx})추가`);
-        biz.ranId = slot.ranId || (slot.ran_id || (biz.slotUrl.match(/[?&]KID=([^&]+)/i)?.[1] || null));
+
+      if (slot && slot.slotUrl !== undefined) {
+        let rawUrl = String(slot.slotUrl || '').trim();
+        if (!rawUrl) {
+          // 사용자가 명시적으로 슬롯 URL을 비운 경우
+          delete biz.slotUrl;
+          delete biz.surveyUrl;
+          delete biz.evalUrl;
+          delete biz.ranId;
+          delete biz.slotIndex;
+          delete biz.slotExtra;
+          continue;
+        }
+
+        // KID 코드만 단독 입력한 경우 정식 Kstat URL로 자동 변환
+        if (!/^https?:\/\//i.test(rawUrl) && /^[A-Za-z0-9_-]{6,20}$/.test(rawUrl)) {
+          rawUrl = isAssoc
+            ? `https://kstat.surveys.kr/2026/P26042401A/index.asp?KID=${rawUrl}&type=tapi&prid=2026070801&mnid=900001364&srt=1`
+            : `https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=${rawUrl}&type=tapi&prid=2026070802&mnid=900001346&srt=1`;
+        }
+
+        const extractedRanId = slot.ranId || slot.ran_id || (rawUrl.match(/[?&]KID=([^&#\s]+)/i)?.[1] || null);
+        if (usedSlotUrls.has(rawUrl) || (extractedRanId && usedRanIds.has(extractedRanId))) {
+          return res.status(409).json({
+            error: `[#${rowNum} ${biz.companyName || biz.marketName || '점포'}] 다른 점포와 중복된 슬롯 URL(KID: ${extractedRanId || rawUrl})이 감지되었습니다. 각 점포마다 고유한 슬롯을 매핑해 주세요.`
+          });
+        }
+
+        const prevUrl = biz.slotUrl || '';
+        usedSlotUrls.add(rawUrl);
+        if (extractedRanId) usedRanIds.add(extractedRanId);
+
+        biz.slotUrl = rawUrl;
+        biz.surveyUrl = rawUrl;
+        biz.slotIndex = slot.slotIndex || rowNum;
+        biz.slotExtra = slot.slotExtra || slot.extraLabel || `(${rowNum - 1})추가`;
+        biz.ranId = extractedRanId;
+        if (extractedRanId) {
+          biz.evalUrl = slot.evalUrl || (isAssoc
+            ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${extractedRanId}&type=tapi&prid=2026070801&mnid=900001364&srt=2`
+            : `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${extractedRanId}&type=tapi&prid=2026070802&mnid=900001346&srt=2`);
+        }
         mappedCount++;
 
         if (resetStatus) {
@@ -1267,9 +1418,14 @@ app.post('/api/campaigns/:id/bind-slots', async (req, res) => {
           biz.completedAt = null;
           biz.usedAt = null;
           biz.capturedSteps = [];
+        } else if (prevUrl !== rawUrl && biz.quotaStatus === 'error') {
+          // 새 슬롯으로 교체된 오류 점포는 대기 상태로 자동 복구
+          biz.quotaStatus = 'ready';
         }
+      } else if (biz.slotUrl) {
+        mappedCount++;
       }
-    });
+    }
 
     const firstSlot = quotaDb[0]?.slotUrl;
     const guidelineConfig = {
@@ -1286,9 +1442,10 @@ app.post('/api/campaigns/:id/bind-slots', async (req, res) => {
     // 원본 쿼터 JSON/XLSX 동기화
     try {
       const quotaFiles = fs.readdirSync(quotasDir).filter(f => f.endsWith('.json'));
+      const linkedQuotaFile = campaign.quotaConfig?.quotaFileName || campaign.quotaSourceFile || campaign.quotaFileName;
       const marketName = quotaDb[0]?.marketName;
       const matchedFile = quotaFiles.find(f => {
-        if (campaign.quotaFileName && f === campaign.quotaFileName) return true;
+        if (linkedQuotaFile && f === linkedQuotaFile) return true;
         if (marketName && f.includes(marketName)) return true;
         return false;
       });
@@ -1299,48 +1456,39 @@ app.post('/api/campaigns/:id/bind-slots', async (req, res) => {
         const qList = quotaJson.data || quotaJson.merchants || [];
         qList.forEach((qm, qIdx) => {
           const matchedBiz = quotaDb.find(b => (b.bizNumber && b.bizNumber === qm.bizNumber) || ((b.index || b.seq) === (qm.seq || qm.index || qIdx + 1)));
-          if (matchedBiz && matchedBiz.slotUrl) {
-            qm.slotUrl = matchedBiz.slotUrl;
-            qm.slotIndex = matchedBiz.slotIndex;
-            qm.slotExtra = matchedBiz.slotExtra;
-            qm.ranId = matchedBiz.ranId;
+          if (matchedBiz) {
+            qm.slotUrl = matchedBiz.slotUrl || '';
+            qm.surveyUrl = matchedBiz.surveyUrl || matchedBiz.slotUrl || '';
+            qm.evalUrl = matchedBiz.evalUrl || '';
+            qm.slotIndex = matchedBiz.slotIndex || null;
+            qm.slotExtra = matchedBiz.slotExtra || '';
+            qm.ranId = matchedBiz.ranId || null;
           }
         });
         fs.writeFileSync(fullJsonPath, JSON.stringify(quotaJson, null, 2), 'utf8');
 
         const xlsxPath = fullJsonPath.replace(/\.json$/, '.xlsx');
         if (qList.length > 0) {
-          const rows = qList.map(m => ({
-            '순번': m.seq || m.index,
-            'Kstat슬롯': m.slotIndex ? `슬롯 #${m.slotIndex} ${m.slotExtra || ''}` : '-',
-            'Kstat설문URL': m.slotUrl || '-',
-            '시장명': m.marketName || '-',
-            '상호': m.companyName || '-',
-            '사업자번호': m.bizNumber || '-',
-            '대표자명': m.ceoName || '-',
-            '연락처': m.phone || '-',
-            '개업일': m.openDate || '-',
-            '업종/품목': m.handledItems || m.industry || '-',
-            '사업장주소': m.address || '-',
-            '가맹상태': m.status || '정상가맹',
-            '지류': m.paperAccepted || 'Y',
-            '디지털': m.digitalAccepted || 'Y'
-          }));
-          const wb = xlsx.utils.book_new();
-          const ws = xlsx.utils.json_to_sheet(rows);
-          xlsx.utils.book_append_sheet(wb, ws, '조사쿼터_Kstat슬롯매핑');
-          xlsx.writeFile(wb, xlsxPath);
+          exportBusinessesToExcel({
+            data: qList,
+            columns: quotaJson.columns,
+            filePath: xlsxPath
+          });
         }
       }
     } catch (syncErr) {
       logger.warn('[슬롯 매핑 쿼터파일 동기화 주의]', syncErr.message);
     }
 
+    logger.broadcast({
+      type: 'QUOTA_UPDATED',
+      quotaDatabase: updated.quotaDatabase
+    });
     logger.success(`[슬롯 1:1 매핑 완료] 캠페인 "${campaign.title}": 총 ${quotaDb.length}개 중 ${mappedCount}개 슬롯 바인딩 완료!`);
 
     res.json({
       success: true,
-      message: `총 ${quotaDb.length}개 쿼터 중 ${mappedCount}개 점포에 케이스탯 슬롯이 1:1 매칭되었습니다.${resetStatus ? ' (상태가 대기로 초기화되었습니다)' : ''}`,
+      message: `총 ${quotaDb.length}개 쿼터 중 ${mappedCount}개 점포에 케이스탯 슬롯(본 설문 + 조사원 평가 URL)이 1:1 매칭되었습니다.${resetStatus ? ' (전체 상태가 대기로 초기화되었습니다)' : ' (기존 완료 점포 상태 유지)'}`,
       mappedCount,
       totalCount: quotaDb.length,
       quotaDatabase: updated.quotaDatabase
@@ -1366,14 +1514,19 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
     return res.status(400).json({ error: '캠페인에 구축된 조사 쿼터가 없습니다.' });
   }
 
-  const targetBiz = quotaDb[Math.max(0, quotaIndex - 1)];
+  const isMetrixCampaign = (campaign.surveyType === 'metrix_panel');
+  const isKonaCampaign = (campaign.surveyType === 'kona_youth');
+  let targetBiz = quotaDb[Math.max(0, quotaIndex - 1)];
+  if (isKonaCampaign && targetBiz && (targetBiz.quotaStatus === 'completed' || targetBiz.status === '완료')) {
+    const firstReady = quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료');
+    if (firstReady) targetBiz = firstReady;
+  }
   if (!targetBiz) {
-    return res.status(400).json({ error: '1번 쿼터 사업자를 찾을 수 없습니다.' });
+    return res.status(400).json({ error: '실행 대상 쿼터를 찾을 수 없습니다.' });
   }
 
   // 1:1 슬롯 매핑 엄격 검증: slotUrl 또는 surveyUrl 없으면 차단
-  const isMetrixCampaign = (campaign.surveyType === 'metrix_panel');
-  const targetUrl = targetBiz.surveyUrl || targetBiz.slotUrl;
+  const targetUrl = targetBiz.surveyUrl || targetBiz.slotUrl || (isKonaCampaign ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '');
   if (!targetUrl) {
     return res.status(400).json({
       error: isMetrixCampaign
@@ -1391,13 +1544,13 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
     }
   });
 
-  logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상 사업자: "${targetBiz.companyName}" (${targetBiz.bizNumber}) (슬롯: ${targetBiz.slotIndex ? '#' + targetBiz.slotIndex : '단독'})`);
+  logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상: "${targetBiz.companyName}" (${targetBiz.idx || targetBiz.bizNumber || ''}) (슬롯: ${targetBiz.slotIndex ? '#' + targetBiz.slotIndex : '단독'})`);
   targetBiz.quotaStatus = 'running';
   CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'running' });
 
   res.json({
     success: true,
-    message: `"${targetBiz.companyName}" 파일럿 시뮬레이션이 시작되었습니다. (Agree 직전 안전 정지)`,
+    message: `"${targetBiz.companyName}" 파일럿 시뮬레이션이 시작되었습니다. (제출 직전 안전 정지)`,
     targetBiz
   });
 
@@ -1406,9 +1559,31 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
     try {
       const isAssoc = (campaign.surveyType === 'kstat_assoc');
       const isMetrix = (campaign.surveyType === 'metrix_panel');
+      const isKona = (campaign.surveyType === 'kona_youth');
       let result;
 
-      if (isMetrix) {
+      if (isKona) {
+        logger.info(`[코나체인 파일럿 실행] 화성특례시 청소년 설문 러너 가동: "${targetBiz.companyName}" (IDX: ${targetBiz.idx})`);
+        const konaPol = campaign.konaPolicy || policy || {};
+        result = await runKonaSurvey({
+          surveyUrl: targetUrl,
+          slotData: targetBiz,
+          policy: konaPol,
+          quotaIndex: targetBiz.index || quotaIndex,
+          pilotMode: true,
+          safetyGuard: true,
+          reportDir: path.join(reportsDir, campaign.id, `kona_item_${targetBiz.index || quotaIndex}_${targetBiz.idx || ''}`),
+          onProgress: (info) => {
+            logger.info(`[코나체인 파일럿 - ${info.step}] ${info.message}`);
+            logger.broadcast({
+              type: 'PILOT_PROGRESS',
+              campaignId: campaign.id,
+              quotaIndex: targetBiz.index,
+              ...info
+            });
+          }
+        });
+      } else if (isMetrix) {
         logger.info(`[메트릭스 파일럿 실행] 메트릭스 전용 러너 가동: "${targetBiz.companyName}" (UID: ${targetBiz.uid})`);
         const metrixPol = campaign.metrixPolicy || policy || {};
         result = await runMetrixSurvey({
@@ -1478,7 +1653,13 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
       }
 
       if (result.success) {
-        if (isMetrix) {
+        if (isKona) {
+          targetBiz.quotaStatus = (result.status === 'stopped_before_submit') ? 'pilot_done' : 'completed';
+          targetBiz.status = (result.status === 'stopped_before_submit') ? '검증완료(제출직전)' : '완료';
+          targetBiz.pilotAt = new Date().toISOString();
+          targetBiz.capturedSteps = result.capturedSteps;
+          logger.success(`🎉 [코나체인 파일럿 성공] "${targetBiz.companyName}" (IDX: ${targetBiz.idx}) 제출 직전 스크린샷 보존 및 검증 완료!`);
+        } else if (isMetrix) {
           targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? '진행중(98%)' : 'pilot_done';
           targetBiz.status = (result.status === 'stopped_at_review') ? '진행중(98%)' : '완료';
           targetBiz.pilotAt = new Date().toISOString();
@@ -1491,7 +1672,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
         }
 
         // 조사원 평가항목 연계 실행 (점포조사 및 상인회조사 2단계 연계)
-        if (isAssoc) {
+        if (!isKona && isAssoc) {
           const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
           if (evalUrl) {
             logger.info(`[파일럿 2단계] "${targetBiz.marketName || targetBiz.companyName}" 상인회 조사원 평가 작성 자동 연계 시작...`);
@@ -1572,30 +1753,32 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
         }
 
         // 본설문 상태 동기화 (Kstat list.php 캐시 갱신)
-        const targetPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
-        await syncKstatSlotStatus({
-          pridSel: targetPridSel,
-          idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
-          kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
-          gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
-          srt: 1
-        }).catch(() => {});
-
-        // [조사표 작성: 완료] + [조사원 평가항목 작성: 완료] 동시 충족 시 Kstat [조사 진행상태] 자동으로 '조사완료'(1) 저장
-        if (!isMetrix && targetBiz.evalStatus === 'completed') {
-          const effLoginId = targetBiz.surveyorAccount || campaign.kstatLoginId || (isAssoc ? '가온박정순' : '가온김영옥');
-          const effLoginPw = campaign.kstatLoginPw || '1234';
-          const progRes = await saveKstatSlotProgressStatus({
+        if (!isKona && !isMetrix) {
+          const targetPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
+          await syncKstatSlotStatus({
             pridSel: targetPridSel,
             idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
             kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
             gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
-            ranId: targetBiz.ranId || targetBiz.ran_id,
-            loginId: effLoginId,
-            loginPw: effLoginPw
-          }).catch(() => ({ success: false }));
-          if (progRes?.success) {
-            targetBiz.kstatProgressSaved = true;
+            srt: 1
+          }).catch(() => {});
+
+          // [조사표 작성: 완료] + [조사원 평가항목 작성: 완료] 동시 충족 시 Kstat [조사 진행상태] 자동으로 '조사완료'(1) 저장
+          if (targetBiz.evalStatus === 'completed') {
+            const effLoginId = targetBiz.surveyorAccount || campaign.kstatLoginId || (isAssoc ? '가온박정순' : '가온김영옥');
+            const effLoginPw = campaign.kstatLoginPw || '1234';
+            const progRes = await saveKstatSlotProgressStatus({
+              pridSel: targetPridSel,
+              idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
+              kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
+              gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
+              ranId: targetBiz.ranId || targetBiz.ran_id,
+              loginId: effLoginId,
+              loginPw: effLoginPw
+            }).catch(() => ({ success: false }));
+            if (progRes?.success) {
+              targetBiz.kstatProgressSaved = true;
+            }
           }
         }
 
@@ -1603,7 +1786,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
           quotaDatabase: quotaDb,
           status: 'ready'
         });
-        logger.success(`🎉 [파일럿 검증 완료] "${targetBiz.companyName}" 1건 시뮬레이션(본설문+조사원평가)이 무결점 완료되었습니다!`);
+        logger.success(`🎉 [파일럿 검증 완료] "${targetBiz.companyName}" 1건 시뮬레이션이 무결점 완료되었습니다!`);
         logger.broadcast({
           type: 'PILOT_COMPLETED',
           campaignId: campaign.id,
@@ -1649,7 +1832,10 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
   const quotaDb = campaign.quotaDatabase || [];
   const isAssoc = (campaign.surveyType === 'kstat_assoc');
   const isMetrix = (campaign.surveyType === 'metrix_panel');
-  const effectivePolicy = isMetrix ? (campaign.metrixPolicy || policy || {}) : (isAssoc ? (campaign.assocPolicy || policy || {}) : policy);
+  const isKona = (campaign.surveyType === 'kona_youth');
+  const effectivePolicy = isKona
+    ? (campaign.konaPolicy || policy || {})
+    : (isMetrix ? (campaign.metrixPolicy || policy || {}) : (isAssoc ? (campaign.assocPolicy || policy || {}) : policy));
 
   const skipCompletedSlots = (effectivePolicy.skipCompletedSlots !== false);
   const skipSlotIndices = (effectivePolicy.skipSlotIndices || '')
@@ -1668,7 +1854,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     const idx = (b.index || b.seq || b.slotIndex || 1);
     if (idx < startIndex) return false;
     if (skipSlotIndices.includes(idx)) return false; // 사용자가 건너뛰도록 지정한 특정 순번
-    if (isMetrix && b.uid && skipSlotUids.includes(String(b.uid))) return false; // 건너뛸 UID
+    if ((isMetrix || isKona) && (b.uid || b.idx) && skipSlotUids.includes(String(b.uid || b.idx))) return false; // 건너뛸 UID/IDX
     if (b.quotaStatus === 'completed' || b.status === '완료') return false; // 이미 마감된 건 제외
     if (skipCompletedSlots && (b.surveyCompleted === '완료' || b.surveyCompleted === true || b.status === '완료')) {
       return false; // 완료된 슬롯 건너뛰기
@@ -1683,11 +1869,11 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     return true;
   });
   if (targets.length === 0) {
-    return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다. (이미 완료되었거나 98% 안전 대기 상태임)' });
+    return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다. (이미 완료되었거나 안전 대기 상태임)' });
   }
 
   // 1:1 슬롯 매핑 엄격 검증
-  const unmapped = targets.filter(b => !b.slotUrl && !b.surveyUrl);
+  const unmapped = isKona ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
   if (unmapped.length > 0) {
     return res.status(400).json({
       error: isMetrix
@@ -1716,9 +1902,9 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         }
 
         const biz = targets[i];
-        const bizUrl = biz.slotUrl || biz.surveyUrl;
+        const bizUrl = biz.slotUrl || biz.surveyUrl || (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '');
         if (!bizUrl) {
-          logger.error(`[배치 ${i + 1}/${targets.length}] "${biz.companyName}"에 할당된 케이스탯 고유 슬롯 URL이 없습니다.`);
+          logger.error(`[배치 ${i + 1}/${targets.length}] "${biz.companyName}"에 할당된 설문 URL이 없습니다.`);
           biz.quotaStatus = 'error';
           CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
           continue;
@@ -1732,11 +1918,32 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         });
 
         const slotInfo = biz.slotIndex ? ` [Kstat 슬롯 #${biz.slotIndex} ${biz.slotExtra || ''}]` : '';
-        logger.info(`[배치 진행 ${i + 1}/${targets.length}] "${biz.marketName || biz.companyName}" (${biz.bizNumber || biz.regCode || ''})${slotInfo} 설문 자동화 시작...`);
+        logger.info(`[배치 진행 ${i + 1}/${targets.length}] "${biz.marketName || biz.companyName}" (${biz.idx || biz.bizNumber || biz.regCode || ''})${slotInfo} 설문 자동화 시작...`);
 
         let result;
         try {
-          if (isMetrix) {
+          if (isKona) {
+            result = await runKonaSurvey({
+              surveyUrl: bizUrl,
+              slotData: biz,
+              policy: effectivePolicy,
+              quotaIndex: biz.index || (i + startIndex),
+              pilotMode: false,
+              safetyGuard,
+              reportDir: path.join(reportsDir, campaign.id, `kona_item_${biz.index || (i + startIndex)}_${biz.idx || ''}`),
+              onProgress: (info) => {
+                logger.info(`[코나체인 배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
+                logger.broadcast({
+                  type: 'BATCH_PROGRESS',
+                  campaignId: campaign.id,
+                  quotaIndex: biz.index || (i + startIndex),
+                  itemNumber: i + 1,
+                  totalItems: targets.length,
+                  ...info
+                });
+              }
+            });
+          } else if (isMetrix) {
             result = await runMetrixSurvey({
               surveyUrl: bizUrl,
               slotData: biz,
@@ -1811,7 +2018,14 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         }
 
         if (result?.success) {
-          if (isMetrix) {
+          if (isKona) {
+            biz.quotaStatus = (result.status === 'stopped_before_submit' || safetyGuard) ? 'pilot_done' : 'completed';
+            biz.status = (result.status === 'stopped_before_submit' || safetyGuard) ? '검증완료(제출직전)' : '완료';
+            biz.surveyCompleted = (biz.quotaStatus === 'completed') ? '완료' : '대기';
+            biz.completedAt = new Date().toISOString();
+            biz.capturedSteps = result.capturedSteps;
+            logger.success(`🎉 [코나체인 배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" (IDX: ${biz.idx}) ${biz.status} 달성!`);
+          } else if (isMetrix) {
             biz.quotaStatus = (result.status === 'stopped_at_review') ? '진행중(98%)' : (safetyGuard ? '진행중(98%)' : 'completed');
             biz.status = (result.status === 'stopped_at_review') ? '진행중(98%)' : (safetyGuard ? '진행중(98%)' : '완료');
             biz.completedAt = new Date().toISOString();
@@ -1824,7 +2038,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           }
 
           // 2단계: 조사원 평가항목 작성 자동 연계 (점포조사 및 상인회조사 전수 지원)
-          if (isAssoc) {
+          if (!isKona && isAssoc) {
             const evalUrl = biz.evalUrl || (biz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${biz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
             if (evalUrl) {
               logger.info(`[배치 #${biz.index || (i + startIndex)} 2단계] "${biz.marketName || biz.companyName}" 상인회 조사원 평가 연계 시작...`);
@@ -1913,30 +2127,32 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           }
 
           // 본설문 상태 동기화 (Kstat list.php 캐시 갱신)
-          const batchPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
-          await syncKstatSlotStatus({
-            pridSel: batchPridSel,
-            idSel: biz.idSel || biz.kstatMeta?.idSel,
-            kid: biz.kid || biz.kstatMeta?.kid,
-            gid: biz.gid || biz.kstatMeta?.gid || '0',
-            srt: 1
-          }).catch(() => {});
-
-          // [조사표 작성: 완료] + [조사원 평가항목 작성: 완료] 동시 충족 시 Kstat [조사 진행상태] 자동으로 '조사완료'(1) 저장
-          if (!isMetrix && biz.evalStatus === 'completed') {
-            const effLoginId = biz.surveyorAccount || campaign.kstatLoginId || (isAssoc ? '가온박정순' : '가온김영옥');
-            const effLoginPw = campaign.kstatLoginPw || '1234';
-            const progRes = await saveKstatSlotProgressStatus({
+          if (!isKona && !isMetrix) {
+            const batchPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
+            await syncKstatSlotStatus({
               pridSel: batchPridSel,
               idSel: biz.idSel || biz.kstatMeta?.idSel,
               kid: biz.kid || biz.kstatMeta?.kid,
               gid: biz.gid || biz.kstatMeta?.gid || '0',
-              ranId: biz.ranId || biz.ran_id,
-              loginId: effLoginId,
-              loginPw: effLoginPw
-            }).catch(() => ({ success: false }));
-            if (progRes?.success) {
-              biz.kstatProgressSaved = true;
+              srt: 1
+            }).catch(() => {});
+
+            // [조사표 작성: 완료] + [조사원 평가항목 작성: 완료] 동시 충족 시 Kstat [조사 진행상태] 자동으로 '조사완료'(1) 저장
+            if (biz.evalStatus === 'completed') {
+              const effLoginId = biz.surveyorAccount || campaign.kstatLoginId || (isAssoc ? '가온박정순' : '가온김영옥');
+              const effLoginPw = campaign.kstatLoginPw || '1234';
+              const progRes = await saveKstatSlotProgressStatus({
+                pridSel: batchPridSel,
+                idSel: biz.idSel || biz.kstatMeta?.idSel,
+                kid: biz.kid || biz.kstatMeta?.kid,
+                gid: biz.gid || biz.kstatMeta?.gid || '0',
+                ranId: biz.ranId || biz.ran_id,
+                loginId: effLoginId,
+                loginPw: effLoginPw
+              }).catch(() => ({ success: false }));
+              if (progRes?.success) {
+                biz.kstatProgressSaved = true;
+              }
             }
           }
         } else {
@@ -1977,7 +2193,7 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
   }
 
-  const { quotaIndex } = req.body;
+  const { quotaIndex, safetyGuard = true } = req.body;
   const quotaDb = campaign.quotaDatabase || [];
   const targetBiz = quotaDb.find(b => (b.index || b.seq) === quotaIndex);
 
@@ -1985,10 +2201,11 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
     return res.status(404).json({ error: '해당 순번의 쿼터 사업자를 찾을 수 없습니다.' });
   }
 
-  const targetUrl = targetBiz.slotUrl || targetBiz.surveyUrl;
+  const isKona = (campaign.surveyType === 'kona_youth');
+  const targetUrl = targetBiz.slotUrl || targetBiz.surveyUrl || (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '');
   if (!targetUrl) {
     return res.status(400).json({
-      error: `[${targetBiz.companyName}] 쿼터에 케이스탯 슬롯 URL(slotUrl)이 매핑되지 않았습니다. 상단의 [슬롯 1:1 매핑]을 먼저 완료해 주세요.`
+      error: `[${targetBiz.companyName}] 쿼터에 설문 URL이 매핑되지 않았습니다.`
     });
   }
 
@@ -2006,30 +2223,52 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
 
   (async () => {
     try {
-      const result = await runKstatSurvey({
-        surveyUrl: targetUrl,
-        bizData: targetBiz,
-        quotaIndex: targetBiz.index || quotaIndex,
-        guidelineConfig: {
-          ...(campaign.guidelineConfig || {}),
-          masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
-        },
-        policy: campaign.guidelineConfig?.policy || {},
-        pilotMode: true,
-        safetyGuard: true,
-        reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`),
-        onProgress: (info) => {
-          logger.broadcast({
-            type: 'PILOT_PROGRESS',
-            campaignId: campaign.id,
-            quotaIndex: targetBiz.index,
-            ...info
+      const result = isKona
+        ? await runKonaSurvey({
+            surveyUrl: targetUrl,
+            slotData: targetBiz,
+            policy: campaign.konaPolicy || {},
+            quotaIndex: targetBiz.index || quotaIndex,
+            pilotMode: safetyGuard,
+            safetyGuard,
+            reportDir: path.join(reportsDir, campaign.id, `kona_item_${targetBiz.index || quotaIndex}_${targetBiz.idx || ''}`),
+            onProgress: (info) => {
+              logger.broadcast({
+                type: 'PILOT_PROGRESS',
+                campaignId: campaign.id,
+                quotaIndex: targetBiz.index,
+                ...info
+              });
+            }
+          })
+        : await runKstatSurvey({
+            surveyUrl: targetUrl,
+            bizData: targetBiz,
+            quotaIndex: targetBiz.index || quotaIndex,
+            guidelineConfig: {
+              ...(campaign.guidelineConfig || {}),
+              masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
+            },
+            policy: campaign.guidelineConfig?.policy || {},
+            pilotMode: true,
+            safetyGuard: true,
+            reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`),
+            onProgress: (info) => {
+              logger.broadcast({
+                type: 'PILOT_PROGRESS',
+                campaignId: campaign.id,
+                quotaIndex: targetBiz.index,
+                ...info
+              });
+            }
           });
-        }
-      });
 
       if (result?.success) {
-        targetBiz.quotaStatus = 'pilot_done';
+        targetBiz.quotaStatus = (isKona && !safetyGuard) ? 'completed' : 'pilot_done';
+        if (isKona) {
+          targetBiz.status = (!safetyGuard) ? '완료' : '검증완료(제출직전)';
+          targetBiz.surveyCompleted = (!safetyGuard) ? '완료' : '대기';
+        }
         targetBiz.pilotAt = new Date().toISOString();
         targetBiz.capturedSteps = result.capturedSteps;
         logger.success(`[개별 쿼터 테스트 성공] "${targetBiz.marketName || targetBiz.companyName}" 완주 완료!`);
@@ -3074,11 +3313,40 @@ app.put('/api/quota/:fileName', (req, res) => {
     const content = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
     if (title) content.title = title.trim();
 
-    // 순번(seq) 재부여 및 데이터 갱신
-    content.data = updatedData.map((item, idx) => ({
-      ...item,
-      seq: idx + 1
-    }));
+    // 순번(seq) 재부여, 슬롯 메타데이터 정규화 및 데이터 갱신
+    content.data = updatedData.map((item, idx) => {
+      const normalized = {
+        ...item,
+        seq: idx + 1
+      };
+      if (normalized.slotUrl !== undefined) {
+        let rawUrl = String(normalized.slotUrl || '').trim();
+        if (!rawUrl) {
+          delete normalized.slotUrl;
+          delete normalized.surveyUrl;
+          delete normalized.evalUrl;
+          delete normalized.ranId;
+          delete normalized.slotIndex;
+          delete normalized.slotExtra;
+        } else {
+          if (!/^https?:\/\//i.test(rawUrl) && /^[A-Za-z0-9_-]{6,20}$/.test(rawUrl)) {
+            rawUrl = `https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=${rawUrl}&type=tapi&prid=2026070802&mnid=900001346&srt=1`;
+          }
+          normalized.slotUrl = rawUrl;
+          normalized.surveyUrl = rawUrl;
+          const kidMatch = rawUrl.match(/[?&]KID=([^&#\s]+)/i);
+          if (kidMatch) {
+            normalized.ranId = kidMatch[1];
+            if (!normalized.evalUrl) {
+              normalized.evalUrl = `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${normalized.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2`;
+            }
+          }
+          if (!normalized.slotIndex) normalized.slotIndex = idx + 1;
+          if (!normalized.slotExtra) normalized.slotExtra = `(${idx})추가`;
+        }
+      }
+      return normalized;
+    });
     content.count = content.data.length;
     content.updatedAt = new Date().toISOString();
 
@@ -3114,9 +3382,14 @@ app.put('/api/quota/:fileName', (req, res) => {
       filePath: excelPath
     });
 
-    // 캠페인 DB에도 매칭되는 점포가 있다면 실시간 동기화
+    // 캠페인 DB에도 매칭되는 점포 및 수동 추가 점포가 있다면 실시간 동기화
     try {
       const allCamps = CampaignStore.getAllCampaigns();
+      const syncKeys = [
+        'companyName', 'industry', 'bizNumber', 'ceoName', 'ceoGender', 'ceoAge',
+        'phone', 'openDate', 'address', 'handledItems', 'mainProducts',
+        'slotUrl', 'surveyUrl', 'evalUrl', 'slotIndex', 'slotExtra', 'ranId'
+      ];
       allCamps.forEach(camp => {
         if (Array.isArray(camp.quotaDatabase)) {
           let campChanged = false;
@@ -3126,13 +3399,37 @@ app.put('/api/quota/:fileName', (req, res) => {
               (d.companyName && d.companyName === cItem.companyName)
             );
             if (matched) {
-              const syncKeys = ['companyName', 'industry', 'bizNumber', 'ceoName', 'ceoGender', 'ceoAge', 'phone', 'openDate', 'address', 'handledItems', 'mainProducts'];
               syncKeys.forEach(k => {
                 if (matched[k] !== undefined) cItem[k] = matched[k];
               });
               campChanged = true;
             }
           });
+
+          // 해당 쿼터 파일을 장착한 캠페인인 경우 신규 수동 추가된 점포도 캠페인에 자동 추가
+          const isLinkedCamp = (camp.quotaConfig?.quotaFileName === safeFilename) ||
+            (camp.quotaSourceFile === safeFilename) ||
+            (content.marketName && camp.quotaConfig?.marketName === content.marketName);
+          if (isLinkedCamp) {
+            content.data.forEach(dItem => {
+              const existsInCamp = camp.quotaDatabase.some(cItem =>
+                (cItem.bizNumber && cItem.bizNumber === dItem.bizNumber) ||
+                (cItem.companyName && cItem.companyName === dItem.companyName)
+              );
+              if (!existsInCamp && dItem.companyName) {
+                const nextIdx = camp.quotaDatabase.length + 1;
+                camp.quotaDatabase.push({
+                  ...dItem,
+                  index: nextIdx,
+                  seq: nextIdx,
+                  quotaStatus: 'ready',
+                  usedAt: null
+                });
+                campChanged = true;
+              }
+            });
+          }
+
           if (campChanged) {
             CampaignStore.updateCampaign(camp.id, { quotaDatabase: camp.quotaDatabase });
           }

@@ -169,8 +169,12 @@ async function initQuotaDetailPage() {
       const addrVal = item.address ? (item.address.length > 28 ? item.address.slice(0, 28) + '...' : item.address) : '-';
 
       let slotTag = '';
-      if (item.slotIndex) {
-        slotTag = `<div class="quota-slot-badge font-mono" title="${escapeHtml(item.slotUrl || '')}">슬롯 #${item.slotIndex} ${escapeHtml(item.slotExtra || '')}</div>`;
+      if (item.slotUrl) {
+        const slotLabel = item.slotIndex ? `슬롯 #${item.slotIndex} ${escapeHtml(item.slotExtra || '')}` : `슬롯 #${seq}`;
+        const kidSuffix = item.ranId ? ` (${escapeHtml(item.ranId)})` : '';
+        slotTag = `<div class="quota-slot-badge font-mono" data-slot-seq="${seq}" title="클릭하여 이 점포의 슬롯 URL 확인/수정: ${escapeHtml(item.slotUrl)}"><i class="fa-solid fa-link"></i> ${slotLabel}${kidSuffix}</div>`;
+      } else {
+        slotTag = `<div class="quota-slot-badge unmapped font-mono" data-slot-seq="${seq}" title="클릭하여 이 점포의 슬롯 URL 직접 입력/매핑"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 미매핑 (클릭하여 입력)</div>`;
       }
 
       return `
@@ -256,6 +260,14 @@ async function initQuotaDetailPage() {
   // 3. 인라인 셀 편집 (Inline Cell Editing - 설문조사 상세 화면과 동일 UX + 자동 동기화)
   // ------------------------------------------------------------------------
   tbody.addEventListener('click', (e) => {
+    const slotBadge = e.target.closest('.quota-slot-badge');
+    if (slotBadge) {
+      e.stopPropagation();
+      const targetSeq = parseInt(slotBadge.getAttribute('data-slot-seq'), 10) || null;
+      openQuotaSlotModal(targetSeq);
+      return;
+    }
+
     const cell = e.target.closest('.editable-quota-cell');
     if (!cell || cell.querySelector('input, select')) return;
 
@@ -480,8 +492,12 @@ async function initQuotaDetailPage() {
     const mainProductsEl = document.getElementById('add-main-products');
     const mainProducts = mainProductsEl ? (mainProductsEl.value.trim() || null) : null;
     const address = document.getElementById('add-address').value.trim() || null;
+    const slotUrlEl = document.getElementById('add-slot-url');
+    const rawSlotUrl = slotUrlEl ? slotUrlEl.value.trim() : '';
 
     const newSeq = currentData.length + 1;
+    const slotMeta = rawSlotUrl ? normalizeQuotaSlotInput(rawSlotUrl, newSeq - 1) : null;
+
     currentData.push({
       seq: newSeq,
       source: 'MANUAL_USER_ADDED',
@@ -499,7 +515,15 @@ async function initQuotaDetailPage() {
       mainProducts,
       status: '정상가맹',
       paperAccepted: 'Y',
-      digitalAccepted: 'Y'
+      digitalAccepted: 'Y',
+      ...(slotMeta && slotMeta.slotUrl ? {
+        slotUrl: slotMeta.slotUrl,
+        surveyUrl: slotMeta.slotUrl,
+        evalUrl: slotMeta.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${slotMeta.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null,
+        ranId: slotMeta.ranId,
+        slotIndex: slotMeta.slotIndex,
+        slotExtra: slotMeta.slotExtra
+      } : {})
     });
 
     modalAdd.classList.remove('is-open');
@@ -508,8 +532,392 @@ async function initQuotaDetailPage() {
     renderTable();
     renderDistributionKpi();
     await autoSaveQuotaSilent();
-    alert(`새 점포 "${companyName}"가 쿼터에 추가 및 Excel 동기화되었습니다.`);
+    const slotSuffix = (slotMeta && slotMeta.slotUrl)
+      ? `\n(케이스탯 슬롯 #${newSeq}${slotMeta.ranId ? ` [KID: ${slotMeta.ranId}]` : ''} 1:1 매핑 완료)`
+      : '';
+    alert(`새 점포 "${companyName}"가 쿼터에 추가 및 Excel/캠페인과 동기화되었습니다.${slotSuffix}`);
   });
+
+  // ------------------------------------------------------------------------
+  // 4-1. 케이스탯 슬롯 1:1 수동 매핑 모달 (쿼터 상세 편집기용)
+  // ------------------------------------------------------------------------
+  const modalQuotaSlot = document.getElementById('modal-quota-slot-mapping');
+  const btnOpenQuotaSlotModal = document.getElementById('btn-open-quota-slot-modal');
+  const btnCloseQuotaSlotModal = document.getElementById('btn-close-quota-slot-modal');
+  const btnCancelQuotaSlotModal = document.getElementById('btn-cancel-quota-slot-modal');
+  const textareaQuotaBulkSlots = document.getElementById('textarea-quota-bulk-slots');
+  const btnQuotaParseSlots = document.getElementById('btn-quota-parse-slots');
+  const btnQuotaParseSlotsUnmapped = document.getElementById('btn-quota-parse-slots-unmapped');
+  const btnQuotaClearSlots = document.getElementById('btn-quota-clear-slots');
+  const quotaSlotParseStatusMsg = document.getElementById('quota-slot-parse-status-msg');
+  const quotaSlotMatchSummaryBadge = document.getElementById('quota-slot-match-summary-badge');
+  const quotaSlotPreviewTbody = document.getElementById('quota-slot-preview-tbody');
+  const btnSubmitQuotaSlotMapping = document.getElementById('btn-submit-quota-slot-mapping');
+
+  let quotaParsedSlotsState = [];
+
+  function normalizeQuotaSlotInput(rawVal, idx = 0) {
+    const trimmed = String(rawVal || '').trim();
+    if (!trimmed) {
+      return { slotUrl: '', ranId: null, slotIndex: idx + 1, slotExtra: '' };
+    }
+    const urlMatch = trimmed.match(/(https?:\/\/[^\s"'<>]+index\.asp\?[^\s"'<>]+)/i);
+    let finalUrl = urlMatch ? urlMatch[1] : trimmed;
+
+    if (!/^https?:\/\//i.test(finalUrl) && /^[A-Za-z0-9_-]{6,20}$/.test(finalUrl)) {
+      finalUrl = `https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=${finalUrl}&type=tapi&prid=2026070802&mnid=900001346&srt=1`;
+    }
+
+    const kidMatch = finalUrl.match(/[?&]KID=([A-Za-z0-9_-]+)/i);
+    const extraMatch = trimmed.match(/\(([0-9]+)\)추가/i);
+    return {
+      slotUrl: finalUrl,
+      ranId: kidMatch ? kidMatch[1] : null,
+      slotIndex: idx + 1,
+      slotExtra: extraMatch ? extraMatch[0] : `(${idx})추가`
+    };
+  }
+
+  function parseQuotaBulkSlotInput(rawText) {
+    if (!rawText || !rawText.trim()) return [];
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const slots = [];
+    const urlRegex = /(https?:\/\/[^\s"'<>]+index\.asp\?[^\s"'<>]+)/gi;
+    const kidRegex = /[?&]KID=([A-Za-z0-9_-]+)/i;
+    const extraRegex = /\(([0-9]+)\)추가/i;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const matches = line.match(urlRegex);
+      if (matches) {
+        matches.forEach(url => {
+          const kidMatch = url.match(kidRegex);
+          const extraMatch = line.match(extraRegex);
+          slots.push({
+            slotUrl: url,
+            ranId: kidMatch ? kidMatch[1] : null,
+            slotExtra: extraMatch ? extraMatch[0] : `(${slots.length})추가`,
+            slotIndex: slots.length + 1
+          });
+        });
+      }
+    }
+
+    if (slots.length === 0) {
+      lines.forEach((line, idx) => {
+        if (line.startsWith('http://') || line.startsWith('https://') || /^[A-Za-z0-9_-]{6,20}$/.test(line)) {
+          const norm = normalizeQuotaSlotInput(line, idx);
+          if (norm.slotUrl) slots.push(norm);
+        }
+      });
+    }
+    return slots;
+  }
+
+  function updateQuotaSlotSummaryUI() {
+    const total = currentData.length;
+    const matchedCount = quotaParsedSlotsState.filter(s => s && s.slotUrl && String(s.slotUrl).trim() !== '').length;
+
+    if (quotaSlotMatchSummaryBadge) {
+      quotaSlotMatchSummaryBadge.textContent = `매칭 완료: ${matchedCount} / ${total} 점포`;
+      if (matchedCount === total && total > 0) {
+        quotaSlotMatchSummaryBadge.className = 'slot-summary-badge success';
+        if (quotaSlotParseStatusMsg) {
+          quotaSlotParseStatusMsg.className = 'slot-parse-msg success';
+          quotaSlotParseStatusMsg.innerHTML = `<i class="fa-solid fa-circle-check"></i> 전체 <strong>${total}개 점포</strong>에 슬롯 URL이 1:1로 매칭되었습니다. 하단의 [슬롯 매핑 적용 및 저장]을 눌러주세요.`;
+        }
+      } else {
+        quotaSlotMatchSummaryBadge.className = 'slot-summary-badge warning';
+        if (quotaSlotParseStatusMsg) {
+          quotaSlotParseStatusMsg.className = 'slot-parse-msg warning';
+          quotaSlotParseStatusMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> 전체 <strong>${total}개 점포</strong> 중 <strong>${matchedCount}개</strong> 매칭됨 (미매핑 <strong>${Math.max(0, total - matchedCount)}개</strong> — 표의 입력칸에 직접 붙여넣거나 상단에서 파싱하세요)`;
+        }
+      }
+    }
+  }
+
+  function renderQuotaSlotPreviewTable(focusSeq = null) {
+    const total = currentData.length;
+    if (total === 0) {
+      if (quotaSlotPreviewTbody) quotaSlotPreviewTbody.innerHTML = '<tr><td colspan="6" class="empty-table-msg">등록된 점포가 없습니다.</td></tr>';
+      if (quotaSlotMatchSummaryBadge) quotaSlotMatchSummaryBadge.textContent = '매칭: 0 / 0 점포';
+      return;
+    }
+
+    if (quotaSlotPreviewTbody) {
+      quotaSlotPreviewTbody.innerHTML = currentData.map((item, idx) => {
+        const seq = item.seq || item.index || (idx + 1);
+        const parsedSlot = quotaParsedSlotsState[idx] || {};
+        const url = parsedSlot.slotUrl !== undefined ? parsedSlot.slotUrl : (item.slotUrl || '');
+        const ranId = parsedSlot.ranId || item.ranId || (url.match(/[?&]KID=([A-Za-z0-9_-]+)/i)?.[1] || '');
+        const slotExtra = parsedSlot.slotExtra || item.slotExtra || (url ? `(${idx})추가` : '-');
+        const isMatched = Boolean(url && String(url).trim());
+        const isFocused = (focusSeq && Number(focusSeq) === Number(seq));
+
+        return `
+          <tr class="slot-preview-row ${isMatched ? 'row-matched' : 'row-unmatched'}${isFocused ? ' row-focused' : ''}" data-row-idx="${idx}" data-seq="${seq}">
+            <td class="text-center font-mono font-bold col-seq">${seq}</td>
+            <td class="col-company"><strong class="company-name-highlight">${escapeHtml(item.companyName || '-')}</strong></td>
+            <td class="text-center col-ind"><span class="quota-ind-badge">${escapeHtml(getIndustryBadgeText(item.industry || item.handledItems))}</span></td>
+            <td class="col-ceo"><span class="ceo-name-highlight">${escapeHtml(item.ceoName || '-')}</span></td>
+            <td class="text-center font-mono col-slot-label" id="quota-slot-label-cell-${idx}">
+              ${isMatched
+                ? `<span class="badge-slot-matched font-mono font-bold">슬롯 #${idx + 1} ${escapeHtml(ranId ? `(${ranId})` : slotExtra)}</span>`
+                : '<span class="badge-slot-unmapped"><i class="fa-solid fa-triangle-exclamation"></i> 미매핑</span>'}
+            </td>
+            <td class="font-mono col-slot-url">
+              <div class="slot-url-input-wrap">
+                <input
+                  type="text"
+                  class="slot-row-url-input ${isMatched ? '' : 'is-empty'}"
+                  data-row-idx="${idx}"
+                  data-seq="${seq}"
+                  value="${escapeHtml(url)}"
+                  placeholder="https://kstat.surveys.kr/...index.asp?KID=... 또는 KID 코드 직접 입력"
+                />
+                <button type="button" class="btn-clear-row-slot" data-row-idx="${idx}" title="이 점포의 슬롯 URL 지우기">&times;</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      quotaSlotPreviewTbody.querySelectorAll('.slot-row-url-input').forEach(input => {
+        const handleRowInput = () => {
+          const rIdx = parseInt(input.getAttribute('data-row-idx'), 10);
+          const norm = normalizeQuotaSlotInput(input.value, rIdx);
+          if (quotaParsedSlotsState[rIdx]) {
+            quotaParsedSlotsState[rIdx].slotUrl = norm.slotUrl;
+            quotaParsedSlotsState[rIdx].ranId = norm.ranId;
+            quotaParsedSlotsState[rIdx].slotIndex = norm.slotIndex;
+            quotaParsedSlotsState[rIdx].slotExtra = norm.slotExtra;
+          }
+          const isMatched = Boolean(norm.slotUrl);
+          input.classList.toggle('is-empty', !isMatched);
+          const tr = input.closest('.slot-preview-row');
+          if (tr) {
+            tr.classList.toggle('row-matched', isMatched);
+            tr.classList.toggle('row-unmatched', !isMatched);
+          }
+          const labelCell = document.getElementById(`quota-slot-label-cell-${rIdx}`);
+          if (labelCell) {
+            labelCell.innerHTML = isMatched
+              ? `<span class="badge-slot-matched font-mono font-bold">슬롯 #${rIdx + 1} ${escapeHtml(norm.ranId ? `(${norm.ranId})` : norm.slotExtra)}</span>`
+              : '<span class="badge-slot-unmapped"><i class="fa-solid fa-triangle-exclamation"></i> 미매핑</span>';
+          }
+          updateQuotaSlotSummaryUI();
+        };
+
+        input.addEventListener('input', handleRowInput);
+        input.addEventListener('change', () => {
+          const rIdx = parseInt(input.getAttribute('data-row-idx'), 10);
+          const norm = normalizeQuotaSlotInput(input.value, rIdx);
+          if (norm.slotUrl && input.value.trim() !== norm.slotUrl) {
+            input.value = norm.slotUrl;
+          }
+          handleRowInput();
+        });
+      });
+
+      quotaSlotPreviewTbody.querySelectorAll('.btn-clear-row-slot').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const rIdx = parseInt(btn.getAttribute('data-row-idx'), 10);
+          const rowInput = quotaSlotPreviewTbody.querySelector(`.slot-row-url-input[data-row-idx="${rIdx}"]`);
+          if (rowInput) {
+            rowInput.value = '';
+            rowInput.dispatchEvent(new Event('input'));
+            rowInput.focus();
+          }
+        });
+      });
+
+      if (focusSeq) {
+        setTimeout(() => {
+          const targetInput = quotaSlotPreviewTbody.querySelector(`.slot-row-url-input[data-seq="${focusSeq}"]`);
+          if (targetInput) {
+            try {
+              targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (_) {}
+            targetInput.focus();
+            targetInput.select();
+          }
+        }, 80);
+      }
+    }
+
+    updateQuotaSlotSummaryUI();
+  }
+
+  function openQuotaSlotModal(focusSeq = null) {
+    if (currentData.length === 0) {
+      alert('등록된 점포 데이터가 없습니다.');
+      return;
+    }
+    const targetSeq = (typeof focusSeq === 'number' || typeof focusSeq === 'string') ? parseInt(focusSeq, 10) : null;
+
+    quotaParsedSlotsState = currentData.map((item, idx) => ({
+      seq: item.seq || item.index || (idx + 1),
+      companyName: item.companyName,
+      industry: item.industry || item.handledItems,
+      ceoName: item.ceoName,
+      slotUrl: item.slotUrl || '',
+      slotIndex: item.slotIndex || (idx + 1),
+      slotExtra: item.slotExtra || '',
+      ranId: item.ranId || ''
+    }));
+
+    const existingUrls = quotaParsedSlotsState.filter(s => s.slotUrl).map(s => s.slotUrl);
+    if (existingUrls.length > 0 && textareaQuotaBulkSlots) {
+      textareaQuotaBulkSlots.value = existingUrls.join('\n');
+    }
+
+    renderQuotaSlotPreviewTable(targetSeq);
+    if (modalQuotaSlot) modalQuotaSlot.classList.add('is-open');
+  }
+
+  function closeQuotaSlotModal() {
+    if (modalQuotaSlot) modalQuotaSlot.classList.remove('is-open');
+  }
+
+  if (btnOpenQuotaSlotModal) btnOpenQuotaSlotModal.addEventListener('click', () => openQuotaSlotModal());
+  if (btnCloseQuotaSlotModal) btnCloseQuotaSlotModal.addEventListener('click', closeQuotaSlotModal);
+  if (btnCancelQuotaSlotModal) btnCancelQuotaSlotModal.addEventListener('click', closeQuotaSlotModal);
+
+  if (btnQuotaParseSlots) {
+    btnQuotaParseSlots.addEventListener('click', () => {
+      const text = textareaQuotaBulkSlots ? textareaQuotaBulkSlots.value.trim() : '';
+      if (!text) {
+        alert('슬롯 URL(또는 KID 코드)을 입력해주세요.');
+        if (textareaQuotaBulkSlots) textareaQuotaBulkSlots.focus();
+        return;
+      }
+      const extracted = parseQuotaBulkSlotInput(text);
+      if (extracted.length === 0) {
+        alert('입력된 텍스트에서 케이스탯 설문 URL을 찾을 수 없습니다.');
+        return;
+      }
+      quotaParsedSlotsState = currentData.map((item, idx) => {
+        const slot = extracted[idx];
+        return {
+          seq: item.seq || item.index || (idx + 1),
+          companyName: item.companyName,
+          industry: item.industry || item.handledItems,
+          ceoName: item.ceoName,
+          slotUrl: slot ? slot.slotUrl : '',
+          slotIndex: slot ? slot.slotIndex : (idx + 1),
+          slotExtra: slot ? slot.slotExtra : `(${idx})추가`,
+          ranId: slot ? slot.ranId : null
+        };
+      });
+      renderQuotaSlotPreviewTable();
+    });
+  }
+
+  if (btnQuotaParseSlotsUnmapped) {
+    btnQuotaParseSlotsUnmapped.addEventListener('click', () => {
+      const text = textareaQuotaBulkSlots ? textareaQuotaBulkSlots.value.trim() : '';
+      if (!text) {
+        alert('미매핑 점포에 채워 넣을 케이스탯 슬롯 URL을 상단 입력창에 붙여넣어 주세요.');
+        if (textareaQuotaBulkSlots) textareaQuotaBulkSlots.focus();
+        return;
+      }
+      const extracted = parseQuotaBulkSlotInput(text);
+      if (extracted.length === 0) {
+        alert('입력된 텍스트에서 케이스탯 설문 URL을 찾을 수 없습니다.');
+        return;
+      }
+      const existingUrls = new Set(quotaParsedSlotsState.filter(s => s.slotUrl && s.slotUrl.trim()).map(s => s.slotUrl.trim()));
+      const existingRanIds = new Set(quotaParsedSlotsState.filter(s => s.ranId).map(s => s.ranId));
+      const availableNewSlots = extracted.filter(s => !existingUrls.has(s.slotUrl) && (!s.ranId || !existingRanIds.has(s.ranId)));
+      if (availableNewSlots.length === 0) {
+        alert('입력된 URL 중 아직 매핑되지 않은 신규 슬롯이 없습니다.');
+        return;
+      }
+      let cursor = 0;
+      let filled = 0;
+      quotaParsedSlotsState.forEach((slotItem, idx) => {
+        if ((!slotItem.slotUrl || !slotItem.slotUrl.trim()) && cursor < availableNewSlots.length) {
+          const nextSlot = availableNewSlots[cursor++];
+          slotItem.slotUrl = nextSlot.slotUrl;
+          slotItem.ranId = nextSlot.ranId;
+          slotItem.slotIndex = idx + 1;
+          slotItem.slotExtra = nextSlot.slotExtra || `(${idx})추가`;
+          filled++;
+        }
+      });
+      renderQuotaSlotPreviewTable();
+      alert(`미매핑 점포 ${filled}곳에 신규 슬롯 URL을 채웠습니다. 하단 [슬롯 매핑 적용 및 저장]을 눌러 확정해 주세요.`);
+    });
+  }
+
+  if (btnQuotaClearSlots) {
+    btnQuotaClearSlots.addEventListener('click', () => {
+      if (textareaQuotaBulkSlots) textareaQuotaBulkSlots.value = '';
+      quotaParsedSlotsState = currentData.map((item, idx) => ({
+        seq: item.seq || item.index || (idx + 1),
+        companyName: item.companyName,
+        industry: item.industry || item.handledItems,
+        ceoName: item.ceoName,
+        slotUrl: '',
+        slotIndex: idx + 1,
+        slotExtra: '',
+        ranId: null
+      }));
+      renderQuotaSlotPreviewTable();
+    });
+  }
+
+  if (btnSubmitQuotaSlotMapping) {
+    btnSubmitQuotaSlotMapping.addEventListener('click', async () => {
+      // 중복 슬롯 검증
+      const seenUrls = new Set();
+      const seenKids = new Set();
+      for (let i = 0; i < quotaParsedSlotsState.length; i++) {
+        const s = quotaParsedSlotsState[i];
+        const u = String(s.slotUrl || '').trim();
+        if (!u) continue;
+        if (seenUrls.has(u) || (s.ranId && seenKids.has(s.ranId))) {
+          alert(`[#${i + 1} ${s.companyName || '점포'}] 다른 점포와 중복된 슬롯 URL(KID: ${s.ranId || u})이 감지되었습니다. 각 점포마다 고유한 슬롯을 입력해 주세요.`);
+          return;
+        }
+        seenUrls.add(u);
+        if (s.ranId) seenKids.add(s.ranId);
+      }
+
+      let mappedCount = 0;
+      currentData.forEach((item, idx) => {
+        const slot = quotaParsedSlotsState[idx];
+        const cleanUrl = slot ? String(slot.slotUrl || '').trim() : '';
+        if (cleanUrl) {
+          item.slotUrl = cleanUrl;
+          item.surveyUrl = cleanUrl;
+          item.ranId = slot.ranId || (cleanUrl.match(/[?&]KID=([A-Za-z0-9_-]+)/i)?.[1] || null);
+          item.evalUrl = item.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${item.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null;
+          item.slotIndex = slot.slotIndex || (idx + 1);
+          item.slotExtra = slot.slotExtra || `(${idx})추가`;
+          mappedCount++;
+        } else {
+          delete item.slotUrl;
+          delete item.surveyUrl;
+          delete item.evalUrl;
+          delete item.ranId;
+          delete item.slotIndex;
+          delete item.slotExtra;
+        }
+      });
+
+      try {
+        btnSubmitQuotaSlotMapping.disabled = true;
+        btnSubmitQuotaSlotMapping.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 및 동기화 중...';
+        await autoSaveQuotaSilent();
+        closeQuotaSlotModal();
+        alert(`총 ${currentData.length}개 점포 중 ${mappedCount}개 점포의 슬롯 매핑이 저장 및 Excel/캠페인과 동기화되었습니다!`);
+      } finally {
+        btnSubmitQuotaSlotMapping.disabled = false;
+        btnSubmitQuotaSlotMapping.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 슬롯 매핑 적용 및 저장';
+      }
+    });
+  }
 
   // ------------------------------------------------------------------------
   // 5. 검색 필터링
