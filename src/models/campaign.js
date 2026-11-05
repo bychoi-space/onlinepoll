@@ -82,6 +82,7 @@ export function createCampaign(data = {}) {
   const campaigns = getAllCampaigns();
   const isAssoc = (data.surveyType === 'kstat_assoc');
   const isMetrix = (data.surveyType === 'metrix_panel');
+  const isKona = (data.surveyType === 'kona_youth');
 
   let defaultAssocPolicy = null;
   if (isAssoc) {
@@ -124,12 +125,23 @@ export function createCampaign(data = {}) {
     }
   }
 
+  let defaultKonaPolicy = null;
+  if (isKona) {
+    const konaBpPath = path.join(dataDir, 'kona_youth_blueprint.json');
+    if (fs.existsSync(konaBpPath)) {
+      try {
+        const bp = JSON.parse(fs.readFileSync(konaBpPath, 'utf-8'));
+        defaultKonaPolicy = bp.defaultPolicy;
+      } catch (_) {}
+    }
+  }
+
   const newCampaign = {
     id: 'camp_' + Date.now(),
-    title: data.title || (isMetrix ? '2026 메트릭스 경기도 소상공인 패널조사' : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인')),
+    title: data.title || (isKona ? '2026 화성특례시 만족도 청소년 설문조사' : (isMetrix ? '2026 메트릭스 경기도 소상공인 패널조사' : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인'))),
     description: data.description || '',
     quotaType: data.quotaType || (isAssoc || isMetrix ? 'b2b' : 'b2c'),
-    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc' | 'metrix_panel'
+    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'kona_youth'
     status: 'ready',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -138,9 +150,9 @@ export function createCampaign(data = {}) {
       targetCount: 1,
       selectedFields: ['companyName', 'bizNumber', 'ceoName', 'address', 'industry']
     },
-    quotaDatabase: [],
+    quotaDatabase: data.quotaDatabase || [],
     guidelineConfig: data.guidelineConfig || {
-      surveyUrl: '',
+      surveyUrl: isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '',
       topic: '',
       positiveRatio: 70,
       neutralRatio: 20,
@@ -161,6 +173,13 @@ export function createCampaign(data = {}) {
       metrixPolicy: {
         ...(defaultMetrixPolicy || {}),
         ...(data.metrixPolicy || {})
+      },
+      hasMasterBlueprint: true
+    } : {}),
+    ...(isKona ? {
+      konaPolicy: {
+        ...(defaultKonaPolicy || {}),
+        ...(data.konaPolicy || {})
       },
       hasMasterBlueprint: true
     } : {})

@@ -319,16 +319,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     campaignContainer.innerHTML = campaigns.map(c => {
       const cat = getCampaignCategory(c);
-      const catMeta = getCategoryMeta(cat);
+      const isKona = (c.surveyType === 'kona_youth');
+      const catMeta = isKona
+        ? { label: '화성 청소년 서베이', icon: 'fa-user-graduate', class: 'smallbiz' }
+        : getCategoryMeta(cat);
       const isAssoc = (cat === 'assoc');
       const isSmallBiz = (cat === 'smallbiz');
       const isCompleted = (c.status === 'completed');
 
-      const quotaLabel = isAssoc 
-        ? '상인회 대상 (25단계)' 
-        : (isSmallBiz ? '소상공인 패널 (120단계)' : (c.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)'));
-      const quotaBadgeClass = isAssoc ? 'assoc' : (isSmallBiz ? 'b2b' : (c.quotaType === 'b2b' ? 'b2b' : 'b2c'));
-      const quotaIcon = isAssoc ? 'fa-sitemap' : (isSmallBiz ? 'fa-building-user' : (c.quotaType === 'b2b' ? 'fa-building' : 'fa-user'));
+      const quotaLabel = isKona
+        ? '청소년 만족도 (40문항/53단계)'
+        : (isAssoc 
+          ? '상인회 대상 (25단계)' 
+          : (isSmallBiz ? '소상공인 패널 (120단계)' : (c.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)')));
+      const quotaBadgeClass = isKona ? 'b2c' : (isAssoc ? 'assoc' : (isSmallBiz ? 'b2b' : (c.quotaType === 'b2b' ? 'b2b' : 'b2c')));
+      const quotaIcon = isKona ? 'fa-user-graduate' : (isAssoc ? 'fa-sitemap' : (isSmallBiz ? 'fa-building-user' : (c.quotaType === 'b2b' ? 'fa-building' : 'fa-user')));
 
       let statusText = '대기 중';
       let statusClass = 'ready';
@@ -337,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (isCompleted) { statusText = '조사 마감 완료'; statusClass = 'completed'; }
 
       const dbCount = c.quotaDatabase ? c.quotaDatabase.length : 0;
-      const targetCount = c.quotaConfig?.targetCount || (isAssoc ? 8 : (isSmallBiz ? 54 : 1));
+      const targetCount = c.quotaConfig?.targetCount || (isKona ? 103 : (isAssoc ? 8 : (isSmallBiz ? 54 : 1)));
       const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString('ko-KR') : '-';
 
       const cardClass = `campaign-card ${isAssoc ? 'assoc-card' : ''} ${isCompleted ? 'completed-card' : ''}`;
@@ -360,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${highlightQuery(escapeHtml(c.title || '무제 캠페인'), currentSearchQuery)}
             </h3>
             <p class="campaign-desc">
-              ${highlightQuery(escapeHtml(c.description || (isAssoc ? '전통시장 상인회 25단계 전년도 일치 미러링 및 2026 정책 가이드 설문' : (isSmallBiz ? '메트릭스 경기도 소상공인 54개 패널조사 98% 안전 대기 자동화' : '상세 설정을 통해 쿼터 DB 및 방향성을 구성하세요.'))), currentSearchQuery)}
+              ${highlightQuery(escapeHtml(c.description || (isKona ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치 40문항 및 제출 직전 스크린샷 자동 저장)' : (isAssoc ? '전통시장 상인회 25단계 전년도 일치 미러링 및 2026 정책 가이드 설문' : (isSmallBiz ? '메트릭스 경기도 소상공인 54개 패널조사 98% 안전 대기 자동화' : '상세 설정을 통해 쿼터 DB 및 방향성을 구성하세요.')))), currentSearchQuery)}
             </p>
           </div>
 
@@ -370,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>조사 쿼터 DB</span>
                 <strong class="${isCompleted ? 'completed-stat' : ''}">
                   ${isCompleted ? '<i class="fa-solid fa-check text-success"></i> ' : ''}
-                  ${isAssoc ? `${dbCount}개 시장 확보 / 대상 8개소` : (isSmallBiz ? `${dbCount}개 패널 확보 / 전수 54개` : `${dbCount}개 점포 보유 / 목표 ${targetCount}개`)}
+                  ${isKona ? `${dbCount}명 명단 확보 / 전수 ${targetCount}명` : (isAssoc ? `${dbCount}개 시장 확보 / 대상 8개소` : (isSmallBiz ? `${dbCount}개 패널 확보 / 전수 54개` : `${dbCount}개 점포 보유 / 목표 ${targetCount}개`))}
                 </strong>
               </div>
               <div class="meta-item">
