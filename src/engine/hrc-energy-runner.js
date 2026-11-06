@@ -303,9 +303,41 @@ export async function runHrcEnergySurvey(options = {}) {
         }
         return v;
       };
-      const checkRadioInputs = activeInputs.filter(inp => (inp.type === 'radio' || inp.type === 'checkbox') && inp.variable);
       const textNumberInputs = activeInputs.filter(inp => inp.type !== 'radio' && inp.type !== 'checkbox' && inp.tag !== 'SELECT' && !String(inp.id).includes('op97') && !String(inp.id).includes('op91'));
+      // 수치 입력창 옆에 붙는 '-8:모름', '-9:응답거절' 보조 체크박스는 수치 입력창이 함께 있을 경우 일반 객관식 그룹 판정에서 제외
+      const checkRadioInputs = activeInputs.filter(inp => {
+        if ((inp.type !== 'radio' && inp.type !== 'checkbox') || !inp.variable) return false;
+        if (textNumberInputs.length > 0 && (String(inp.value).startsWith('-8') || String(inp.value).startsWith('-9'))) {
+          return false;
+        }
+        return true;
+      });
       const checkRadioVarGroups = Array.from(new Set(checkRadioInputs.map(inp => getGroupKey(inp))));
+
+      const isMixedNumericComplete = () => {
+        if (step.cv === 'q1500') {
+          return ['1', '2', '3'].every(k => {
+            const opVal = (step.inputs.find(i => i.variable === `q1500_op${k}`)?.value || '').trim();
+            const dkChecked = step.inputs.some(i => i.variable === `q1500_${k}` && i.checked);
+            return (opVal !== '' && opVal !== '0') || dkChecked;
+          });
+        }
+        if (step.cv === 'q1460') {
+          const op1Val = (step.inputs.find(i => i.variable === 'q1460_op1')?.value || '').trim();
+          const op2Val = (step.inputs.find(i => i.variable === 'q1460_op2')?.value || '').trim();
+          const dk1 = step.inputs.some(i => i.variable === 'q1460_1' && i.checked);
+          const dk2 = step.inputs.some(i => i.variable === 'q1460_2' && i.checked);
+          return ((op1Val !== '' && op1Val !== '0') || dk1) && (op2Val !== '' || dk2);
+        }
+        if (step.cv === 'q1650') {
+          const op1Val = (step.inputs.find(i => i.variable === 'q1650_op1')?.value || '').trim();
+          const op2Val = (step.inputs.find(i => i.variable === 'q1650_op2')?.value || '').trim();
+          const dk1 = step.inputs.some(i => i.variable === 'q1650_1' && i.checked);
+          const dk2 = step.inputs.some(i => i.variable === 'q1650_2' && i.checked);
+          return ((op1Val !== '' && op1Val !== '0') || dk1) && ((op2Val !== '' && op2Val !== '0') || dk2);
+        }
+        return textNumberInputs.length > 0 && textNumberInputs.every(inp => inp.value !== '' && inp.value !== null);
+      };
 
       const hasExistingAnswer = preserveExisting && (
         step.cv === 'q1260'
@@ -313,7 +345,7 @@ export async function runHrcEnergySurvey(options = {}) {
           : (
               checkRadioVarGroups.length > 0
                 ? checkRadioVarGroups.every(g => checkRadioInputs.some(inp => getGroupKey(inp) === g && inp.checked))
-                : (textNumberInputs.length > 0 && textNumberInputs.every(inp => inp.value !== '' && inp.value !== null))
+                : isMixedNumericComplete()
             )
       );
 
@@ -447,19 +479,45 @@ export async function runHrcEnergySurvey(options = {}) {
             return 'q1450: 1(주건물)';
           }
           if (cv === 'q1460') {
-            setVal(document.querySelector('input[variable="q1460_op1"]'), '5');
-            setVal(document.querySelector('input[variable="q1460_op2"]'), '1');
-            return 'q1460: 층수 보강';
+            const op1 = document.querySelector('input[variable="q1460_op1"]');
+            const op2 = document.querySelector('input[variable="q1460_op2"]');
+            const dk1 = document.querySelector('input[variable="q1460_1"]:checked');
+            const dk2 = document.querySelector('input[variable="q1460_2"]:checked');
+            if (op1 && !dk1 && (!op1.value || op1.value.trim() === '0')) {
+              op1.value = '';
+              setVal(op1, '5');
+            }
+            if (op2 && !dk2 && op2.value.trim() === '') {
+              setVal(op2, '1');
+            }
+            return `q1460: 층수 확인 (지상=${op1?.value}, 지하=${op2?.value})`;
           }
           if (cv === 'q1470') {
             setVal(document.querySelector('input[variable="q1470_op1"]'), policy.ceilingHeightM || '2.8');
             return 'q1470: 천장고 2.8m';
           }
           if (cv === 'q1500') {
-            setVal(document.querySelector('input[variable="q1500_op1"]'), '500');
-            setVal(document.querySelector('input[variable="q1500_op2"]'), '300');
-            setVal(document.querySelector('input[variable="q1500_op3"]'), '1500');
-            return 'q1500: 면적 보강';
+            const op1 = document.querySelector('input[variable="q1500_op1"]');
+            const op2 = document.querySelector('input[variable="q1500_op2"]');
+            const op3 = document.querySelector('input[variable="q1500_op3"]');
+            const dk1 = document.querySelector('input[variable="q1500_1"]:checked');
+            const dk2 = document.querySelector('input[variable="q1500_2"]:checked');
+            const dk3 = document.querySelector('input[variable="q1500_3"]:checked');
+            if (op1 && !dk1 && (!op1.value || op1.value.trim() === '0')) {
+              const btn1 = document.querySelector('#q1500_1_1, input[variable="q1500_1"][value^="-8"]');
+              if (btn1) clickEl(btn1);
+              else { op1.value = ''; setVal(op1, '500'); }
+            }
+            if (op2 && !dk2 && (!op2.value || op2.value.trim() === '0')) {
+              const btn2 = document.querySelector('#q1500_2_1, input[variable="q1500_2"][value^="-8"]');
+              if (btn2) clickEl(btn2);
+              else { op2.value = ''; setVal(op2, '300'); }
+            }
+            if (op3 && !dk3 && (!op3.value || op3.value.trim() === '0')) {
+              op3.value = '';
+              setVal(op3, '1500');
+            }
+            return `q1500: 면적 확인 (대지=${op1?.value || '모름'}, 건축=${op2?.value || '모름'}, 연면적=${op3?.value})`;
           }
           if (cv === 'q1550') {
             const code = policy.hvacAreaRatioCode || '7';
@@ -474,9 +532,21 @@ export async function runHrcEnergySurvey(options = {}) {
             return `q1600: 창면적비 ${winCode}, 문형태 ${doorCode}`;
           }
           if (cv === 'q1650') {
-            setVal(document.querySelector('input[variable="q1650_op1"]'), '2005');
-            setVal(document.querySelector('input[variable="q1650_op2"]'), '6');
-            return 'q1650: 준공연월 보강';
+            const op1 = document.querySelector('input[variable="q1650_op1"]');
+            const op2 = document.querySelector('input[variable="q1650_op2"]');
+            const dk1 = document.querySelector('input[variable="q1650_1"]:checked');
+            const dk2 = document.querySelector('input[variable="q1650_2"]:checked');
+            if (op1 && !dk1 && (!op1.value || op1.value.trim() === '0')) {
+              const btn1 = document.querySelector('#q1650_1_1, input[variable="q1650_1"][value^="-8"]');
+              if (btn1) clickEl(btn1);
+              else { op1.value = ''; setVal(op1, '2005'); }
+            }
+            if (op2 && !dk2 && (!op2.value || op2.value.trim() === '0')) {
+              const btn2 = document.querySelector('#q1650_2_1, input[variable="q1650_2"][value^="-8"]');
+              if (btn2) clickEl(btn2);
+              else { op2.value = ''; setVal(op2, '6'); }
+            }
+            return `q1650: 준공연월 확인 (연도=${op1?.value || '모름'}, 월=${op2?.value || '모름'})`;
           }
           if (cv === 'q1700') {
             const m = text.match(/승강기수\s*:\s*(\d+)/);

@@ -9387,18 +9387,19 @@
       "memo": "",
       "surveyorAccount": "700275",
       "surveyorName": "강영미",
-      "quotaStatus": "ready",
+      "quotaStatus": "completed",
       "index": 2,
       "surveyorId": "700275",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800173&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800173&page=1",
-      "status": "대기",
-      "progress": "0%",
+      "status": "완료",
+      "progress": "100%",
       "bizNumber": "800173",
       "openDate": "선정",
       "slotIndex": 2,
       "slotExtra": "선정 / 0%",
-      "ranId": "800173"
+      "ranId": "800173",
+      "roadAddress": "서울 노원구 노원로 547"
     },
     {
       "seq": 3,

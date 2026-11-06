@@ -160,3 +160,45 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
      - **Q1.asp `조사원 명` (`#Q1_10`) 입력 절대 금지 및 공란 유지 규칙**: Kstat `Q1.asp`에서 `Q1_10`(`조사원 명`)은 `readonly` 잠금 처리된 비필수(자동 `"-"` 검증 우회) 항목이므로 **절대 값을 입력하거나 `readonly`를 해제하여 조사원명을 주입하지 않는다**. 기존에 입력된 값이 발견될 경우 즉시 공란(`""`)으로 삭제한다.
      - **시설필요도(`_3`) 3·4·5 제한 규칙**: `P7` (`C1_1_3`~`C1_9_3`), `P8` (`C2_1_3`~`C2_18_3`), `P10` (`C4_1_3`~`C4_5_3`), `P17` (`E1_1_3`~`E1_7_3`)의 모든 `(추가) 시설필요도` 문항에서는 **'매우 불필요(1)'와 '불필요(2)'를 절대 체크하지 않으며**, 반드시 **'보통(3)', '필요(4)', '매우 필요(5)' 셋 중 하나**로만 응답한다(기존에 1·2로 저장된 값도 즉시 3·4·5로 덮어쓰기 및 `Agree.asp` 진입 전 전수 자동 보정 수행).
 
+---
+
+## 8. Hankook Research (HRC) 2025 Energy Census — Building Sector Engine (`src/engine/hrc-energy-runner.js`)
+
+### 8.1 Project & Accounts (`hrc_energy_building`)
+- **Target Survey**: `2026-89-0342C 2025년 기준 에너지총조사` ➔ `[건물]` 탭 (`https://tapi.hrcglobal.com/Home/Login` ➔ `https://rpssurvey.hrcglobal.com`)
+- **Surveyor Accounts & Quotas**:
+  - `700275` (`강영미`): 219 total slots / **70 selected (`선정`)** (`camp_hrc_energy_700275`)
+  - `700277` (`강경옥`): 169 total slots / **55 selected (`선정`)** (`camp_hrc_energy_700277`)
+  - `701493` (`김정례`): 168 total slots / **55 selected (`선정`)** (`camp_hrc_energy_701493`)
+
+### 8.2 Standing Rules (Non-Negotiable)
+1. **Preserve Existing Inputs (`preserveExistingInputs: true`)**:
+   - Never overwrite or modify any pre-filled building registry field or previously entered response in `AnswerInfo4` or `rpssurvey.hrcglobal.com`.
+   - **Exception for `'0'` Registry Placeholders**: When the building registry pre-fills `'0'` in `q1500_op1` (대지면적) or `q1500_op2` (건축면적) (e.g. apartment commercial complexes like `임광아파트 상가`), RPS validation rejects `'0'` (`1 ~ 9999999 사이의 값으로 입력해주세요`). Automatically check `#q1500_1_1` / `#q1500_2_1` (`-8:모름`) while preserving `q1500_op3` (연면적).
+2. **Never Click SMS/Email Dispatch Buttons**:
+   - On `AnswerInfo4?pid={UID}`, only fill `#contact1Name`, `#contact1TelPrefix`, `#contact1Tel2`, `#contact1Tel3` if empty, and click ONLY `#survey` (`[조사하기]`).
+3. **Coherent Single-Energy Scenario (Electricity + EHP)**:
+   - To avoid cross-question validation traps on fresh `0%` slots:
+     - `q1000`: `1` (조사원 면접조사)
+     - `q1260`: Juso API search (`searchDivButton()` ➔ `#listDiv a` / `openApiDivCallBack`) using the road address from `AnswerInfo4`
+     - `q1300`: Building name from `AnswerInfo4`/quota
+     - `q1350`: Match `주용도` label; `q1400`: `77` (`없음`)
+     - `q1450`: `1` (주건물); `q1460`: preserve or `5`층/`1`층; `q1470`: `2.8`m; `q1500`: preserve or `-8:모름` for `0` values
+     - `q1550`: `7` (60~70% 미만); `q1600`: 창면적비 `4` (30~40% 미만), 주출입문 `3` (여닫이문-자동문 포함)
+     - `q1650`: preserve or `-8:모름` / `2005`년 `6`월
+     - `q1700`: Parse `승강기수 : N` (`0` -> `1: 없음`, `>=1` -> `2: 있음` + `N`대); `q1750`: `1` (에스컬레이터 없음)
+     - `q1900`: `4` (개보수 안함); `q2250`~`q2350`: 총 점포 `10`개 (`1: 개수 응답`, 소유주 `0`, 세입자 `10`, 공실 `0`)
+     - `q2450`: `3` (관리인 등); `q2500`: 상근 `20`명, 방문객 `50`명; `q2550` & `q2900`: `77` (해당 시설 없음)
+     - `q3450`: `2` (클라우드/서버실 이용 안함); `q3550`~`q3950`: 개별냉난방(`3`), 통제안함(`3`), 여름 `24`℃ / 겨울 `22`℃, 냉방 `6~9월` / 난방 `1~3, 11~12월`, 공조시간(`q3800` 1~4열 `9~18시`), 주중 `5`일 / 주말 `2`일, 건물 운영시간(`q3950` `9~18시`)
+     - `q4000`~`q4350_r4`: `4` (시스템 에어컨 EHP), 단위 `4 (kW)`, 용량 `150` kW, 에너지원 `31 (구입전기-한전일반)`, 교체여부 `2 (아니요)`
+     - `q4500`: `77` (자가/비상발전 설비 없음); `q4700`: `5` (2028년까지 신재생 설치계획 없음)
+     - `q7300`~`q8050`: 지상 `1`층, 비율 `80%`, 형광등 `0`/LED `50`/할로겐 `0`, 스마트LED `2 (아니요)`, 공용 주조명 `2 (LED등)`, 부조명 `9 (없음)`, 다소비기기 `98 (모름)`, 절약설비 `77 (없음)`, 정부사업 7종 `1 (전혀 모른다)` & 참여 `9 (없음)`
+     - `q6000`~`q6300`: 전력량계 `1개`, `1 (한전일반)`, 계약전력 `300` kW, `2 (회상응답)`, 단위 `1 (kWh)`, 1~12월 `[24000, 22000, 18000, 15000, 15000, 19000, 25000, 26000, 19000, 15000, 18000, 23000]` kWh, 구성비(`1`): 난방 `30%`, 냉방 `30%`, 조명 `15%`, 동력 `20%`, 기타 `5%`
+     - `q6350`, `q6800`, `q7000`: 도시가스·지역난방·석유류 모두 `2` (사용하지 않는다)
+     - `q90000`~`q90020_r1`: 응답자 `1명`, 담당업무 `3 (건물 관리)`, 성명·전화번호(`AnswerInfo4` 일치), 이메일 `bldg{UID}@naver.com`
+
+### 8.3 Critical RPS DOM Traps
+- **`q1260` Hidden Default (`#q1260_op10="999"`)**: Always check `#q1260_op9` (road address) rather than `#q1260_op10` to determine if `q1260` is already answered.
+- **AJAX `GoNext` Synchronization**: Wait for `window.$.active === 0` inside `waitForRpsReady(page)` so confirmation alerts (`window.GoNext(false, true)`) do not collide with in-flight AJAX requests.
+- **Custom CSS Radio/Checkbox Visibility**: Never filter out `radio`/`checkbox` inputs using `el.offsetParent !== null`; RPS hides native inputs with CSS.
+- **Mixed Numeric + `-8:모름`/`-9:응답거절` Checkboxes (`q1460`, `q1500`, `q1650`)**: Exclude `value^="-8"` and `value^="-9"` checkboxes from `checkRadioInputs` when numeric inputs exist on the page.
