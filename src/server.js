@@ -187,7 +187,7 @@ try {
         const rawList = qContent.data || qContent.items || [];
         quotaDb = rawList.map((item, idx) => {
           const uidStr = String(item.uid || '').trim();
-          const isDone = (uidStr === '800715' || item.status === '완료' || item.quotaStatus === 'completed');
+          const isDone = (['800715', '800164', '800173'].includes(uidStr) || item.status === '완료' || item.quotaStatus === 'completed');
           return {
             ...item,
             index: item.index || idx + 1,
@@ -223,14 +223,25 @@ try {
         existingCamp.quotaDatabase = quotaDb;
         existingCamp.quotaSourceFile = quotaSourceFile;
         needUpdate = true;
-      } else if (spec.loginId === '700275') {
-        const u800715 = existingCamp.quotaDatabase.find(q => String(q.uid || '').trim() === '800715');
-        if (u800715 && u800715.quotaStatus !== 'completed') {
-          u800715.status = '완료';
-          u800715.quotaStatus = 'completed';
-          u800715.progress = '100%';
-          u800715.surveyCompleted = '완료';
-          needUpdate = true;
+      } else {
+        for (const qItem of quotaDb) {
+          if (qItem.quotaStatus === 'completed') {
+            const target = existingCamp.quotaDatabase.find(q => String(q.uid || '').trim() === String(qItem.uid || '').trim());
+            if (target && (target.quotaStatus !== 'completed' || (qItem.buildingName && !target.buildingName))) {
+              if (qItem.buildingName) {
+                target.buildingName = qItem.buildingName;
+                target.companyName = qItem.buildingName;
+              }
+              if (qItem.roadAddress) {
+                target.roadAddress = qItem.roadAddress;
+              }
+              target.status = '완료';
+              target.quotaStatus = 'completed';
+              target.progress = '100%';
+              target.surveyCompleted = '완료';
+              needUpdate = true;
+            }
+          }
         }
       }
       if (needUpdate) {

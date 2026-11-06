@@ -625,18 +625,20 @@
       "memo": "",
       "surveyorAccount": "700275",
       "surveyorName": "강영미",
-      "quotaStatus": "ready",
+      "quotaStatus": "completed",
       "index": 2,
       "surveyorId": "700275",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800173&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800173&page=1",
-      "status": "대기",
-      "progress": "0%",
+      "status": "완료",
+      "progress": "100%",
       "bizNumber": "800173",
       "openDate": "선정",
       "slotIndex": 2,
       "slotExtra": "선정 / 0%",
-      "ranId": "800173"
+      "ranId": "800173",
+      "roadAddress": "서울 노원구 노원로 547",
+      "surveyCompleted": "완료"
     },
     {
       "seq": 3,
@@ -1004,8 +1006,8 @@
       "selectionType": "대체",
       "cellPriority": 12,
       "cellKey": "서울_1001_1001",
-      "companyName": "(노원구 제1종근린생활시설 #800164)",
-      "buildingName": "",
+      "companyName": "경인빌딩",
+      "buildingName": "경인빌딩",
       "ceoName": "",
       "contactName": "",
       "phone": "",
@@ -1025,18 +1027,20 @@
       "memo": "",
       "surveyorAccount": "700275",
       "surveyorName": "강영미",
-      "quotaStatus": "ready",
+      "quotaStatus": "completed",
       "index": 12,
       "surveyorId": "700275",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800164&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800164&page=1",
-      "status": "대기",
-      "progress": "0%",
+      "status": "완료",
+      "progress": "100%",
       "bizNumber": "800164",
       "openDate": "대체",
       "slotIndex": 12,
       "slotExtra": "대체 / 0%",
-      "ranId": "800164"
+      "ranId": "800164",
+      "roadAddress": "서울 노원구 상계로27길 12",
+      "surveyCompleted": "완료"
     },
     {
       "seq": 13,
@@ -9399,7 +9403,8 @@
       "slotIndex": 2,
       "slotExtra": "선정 / 0%",
       "ranId": "800173",
-      "roadAddress": "서울 노원구 노원로 547"
+      "roadAddress": "서울 노원구 노원로 547",
+      "surveyCompleted": "완료"
     },
     {
       "seq": 3,
@@ -9767,7 +9772,7 @@
       "selectionType": "대체",
       "cellPriority": 12,
       "cellKey": "서울_1001_1001",
-      "companyName": "(노원구 제1종근린생활시설 #800164)",
+      "companyName": "경인빌딩",
       "buildingName": "경인빌딩",
       "ceoName": "",
       "contactName": "",
@@ -9800,7 +9805,8 @@
       "slotIndex": 12,
       "slotExtra": "대체 / 0%",
       "ranId": "800164",
-      "roadAddress": "서울 노원구 상계로27길 12"
+      "roadAddress": "서울 노원구 상계로27길 12",
+      "surveyCompleted": "완료"
     },
     {
       "seq": 13,
