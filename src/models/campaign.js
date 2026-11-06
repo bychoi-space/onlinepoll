@@ -83,6 +83,7 @@ export function createCampaign(data = {}) {
   const isAssoc = (data.surveyType === 'kstat_assoc');
   const isMetrix = (data.surveyType === 'metrix_panel');
   const isKona = (data.surveyType === 'kona_youth');
+  const isHrcEnergy = (data.surveyType === 'hrc_energy');
 
   let defaultAssocPolicy = null;
   if (isAssoc) {
@@ -136,12 +137,23 @@ export function createCampaign(data = {}) {
     }
   }
 
+  let defaultHrcEnergyPolicy = null;
+  if (isHrcEnergy) {
+    const hrcBpPath = path.join(dataDir, 'hrc_energy_blueprint.json');
+    if (fs.existsSync(hrcBpPath)) {
+      try {
+        const bp = JSON.parse(fs.readFileSync(hrcBpPath, 'utf-8'));
+        defaultHrcEnergyPolicy = bp.defaultPolicy;
+      } catch (_) {}
+    }
+  }
+
   const newCampaign = {
-    id: 'camp_' + Date.now(),
-    title: data.title || (isKona ? '2026 화성특례시 만족도 청소년 설문조사' : (isMetrix ? '2026 메트릭스 경기도 소상공인 패널조사' : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인'))),
+    id: data.id || ('camp_' + Date.now()),
+    title: data.title || (isHrcEnergy ? '2025년 기준 에너지총조사 (건물 부문)' : (isKona ? '2026 화성특례시 만족도 청소년 설문조사' : (isMetrix ? '2026 메트릭스 경기도 소상공인 패널조사' : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인')))),
     description: data.description || '',
-    quotaType: data.quotaType || (isAssoc || isMetrix ? 'b2b' : 'b2c'),
-    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'kona_youth'
+    quotaType: data.quotaType || (isAssoc || isMetrix || isHrcEnergy ? 'b2b' : 'b2c'),
+    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'kona_youth' | 'hrc_energy'
     status: 'ready',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -152,7 +164,7 @@ export function createCampaign(data = {}) {
     },
     quotaDatabase: data.quotaDatabase || [],
     guidelineConfig: data.guidelineConfig || {
-      surveyUrl: isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '',
+      surveyUrl: isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''),
       topic: '',
       positiveRatio: 70,
       neutralRatio: 20,
@@ -180,6 +192,17 @@ export function createCampaign(data = {}) {
       konaPolicy: {
         ...(defaultKonaPolicy || {}),
         ...(data.konaPolicy || {})
+      },
+      hasMasterBlueprint: true
+    } : {}),
+    ...(isHrcEnergy ? {
+      loginId: data.loginId || '700275',
+      loginPw: data.loginPw || data.loginId || '700275',
+      surveyorName: data.surveyorName || '강영미',
+      quotaSourceFile: data.quotaSourceFile || '',
+      hrcEnergyPolicy: {
+        ...(defaultHrcEnergyPolicy || {}),
+        ...(data.hrcEnergyPolicy || {})
       },
       hasMasterBlueprint: true
     } : {})

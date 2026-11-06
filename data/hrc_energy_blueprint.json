@@ -1,0 +1,111 @@
+{
+  "surveyId": "hrc_energy_census_2025",
+  "projectCode": "2026-89-0342C",
+  "title": "2025년 기준 에너지총조사 (건물 부문)",
+  "description": "한국리서치 TAPI(tapi.hrcglobal.com) 및 RPS 웹설문(rpssurvey.hrcglobal.com) 건물 부문 전자조사표 자동화 블루프린트. 기입력 항목 보존(Preserve Existing Inputs) 원칙 및 동일 표본층(Cell) 내 선정 ➔ 대체 쿼터 자동 승계를 지원합니다.",
+  "version": "1.0.0",
+  "loginUrl": "https://tapi.hrcglobal.com/Home/Login",
+  "accounts": [
+    {
+      "loginId": "700275",
+      "loginPw": "700275",
+      "surveyorName": "강영미",
+      "regionSummary": "서울 노원구 및 그외",
+      "totalSlots": 219,
+      "selectedCount": 70,
+      "substituteCount": 149,
+      "quotaFile": "quota_hrc_energy_2025_700275_강영미_전체219개_선정70개.json"
+    },
+    {
+      "loginId": "700277",
+      "loginPw": "700277",
+      "surveyorName": "강경옥",
+      "regionSummary": "인천 부평구 및 그외",
+      "totalSlots": 186,
+      "selectedCount": 58,
+      "substituteCount": 128,
+      "quotaFile": "quota_hrc_energy_2025_700277_강경옥_전체186개_선정58개.json"
+    },
+    {
+      "loginId": "701493",
+      "loginPw": "701493",
+      "surveyorName": "김정례",
+      "regionSummary": "서울 노원구/그외 + 인천 연수·남동·미추홀/그외",
+      "totalSlots": 409,
+      "selectedCount": 117,
+      "substituteCount": 292,
+      "quotaFile": "quota_hrc_energy_2025_701493_김정례_전체409개_선정117개.json"
+    }
+  ],
+  "defaultPolicy": {
+    "preserveExistingInputs": true,
+    "skipCompletedSlots": true,
+    "onlySelectedByDefault": true,
+    "autoFallbackToSub": true,
+    "neverSendSmsOrEmail": true,
+    "ceilingHeightM": "2.8",
+    "hvacAreaRatioCode": "7",
+    "windowRatioCode": "4",
+    "entranceDoorCode": "3",
+    "renovationCode": "4",
+    "storeCount": "10",
+    "workerCount": "20",
+    "visitorCount": "50",
+    "hvacMethodCode": "3",
+    "tempControlCode": "3",
+    "summerTempC": "24",
+    "winterTempC": "22",
+    "weekdayDays": "5",
+    "weekendDays": "2",
+    "ehpCapacityKw": "150",
+    "contractPowerKw": "300",
+    "elecResponseMethod": "2",
+    "monthlyElecKwh": [24000, 22000, 18000, 15000, 15000, 19000, 25000, 26000, 19000, 15000, 18000, 23000],
+    "elecUsageRatios": {
+      "heatingHotWater": "30",
+      "cooling": "30",
+      "cooking": "0",
+      "selfGen": "0",
+      "generalPower": "15",
+      "indoorLighting": "20",
+      "outdoorLighting": "5"
+    }
+  },
+  "sections": [
+    {
+      "key": "AnswerInfo4",
+      "title": "기본정보 (AnswerInfo4)",
+      "desc": "컨택1 이름(#contact1Name), 휴대폰(#contact1TelPrefix, #contact1Tel2, #contact1Tel3) 기입력 보존 후 빈칸만 채우고 [조사하기](#survey) 진입 (문자/메일 발송 버튼 절대 클릭 금지)"
+    },
+    {
+      "key": "SQ",
+      "title": "SQ. 일반 특성 (q1000 ~ q1400)",
+      "desc": "작성주체(1:조사원), 주소(건축물대장 기입력 보존), 건물명칭(q1300), 주용도(q1350 리스트 주용도 매칭), 부용도(77:부용도 없음)"
+    },
+    {
+      "key": "PartA",
+      "title": "A. 건물 현황 (q1450 ~ q3950)",
+      "desc": "주건물(1), 층수/면적/준공연월(건축물대장 기입력 보존), 천장고(2.8m), 냉난방비율(60~70%), 창면적비(30~40%), 승강기(건축물대장 대수 매칭), 개보수(4:안함), 입점점포(10개), 냉난방(3:개별방식, 24℃/22℃), 영업일수(주중5일/주말2일, 9~18시)"
+    },
+    {
+      "key": "PartB",
+      "title": "B. 에너지 설비 현황 (q4000 ~ q4700)",
+      "desc": "시스템 냉온풍기 EHP(q4000_4), 용량단위 kW(4), 총용량(150kW), 에너지원 구입전기 한전일반(31), 자가발전/열생산 설비(77:해당사항 없음), 신재생에너지 계획(5:2028년까지 설치계획 없음)"
+    },
+    {
+      "key": "PartC",
+      "title": "C. 에너지 사용기기 및 효율개선사업 (q7300 ~ q8050)",
+      "desc": "기준층 지상 1층(비율 80%), 대표공간 조명(LED 50개, 스마트LED 아니요), 공용공간 주조명(LED등, 부조명 없음), 에너지다소비기기(98:모름), 절약설비(77:없음), 효율개선사업(1:전혀 모른다, 9:참여사업 없음)"
+    },
+    {
+      "key": "PartD",
+      "title": "D. 2025년도 에너지소비량 (q6000 ~ q7000)",
+      "desc": "전력량계 1개, 한전구입 일반, 계약전력 300kW, 회상에 의한 응답(2, 증빙자료 면제), 1~12월 전기소비량(kWh), 용도별 전기 구성비(난방30/냉방30/동력15/실내조명20/외부조명5=100%), 도시가스·열에너지·석유(2:사용안함)"
+    },
+    {
+      "key": "PartE",
+      "title": "E. 응답자 일반사항 및 완료 (q90000 ~ q90020_r1)",
+      "desc": "참여 응답자 수(1명), 담당 업무(3:건물 관리), 응답자 성명·연락처·이메일 입력 후 최종 완료(100%)"
+    }
+  ]
+}

@@ -320,20 +320,32 @@ document.addEventListener('DOMContentLoaded', () => {
     campaignContainer.innerHTML = campaigns.map(c => {
       const cat = getCampaignCategory(c);
       const isKona = (c.surveyType === 'kona_youth');
-      const catMeta = isKona
-        ? { label: '화성 청소년 서베이', icon: 'fa-user-graduate', class: 'smallbiz' }
-        : getCategoryMeta(cat);
+      const isHrcEnergy = (c.surveyType === 'hrc_energy');
+      const catMeta = isHrcEnergy
+        ? { label: '에너지총조사 [건물]', icon: 'fa-bolt', class: 'smallbiz' }
+        : (isKona
+          ? { label: '화성 청소년 서베이', icon: 'fa-user-graduate', class: 'smallbiz' }
+          : getCategoryMeta(cat));
       const isAssoc = (cat === 'assoc');
       const isSmallBiz = (cat === 'smallbiz');
       const isCompleted = (c.status === 'completed');
 
-      const quotaLabel = isKona
-        ? '청소년 만족도 (40문항/53단계)'
-        : (isAssoc 
-          ? '상인회 대상 (25단계)' 
-          : (isSmallBiz ? '소상공인 패널 (120단계)' : (c.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)')));
-      const quotaBadgeClass = isKona ? 'b2c' : (isAssoc ? 'assoc' : (isSmallBiz ? 'b2b' : (c.quotaType === 'b2b' ? 'b2b' : 'b2c')));
-      const quotaIcon = isKona ? 'fa-user-graduate' : (isAssoc ? 'fa-sitemap' : (isSmallBiz ? 'fa-building-user' : (c.quotaType === 'b2b' ? 'fa-building' : 'fa-user')));
+      const selCount = isHrcEnergy
+        ? (c.quotaDatabase || []).filter(q => q.selectionType === '선정').length
+        : 0;
+      const doneSelCount = isHrcEnergy
+        ? (c.quotaDatabase || []).filter(q => q.selectionType === '선정' && (q.quotaStatus === 'completed' || q.status === '완료')).length
+        : 0;
+
+      const quotaLabel = isHrcEnergy
+        ? `선정 ${selCount}건 (완료 ${doneSelCount}건) · 기입력 보존`
+        : (isKona
+          ? '청소년 만족도 (40문항/53단계)'
+          : (isAssoc 
+            ? '상인회 대상 (25단계)' 
+            : (isSmallBiz ? '소상공인 패널 (120단계)' : (c.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)'))));
+      const quotaBadgeClass = isKona ? 'b2c' : (isAssoc ? 'assoc' : (isSmallBiz || isHrcEnergy ? 'b2b' : (c.quotaType === 'b2b' ? 'b2b' : 'b2c')));
+      const quotaIcon = isHrcEnergy ? 'fa-building-circle-check' : (isKona ? 'fa-user-graduate' : (isAssoc ? 'fa-sitemap' : (isSmallBiz ? 'fa-building-user' : (c.quotaType === 'b2b' ? 'fa-building' : 'fa-user'))));
 
       let statusText = '대기 중';
       let statusClass = 'ready';
@@ -342,7 +354,9 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (isCompleted) { statusText = '조사 마감 완료'; statusClass = 'completed'; }
 
       const dbCount = c.quotaDatabase ? c.quotaDatabase.length : 0;
-      const targetCount = c.quotaConfig?.targetCount || (isKona ? 103 : (isAssoc ? 8 : (isSmallBiz ? 54 : 1)));
+      const targetCount = isHrcEnergy
+        ? (selCount || c.quotaConfig?.targetCount || dbCount)
+        : (c.quotaConfig?.targetCount || (isKona ? 103 : (isAssoc ? 8 : (isSmallBiz ? 54 : 1))));
       const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString('ko-KR') : '-';
 
       const cardClass = `campaign-card ${isAssoc ? 'assoc-card' : ''} ${isCompleted ? 'completed-card' : ''}`;
@@ -365,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${highlightQuery(escapeHtml(c.title || '무제 캠페인'), currentSearchQuery)}
             </h3>
             <p class="campaign-desc">
-              ${highlightQuery(escapeHtml(c.description || (isKona ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치 40문항 및 제출 직전 스크린샷 자동 저장)' : (isAssoc ? '전통시장 상인회 25단계 전년도 일치 미러링 및 2026 정책 가이드 설문' : (isSmallBiz ? '메트릭스 경기도 소상공인 54개 패널조사 98% 안전 대기 자동화' : '상세 설정을 통해 쿼터 DB 및 방향성을 구성하세요.')))), currentSearchQuery)}
+              ${highlightQuery(escapeHtml(c.description || (isHrcEnergy ? '한국리서치 TAPI(2026-89-0342C) 건물 부문 에너지총조사 · 기존 입력 항목 100% 보존' : (isKona ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치 40문항 및 제출 직전 스크린샷 자동 저장)' : (isAssoc ? '전통시장 상인회 25단계 전년도 일치 미러링 및 2026 정책 가이드 설문' : (isSmallBiz ? '메트릭스 경기도 소상공인 54개 패널조사 98% 안전 대기 자동화' : '상세 설정을 통해 쿼터 DB 및 방향성을 구성하세요.'))))), currentSearchQuery)}
             </p>
           </div>
 
@@ -375,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>조사 쿼터 DB</span>
                 <strong class="${isCompleted ? 'completed-stat' : ''}">
                   ${isCompleted ? '<i class="fa-solid fa-check text-success"></i> ' : ''}
-                  ${isKona ? `${dbCount}명 명단 확보 / 전수 ${targetCount}명` : (isAssoc ? `${dbCount}개 시장 확보 / 대상 8개소` : (isSmallBiz ? `${dbCount}개 패널 확보 / 전수 54개` : `${dbCount}개 점포 보유 / 목표 ${targetCount}개`))}
+                  ${isHrcEnergy ? `선정 ${selCount}건 (완료 ${doneSelCount}건) / 전체 ${dbCount}건` : (isKona ? `${dbCount}명 명단 확보 / 전수 ${targetCount}명` : (isAssoc ? `${dbCount}개 시장 확보 / 대상 8개소` : (isSmallBiz ? `${dbCount}개 패널 확보 / 전수 54개` : `${dbCount}개 점포 보유 / 목표 ${targetCount}개`)))}
                 </strong>
               </div>
               <div class="meta-item">
@@ -1019,9 +1033,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     quotaContainer.innerHTML = quotas.map(q => {
       const cat = getQuotaCategory(q);
-      const catMeta = getCategoryMeta(cat);
+      const isHrcEnergy = (q.type === 'HRC_ENERGY_BUILDING' || q.surveyType === 'hrc_energy' || String(q.fileName || '').includes('hrc_energy'));
+      const catMeta = isHrcEnergy
+        ? { label: '에너지총조사 [건물]', icon: 'fa-bolt', class: 'smallbiz' }
+        : getCategoryMeta(cat);
       const dateStr = q.createdAt ? new Date(q.createdAt).toLocaleDateString('ko-KR') : '-';
-      const marketName = q.marketName || (cat === 'smallbiz' ? '경기도 소상공인 패널' : (cat === 'assoc' ? '전통시장 상인회' : '일반 사업자'));
+      const marketName = q.marketName || (isHrcEnergy ? '한국리서치 TAPI 건물표본' : (cat === 'smallbiz' ? '경기도 소상공인 패널' : (cat === 'assoc' ? '전통시장 상인회' : '일반 사업자')));
       const isStratified = isQuotaStratified(q);
       const isExcelUpload = (q.requestParams?.samplingMode === 'excel_upload' || String(q.title || '').includes('엑셀업로드'));
 
@@ -1029,6 +1046,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let industryChipsHtml = '';
       if (q.industryDistribution) {
         const iconMap = {
+          '★선정(우선)': '⭐', '대체(예비)': '🔄', '조사완료': '✅',
           '농산물': '🌾', '축산물': '🥩', '수산물': '🐟',
           '가공식품': '🍱', '의류신발': '👗', '가정용품': '🏠',
           '음식점업': '🍽️', '기타소매': '🛒', '근린상권': '💈', '기타': '📦'
@@ -1036,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', () => {
         industryChipsHtml = `
           <div class="quota-industry-chips">
             ${Object.entries(q.industryDistribution).map(([ind, cnt]) => `
-              <span class="quota-ind-badge">${iconMap[ind] || '🏷️'} ${highlightQuery(escapeHtml(ind), currentQuotaSearchQuery)} ${cnt}</span>
+              <span class="quota-ind-badge">${iconMap[ind] || '🏢'} ${highlightQuery(escapeHtml(ind), currentQuotaSearchQuery)} ${cnt}</span>
             `).join('')}
           </div>
         `;
@@ -1048,7 +1066,9 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }
 
-      const modeBadgeText = isStratified ? '9대 업종 층화 표본' : (isExcelUpload ? '엑셀 업로드 표본' : '단순 순차 수집');
+      const modeBadgeText = isHrcEnergy
+        ? 'TAPI + 구글시트 층화 표본'
+        : (isStratified ? '9대 업종 층화 표본' : (isExcelUpload ? '엑셀 업로드 표본' : '단순 순차 수집'));
 
       return `
         <div class="campaign-card quota-card" data-filename="${escapeHtml(q.fileName)}">
@@ -1056,9 +1076,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="campaign-card-header">
               <div class="flex-center-gap-6 flex-wrap">
                 <span class="badge-category ${catMeta.class}"><i class="fa-solid ${catMeta.icon}"></i> ${catMeta.label}</span>
-                <span class="badge-quota-type b2b"><i class="fa-solid fa-shop"></i> ${highlightQuery(escapeHtml(marketName), currentQuotaSearchQuery)}</span>
+                <span class="badge-quota-type b2b"><i class="fa-solid ${isHrcEnergy ? 'fa-building-circle-check' : 'fa-shop'}"></i> ${highlightQuery(escapeHtml(marketName), currentQuotaSearchQuery)}</span>
               </div>
-              <span class="badge-status ${isStratified ? 'success' : 'ready'}">
+              <span class="badge-status ${isStratified || isHrcEnergy ? 'success' : 'ready'}">
                 ${modeBadgeText}
               </span>
             </div>
@@ -1072,7 +1092,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="campaign-meta-box">
               <div class="meta-item">
                 <span>확보 표본수</span>
-                <strong class="text-primary-color">${q.count}건</strong>
+                <strong class="text-primary-color">${isHrcEnergy && q.selectedCount ? `선정 ${q.selectedCount}건 / 전체 ${q.count}건` : `${q.count}건`}</strong>
               </div>
               <div class="meta-item">
                 <span>생성 일자</span>
