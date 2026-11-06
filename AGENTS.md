@@ -521,17 +521,17 @@ c:/onlinepoll/
 ### 1. 인프라 사양 및 접속 정보
 - **클라우드 플랫폼**: Google Cloud Platform (GCP)
 - **프로젝트 ID**: `onlinepoll-511605` (프로젝트명: `onlinepoll`)
-- **인스턴스 이름**: `onlinepoll-server`
+- **인스턴스 이름**: `bychoi-space`
 - **리전 / 영역**: `asia-northeast3-a` (대한민국 서울 리전 - 국내 공인 IP 제공)
-- **머신 유형**: `e2-small` (2 vCPU, 2GB RAM)
-- **부팅 디스크 OS**: Debian 13 (`debian-13-trixie`), 10GB 표준 영구 디스크
-- **스왑 메모리 (Swap)**: 2GB 스왑 파일(`/swapfile`) 구성 완료 (Playwright Chromium 구동 시 메모리 부족 OOM 방지)
-- **외부 공인 IP (Static/Public IP)**: `34.64.233.77`
+- **머신 유형**: `e2-standard-2` (2 vCPU, 8GB RAM)
+- **부팅 디스크 OS**: Debian 13 (`debian-13-trixie`), 30GB 균형 있는 영구 디스크 (SSD)
+- **스왑 메모리 (Swap)**: 2GB 스왑 파일(`/swapfile`) 구성 완료 (총 가용 메모리 10GB)
+- **외부 공인 IP (Static/Public IP)**: `8.230.14.1`
 - **서비스 포트**: `3000` (Node.js Express)
 - **실시간 웹 접속 URL**:
-  - **메인 캠페인 대시보드**: [http://34.64.233.77:3000](http://34.64.233.77:3000)
-  - **설문 작업실 (STEP 1~3)**: [http://34.64.233.77:3000/survey-detail.html](http://34.64.233.77:3000/survey-detail.html)
-  - **B2B 쿼터 생성기 & Excel 뷰어**: [http://34.64.233.77:3000/quota-builder.html](http://34.64.233.77:3000/quota-builder.html)
+  - **메인 캠페인 대시보드**: [http://8.230.14.1:3000](http://8.230.14.1:3000)
+  - **설문 작업실 (STEP 1~3)**: [http://8.230.14.1:3000/survey-detail.html](http://8.230.14.1:3000/survey-detail.html)
+  - **B2B 쿼터 생성기 & Excel 뷰어**: [http://8.230.14.1:3000/quota-builder.html](http://8.230.14.1:3000/quota-builder.html)
 
 ### 2. 네트워크 및 방화벽 설정
 1. **기본 웹 트래픽 허용**: 인스턴스 설정에서 `HTTP 트래픽 허용`(포트 80), `HTTPS 트래픽 허용`(포트 443) 활성화
