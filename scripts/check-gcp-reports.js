@@ -10,7 +10,7 @@ async function checkReports() {
   console.log('Scanning screenshots endpoint for items 1 through 10...');
   for (let i = 1; i <= 10; i++) {
     try {
-      const res = await fetch(`http://34.64.233.77:3000/api/campaigns/camp_1792039653802/screenshots?quotaIndex=${i}`, {
+      const res = await fetch(`http://8.230.14.1:3000/api/campaigns/camp_1792039653802/screenshots?quotaIndex=${i}`, {
         headers: { Cookie: cookie }
       });
       const data = await res.json();

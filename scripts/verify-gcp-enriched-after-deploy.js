@@ -7,7 +7,7 @@ const cookie = 'autosurvey_auth=' + token;
 
 async function verify() {
   console.log('Verifying GCP post-deploy state...');
-  const res = await fetch('http://34.64.233.77:3000/api/campaigns/camp_1792039653802', {
+  const res = await fetch('http://8.230.14.1:3000/api/campaigns/camp_1792039653802', {
     headers: { Cookie: cookie },
     signal: AbortSignal.timeout(5000)
   });

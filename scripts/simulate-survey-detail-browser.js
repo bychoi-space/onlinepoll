@@ -5,7 +5,7 @@ const html = fs.readFileSync('scripts/gcp-survey-detail.html', 'utf-8');
 const js = fs.readFileSync('scripts/gcp-survey-detail-auth.js', 'utf-8');
 
 const dom = new JSDOM(html, {
-  url: 'http://34.64.233.77:3000/survey-detail.html?id=camp_1792039653802',
+  url: 'http://8.230.14.1:3000/survey-detail.html?id=camp_1792039653802',
   runScripts: 'outside-only'
 });
 

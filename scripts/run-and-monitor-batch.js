@@ -4,7 +4,7 @@ const MASTER_PASSWORD = '2265';
 const TOKEN_SALT = 'autosurvey_secure_salt_2026';
 const token = crypto.createHmac('sha256', TOKEN_SALT).update(MASTER_PASSWORD).digest('hex');
 const cookie = 'autosurvey_auth=' + token;
-const GCP_URL = 'http://34.64.233.77:3000';
+const GCP_URL = 'http://8.230.14.1:3000';
 const CAMPAIGN_ID = 'camp_1792039653802';
 
 async function main() {

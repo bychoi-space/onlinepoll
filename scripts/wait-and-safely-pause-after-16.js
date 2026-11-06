@@ -9,7 +9,7 @@ async function monitorAndPause() {
   console.log('🔍 [#16 어묵집] 안전 완주 대기 모니터링 시작...');
   while (true) {
     try {
-      const res = await fetch('http://34.64.233.77:3000/api/campaigns/camp_1792039653802', {
+      const res = await fetch('http://8.230.14.1:3000/api/campaigns/camp_1792039653802', {
         headers: { Cookie: cookie }
       });
       const camp = await res.json();
@@ -20,7 +20,7 @@ async function monitorAndPause() {
         console.log(`🎉 [#16 ${item16.companyName}] 100% 안전 완주 확인! (상태: ${item16.quotaStatus})`);
         console.log('🛑 다음 점포 진입 전 안전 배포를 위해 배치 일시 정지를 요청합니다...');
         
-        const stopRes = await fetch('http://34.64.233.77:3000/api/survey/stop', {
+        const stopRes = await fetch('http://8.230.14.1:3000/api/survey/stop', {
           method: 'POST',
           headers: { Cookie: cookie }
         });

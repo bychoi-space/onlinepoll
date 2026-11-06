@@ -6,7 +6,7 @@ const token = crypto.createHmac('sha256', TOKEN_SALT).update(MASTER_PASSWORD).di
 const cookie = `autosurvey_auth=${token}`;
 
 async function testQuotaList() {
-  const res = await fetch('http://34.64.233.77:3000/api/quota/list', {
+  const res = await fetch('http://8.230.14.1:3000/api/quota/list', {
     headers: { Cookie: cookie }
   });
   console.log('Status:', res.status);

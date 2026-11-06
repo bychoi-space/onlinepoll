@@ -9,7 +9,7 @@ async function check() {
   console.log('Checking GCP deployment for B4_4 and rotation...');
   for (let i = 1; i <= 20; i++) {
     try {
-      const res = await fetch('http://34.64.233.77:3000/survey-detail.js?v=' + Date.now(), {
+      const res = await fetch('http://8.230.14.1:3000/survey-detail.js?v=' + Date.now(), {
         headers: { Cookie: cookie, 'Cache-Control': 'no-cache' }
       });
       const js = await res.text();
@@ -20,7 +20,7 @@ async function check() {
         console.log('🎉 LIVE VERIFICATION SUCCESS: GCP VM has updated code!');
         
         // Check survey-blueprint.js as well
-        const bpRes = await fetch('http://34.64.233.77:3000/survey-blueprint.js?v=' + Date.now(), {
+        const bpRes = await fetch('http://8.230.14.1:3000/survey-blueprint.js?v=' + Date.now(), {
           headers: { Cookie: cookie, 'Cache-Control': 'no-cache' }
         });
         const bpJs = await bpRes.text();
@@ -28,7 +28,7 @@ async function check() {
         console.log('survey-blueprint.js hasRotation:', bpJs.includes('btnPresetRotation'));
 
         // Check CSS
-        const cssRes = await fetch('http://34.64.233.77:3000/custom-styles.css?v=' + Date.now(), {
+        const cssRes = await fetch('http://8.230.14.1:3000/custom-styles.css?v=' + Date.now(), {
           headers: { Cookie: cookie, 'Cache-Control': 'no-cache' }
         });
         const cssText = await cssRes.text();

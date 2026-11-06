@@ -7,13 +7,13 @@ const cookie = 'autosurvey_auth=' + token;
 
 async function checkDeploy() {
   console.log('1. Checking survey status...');
-  const statusRes = await fetch('http://34.64.233.77:3000/api/survey/status', {
+  const statusRes = await fetch('http://8.230.14.1:3000/api/survey/status', {
     headers: { Cookie: cookie }
   });
   console.log('Status HTTP:', statusRes.status, await statusRes.json());
 
   console.log('\n2. Checking survey-detail.js for removal of 캡처보기/결과보기...');
-  const jsRes = await fetch('http://34.64.233.77:3000/survey-detail.js', {
+  const jsRes = await fetch('http://8.230.14.1:3000/survey-detail.js', {
     headers: { Cookie: cookie }
   });
   const jsText = await jsRes.text();

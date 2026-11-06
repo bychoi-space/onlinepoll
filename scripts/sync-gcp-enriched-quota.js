@@ -7,7 +7,7 @@ const TOKEN_SALT = 'autosurvey_secure_salt_2026';
 const token = crypto.createHmac('sha256', TOKEN_SALT).update(MASTER_PASSWORD).digest('hex');
 const cookie = 'autosurvey_auth=' + token;
 
-const GCP_BASE = 'http://34.64.233.77:3000';
+const GCP_BASE = 'http://8.230.14.1:3000';
 
 async function syncToGCP() {
   console.log('=== SYNCING ENRICHED 24 MERCHANTS TO GCP ===');

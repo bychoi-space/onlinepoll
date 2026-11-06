@@ -8,7 +8,7 @@ async function check() {
   
   // 1. master-status 엔드포인트 확인
   try {
-    const res = await fetch('http://34.64.233.77:3000/api/onnuri/master-status', {
+    const res = await fetch('http://8.230.14.1:3000/api/onnuri/master-status', {
       headers: { Cookie: cookie }
     });
     console.log('1. master-status HTTP:', res.status);
@@ -24,7 +24,7 @@ async function check() {
 
   // 2. market-stats (풍납시장) 통계 확인
   try {
-    const statsRes = await fetch('http://34.64.233.77:3000/api/onnuri/market-stats?marketName=' + encodeURIComponent('풍납시장'), {
+    const statsRes = await fetch('http://8.230.14.1:3000/api/onnuri/market-stats?marketName=' + encodeURIComponent('풍납시장'), {
       headers: { Cookie: cookie }
     });
     console.log('\n2. market-stats HTTP:', statsRes.status);
@@ -40,7 +40,7 @@ async function check() {
 
   // 3. quota-builder.html 내 마스터 DB 상태 바 확인
   try {
-    const htmlRes = await fetch('http://34.64.233.77:3000/quota-builder.html', {
+    const htmlRes = await fetch('http://8.230.14.1:3000/quota-builder.html', {
       headers: { Cookie: cookie }
     });
     const html = await htmlRes.text();

@@ -8,7 +8,7 @@ description: Comprehensive technical reference and operational guide for the Aut
 ## 1. Core Principles (Non-Negotiable)
 1. **No Browser Subagent**: Never invoke `browser_subagent` for UI verification; verify only via Node scripts, REST APIs, and logs.
 2. **Zero Fabricated Results**: Never fabricate execution results or fake business registrations.
-3. **No Local Daemons/Tunnels**: Never run background servers or tunnels on the user's local PC; production runs on GCP (`http://34.64.233.77:3000`).
+3. **No Local Daemons/Tunnels**: Never run background servers or tunnels on the user's local PC; production runs on GCP (`http://8.230.14.1:3000`).
 4. **No Deploy During Active Batch**: Always check `GET /api/survey/status` (`isRunning === false`) before running `git push origin main`.
 5. **No Runtime Overwrite & Untracked Campaigns DB**: `data/campaigns.json` is a runtime user state database and must NEVER be tracked by Git or overwritten during `git pull`. Always keep it excluded in `.gitignore` and untracked (`git rm --cached`). Before any `git pull`, verify no runtime data overwrite occurs.
 6. **Progressive Disclosure & User Journey Verification**: Analyze complete UX flow (Empty State ➔ Quota Binding ➔ Baseline ➔ Run) before development; hide posterior steps when quotas are 0; verify every button cited in guidance text actually exists in the DOM.

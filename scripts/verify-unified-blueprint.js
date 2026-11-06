@@ -7,7 +7,7 @@ async function check() {
   console.log('Checking GCP deployment status for unified layout...');
   for (let i = 1; i <= 12; i++) {
     try {
-      const res = await fetch('http://34.64.233.77:3000/survey-detail.html?id=camp_1792039653802', {
+      const res = await fetch('http://8.230.14.1:3000/survey-detail.html?id=camp_1792039653802', {
         headers: { Cookie: cookie }
       });
       const html = await res.text();
@@ -19,7 +19,7 @@ async function check() {
         console.log('- Has removed policy-empty-notes:', !html.includes('policy-empty-notes'));
         console.log('- Has removed slider-pos (generic):', !html.includes('id="slider-pos"'));
 
-        const jsRes = await fetch('http://34.64.233.77:3000/survey-detail.js?v=20261016_3', { headers: { Cookie: cookie } });
+        const jsRes = await fetch('http://8.230.14.1:3000/survey-detail.js?v=20261016_3', { headers: { Cookie: cookie } });
         const js = await jsRes.text();
         console.log('- JS has loadBlueprint:', js.includes('loadBlueprint'));
         console.log('- JS has renderStages:', js.includes('renderStages'));

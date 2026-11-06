@@ -7,7 +7,7 @@ const token = crypto.createHmac('sha256', TOKEN_SALT).update(MASTER_PASSWORD).di
 const cookie = `autosurvey_auth=${token}`;
 
 async function fetchGcpJsWithAuth() {
-  const res = await fetch('http://34.64.233.77:3000/survey-detail.js', {
+  const res = await fetch('http://8.230.14.1:3000/survey-detail.js', {
     headers: { Cookie: cookie }
   });
   const text = await res.text();

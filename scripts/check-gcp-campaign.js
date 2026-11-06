@@ -6,7 +6,7 @@ const token = crypto.createHmac('sha256', TOKEN_SALT).update(MASTER_PASSWORD).di
 const cookie = 'autosurvey_auth=' + token;
 
 async function checkCampaign() {
-  const url = 'http://34.64.233.77:3000/api/campaigns/camp_1792039653802';
+  const url = 'http://8.230.14.1:3000/api/campaigns/camp_1792039653802';
   try {
     const res = await fetch(url, {
       headers: { Cookie: cookie },

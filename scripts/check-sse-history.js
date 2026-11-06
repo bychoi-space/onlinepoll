@@ -10,7 +10,7 @@ async function checkSseHistory() {
   setTimeout(() => controller.abort(), 2000);
 
   try {
-    const res = await fetch('http://34.64.233.77:3000/api/events', {
+    const res = await fetch('http://8.230.14.1:3000/api/events', {
       headers: { Cookie: cookie },
       signal: controller.signal
     });

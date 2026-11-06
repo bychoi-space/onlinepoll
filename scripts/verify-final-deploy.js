@@ -7,12 +7,12 @@ async function checkDeploy() {
   console.log('=== VERIFYING GCP PRODUCTION POST-DEPLOY ===');
   
   // 1. HTML 확인
-  const htmlRes = await fetch('http://34.64.233.77:3000/quota-builder.html', { headers: { Cookie: cookie } });
+  const htmlRes = await fetch('http://8.230.14.1:3000/quota-builder.html', { headers: { Cookie: cookie } });
   const htmlText = await htmlRes.text();
   console.log('1. quota-builder.html contains max-open-year:', htmlText.includes('id="max-open-year"'));
   
   // 2. 캠페인 쿼터 확인
-  const campRes = await fetch('http://34.64.233.77:3000/api/campaigns/camp_1792039653802', { headers: { Cookie: cookie } });
+  const campRes = await fetch('http://8.230.14.1:3000/api/campaigns/camp_1792039653802', { headers: { Cookie: cookie } });
   const campData = await campRes.json();
   console.log('2. Campaign Quotas count:', campData.quotaDatabase.length);
   

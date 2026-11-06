@@ -3,7 +3,7 @@ import crypto from 'crypto';
 const token = crypto.createHmac('sha256', 'autosurvey_secure_salt_2026').update('2265').digest('hex');
 const cookie = 'autosurvey_auth=' + token;
 const fileName = 'quota_onnuri_2026_서원동상점가_업종별30개_조사쿼터_1792544350602.json';
-const GCP_URL = 'http://34.64.233.77:3000';
+const GCP_URL = 'http://8.230.14.1:3000';
 
 const KAKAO_KEY = 'b70a114467ff79ff2dd5d4d4d1ba118f';
 const KAKAO_HEADERS = {

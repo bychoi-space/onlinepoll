@@ -10,7 +10,7 @@ async function testGCP() {
 
   // 1. Quota list
   try {
-    const res = await fetch('http://34.64.233.77:3000/api/quota/list', {
+    const res = await fetch('http://8.230.14.1:3000/api/quota/list', {
       headers: { Cookie: cookie }
     });
     console.log('/api/quota/list status:', res.status);
@@ -25,7 +25,7 @@ async function testGCP() {
 
   // 2. Campaigns list
   try {
-    const res = await fetch('http://34.64.233.77:3000/api/campaigns', {
+    const res = await fetch('http://8.230.14.1:3000/api/campaigns', {
       headers: { Cookie: cookie }
     });
     console.log('\n/api/campaigns status:', res.status);

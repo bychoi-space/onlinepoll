@@ -7,7 +7,7 @@ const cookie = 'autosurvey_auth=' + token;
 
 async function dumpHistory() {
   console.log('Connecting to GCP /api/events for history dump...');
-  const res = await fetch('http://34.64.233.77:3000/api/events', {
+  const res = await fetch('http://8.230.14.1:3000/api/events', {
     headers: { Cookie: cookie }
   });
 
