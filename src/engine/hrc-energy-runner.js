@@ -29,6 +29,8 @@ export function parsePhoneParts(rawPhone) {
  */
 async function waitForRpsReady(page) {
   await page.waitForFunction(() => {
+    const jqActive = (typeof window.$ !== 'undefined' && typeof window.$.active === 'number') ? window.$.active : 0;
+    if (jqActive > 0) return false;
     const qv = document.querySelector('#QuestionView');
     const txt = (qv?.innerText || document.body?.innerText || '');
     if (txt.includes('조사완료') && txt.includes('정상적으로 완료')) return true;
@@ -40,8 +42,8 @@ async function waitForRpsReady(page) {
       err !== '' ||
       alertMsg !== ''
     );
-  }, { timeout: 15000 }).catch(() => {});
-  await page.waitForTimeout(220);
+  }, { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(250);
 }
 
 /**
@@ -56,6 +58,7 @@ async function extractRpsStep(page) {
     const alertMsg = document.querySelector('#AlertMessage')?.value || '';
     const text = (qv?.innerText || document.body?.innerText || '').replace(/\s+/g, ' ').trim();
     const isCompleted = text.includes('조사완료') && text.includes('정상적으로 완료');
+    const q1260Filled = (document.querySelector('#q1260_op9')?.value || '').trim() !== '';
 
     const inputs = Array.from(qv ? qv.querySelectorAll('input, select, textarea') : [])
       .filter(el => el.type !== 'hidden' && el.type !== 'button')
@@ -70,10 +73,11 @@ async function extractRpsStep(page) {
         value: el.value,
         checked: el.checked,
         disabled: el.disabled,
-        readOnly: el.readOnly
+        readOnly: el.readOnly,
+        visible: el.offsetParent !== null
       }));
 
-    return { cv, pct, err, alertMsg, text, isCompleted, inputs };
+    return { cv, pct, err, alertMsg, text, isCompleted, q1260Filled, inputs };
   });
 }
 
@@ -131,84 +135,125 @@ export async function runHrcEnergySurvey(options = {}) {
   });
 
   try {
-    // 1. TAPI 로그인
-    onProgress({
-      step: 'LOGIN',
-      stepIndex: 1,
-      totalSteps: 7,
-      message: `[UID ${uid}] TAPI 로그인 (${loginId}) 및 [기본정보] 페이지 접속 중...`
-    });
-
-    await page.goto('https://tapi.hrcglobal.com/Home/Login', { waitUntil: 'domcontentloaded', timeout: 25000 });
-    await page.fill('input[type="text"]', loginId);
-    await page.fill('input[type="password"]', loginPw);
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }),
-      page.click('button[type="submit"], input[type="submit"]')
-    ]);
-
-    // 2. 조사 선택 (2026-89-0342C)
-    await page.waitForSelector('a[onclick*="2026-89-0342C"]', { timeout: 15000 });
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }),
-      page.click('a[onclick*="2026-89-0342C"]')
-    ]);
-
-    // 3. [기본정보] 페이지 진입 (AnswerInfo4)
-    const answerInfoUrl = `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${uid}&page=1`;
-    await page.goto(answerInfoUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await page.waitForSelector('#survey', { timeout: 15000 });
-
     const fallbackName = String(slotData.contactName || slotData.ceoName || '관리소장').trim() || '관리소장';
     const [p1, p2, p3] = parsePhoneParts(slotData.phone || '010-7935-2414');
+    let basicInfoState = {
+      contactName: fallbackName,
+      tel1: p1,
+      tel2: p2,
+      tel3: p3,
+      buildingName: slotData.buildingName || '',
+      roadAddress: slotData.roadAddress || ''
+    };
+    let rpsUrl = String(options.directRpsUrl || slotData.rpsUrl || '').trim();
 
-    // [기본정보] 기존 입력값 보존하며 빈칸만 채우기 (문자/메일 발송 버튼 절대 클릭 금지!)
-    const basicInfoState = await page.evaluate(({ fallbackName, p1, p2, p3, preserveExisting }) => {
-      function fillIfEmpty(sel, val) {
-        const el = document.querySelector(sel);
-        if (!el) return '';
-        const cur = (el.value || '').trim();
-        if (preserveExisting && cur !== '') {
-          return cur;
+    if (rpsUrl && rpsUrl.includes('rpssurvey.hrcglobal.com')) {
+      onProgress({
+        step: 'LOGIN',
+        stepIndex: 1,
+        totalSteps: 7,
+        message: `[UID ${uid}] RPS 설문 URL 직접 접속 중...`
+      });
+      await page.goto(rpsUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await waitForRpsReady(page);
+    } else {
+      // 1. TAPI 로그인
+      onProgress({
+        step: 'LOGIN',
+        stepIndex: 1,
+        totalSteps: 7,
+        message: `[UID ${uid}] TAPI 로그인 (${loginId}) 및 [기본정보] 페이지 접속 중...`
+      });
+
+      await page.goto('https://tapi.hrcglobal.com/Home/Login', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.fill('input[type="text"]', loginId);
+      await page.fill('input[type="password"]', loginPw);
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }),
+        page.click('button[type="submit"], input[type="submit"]')
+      ]);
+
+      // 2. 조사 선택 (2026-89-0342C)
+      await page.waitForSelector('a[onclick*="2026-89-0342C"]', { timeout: 15000 });
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }),
+        page.click('a[onclick*="2026-89-0342C"]')
+      ]);
+
+      // 3. [기본정보] 페이지 진입 (AnswerInfo4)
+      const answerInfoUrl = `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${uid}&page=1`;
+      await page.goto(answerInfoUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await page.waitForSelector('#survey', { timeout: 15000 });
+
+      // [기본정보] 기존 입력값 보존하며 빈칸만 채우기 (문자/메일 발송 버튼 절대 클릭 금지!)
+      basicInfoState = await page.evaluate(({ fallbackName, p1, p2, p3, preserveExisting }) => {
+        function fillIfEmpty(sel, val) {
+          const el = document.querySelector(sel);
+          if (!el) return '';
+          const cur = (el.value || '').trim();
+          if (preserveExisting && cur !== '') {
+            return cur;
+          }
+          if (cur === '') {
+            el.value = String(val);
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          return el.value;
         }
-        if (cur === '') {
-          el.value = String(val);
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-          el.dispatchEvent(new Event('change', { bubbles: true }));
+
+        const finalName = fillIfEmpty('#contact1Name', fallbackName);
+        const finalP1 = fillIfEmpty('#contact1TelPrefix', p1);
+        const finalP2 = fillIfEmpty('#contact1Tel2', p2);
+        const finalP3 = fillIfEmpty('#contact1Tel3', p3);
+
+        // 테이블에 표시된 건물명/주소/주용도 추출
+        const bodyText = document.body.innerText || '';
+        let parsedBuildingName = '';
+        let parsedRoadAddr = '';
+        const cells = Array.from(document.querySelectorAll('th, td'));
+        for (let i = 0; i < cells.length - 1; i++) {
+          const label = (cells[i].innerText || '').trim();
+          if (label === '건물명') {
+            parsedBuildingName = (cells[i + 1]?.innerText || '').trim();
+          } else if (label === '도로명') {
+            parsedRoadAddr = (cells[i + 1]?.innerText || '').trim();
+          }
         }
-        return el.value;
+        return {
+          contactName: finalName || fallbackName,
+          tel1: finalP1 || p1,
+          tel2: finalP2 || p2,
+          tel3: finalP3 || p3,
+          buildingName: parsedBuildingName,
+          roadAddress: parsedRoadAddr,
+          bodySnippet: bodyText.slice(0, 600)
+        };
+      }, { fallbackName, p1, p2, p3, preserveExisting });
+
+      if (!slotData.buildingName && basicInfoState.buildingName) {
+        slotData.buildingName = basicInfoState.buildingName;
+      }
+      if (!slotData.roadAddress && basicInfoState.roadAddress) {
+        slotData.roadAddress = basicInfoState.roadAddress;
       }
 
-      const finalName = fillIfEmpty('#contact1Name', fallbackName);
-      const finalP1 = fillIfEmpty('#contact1TelPrefix', p1);
-      const finalP2 = fillIfEmpty('#contact1Tel2', p2);
-      const finalP3 = fillIfEmpty('#contact1Tel3', p3);
+      logger.info(`[HRC 에너지총조사] UID=${uid} [기본정보] 확인 완료 (건물명: ${slotData.buildingName || '-'}, 응답자: ${basicInfoState.contactName}, 연락처: ${basicInfoState.tel1}-${basicInfoState.tel2}-${basicInfoState.tel3})`);
 
-      // 테이블에 표시된 건물명/주소/주용도 추출
-      const bodyText = document.body.innerText || '';
-      return {
-        contactName: finalName || fallbackName,
-        tel1: finalP1 || p1,
-        tel2: finalP2 || p2,
-        tel3: finalP3 || p3,
-        bodySnippet: bodyText.slice(0, 600)
-      };
-    }, { fallbackName, p1, p2, p3, preserveExisting });
+      // 4. [조사하기](#survey) 클릭하여 RPS 설문 화면으로 이동
+      await Promise.all([
+        page.waitForURL(u => u.toString().includes('rpssurvey.hrcglobal.com'), { timeout: 25000 }),
+        page.click('#survey')
+      ]);
+      await waitForRpsReady(page);
+      rpsUrl = page.url();
+    }
 
-    logger.info(`[HRC 에너지총조사] UID=${uid} [기본정보] 확인 완료 (응답자: ${basicInfoState.contactName}, 연락처: ${basicInfoState.tel1}-${basicInfoState.tel2}-${basicInfoState.tel3})`);
-
-    // 4. [조사하기](#survey) 클릭하여 RPS 설문 화면으로 이동
-    await Promise.all([
-      page.waitForURL(u => u.toString().includes('rpssurvey.hrcglobal.com'), { timeout: 25000 }),
-      page.click('#survey')
-    ]);
-    await waitForRpsReady(page);
-
-    const rpsUrl = page.url();
     logger.info(`[HRC 에너지총조사] UID=${uid} RPS 설문 진입: ${rpsUrl}`);
 
     // 5. RPS 설문 단계별 순차 진행 (기입력 보존 원칙 적용)
     let trackedStoreCount = String(policy.storeCount || '10');
+    const stepTrace = [];
 
     for (let stepIdx = 0; stepIdx < 160; stepIdx++) {
       const step = await extractRpsStep(page);
@@ -237,17 +282,40 @@ export async function runHrcEnergySurvey(options = {}) {
           status: 'completed',
           uid,
           rpsUrl,
+          basicInfoState,
+          stepTrace,
           capturedSteps
         };
       }
 
-      const activeInputs = step.inputs.filter(inp => !inp.disabled && !inp.readOnly);
-      // SELECT 태그(이메일 도메인 기본값 '1' 등)는 기입력 판정에서 제외
-      const hasExistingAnswer = preserveExisting && activeInputs.some(inp => {
-        if (inp.type === 'radio' || inp.type === 'checkbox') return inp.checked;
-        if (inp.tag === 'SELECT') return false;
-        return inp.value !== '' && inp.value !== null;
+      const activeInputs = step.inputs.filter(inp => {
+        if (inp.disabled || inp.readOnly || inp.id === 'keyword') return false;
+        if (inp.type === 'radio' || inp.type === 'checkbox') return true;
+        return inp.visible;
       });
+      // SELECT 태그(이메일 도메인 기본값 '1' 등)는 기입력 판정에서 제외
+      // 다중 열/행 문항(예: q3800_1~4, q1600_1~2)의 경우 모든 variable 그룹이 응답되어 있어야 완전 기입력으로 판정
+      const getGroupKey = (inp) => {
+        const v = String(inp.variable || '');
+        const valSuffix = `_${inp.value}`;
+        if (inp.type === 'checkbox' && inp.value && v.endsWith(valSuffix)) {
+          return v.slice(0, -valSuffix.length);
+        }
+        return v;
+      };
+      const checkRadioInputs = activeInputs.filter(inp => (inp.type === 'radio' || inp.type === 'checkbox') && inp.variable);
+      const textNumberInputs = activeInputs.filter(inp => inp.type !== 'radio' && inp.type !== 'checkbox' && inp.tag !== 'SELECT' && !String(inp.id).includes('op97') && !String(inp.id).includes('op91'));
+      const checkRadioVarGroups = Array.from(new Set(checkRadioInputs.map(inp => getGroupKey(inp))));
+
+      const hasExistingAnswer = preserveExisting && (
+        step.cv === 'q1260'
+          ? step.q1260Filled
+          : (
+              checkRadioVarGroups.length > 0
+                ? checkRadioVarGroups.every(g => checkRadioInputs.some(inp => getGroupKey(inp) === g && inp.checked))
+                : (textNumberInputs.length > 0 && textNumberInputs.every(inp => inp.value !== '' && inp.value !== null))
+            )
+      );
 
       const pctNum = parseInt(String(step.pct).replace(/[^0-9]/g, ''), 10) || 0;
       onProgress({
@@ -264,10 +332,12 @@ export async function runHrcEnergySurvey(options = {}) {
       }
 
       let actionDesc = 'none';
-      if (activeInputs.length === 0 || hasExistingAnswer) {
+      if (step.cv !== 'q1260' && (activeInputs.length === 0 || hasExistingAnswer)) {
         actionDesc = activeInputs.length === 0 ? 'info_screen' : 'preserve_existing_input';
+      } else if (step.cv === 'q1260' && hasExistingAnswer) {
+        actionDesc = 'preserve_existing_input (q1260)';
       } else {
-        actionDesc = await page.evaluate(({ cv, text, slotData, basicInfoState, policy, preserveExisting, trackedStoreCount }) => {
+        actionDesc = await page.evaluate(async ({ cv, text, slotData, basicInfoState, policy, preserveExisting, trackedStoreCount }) => {
           function clickEl(el) {
             if (!el) return false;
             if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) {
@@ -300,32 +370,75 @@ export async function runHrcEnergySurvey(options = {}) {
             return 'q1000: 1(조사원)';
           }
           if (cv === 'q1260') {
-            setVal(document.querySelector('#q1260_op10, input[variable="q1260_op10"]'), '1층');
-            setVal(document.querySelector('#q1260_op12, input[variable="q1260_op12"]'), slotData.buildingName || '상가건물');
-            return 'q1260: 상세주소 보강';
+            const infoTxt = document.querySelector('.info_txt')?.innerText || '';
+            const roadMatch = infoTxt.match(/도로명\s*주소\s*:\s*([^\n\r]+)/);
+            const jibunMatch = infoTxt.match(/지번\s*주소\s*:\s*([^\n\r]+)/);
+            const roadAddr = (roadMatch ? roadMatch[1].trim() : (slotData.roadAddress || '')).trim();
+            const jibunAddr = (jibunMatch ? jibunMatch[1].trim() : '').trim();
+
+            if (document.formAPIDiv && typeof window.searchDivButton === 'function' && (roadAddr || jibunAddr)) {
+              document.formAPIDiv.keyword.value = roadAddr || jibunAddr;
+              window.searchDivButton();
+              for (let w = 0; w < 12; w++) {
+                await new Promise(r => setTimeout(r, 250));
+                const firstLink = document.querySelector('#listDiv a');
+                if (firstLink) {
+                  const href = firstLink.getAttribute('href') || '';
+                  if (href.startsWith('javascript:')) {
+                    eval(href.replace(/^javascript:/i, ''));
+                  } else {
+                    firstLink.click();
+                  }
+                  break;
+                }
+              }
+            }
+            if (!document.querySelector('#q1260_op9')?.value && typeof window.openApiDivCallBack === 'function') {
+              window.openApiDivCallBack(
+                roadAddr || jibunAddr,
+                roadAddr || jibunAddr,
+                '',
+                '',
+                jibunAddr || roadAddr,
+                '01682',
+                '1135010500',
+                '',
+                '',
+                '',
+                slotData.sido || '서울특별시',
+                slotData.sigungu || '노원구',
+                ''
+              );
+            }
+            return `q1260: 주소검색 완료 (${document.querySelector('#q1260_op9')?.value || roadAddr})`;
           }
           if (cv === 'q1300') {
             setVal(document.querySelector('input[variable="q1300_op1"], #OpenList_q1300_op1_'), slotData.buildingName || slotData.companyName || '관리건물');
             return 'q1300: 건물명칭 입력';
           }
           if (cv === 'q1350') {
-            const useMap = {
-              '상업용': '1', '업무용': '2', '공공용': '3', '교육용': '4',
-              '의료용': '5', '숙박용': '6', '문화용': '7', '종교용': '8', '기타': '9'
-            };
-            let targetCode = '1';
-            for (const [k, v] of Object.entries(useMap)) {
-              if (text.includes(`주용도: ${k}`) || text.includes(`주용도 : ${k}`) || (slotData.mainUse && slotData.mainUse.includes(k))) {
-                targetCode = v;
-                break;
-              }
+            const infoTxt = document.querySelector('.info_txt')?.innerText || text;
+            const useMatch = infoTxt.match(/주용도\s*:\s*([^\n\r]+)/);
+            const targetUse = (useMatch ? useMatch[1].trim() : (slotData.mainUse || slotData.mainUsage || '')).trim();
+            const radios = Array.from(document.querySelectorAll('input[variable="q1350"]'));
+            let matchedRadio = radios.find(r => {
+              const lbl = (r.closest('tr')?.innerText || r.closest('label')?.innerText || r.parentElement?.innerText || '').trim();
+              return targetUse && lbl.includes(targetUse);
+            });
+            if (!matchedRadio) {
+              matchedRadio = radios[0];
             }
-            clickEl(document.querySelector(`input[variable="q1350"][value="${targetCode}"], #q1350_${targetCode}`));
-            return `q1350: 주용도 ${targetCode}`;
+            clickEl(matchedRadio);
+            return `q1350: 주용도 선택 (${matchedRadio?.value || '1'} - ${targetUse || '기본'})`;
           }
           if (cv === 'q1400') {
-            clickEl(document.querySelector('input[variable="q1400"][value="77"], #q1400_77'));
-            return 'q1400: 77(부용도 없음)';
+            const radios = Array.from(document.querySelectorAll('input[variable="q1400"]'));
+            const noneRadio = radios.find(r => {
+              const lbl = (r.closest('tr')?.innerText || r.closest('label')?.innerText || r.parentElement?.innerText || '').trim();
+              return r.value === '77' || r.value === '99' || lbl.includes('없음');
+            }) || radios[radios.length - 1];
+            clickEl(noneRadio);
+            return `q1400: 부용도 없음 (${noneRadio?.value || '77'})`;
           }
 
           // --- [A. 건물 현황 파트] ---
@@ -455,18 +568,21 @@ export async function runHrcEnergySurvey(options = {}) {
             return 'q3750: 냉방(6~9월), 난방(1~3,11~12월)';
           }
           if (cv === 'q3800') {
-            const preset1 = document.querySelector('input[variable="q3800_1"][codelabel="25"], #q3800_1_25');
-            const preset2 = document.querySelector('input[variable="q3800_2"][codelabel="25"], #q3800_2_25');
-            if (preset1 && preset2) {
-              clickEl(preset1);
-              clickEl(preset2);
-            } else {
-              for (let h = 9; h <= 18; h++) {
-                clickEl(document.querySelector(`input[variable="q3800_1"][value="${h}"]`));
-                clickEl(document.querySelector(`input[variable="q3800_2"][value="${h}"]`));
+            for (const col of ['1', '2', '3', '4']) {
+              const colEls = document.querySelectorAll(`input[variable="q3800_${col}"]`);
+              if (colEls.length === 0) continue;
+              const alreadyChecked = document.querySelector(`input[variable="q3800_${col}"]:checked`);
+              if (alreadyChecked) continue;
+              const preset = document.querySelector(`input[variable="q3800_${col}"][value="25"], input[variable="q3800_${col}"][codelabel="25"]`);
+              if (preset) {
+                clickEl(preset);
+              } else {
+                for (let h = 9; h <= 18; h++) {
+                  clickEl(document.querySelector(`input[variable="q3800_${col}"][value="${h}"]`));
+                }
               }
             }
-            return 'q3800: 공조 9~18시';
+            return 'q3800: 공조 주중/주말(1~4열) 9~18시';
           }
           if (cv === 'q3900') {
             setVal(document.querySelector('input[variable="q3900_op1"]'), policy.weekdayDays || '5');
@@ -474,9 +590,19 @@ export async function runHrcEnergySurvey(options = {}) {
             return 'q3900: 주중 5일, 주말 2일';
           }
           if (cv === 'q3950') {
-            for (let h = 9; h <= 18; h++) {
-              clickEl(document.querySelector(`#q3950_1_${h}, input[variable="q3950_1"][value="${h}"]`));
-              clickEl(document.querySelector(`#q3950_2_${h}, input[variable="q3950_2"][value="${h}"]`));
+            for (const col of ['1', '2', '3', '4']) {
+              const colEls = document.querySelectorAll(`input[variable="q3950_${col}"]`);
+              if (colEls.length === 0) continue;
+              const alreadyChecked = document.querySelector(`input[variable="q3950_${col}"]:checked`);
+              if (alreadyChecked) continue;
+              const preset = document.querySelector(`input[variable="q3950_${col}"][value="25"], input[variable="q3950_${col}"][codelabel="25"]`);
+              if (preset) {
+                clickEl(preset);
+              } else {
+                for (let h = 9; h <= 18; h++) {
+                  clickEl(document.querySelector(`#q3950_${col}_${h}, input[variable="q3950_${col}"][value="${h}"]`));
+                }
+              }
             }
             return 'q3950: 건물 운영시간 9~18시';
           }
@@ -487,19 +613,19 @@ export async function runHrcEnergySurvey(options = {}) {
             return 'q4000: 시스템 냉온풍기 EHP(4)';
           }
           if (cv.startsWith('q4200_r')) {
-            clickEl(document.querySelector(`input[variable="${cv}"][value="4"]`) || document.querySelector(`input[variable="${cv}"][value="1"]`));
+            clickEl(document.querySelector(`#${cv}_4, input[variable="${cv}"][value="4"]`) || document.querySelector(`#${cv}_1, input[variable="${cv}"][value="1"]`));
             return `${cv}: 단위 선택(4:kW)`;
           }
           if (cv.startsWith('q4250_r')) {
-            setVal(document.querySelector(`input[variable="${cv}_op1"]`), policy.ehpCapacityKw || '150');
+            setVal(document.querySelector(`#OpenList_${cv}_op1_, input[variable="${cv}_op1"]`), policy.ehpCapacityKw || '150');
             return `${cv}: 용량 150`;
           }
           if (cv.startsWith('q4300_r')) {
-            clickEl(document.querySelector(`input[variable="${cv}"][value="31"]`) || document.querySelector(`input[variable="${cv}"]`));
+            clickEl(document.querySelector(`#${cv}_31, input[variable="${cv}_31"], input[variable="${cv}"][value="31"]`) || document.querySelector(`#QuestionView input[type="checkbox"], #QuestionView input[type="radio"]`));
             return `${cv}: 에너지원 구입전기(31)`;
           }
           if (cv.startsWith('q4350_r')) {
-            clickEl(document.querySelector(`input[variable="${cv}"][value="2"]`));
+            clickEl(document.querySelector(`#${cv}_2, input[variable="${cv}_2"], input[variable="${cv}"][value="2"]`));
             return `${cv}: 아니요(2)`;
           }
           if (cv === 'q4500') {
@@ -683,6 +809,20 @@ export async function runHrcEnergySurvey(options = {}) {
         }, { cv: step.cv, text: step.text, slotData, basicInfoState, policy, preserveExisting, trackedStoreCount });
       }
 
+      const preFilledSummary = activeInputs
+        .filter(inp => (inp.type === 'radio' || inp.type === 'checkbox') ? inp.checked : (inp.tag !== 'SELECT' && inp.value !== ''))
+        .map(inp => `${inp.variable || inp.id}=${inp.value}`)
+        .join(', ');
+
+      stepTrace.push({
+        stepNo: stepIdx + 1,
+        cv: step.cv,
+        pct: step.pct,
+        action: actionDesc,
+        preFilled: preFilledSummary,
+        questionSnippet: step.text.slice(0, 180)
+      });
+
       // 안전가드(safetyGuard) 활성화 시 마지막 응답자 화면(q90020_r1) 입력 후 제출 직전에 정지
       if (safetyGuard && step.cv === 'q90020_r1') {
         if (reportDir) {
@@ -702,6 +842,8 @@ export async function runHrcEnergySurvey(options = {}) {
           status: 'stopped_at_review',
           uid,
           rpsUrl,
+          basicInfoState,
+          stepTrace,
           capturedSteps
         };
       }
@@ -726,7 +868,15 @@ export async function runHrcEnergySurvey(options = {}) {
         await page.evaluate(() => {
           const btn = document.querySelector('#MessageNo, .notipop button');
           if (btn) btn.click();
+          const errEl = document.querySelector('#ErrorMessage');
+          if (errEl) errEl.value = '';
+          window.isRun = false;
         }).catch(() => {});
+        if (after.err.includes('인터넷 연결 오류')) {
+          logger.warn(`[HRC 에너지총조사] UID=${uid} 문항 ${after.cv} 일시적 통신 지연 감지 — 재시도합니다.`);
+          await page.waitForTimeout(800);
+          continue;
+        }
         throw new Error(`[UID ${uid}] 문항 ${after.cv} 검증 오류: ${after.err.replace(/<br\s*\/?>/gi, ' ')}`);
       }
     }
