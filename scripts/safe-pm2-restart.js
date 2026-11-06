@@ -22,7 +22,8 @@ async function waitAndRestart() {
     const status = await checkIsRunning();
     if (!status.isRunning) {
       try {
-        execSync('pm2 restart onlinepoll', { stdio: 'ignore' });
+        execSync('pm2 restart onlinepoll || pm2 start src/server.js --name onlinepoll', { stdio: 'ignore' });
+        execSync('pm2 save', { stdio: 'ignore' });
       } catch (_) {}
       process.exit(0);
     }
@@ -38,7 +39,15 @@ async function main() {
   const status = await checkIsRunning();
   if (!status.isRunning) {
     console.log('✅ 현재 실행 중인 설문 자동화 배치가 없습니다. 즉시 pm2 restart onlinepoll을 수행합니다.');
-    execSync('pm2 restart onlinepoll', { stdio: 'inherit' });
+    try {
+      execSync('pm2 restart onlinepoll', { stdio: 'inherit' });
+    } catch (_) {
+      console.log('🚀 PM2 프로세스(onlinepoll)가 등록되어 있지 않아 새로 기동합니다...');
+      execSync('pm2 start src/server.js --name onlinepoll', { stdio: 'inherit' });
+    }
+    try {
+      execSync('pm2 save', { stdio: 'inherit' });
+    } catch (_) {}
     return;
   }
 
