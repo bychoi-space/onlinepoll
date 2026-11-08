@@ -128,9 +128,9 @@ export function buildRespondentAnswerPlan(slotData, policy = {}, existingQ10 = n
   const name = String(slotData.name || slotData.respondentName || slotData.ceoName || '').trim();
   const phone = normalizeGallupPhone(slotData.phone, idNum);
 
-  // 동일 귀농연도 템플릿 우선 선택 후 결정론적 순환
+  // 13개 2인가구(부부) 완료 템플릿 풀 전체에서 ID 해시로 고르게 순환 선택하여 응답 다양성 확보
   const sameYearPool = pool.filter(t => String(t.meta?.moveYear) === moveYear);
-  const chosenTemplate = (sameYearPool.length > 0)
+  const chosenTemplate = (sameYearPool.length >= 2 && (idNum % 2 === 0))
     ? sameYearPool[idNum % sameYearPool.length]
     : pool[idNum % pool.length];
 
@@ -237,15 +237,14 @@ export function buildRespondentAnswerPlan(slotData, policy = {}, existingQ10 = n
     'Q18-2': moveMonth
   };
 
-  // 2024~2025년 최근 귀농자의 경우 기간 초과 트랩 방지를 위해 주택/농지 확보 시기 및 영농 시작 시기를 안전 범위로 보정
-  if (Number(moveYear) >= 2024) {
-    if (plan[48]) {
-      plan[48] = { 'Q28-1': '1' }; // 귀농 전 확보
-      plan[49] = { 'Q133-1': '0', 'Q133-2': String(3 + (idNum % 6)) };
-    }
-    plan[55] = { 'Q35-1': '1' }; // 귀농 첫해 바로 시작
+  // 귀농연도(2022~2025)와 템플릿의 주택/농지 확보 시기·영농 시작 시기 간 기간 초과 트랩 원천 방지
+  if (Number(moveYear) >= 2022) {
+    plan[48] = { 'Q28-1': '1' }; // 귀농 전 주택 확보
+    plan[49] = { 'Q133-1': '0', 'Q133-2': String(3 + (idNum % 6)) };
+    plan[54] = { 'Q34-1-4': '4', 'Q34-2-4': '4' }; // 귀농 1년 미만 시 초기/현재 주택만족도 동일 제약 통과
+    plan[55] = { 'Q35-1': '1' }; // 귀농 첫해 바로 영농 시작
     plan[58] = { 'Q39-2': '2' };
-    plan[60] = { 'Q41-1': '1' }; // 1년 미만
+    plan[60] = Number(moveYear) >= 2024 ? { 'Q41-1': '1' } : { 'Q41-2': '2' };
     plan[70] = { 'Q55-1': '1' }; // 귀농 전 농지 확보
     plan[71] = { 'Q134-1': '0', 'Q134-2': String(2 + (idNum % 5)) };
   }
@@ -917,7 +916,7 @@ export async function runGallupReturnFarmSurvey({
         } else {
           stableCount = 0;
         }
-        await page.waitForTimeout(160);
+        await page.waitForTimeout(70);
       }
       return Number(await page.locator('#ps_Form #p_cur_page').inputValue().catch(() => 0));
     }
@@ -1419,8 +1418,8 @@ export async function runGallupReturnFarmSurvey({
       // 페이지 이동 또는 SweetAlert2 모달 대기
       let moved = false;
       let lastSwalMsg = '';
-      for (let waitStep = 0; waitStep < 35; waitStep++) {
-        await page.waitForTimeout(200);
+      for (let waitStep = 0; waitStep < 65; waitStep++) {
+        await page.waitForTimeout(80);
         const navState = await page.evaluate(({ fromPage }) => {
           const swalConfirm = document.querySelector('.swal2-confirm');
           if (swalConfirm && swalConfirm.offsetParent !== null) {
@@ -1439,10 +1438,17 @@ export async function runGallupReturnFarmSurvey({
 
         if (navState.swalMsg) {
           lastSwalMsg = navState.swalMsg;
-          // 만약 chkSameAnswer("모든 항목에 대해 동일하게 평가하셨습니다") 경고인 경우 다시 한 번 #btn_save_Rspns 클릭하면 통과됨
-          if (navState.swalMsg.includes('동일하게 평가') || navState.swalMsg.includes('다시 한 번 확인')) {
-            await page.waitForTimeout(150);
-            await page.evaluate(() => document.getElementById('btn_save_Rspns')?.click());
+          // 만약 chkSameAnswer("모든 항목에 대해 동일하게 평가하셨습니다") 경고이거나 일시적 서버 통신 오류("시스템 장애")인 경우 다시 한 번 #btn_save_Rspns 클릭하여 재시도
+          if (
+            navState.swalMsg.includes('동일하게 평가') ||
+            navState.swalMsg.includes('다시 한 번 확인') ||
+            navState.swalMsg.includes('시스템 장애')
+          ) {
+            await page.waitForTimeout(350);
+            await page.evaluate(() => {
+              window.multiChk = false;
+              document.getElementById('btn_save_Rspns')?.click();
+            });
           }
         }
         if (navState.moved) {
