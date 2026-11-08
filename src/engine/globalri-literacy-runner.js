@@ -227,7 +227,8 @@ export async function runGlobalriLiteracySurvey(options = {}) {
   const userAgeGroups = policy?.ageGroups || policy?.groups || {};
   const agePol = {
     ...(defaultAgeGroups[ageGroupKey] || defaultAgeGroups.age50 || {}),
-    ...(userAgeGroups[ageGroupKey] || {})
+    ...(userAgeGroups[ageGroupKey] || {}),
+    ...(slotData.customGuide || {})
   };
 
   const partCPlan = buildPartCAnswerPlan(agePol);
@@ -236,7 +237,7 @@ export async function runGlobalriLiteracySurvey(options = {}) {
     fs.mkdirSync(reportDir, { recursive: true });
   }
 
-  logger.info(`[성인문해능력조사 러너] #${quotaIndex} "${respondentName}" (LID: ${lid}, UID: ${memberUid}, ${ageMeta.age}세/${ageMeta.ageGroupLabel}) 설문 시작 — 목표 Part C 정답수: ${partCPlan.targetCorrect}/20개`);
+  logger.info(`[성인문해능력조사 러너] #${quotaIndex} "${respondentName}" (LID: ${lid}, UID: ${memberUid}, ${ageMeta.age}세/${ageMeta.ageGroupLabel}) 설문 시작 — 목표 Part C 정답수: ${partCPlan.targetCorrect}/20개${slotData.customGuide ? ' [개별 지정 가이드 적용]' : ''}`);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -257,7 +258,9 @@ export async function runGlobalriLiteracySurvey(options = {}) {
   const stepTrace = [];
   const submittedAnswers = [];
   const gradeSummary = {};
-  const stopAfterPartC = (options.stopAfterPartC !== false && policy.stopAfterPartC !== false);
+  const stopAfterPartC = (slotData.customGuide && slotData.customGuide.stopAfterPartC !== undefined)
+    ? Boolean(slotData.customGuide.stopAfterPartC)
+    : (options.stopAfterPartC !== false && policy.stopAfterPartC !== false && agePol.stopAfterPartC !== false);
 
   async function captureStepScreenshot(stepCode, title) {
     if (!reportDir) return;

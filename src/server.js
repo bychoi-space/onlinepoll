@@ -902,6 +902,56 @@ app.post('/api/campaigns/:id/baseline', (req, res) => {
   });
 });
 
+// 선택한 쿼터 항목들에 개별 설문 응답 가이드(customGuide) 일괄 부여·저장 API
+app.post('/api/campaigns/:id/apply-selected-guide', (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  const { targetIndices = [], guide = {}, guideSummary = '', presetLabel = '' } = req.body;
+  if (!Array.isArray(targetIndices) || targetIndices.length === 0) {
+    return res.status(400).json({ error: '가이드를 적용할 대상자를 먼저 STEP 1 쿼터 목록에서 체크해 주세요.' });
+  }
+
+  const indexSet = new Set(targetIndices.map(n => Number(n)).filter(n => !isNaN(n)));
+  const quotaDb = Array.isArray(campaign.quotaDatabase) ? campaign.quotaDatabase : [];
+  let appliedCount = 0;
+  const appliedNames = [];
+
+  quotaDb.forEach((item, idx) => {
+    const seq = Number(item.index || item.seq || (idx + 1));
+    if (indexSet.has(seq)) {
+      item.customGuide = { ...guide };
+      item.guideApplied = true;
+      item.guideSummary = guideSummary || `Part C: ${guide.partC_correctCountMin ?? 18}~${guide.partC_correctCountMax ?? 20}점 · D5(${String(guide.D5_1_healthLiteracy || '4_5').replace('_', '~')})`;
+      item.guidePresetLabel = presetLabel || '';
+      item.guideUpdatedAt = new Date().toISOString();
+      appliedCount++;
+      appliedNames.push(`#${seq} ${item.memberName || item.respondentName || item.ceoName || '-'}`);
+    }
+  });
+
+  CampaignStore.updateCampaign(campaign.id, {
+    quotaDatabase: quotaDb,
+    hasMasterBlueprint: true
+  });
+
+  logger.broadcast({
+    type: 'QUOTA_UPDATED',
+    quotaDatabase: quotaDb
+  });
+
+  logger.success(`[선택 쿼터 가이드 부여] "${campaign.title}" ➔ 선택된 ${appliedCount}명(${appliedNames.join(', ')})에게 맞춤 응답 가이드 적용 완료!`);
+  res.json({
+    success: true,
+    appliedCount,
+    appliedNames,
+    message: `선택한 대상자 ${appliedCount}명(${appliedNames.join(', ')})에게 설문 응답 가이드가 적용·저장되었습니다.`,
+    quotaDatabase: quotaDb
+  });
+});
+
 // 다른 캠페인에서 마스터 기준점 복제해오기 API
 app.post('/api/campaigns/:id/import-baseline', (req, res) => {
   const { sourceCampaignId } = req.body;
@@ -2308,7 +2358,10 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
   }
 
-  const { surveyUrl, policy = {}, startIndex = 1, safetyGuard = false } = req.body;
+  const { surveyUrl, policy = {}, startIndex = 1, safetyGuard = false, targetIndices = null } = req.body;
+  const selectedIndexSet = (Array.isArray(targetIndices) && targetIndices.length > 0)
+    ? new Set(targetIndices.map(n => Number(n)).filter(n => !isNaN(n)))
+    : null;
   const defaultUrl = surveyUrl || campaign.guidelineConfig?.surveyUrl;
   const quotaDb = campaign.quotaDatabase || [];
   const isAssoc = (campaign.surveyType === 'kstat_assoc');
@@ -2338,7 +2391,12 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     .filter(Boolean);
 
   const targets = quotaDb.filter(b => {
-    const idx = (b.index || b.seq || b.slotIndex || 1);
+    const idx = Number(b.index || b.seq || b.slotIndex || 1);
+    if (selectedIndexSet) {
+      if (!selectedIndexSet.has(idx)) return false;
+      if (b.quotaStatus === 'completed' || b.status === '완료' || b.memberStatus === '완료') return false;
+      return true;
+    }
     if (idx < startIndex) return false;
     if (skipSlotIndices.includes(idx)) return false;
     if ((isMetrix || isKona || isHrcEnergy || isGlobalriLiteracy) && (b.uid || b.memberUid || b.idx) && skipSlotUids.includes(String(b.memberUid || b.uid || b.idx))) return false;

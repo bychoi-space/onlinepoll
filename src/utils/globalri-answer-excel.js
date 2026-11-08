@@ -511,3 +511,4 @@ export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null 
 
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 }
+

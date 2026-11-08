@@ -904,6 +904,9 @@ async function initSurveyDetailPage() {
       if (isGlobalriLiteracy) {
         quotaTableHead.innerHTML = `
           <tr>
+            <th class="th-no text-center" style="width: 44px;">
+              <input type="checkbox" id="cb-globalri-check-all" title="미완료 쿼터 전체 선택/해제" style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+            </th>
             <th class="th-no">번호</th>
             <th>가구 LID</th>
             <th>개인 UID</th>
@@ -911,12 +914,13 @@ async function initSurveyDetailPage() {
             <th>성별</th>
             <th>출생연도 (만 나이)</th>
             <th>나이대 그룹</th>
+            <th style="min-width: 230px;">적용된 설문 응답 가이드</th>
             <th>가구주 관계</th>
             <th>시군구 / 읍면동</th>
             <th>가구 상세주소</th>
             <th>가구원 조사 현황</th>
             <th class="th-status">진행 상태</th>
-            <th class="text-center" style="min-width: 115px;">파일럿 테스트</th>
+            <th class="text-center" style="min-width: 115px;">개별 실행</th>
           </tr>
         `;
       } else if (isHrcEnergy) {
@@ -1019,15 +1023,37 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    // [글로벌리서치 제5차 성인문해능력조사 13개 컬럼 테이블 렌더링]
+    // [글로벌리서치 제5차 성인문해능력조사 15개 컬럼 테이블 렌더링 + 체크박스 선택 바]
+    const existingCheckBar = document.getElementById('globalri-step1-check-bar');
+    if (!isGlobalriLiteracy && existingCheckBar) {
+      existingCheckBar.style.display = 'none';
+    }
+
     if (isGlobalriLiteracy) {
+      // 최초 1회 초기화: 가이드 지정 항목이 있으면 그 항목들을 체크, 없으면 20대 미완료 항목을 기본 체크
+      if (!globalriSelectionInitialized && db.length > 0) {
+        globalriSelectionInitialized = true;
+        const guidedUncompleted = db.filter(item => item.guideApplied && item.quotaStatus !== 'completed' && item.status !== '완료');
+        if (guidedUncompleted.length > 0) {
+          guidedUncompleted.forEach((item, idx) => checkedGlobalriSeqs.add(Number(item.index || item.seq || (idx + 1))));
+        } else {
+          db.forEach((item, idx) => {
+            const seq = Number(item.index || item.seq || (idx + 1));
+            const isDone = (item.quotaStatus === 'completed' || item.status === '완료');
+            if (!isDone && resolveGlobalriAgeGroupKey(item) === 'age20') {
+              checkedGlobalriSeqs.add(seq);
+            }
+          });
+        }
+      }
+
       const ageBadgeStyleMap = {
-        age20: 'background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);',
-        age30: 'background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35);',
-        age40: 'background: rgba(168, 85, 247, 0.16); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35);',
-        age50: 'background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35);',
-        age60: 'background: rgba(249, 115, 22, 0.16); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35);',
-        age70: 'background: rgba(244, 63, 94, 0.16); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35);'
+        age20: 'background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd;',
+        age30: 'background: #ecfdf5; color: #047857; border: 1px solid #6ee7b7;',
+        age40: 'background: #f5f3ff; color: #6d28d9; border: 1px solid #c4b5fd;',
+        age50: 'background: #fffbeb; color: #b45309; border: 1px solid #fcd34d;',
+        age60: 'background: #fff7ed; color: #c2410c; border: 1px solid #fdba74;',
+        age70: 'background: #fff1f2; color: #be123c; border: 1px solid #fda4af;'
       };
       const ageLabelFallbackMap = {
         age20: '20대',
@@ -1037,8 +1063,61 @@ async function initSurveyDetailPage() {
         age60: '60대',
         age70: '70대 이상'
       };
+
+      // 상단 빠른 체크 선택 툴바 렌더링
+      const tableScrollContainer = quotaTableBody.closest('.table-scroll-container');
+      let checkBar = document.getElementById('globalri-step1-check-bar');
+      if (!checkBar && tableScrollContainer && tableScrollContainer.parentNode) {
+        checkBar = document.createElement('div');
+        checkBar.id = 'globalri-step1-check-bar';
+        checkBar.className = 'globalri-check-toolbar';
+        tableScrollContainer.parentNode.insertBefore(checkBar, tableScrollContainer);
+      }
+
+      const uncompletedCount = db.filter(i => i.quotaStatus !== 'completed' && i.status !== '완료').length;
+      const guidedCount = db.filter(i => i.guideApplied && i.quotaStatus !== 'completed' && i.status !== '완료').length;
+      const checkedCount = checkedGlobalriSeqs.size;
+      const countByAge = { age20: 0, age30: 0, age40: 0, age50: 0, age60: 0, age70: 0 };
+      db.forEach(item => {
+        if (item.quotaStatus !== 'completed' && item.status !== '완료') {
+          const ak = resolveGlobalriAgeGroupKey(item);
+          countByAge[ak] = (countByAge[ak] || 0) + 1;
+        }
+      });
+
+      if (checkBar) {
+        checkBar.style.display = 'flex';
+        checkBar.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 4px;">
+              <i class="fa-solid fa-square-check text-primary-color"></i> 1단계 쿼터 체크 선택:
+            </span>
+            <button type="button" class="globalri-quick-check-btn" data-quick-check="uncompleted">미완료 전체 (${uncompletedCount}명)</button>
+            <button type="button" class="globalri-quick-check-btn" data-quick-check="guided">🎯 가이드 지정됨 (${guidedCount}명)</button>
+            <button type="button" class="globalri-quick-check-btn" data-quick-check="age20">20대 (${countByAge.age20}명)</button>
+            ${countByAge.age30 > 0 ? `<button type="button" class="globalri-quick-check-btn" data-quick-check="age30">30대 (${countByAge.age30}명)</button>` : ''}
+            ${countByAge.age40 > 0 ? `<button type="button" class="globalri-quick-check-btn" data-quick-check="age40">40대 (${countByAge.age40}명)</button>` : ''}
+            <button type="button" class="globalri-quick-check-btn" data-quick-check="age50">50대 (${countByAge.age50}명)</button>
+            <button type="button" class="globalri-quick-check-btn" data-quick-check="age60">60대 (${countByAge.age60}명)</button>
+            <button type="button" class="globalri-quick-check-btn" data-quick-check="age70">70대+ (${countByAge.age70}명)</button>
+            <button type="button" class="globalri-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span id="badge-globalri-checked-count" class="badge-status ready font-bold" style="padding: 5px 12px; font-size: 12.5px;">
+              현재 체크됨: <strong>${checkedCount}명</strong> · 가이드 부여됨: <strong>${guidedCount}명</strong>
+            </span>
+            <button type="button" id="btn-globalri-jump-step2" class="btn-pill btn-pill-primary btn-pill-small font-bold">
+              <i class="fa-solid fa-sliders"></i> ↓ 체크한 항목(${checkedCount}명) 가이드 설정 (STEP 2)
+            </button>
+            <button type="button" id="btn-globalri-top-batch-run" class="btn-pill btn-pill-success btn-pill-small font-bold">
+              <i class="fa-solid fa-rocket"></i> 선택/가이드 항목 일괄 배치 실행
+            </button>
+          </div>
+        `;
+      }
+
       quotaTableBody.innerHTML = db.map((item, idx) => {
-        const seq = item.index || item.seq || (idx + 1);
+        const seq = Number(item.index || item.seq || (idx + 1));
         const st = item.quotaStatus || 'ready';
         const prog = item.progress || (st === 'completed' || item.status === '완료' ? '100%' : '진행 중');
         const cScoreTxt = item.gradeSummary?.partC ? ` (C:${item.gradeSummary.partC.replace(/\s+/g, '')})` : '';
@@ -1047,8 +1126,8 @@ async function initSurveyDetailPage() {
           statusHtml = `<span class="badge-status success"><i class="fa-solid fa-check-double"></i> 조사완료${escapeHtml(cScoreTxt)}</span>`;
         } else if (st === 'running') {
           statusHtml = `<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 실행중 (${escapeHtml(prog)})</span>`;
-        } else if (st === 'pilot_done' || String(item.status || '').includes('Part C')) {
-          statusHtml = `<span class="badge-status pilot" title="Part A ~ Part C 채점 저장 완료 · D1부터 면접원 수기 진행 대기"><i class="fa-solid fa-clipboard-check"></i> Part C 완료${escapeHtml(cScoreTxt)}</span>`;
+        } else if (st === 'pilot_done' || String(item.status || '').includes('Part C') || String(item.status || '').includes('F05_2')) {
+          statusHtml = `<span class="badge-status pilot" title="자동화 구간 완료 · 수기/검토 대기"><i class="fa-solid fa-clipboard-check"></i> ${escapeHtml(item.status || 'Part C 완료')}${escapeHtml(cScoreTxt)}</span>`;
         } else if (st === 'error') {
           statusHtml = `<span class="badge-status error" title="${escapeHtml(item.error || '')}">오류</span>`;
         }
@@ -1063,17 +1142,53 @@ async function initSurveyDetailPage() {
 
         const isDone = (st === 'completed' || item.status === '완료');
         const isRowRunning = (st === 'running');
+        const isChecked = checkedGlobalriSeqs.has(seq);
+
+        // 적용된 설문 응답 가이드 요약 배지
+        let guideCellHtml = '';
+        if (item.guideApplied && item.customGuide) {
+          const cg = item.customGuide;
+          const d5Txt = String(cg.D5_1_healthLiteracy || '4_5').replace('_', '~');
+          const stopTxt = cg.stopAfterPartC === false ? 'F05_2까지' : 'Part C 후 정지';
+          guideCellHtml = `
+            <div style="display: flex; flex-direction: column; gap: 2px; align-items: center;">
+              <span class="badge-status success font-bold" style="padding: 2px 8px; font-size: 11.5px;">
+                <i class="fa-solid fa-bullseye"></i> ${escapeHtml(item.guidePresetLabel || '맞춤 가이드 지정됨')}
+              </span>
+              <span style="font-size: 11px; color: #0f172a; font-weight: 600;">
+                Part C ${cg.partC_correctCountMin ?? 18}~${cg.partC_correctCountMax ?? 20}개 · D5(${escapeHtml(d5Txt)}교차) · ${stopTxt}
+              </span>
+            </div>
+          `;
+        } else {
+          const defPol = (globalriAgePolicies && globalriAgePolicies[ageKey]) || DEFAULT_GLOBALRI_AGE_POLICIES[ageKey] || DEFAULT_GLOBALRI_AGE_POLICIES.age50;
+          const defD5 = String(defPol.D5_1_healthLiteracy || '3_4').replace('_', '~');
+          guideCellHtml = `
+            <div style="display: flex; flex-direction: column; gap: 2px; align-items: center;">
+              <span class="badge-status" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 2px 8px; font-size: 11px;">
+                미지정 (${escapeHtml(ageDisplayLabel)} 기본값 대기)
+              </span>
+              <span style="font-size: 11px; color: #64748b;">
+                기본 C ${defPol.partC_correctCountMin ?? 15}~${defPol.partC_correctCountMax ?? 18}개 · D5(${escapeHtml(defD5)}교차)
+              </span>
+            </div>
+          `;
+        }
+
         let pilotActionHtml = '';
         if (isDone) {
           pilotActionHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45; cursor:not-allowed;">제출완료</button>`;
         } else if (isRowRunning) {
           pilotActionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small" disabled><i class="fa-solid fa-spinner fa-spin"></i> 진행중</button>`;
         } else {
-          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-globalri" data-seq="${seq}" title="${escapeHtml(mName)} (LID ${escapeHtml(item.lid || '')}) Part A ~ Part C 채점까지 진행 후 D1에서 수기 대기">▷ 파일럿</button>`;
+          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-globalri" data-seq="${seq}" title="${escapeHtml(mName)} (LID ${escapeHtml(item.lid || '')}) 현재 적용된 가이드로 단건 실행">▷ 단건실행</button>`;
         }
 
         return `
-          <tr data-row-idx="${seq}">
+          <tr data-row-idx="${seq}" class="${isChecked ? 'globalri-row-checked' : ''}">
+            <td class="text-center">
+              <input type="checkbox" class="cb-globalri-quota-row" data-seq="${seq}" ${isChecked ? 'checked' : ''} ${isDone ? 'title="이미 조사 완료된 항목입니다"' : ''} style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+            </td>
             <td class="text-center font-mono font-bold">${seq}</td>
             <td class="text-center font-mono font-bold text-primary-color">${escapeHtml(item.lid || '-')}</td>
             <td class="text-center font-mono">${escapeHtml(item.memberUid || '-')}</td>
@@ -1085,6 +1200,7 @@ async function initSurveyDetailPage() {
                 ${escapeHtml(ageDisplayLabel)}
               </span>
             </td>
+            <td class="text-center">${guideCellHtml}</td>
             <td class="text-center">${escapeHtml(item.relation || '-')}</td>
             <td class="text-center">${escapeHtml(item.sigungu || '')} ${escapeHtml(item.dong || '')}</td>
             <td>${escapeHtml(item.detailAddress || item.address || '-')}</td>
@@ -1098,8 +1214,68 @@ async function initSurveyDetailPage() {
           </tr>
         `;
       }).join('');
+
+      // 전체선택 헤더 체크박스 상태 동기화 및 이벤트
+      const cbAll = document.getElementById('cb-globalri-check-all');
+      const uncompletedSeqs = db
+        .filter(item => item.quotaStatus !== 'completed' && item.status !== '완료')
+        .map((item, idx) => Number(item.index || item.seq || (idx + 1)));
+      if (cbAll) {
+        cbAll.checked = uncompletedSeqs.length > 0 && uncompletedSeqs.every(s => checkedGlobalriSeqs.has(s));
+        cbAll.onchange = () => {
+          if (cbAll.checked) {
+            uncompletedSeqs.forEach(s => checkedGlobalriSeqs.add(s));
+          } else {
+            checkedGlobalriSeqs.clear();
+          }
+          renderQuotaTable(db);
+          renderGlobalriAgeGroupCards();
+        };
+      }
+
+      // 개별 행 체크박스 이벤트
+      quotaTableBody.querySelectorAll('.cb-globalri-quota-row').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const seq = Number(cb.getAttribute('data-seq'));
+          if (cb.checked) checkedGlobalriSeqs.add(seq);
+          else checkedGlobalriSeqs.delete(seq);
+          const tr = cb.closest('tr');
+          if (tr) tr.classList.toggle('globalri-row-checked', cb.checked);
+          const badgeEl = document.getElementById('badge-globalri-checked-count');
+          if (badgeEl) {
+            badgeEl.innerHTML = `현재 체크됨: <strong>${checkedGlobalriSeqs.size}명</strong> · 가이드 부여됨: <strong>${guidedCount}명</strong>`;
+          }
+          const jumpBtn = document.getElementById('btn-globalri-jump-step2');
+          if (jumpBtn) {
+            jumpBtn.innerHTML = `<i class="fa-solid fa-sliders"></i> ↓ 체크한 항목(${checkedGlobalriSeqs.size}명) 가이드 설정 (STEP 2)`;
+          }
+          renderGlobalriAgeGroupCards();
+        });
+      });
+
+      // 상단 빠른 체크 버튼 이벤트
+      if (checkBar) {
+        checkBar.querySelectorAll('.globalri-quick-check-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const mode = btn.getAttribute('data-quick-check');
+            applyGlobalriQuickCheck(mode, db);
+          });
+        });
+        const jumpBtn = document.getElementById('btn-globalri-jump-step2');
+        if (jumpBtn) {
+          jumpBtn.addEventListener('click', () => {
+            const sec = document.getElementById('section-master-blueprint');
+            if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        }
+        const topBatchBtn = document.getElementById('btn-globalri-top-batch-run');
+        if (topBatchBtn) {
+          topBatchBtn.addEventListener('click', () => triggerBatchRun());
+        }
+      }
+
       rebuildGlobalriAgeGroupStats(db);
-      if (blueprintStageGrid && blueprintStageGrid.querySelector('.globalri-age-tab-btn')) {
+      if (blueprintStageGrid && blueprintStageGrid.querySelector('#globalri-step2-target-banner')) {
         renderGlobalriAgeGroupCards();
       }
       return;
@@ -3928,6 +4104,8 @@ async function initSurveyDetailPage() {
   let globalriAgePolicies = JSON.parse(JSON.stringify(DEFAULT_GLOBALRI_AGE_POLICIES));
   let activeGlobalriAgeGroup = 'age20';
   let globalriAgeGroupStats = {};
+  let checkedGlobalriSeqs = new Set();
+  let globalriSelectionInitialized = false;
 
   function resolveGlobalriAgeGroupKey(item) {
     if (!item) return 'age50';
@@ -3951,6 +4129,34 @@ async function initSurveyDetailPage() {
       return 'age70';
     }
     return 'age50';
+  }
+
+  function applyGlobalriQuickCheck(mode, dbInput) {
+    const db = dbInput || currentCampaign?.quotaDatabase || [];
+    checkedGlobalriSeqs.clear();
+    if (mode === 'uncompleted') {
+      db.forEach((item, idx) => {
+        if (item.quotaStatus !== 'completed' && item.status !== '완료') {
+          checkedGlobalriSeqs.add(Number(item.index || item.seq || (idx + 1)));
+        }
+      });
+    } else if (mode === 'guided') {
+      db.forEach((item, idx) => {
+        if (item.guideApplied && item.quotaStatus !== 'completed' && item.status !== '완료') {
+          checkedGlobalriSeqs.add(Number(item.index || item.seq || (idx + 1)));
+        }
+      });
+    } else if (GLOBALRI_AGE_GROUP_METAS[mode]) {
+      db.forEach((item, idx) => {
+        if (item.quotaStatus !== 'completed' && item.status !== '완료' && resolveGlobalriAgeGroupKey(item) === mode) {
+          checkedGlobalriSeqs.add(Number(item.index || item.seq || (idx + 1)));
+        }
+      });
+      syncGlobalriActiveCardToState();
+      activeGlobalriAgeGroup = mode;
+    }
+    renderQuotaTable(db);
+    renderGlobalriAgeGroupCards();
   }
 
   function rebuildGlobalriAgeGroupStats(qDb, fallbackStats = null) {
@@ -3997,6 +4203,13 @@ async function initSurveyDetailPage() {
     const cbPreserve = document.getElementById('cb-globalri-preserve');
     if (cbPreserve) cur.preserveExistingInputs = cbPreserve.checked;
 
+    const stopModeEl = document.getElementById('sel-globalri-stop-mode');
+    if (stopModeEl) {
+      cur.stopAfterPartC = (stopModeEl.value !== 'full_f05_2');
+    } else if (cur.stopAfterPartC === undefined) {
+      cur.stopAfterPartC = (currentCampaign?.masterBaseline?.policy?.stopAfterPartC !== false);
+    }
+
     cur.partA_targetScore = getNum('sel-globalri-partA-score', cur.partA_targetScore ?? 3);
     cur.partB1_targetScore = getNum('sel-globalri-partB1-score', cur.partB1_targetScore ?? 20);
     let cMin = Math.max(0, Math.min(20, getNum('num-globalri-partC-min', cur.partC_correctCountMin ?? 18)));
@@ -4038,87 +4251,207 @@ async function initSurveyDetailPage() {
     cur.F05_2_householdIncome = String(hInc);
 
     globalriAgePolicies[activeGlobalriAgeGroup] = cur;
+    return cur;
+  }
+
+  async function applyGuideToCheckedGlobalriQuotas(showNotification = true) {
+    const curGuide = syncGlobalriActiveCardToState();
+    const checkedSeqs = Array.from(checkedGlobalriSeqs);
+    if (checkedSeqs.length === 0) {
+      if (showNotification) {
+        alert('먼저 STEP 1 조사 쿼터 테이블(또는 상단 빠른 체크 버튼)에서 가이드를 부여할 대상자를 1명 이상 체크해 주세요.');
+      }
+      return false;
+    }
+
+    const meta = GLOBALRI_AGE_GROUP_METAS[activeGlobalriAgeGroup] || GLOBALRI_AGE_GROUP_METAS.age20;
+    const presetLabel = `${meta.name} 기준 맞춤가이드`;
+
+    try {
+      const btnTop = document.getElementById('btn-globalri-apply-top');
+      const btnBot = document.getElementById('btn-globalri-apply-selected-guide');
+      if (btnTop) { btnTop.disabled = true; btnTop.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 적용 중...'; }
+      if (btnBot) { btnBot.disabled = true; btnBot.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 체크 항목에 가이드 적용 중...'; }
+
+      const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/apply-selected-guide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetIndices: checkedSeqs,
+          customGuide: {
+            ...curGuide,
+            stopAfterPartC: curGuide.stopAfterPartC !== false
+          },
+          presetLabel
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '선택 쿼터 가이드 적용 실패');
+
+      if (currentCampaign && Array.isArray(data.quotaDatabase)) {
+        currentCampaign.quotaDatabase = data.quotaDatabase;
+      }
+
+      // 기본 나이대별 마스터 가이드도 함께 저장
+      await fetch(`/api/campaigns/${encodeURIComponent(campId)}/baseline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          surveyType: 'globalri_literacy',
+          ageGroups: globalriAgePolicies || {},
+          policy: {
+            preserveExistingInputs: curGuide.preserveExistingInputs !== false,
+            stopAfterPartC: curGuide.stopAfterPartC !== false,
+            safetyStopAtF05_2: true
+          }
+        })
+      });
+
+      renderQuotaTable(currentCampaign?.quotaDatabase || []);
+      renderGlobalriAgeGroupCards();
+
+      if (showNotification) {
+        appendLog('success', `✅ ${data.message}`);
+        alert(`✅ 체크한 쿼터 ${data.appliedCount}명(${(data.appliedNames || []).join(', ')})에게 [${presetLabel}] 응답 가이드가 적용·저장되었습니다!\n\n이제 우측의 [🚀 선택/가이드 지정 쿼터 일괄 배치 실행] 버튼을 누르면 해당 항목들이 순차 자동 진행됩니다.`);
+      }
+      return true;
+    } catch (err) {
+      if (showNotification) alert('선택 쿼터 가이드 적용 실패: ' + err.message);
+      appendLog('error', `선택 쿼터 가이드 적용 실패: ${err.message}`);
+      renderGlobalriAgeGroupCards();
+      return false;
+    }
   }
 
   function renderGlobalriAgeGroupCards() {
     if (!blueprintStageGrid) return;
+    const qDb = currentCampaign?.quotaDatabase || [];
     const meta = GLOBALRI_AGE_GROUP_METAS[activeGlobalriAgeGroup] || GLOBALRI_AGE_GROUP_METAS.age20;
     const p = globalriAgePolicies[activeGlobalriAgeGroup] || DEFAULT_GLOBALRI_AGE_POLICIES[activeGlobalriAgeGroup];
-    const st = globalriAgeGroupStats[activeGlobalriAgeGroup] || { count: 0, members: [] };
-    const memberPreview = (st.members && st.members.length > 0)
-      ? st.members.join(', ')
-      : '현재 쿼터에 해당 나이대 대상자 없음 (신규 LID 추가 시 자동 적용)';
+    const stopAfterPartC = (p.stopAfterPartC !== undefined)
+      ? (p.stopAfterPartC !== false)
+      : (currentCampaign?.masterBaseline?.policy?.stopAfterPartC !== false);
 
-    const tabsHtml = Object.keys(GLOBALRI_AGE_GROUP_METAS).map(k => {
+    // 현재 체크된 쿼터 목록 및 가이드 지정된 쿼터 목록 집계
+    const checkedItems = qDb.filter((item, idx) => checkedGlobalriSeqs.has(Number(item.index || item.seq || (idx + 1))));
+    const guidedUncompletedItems = qDb.filter(item => item.guideApplied && item.quotaStatus !== 'completed' && item.status !== '완료');
+    const uncompletedItems = qDb.filter(item => item.quotaStatus !== 'completed' && item.status !== '완료');
+
+    const countByAge = { age20: 0, age30: 0, age40: 0, age50: 0, age60: 0, age70: 0 };
+    qDb.forEach(item => {
+      if (item.quotaStatus !== 'completed' && item.status !== '완료') {
+        const ak = resolveGlobalriAgeGroupKey(item);
+        countByAge[ak] = (countByAge[ak] || 0) + 1;
+      }
+    });
+
+    const selectedChipsHtml = checkedItems.length > 0
+      ? checkedItems.map((item, idx) => {
+          const seq = Number(item.index || item.seq || (idx + 1));
+          const mName = item.memberName || item.respondentName || item.ceoName || '-';
+          const ageLabel = item.ageGroupLabel || GLOBALRI_AGE_GROUP_METAS[resolveGlobalriAgeGroupKey(item)]?.name.replace(' 그룹', '') || '';
+          const gBadge = item.guideApplied ? ' · 🎯가이드지정됨' : '';
+          return `
+            <span class="globalri-selected-member-chip">
+              <span>#${seq} ${escapeHtml(mName)} (${escapeHtml(ageLabel)} · LID ${escapeHtml(item.lid || '')}${gBadge})</span>
+              <button type="button" class="remove-chip-btn btn-uncheck-member-chip" data-seq="${seq}" title="체크 해제">&times;</button>
+            </span>
+          `;
+        }).join('')
+      : `<span style="font-size: 12.5px; color: #b45309; font-weight: 700;"><i class="fa-solid fa-triangle-exclamation"></i> 현재 체크된 쿼터가 없습니다. 상단 STEP 1 표에서 체크박스를 선택하거나 오른쪽 빠른 체크 버튼을 클릭해 주세요.</span>`;
+
+    // 6개 연령대 추천 프리셋 버튼
+    const presetButtonsHtml = Object.keys(GLOBALRI_AGE_GROUP_METAS).map(k => {
       const m = GLOBALRI_AGE_GROUP_METAS[k];
       const cnt = globalriAgeGroupStats[k]?.count || 0;
       const isAct = (k === activeGlobalriAgeGroup);
       return `
-        <button type="button" class="group-tab-btn globalri-age-tab-btn ${isAct ? 'active' : ''}" data-age-group="${k}" style="flex: 1; min-width: 135px; padding: 10px 12px; border-radius: 10px; border: 1px solid ${isAct ? m.color : 'rgba(255,255,255,0.12)'}; background: ${isAct ? 'rgba(56, 189, 248, 0.14)' : 'rgba(15, 23, 42, 0.6)'}; cursor: pointer; text-align: left;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-            <strong style="color: ${isAct ? m.color : '#e2e8f0'}; font-size: 14px;">${escapeHtml(m.name)}</strong>
-            <span class="badge-status ${cnt > 0 ? 'ready' : ''}" style="padding: 2px 7px; font-size: 11px;">${cnt}명</span>
-          </div>
-          <div class="font-caption text-dim" style="margin-top: 4px; font-size: 11px;">${escapeHtml(m.range.split(' ')[0] + ' ' + (m.range.split(' ')[1] || ''))}</div>
+        <button type="button" class="globalri-preset-chip globalri-age-tab-btn ${isAct ? 'active' : ''}" data-age-group="${k}">
+          <i class="fa-solid fa-sliders"></i> ${escapeHtml(m.name)} 추천 프리셋 (${cnt}명)
         </button>
       `;
     }).join('');
 
+    // 배치 실행 대상 수 계산 (체크된 미완료 항목 우선, 없으면 가이드 지정된 미완료 항목)
+    const checkedUncompletedCount = checkedItems.filter(i => i.quotaStatus !== 'completed' && i.status !== '완료').length;
+    const batchTargetCount = checkedUncompletedCount > 0
+      ? checkedUncompletedCount
+      : (guidedUncompletedItems.length > 0 ? guidedUncompletedItems.length : uncompletedItems.length);
+    const batchTargetDesc = checkedUncompletedCount > 0
+      ? `현재 체크된 미완료 ${checkedUncompletedCount}명`
+      : (guidedUncompletedItems.length > 0 ? `가이드 지정된 미완료 ${guidedUncompletedItems.length}명` : `미완료 전체 ${uncompletedItems.length}명`);
+
     blueprintStageGrid.innerHTML = `
-      <!-- 상단 나이대 그룹 선택 탭 & 요약 배너 (전폭) -->
-      <section class="blueprint-card full-width-card" style="grid-column: 1 / -1; width: 100%; border: 1px solid rgba(56, 189, 248, 0.35); background: rgba(15, 23, 42, 0.75);">
-        <div class="p-14">
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-            <div>
-              <span class="blueprint-step-pill" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;"><i class="fa-solid fa-users-gear"></i> 나이대별 그룹 가이드</span>
-              <strong class="text-white ml-8" style="font-size: 15px;">조사 대상자의 출생연도(만 나이)에 따라 자동 매칭되는 6개 연령대 그룹 가이드라인</strong>
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button type="button" id="btn-globalri-copy-age-all" class="btn-pill btn-pill-secondary btn-pill-small" title="현재 선택된 나이대 가이드를 20대~70대+ 전체에 동일하게 복사">
-                <i class="fa-solid fa-copy"></i> 현재 [${escapeHtml(meta.name)}] 설정을 전 연령대에 일괄 복사
-              </button>
-              <button type="button" id="btn-globalri-reset-age-defaults" class="btn-pill btn-pill-secondary btn-pill-small" title="연령대별 현실적 표준 차등 프리셋으로 초기화">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> 연령별 표준 차등 기본값 복원
-              </button>
-            </div>
+      <!-- 상단 전폭 배너: 체크한 쿼터 확인 + 나이대 프리셋 불러오기 + 원클릭 가이드 적용 -->
+      <section id="globalri-step2-target-banner" class="blueprint-card full-width-card globalri-step2-target-banner">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <span class="blueprint-step-pill" style="background: #dbeafe; color: #1d4ed8; font-weight: 800;">
+              <i class="fa-solid fa-list-check"></i> STEP 2 · 선택 쿼터 맞춤 응답 가이드 부여
+            </span>
+            <strong style="font-size: 16px; color: #0f172a; margin-left: 8px;">
+              1) 쿼터 체크 ➔ 2) 아래 응답 가이드 설정 및 [체크한 쿼터에 가이드 적용] ➔ 3) 선택 항목 일괄 자동 배치
+            </strong>
           </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" id="btn-globalri-apply-top" class="btn-pill btn-pill-primary font-bold" style="padding: 9px 16px; font-size: 13px;">
+              <i class="fa-solid fa-check-double"></i> ✅ 체크한 쿼터 (${checkedItems.length}명)에 현재 가이드 적용·저장
+            </button>
+            <button type="button" id="btn-globalri-batch-top" class="btn-pill btn-pill-success font-bold" style="padding: 9px 16px; font-size: 13px;">
+              <i class="fa-solid fa-rocket"></i> 🚀 선택/가이드 쿼터 (${batchTargetCount}명) 일괄 배치 실행
+            </button>
+          </div>
+        </div>
 
-          <!-- 6개 나이대 탭 바 -->
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
-            ${tabsHtml}
+        <!-- 현재 체크된 대상자 박스 & 빠른 체크 버튼 -->
+        <div class="globalri-selected-box">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+            <div style="font-size: 13px; font-weight: 800; color: #1e3a8a;">
+              <i class="fa-solid fa-user-check text-primary-color"></i> 현재 체크된 가이드 적용 대상 쿼터: <span style="color: #2563eb;">${checkedItems.length}명</span>
+              <span style="font-size: 12px; font-weight: 600; color: #64748b; margin-left: 8px;">(가이드 부여 완료: ${guidedUncompletedItems.length}명 / 미완료 전체: ${uncompletedItems.length}명)</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span style="font-size: 12px; color: #475569; font-weight: 700; align-self: center;">빠른 체크 선택:</span>
+              <button type="button" class="globalri-quick-check-btn step2-quick-check" data-quick-check="uncompleted">미완료 전체(${uncompletedItems.length}명)</button>
+              <button type="button" class="globalri-quick-check-btn step2-quick-check" data-quick-check="guided">🎯 가이드 지정됨(${guidedUncompletedItems.length}명)</button>
+              <button type="button" class="globalri-quick-check-btn step2-quick-check" data-quick-check="age20">20대(${countByAge.age20}명)</button>
+              <button type="button" class="globalri-quick-check-btn step2-quick-check" data-quick-check="age50">50대(${countByAge.age50}명)</button>
+              <button type="button" class="globalri-quick-check-btn step2-quick-check" data-quick-check="age60">60대(${countByAge.age60}명)</button>
+              <button type="button" class="globalri-quick-check-btn step2-quick-check" data-quick-check="age70">70대+(${countByAge.age70}명)</button>
+              <button type="button" class="globalri-quick-check-btn step2-quick-check" data-quick-check="none" style="color: #64748b;">선택 해제</button>
+            </div>
           </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+            ${selectedChipsHtml}
+          </div>
+        </div>
 
-          <!-- 현재 선택된 나이대 상세 배너 -->
-          <div class="assoc-rule-box mb-0" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-left: 4px solid ${meta.color};">
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="badge-status ready font-bold" style="color: ${meta.color};">${escapeHtml(meta.name)} (${escapeHtml(meta.range)})</span>
-                <span class="font-caption text-white font-bold">적용 대상자: <strong>${st.count}명</strong></span>
-              </div>
-              <div class="font-caption text-dim mt-4">${escapeHtml(meta.desc)}</div>
-              <div class="font-caption text-primary-color mt-4"><i class="fa-solid fa-user-tag"></i> 소속 쿼터 명단: ${escapeHtml(memberPreview)}</div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <label class="custom-cb-label" style="margin-bottom: 0;">
-                <input type="checkbox" id="cb-globalri-preserve" ${p.preserveExistingInputs !== false ? 'checked' : ''} />
-                <span class="font-bold text-success"><i class="fa-solid fa-shield-halved"></i> CONSENT~GP1 및 기입력 문항 100% 보존</span>
-              </label>
-            </div>
+        <!-- 나이대별 추천 가이드 프리셋 로더 바 -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div class="globalri-preset-bar">
+            <span style="font-size: 12.5px; font-weight: 800; color: #334155; margin-right: 4px;">
+              <i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i> 나이대별 추천 가이드 프리셋 불러오기:
+            </span>
+            ${presetButtonsHtml}
           </div>
+          <label class="custom-cb-label" style="margin-bottom: 0; background: #f8fafc; padding: 6px 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
+            <input type="checkbox" id="cb-globalri-preserve" ${p.preserveExistingInputs !== false ? 'checked' : ''} />
+            <span class="font-bold" style="color: #047857; font-size: 12.5px;"><i class="fa-solid fa-shield-halved"></i> CONSENT~GP1 및 기입력 문항 100% 보존</span>
+          </label>
         </div>
       </section>
 
-      <!-- 카드 1: Part A · B · C 문해력 평가 정답 개수 가이드 -->
+      <!-- 카드 1 (좌측): Part A · B · C 문해력 평가 목표 점수 & 자동화 진행 범위 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
-            <span class="blueprint-step-pill">Part A · B · C (자동화 구간)</span>
-            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 문해력 평가 목표 점수 &amp; 정답 수 설정</h3>
+            <span class="blueprint-step-pill">Part A · B · C (문해력 채점)</span>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)} 프리셋] 문해력 목표 점수 &amp; 진행 범위</h3>
           </div>
-          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 나이대별 정답률</span>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 목표 정답 수</span>
         </div>
         <div class="blueprint-stage-desc">
-          Part A(선별 3문항, A1 음성인식 포함) ➔ Part B-1(기초 5문항) ➔ Part C(심화 C1~C20, 총 20문항)에서 해당 나이대 응답자가 맞힐 목표 정답 수를 설정합니다. <strong>END_C 채점 저장 후 D1(Part D) 진입 시 수기 전환을 위해 자동 정지</strong>합니다.
+          체크한 쿼터 대상자가 Part A(선별 3문항) ➔ Part B-1(기초 5문항) ➔ Part C(심화 C1~C20, 총 20문항)에서 맞힐 목표 정답 수와 <strong>자동화 정지 지점(Part C 채점 저장 후 정지 vs Part F까지 진행)</strong>을 설정합니다.
         </div>
         <div class="p-14">
           <div class="grid-2col gap-10 mb-12">
@@ -4137,7 +4470,7 @@ async function initSurveyDetailPage() {
               </select>
             </div>
           </div>
-          <div>
+          <div class="mb-12">
             <label class="figma-label font-bold text-primary-color">Part C 심화문해 (C1~C20, 총 20문항) 목표 정답 개수 범위</label>
             <div class="grid-2col gap-10 mt-6">
               <div>
@@ -4149,144 +4482,34 @@ async function initSurveyDetailPage() {
                 <input type="number" id="num-globalri-partC-max" class="figma-input w-full globalri-policy-input" min="0" max="20" value="${p.partC_correctCountMax ?? 20}" />
               </div>
             </div>
-            <div class="font-caption text-dim mt-6">
-              * 지정된 범위(예: ${p.partC_correctCountMin ?? 18}~${p.partC_correctCountMax ?? 20}개) 내에서 공인 정답을 자동 주입하고, 나머지 문항은 자연스러운 인접 보기를 선택합니다.
-            </div>
           </div>
-        </div>
-      </section>
-
-      <!-- 카드 1-2: 전 연령대 그룹 분류 현황 & 제출 문항·답변 엑셀 다운로드 -->
-      <section class="blueprint-card">
-        <div class="blueprint-card-header">
-          <div class="blueprint-card-title-group">
-            <span class="blueprint-step-pill" style="background: rgba(16, 185, 129, 0.2); color: #34d399;"><i class="fa-solid fa-file-excel"></i> 그룹 분류 &amp; 엑셀 저장</span>
-            <h3 class="blueprint-stage-title">나이대별 쿼터 분류(13명) &amp; 제출 문항·답변 엑셀 다운로드</h3>
-          </div>
-          <span class="badge-status success"><i class="fa-solid fa-check"></i> Part D 이후 수기 전환</span>
-        </div>
-        <div class="blueprint-stage-desc">
-          전체 13명 쿼터의 나이대별 그룹 분류 현황과 그룹별 Part C 목표 점수 요약입니다. 실행된 모든 문항(A1~C20)과 제출 답변, 공식 정답표, 채점 결과는 아래 엑셀 파일로 언제든 확인·다운로드할 수 있습니다.
-        </div>
-        <div class="p-14">
-          <div style="overflow-x: auto; margin-bottom: 12px;">
-            <table class="quota-clean-table" style="width: 100%; font-size: 12px;">
-              <thead>
-                <tr>
-                  <th style="padding: 6px 8px;">나이대 그룹</th>
-                  <th style="padding: 6px 8px;">인원</th>
-                  <th style="padding: 6px 8px;">Part C 목표점수</th>
-                  <th style="padding: 6px 8px; text-align: left;">소속 대상자 명단</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${Object.keys(GLOBALRI_AGE_GROUP_METAS).map(gk => {
-                  const gm = GLOBALRI_AGE_GROUP_METAS[gk];
-                  const gp = globalriAgePolicies[gk] || DEFAULT_GLOBALRI_AGE_POLICIES[gk];
-                  const gs = globalriAgeGroupStats[gk] || { count: 0, members: [] };
-                  return `
-                    <tr style="${gk === activeGlobalriAgeGroup ? 'background: rgba(56, 189, 248, 0.1);' : ''}">
-                      <td class="text-center font-bold" style="color: ${gm.color}; padding: 6px 8px;">${escapeHtml(gm.name)}</td>
-                      <td class="text-center font-mono font-bold" style="padding: 6px 8px;">${gs.count}명</td>
-                      <td class="text-center font-mono" style="padding: 6px 8px;">${gp.partC_correctCountMin ?? 18}~${gp.partC_correctCountMax ?? 20} / 20</td>
-                      <td style="padding: 6px 8px; white-space: normal; line-height: 1.4;">${gs.members.length > 0 ? escapeHtml(gs.members.join(', ')) : '<span class="text-dim">-</span>'}</td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          </div>
-          <div style="margin-bottom: 12px; padding: 10px 12px; background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-            <div>
-              <span class="font-bold text-white" style="font-size: 13px;"><i class="fa-solid fa-route text-primary-color"></i> 자동화 진행 범위 설정</span>
-              <div class="font-caption text-dim">Part C 채점 저장 후 수기 전환할지, Part D(D5_1~D5_4 교차체크 포함)~Part F(F05_2)까지 자동 진행할지 선택할 수 있습니다.</div>
-            </div>
-            <select id="sel-globalri-stop-mode" class="figma-select globalri-policy-input" style="min-width: 310px;">
-              <option value="part_c" ${(currentCampaign?.masterBaseline?.policy?.stopAfterPartC !== false) ? 'selected' : ''}>1) Part C 채점 저장(END_C)까지만 자동 진행 후 정지 (D1~ 수기)</option>
-              <option value="full_f05_2" ${(currentCampaign?.masterBaseline?.policy?.stopAfterPartC === false) ? 'selected' : ''}>2) Part F(F05_2)까지 전체 자동 진행 후 제출 직전 대기 (D5 교차체크)</option>
-            </select>
-          </div>
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-            <span class="font-caption text-dim"><i class="fa-solid fa-circle-info text-primary-color"></i> 시트1: 응답자별 A1~C20 답변 매트릭스 · 시트2: 문항별 제출 상세 · 시트3: 43문항 공식 정답표</span>
-            <a href="/api/campaigns/${encodeURIComponent(campId)}/export-answers-xlsx" class="btn-pill btn-pill-primary font-bold" style="text-decoration: none;">
-              <i class="fa-solid fa-download"></i> 제출 문항·답변 내역 엑셀(.xlsx) 다운로드
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <!-- 카드 2: Part D (D1~D4) 생활 만족도 · 정치 관심 · 사회적 지위 · 모임 빈도 -->
-      <section class="blueprint-card">
-        <div class="blueprint-card-header">
-          <div class="blueprint-card-title-group">
-            <span class="blueprint-step-pill">Part D (D1~D4)</span>
-            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 생활만족도 · 사회인식 · 모임 빈도</h3>
-          </div>
-          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 나이대별 가이드</span>
-        </div>
-        <div class="blueprint-stage-desc">
-          D1 전반적 생활 만족도, D2 정치적 관심도, D3 사회적 지위 인식, D4 친목 모임 참여 빈도를 설정합니다.
-        </div>
-        <div class="p-14 grid-2col gap-10">
-          <div>
-            <label class="figma-label font-bold">D1. 전반적 생활 만족도</label>
-            <select id="sel-globalri-D1" class="figma-select w-full globalri-policy-input">
-              <option value="4" ${p.D1_lifeSatisfaction === '4' ? 'selected' : ''}>4. 대체로 만족하는 편</option>
-              <option value="3_4" ${p.D1_lifeSatisfaction === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~만족 자연 분산)</option>
-              <option value="4_5" ${p.D1_lifeSatisfaction === '4_5' ? 'selected' : ''}>🎲 4~5점 (만족~매우 만족)</option>
-              <option value="3" ${p.D1_lifeSatisfaction === '3' ? 'selected' : ''}>3. 보통이다</option>
-              <option value="2" ${p.D1_lifeSatisfaction === '2' ? 'selected' : ''}>2. 대체로 불만족하는 편</option>
-              <option value="5" ${p.D1_lifeSatisfaction === '5' ? 'selected' : ''}>5. 매우 만족하는 편</option>
-            </select>
-          </div>
-          <div>
-            <label class="figma-label font-bold">D2. 평소 정치적 관심도</label>
-            <select id="sel-globalri-D2" class="figma-select w-full globalri-policy-input">
-              <option value="3" ${p.D2_politicalInterest === '3' ? 'selected' : ''}>3. 보통이다</option>
-              <option value="3_4" ${p.D2_politicalInterest === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~높은 편 자연 분산)</option>
-              <option value="2_3" ${p.D2_politicalInterest === '2_3' ? 'selected' : ''}>🎲 2~3점 (낮은 편~보통 자연 분산)</option>
-              <option value="4" ${p.D2_politicalInterest === '4' ? 'selected' : ''}>4. 대체로 높은 편</option>
-              <option value="2" ${p.D2_politicalInterest === '2' ? 'selected' : ''}>2. 대체로 낮은 편</option>
-            </select>
-          </div>
-          <div>
-            <label class="figma-label font-bold">D3. 본인의 사회적 지위 인식</label>
-            <select id="sel-globalri-D3" class="figma-select w-full globalri-policy-input">
-              <option value="3" ${p.D3_socialStatus === '3' ? 'selected' : ''}>3. 중간이다 (표준)</option>
-              <option value="3_4" ${p.D3_socialStatus === '3_4' ? 'selected' : ''}>🎲 3~4점 (중간~중상 자연 분산)</option>
-              <option value="2_3" ${p.D3_socialStatus === '2_3' ? 'selected' : ''}>🎲 2~3점 (낮은 편~중간 자연 분산)</option>
-              <option value="4" ${p.D3_socialStatus === '4' ? 'selected' : ''}>4. 대체로 높은 편</option>
-              <option value="2" ${p.D3_socialStatus === '2' ? 'selected' : ''}>2. 대체로 낮은 편</option>
-            </select>
-          </div>
-          <div>
-            <label class="figma-label font-bold">D4. 친목 모임(동창·향우회 등) 빈도</label>
-            <select id="sel-globalri-D4" class="figma-select w-full globalri-policy-input">
-              <option value="2" ${p.D4_socialGathering === '2' ? 'selected' : ''}>2. 일주일에 2~3번</option>
-              <option value="3" ${p.D4_socialGathering === '3' ? 'selected' : ''}>3. 한 달에 2~3번 (표준)</option>
-              <option value="4" ${p.D4_socialGathering === '4' ? 'selected' : ''}>4. 한 달에 1번 이하</option>
-              <option value="1" ${p.D4_socialGathering === '1' ? 'selected' : ''}>1. 거의 매일</option>
-              <option value="5" ${p.D4_socialGathering === '5' ? 'selected' : ''}>5. 거의 만나지 않음</option>
+          <div style="padding: 10px 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;">
+            <label class="figma-label font-bold" style="color: #0f172a; margin-bottom: 6px;">
+              <i class="fa-solid fa-route text-primary-color"></i> 설문 자동화 진행 범위 (정지 지점 선택)
+            </label>
+            <select id="sel-globalri-stop-mode" class="figma-select w-full globalri-policy-input">
+              <option value="part_c" ${stopAfterPartC ? 'selected' : ''}>1) Part C 채점 저장(END_C)까지만 자동 진행 후 정지 (Part D부터 수기 · 권장)</option>
+              <option value="full_f05_2" ${!stopAfterPartC ? 'selected' : ''}>2) Part F(F05_2)까지 전체 자동 진행 후 제출 직전 대기 (Part D D5 교차체크)</option>
             </select>
           </div>
         </div>
       </section>
 
-      <!-- 카드 3: Part D (D5_1~D5_4) 4대 영역별 문해력 자가진단 (각 5문항 × 5점 척도 교차 패턴) -->
+      <!-- 카드 2 (우측): Part D (D5_1~D5_4) 4대 영역별 문해력 자가진단 (교차 체크 · 한 번호 통일 금지) -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
             <span class="blueprint-step-pill">Part D (D5_1~D5_4)</span>
-            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 4대 영역 문해력 자가진단 (교차 체크 · 한 번호 통일 금지)</h3>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)} 프리셋] 4대 영역 자가진단 (교차 체크 강제)</h3>
           </div>
-          <span class="badge-tag-tunable"><i class="fa-solid fa-shuffle"></i> 교차 패턴 강제</span>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-shuffle"></i> 한 번호 통일 금지</span>
         </div>
         <div class="blueprint-stage-desc">
-          건강(D5_1) · 공공(D5_2) · 금융(D5_3) · 디지털/AI(D5_4) 각 5~6문항 입력 시 <strong>한 번호로 통일 체크하는 것을 원천 차단</strong>하고, 지정된 범위 내에서 <code>4-4-5-4-5</code> 또는 <code>5-4-5-4-5</code> 형태로 자연스럽게 교차 체크합니다.
+          건강(D5_1) · 공공(D5_2) · 금융(D5_3) · 디지털/AI(D5_4) 각 5~6문항 입력 시 <strong>한 번호로 일자 통일하는 것을 원천 금지</strong>하고, 선택한 범위에서 <code>4-4-5-4-5</code> 또는 <code>5-4-5-4-5</code> 형태로 교차 체크합니다.
         </div>
         <div class="p-14 grid-2col gap-10">
           <div>
-            <label class="figma-label font-bold">D5_1. 건강 문해력 (의약품·병원안내 이해)</label>
+            <label class="figma-label font-bold">D5_1. 건강 문해력 (의약품·병원안내)</label>
             <select id="sel-globalri-D5-1" class="figma-select w-full globalri-policy-input">
               <option value="4_5" ${(p.D5_1_healthLiteracy === '4_5' || p.D5_1_healthLiteracy === '4' || p.D5_1_healthLiteracy === '5') ? 'selected' : ''}>🎲 4~5점 교차 체크 (4-4-5-4-5 / 5-4-5-4-5)</option>
               <option value="3_4" ${(p.D5_1_healthLiteracy === '3_4' || p.D5_1_healthLiteracy === '3') ? 'selected' : ''}>🎲 3~4점 교차 체크 (3-3-4-3-4 / 4-3-4-3-4)</option>
@@ -4295,7 +4518,7 @@ async function initSurveyDetailPage() {
             </select>
           </div>
           <div>
-            <label class="figma-label font-bold">D5_2. 공공 문해력 (관공서·세금·법률서류)</label>
+            <label class="figma-label font-bold">D5_2. 공공 문해력 (관공서·세금·법률)</label>
             <select id="sel-globalri-D5-2" class="figma-select w-full globalri-policy-input">
               <option value="4_5" ${(p.D5_2_publicLiteracy === '4_5' || p.D5_2_publicLiteracy === '4' || p.D5_2_publicLiteracy === '5') ? 'selected' : ''}>🎲 4~5점 교차 체크 (4-4-5-4-5 / 5-4-5-4-5)</option>
               <option value="3_4" ${(p.D5_2_publicLiteracy === '3_4' || p.D5_2_publicLiteracy === '3') ? 'selected' : ''}>🎲 3~4점 교차 체크 (3-3-4-3-4 / 4-3-4-3-4)</option>
@@ -4304,7 +4527,7 @@ async function initSurveyDetailPage() {
             </select>
           </div>
           <div>
-            <label class="figma-label font-bold">D5_3. 금융 문해력 (예적금·보험·대출이자)</label>
+            <label class="figma-label font-bold">D5_3. 금융 문해력 (예적금·보험·대출)</label>
             <select id="sel-globalri-D5-3" class="figma-select w-full globalri-policy-input">
               <option value="4_5" ${(p.D5_3_financialLiteracy === '4_5' || p.D5_3_financialLiteracy === '4' || p.D5_3_financialLiteracy === '5') ? 'selected' : ''}>🎲 4~5점 교차 체크 (4-4-5-4-5 / 5-4-5-4-5)</option>
               <option value="3_4" ${(p.D5_3_financialLiteracy === '3_4' || p.D5_3_financialLiteracy === '3') ? 'selected' : ''}>🎲 3~4점 교차 체크 (3-3-4-3-4 / 4-3-4-3-4)</option>
@@ -4324,20 +4547,60 @@ async function initSurveyDetailPage() {
         </div>
       </section>
 
-      <!-- 카드 4: Part E (E1~E2) 성인문해교육 필요성 · 참여 의향 · 7대 교육프로그램 희망도 -->
+      <!-- 카드 3 (좌측): Part D (D1~D4) 생활만족도·사회인식 & Part E (E1~E2) 성인문해교육 수요 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
-            <span class="blueprint-step-pill">Part E (E1~E2)</span>
-            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 성인문해교육 수요 &amp; 7대 프로그램 희망도</h3>
+            <span class="blueprint-step-pill">Part D (D1~D4) &amp; Part E</span>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)} 프리셋] 생활만족도 · 사회인식 · 문해교육 수요</h3>
           </div>
-          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 조건부 분기 연동</span>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 생활·교육 인식</span>
         </div>
         <div class="blueprint-stage-desc">
-          E1 필요 여부(1=필요함➔E1_1, 2=불필요➔E2 직행), E1_1 참여 의향, E1_2 미참여 사유, E2 7대 교육프로그램 참여 희망도를 설정합니다.
+          Part D(D1~D4 생활만족·정치관심·사회적지위·모임빈도) 및 Part E(E1 문해교육 필요성·E2 7대 프로그램 희망도) 응답 가이드를 설정합니다.
         </div>
         <div class="p-14">
-          <div class="grid-3col gap-10 mb-12" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+          <div class="grid-2col gap-10 mb-12">
+            <div>
+              <label class="figma-label font-bold">D1. 전반적 생활 만족도</label>
+              <select id="sel-globalri-D1" class="figma-select w-full globalri-policy-input">
+                <option value="4" ${p.D1_lifeSatisfaction === '4' ? 'selected' : ''}>4. 대체로 만족하는 편</option>
+                <option value="3_4" ${p.D1_lifeSatisfaction === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~만족 자연 분산)</option>
+                <option value="4_5" ${p.D1_lifeSatisfaction === '4_5' ? 'selected' : ''}>🎲 4~5점 (만족~매우 만족)</option>
+                <option value="3" ${p.D1_lifeSatisfaction === '3' ? 'selected' : ''}>3. 보통이다</option>
+                <option value="2" ${p.D1_lifeSatisfaction === '2' ? 'selected' : ''}>2. 대체로 불만족하는 편</option>
+              </select>
+            </div>
+            <div>
+              <label class="figma-label font-bold">D2. 평소 정치적 관심도</label>
+              <select id="sel-globalri-D2" class="figma-select w-full globalri-policy-input">
+                <option value="3" ${p.D2_politicalInterest === '3' ? 'selected' : ''}>3. 보통이다</option>
+                <option value="3_4" ${p.D2_politicalInterest === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~높은 편)</option>
+                <option value="2_3" ${p.D2_politicalInterest === '2_3' ? 'selected' : ''}>🎲 2~3점 (낮은 편~보통)</option>
+                <option value="4" ${p.D2_politicalInterest === '4' ? 'selected' : ''}>4. 대체로 높은 편</option>
+                <option value="2" ${p.D2_politicalInterest === '2' ? 'selected' : ''}>2. 대체로 낮은 편</option>
+              </select>
+            </div>
+            <div>
+              <label class="figma-label font-bold">D3. 본인의 사회적 지위 인식</label>
+              <select id="sel-globalri-D3" class="figma-select w-full globalri-policy-input">
+                <option value="3" ${p.D3_socialStatus === '3' ? 'selected' : ''}>3. 중간이다 (표준)</option>
+                <option value="3_4" ${p.D3_socialStatus === '3_4' ? 'selected' : ''}>🎲 3~4점 (중간~중상)</option>
+                <option value="2_3" ${p.D3_socialStatus === '2_3' ? 'selected' : ''}>🎲 2~3점 (낮은 편~중간)</option>
+                <option value="4" ${p.D3_socialStatus === '4' ? 'selected' : ''}>4. 대체로 높은 편</option>
+                <option value="2" ${p.D3_socialStatus === '2' ? 'selected' : ''}>2. 대체로 낮은 편</option>
+              </select>
+            </div>
+            <div>
+              <label class="figma-label font-bold">D4. 친목 모임(동창·향우회) 빈도</label>
+              <select id="sel-globalri-D4" class="figma-select w-full globalri-policy-input">
+                <option value="2" ${p.D4_socialGathering === '2' ? 'selected' : ''}>2. 일주일에 2~3번</option>
+                <option value="3" ${p.D4_socialGathering === '3' ? 'selected' : ''}>3. 한 달에 2~3번 (표준)</option>
+                <option value="4" ${p.D4_socialGathering === '4' ? 'selected' : ''}>4. 한 달에 1번 이하</option>
+                <option value="1" ${p.D4_socialGathering === '1' ? 'selected' : ''}>1. 거의 매일</option>
+                <option value="5" ${p.D4_socialGathering === '5' ? 'selected' : ''}>5. 거의 만나지 않음</option>
+              </select>
+            </div>
             <div>
               <label class="figma-label font-bold">E1. 문해교육 필요 여부</label>
               <select id="sel-globalri-E1" class="figma-select w-full globalri-policy-input">
@@ -4346,35 +4609,30 @@ async function initSurveyDetailPage() {
               </select>
             </div>
             <div>
-              <label class="figma-label font-bold">E1_1. 참여 의향 (E1=1 시)</label>
-              <select id="sel-globalri-E1-1" class="figma-select w-full globalri-policy-input">
-                <option value="1" ${p.E1_1_participationIntent === '1' ? 'selected' : ''}>1. 참여 의향 있음 (➔ E2)</option>
-                <option value="2" ${p.E1_1_participationIntent === '2' ? 'selected' : ''}>2. 참여 의향 없음 (➔ E1_2)</option>
-              </select>
+              <label class="figma-label font-bold">E1_1 / E1_2. 참여 의향 &amp; 불참 이유</label>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <select id="sel-globalri-E1-1" class="figma-select w-full globalri-policy-input" title="E1=1 시 참여 의향">
+                  <option value="1" ${p.E1_1_participationIntent === '1' ? 'selected' : ''}>E1_1: 참여함</option>
+                  <option value="2" ${p.E1_1_participationIntent === '2' ? 'selected' : ''}>E1_1: 불참</option>
+                </select>
+                <select id="sel-globalri-E1-2" class="figma-select w-full globalri-policy-input" title="E1_1=2 시 불참 이유">
+                  <option value="1" ${p.E1_2_barrierReason === '1' ? 'selected' : ''}>1. 시간부족</option>
+                  <option value="3" ${p.E1_2_barrierReason === '3' ? 'selected' : ''}>3. 건강어려움</option>
+                  <option value="5" ${p.E1_2_barrierReason === '5' ? 'selected' : ''}>5. 정보부족</option>
+                </select>
+              </div>
             </div>
             <div>
-              <label class="figma-label font-bold">E1_2. 불참 이유 (E1_1=2 시)</label>
-              <select id="sel-globalri-E1-2" class="figma-select w-full globalri-policy-input">
-                <option value="1" ${p.E1_2_barrierReason === '1' ? 'selected' : ''}>1. 시간 부족 (직장/가사 등)</option>
-                <option value="2" ${p.E1_2_barrierReason === '2' ? 'selected' : ''}>2. 경제적 여유 부족</option>
-                <option value="3" ${p.E1_2_barrierReason === '3' ? 'selected' : ''}>3. 건강상의 어려움</option>
-                <option value="5" ${p.E1_2_barrierReason === '5' ? 'selected' : ''}>5. 교육기관 정보 부족</option>
-                <option value="6" ${p.E1_2_barrierReason === '6' ? 'selected' : ''}>6. 교육장소 접근 어려움</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid-2col gap-10">
-            <div>
-              <label class="figma-label font-bold">E2. 7대 교육프로그램 전반적 희망도</label>
+              <label class="figma-label font-bold">E2. 7대 교육프로그램 희망도</label>
               <select id="sel-globalri-E2-mode" class="figma-select w-full globalri-policy-input">
-                <option value="3_4" ${p.E2_programDesireMode === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~참여 희망 자연 분산)</option>
-                <option value="2_3" ${p.E2_programDesireMode === '2_3' ? 'selected' : ''}>🎲 2~3점 (별로 없음~보통 자연 분산)</option>
-                <option value="4_5" ${p.E2_programDesireMode === '4_5' ? 'selected' : ''}>🎲 4~5점 (적극 참여 희망)</option>
-                <option value="1_2" ${p.E2_programDesireMode === '1_2' ? 'selected' : ''}>🎲 1~2점 (참여 의사 낮음)</option>
+                <option value="3_4" ${p.E2_programDesireMode === '3_4' ? 'selected' : ''}>🎲 3~4점 교차 (보통~희망)</option>
+                <option value="2_3" ${p.E2_programDesireMode === '2_3' ? 'selected' : ''}>🎲 2~3점 교차 (낮음~보통)</option>
+                <option value="4_5" ${p.E2_programDesireMode === '4_5' ? 'selected' : ''}>🎲 4~5점 교차 (적극 희망)</option>
+                <option value="1_2" ${p.E2_programDesireMode === '1_2' ? 'selected' : ''}>🎲 1~2점 교차 (의사 낮음)</option>
               </select>
             </div>
             <div>
-              <label class="figma-label font-bold">E2. 중점 선호 프로그램 가중치</label>
+              <label class="figma-label font-bold">E2. 중점 선호 프로그램</label>
               <select id="sel-globalri-E2-pref" class="figma-select w-full globalri-policy-input">
                 <option value="digital_finance" ${p.E2_preferredPrograms === 'digital_finance' ? 'selected' : ''}>금융·경제(4번) &amp; 디지털·AI(5번) 우대</option>
                 <option value="health_leisure" ${p.E2_preferredPrograms === 'health_leisure' ? 'selected' : ''}>건강·안전(3번) &amp; 문화·여가(6번) 우대</option>
@@ -4385,17 +4643,17 @@ async function initSurveyDetailPage() {
         </div>
       </section>
 
-      <!-- 카드 5: Part F (F01~F02) 응답자 최종학력 및 부모 학력 -->
+      <!-- 카드 4 (우측): Part F (F01~F05_2) 학력 · 경제활동 · 직업 · 월평균 소득 -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
-            <span class="blueprint-step-pill">Part F (F01~F02)</span>
-            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 본인 최종학력 &amp; 부모님 학력</h3>
+            <span class="blueprint-step-pill">Part F (F01~F05_2)</span>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)} 프리셋] 학력 · 경제활동 · 개인/가구 소득</h3>
           </div>
-          <span class="badge-tag-tunable"><i class="fa-solid fa-graduation-cap"></i> 학력 정합성</span>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-coins"></i> 소득 정합성 보장</span>
         </div>
         <div class="blueprint-stage-desc">
-          F01 응답자 본인 최종학력(학교급·졸업여부)과 F02 아버지/어머니 학력(무학 또는 모름 선택 시 졸업여부 자동 비활성화)을 설정합니다.
+          본인·부모 학력(F01~F02), 지난 4주간 경제활동·직업(F03~F04_2), 월평균 개인/가구소득(F05_2 &ge; F05_1 자동 보정)을 설정합니다.
         </div>
         <div class="p-14 grid-2col gap-10">
           <div>
@@ -4407,7 +4665,6 @@ async function initSurveyDetailPage() {
               <option value="3" ${p.F01_1_educationLevel === '3' ? 'selected' : ''}>3. 중학교</option>
               <option value="2" ${p.F01_1_educationLevel === '2' ? 'selected' : ''}>2. 초등학교</option>
               <option value="7" ${p.F01_1_educationLevel === '7' ? 'selected' : ''}>7. 대학원 (석사 과정)</option>
-              <option value="8" ${p.F01_1_educationLevel === '8' ? 'selected' : ''}>8. 대학원 (박사 과정)</option>
               <option value="1" ${p.F01_1_educationLevel === '1' ? 'selected' : ''}>1. 무학 (학교 다니지 않음)</option>
             </select>
           </div>
@@ -4418,61 +4675,41 @@ async function initSurveyDetailPage() {
               <option value="1" ${p.F01_2_graduationStatus === '1' ? 'selected' : ''}>1. 재학 중 (대학생 등)</option>
               <option value="3" ${p.F01_2_graduationStatus === '3' ? 'selected' : ''}>3. 휴학 중</option>
               <option value="2" ${p.F01_2_graduationStatus === '2' ? 'selected' : ''}>2. 중퇴</option>
-              <option value="4" ${p.F01_2_graduationStatus === '4' ? 'selected' : ''}>4. 수료</option>
             </select>
           </div>
           <div>
-            <label class="figma-label font-bold">F02 (부). 아버지 최종학력</label>
-            <select id="sel-globalri-F02-father" class="figma-select w-full globalri-policy-input">
-              <option value="6" ${p.F02_fatherEdu === '6' ? 'selected' : ''}>6. 대학교(4년제 이상) 졸업</option>
-              <option value="5" ${p.F02_fatherEdu === '5' ? 'selected' : ''}>5. 대학(2·3년제) 졸업</option>
-              <option value="4" ${p.F02_fatherEdu === '4' ? 'selected' : ''}>4. 고등학교 졸업</option>
-              <option value="3" ${p.F02_fatherEdu === '3' ? 'selected' : ''}>3. 중학교 졸업</option>
-              <option value="2" ${p.F02_fatherEdu === '2' ? 'selected' : ''}>2. 초등학교 졸업</option>
-              <option value="1" ${p.F02_fatherEdu === '1' ? 'selected' : ''}>1. 무학 (학교 다니지 않음)</option>
-              <option value="9" ${p.F02_fatherEdu === '9' ? 'selected' : ''}>9. 모름</option>
-            </select>
+            <label class="figma-label font-bold">F02. 부모님 학력 (부 / 모)</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+              <select id="sel-globalri-F02-father" class="figma-select w-full globalri-policy-input" title="아버지 학력">
+                <option value="6" ${p.F02_fatherEdu === '6' ? 'selected' : ''}>부: 대졸</option>
+                <option value="4" ${p.F02_fatherEdu === '4' ? 'selected' : ''}>부: 고졸</option>
+                <option value="3" ${p.F02_fatherEdu === '3' ? 'selected' : ''}>부: 중졸</option>
+                <option value="2" ${p.F02_fatherEdu === '2' ? 'selected' : ''}>부: 초졸</option>
+                <option value="1" ${p.F02_fatherEdu === '1' ? 'selected' : ''}>부: 무학</option>
+                <option value="9" ${p.F02_fatherEdu === '9' ? 'selected' : ''}>부: 모름</option>
+              </select>
+              <select id="sel-globalri-F02-mother" class="figma-select w-full globalri-policy-input" title="어머니 학력">
+                <option value="6" ${p.F02_motherEdu === '6' ? 'selected' : ''}>모: 대졸</option>
+                <option value="4" ${p.F02_motherEdu === '4' ? 'selected' : ''}>모: 고졸</option>
+                <option value="3" ${p.F02_motherEdu === '3' ? 'selected' : ''}>모: 중졸</option>
+                <option value="2" ${p.F02_motherEdu === '2' ? 'selected' : ''}>모: 초졸</option>
+                <option value="1" ${p.F02_motherEdu === '1' ? 'selected' : ''}>모: 무학</option>
+                <option value="9" ${p.F02_motherEdu === '9' ? 'selected' : ''}>모: 모름</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label class="figma-label font-bold">F02 (모). 어머니 최종학력</label>
-            <select id="sel-globalri-F02-mother" class="figma-select w-full globalri-policy-input">
-              <option value="6" ${p.F02_motherEdu === '6' ? 'selected' : ''}>6. 대학교(4년제 이상) 졸업</option>
-              <option value="5" ${p.F02_motherEdu === '5' ? 'selected' : ''}>5. 대학(2·3년제) 졸업</option>
-              <option value="4" ${p.F02_motherEdu === '4' ? 'selected' : ''}>4. 고등학교 졸업</option>
-              <option value="3" ${p.F02_motherEdu === '3' ? 'selected' : ''}>3. 중학교 졸업</option>
-              <option value="2" ${p.F02_motherEdu === '2' ? 'selected' : ''}>2. 초등학교 졸업</option>
-              <option value="1" ${p.F02_motherEdu === '1' ? 'selected' : ''}>1. 무학 (학교 다니지 않음)</option>
-              <option value="9" ${p.F02_motherEdu === '9' ? 'selected' : ''}>9. 모름</option>
-            </select>
-          </div>
-        </div>
-      </section>
-
-      <!-- 카드 6: Part F (F03~F05_2) 경제활동 · 직업 · 종사상 지위 · 개인/가구 소득 -->
-      <section class="blueprint-card">
-        <div class="blueprint-card-header">
-          <div class="blueprint-card-title-group">
-            <span class="blueprint-step-pill">Part F (F03~F05_2)</span>
-            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 경제활동 · 직업 · 월간 개인/가구 소득</h3>
-          </div>
-          <span class="badge-tag-tunable"><i class="fa-solid fa-coins"></i> 소득 정합성 보장</span>
-        </div>
-        <div class="blueprint-stage-desc">
-          F03 주된 활동(1=일하였음 선택 시 F04 직업·고용형태 진입)과 F05_1 개인소득 / F05_2 가구소득(가구소득 &ge; 개인소득 자동 보장)을 설정합니다.
-        </div>
-        <div class="p-14 grid-2col gap-10">
           <div>
             <label class="figma-label font-bold">F03. 지난 4주간 주된 활동</label>
             <select id="sel-globalri-F03" class="figma-select w-full globalri-policy-input">
-              <option value="1" ${p.F03_economicActivity === '1' ? 'selected' : ''}>1. 일하였음 (취업·자영업 ➔ F04 진입)</option>
-              <option value="2" ${p.F03_economicActivity === '2' ? 'selected' : ''}>2. 구직 활동 및 취업 준비 (➔ F05_1 직행)</option>
-              <option value="3" ${p.F03_economicActivity === '3' ? 'selected' : ''}>3. 학교 재학 및 진학 준비 (➔ F05_1 직행)</option>
-              <option value="4" ${p.F03_economicActivity === '4' ? 'selected' : ''}>4. 육아·가사 (전업주부 등 ➔ F05_1 직행)</option>
-              <option value="5" ${p.F03_economicActivity === '5' ? 'selected' : ''}>5. 쉬었음 (은퇴·휴식 등 ➔ F05_1 직행)</option>
+              <option value="1" ${p.F03_economicActivity === '1' ? 'selected' : ''}>1. 일하였음 (➔ F04 진입)</option>
+              <option value="2" ${p.F03_economicActivity === '2' ? 'selected' : ''}>2. 구직 활동 및 취업 준비</option>
+              <option value="3" ${p.F03_economicActivity === '3' ? 'selected' : ''}>3. 학교 재학 및 진학 준비</option>
+              <option value="4" ${p.F03_economicActivity === '4' ? 'selected' : ''}>4. 육아·가사 (전업주부 등)</option>
+              <option value="5" ${p.F03_economicActivity === '5' ? 'selected' : ''}>5. 쉬었음 (은퇴·휴식 등)</option>
             </select>
           </div>
           <div>
-            <label class="figma-label font-bold">F04. 직업 분류 (F03=1 일하였음 시)</label>
+            <label class="figma-label font-bold">F04. 직업 분류 (F03=1 시)</label>
             <select id="sel-globalri-F04" class="figma-select w-full globalri-policy-input">
               <option value="3" ${p.F04_occupation === '3' ? 'selected' : ''}>3. 사무 종사자</option>
               <option value="2" ${p.F04_occupation === '2' ? 'selected' : ''}>2. 전문가 및 관련 종사자</option>
@@ -4480,25 +4717,24 @@ async function initSurveyDetailPage() {
               <option value="5" ${p.F04_occupation === '5' ? 'selected' : ''}>5. 판매 종사자</option>
               <option value="1" ${p.F04_occupation === '1' ? 'selected' : ''}>1. 관리자</option>
               <option value="7" ${p.F04_occupation === '7' ? 'selected' : ''}>7. 기능원 및 관련 기능 종사자</option>
-              <option value="8" ${p.F04_occupation === '8' ? 'selected' : ''}>8. 장치·기계 조작 및 조립 종사자</option>
+              <option value="8" ${p.F04_occupation === '8' ? 'selected' : ''}>8. 장치·기계 조작 및 조립</option>
               <option value="9" ${p.F04_occupation === '9' ? 'selected' : ''}>9. 단순노무 종사자</option>
             </select>
           </div>
           <div>
-            <label class="figma-label font-bold">F04_1. 고용 형태 (F03=1 시)</label>
-            <select id="sel-globalri-F04-1" class="figma-select w-full globalri-policy-input">
-              <option value="1" ${p.F04_1_employmentType === '1' ? 'selected' : ''}>1. 임금근로자 (➔ F04_2 진입)</option>
-              <option value="2" ${p.F04_1_employmentType === '2' ? 'selected' : ''}>2. 비임금근로자 (자영업자·무급가족 ➔ F05_1)</option>
-            </select>
-          </div>
-          <div>
-            <label class="figma-label font-bold">F04_2. 근로 시간·지위 (F04_1=1 시)</label>
-            <select id="sel-globalri-F04-2" class="figma-select w-full globalri-policy-input">
-              <option value="1" ${p.F04_2_workStatus === '1' ? 'selected' : ''}>1. 전일제 상근근로자 (정규직)</option>
-              <option value="2" ${p.F04_2_workStatus === '2' ? 'selected' : ''}>2. 시간제 상근근로자</option>
-              <option value="3" ${p.F04_2_workStatus === '3' ? 'selected' : ''}>3. 전일제 임시·일용근로자</option>
-              <option value="4" ${p.F04_2_workStatus === '4' ? 'selected' : ''}>4. 시간제 임시·일용근로자</option>
-            </select>
+            <label class="figma-label font-bold">F04_1 / F04_2. 고용형태 &amp; 지위</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+              <select id="sel-globalri-F04-1" class="figma-select w-full globalri-policy-input">
+                <option value="1" ${p.F04_1_employmentType === '1' ? 'selected' : ''}>1. 임금근로자</option>
+                <option value="2" ${p.F04_1_employmentType === '2' ? 'selected' : ''}>2. 자영업/비임금</option>
+              </select>
+              <select id="sel-globalri-F04-2" class="figma-select w-full globalri-policy-input">
+                <option value="1" ${p.F04_2_workStatus === '1' ? 'selected' : ''}>1. 전일제 상근</option>
+                <option value="2" ${p.F04_2_workStatus === '2' ? 'selected' : ''}>2. 시간제 상근</option>
+                <option value="3" ${p.F04_2_workStatus === '3' ? 'selected' : ''}>3. 전일제 임시</option>
+                <option value="4" ${p.F04_2_workStatus === '4' ? 'selected' : ''}>4. 시간제 임시</option>
+              </select>
+            </div>
           </div>
           <div>
             <label class="figma-label font-bold">F05_1. 월평균 개인소득 (1~8)</label>
@@ -4514,7 +4750,7 @@ async function initSurveyDetailPage() {
             </select>
           </div>
           <div>
-            <label class="figma-label font-bold">F05_2. 월평균 가구소득 (개인소득 이상 필수)</label>
+            <label class="figma-label font-bold">F05_2. 월평균 가구소득 (개인소득 이상)</label>
             <select id="sel-globalri-F05-2" class="figma-select w-full globalri-policy-input">
               <option value="1" ${p.F05_2_householdIncome === '1' ? 'selected' : ''}>1. 100만원 미만</option>
               <option value="2" ${p.F05_2_householdIncome === '2' ? 'selected' : ''}>2. 100만원 ~ 200만원 미만</option>
@@ -4528,13 +4764,56 @@ async function initSurveyDetailPage() {
           </div>
         </div>
       </section>
+
+      <!-- 하단 전폭 액션 바 & 쿼터별 적용 가이드 요약 -->
+      <section class="blueprint-card full-width-card globalri-action-footer-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: #0f172a;">
+              <i class="fa-solid fa-clipboard-check text-primary-color"></i> 선택 쿼터 가이드 적용 현황 및 일괄 배치 실행
+            </h4>
+            <div style="font-size: 12.5px; color: #475569; margin-top: 4px;">
+              체크한 쿼터에 가이드를 적용한 뒤, <strong>[선택/가이드 지정된 쿼터 일괄 자동 배치 시작]</strong>을 누르면 선택된 대상자들만 순차 실행됩니다.
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" id="btn-globalri-apply-selected-guide" class="btn-pill btn-pill-primary font-bold" style="padding: 10px 18px; font-size: 13.5px;">
+              <i class="fa-solid fa-check-double"></i> ✅ 1단계: 체크한 쿼터 (${checkedItems.length}명)에 위 가이드 적용·저장
+            </button>
+            <button type="button" id="btn-globalri-run-selected-batch" class="btn-pill btn-pill-success font-bold" style="padding: 10px 20px; font-size: 13.5px;">
+              <i class="fa-solid fa-rocket"></i> 🚀 2단계: ${escapeHtml(batchTargetDesc)} 일괄 자동 배치 시작
+            </button>
+            <a href="/api/campaigns/${encodeURIComponent(campId)}/export-answers-xlsx" class="btn-pill btn-pill-secondary font-bold" style="padding: 10px 16px; font-size: 13px; text-decoration: none;">
+              <i class="fa-solid fa-file-excel text-success"></i> 제출 문항·답변 엑셀(.xlsx) 다운로드
+            </a>
+          </div>
+        </div>
+      </section>
     `;
 
-    // 나이대 탭 클릭 이벤트 바인딩
+    // 개별 칩 체크 해제 이벤트
+    blueprintStageGrid.querySelectorAll('.btn-uncheck-member-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const seq = Number(btn.getAttribute('data-seq'));
+        checkedGlobalriSeqs.delete(seq);
+        renderQuotaTable(qDb);
+        renderGlobalriAgeGroupCards();
+      });
+    });
+
+    // STEP 2 내부 빠른 체크 버튼 이벤트
+    blueprintStageGrid.querySelectorAll('.step2-quick-check').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-quick-check');
+        applyGlobalriQuickCheck(mode, qDb);
+      });
+    });
+
+    // 나이대 프리셋 탭 클릭 이벤트 바인딩
     blueprintStageGrid.querySelectorAll('.globalri-age-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const targetGroup = btn.getAttribute('data-age-group');
-        if (!targetGroup || targetGroup === activeGlobalriAgeGroup) return;
+        if (!targetGroup) return;
         syncGlobalriActiveCardToState();
         activeGlobalriAgeGroup = targetGroup;
         renderGlobalriAgeGroupCards();
@@ -4568,30 +4847,24 @@ async function initSurveyDetailPage() {
       });
     }
 
-    // 현재 나이대 설정을 전 연령대에 일괄 복사
-    const btnCopyAll = document.getElementById('btn-globalri-copy-age-all');
-    if (btnCopyAll) {
-      btnCopyAll.addEventListener('click', () => {
-        syncGlobalriActiveCardToState();
-        const src = globalriAgePolicies[activeGlobalriAgeGroup];
-        Object.keys(GLOBALRI_AGE_GROUP_METAS).forEach(k => {
-          globalriAgePolicies[k] = JSON.parse(JSON.stringify(src));
-        });
-        markUnsaved();
-        alert(`✓ [${GLOBALRI_AGE_GROUP_METAS[activeGlobalriAgeGroup].name}]의 가이드 설정이 20대·30대·40대·50대·60대·70대 이상 전체 그룹에 일괄 복사되었습니다.\n우측 상단의 [나이대별 가이드 저장] 버튼을 눌러 저장해 주세요.`);
-      });
+    // 체크한 쿼터에 가이드 적용 버튼 (상단 & 하단)
+    const btnApplyTop = document.getElementById('btn-globalri-apply-top');
+    if (btnApplyTop) {
+      btnApplyTop.addEventListener('click', () => applyGuideToCheckedGlobalriQuotas(true));
+    }
+    const btnApplyBottom = document.getElementById('btn-globalri-apply-selected-guide');
+    if (btnApplyBottom) {
+      btnApplyBottom.addEventListener('click', () => applyGuideToCheckedGlobalriQuotas(true));
     }
 
-    // 연령별 표준 차등 기본값 복원
-    const btnResetDefaults = document.getElementById('btn-globalri-reset-age-defaults');
-    if (btnResetDefaults) {
-      btnResetDefaults.addEventListener('click', () => {
-        if (!confirm('20대~70대 이상 전 연령대 가이드를 연령별 표준 차등 기본값으로 복원하시겠습니까?')) return;
-        globalriAgePolicies = JSON.parse(JSON.stringify(DEFAULT_GLOBALRI_AGE_POLICIES));
-        renderGlobalriAgeGroupCards();
-        markUnsaved();
-        appendLog('info', '[프리셋 복원] 20대~70대+ 연령별 표준 차등 가이드라인이 복원되었습니다.');
-      });
+    // 선택/가이드 쿼터 일괄 배치 실행 버튼 (상단 & 하단)
+    const btnBatchTop = document.getElementById('btn-globalri-batch-top');
+    if (btnBatchTop) {
+      btnBatchTop.addEventListener('click', () => triggerBatchRun());
+    }
+    const btnBatchBottom = document.getElementById('btn-globalri-run-selected-batch');
+    if (btnBatchBottom) {
+      btnBatchBottom.addEventListener('click', () => triggerBatchRun());
     }
   }
 
@@ -4615,18 +4888,18 @@ async function initSurveyDetailPage() {
     if (legendWrap) legendWrap.style.display = 'none';
 
     const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
-    if (titleEl) titleEl.textContent = '제5차 성인문해능력조사 나이대별(20대 · 30대 · 40대 · 50대 · 60대 · 70대+) 그룹 응답 가이드';
+    if (titleEl) titleEl.textContent = '제5차 성인문해능력조사 · 체크한 쿼터 항목별 맞춤 응답 가이드 설정';
 
     const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
-    if (subtitleEl) subtitleEl.textContent = '조사 대상자의 출생연도에 따라 자동 분류되는 나이대 그룹별로 문해력 목표 정답 수(Part A~C), 문해력 자가진단(D5), 문해교육 수요(Part E), 학력·직업·소득(Part F) 가이드를 설정합니다.';
+    if (subtitleEl) subtitleEl.textContent = 'STEP 1 조사 쿼터에서 원하는 대상자들을 체크한 뒤, 나이대 추천 프리셋(20대~70대+) 또는 상세 문항 가이드를 적용하고 선택 항목만 일괄 배치 자동화로 실행합니다.';
 
     if (badgeMasterStatus) {
-      badgeMasterStatus.innerHTML = '<i class="fa-solid fa-layer-group"></i> 나이대별(20대~70대+) 6개 그룹 가이드 활성';
+      badgeMasterStatus.innerHTML = '<i class="fa-solid fa-square-check"></i> 선택 쿼터 맞춤 가이드 &amp; 일괄 배치 활성';
       badgeMasterStatus.className = 'badge-status badge-blueprint ready';
     }
 
     if (btnSaveBaseline) {
-      btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 나이대별 응답 가이드 저장';
+      btnSaveBaseline.innerHTML = '<i class="fa-solid fa-check-double"></i> 체크한 쿼터에 가이드 적용·저장';
     }
 
     const incomingGroups = data.ageGroups || data.policy?.ageGroups || data.ageGroupPolicies || data.baseline?.ageGroups || data.blueprint?.defaultPolicy?.ageGroups || {};
@@ -4638,7 +4911,7 @@ async function initSurveyDetailPage() {
       };
     });
 
-    // 쿼터 DB 기반 나이대별 통계 재집계 (ageGroupKey / ageGroup / ageGroupLabel / birthYear 전수 판별)
+    // 쿼터 DB 기반 나이대별 통계 재집계
     const qDb = currentCampaign?.quotaDatabase || [];
     rebuildGlobalriAgeGroupStats(qDb, data.ageGroupStats || null);
 
@@ -6245,6 +6518,21 @@ async function initSurveyDetailPage() {
 
       let payload;
       if (isGlobalriLiteracy) {
+        if (showNotification && checkedGlobalriSeqs.size > 0) {
+          const ok = await applyGuideToCheckedGlobalriQuotas(true);
+          if (btnSaveBaseline) {
+            btnSaveBaseline.disabled = false;
+            btnSaveBaseline.innerHTML = '<i class="fa-solid fa-check-double"></i> 체크한 쿼터에 가이드 적용·저장 완료!';
+            btnSaveBaseline.className = 'btn-pill btn-pill-success';
+            setTimeout(() => {
+              if (btnSaveBaseline) {
+                btnSaveBaseline.innerHTML = '<i class="fa-solid fa-check-double"></i> 체크한 쿼터에 가이드 적용·저장';
+                btnSaveBaseline.className = 'btn-pill btn-pill-primary';
+              }
+            }, 2500);
+          }
+          return ok;
+        }
         syncGlobalriActiveCardToState();
         const stopModeEl = document.getElementById('sel-globalri-stop-mode');
         const stopAfterPartC = stopModeEl ? (stopModeEl.value !== 'full_f05_2') : (currentCampaign?.masterBaseline?.policy?.stopAfterPartC !== false);
@@ -6510,12 +6798,34 @@ async function initSurveyDetailPage() {
     const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed' || firstQuota.status === '완료' || firstQuota.quotaStatus === '진행중(98%)' || firstQuota.status === '진행중(98%)');
     const startIdx = (isKona || isHrcEnergy || isGlobalriLiteracy) ? 1 : (firstDone ? 2 : 1);
 
-    // 1:1 슬롯 매핑 전수 검증
-    const targets = isHrcEnergy
-      ? quotaDb.filter(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료')
-      : ((isKona || isGlobalriLiteracy)
-        ? quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료')
-        : quotaDb.filter(b => (b.index || b.seq) >= startIdx));
+    // 1:1 슬롯 매핑 전수 검증 및 글로벌리서치 선택 항목 필터링
+    let selectedTargetIndices = null;
+    let targets = [];
+    if (isGlobalriLiteracy) {
+      const uncompletedAll = quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료');
+      const checkedUncompleted = uncompletedAll.filter((b, idx) => checkedGlobalriSeqs.has(Number(b.index || b.seq || (idx + 1))));
+      const guidedUncompleted = uncompletedAll.filter(b => b.guideApplied);
+      if (checkedUncompleted.length > 0) {
+        targets = checkedUncompleted;
+        selectedTargetIndices = checkedUncompleted.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
+      } else if (guidedUncompleted.length > 0) {
+        targets = guidedUncompleted;
+        selectedTargetIndices = guidedUncompleted.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
+      } else {
+        targets = uncompletedAll;
+        selectedTargetIndices = uncompletedAll.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
+      }
+      if (targets.length === 0) {
+        alert('실행할 미완료 쿼터 항목이 없습니다.');
+        return;
+      }
+    } else {
+      targets = isHrcEnergy
+        ? quotaDb.filter(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료')
+        : (isKona
+          ? quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료')
+          : quotaDb.filter(b => (b.index || b.seq) >= startIdx));
+    }
     const unmappedTargets = (isKona || isHrcEnergy || isGlobalriLiteracy) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
     if (unmappedTargets.length > 0) {
       if (isMetrix) {
@@ -6532,7 +6842,8 @@ async function initSurveyDetailPage() {
     
     let confirmMsg;
     if (isGlobalriLiteracy) {
-      confirmMsg = `[제5차 성인문해능력조사 - 나이대별 그룹 가이드 배치 (Part A ~ Part C)]\n미완료 대상자 ${targets.length}명에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 대상자의 출생연도(20대·30대·40대·50대·60대·70대+)에 맞춘 그룹 가이드 자동 적용\n2. CONSENT~GP1 및 기존 입력 문항 100% 보존\n3. Part A ~ Part C 채점 저장(END_C) 완료 후 D1에서 즉시 정지 (Part D~F는 사용자 수기 진행)\n4. 제출 문항·답변 내역 엑셀(.xlsx) 자동 저장\n\n계속하시겠습니까?`;
+      const targetNameList = targets.map(b => `#${b.index || b.seq} ${b.memberName || b.ceoName}(${b.ageGroupLabel || ''})`).join(', ');
+      confirmMsg = `[제5차 성인문해능력조사 - 선택 쿼터 일괄 자동 배치]\n선택된 대상자 ${targets.length}명(${targetNameList})에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 각 대상자에게 부여된 맞춤 응답 가이드(또는 연령 프리셋) 적용\n2. CONSENT~GP1 및 기존 입력 문항 100% 보존\n3. 설정된 진행 범위(Part C 채점 저장 후 D1 수기 대기 또는 F05_2까지 진행) 준수 (Part D D5 4~5 / 3~4 교차체크 보장)\n4. 제출 문항·답변 내역 엑셀(.xlsx) 자동 저장\n\n계속하시겠습니까?`;
     } else if (isHrcEnergy) {
       confirmMsg = `[2025년 기준 에너지총조사 - 건물 부문]\n미완료 [선정] 쿼터 ${targets.length}건에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 기존에 이미 입력되어 있는 항목은 절대 건드리지 않고 100% 보존\n2. SMS/이메일 발송 버튼 절대 클릭 금지\n3. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터 자동 승계\n4. ${safetyGuard ? '91% 마지막 문항(E1-5)에서 완료 보류' : '100% 조사완료까지 즉시 완료'}\n\n계속하시겠습니까?`;
     } else if (isKona) {
@@ -6555,7 +6866,10 @@ async function initSurveyDetailPage() {
       setRunningState(true);
       openMonitorDrawer();
       if (isGlobalriLiteracy) {
-        appendLog('info', `🚀 [성인문해능력조사 배치 가동 시작] 진행중 대상자 ${targets.length}명 순차 자동화 실행을 시작합니다... (나이대별 그룹 가이드 적용)`);
+        if (checkedGlobalriSeqs.size > 0) {
+          await applyGuideToCheckedGlobalriQuotas(false);
+        }
+        appendLog('info', `🚀 [성인문해능력조사 선택 배치 가동 시작] 선택 대상자 ${targets.length}명 순차 자동화 실행을 시작합니다...`);
       } else if (isHrcEnergy) {
         appendLog('info', `🚀 [에너지총조사 배치 가동 시작] 미완료 선정 쿼터 ${targets.length}건 순차 자동화 실행을 시작합니다... (기입력 항목 100% 보존)`);
       } else if (isKona) {
@@ -6577,7 +6891,8 @@ async function initSurveyDetailPage() {
           startIndex: startIdx,
           safetyGuard,
           onlySelected: true,
-          autoFallbackToSub: true
+          autoFallbackToSub: true,
+          targetIndices: selectedTargetIndices
         })
       });
 

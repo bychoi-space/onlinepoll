@@ -6295,6 +6295,187 @@ body.monitor-drawer-open .floating-monitor-launcher {
   box-shadow: 0 2px 8px rgba(56, 189, 248, 0.25);
 }
 
+/* ==========================================================================
+   9. 제5차 성인문해능력조사 - 체크 선택형 가이드 부여 & 일괄 배치 UI (깨짐 원천 방지)
+   ========================================================================== */
+.blueprint-stage-grid > *,
+.blueprint-card {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.blueprint-card .blueprint-stage-title {
+  white-space: normal !important;
+  line-height: 1.35 !important;
+}
+
+.globalri-check-toolbar {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.globalri-check-btn-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.globalri-quick-check-btn {
+  padding: 5px 11px;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.globalri-quick-check-btn:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+.globalri-quick-check-btn.primary {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.globalri-step2-target-banner {
+  grid-column: 1 / -1;
+  width: 100%;
+  background: #f8fafc;
+  border: 1.5px solid #93c5fd;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+}
+
+.globalri-selected-box {
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+.globalri-selected-member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.globalri-preset-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.globalri-preset-chip {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.globalri-preset-chip:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+}
+
+.globalri-preset-chip.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+}
+
+.globalri-summary-mini-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.globalri-summary-mini-table th {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-bottom: 1px solid #cbd5e1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.globalri-summary-mini-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.globalri-action-footer-card {
+  grid-column: 1 / -1;
+  width: 100%;
+  background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);
+  border: 1.5px solid #86efac;
+  border-radius: 12px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.quota-clean-table tr.globalri-row-checked td {
+  background-color: #eff6ff !important;
+}
+
+
 
 
 
