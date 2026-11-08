@@ -13,6 +13,7 @@ data/*
 !data/metrix_survey_blueprint.json
 !data/hrc_energy_blueprint.json
 !data/globalri_literacy_blueprint.json
+!data/gallup_20263603_templates.json
 !data/sample_metrix_sign.png
 !data/ceo_persona_pool.json
 data/campaigns.json

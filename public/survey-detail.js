@@ -119,13 +119,20 @@ async function initSurveyDetailPage() {
     const isKona = (camp.surveyType === 'kona_youth');
     const isHrcEnergy = (camp.surveyType === 'hrc_energy');
     const isGlobalriLiteracy = (camp.surveyType === 'globalri_literacy');
+    const isGallupReturnFarm = (camp.surveyType === 'gallup_return_farm');
 
     // 배지 상태
     statusBadge.className = `badge-status ${camp.status || 'ready'}`;
     statusBadge.textContent = camp.status === 'running' ? '실행 중' : (camp.status === 'completed' ? '완료' : '준비 완료');
 
     if (quotaBadge) {
-      if (isGlobalriLiteracy) {
+      if (isGallupReturnFarm) {
+        const qList = camp.quotaDatabase || [];
+        const doneCnt = qList.filter(q => q.quotaStatus === 'completed' || q.status === '조사완료').length;
+        const waitCnt = qList.filter(q => q.quotaStatus === 'pilot_done' || String(q.status || '').includes('완료직전')).length;
+        quotaBadge.className = 'badge-quota-type b2c';
+        quotaBadge.textContent = `한국갤럽 귀농실태조사 (선정 ${qList.length}명 · 완료 ${doneCnt} · 완료직전대기 ${waitCnt})`;
+      } else if (isGlobalriLiteracy) {
         quotaBadge.className = 'badge-quota-type b2c';
         quotaBadge.textContent = `성인문해능력조사 (진행중 ${(camp.quotaDatabase || []).length}명 · 나이대별 가이드)`;
       } else if (isHrcEnergy) {
@@ -148,11 +155,13 @@ async function initSurveyDetailPage() {
     }
 
     // 조사원 연동 계정 바인딩
-    const defaultSurveyor = isGlobalriLiteracy
-      ? `${camp.loginId || '01071447791'} (${camp.surveyorName || '노영미7791'})`
-      : (isHrcEnergy
-        ? `${camp.loginId || '700275'} (${camp.surveyorName || ''})`
-        : (isKona ? '코나체인(익명)' : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : '가온김영옥')));
+    const defaultSurveyor = isGallupReturnFarm
+      ? `${camp.loginId || '076_000009'} (${camp.surveyorName || '백영자'})`
+      : (isGlobalriLiteracy
+        ? `${camp.loginId || '01071447791'} (${camp.surveyorName || '노영미7791'})`
+        : (isHrcEnergy
+          ? `${camp.loginId || '700275'} (${camp.surveyorName || ''})`
+          : (isKona ? '코나체인(익명)' : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : '가온김영옥'))));
     const inputKstatAccountId = document.getElementById('input-kstat-account-id');
     const inputKstatAccountPw = document.getElementById('input-kstat-account-pw');
     const badgeCurrentKstatAccount = document.getElementById('badge-current-kstat-account');
@@ -165,7 +174,10 @@ async function initSurveyDetailPage() {
     // STEP 2 헤더 문구 동적 커스터마이징
     const step2TitleEl = document.querySelector('#section-master-blueprint .step-card-title');
     const step2DescEl = document.querySelector('#section-master-blueprint .font-caption.text-dim');
-    if (isGlobalriLiteracy) {
+    if (isGallupReturnFarm) {
+      if (step2TitleEl) step2TitleEl.textContent = '2026년 귀농귀촌 실태조사(귀농) · 4대 자동화 검증 규칙 및 전자서명 필체 다변화 가이드';
+      if (step2DescEl) step2DescEl.textContent = '1) 홍천군 읍·면별 브라우저 GPS 강제 주입, 2) 방문기록 입력 검증 규칙 준수, 3) 답례품 인수증 전자서명 8종 필체 다변화, 4) 최종 제출 직전(Page 118) 안전 대기 정책을 설정합니다.';
+    } else if (isGlobalriLiteracy) {
       if (step2TitleEl) step2TitleEl.textContent = '제5차 성인문해능력조사 나이대별(20대~70대+) 그룹 응답 가이드 설정';
       if (step2DescEl) step2DescEl.textContent = '조사 대상자의 출생연도(나이대)에 따라 문해력 목표 점수(Part A~C), 문해력 자가진단(D5), 문해교육 수요(Part E), 학력·경제활동·소득(Part F) 가이드를 그룹별로 설정합니다.';
     } else if (isHrcEnergy) {
@@ -183,54 +195,62 @@ async function initSurveyDetailPage() {
     }
 
     // 실시간 모니터링 레이어 타임라인 칩 & 제목 동적 렌더링
-    renderTimelineChips(isAssoc);
+    renderTimelineChips(isAssoc, isGallupReturnFarm);
 
     // STEP 3 캡처 버튼 문구 동적화
     const btnViewPilotCaptures = document.getElementById('btn-view-pilot-captures');
     if (btnViewPilotCaptures) {
-      btnViewPilotCaptures.textContent = isGlobalriLiteracy ? '단계별 설문 캡처 보기' : (isHrcEnergy ? '설문 완료 캡처 보기' : (isKona ? '제출 직전 캡처 보기' : (isAssoc ? '25단계 캡처 전체보기' : '15단계 캡처 전체보기')));
+      btnViewPilotCaptures.textContent = isGallupReturnFarm ? '단계별 설문 캡처 보기' : (isGlobalriLiteracy ? '단계별 설문 캡처 보기' : (isHrcEnergy ? '설문 완료 캡처 보기' : (isKona ? '제출 직전 캡처 보기' : (isAssoc ? '25단계 캡처 전체보기' : '15단계 캡처 전체보기'))));
     }
 
     // 대상 설문 요약 스트립 동적화
     const labelExecTargetMarket = document.getElementById('label-exec-target-market');
     if (labelExecTargetMarket) {
-      labelExecTargetMarket.textContent = isGlobalriLiteracy
-        ? `[GR20260618-1-001-02] 제5차 성인문해능력조사 (${camp.loginId || '01071447791'} ${camp.surveyorName || '노영미7791'})`
-        : (isHrcEnergy
-          ? `2026-89-0342C 2025년 기준 에너지총조사 [건물 부문] (${camp.loginId || ''} ${camp.surveyorName || ''})`
-          : (isKona
-            ? '2026 화성특례시 만족도 청소년 설문조사 (코나체인 Event 2085)'
-            : (isMetrix
-              ? '2026 경기도 소상공인 사업체패널조사 (메트릭스 SNUM 622)'
-              : (isAssoc ? '2026 전통시장 및 상점가 실태조사 (상인회)' : '2026 전통시장 및 점포경영 실태조사'))));
+      labelExecTargetMarket.textContent = isGallupReturnFarm
+        ? `[20263603] 2026년 귀농귀촌 실태조사(귀농) - 강원 홍천군 (${camp.loginId || '076_000009'} ${camp.surveyorName || '백영자'})`
+        : (isGlobalriLiteracy
+          ? `[GR20260618-1-001-02] 제5차 성인문해능력조사 (${camp.loginId || '01071447791'} ${camp.surveyorName || '노영미7791'})`
+          : (isHrcEnergy
+            ? `2026-89-0342C 2025년 기준 에너지총조사 [건물 부문] (${camp.loginId || ''} ${camp.surveyorName || ''})`
+            : (isKona
+              ? '2026 화성특례시 만족도 청소년 설문조사 (코나체인 Event 2085)'
+              : (isMetrix
+                ? '2026 경기도 소상공인 사업체패널조사 (메트릭스 SNUM 622)'
+                : (isAssoc ? '2026 전통시장 및 상점가 실태조사 (상인회)' : '2026 전통시장 및 점포경영 실태조사')))));
     }
     const badgeBlueprintStatus = document.getElementById('badge-blueprint-status');
     if (badgeBlueprintStatus) {
-      badgeBlueprintStatus.innerHTML = isGlobalriLiteracy
-        ? '<i class="fa-solid fa-layer-group"></i> 나이대별(20대~70대+) 6개 그룹 가이드 활성'
-        : (isHrcEnergy
-          ? '<i class="fa-solid fa-shield-halved"></i> 기입력 항목 100% 보존 &amp; 증빙 자동 생략'
-          : (isKona
-            ? '<i class="fa-solid fa-check-double"></i> 40문항/53단계 기준점 연동 완료'
-            : (isMetrix
-              ? '<i class="fa-solid fa-check-double"></i> 120단계 기준점 연동 완료'
-              : (isAssoc ? '<i class="fa-solid fa-check-double"></i> 25단계 기준점 연동 완료' : '<i class="fa-solid fa-check-double"></i> 17단계 기준점 연동 완료'))));
+      badgeBlueprintStatus.innerHTML = isGallupReturnFarm
+        ? '<i class="fa-solid fa-location-crosshairs"></i> 홍천군 GPS 주입 · 8종 전자서명 · Page 118 완료직전 정지 활성'
+        : (isGlobalriLiteracy
+          ? '<i class="fa-solid fa-layer-group"></i> 나이대별(20대~70대+) 6개 그룹 가이드 활성'
+          : (isHrcEnergy
+            ? '<i class="fa-solid fa-shield-halved"></i> 기입력 항목 100% 보존 &amp; 증빙 자동 생략'
+            : (isKona
+              ? '<i class="fa-solid fa-check-double"></i> 40문항/53단계 기준점 연동 완료'
+              : (isMetrix
+                ? '<i class="fa-solid fa-check-double"></i> 120단계 기준점 연동 완료'
+                : (isAssoc ? '<i class="fa-solid fa-check-double"></i> 25단계 기준점 연동 완료' : '<i class="fa-solid fa-check-double"></i> 17단계 기준점 연동 완료')))));
     }
     const badgeExecEngine = document.getElementById('badge-exec-engine');
     if (badgeExecEngine) {
-      badgeExecEngine.textContent = isGlobalriLiteracy
-        ? '글로벌리서치 온서베이 (SNUM 5963)'
-        : (isHrcEnergy
-          ? '한국리서치 TAPI 전용'
-          : (isKona ? '코나체인 리서치 전용' : (isMetrix ? '메트릭스 패널 전용' : (isAssoc ? '케이스탯 상인회 전용' : '케이스탯 TAPI 전용'))));
+      badgeExecEngine.textContent = isGallupReturnFarm
+        ? '한국갤럽 G-CAII (20263603)'
+        : (isGlobalriLiteracy
+          ? '글로벌리서치 온서베이 (SNUM 5963)'
+          : (isHrcEnergy
+            ? '한국리서치 TAPI 전용'
+            : (isKona ? '코나체인 리서치 전용' : (isMetrix ? '메트릭스 패널 전용' : (isAssoc ? '케이스탯 상인회 전용' : '케이스탯 TAPI 전용')))));
     }
     const execSurveyorLabel = document.getElementById('exec-surveyor-label');
     if (execSurveyorLabel) {
-      execSurveyorLabel.textContent = isGlobalriLiteracy
-        ? `${camp.loginId || '01071447791'} (${camp.surveyorName || '노영미7791'})`
-        : (isHrcEnergy
-          ? `${camp.loginId || '700275'} (${camp.surveyorName || '조사원'})`
-          : (isKona ? '동탄구 청소년 (6001~6103)' : (isMetrix ? (camp.loginId || '강영미') : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : (camp.kstatLoginId || '가온김영옥')))));
+      execSurveyorLabel.textContent = isGallupReturnFarm
+        ? `${camp.loginId || '076_000009'} (${camp.surveyorName || '백영자'})`
+        : (isGlobalriLiteracy
+          ? `${camp.loginId || '01071447791'} (${camp.surveyorName || '노영미7791'})`
+          : (isHrcEnergy
+            ? `${camp.loginId || '700275'} (${camp.surveyorName || '조사원'})`
+            : (isKona ? '동탄구 청소년 (6001~6103)' : (isMetrix ? (camp.loginId || '강영미') : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : (camp.kstatLoginId || '가온김영옥'))))));
     }
 
     // 슬롯 바인딩 버튼 UI 튜닝
@@ -245,10 +265,92 @@ async function initSurveyDetailPage() {
       }
     }
 
-    // 성인문해능력조사 / 에너지총조사 / 코나체인 청소년 / 메트릭스 모드 시 Kstat 전용 버튼 제어 및 STEP 3 스트립 갱신
+    // 귀농실태조사 / 성인문해능력조사 / 에너지총조사 / 코나체인 청소년 / 메트릭스 모드 시 Kstat 전용 버튼 제어 및 STEP 3 스트립 갱신
     const btnOpenSlotModalToolbar = document.getElementById('btn-open-slot-modal');
     const btnOpenCampaignAddMerchant = document.getElementById('btn-open-campaign-add-merchant');
-    if (isGlobalriLiteracy) {
+    if (isGallupReturnFarm) {
+      if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
+      if (btnOpenSlotModalToolbar) btnOpenSlotModalToolbar.style.display = 'none';
+      if (btnOpenCampaignAddMerchant) btnOpenCampaignAddMerchant.style.display = 'none';
+      const btnSyncKstat = document.getElementById('btn-sync-kstat-status');
+      if (btnSyncKstat) {
+        btnSyncKstat.style.display = 'inline-flex';
+        btnSyncKstat.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 한국갤럽(20263603) 실시간 상태 동기화';
+        let btnExportAns = document.getElementById('btn-export-globalri-answers-top');
+        const gsheetUrl = camp.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1Hoai6ggQWxNVTW5SyxEsvpNtMOlBO1z_ThmM6cZ6gRg/edit?gid=1470110969#gid=1470110969';
+        if (!btnExportAns && btnSyncKstat.parentElement) {
+          btnExportAns = document.createElement('a');
+          btnExportAns.id = 'btn-export-globalri-answers-top';
+          btnExportAns.className = 'btn-pill btn-pill-primary font-bold';
+          btnExportAns.style.textDecoration = 'none';
+          btnExportAns.target = '_blank';
+          btnExportAns.rel = 'noopener noreferrer';
+          btnSyncKstat.parentElement.insertBefore(btnExportAns, btnSyncKstat.nextSibling);
+        }
+        if (btnExportAns) {
+          btnExportAns.href = gsheetUrl;
+          btnExportAns.target = '_blank';
+          btnExportAns.rel = 'noopener noreferrer';
+          btnExportAns.innerHTML = '<i class="fa-solid fa-table"></i> 선정명단 구글 스프레드시트 열기';
+          btnExportAns.title = '2026년 귀농귀촌 실태조사(귀농) 강원 홍천군 선정명단(70명) 구글 스프레드시트를 엽니다';
+          btnExportAns.style.display = 'inline-flex';
+        }
+      }
+      if (btnEnrichCampaign) btnEnrichCampaign.style.display = 'none';
+      const kstatPill = document.getElementById('badge-kstat-account-pill');
+      if (kstatPill) {
+        const qList = camp.quotaDatabase || [];
+        const doneCnt = qList.filter(q => q.quotaStatus === 'completed' || q.status === '조사완료').length;
+        const waitCnt = qList.filter(q => q.quotaStatus === 'pilot_done' || String(q.status || '').includes('완료직전')).length;
+        kstatPill.innerHTML = `<i class="fa-solid fa-location-crosshairs text-primary-color"></i> <span>면접원: <strong>${escapeHtml(camp.loginId || '076_000009')} (${escapeHtml(camp.surveyorName || '백영자')})</strong> · 강원 홍천군 <strong>${qList.length}명</strong> (완료 ${doneCnt} · 완료직전대기 ${waitCnt})</span>`;
+      }
+
+      const badgeExec = document.getElementById('badge-exec-engine');
+      if (badgeExec) {
+        badgeExec.className = 'badge-status ready font-bold';
+        badgeExec.textContent = '한국갤럽 G-CAII (Page 1~118 완료직전)';
+      }
+      const labelMarket = document.getElementById('label-exec-target-market');
+      if (labelMarket) {
+        labelMarket.textContent = camp.title || '[20263603] 2026년 귀농귀촌 실태조사(귀농) - 강원 홍천군';
+      }
+      const labelSurveyor = document.getElementById('exec-surveyor-label');
+      if (labelSurveyor) {
+        labelSurveyor.textContent = `${camp.loginId || '076_000009'} (${camp.surveyorName || '백영자'})`;
+      }
+      const slotCountLabel = document.getElementById('exec-slot-count-label');
+      if (slotCountLabel) {
+        slotCountLabel.textContent = `선정명단 ${(camp.quotaDatabase || []).length}명 장착 완료`;
+      }
+      const badgeBp = document.getElementById('badge-blueprint-status');
+      if (badgeBp) {
+        badgeBp.className = 'badge-status badge-blueprint ready';
+        badgeBp.innerHTML = '<i class="fa-solid fa-signature text-success"></i> 홍천군 GPS · 방문기록 · 8종 전자서명 · Page 118 정지 활성';
+      }
+
+      const titleBatch = document.getElementById('title-batch-automation');
+      if (titleBatch) {
+        titleBatch.textContent = `2026년 귀농귀촌 실태조사(귀농) 선택 대상자 일괄 자동 진행 (완료 직전 Page 118 대기)`;
+      }
+      const descBatch = document.getElementById('desc-batch-automation');
+      if (descBatch) {
+        descBatch.textContent = '1) 대상자 주소지(홍천군 10개 읍·면) 브라우저 GPS 위치정보 강제 주입, 2) 방문 기록 검증 규칙(07~22시·컨택성공) 준수, 3) 답례품 인수증 전자서명 패드(Page 7) 8종 한글 필체 다변화, 4) 최종 제출하지 않고 Page 118(NAME·PHONE·ADDR) 저장 후 완료 직전 상태에서 정지합니다.';
+      }
+      const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
+      if (safetyGuardToggle) {
+        safetyGuardToggle.textContent = '최종 제출([조사완료]) 클릭 직전 Page 118에서 자동 정지 (검토 후 수기 완료 가능 · 필수 권장)';
+      }
+      if (checkSafetyGuard) {
+        checkSafetyGuard.checked = true;
+      }
+
+      if (btnPilot) {
+        btnPilot.classList.remove('d-none');
+        btnPilot.className = 'btn-action-secondary font-bold';
+        btnPilot.style.display = 'inline-flex';
+        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 미완료 대상자 1건 완료 직전(Page 118)까지 단건 실행';
+      }
+    } else if (isGlobalriLiteracy) {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
       if (btnOpenSlotModalToolbar) btnOpenSlotModalToolbar.style.display = 'none';
       if (btnOpenCampaignAddMerchant) btnOpenCampaignAddMerchant.style.display = 'none';
@@ -532,8 +634,22 @@ async function initSurveyDetailPage() {
 
     // 버튼 상태 머신 갱신 (1번 검증 완료 및 배치 완료 제어)
     updateButtonStates();
-    if (!isAssoc && !isHrcEnergy && !isGlobalriLiteracy) updateGroupStatsUI();
+    if (!isAssoc && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) updateGroupStatsUI();
   }
+
+  let checkedGallupSeqs = new Set();
+  let gallupSelectionInitialized = false;
+
+  const GALLUP_SIG_STYLES_LABELS = [
+    '스타일 A · 정자체 (단정한 가로획)',
+    '스타일 B · 우상향 흘림 (빠른 필기풍)',
+    '스타일 C · 둥근 굴림 (부드러운 곡선)',
+    '스타일 D · 힘찬 각진체 (굵은 붓펜풍)',
+    '스타일 E · 소폭 단아체 (작고 정밀한 서명)',
+    '스타일 F · 세로 장체 (어르신 정자풍)',
+    '스타일 G · 와이드 서명체 (넓은 자간)',
+    '스타일 H · 약자 연필체 (자연스러운 흘림)'
+  ];
 
   // -------------------------------------------------------------
   // 실시간 배치 프로그레스 바 제어
@@ -558,6 +674,7 @@ async function initSurveyDetailPage() {
     const quotaDb = currentCampaign.quotaDatabase || [];
     const isHrcEnergy = (currentCampaign.surveyType === 'hrc_energy');
     const isGlobalriLiteracy = (currentCampaign.surveyType === 'globalri_literacy');
+    const isGallupReturnFarm = (currentCampaign.surveyType === 'gallup_return_farm');
     const firstQuota = quotaDb.find(b => b.index === 1) || quotaDb[0];
     const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed');
 
@@ -615,7 +732,10 @@ async function initSurveyDetailPage() {
 
       // 1) 블루프린트 상태 동기화
       if (badgeBlueprintStatus) {
-        if (isGlobalriLiteracy) {
+        if (isGallupReturnFarm) {
+          badgeBlueprintStatus.className = 'badge-status badge-blueprint ready';
+          badgeBlueprintStatus.innerHTML = '<i class="fa-solid fa-location-crosshairs text-success"></i> 홍천군 GPS 주입 · 8종 전자서명 · Page 118 완료직전 정지 활성';
+        } else if (isGlobalriLiteracy) {
           badgeBlueprintStatus.className = 'badge-status badge-blueprint ready';
           badgeBlueprintStatus.innerHTML = '<i class="fa-solid fa-layer-group text-success"></i> 나이대별(20대~70대+) 6개 그룹 가이드 활성';
         } else if (isHrcEnergy) {
@@ -634,7 +754,10 @@ async function initSurveyDetailPage() {
       const isMetrix = (currentCampaign.surveyType === 'metrix_panel');
       const isKona = (currentCampaign.surveyType === 'kona_youth');
       if (btnPilot) {
-        if (isGlobalriLiteracy) {
+        if (isGallupReturnFarm) {
+          btnPilot.disabled = false;
+          btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 미완료 대상자 1건 완료 직전(Page 118)까지 단건 실행';
+        } else if (isGlobalriLiteracy) {
           btnPilot.disabled = false;
           btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 대상자 Part C까지 실행 (D1 수기대기)';
         } else if (isHrcEnergy) {
@@ -656,7 +779,22 @@ async function initSurveyDetailPage() {
       }
 
       // 3) 단일 통합 배치 자동화 버튼 상태
-      if (isGlobalriLiteracy) {
+      if (isGallupReturnFarm) {
+        const doneCount = quotaDb.filter(b => b.quotaStatus === 'completed' || b.status === '조사완료' || b.quotaStatus === 'pilot_done').length;
+        const allCompleted = quotaDb.length > 0 && quotaDb.every(b => b.quotaStatus === 'completed' || b.status === '조사완료');
+        if (allCompleted) {
+          btnBatch.disabled = true;
+          btnBatch.innerHTML = `<i class="fa-solid fa-circle-check"></i> 선정명단 ${quotaDb.length}명 전체 조사 마감 완료 (100%)`;
+        } else {
+          btnBatch.disabled = false;
+          btnBatch.className = 'btn-action-success flex-1 font-bold';
+          btnBatch.innerHTML = `<i class="fa-solid fa-play"></i> 체크한 대상자 일괄 배치 자동화 가동 (완료 직전 Page 118까지 · ${doneCount}/${quotaDb.length} 진행)`;
+          if (btnRunAllBatchBottom) {
+            btnRunAllBatchBottom.disabled = false;
+            btnRunAllBatchBottom.innerHTML = '<i class="fa-solid fa-rocket"></i> 체크한 대상자 일괄 배치 가동 (Page 118 완료직전까지)';
+          }
+        }
+      } else if (isGlobalriLiteracy) {
         const doneCount = quotaDb.filter(b => b.quotaStatus === 'completed' || b.status === '완료' || b.quotaStatus === 'pilot_done').length;
         const allCompleted = quotaDb.length > 0 && quotaDb.every(b => b.quotaStatus === 'completed' || b.status === '완료');
         if (allCompleted) {
@@ -746,6 +884,7 @@ async function initSurveyDetailPage() {
     const total = db.length;
     const isHrcEnergy = (currentCampaign?.surveyType === 'hrc_energy');
     const isGlobalriLiteracy = (currentCampaign?.surveyType === 'globalri_literacy');
+    const isGallupReturnFarm = (currentCampaign?.surveyType === 'gallup_return_farm');
     let ready = 0;
     let pilot = 0;
     let completed = 0;
@@ -753,8 +892,8 @@ async function initSurveyDetailPage() {
 
     db.forEach(item => {
       const st = item.quotaStatus || item.status || 'ready';
-      if (st === 'pilot_done' || st === '진행중(98%)' || String(st).includes('98%') || String(st).includes('F05_2')) pilot++;
-      else if (st === 'completed' || st === '완료') completed++;
+      if (st === 'pilot_done' || st === '진행중(98%)' || String(st).includes('98%') || String(st).includes('F05_2') || String(st).includes('완료직전')) pilot++;
+      else if (st === 'completed' || st === '완료' || st === '조사완료') completed++;
       else ready++;
 
       if (item.slotUrl || item.surveyUrl || item.householdUrl) mappedSlots++;
@@ -798,7 +937,7 @@ async function initSurveyDetailPage() {
     const jumpPills = document.querySelectorAll('.quick-jump-pill');
 
     if (total === 0) {
-      if (isAssoc || isHrcEnergy || isGlobalriLiteracy) {
+      if (isAssoc || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm) {
         if (sectionMasterBlueprint) {
           sectionMasterBlueprint.classList.remove('hidden');
           sectionMasterBlueprint.style.display = 'block';
@@ -847,17 +986,21 @@ async function initSurveyDetailPage() {
     const execSlotCountLabel = document.getElementById('exec-slot-count-label');
     const execSurveyorLabel = document.getElementById('exec-surveyor-label');
 
-    const currentSurveyor = isGlobalriLiteracy
-      ? `${currentCampaign?.loginId || '01071447791'} (${currentCampaign?.surveyorName || '노영미7791'})`
-      : (isHrcEnergy
-        ? `${currentCampaign?.loginId || '700275'} (${currentCampaign?.surveyorName || ''})`
-        : (currentCampaign?.kstatLoginId || (isAssoc ? '가온이강윤' : '가온김영옥')));
+    const currentSurveyor = isGallupReturnFarm
+      ? `${currentCampaign?.loginId || '076_000009'} (${currentCampaign?.surveyorName || '백영자'})`
+      : (isGlobalriLiteracy
+        ? `${currentCampaign?.loginId || '01071447791'} (${currentCampaign?.surveyorName || '노영미7791'})`
+        : (isHrcEnergy
+          ? `${currentCampaign?.loginId || '700275'} (${currentCampaign?.surveyorName || ''})`
+          : (currentCampaign?.kstatLoginId || (isAssoc ? '가온이강윤' : '가온김영옥'))));
     if (assocSurveyorBadgeName) assocSurveyorBadgeName.textContent = currentSurveyor;
     if (assocBtnSurveyorName) assocBtnSurveyorName.textContent = currentSurveyor;
     if (kstatAccountNameBadge) kstatAccountNameBadge.textContent = currentSurveyor;
     if (execSurveyorLabel) execSurveyorLabel.textContent = currentSurveyor;
     if (execSlotCountLabel) {
-      if (isGlobalriLiteracy) {
+      if (isGallupReturnFarm) {
+        execSlotCountLabel.textContent = `선정명단 ${total}명 장착`;
+      } else if (isGlobalriLiteracy) {
         execSlotCountLabel.textContent = `진행중 대상자 ${total}명 장착`;
       } else if (isHrcEnergy) {
         const selCnt = db.filter(i => i.selectionType === '선정').length;
@@ -889,7 +1032,7 @@ async function initSurveyDetailPage() {
         if (quotaMountedGroup) quotaMountedGroup.classList.remove('hidden');
         if (detailsMarketbz) detailsMarketbz.style.display = 'none';
         if (btnEnrichCampaign) {
-          if (isHrcEnergy || isGlobalriLiteracy) btnEnrichCampaign.classList.add('hidden');
+          if (isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm) btnEnrichCampaign.classList.add('hidden');
           else btnEnrichCampaign.classList.remove('hidden');
         }
         if (btnToggleQuotaReplace) btnToggleQuotaReplace.classList.remove('hidden');
@@ -906,7 +1049,29 @@ async function initSurveyDetailPage() {
     // 테이블 헤더 동적 교체
     const quotaTableHead = document.getElementById('quota-table-head');
     if (quotaTableHead) {
-      if (isGlobalriLiteracy) {
+      if (isGallupReturnFarm) {
+        quotaTableHead.innerHTML = `
+          <tr>
+            <th class="th-no text-center" style="width: 44px;">
+              <input type="checkbox" id="cb-gallup-check-all" title="미완료 쿼터 전체 선택/해제" style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+            </th>
+            <th class="th-no">번호</th>
+            <th>가구 ID</th>
+            <th>표본구분</th>
+            <th>대상자 성명</th>
+            <th>성별 / 연령</th>
+            <th>이주년도</th>
+            <th>읍·면</th>
+            <th>상세 주소</th>
+            <th>연락처</th>
+            <th>브라우저 GPS 주입 좌표</th>
+            <th>방문기록 검증</th>
+            <th>답례품 전자서명 필체</th>
+            <th class="th-status">진행 상태</th>
+            <th class="text-center" style="min-width: 115px;">개별 실행</th>
+          </tr>
+        `;
+      } else if (isGlobalriLiteracy) {
         quotaTableHead.innerHTML = `
           <tr>
             <th class="th-no text-center" style="width: 44px;">
@@ -1018,14 +1183,220 @@ async function initSurveyDetailPage() {
       quotaTableBody.innerHTML = `
         <tr>
           <td colspan="${isAssoc ? 10 : (isHrcEnergy ? 12 : 13)}" class="empty-table-msg">
-            ${isGlobalriLiteracy
-              ? '아직 장착된 성인문해능력조사 대상자가 없습니다.<br>상단의 <strong>[글로벌리서치 GIFT 동기화 / LID 지정 필터]</strong> 버튼을 클릭하여 쿼터를 불러와 주세요.'
-              : (isAssoc 
-                ? '아직 등록된 상인회 슬롯 DB가 없습니다.<br>상단의 <strong>[Kstat 상인회 슬롯 자동 바인딩]</strong> 버튼을 클릭하여 슬롯을 장착해 주세요.' 
-                : '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.')}
+            ${isGallupReturnFarm
+              ? '아직 장착된 귀농실태조사 대상자가 없습니다.'
+              : (isGlobalriLiteracy
+                ? '아직 장착된 성인문해능력조사 대상자가 없습니다.<br>상단의 <strong>[글로벌리서치 GIFT 동기화 / LID 지정 필터]</strong> 버튼을 클릭하여 쿼터를 불러와 주세요.'
+                : (isAssoc 
+                  ? '아직 등록된 상인회 슬롯 DB가 없습니다.<br>상단의 <strong>[Kstat 상인회 슬롯 자동 바인딩]</strong> 버튼을 클릭하여 슬롯을 장착해 주세요.' 
+                  : '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.'))}
           </td>
         </tr>
       `;
+      return;
+    }
+
+    const existingGallupBar = document.getElementById('gallup-step1-check-bar');
+    if (!isGallupReturnFarm && existingGallupBar) {
+      existingGallupBar.style.display = 'none';
+    }
+
+    // [한국갤럽 2026년 귀농귀촌 실태조사(귀농) 15개 컬럼 테이블 렌더링 + 체크박스 선택 바]
+    if (isGallupReturnFarm) {
+      if (!gallupSelectionInitialized && db.length > 0) {
+        gallupSelectionInitialized = true;
+        db.forEach((item, idx) => {
+          const seq = Number(item.index || item.seq || (idx + 1));
+          const isDone = (item.quotaStatus === 'completed' || item.status === '조사완료');
+          const isPilotWait = (item.quotaStatus === 'pilot_done' || String(item.status || '').includes('완료직전'));
+          if (!isDone && !isPilotWait) {
+            checkedGallupSeqs.add(seq);
+          }
+        });
+      }
+
+      const tableScrollContainer = quotaTableBody.closest('.table-scroll-container');
+      let gallupBar = document.getElementById('gallup-step1-check-bar');
+      if (!gallupBar && tableScrollContainer && tableScrollContainer.parentNode) {
+        gallupBar = document.createElement('div');
+        gallupBar.id = 'gallup-step1-check-bar';
+        gallupBar.className = 'globalri-check-toolbar';
+        tableScrollContainer.parentNode.insertBefore(gallupBar, tableScrollContainer);
+      }
+
+      const readyOnlyItems = db.filter(i => i.quotaStatus !== 'completed' && i.status !== '조사완료' && i.quotaStatus !== 'pilot_done' && !String(i.status || '').includes('완료직전'));
+      const pilotWaitItems = db.filter(i => i.quotaStatus === 'pilot_done' || String(i.status || '').includes('완료직전'));
+      const uncompletedItems = db.filter(i => i.quotaStatus !== 'completed' && i.status !== '조사완료');
+      const mainUncompletedItems = uncompletedItems.filter(i => (i.sampleType || '').includes('본표본'));
+      const subUncompletedItems = uncompletedItems.filter(i => (i.sampleType || '').includes('예비'));
+      const checkedCount = checkedGallupSeqs.size;
+
+      if (gallupBar) {
+        gallupBar.style.display = 'flex';
+        gallupBar.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 4px;">
+              <i class="fa-solid fa-square-check text-primary-color"></i> 실행 대상 체크 선택:
+            </span>
+            <button type="button" class="globalri-quick-check-btn gallup-quick-check-btn" data-quick-check="ready_only">미진행 대기 (${readyOnlyItems.length}명)</button>
+            <button type="button" class="globalri-quick-check-btn gallup-quick-check-btn" data-quick-check="pilot_done">완료직전 대기 P118 (${pilotWaitItems.length}명)</button>
+            <button type="button" class="globalri-quick-check-btn gallup-quick-check-btn" data-quick-check="uncompleted">미완료 전체 (${uncompletedItems.length}명)</button>
+            <button type="button" class="globalri-quick-check-btn gallup-quick-check-btn" data-quick-check="main_sample">본표본 미완료 (${mainUncompletedItems.length}명)</button>
+            <button type="button" class="globalri-quick-check-btn gallup-quick-check-btn" data-quick-check="sub_sample">예비표본 미완료 (${subUncompletedItems.length}명)</button>
+            <button type="button" class="globalri-quick-check-btn gallup-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span id="badge-gallup-checked-count" class="badge-status ready font-bold" style="padding: 5px 12px; font-size: 12.5px;">
+              현재 체크됨: <strong>${checkedCount}명</strong> · 완료직전(P118): <strong>${pilotWaitItems.length}명</strong> · 최종완료: <strong>${completed}명</strong>
+            </span>
+            <button type="button" id="btn-gallup-jump-step2" class="btn-pill btn-pill-primary btn-pill-small font-bold">
+              <i class="fa-solid fa-sliders"></i> ↓ 4대 자동화 규칙 확인 (STEP 2)
+            </button>
+            <button type="button" id="btn-gallup-top-batch-run" class="btn-pill btn-pill-success btn-pill-small font-bold">
+              <i class="fa-solid fa-rocket"></i> 체크한 대상자 (${checkedCount}명) 완료직전까지 일괄 실행
+            </button>
+          </div>
+        `;
+      }
+
+      quotaTableBody.innerHTML = db.map((item, idx) => {
+        const seq = Number(item.index || item.seq || (idx + 1));
+        const st = item.quotaStatus || 'ready';
+        const isDone = (st === 'completed' || item.status === '조사완료');
+        const isPilotWait = (st === 'pilot_done' || String(item.status || '').includes('완료직전'));
+        const isRowRunning = (st === 'running');
+        const isChecked = checkedGallupSeqs.has(seq);
+
+        let statusHtml = `<span class="badge-status ready"><i class="fa-regular fa-clock"></i> ${escapeHtml(item.status || '미진행 대기')}</span>`;
+        if (isDone) {
+          statusHtml = `<span class="badge-status success"><i class="fa-solid fa-check-double"></i> 조사완료 (100%)</span>`;
+        } else if (isRowRunning) {
+          statusHtml = `<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 자동진행 중 (${escapeHtml(item.progress || '')})</span>`;
+        } else if (isPilotWait) {
+          statusHtml = `<span class="badge-status pilot" title="Page 118 입력·저장 완료, [조사완료] 버튼 클릭 직전 대기 중"><i class="fa-solid fa-flag-checkered"></i> 완료직전 대기 (Page 118)</span>`;
+        } else if (st === 'error') {
+          statusHtml = `<span class="badge-status error" title="${escapeHtml(item.error || '')}">오류</span>`;
+        }
+
+        const sampleBadge = (item.sampleType || '').includes('본표본')
+          ? `<span class="badge-status success font-bold" style="padding: 2px 8px;">본표본</span>`
+          : `<span class="badge-status ready" style="padding: 2px 8px;">${escapeHtml(item.sampleType || '예비표본')}</span>`;
+
+        const gpsStr = (item.gpsLat && item.gpsLng)
+          ? `${Number(item.gpsLat).toFixed(4)}, ${Number(item.gpsLng).toFixed(4)}`
+          : '37.6970, 127.8887';
+        const sigStyleIdx = (parseInt(String(item.id || seq).replace(/\D/g, ''), 10) || seq) % GALLUP_SIG_STYLES_LABELS.length;
+        const sigLabel = item.signatureStyle || GALLUP_SIG_STYLES_LABELS[sigStyleIdx];
+
+        let pilotActionHtml = '';
+        if (isDone) {
+          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45; cursor:not-allowed;">제출완료</button>`;
+        } else if (isRowRunning) {
+          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small" disabled><i class="fa-solid fa-spinner fa-spin"></i> 진행중</button>`;
+        } else if (isPilotWait) {
+          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small btn-row-pilot-gallup" data-seq="${seq}" title="${escapeHtml(item.name || '')} (ID ${escapeHtml(item.id || '')}) Page 118 완료직전 상태 재검증 실행">↻ 재검증(P118)</button>`;
+        } else {
+          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-gallup" data-seq="${seq}" title="${escapeHtml(item.name || '')} (ID ${escapeHtml(item.id || '')}) 완료 직전(Page 118)까지 단건 실행">▷ 단건실행</button>`;
+        }
+
+        return `
+          <tr data-row-idx="${seq}" class="${isChecked ? 'globalri-row-checked' : ''}">
+            <td class="text-center">
+              <input type="checkbox" class="cb-gallup-quota-row" data-seq="${seq}" ${isChecked ? 'checked' : ''} style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+            </td>
+            <td class="text-center font-mono font-bold">${seq}</td>
+            <td class="text-center font-mono font-bold text-primary-color">${escapeHtml(item.id || '-')}</td>
+            <td class="text-center">${sampleBadge}</td>
+            <td class="text-center"><strong>${escapeHtml(item.name || item.ceoName || '-')}</strong></td>
+            <td class="text-center">${escapeHtml(item.gender || '-')} · ${escapeHtml(String(item.age || '-'))}세</td>
+            <td class="text-center font-mono">${escapeHtml(String(item.moveYear || '2025'))}년</td>
+            <td class="text-center"><strong>${escapeHtml(item.eupMyeon || '-')}</strong></td>
+            <td title="${escapeHtml(item.fullAddress || '')}">${escapeHtml(item.detailAddress || item.fullAddress || '-')}</td>
+            <td class="font-mono text-center">${escapeHtml(item.mobile || item.phone || '-')}</td>
+            <td class="text-center font-mono" style="font-size: 11.5px;">
+              <span class="badge-status ready" style="padding: 2px 7px;">
+                <i class="fa-solid fa-location-dot text-primary-color"></i> ${escapeHtml(gpsStr)}
+              </span>
+            </td>
+            <td class="text-center" style="font-size: 11.5px;">
+              <span class="badge-status success" style="padding: 2px 7px;">
+                <i class="fa-solid fa-calendar-check"></i> ${escapeHtml(item.visitDate || '07~22시')} · 컨택성공
+              </span>
+            </td>
+            <td class="text-center" style="font-size: 11.5px;">
+              <span class="badge-tag-tunable" style="padding: 2px 8px;">
+                <i class="fa-solid fa-signature"></i> ${escapeHtml(sigLabel)}
+              </span>
+            </td>
+            <td class="text-center">${statusHtml}</td>
+            <td class="text-center">${pilotActionHtml}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const cbAllGallup = document.getElementById('cb-gallup-check-all');
+      const uncompletedGallupSeqs = uncompletedItems.map((item, idx) => Number(item.index || item.seq || (idx + 1)));
+      if (cbAllGallup) {
+        cbAllGallup.checked = uncompletedGallupSeqs.length > 0 && uncompletedGallupSeqs.every(s => checkedGallupSeqs.has(s));
+        cbAllGallup.onchange = () => {
+          if (cbAllGallup.checked) {
+            uncompletedGallupSeqs.forEach(s => checkedGallupSeqs.add(s));
+          } else {
+            checkedGallupSeqs.clear();
+          }
+          renderQuotaTable(db);
+        };
+      }
+
+      quotaTableBody.querySelectorAll('.cb-gallup-quota-row').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const seq = Number(cb.getAttribute('data-seq'));
+          if (cb.checked) checkedGallupSeqs.add(seq);
+          else checkedGallupSeqs.delete(seq);
+          const tr = cb.closest('tr');
+          if (tr) tr.classList.toggle('globalri-row-checked', cb.checked);
+          const badgeEl = document.getElementById('badge-gallup-checked-count');
+          if (badgeEl) {
+            badgeEl.innerHTML = `현재 체크됨: <strong>${checkedGallupSeqs.size}명</strong> · 완료직전(P118): <strong>${pilotWaitItems.length}명</strong> · 최종완료: <strong>${completed}명</strong>`;
+          }
+          const topBatchBtn = document.getElementById('btn-gallup-top-batch-run');
+          if (topBatchBtn) {
+            topBatchBtn.innerHTML = `<i class="fa-solid fa-rocket"></i> 체크한 대상자 (${checkedGallupSeqs.size}명) 완료직전까지 일괄 실행`;
+          }
+        });
+      });
+
+      if (gallupBar) {
+        gallupBar.querySelectorAll('.gallup-quick-check-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const mode = btn.getAttribute('data-quick-check');
+            checkedGallupSeqs.clear();
+            if (mode === 'ready_only') {
+              readyOnlyItems.forEach(i => checkedGallupSeqs.add(Number(i.index || i.seq)));
+            } else if (mode === 'pilot_done') {
+              pilotWaitItems.forEach(i => checkedGallupSeqs.add(Number(i.index || i.seq)));
+            } else if (mode === 'uncompleted') {
+              uncompletedItems.forEach(i => checkedGallupSeqs.add(Number(i.index || i.seq)));
+            } else if (mode === 'main_sample') {
+              mainUncompletedItems.forEach(i => checkedGallupSeqs.add(Number(i.index || i.seq)));
+            } else if (mode === 'sub_sample') {
+              subUncompletedItems.forEach(i => checkedGallupSeqs.add(Number(i.index || i.seq)));
+            }
+            renderQuotaTable(db);
+          });
+        });
+        const jumpBtn = document.getElementById('btn-gallup-jump-step2');
+        if (jumpBtn) {
+          jumpBtn.addEventListener('click', () => {
+            const sec = document.getElementById('section-master-blueprint');
+            if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        }
+        const topBatchBtn = document.getElementById('btn-gallup-top-batch-run');
+        if (topBatchBtn) {
+          topBatchBtn.addEventListener('click', () => triggerBatchRun());
+        }
+      }
       return;
     }
 
@@ -1615,6 +1986,42 @@ async function initSurveyDetailPage() {
   // 3-1. 쿼터 테이블 인라인 편집 (대표자이름, 성별, 나이, 주요품목 등 전체 지원) 및 실시간 동기화
   // ------------------------------------------------------------------------
   quotaTableBody.addEventListener('click', async (e) => {
+    const gallupPilotBtn = e.target.closest('.btn-row-pilot-gallup');
+    if (gallupPilotBtn) {
+      e.stopPropagation();
+      const targetSeq = parseInt(gallupPilotBtn.getAttribute('data-seq'), 10);
+      if (!targetSeq || !currentCampaign || !Array.isArray(currentCampaign.quotaDatabase)) return;
+      const targetItem = currentCampaign.quotaDatabase.find(b => Number(b.index || b.seq) === Number(targetSeq));
+      if (!targetItem) return;
+
+      const surveyUrl = targetItem.surveyUrl || targetItem.slotUrl || currentCampaign?.guidelineConfig?.surveyUrl || 'https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W';
+      if (inputSurveyUrl) inputSurveyUrl.value = surveyUrl;
+
+      try {
+        setRunningState(true);
+        openMonitorDrawer();
+        resetTimelineChips();
+        appendLog('info', `🎯 [한국갤럽 귀농실태조사 단건 실행] #${targetSeq} "${targetItem.name || targetItem.ceoName}" (가구 ID: ${targetItem.id} · ${targetItem.eupMyeon || ''}) 홍천군 GPS 주입 · 방문기록 검증 · 전자서명 다변화 · Page 118 완료 직전까지 자동 진행합니다...`);
+        await saveBaseline(false);
+
+        const res = await fetch(`/api/campaigns/${campId}/pilot-run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            surveyUrl,
+            quotaIndex: targetSeq
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '단건 실행 실패');
+        appendLog('success', data.message);
+      } catch (err) {
+        appendLog('error', `단건 실행 실패: ${err.message}`);
+        setRunningState(false);
+      }
+      return;
+    }
+
     const rowPilotBtn = e.target.closest('.btn-row-pilot-globalri');
     if (rowPilotBtn) {
       e.stopPropagation();
@@ -5041,12 +5448,165 @@ async function initSurveyDetailPage() {
     `).join('');
   }
 
+  function renderGallupReturnFarmBlueprint(data) {
+    const bpSection = document.getElementById('section-master-blueprint');
+    if (bpSection) {
+      bpSection.classList.remove('hidden');
+      bpSection.style.display = 'block';
+    }
+
+    const groupNav = document.querySelector('.blueprint-group-nav-container');
+    if (groupNav) groupNav.style.display = 'none';
+    const presetGroup = document.querySelector('.blueprint-preset-group');
+    if (presetGroup) presetGroup.style.display = 'none';
+    const tplPicker = document.querySelector('.blueprint-template-picker');
+    if (tplPicker) tplPicker.style.display = 'none';
+    const legendWrap = document.querySelector('.blueprint-legend-inline');
+    if (legendWrap) legendWrap.style.display = 'none';
+
+    const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
+    if (titleEl) titleEl.textContent = '2026년 귀농귀촌 실태조사(귀농) · 4대 핵심 자동화 규칙 및 전자서명 필체 다변화 정책';
+
+    const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
+    if (subtitleEl) subtitleEl.textContent = '1) 대상 지역(홍천군 10개 읍·면) 브라우저 GPS 강제 주입, 2) 방문기록 입력 검증 규칙 준수, 3) 답례품 인수증 전자서명 8종 필체 다변화, 4) 최종 제출 직전(Page 118) 안전 대기 정책입니다.';
+
+    if (badgeMasterStatus) {
+      badgeMasterStatus.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> 홍천군 GPS 주입 · 방문기록 검증 · 8종 전자서명 · Page 118 완료직전 정지 활성';
+      badgeMasterStatus.className = 'badge-status badge-blueprint ready';
+    }
+
+    if (btnSaveBaseline) {
+      btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 귀농실태조사 자동화 정책 저장';
+    }
+
+    if (!blueprintStageGrid) return;
+    const qDb = currentCampaign?.quotaDatabase || [];
+    const checkedCount = checkedGallupSeqs.size;
+    const pol = data.policy || currentCampaign?.masterBaseline?.policy || {};
+    const gsheetUrl = currentCampaign?.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1Hoai6ggQWxNVTW5SyxEsvpNtMOlBO1z_ThmM6cZ6gRg/edit?gid=1470110969#gid=1470110969';
+
+    blueprintStageGrid.innerHTML = `
+      <section class="blueprint-card full-width-card globalri-step2-target-banner">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <span class="blueprint-step-pill" style="background: #dbeafe; color: #1d4ed8; font-weight: 800;">
+              <i class="fa-solid fa-shield-halved"></i> 한국갤럽 G-CAII (20263603) 4대 필수 자동화 검증 시스템
+            </span>
+            <strong style="font-size: 16px; color: #0f172a; margin-left: 8px;">
+              강원특별자치도 홍천군 선정명단 (${qDb.length}명) · 현재 체크된 실행 대상: <span style="color: #2563eb;">${checkedCount}명</span>
+            </strong>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" id="btn-gallup-step2-batch" class="btn-pill btn-pill-success font-bold" style="padding: 9px 18px; font-size: 13.5px;">
+              <i class="fa-solid fa-rocket"></i> 🚀 체크한 대상자 (${checkedCount}명) 완료 직전(Page 118)까지 일괄 실행
+            </button>
+            <a href="${escapeHtml(gsheetUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary font-bold" style="padding: 9px 16px; font-size: 13px; text-decoration: none;">
+              <i class="fa-solid fa-table text-success"></i> 선정명단 구글 스프레드시트 열기
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">규칙 1 · GPS 스푸핑</span>
+            <h3 class="blueprint-stage-title">1. 대상 지역(홍천군 10개 읍·면) 브라우저 GPS 강제 주입</h3>
+          </div>
+          <span class="badge-status success"><i class="fa-solid fa-location-crosshairs"></i> 상시 강제 주입</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          G-CAII 설문지의 <code>navigator.geolocation.getCurrentPosition</code> 호출 시, 대상자의 실제 주소지(강원특별자치도 홍천군 홍천읍·화촌면·두촌면·내촌면·서석면·영귀미면·남면·서면·북방면·내면) 중심 좌표에 응답자 고유 지터(±250m)를 더해 <code>#p_gps_lat</code> / <code>#p_gps_lng</code>에 주입합니다.
+        </div>
+        <div class="p-14">
+          <label class="figma-label font-bold">GPS 좌표 주입 방식</label>
+          <select id="sel-gallup-gps-mode" class="figma-select w-full">
+            <option value="eup_myeon_jitter" ${pol.gpsMode !== 'fixed' ? 'selected' : ''}>홍천군 10개 읍·면별 실측 중심좌표 + 응답자별 고유 미세 지터 (±250m · 권장)</option>
+            <option value="fixed" ${pol.gpsMode === 'fixed' ? 'selected' : ''}>홍천군청 기준 대표 좌표 고정</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">규칙 2 · 방문 기록 검증</span>
+            <h3 class="blueprint-stage-title">2. 방문 기록 입력(1~5차) 유효성 검증 규칙 완벽 준수</h3>
+          </div>
+          <span class="badge-status success"><i class="fa-solid fa-calendar-check"></i> 검증 규칙 통과</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          <code>ResponseIdStart_20263603.asp</code>의 방문기록 검증 트랩(① <code>07시~22시</code> 외 입력 차단, ② 차수 순차 입력 필수, ③ 이전 차수보다 빠른 일시 차단, ④ 최종 차수 <code>'컨택성공(1)'</code> 필수, ⑤ 기존 방문기록이 있으면 보존 후 마지막 차수를 컨택성공으로 설정)을 100% 준수합니다.
+        </div>
+        <div class="p-14">
+          <label class="figma-label font-bold">방문 시간대 생성 범위 (07~22시 제약 내)</label>
+          <select id="sel-gallup-visit-hours" class="figma-select w-full">
+            <option value="10_17" ${pol.visitHourRange !== '09_19' ? 'selected' : ''}>주간 방문 표준 시간대 (10:00 ~ 17:50 · 권장)</option>
+            <option value="09_19" ${pol.visitHourRange === '09_19' ? 'selected' : ''}>넓은 주간 시간대 (09:00 ~ 19:50)</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">규칙 3 · 전자서명 필체 다변화</span>
+            <h3 class="blueprint-stage-title">3. 답례품 인수증 전자서명 패드(Page 7) 8종 한글 필체 변주</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-signature"></i> 8종 필체 변주</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          Page 7(<code>T3 답례품 인수증 서명</code>)의 <code>#signature_pad_Q3_1 canvas</code>에 대상자 성명 한글 자모를 베지어 곡선·필압·기울기·자간·획 굵기가 서로 다른 <strong>8가지 필체 스타일(정자체·우상향 흘림·둥근 굴림·힘찬 각진체·소폭 단아체·세로 장체·와이드 서명체·약자 연필체)</strong>과 응답자 고유 난수 시드로 그려 다른 사람이 직접 서명한 것처럼 업로드합니다.
+        </div>
+        <div class="p-14">
+          <label class="figma-label font-bold">전자서명 필체 적용 방식</label>
+          <select id="sel-gallup-sig-mode" class="figma-select w-full">
+            <option value="auto_rotate" ${pol.signatureStyleMode !== 'random' ? 'selected' : ''}>응답자 ID 기반 8종 한글 자모 필체 자동 분배 + 미세 획 변주 (권장)</option>
+            <option value="random" ${pol.signatureStyleMode === 'random' ? 'selected' : ''}>매 실행 시 8종 필체 완전 무작위 선택</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">규칙 4 · 완료 직전 정지</span>
+            <h3 class="blueprint-stage-title">4. 최종 제출 직전 상태(Page 118)까지 진행 후 안전 대기</h3>
+          </div>
+          <span class="badge-status pilot"><i class="fa-solid fa-flag-checkered"></i> Page 118 정지</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          SQ1~SQ7 ➔ Page 7(서명 업로드) ➔ 본설문(귀농동향·준비·정착·주거·농지·영농활동·지역융화·경제활동·삶의질) ➔ <strong>마지막 Page 118(응답자 성명·연락처·주소)</strong>까지 모든 문항을 입력·임시저장(<code>rschRspnsWrite</code>)하되, <strong>[조사완료] 버튼은 클릭하지 않고 진행중(99%) 상태에서 안전 정지</strong>합니다.
+        </div>
+        <div class="p-14">
+          <label class="figma-label font-bold">정지 지점 설정</label>
+          <select id="sel-gallup-stop-mode" class="figma-select w-full">
+            <option value="stop_before_submit" ${pol.stopBeforeSubmit !== false ? 'selected' : ''}>Page 118 (NAME·PHONE·ADDR) DB 저장 후 [조사완료] 클릭 직전 정지 (필수 권장)</option>
+            <option value="full_submit" ${pol.stopBeforeSubmit === false ? 'selected' : ''}>[조사완료] 버튼까지 클릭하여 최종 제출 마감</option>
+          </select>
+        </div>
+      </section>
+    `;
+
+    const btnStep2Batch = document.getElementById('btn-gallup-step2-batch');
+    if (btnStep2Batch) {
+      btnStep2Batch.addEventListener('click', () => triggerBatchRun());
+    }
+  }
+
   async function loadBlueprint() {
     try {
       const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/blueprint`);
       if (!res.ok) throw new Error('블루프린트를 불러올 수 없습니다.');
       const data = await res.json();
       blueprintData = data.blueprint;
+
+      // 한국갤럽 2026년 귀농귀촌 실태조사(귀농) 전용 블루프린트 분기
+      const isGallupReturnFarmCampaign = (data.surveyType === 'gallup_return_farm' || currentCampaign?.surveyType === 'gallup_return_farm');
+      if (isGallupReturnFarmCampaign) {
+        renderGallupReturnFarmBlueprint(data);
+        return;
+      }
 
       // 글로벌리서치 제5차 성인문해능력조사 전용 블루프린트 분기 (나이대별 그룹 가이드)
       const isGlobalriLiteracyCampaign = (data.surveyType === 'globalri_literacy' || currentCampaign?.surveyType === 'globalri_literacy');
@@ -6548,9 +7108,27 @@ async function initSurveyDetailPage() {
       const isKona = (currentCampaign?.surveyType === 'kona_youth');
       const isHrcEnergy = (currentCampaign?.surveyType === 'hrc_energy');
       const isGlobalriLiteracy = (currentCampaign?.surveyType === 'globalri_literacy');
+      const isGallupReturnFarm = (currentCampaign?.surveyType === 'gallup_return_farm');
 
       let payload;
-      if (isGlobalriLiteracy) {
+      if (isGallupReturnFarm) {
+        const gpsMode = document.getElementById('sel-gallup-gps-mode')?.value || 'eup_myeon_jitter';
+        const visitHourRange = document.getElementById('sel-gallup-visit-hours')?.value || '10_17';
+        const signatureStyleMode = document.getElementById('sel-gallup-sig-mode')?.value || 'auto_rotate';
+        const stopBeforeSubmit = (document.getElementById('sel-gallup-stop-mode')?.value !== 'full_submit');
+        payload = {
+          surveyType: 'gallup_return_farm',
+          policy: {
+            gpsSpoofing: true,
+            gpsMode,
+            visitLogValidation: true,
+            visitHourRange,
+            variedSignature: true,
+            signatureStyleMode,
+            stopBeforeSubmit
+          }
+        };
+      } else if (isGlobalriLiteracy) {
         if (showNotification && checkedGlobalriSeqs.size > 0) {
           const ok = await applyGuideToCheckedGlobalriQuotas(true);
           if (btnSaveBaseline) {
@@ -6756,12 +7334,18 @@ async function initSurveyDetailPage() {
     const isKona = (currentCampaign?.surveyType === 'kona_youth');
     const isHrcEnergy = (currentCampaign?.surveyType === 'hrc_energy');
     const isGlobalriLiteracy = (currentCampaign?.surveyType === 'globalri_literacy');
-    const firstBiz = isHrcEnergy
-      ? (quotaDb.find(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
-      : ((isKona || isGlobalriLiteracy)
-        ? (quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
-        : quotaDb[0]);
-    const firstSlot = firstBiz?.surveyUrl || firstBiz?.slotUrl || firstBiz?.householdUrl || (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${firstBiz?.uid || ''}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''));
+    const isGallupReturnFarm = (currentCampaign?.surveyType === 'gallup_return_farm');
+    const firstBiz = isGallupReturnFarm
+      ? (quotaDb.find(b => checkedGallupSeqs.has(Number(b.index || b.seq)) && b.quotaStatus !== 'completed' && b.status !== '조사완료')
+        || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '조사완료' && b.quotaStatus !== 'pilot_done')
+        || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '조사완료')
+        || quotaDb[0])
+      : (isHrcEnergy
+        ? (quotaDb.find(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
+        : ((isKona || isGlobalriLiteracy)
+          ? (quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
+          : quotaDb[0]));
+    const firstSlot = firstBiz?.surveyUrl || firstBiz?.slotUrl || firstBiz?.householdUrl || (isGallupReturnFarm ? 'https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W' : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${firstBiz?.uid || ''}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '')));
     const targetPilotIdx = firstBiz?.index || firstBiz?.seq || 1;
 
     // 1번 쿼터 슬롯 매핑 검증
@@ -6782,7 +7366,9 @@ async function initSurveyDetailPage() {
       setRunningState(true);
       openMonitorDrawer();
       resetTimelineChips();
-      if (isGlobalriLiteracy) {
+      if (isGallupReturnFarm) {
+        appendLog('info', `🎯 [한국갤럽 귀농실태조사 단건 실행] "${firstBiz.name || firstBiz.ceoName}" (가구 ID: ${firstBiz.id} · ${firstBiz.eupMyeon || ''}) 홍천군 GPS 주입 · 방문기록 검증 · 8종 전자서명 · Page 118 완료 직전까지 자동 진행합니다...`);
+      } else if (isGlobalriLiteracy) {
         appendLog('info', `🎯 [성인문해능력조사 Part A~C 실행] "${firstBiz.memberName || firstBiz.ceoName}" (LID ${firstBiz.lid} · ${firstBiz.ageGroupLabel || ''}) 나이대별 가이드 적용 및 Part C 채점 저장 후 D1 수기 대기를 진행합니다...`);
       } else if (isHrcEnergy) {
         appendLog('info', `🎯 [에너지총조사 단건 실행] "${firstBiz.buildingName || firstBiz.companyName}" (UID: ${firstBiz.uid}) 기존 입력 항목을 100% 보존하며 설문을 진행합니다...`);
@@ -6827,14 +7413,33 @@ async function initSurveyDetailPage() {
     const isKona = (currentCampaign?.surveyType === 'kona_youth');
     const isHrcEnergy = (currentCampaign?.surveyType === 'hrc_energy');
     const isGlobalriLiteracy = (currentCampaign?.surveyType === 'globalri_literacy');
+    const isGallupReturnFarm = (currentCampaign?.surveyType === 'gallup_return_farm');
     const firstQuota = quotaDb.find(b => b.index === 1) || quotaDb[0];
     const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed' || firstQuota.status === '완료' || firstQuota.quotaStatus === '진행중(98%)' || firstQuota.status === '진행중(98%)');
-    const startIdx = (isKona || isHrcEnergy || isGlobalriLiteracy) ? 1 : (firstDone ? 2 : 1);
+    const startIdx = (isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm) ? 1 : (firstDone ? 2 : 1);
 
-    // 1:1 슬롯 매핑 전수 검증 및 글로벌리서치 선택 항목 필터링
+    // 1:1 슬롯 매핑 전수 검증 및 선택 항목 필터링
     let selectedTargetIndices = null;
     let targets = [];
-    if (isGlobalriLiteracy) {
+    if (isGallupReturnFarm) {
+      const uncompletedAll = quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '조사완료');
+      const checkedUncompleted = uncompletedAll.filter((b, idx) => checkedGallupSeqs.has(Number(b.index || b.seq || (idx + 1))));
+      const readyOnly = uncompletedAll.filter(b => b.quotaStatus !== 'pilot_done' && !String(b.status || '').includes('완료직전'));
+      if (checkedUncompleted.length > 0) {
+        targets = checkedUncompleted;
+        selectedTargetIndices = checkedUncompleted.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
+      } else if (readyOnly.length > 0) {
+        targets = readyOnly;
+        selectedTargetIndices = readyOnly.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
+      } else {
+        targets = uncompletedAll;
+        selectedTargetIndices = uncompletedAll.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
+      }
+      if (targets.length === 0) {
+        alert('실행할 미완료 대상자가 없습니다.');
+        return;
+      }
+    } else if (isGlobalriLiteracy) {
       const uncompletedAll = quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료');
       const checkedUncompleted = uncompletedAll.filter((b, idx) => checkedGlobalriSeqs.has(Number(b.index || b.seq || (idx + 1))));
       const guidedUncompleted = uncompletedAll.filter(b => b.guideApplied);
@@ -6859,7 +7464,7 @@ async function initSurveyDetailPage() {
           ? quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료')
           : quotaDb.filter(b => (b.index || b.seq) >= startIdx));
     }
-    const unmappedTargets = (isKona || isHrcEnergy || isGlobalriLiteracy) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
+    const unmappedTargets = (isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
     if (unmappedTargets.length > 0) {
       if (isMetrix) {
         alert(`⚠️ 실행 대상 패널 ${targets.length}건 중 ${unmappedTargets.length}건에 설문 참여 URL(surveyUrl)이 누락되었습니다.`);
@@ -6870,11 +7475,14 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    let surveyUrl = targets[0]?.slotUrl || targets[0]?.surveyUrl || targets[0]?.householdUrl || inputSurveyUrl.value.trim() || (isGlobalriLiteracy ? 'https://gift.globalri.it/login' : (isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL'));
+    let surveyUrl = targets[0]?.slotUrl || targets[0]?.surveyUrl || targets[0]?.householdUrl || inputSurveyUrl.value.trim() || (isGallupReturnFarm ? 'https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W' : (isGlobalriLiteracy ? 'https://gift.globalri.it/login' : (isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL')));
     const safetyGuard = checkSafetyGuard ? checkSafetyGuard.checked : (isHrcEnergy ? false : true);
     
     let confirmMsg;
-    if (isGlobalriLiteracy) {
+    if (isGallupReturnFarm) {
+      const targetNameList = targets.slice(0, 8).map(b => `#${b.index || b.seq} ${b.name || b.ceoName}(${b.id})`).join(', ') + (targets.length > 8 ? ` 외 ${targets.length - 8}명` : '');
+      confirmMsg = `[2026년 귀농귀촌 실태조사(귀농) - 선택 대상자 일괄 자동 배치]\n선택된 대상자 ${targets.length}명(${targetNameList})에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 대상 지역(홍천군 10개 읍·면) 브라우저 GPS 위치정보 강제 주입\n2. 방문 기록 검증 규칙(07~22시 시간대 · 순차 오름차순 · 최종 '컨택성공') 준수\n3. 답례품 인수증 전자서명 패드(Page 7) 8종 한글 필체 변주 서명 업로드\n4. 최종 제출하지 않고 마지막 Page 118(NAME·PHONE·ADDR) 저장 후 완료 직전 상태에서 정지\n\n계속하시겠습니까?`;
+    } else if (isGlobalriLiteracy) {
       const targetNameList = targets.map(b => `#${b.index || b.seq} ${b.memberName || b.ceoName}(${b.ageGroupLabel || ''})`).join(', ');
       confirmMsg = `[제5차 성인문해능력조사 - 선택 쿼터 일괄 자동 배치]\n선택된 대상자 ${targets.length}명(${targetNameList})에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 각 대상자에게 부여된 맞춤 응답 가이드(또는 연령 프리셋) 적용\n2. CONSENT~GP1 및 기존 입력 문항 100% 보존\n3. 설정된 진행 범위(Part C 채점 저장 후 D1 수기 대기 또는 F05_2까지 진행) 준수 (Part D D5 4~5 / 3~4 교차체크 보장)\n4. 제출 문항·답변 내역 엑셀(.xlsx) 자동 저장\n\n계속하시겠습니까?`;
     } else if (isHrcEnergy) {
@@ -6898,7 +7506,9 @@ async function initSurveyDetailPage() {
     try {
       setRunningState(true);
       openMonitorDrawer();
-      if (isGlobalriLiteracy) {
+      if (isGallupReturnFarm) {
+        appendLog('info', `🚀 [한국갤럽 귀농실태조사 배치 가동 시작] 선택 대상자 ${targets.length}명 완료 직전(Page 118)까지 순차 자동화 실행을 시작합니다...`);
+      } else if (isGlobalriLiteracy) {
         if (checkedGlobalriSeqs.size > 0) {
           await applyGuideToCheckedGlobalriQuotas(false);
         }
@@ -7491,15 +8101,29 @@ async function initSurveyDetailPage() {
   // ------------------------------------------------------------------------
   // 6. 실시간 타임라인 칩 제어
   // ------------------------------------------------------------------------
-  function renderTimelineChips(isAssoc) {
+  function renderTimelineChips(isAssoc, isGallupReturnFarm = false) {
     const strip = document.getElementById('timeline-chips-strip');
     if (!strip) return;
 
     if (timelineStepperTitle) {
-      timelineStepperTitle.textContent = isAssoc ? '상인회 실태조사 타임라인 (25단계)' : '점포경영 실태조사 타임라인 (15단계)';
+      timelineStepperTitle.textContent = isGallupReturnFarm
+        ? '한국갤럽 귀농실태조사 타임라인 (Page 1 ~ 118 완료직전)'
+        : (isAssoc ? '상인회 실태조사 타임라인 (25단계)' : '점포경영 실태조사 타임라인 (15단계)');
     }
 
-    const steps = isAssoc ? [
+    const steps = isGallupReturnFarm ? [
+      '검색/방문기록',
+      'SQ1~SQ7',
+      'T3서명(P7)',
+      '귀농동향(P10)',
+      '준비/정착(P20)',
+      '주거/농지(P50)',
+      '영농활동(P65)',
+      '지역융화(P83)',
+      '경제/소득(P92)',
+      '삶의질(P112)',
+      'P118(완료직전)'
+    ] : (isAssoc ? [
       'Q1',
       'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10',
       'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20',
@@ -7510,10 +8134,10 @@ async function initSurveyDetailPage() {
       'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10',
       'P11', 'P12', 'P13', 'P14',
       'Agree'
-    ];
+    ]);
 
     strip.innerHTML = steps.map(step => {
-      const isFinal = (step.toLowerCase() === 'agree');
+      const isFinal = (step.toLowerCase() === 'agree' || step.includes('P118'));
       return `<span class="step-chip${isFinal ? ' step-chip-final' : ''}" data-step="${step}">${step}</span>`;
     }).join('');
 
@@ -7603,10 +8227,12 @@ async function initSurveyDetailPage() {
 
         // 파일럿 완료 (화면 자동 동기화)
         else if (data.type === 'PILOT_COMPLETED') {
-          setTimelineStep('Agree');
+          setTimelineStep(currentCampaign?.surveyType === 'gallup_return_farm' ? 'P118(완료직전)' : 'Agree');
           setRunningState(false);
           await loadCampaign();
-          if (currentCampaign?.surveyType === 'globalri_literacy') {
+          if (currentCampaign?.surveyType === 'gallup_return_farm') {
+            appendLog('success', `🎉 대상자 "${data.bizName || ''}" Page 118(NAME·PHONE·ADDR) 저장 완료! ([조사완료] 클릭 직전 상태에서 안전 대기 중)`);
+          } else if (currentCampaign?.surveyType === 'globalri_literacy') {
             appendLog('success', `🎉 대상자 "${data.bizName || ''}" Part A ~ Part C 채점 저장 완료! (D1에서 수기 진행 대기 중 · 엑셀 내역 갱신됨)`);
           } else {
             appendLog('success', `🎉 1번 쿼터 "${data.bizName || ''}" 파일럿 검증 완료! Agree.asp 안전 대기 중.`);
@@ -7810,6 +8436,7 @@ async function initSurveyDetailPage() {
       if (!currentCampaign?.id) return;
       const isHrcEnergy = (currentCampaign.surveyType === 'hrc_energy');
       const isGlobalriLiteracy = (currentCampaign.surveyType === 'globalri_literacy');
+      const isGallupReturnFarm = (currentCampaign.surveyType === 'gallup_return_farm');
       let lidFilterInput = '';
       if (isGlobalriLiteracy) {
         const promptVal = prompt(
@@ -7823,17 +8450,21 @@ async function initSurveyDetailPage() {
       }
       const originalText = btnSyncKstatStatus.innerHTML;
       btnSyncKstatStatus.disabled = true;
-      btnSyncKstatStatus.innerHTML = isGlobalriLiteracy
-        ? '<i class="fa-solid fa-spinner fa-spin"></i> 글로벌리서치 GIFT 동기화 중...'
-        : (isHrcEnergy
-          ? '<i class="fa-solid fa-spinner fa-spin"></i> 한국리서치 TAPI 동기화 중...'
-          : '<i class="fa-solid fa-spinner fa-spin"></i> Kstat 동기화 중...');
-      try {
-        const endpoint = isGlobalriLiteracy
-          ? `/api/campaigns/${currentCampaign.id}/sync-globalri-literacy`
+      btnSyncKstatStatus.innerHTML = isGallupReturnFarm
+        ? '<i class="fa-solid fa-spinner fa-spin"></i> 한국갤럽(20263603) 동기화 중...'
+        : (isGlobalriLiteracy
+          ? '<i class="fa-solid fa-spinner fa-spin"></i> 글로벌리서치 GIFT 동기화 중...'
           : (isHrcEnergy
-            ? `/api/campaigns/${currentCampaign.id}/sync-hrc-energy`
-            : `/api/campaigns/${currentCampaign.id}/sync-kstat-status`);
+            ? '<i class="fa-solid fa-spinner fa-spin"></i> 한국리서치 TAPI 동기화 중...'
+            : '<i class="fa-solid fa-spinner fa-spin"></i> Kstat 동기화 중...'));
+      try {
+        const endpoint = isGallupReturnFarm
+          ? `/api/campaigns/${currentCampaign.id}/sync-gallup-status`
+          : (isGlobalriLiteracy
+            ? `/api/campaigns/${currentCampaign.id}/sync-globalri-literacy`
+            : (isHrcEnergy
+              ? `/api/campaigns/${currentCampaign.id}/sync-hrc-energy`
+              : `/api/campaigns/${currentCampaign.id}/sync-kstat-status`));
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -7842,8 +8473,8 @@ async function initSurveyDetailPage() {
         const data = await res.json();
         if (data.success) {
           alert(`✓ ${data.message}`);
-          appendLog('success', `[${isGlobalriLiteracy ? '글로벌리서치 GIFT 동기화' : (isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화')}] ${data.message}`);
-          if (isHrcEnergy || isGlobalriLiteracy) {
+          appendLog('success', `[${isGallupReturnFarm ? '한국갤럽 상태 동기화' : (isGlobalriLiteracy ? '글로벌리서치 GIFT 동기화' : (isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화'))}] ${data.message}`);
+          if (isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm) {
             await loadCampaign();
             await loadBlueprint();
           }
