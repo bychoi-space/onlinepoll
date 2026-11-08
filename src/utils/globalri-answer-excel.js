@@ -428,110 +428,56 @@ export function normalizeSubmittedAnswersList(item = {}) {
   return [];
 }
 
+export const GLOBALRI_SHEET_QUESTION_COLS = [
+  { col: 'a01', code: 'A1_2' },
+  { col: 'a02', code: 'A2' },
+  { col: 'a03', code: 'A3' },
+  { col: 'b01', code: 'B1' },
+  { col: 'b02', code: 'B2' },
+  { col: 'b03', code: 'B3' },
+  { col: 'b04', code: 'B4' },
+  { col: 'b05', code: 'B5' },
+  { col: 'c02', code: 'C2' },
+  { col: 'c05', code: 'C5' },
+  { col: 'c06', code: 'C6' },
+  { col: 'c09', code: 'C9' },
+  { col: 'c13', code: 'C13' },
+  { col: 'c16', code: 'C16' },
+  { col: 'c18', code: 'C18' }
+];
+
+function cleanPureAnswer(val = '') {
+  return String(val || '')
+    .replace(/\s*\(O:\s*제대로\s*읽음\)\s*/g, '')
+    .replace(/\s*\(X:\s*읽지\s*못함\)\s*/g, '')
+    .replace(/\s*\(목표점수\s*조절용\s*오답\)\s*/g, '')
+    .replace(/\s*\[정답\]\s*/g, '')
+    .replace(/\s*\[오답조절\]\s*/g, '')
+    .trim();
+}
+
 export function buildGlobalriSheetsData({ quotaDatabase = [] }) {
-  // 1) 시트 1: 응답자별 제출답변 요약 및 문항 매트릭스 (A1 ~ C20)
-  const summaryRows = quotaDatabase.map((item, idx) => {
-    const seq = item.index || item.seq || (idx + 1);
+  const summaryRows = quotaDatabase.map(item => {
     const ansList = normalizeSubmittedAnswersList(item);
     const ansMap = {};
     ansList.forEach(a => {
       ansMap[a.questionCode] = a;
     });
 
-    const grades = item.gradeSummary || {};
     const row = {
-      '순번': seq,
-      'LID': item.lid || '',
-      '가구원UID': item.memberUid || item.uid || '',
-      '성명': item.memberName || item.respondentName || item.ceoName || '',
-      '성별': item.gender || item.ceoGender || '',
-      '출생연도': item.birthYear ? `${item.birthYear}년` : '',
-      '만나이': item.age ? `만 ${item.age}세` : '',
-      '나이대그룹': item.ageGroupLabel || '',
-      '진행상태': item.status || item.quotaStatus || '대기',
-      '진행률': item.progress || '',
-      'Part A 채점': grades.partA || (ansList.length > 0 ? '3 / 3' : '-'),
-      'Part B-1 채점': grades.partB1 || (ansList.length > 0 ? '5 / 5 (B6~B20 스킵)' : '-'),
-      'Part C 채점': grades.partC || '-',
-      '최근실행일시': item.pilotCompletedAt || item.completedAt || '-'
+      'LID': String(item.lid || ''),
+      '성명': item.memberName || item.respondentName || item.ceoName || ''
     };
 
-    PART_A_TO_C_QUESTION_ORDER.forEach(qCode => {
-      const a = ansMap[qCode];
-      if (a) {
-        const cleanVal = String(a.submittedAnswer || '').replace(/\s*\(목표점수 조절용 오답\)\s*/g, '');
-        const mark = a.isCorrect === false ? ' [오답조절]' : ' [정답]';
-        row[qCode] = `${cleanVal}${qCode === 'A1' ? '' : mark}`;
-      } else {
-        row[qCode] = '-';
-      }
+    GLOBALRI_SHEET_QUESTION_COLS.forEach(({ col, code }) => {
+      const a = ansMap[code];
+      row[col] = a ? cleanPureAnswer(a.submittedAnswer) : '';
     });
 
     return row;
   });
 
-  // 2) 시트 2: 문항별 제출답변 상세내역 (실행 완료된 응답자의 전 문항 로그)
-  const detailRows = [];
-  quotaDatabase.forEach((item, idx) => {
-    const seq = item.index || item.seq || (idx + 1);
-    const ansList = normalizeSubmittedAnswersList(item);
-    ansList.forEach((a, aIdx) => {
-      const meta = LITERACY_QUESTION_META[a.questionCode] || {};
-      detailRows.push({
-        '응답자순번': `#${seq}`,
-        'LID': item.lid || '',
-        '가구원UID': item.memberUid || item.uid || '',
-        '성명': item.memberName || item.respondentName || item.ceoName || '',
-        '성별': item.gender || item.ceoGender || '',
-        '출생연도(나이)': `${item.birthYear || ''}년생 (만 ${item.age || ''}세)`,
-        '나이대그룹': item.ageGroupLabel || '',
-        '문항순서': aIdx + 1,
-        '파트구분': a.part || meta.part || '기타 파트',
-        '문항코드': a.questionCode,
-        '문항유형': a.questionType || meta.type || '',
-        '문항내용 및 지문 요약': a.questionSummary || meta.summary || a.questionCode,
-        '공식 정답': a.officialAnswer || meta.officialAnswer || '-',
-        '제출(입력)한 답변': a.submittedAnswer,
-        '정오답 판정': a.isCorrectLabel,
-        '제출일시': a.answeredAt || item.pilotCompletedAt || item.completedAt || ''
-      });
-    });
-  });
-
-  if (detailRows.length === 0) {
-    detailRows.push({
-      '응답자순번': '-',
-      'LID': '-',
-      '가구원UID': '-',
-      '성명': '아직 실행된 응답자가 없습니다',
-      '성별': '-',
-      '출생연도(나이)': '-',
-      '나이대그룹': '-',
-      '문항순서': '-',
-      '파트구분': '-',
-      '문항코드': '-',
-      '문항유형': '-',
-      '문항내용 및 지문 요약': '파일럿 또는 배치 실행 시 문항별 제출 답변이 이 시트에 자동으로 기록됩니다.',
-      '공식 정답': '-',
-      '제출(입력)한 답변': '-',
-      '정오답 판정': '-',
-      '제출일시': '-'
-    });
-  }
-
-  // 3) 시트 3: Part A ~ Part C 전문항(43문항) 공식 정답 참조표
-  const refRows = Object.entries(LITERACY_QUESTION_META).map(([code, meta], idx) => ({
-    'No': idx + 1,
-    '파트구분': meta.part,
-    '문항코드': code,
-    '문항유형': meta.type,
-    '문제 지문 및 평가 내용 요약': meta.summary,
-    '공식 정답': meta.officialAnswer,
-    '점수조절용 오답 예시': meta.wrongExample,
-    '채점 및 분기 비고': meta.note
-  }));
-
-  return { summaryRows, detailRows, refRows };
+  return { summaryRows, detailRows: summaryRows, refRows: summaryRows };
 }
 
 /**
@@ -539,19 +485,11 @@ export function buildGlobalriSheetsData({ quotaDatabase = [] }) {
  */
 export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null }) {
   const wb = XLSX.utils.book_new();
-  const { summaryRows, detailRows, refRows } = buildGlobalriSheetsData({ quotaDatabase });
+  const { summaryRows } = buildGlobalriSheetsData({ quotaDatabase });
 
   const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
-  wsSummary['!cols'] = autoFitColumns(summaryRows, 10, 42);
-  XLSX.utils.book_append_sheet(wb, wsSummary, '1_응답자별_문항답변_현황');
-
-  const wsDetail = XLSX.utils.json_to_sheet(detailRows);
-  wsDetail['!cols'] = autoFitColumns(detailRows, 10, 62);
-  XLSX.utils.book_append_sheet(wb, wsDetail, '2_문항별_제출답변_상세내역');
-
-  const wsRef = XLSX.utils.json_to_sheet(refRows);
-  wsRef['!cols'] = autoFitColumns(refRows, 10, 65);
-  XLSX.utils.book_append_sheet(wb, wsRef, '3_전문항_공식정답표(PartA_C)');
+  wsSummary['!cols'] = autoFitColumns(summaryRows, 10, 36);
+  XLSX.utils.book_append_sheet(wb, wsSummary, '시트1');
 
   if (filePath) {
     const dir = path.dirname(filePath);
@@ -568,7 +506,7 @@ export async function syncGlobalriAnswersToGoogleSheet({
   quotaDatabase = [],
   sheetUrl = GLOBALRI_DEFAULT_GSHEET_URL
 } = {}) {
-  const { summaryRows, detailRows, refRows } = buildGlobalriSheetsData({ quotaDatabase });
+  const { summaryRows } = buildGlobalriSheetsData({ quotaDatabase });
   function rowsToTsvLines(rows) {
     if (!rows || rows.length === 0) return [];
     const headers = Object.keys(rows[0]);
@@ -579,16 +517,7 @@ export async function syncGlobalriAnswersToGoogleSheet({
     return lines;
   }
 
-  const allLines = [
-    ['■ [1] 제5차 성인문해능력조사 (노영미7791) — 응답자별 진행현황 및 문항별(A1~C20) 제출 답변 요약 매트릭스'].join('\t'),
-    ...rowsToTsvLines(summaryRows),
-    '',
-    ['■ [2] 실행 완료 응답자 문항별 제출 답변 및 채점 상세내역 (Part A ~ Part C 전수 기록)'].join('\t'),
-    ...rowsToTsvLines(detailRows),
-    '',
-    ['■ [3] 제5차 성인문해능력조사 Part A ~ Part C 전 문항(43문항) 공식 정답 및 지문 요약 참조표'].join('\t'),
-    ...rowsToTsvLines(refRows)
-  ];
+  const allLines = rowsToTsvLines(summaryRows);
   const fullTsv = allLines.join('\n');
 
   const browser = await chromium.launch({ headless: true });
@@ -599,19 +528,25 @@ export async function syncGlobalriAnswersToGoogleSheet({
     });
     const page = await context.newPage();
     await page.goto(sheetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(4500);
 
-    const nameBox = page.locator('#t-name-box, .waffle-name-box');
-    if ((await nameBox.count()) > 0) {
-      await nameBox.first().click();
-      await page.keyboard.press('Control+A');
-      await page.keyboard.type('A1');
-      await page.keyboard.press('Enter');
-      await page.waitForTimeout(500);
-    } else {
-      await page.mouse.click(100, 240);
-      await page.waitForTimeout(400);
-    }
+    // Dismiss any initial banner/dialog and focus grid
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await page.mouse.click(120, 260);
+    await page.waitForTimeout(400);
+
+    // Select all cells and clear previous contents
+    await page.keyboard.press('Control+A');
+    await page.waitForTimeout(250);
+    await page.keyboard.press('Control+A');
+    await page.waitForTimeout(250);
+    await page.keyboard.press('Delete');
+    await page.waitForTimeout(600);
+
+    // Return to A1
+    await page.keyboard.press('Control+Home');
+    await page.waitForTimeout(400);
 
     await page.evaluate(async (tsvText) => {
       try {
@@ -630,7 +565,7 @@ export async function syncGlobalriAnswersToGoogleSheet({
 
     await page.waitForTimeout(1200);
     await page.keyboard.press('Control+V');
-    await page.waitForTimeout(4500);
+    await page.waitForTimeout(5000);
     await browser.close();
     return { success: true, lineCount: allLines.length };
   } catch (err) {
