@@ -9,7 +9,10 @@
       "key": "age20",
       "label": "20대 (18~29세)",
       "shortLabel": "20대",
-      "ageRange": [18, 29],
+      "ageRange": [
+        18,
+        29
+      ],
       "badgeColor": "#2563eb",
       "description": "디지털·AI 활용 및 고등 문해력 우수 그룹 (비혼자녀·대학생·사회초년생)"
     },
@@ -17,7 +20,10 @@
       "key": "age30",
       "label": "30대 (30~39세)",
       "shortLabel": "30대",
-      "ageRange": [30, 39],
+      "ageRange": [
+        30,
+        39
+      ],
       "badgeColor": "#0284c7",
       "description": "경제활동 활발 및 금융·공공·디지털 문해력 우수 그룹"
     },
@@ -25,7 +31,10 @@
       "key": "age40",
       "label": "40대 (40~49세)",
       "shortLabel": "40대",
-      "ageRange": [40, 49],
+      "ageRange": [
+        40,
+        49
+      ],
       "badgeColor": "#0d9488",
       "description": "가구 핵심 경제주체 및 공공·금융·생활 문해력 안정 그룹"
     },
@@ -33,7 +42,10 @@
       "key": "age50",
       "label": "50대 (50~59세)",
       "shortLabel": "50대",
-      "ageRange": [50, 59],
+      "ageRange": [
+        50,
+        59
+      ],
       "badgeColor": "#7c3aed",
       "description": "중장년 가구주·배우자 그룹 (건강·금융 관심 높음, 디지털 보통~양호)"
     },
@@ -41,7 +53,10 @@
       "key": "age60",
       "label": "60대 (60~69세)",
       "shortLabel": "60대",
-      "ageRange": [60, 69],
+      "ageRange": [
+        60,
+        69
+      ],
       "badgeColor": "#d97706",
       "description": "장년·은퇴 전환기 그룹 (건강·공공 문해 관심 높음, 디지털·AI 교육 수요 높음)"
     },
@@ -49,7 +64,10 @@
       "key": "age70",
       "label": "70대 이상 (70세~)",
       "shortLabel": "70대 이상",
-      "ageRange": [70, 120],
+      "ageRange": [
+        70,
+        120
+      ],
       "badgeColor": "#dc2626",
       "description": "고령층 그룹 (기초·생활문해 중심, 스마트폰·키오스크·건강관리 교육 수요 높음)"
     }
@@ -68,10 +86,6 @@
         "D2_politicalInterest": "3",
         "D3_socialStatus": "3",
         "D4_socialMeeting": "2",
-        "D5_1_healthScore": 4,
-        "D5_2_publicScore": 4,
-        "D5_3_financeScore": 4,
-        "D5_4_digitalScore": 5,
         "D5_jitter": true,
         "E1_needEducation": "2",
         "E1_1_participateIntent": "1",
@@ -94,7 +108,11 @@
         "F04_1_empType": "1",
         "F04_2_workStatus": "1",
         "F05_1_personalIncome": "3",
-        "F05_2_householdIncome": "6"
+        "F05_2_householdIncome": "6",
+        "D5_1_healthLiteracy": "4_5",
+        "D5_2_publicLiteracy": "4_5",
+        "D5_3_financialLiteracy": "4_5",
+        "D5_4_digitalAiLiteracy": "4_5"
       },
       "age30": {
         "partA_voicePass": "1",
@@ -105,10 +123,6 @@
         "D2_politicalInterest": "3",
         "D3_socialStatus": "3",
         "D4_socialMeeting": "3",
-        "D5_1_healthScore": 4,
-        "D5_2_publicScore": 4,
-        "D5_3_financeScore": 4,
-        "D5_4_digitalScore": 5,
         "D5_jitter": true,
         "E1_needEducation": "2",
         "E1_1_participateIntent": "1",
@@ -131,7 +145,11 @@
         "F04_1_empType": "1",
         "F04_2_workStatus": "1",
         "F05_1_personalIncome": "4",
-        "F05_2_householdIncome": "6"
+        "F05_2_householdIncome": "6",
+        "D5_1_healthLiteracy": "4_5",
+        "D5_2_publicLiteracy": "4_5",
+        "D5_3_financialLiteracy": "4_5",
+        "D5_4_digitalAiLiteracy": "4_5"
       },
       "age40": {
         "partA_voicePass": "1",
@@ -142,10 +160,6 @@
         "D2_politicalInterest": "3",
         "D3_socialStatus": "3",
         "D4_socialMeeting": "3",
-        "D5_1_healthScore": 4,
-        "D5_2_publicScore": 4,
-        "D5_3_financeScore": 4,
-        "D5_4_digitalScore": 4,
         "D5_jitter": true,
         "E1_needEducation": "2",
         "E1_1_participateIntent": "1",
@@ -168,7 +182,11 @@
         "F04_1_empType": "1",
         "F04_2_workStatus": "1",
         "F05_1_personalIncome": "5",
-        "F05_2_householdIncome": "7"
+        "F05_2_householdIncome": "7",
+        "D5_1_healthLiteracy": "4_5",
+        "D5_2_publicLiteracy": "4_5",
+        "D5_3_financialLiteracy": "3_4",
+        "D5_4_digitalAiLiteracy": "4_5"
       },
       "age50": {
         "partA_voicePass": "1",
@@ -179,10 +197,6 @@
         "D2_politicalInterest": "3",
         "D3_socialStatus": "3",
         "D4_socialMeeting": "3",
-        "D5_1_healthScore": 4,
-        "D5_2_publicScore": 4,
-        "D5_3_financeScore": 4,
-        "D5_4_digitalScore": 3,
         "D5_jitter": true,
         "E1_needEducation": "2",
         "E1_1_participateIntent": "1",
@@ -205,7 +219,11 @@
         "F04_1_empType": "1",
         "F04_2_workStatus": "1",
         "F05_1_personalIncome": "4",
-        "F05_2_householdIncome": "6"
+        "F05_2_householdIncome": "6",
+        "D5_1_healthLiteracy": "3_4",
+        "D5_2_publicLiteracy": "3_4",
+        "D5_3_financialLiteracy": "3_4",
+        "D5_4_digitalAiLiteracy": "3_4"
       },
       "age60": {
         "partA_voicePass": "1",
@@ -216,10 +234,6 @@
         "D2_politicalInterest": "3",
         "D3_socialStatus": "3",
         "D4_socialMeeting": "3",
-        "D5_1_healthScore": 3,
-        "D5_2_publicScore": 3,
-        "D5_3_financeScore": 3,
-        "D5_4_digitalScore": 3,
         "D5_jitter": true,
         "E1_needEducation": "1",
         "E1_1_participateIntent": "1",
@@ -242,7 +256,11 @@
         "F04_1_empType": "2",
         "F04_2_workStatus": "1",
         "F05_1_personalIncome": "3",
-        "F05_2_householdIncome": "5"
+        "F05_2_householdIncome": "5",
+        "D5_1_healthLiteracy": "3_4",
+        "D5_2_publicLiteracy": "3_4",
+        "D5_3_financialLiteracy": "3_4",
+        "D5_4_digitalAiLiteracy": "2_3"
       },
       "age70": {
         "partA_voicePass": "1",
@@ -253,10 +271,6 @@
         "D2_politicalInterest": "3",
         "D3_socialStatus": "3",
         "D4_socialMeeting": "3",
-        "D5_1_healthScore": 3,
-        "D5_2_publicScore": 3,
-        "D5_3_financeScore": 2,
-        "D5_4_digitalScore": 2,
         "D5_jitter": true,
         "E1_needEducation": "1",
         "E1_1_participateIntent": "1",
@@ -279,7 +293,11 @@
         "F04_1_empType": "1",
         "F04_2_workStatus": "4",
         "F05_1_personalIncome": "2",
-        "F05_2_householdIncome": "3"
+        "F05_2_householdIncome": "3",
+        "D5_1_healthLiteracy": "2_3",
+        "D5_2_publicLiteracy": "2_3",
+        "D5_3_financialLiteracy": "2_3",
+        "D5_4_digitalAiLiteracy": "1_2"
       }
     }
   }

@@ -611,26 +611,43 @@ export async function runGlobalriLiteracySurvey(options = {}) {
         await selectRadioOption(page, val);
         actionDesc = `${qName} 선택: ${val}번`;
       } else if (['D5_1', 'D5_2', 'D5_3', 'D5_4'].includes(qName)) {
-        const parseScaleScore = (raw, fallback = 4) => {
-          if (raw === undefined || raw === null) return fallback;
-          const s = String(raw);
+        // 한 번호 통일 응답(일렬응답) 원천 차단: 4~5 범위면 4-4-5-4-5 / 5-4-5-4-5 교차 패턴 적용
+        const parseScaleRange = (raw, fallbackLo = 4, fallbackHi = 5) => {
+          if (raw === undefined || raw === null) return [fallbackLo, fallbackHi];
+          const s = String(raw).trim();
           if (s.includes('_')) {
-            const parts = s.split('_').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
-            if (parts.length > 0) return parts[Math.floor(Math.random() * parts.length)];
+            const parts = s.split('_').map(n => parseInt(n, 10)).filter(n => !isNaN(n) && n >= 1 && n <= 5);
+            if (parts.length >= 2) {
+              const lo = Math.min(parts[0], parts[1]);
+              let hi = Math.max(parts[0], parts[1]);
+              if (lo === hi) hi = lo < 5 ? lo + 1 : lo - 1;
+              return [Math.min(lo, hi), Math.max(lo, hi)];
+            }
           }
           const n = parseInt(s, 10);
-          return isNaN(n) ? fallback : n;
+          if (!isNaN(n) && n >= 1 && n <= 5) {
+            if (n >= 4) return [4, 5];
+            if (n === 3) return [3, 4];
+            if (n === 2) return [2, 3];
+            return [1, 2];
+          }
+          return [fallbackLo, fallbackHi];
         };
-        const baseMap = {
-          D5_1: parseScaleScore(agePol.D5_1_healthLiteracy ?? agePol.D5_1_healthScore, 4),
-          D5_2: parseScaleScore(agePol.D5_2_publicLiteracy ?? agePol.D5_2_publicScore, 4),
-          D5_3: parseScaleScore(agePol.D5_3_financialLiteracy ?? agePol.D5_3_financeScore, 4),
-          D5_4: parseScaleScore(agePol.D5_4_digitalAiLiteracy ?? agePol.D5_4_digitalScore, 4)
+
+        const rangeMap = {
+          D5_1: parseScaleRange(agePol.D5_1_healthLiteracy ?? agePol.D5_1_healthScore, 4, 5),
+          D5_2: parseScaleRange(agePol.D5_2_publicLiteracy ?? agePol.D5_2_publicScore, 4, 5),
+          D5_3: parseScaleRange(agePol.D5_3_financialLiteracy ?? agePol.D5_3_financeScore, 3, 4),
+          D5_4: parseScaleRange(agePol.D5_4_digitalAiLiteracy ?? agePol.D5_4_digitalScore, 4, 5)
         };
-        const baseScore = baseMap[qName] || 4;
-        const useJitter = (agePol.D5_jitter !== false);
-        await fillRadioSetsMatrix(page, { baseScore, useJitter, minScale: 1, maxScale: 5 });
-        actionDesc = `${qName} 5점 척도 행렬 입력 완료 (기준점: ${baseScore}점)`;
+        const [loScore, hiScore] = rangeMap[qName] || [4, 5];
+        const stepIdx = ['D5_1', 'D5_2', 'D5_3', 'D5_4'].indexOf(qName);
+        const appliedPattern = await fillRadioSetsMatrix(page, {
+          loScore,
+          hiScore,
+          patternVariant: (stepIdx + (Number(slotData?.seq || slotData?.index || 0))) % 4
+        });
+        actionDesc = `${qName} 5점 척도 교차 입력 완료 (범위 ${loScore}~${hiScore}점 ➔ [${appliedPattern.join('-')}])`;
         if (qName === 'D5_4') {
           await captureStepScreenshot(qName, `${qName} 디지털·AI 문해력 자가진단`);
         }
@@ -855,19 +872,25 @@ async function fillLiteracyQuestion(page, qName, targetValues) {
 }
 
 /**
- * RADIOSETS 행렬 문항 (D5_1 ~ D5_4) 기준점 + 지터 입력
+ * RADIOSETS 행렬 문항 (D5_1 ~ D5_4) 교차 패턴 입력 (한 번호 일렬응답 원천 금지: 445454 / 54545 등)
  */
-async function fillRadioSetsMatrix(page, { baseScore, useJitter, minScale, maxScale }) {
-  await page.evaluate(({ base, jitter, minS, maxS }) => {
+async function fillRadioSetsMatrix(page, { loScore = 4, hiScore = 5, patternVariant = 0 }) {
+  const applied = await page.evaluate(({ lo, hi, variant }) => {
     const qDiv = document.querySelector('.question-container [question-name], [question-name]');
-    if (!qDiv) return;
+    if (!qDiv) return [];
     const rows = Array.from(qDiv.querySelectorAll('tr[vkey], tbody tr')).filter(tr => tr.querySelectorAll('input[type="radio"]').length > 0);
+    // 교차 패턴 템플릿 (445454, 545454, 454545, 544545)
+    const templates = [
+      [lo, lo, hi, lo, hi, lo, hi],
+      [hi, lo, hi, lo, hi, lo, hi],
+      [lo, hi, lo, hi, lo, hi, lo],
+      [hi, lo, lo, hi, lo, hi, lo]
+    ];
+    const tpl = templates[Math.abs(variant) % templates.length];
+    const chosenScores = [];
     rows.forEach((tr, idx) => {
-      let score = base;
-      if (jitter) {
-        const delta = (idx % 3 === 1) ? 0 : ((idx % 2 === 0) ? 0 : -1);
-        score = Math.max(minS, Math.min(maxS, base + delta));
-      }
+      const score = tpl[idx % tpl.length];
+      chosenScores.push(score);
       const radios = Array.from(tr.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
       const target = radios.find(r => String(r.value) === String(score) || String(r.getAttribute('hkey') || '') === String(score)) || radios[radios.length - 1];
       if (target) {
@@ -878,8 +901,10 @@ async function fillRadioSetsMatrix(page, { baseScore, useJitter, minScale, maxSc
         }
       }
     });
-  }, { base: baseScore, jitter: useJitter, minS: minScale, maxS: maxScale });
+    return chosenScores;
+  }, { lo: loScore, hi: hiScore, variant: patternVariant });
   await page.waitForTimeout(200);
+  return applied || [];
 }
 
 /**

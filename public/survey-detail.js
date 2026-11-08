@@ -3754,8 +3754,8 @@ async function initSurveyDetailPage() {
       D3_socialStatus: '3',
       D4_socialGathering: '2',
       D5_1_healthLiteracy: '4_5',
-      D5_2_publicLiteracy: '4',
-      D5_3_financialLiteracy: '4',
+      D5_2_publicLiteracy: '4_5',
+      D5_3_financialLiteracy: '4_5',
       D5_4_digitalAiLiteracy: '4_5',
       E1_educationNeed: '2',
       E1_1_participationIntent: '1',
@@ -3813,10 +3813,10 @@ async function initSurveyDetailPage() {
       D2_politicalInterest: '3_4',
       D3_socialStatus: '3',
       D4_socialGathering: '3',
-      D5_1_healthLiteracy: '4',
-      D5_2_publicLiteracy: '4',
-      D5_3_financialLiteracy: '4',
-      D5_4_digitalAiLiteracy: '4',
+      D5_1_healthLiteracy: '4_5',
+      D5_2_publicLiteracy: '4_5',
+      D5_3_financialLiteracy: '3_4',
+      D5_4_digitalAiLiteracy: '4_5',
       E1_educationNeed: '2',
       E1_1_participationIntent: '1',
       E1_2_barrierReason: '1',
@@ -3846,7 +3846,7 @@ async function initSurveyDetailPage() {
       D5_1_healthLiteracy: '3_4',
       D5_2_publicLiteracy: '3_4',
       D5_3_financialLiteracy: '3_4',
-      D5_4_digitalAiLiteracy: '3',
+      D5_4_digitalAiLiteracy: '3_4',
       E1_educationNeed: '2',
       E1_1_participationIntent: '1',
       E1_2_barrierReason: '1',
@@ -3873,9 +3873,9 @@ async function initSurveyDetailPage() {
       D2_politicalInterest: '4',
       D3_socialStatus: '3',
       D4_socialGathering: '3',
-      D5_1_healthLiteracy: '3',
-      D5_2_publicLiteracy: '3',
-      D5_3_financialLiteracy: '3',
+      D5_1_healthLiteracy: '3_4',
+      D5_2_publicLiteracy: '3_4',
+      D5_3_financialLiteracy: '3_4',
       D5_4_digitalAiLiteracy: '2_3',
       E1_educationNeed: '2',
       E1_1_participationIntent: '1',
@@ -3906,7 +3906,7 @@ async function initSurveyDetailPage() {
       D5_1_healthLiteracy: '2_3',
       D5_2_publicLiteracy: '2_3',
       D5_3_financialLiteracy: '2_3',
-      D5_4_digitalAiLiteracy: '2',
+      D5_4_digitalAiLiteracy: '1_2',
       E1_educationNeed: '1',
       E1_1_participationIntent: '2',
       E1_2_barrierReason: '3',
@@ -4196,6 +4196,16 @@ async function initSurveyDetailPage() {
               </tbody>
             </table>
           </div>
+          <div style="margin-bottom: 12px; padding: 10px 12px; background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div>
+              <span class="font-bold text-white" style="font-size: 13px;"><i class="fa-solid fa-route text-primary-color"></i> 자동화 진행 범위 설정</span>
+              <div class="font-caption text-dim">Part C 채점 저장 후 수기 전환할지, Part D(D5_1~D5_4 교차체크 포함)~Part F(F05_2)까지 자동 진행할지 선택할 수 있습니다.</div>
+            </div>
+            <select id="sel-globalri-stop-mode" class="figma-select globalri-policy-input" style="min-width: 310px;">
+              <option value="part_c" ${(currentCampaign?.masterBaseline?.policy?.stopAfterPartC !== false) ? 'selected' : ''}>1) Part C 채점 저장(END_C)까지만 자동 진행 후 정지 (D1~ 수기)</option>
+              <option value="full_f05_2" ${(currentCampaign?.masterBaseline?.policy?.stopAfterPartC === false) ? 'selected' : ''}>2) Part F(F05_2)까지 전체 자동 진행 후 제출 직전 대기 (D5 교차체크)</option>
+            </select>
+          </div>
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
             <span class="font-caption text-dim"><i class="fa-solid fa-circle-info text-primary-color"></i> 시트1: 응답자별 A1~C20 답변 매트릭스 · 시트2: 문항별 제출 상세 · 시트3: 43문항 공식 정답표</span>
             <a href="/api/campaigns/${encodeURIComponent(campId)}/export-answers-xlsx" class="btn-pill btn-pill-primary font-bold" style="text-decoration: none;">
@@ -4262,58 +4272,53 @@ async function initSurveyDetailPage() {
         </div>
       </section>
 
-      <!-- 카드 3: Part D (D5_1~D5_4) 4대 영역별 문해력 자가진단 (각 5문항 × 5점 척도) -->
+      <!-- 카드 3: Part D (D5_1~D5_4) 4대 영역별 문해력 자가진단 (각 5문항 × 5점 척도 교차 패턴) -->
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
             <span class="blueprint-step-pill">Part D (D5_1~D5_4)</span>
-            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 4대 영역 문해력 자가진단 (5점 척도)</h3>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 4대 영역 문해력 자가진단 (교차 체크 · 한 번호 통일 금지)</h3>
           </div>
-          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 나이대별 가이드</span>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-shuffle"></i> 교차 패턴 강제</span>
         </div>
         <div class="blueprint-stage-desc">
-          건강(D5_1) · 공공(D5_2) · 금융(D5_3) · 디지털/AI(D5_4) 각 5문항(1=전혀 그렇지 않다 ~ 5=매우 그렇다) 응답 분포를 설정합니다.
+          건강(D5_1) · 공공(D5_2) · 금융(D5_3) · 디지털/AI(D5_4) 각 5~6문항 입력 시 <strong>한 번호로 통일 체크하는 것을 원천 차단</strong>하고, 지정된 범위 내에서 <code>4-4-5-4-5</code> 또는 <code>5-4-5-4-5</code> 형태로 자연스럽게 교차 체크합니다.
         </div>
         <div class="p-14 grid-2col gap-10">
           <div>
             <label class="figma-label font-bold">D5_1. 건강 문해력 (의약품·병원안내 이해)</label>
             <select id="sel-globalri-D5-1" class="figma-select w-full globalri-policy-input">
-              <option value="4_5" ${p.D5_1_healthLiteracy === '4_5' ? 'selected' : ''}>🎲 4~5점 (우수 · 그렇다~매우 그렇다)</option>
-              <option value="4" ${p.D5_1_healthLiteracy === '4' ? 'selected' : ''}>4점 고정 (대체로 그렇다)</option>
-              <option value="3_4" ${p.D5_1_healthLiteracy === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~그렇다 자연 분산)</option>
-              <option value="3" ${p.D5_1_healthLiteracy === '3' ? 'selected' : ''}>3점 고정 (보통이다)</option>
-              <option value="2_3" ${p.D5_1_healthLiteracy === '2_3' ? 'selected' : ''}>🎲 2~3점 (다소 어려움~보통)</option>
+              <option value="4_5" ${(p.D5_1_healthLiteracy === '4_5' || p.D5_1_healthLiteracy === '4' || p.D5_1_healthLiteracy === '5') ? 'selected' : ''}>🎲 4~5점 교차 체크 (4-4-5-4-5 / 5-4-5-4-5)</option>
+              <option value="3_4" ${(p.D5_1_healthLiteracy === '3_4' || p.D5_1_healthLiteracy === '3') ? 'selected' : ''}>🎲 3~4점 교차 체크 (3-3-4-3-4 / 4-3-4-3-4)</option>
+              <option value="2_3" ${(p.D5_1_healthLiteracy === '2_3' || p.D5_1_healthLiteracy === '2') ? 'selected' : ''}>🎲 2~3점 교차 체크 (2-2-3-2-3 / 3-2-3-2-3)</option>
+              <option value="1_2" ${(p.D5_1_healthLiteracy === '1_2' || p.D5_1_healthLiteracy === '1') ? 'selected' : ''}>🎲 1~2점 교차 체크 (1-1-2-1-2 / 2-1-2-1-2)</option>
             </select>
           </div>
           <div>
             <label class="figma-label font-bold">D5_2. 공공 문해력 (관공서·세금·법률서류)</label>
             <select id="sel-globalri-D5-2" class="figma-select w-full globalri-policy-input">
-              <option value="4_5" ${p.D5_2_publicLiteracy === '4_5' ? 'selected' : ''}>🎲 4~5점 (우수 · 그렇다~매우 그렇다)</option>
-              <option value="4" ${p.D5_2_publicLiteracy === '4' ? 'selected' : ''}>4점 고정 (대체로 그렇다)</option>
-              <option value="3_4" ${p.D5_2_publicLiteracy === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~그렇다 자연 분산)</option>
-              <option value="3" ${p.D5_2_publicLiteracy === '3' ? 'selected' : ''}>3점 고정 (보통이다)</option>
-              <option value="2_3" ${p.D5_2_publicLiteracy === '2_3' ? 'selected' : ''}>🎲 2~3점 (다소 어려움~보통)</option>
+              <option value="4_5" ${(p.D5_2_publicLiteracy === '4_5' || p.D5_2_publicLiteracy === '4' || p.D5_2_publicLiteracy === '5') ? 'selected' : ''}>🎲 4~5점 교차 체크 (4-4-5-4-5 / 5-4-5-4-5)</option>
+              <option value="3_4" ${(p.D5_2_publicLiteracy === '3_4' || p.D5_2_publicLiteracy === '3') ? 'selected' : ''}>🎲 3~4점 교차 체크 (3-3-4-3-4 / 4-3-4-3-4)</option>
+              <option value="2_3" ${(p.D5_2_publicLiteracy === '2_3' || p.D5_2_publicLiteracy === '2') ? 'selected' : ''}>🎲 2~3점 교차 체크 (2-2-3-2-3 / 3-2-3-2-3)</option>
+              <option value="1_2" ${(p.D5_2_publicLiteracy === '1_2' || p.D5_2_publicLiteracy === '1') ? 'selected' : ''}>🎲 1~2점 교차 체크 (1-1-2-1-2 / 2-1-2-1-2)</option>
             </select>
           </div>
           <div>
             <label class="figma-label font-bold">D5_3. 금융 문해력 (예적금·보험·대출이자)</label>
             <select id="sel-globalri-D5-3" class="figma-select w-full globalri-policy-input">
-              <option value="4_5" ${p.D5_3_financialLiteracy === '4_5' ? 'selected' : ''}>🎲 4~5점 (우수 · 그렇다~매우 그렇다)</option>
-              <option value="4" ${p.D5_3_financialLiteracy === '4' ? 'selected' : ''}>4점 고정 (대체로 그렇다)</option>
-              <option value="3_4" ${p.D5_3_financialLiteracy === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~그렇다 자연 분산)</option>
-              <option value="3" ${p.D5_3_financialLiteracy === '3' ? 'selected' : ''}>3점 고정 (보통이다)</option>
-              <option value="2_3" ${p.D5_3_financialLiteracy === '2_3' ? 'selected' : ''}>🎲 2~3점 (다소 어려움~보통)</option>
+              <option value="4_5" ${(p.D5_3_financialLiteracy === '4_5' || p.D5_3_financialLiteracy === '4' || p.D5_3_financialLiteracy === '5') ? 'selected' : ''}>🎲 4~5점 교차 체크 (4-4-5-4-5 / 5-4-5-4-5)</option>
+              <option value="3_4" ${(p.D5_3_financialLiteracy === '3_4' || p.D5_3_financialLiteracy === '3') ? 'selected' : ''}>🎲 3~4점 교차 체크 (3-3-4-3-4 / 4-3-4-3-4)</option>
+              <option value="2_3" ${(p.D5_3_financialLiteracy === '2_3' || p.D5_3_financialLiteracy === '2') ? 'selected' : ''}>🎲 2~3점 교차 체크 (2-2-3-2-3 / 3-2-3-2-3)</option>
+              <option value="1_2" ${(p.D5_3_financialLiteracy === '1_2' || p.D5_3_financialLiteracy === '1') ? 'selected' : ''}>🎲 1~2점 교차 체크 (1-1-2-1-2 / 2-1-2-1-2)</option>
             </select>
           </div>
           <div>
             <label class="figma-label font-bold">D5_4. 디지털·AI 문해력 (앱·키오스크·AI)</label>
             <select id="sel-globalri-D5-4" class="figma-select w-full globalri-policy-input">
-              <option value="4_5" ${p.D5_4_digitalAiLiteracy === '4_5' ? 'selected' : ''}>🎲 4~5점 (우수 · 청년/중장년 강세)</option>
-              <option value="4" ${p.D5_4_digitalAiLiteracy === '4' ? 'selected' : ''}>4점 고정 (대체로 그렇다)</option>
-              <option value="3_4" ${p.D5_4_digitalAiLiteracy === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~그렇다 자연 분산)</option>
-              <option value="3" ${p.D5_4_digitalAiLiteracy === '3' ? 'selected' : ''}>3점 고정 (보통이다)</option>
-              <option value="2_3" ${p.D5_4_digitalAiLiteracy === '2_3' ? 'selected' : ''}>🎲 2~3점 (다소 어려움~보통)</option>
-              <option value="2" ${p.D5_4_digitalAiLiteracy === '2' ? 'selected' : ''}>2점 고정 (대체로 그렇지 않다)</option>
+              <option value="4_5" ${(p.D5_4_digitalAiLiteracy === '4_5' || p.D5_4_digitalAiLiteracy === '4' || p.D5_4_digitalAiLiteracy === '5') ? 'selected' : ''}>🎲 4~5점 교차 체크 (4-4-5-4-5 / 5-4-5-4-5)</option>
+              <option value="3_4" ${(p.D5_4_digitalAiLiteracy === '3_4' || p.D5_4_digitalAiLiteracy === '3') ? 'selected' : ''}>🎲 3~4점 교차 체크 (3-3-4-3-4 / 4-3-4-3-4)</option>
+              <option value="2_3" ${(p.D5_4_digitalAiLiteracy === '2_3' || p.D5_4_digitalAiLiteracy === '2') ? 'selected' : ''}>🎲 2~3점 교차 체크 (2-2-3-2-3 / 3-2-3-2-3)</option>
+              <option value="1_2" ${(p.D5_4_digitalAiLiteracy === '1_2' || p.D5_4_digitalAiLiteracy === '1') ? 'selected' : ''}>🎲 1~2점 교차 체크 (1-1-2-1-2 / 2-1-2-1-2)</option>
             </select>
           </div>
         </div>
@@ -6241,12 +6246,14 @@ async function initSurveyDetailPage() {
       let payload;
       if (isGlobalriLiteracy) {
         syncGlobalriActiveCardToState();
+        const stopModeEl = document.getElementById('sel-globalri-stop-mode');
+        const stopAfterPartC = stopModeEl ? (stopModeEl.value !== 'full_f05_2') : (currentCampaign?.masterBaseline?.policy?.stopAfterPartC !== false);
         payload = {
           surveyType: 'globalri_literacy',
           ageGroups: globalriAgePolicies || {},
           policy: {
             preserveExistingInputs: true,
-            stopAfterPartC: true,
+            stopAfterPartC,
             safetyStopAtF05_2: true
           }
         };
