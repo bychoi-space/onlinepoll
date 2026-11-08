@@ -9,7 +9,7 @@
   "googleSheetId": "1Hoai6ggQWxNVTW5SyxEsvpNtMOlBO1z_ThmM6cZ6gRg",
   "googleSheetUrl": "https://docs.google.com/spreadsheets/d/1Hoai6ggQWxNVTW5SyxEsvpNtMOlBO1z_ThmM6cZ6gRg/edit?gid=1470110969#gid=1470110969",
   "createdAt": "2026-11-08T08:37:52.395Z",
-  "updatedAt": "2026-11-08T08:37:52.396Z",
+  "updatedAt": "2026-11-08T12:01:05.260Z",
   "count": 70,
   "targetTotal": 70,
   "isComplete": true,
@@ -821,43 +821,95 @@
     {
       "seq": 19,
       "index": 19,
-      "id": "104181",
-      "uid": "104181",
-      "listId": "104181",
-      "respondId": "35269111",
-      "sampleType": "본표본",
-      "name": "안명선",
-      "respondentName": "안명선",
-      "companyName": "안명선 (남면·2021년)",
-      "ceoName": "안명선",
-      "birthYear": 1963,
-      "age": 63,
-      "ceoAge": "63",
-      "ageGroup": "60대",
+      "id": "104196",
+      "uid": "104196",
+      "listId": "104196",
+      "respondId": "35269125",
+      "sampleType": "예비표본",
+      "name": "김영선",
+      "respondentName": "김영선",
+      "companyName": "김영선 (남면·2021년)",
+      "ceoName": "김영선",
+      "birthYear": 1959,
+      "age": 67,
+      "ceoAge": "67",
+      "ageGroup": "70대이상",
       "gender": "남",
       "ceoGender": "남",
       "moveYear": "2021",
       "openDate": "2021",
       "eupMyeon": "남면",
-      "address": "강원특별자치도 홍천군 남면 시동리 시동안로201번길 126",
-      "roadAddress": "강원특별자치도 홍천군 남면 시동리 시동안로201번길 126",
+      "address": "강원특별자치도 홍천군 남면 제곡리 남노일로 560",
+      "roadAddress": "강원특별자치도 홍천군 남면 제곡리 남노일로 560",
       "phone": "010-3711-8089",
       "rawPhone": "010-3711-8089",
       "sheetResult": "",
       "sheetNote": "",
-      "serverStatus": "03",
+      "serverStatus": "01",
       "visitCount": 1,
       "lastVisitResult": "컨택성공",
-      "gpsLatitude": 37.606934,
-      "gpsLongitude": 127.798398,
-      "gpsRegionLabel": "강원 홍천군 남면 (37.606934, 127.798398)",
-      "signatureStyleIndex": 7,
-      "signatureStyle": "스타일 H · 초성 강조 흘림 사인체",
+      "gpsLatitude": 37.608644,
+      "gpsLongitude": 127.797768,
+      "gpsRegionLabel": "강원 홍천군 남면 (37.608644, 127.797768)",
+      "signatureStyleIndex": 0,
+      "signatureStyle": "스타일 A · 정자 손글씨체 (단정한 필압)",
       "slotUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
       "surveyUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
-      "status": "중단(재진행가능)",
-      "quotaStatus": "ready",
-      "progress": "중단 (P.3)"
+      "status": "완료직전 대기 (Page 118)",
+      "quotaStatus": "pilot_done",
+      "progress": "99% (Page 118 완료직전)",
+      "capturedSteps": [
+        {
+          "step": "VISIT_LOG",
+          "title": "방문기록 검증 (1차 2026-11-05 14:30 · 컨택성공)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_19_104196/step_00_visit_log.png"
+        },
+        {
+          "step": "PAGE_1",
+          "title": "Page 1 (T1) [2026년 귀농귀촌 실태조사 개인정보 동의서] [개인정보 수)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_19_104196/step_001.png"
+        },
+        {
+          "step": "PAGE_7_SIGNATURE",
+          "title": "Page 7 답례품 인수증 전자서명 (스타일 A · 정자 손글씨체 (단정한 필압))",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_19_104196/step_07_signature.png"
+        },
+        {
+          "step": "PAGE_8",
+          "title": "Page 8 (SQ5) 응답자 성별 / SQ6) 응답자 연령 / SQ7) 귀 가구가)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_19_104196/step_008.png"
+        },
+        {
+          "step": "PAGE_14",
+          "title": "Page 14 (문1C-1) 성별 및 출생년도를 말씀해 주십시오.)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_19_104196/step_014.png"
+        },
+        {
+          "step": "PAGE_20",
+          "title": "Page 20 (문6) 귀댁에서 귀농하신 시기는 언제입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_19_104196/step_020.png"
+        },
+        {
+          "step": "PAGE_56",
+          "title": "Page 56 (H32) 현재 귀댁에서 재배하고 있는 주소득작목(작물)을 소득에서 차)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_19_104196/step_056.png"
+        },
+        {
+          "step": "PAGE_91",
+          "title": "Page 91 (문39) 각 시기 및 소득 구분별로 소득 유무에 대해 말씀해 주십시오)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_19_104196/step_091.png"
+        },
+        {
+          "step": "PAGE_114",
+          "title": "Page 114 (문52) 귀댁에서는 현재 살고 계신 지역에 계속 거주하실 계획입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_19_104196/step_114.png"
+        },
+        {
+          "step": "PAGE_118_READY",
+          "title": "Page 118 완료 직전 정지 (김영선 · 010-3711-8089)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_19_104196/step_118_final_before_submit.png"
+        }
+      ]
     },
     {
       "seq": 20,
@@ -1009,19 +1061,66 @@
       "rawPhone": "010-6786-8849",
       "sheetResult": "",
       "sheetNote": "",
-      "serverStatus": "00",
-      "visitCount": 0,
-      "lastVisitResult": "",
+      "serverStatus": "01",
+      "visitCount": 1,
+      "lastVisitResult": "컨택성공",
       "gpsLatitude": 37.696856,
       "gpsLongitude": 127.889132,
       "gpsRegionLabel": "강원 홍천군 홍천읍 (37.696856, 127.889132)",
-      "signatureStyleIndex": 2,
-      "signatureStyle": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "signatureStyleIndex": 1,
+      "signatureStyle": "스타일 B · 우상향 흘림체 (연속 필기)",
       "slotUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
       "surveyUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0% (미진행)"
+      "status": "완료직전 대기 (Page 118)",
+      "quotaStatus": "pilot_done",
+      "progress": "99% (Page 118 완료직전)",
+      "capturedSteps": [
+        {
+          "step": "VISIT_LOG",
+          "title": "방문기록 검증 (1차 2026-11-03 15:26 · 컨택성공)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_23_103404/step_00_visit_log.png"
+        },
+        {
+          "step": "PAGE_7_SIGNATURE",
+          "title": "Page 7 답례품 인수증 전자서명 (스타일 B · 우상향 흘림체 (연속 필기))",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_23_103404/step_07_signature.png"
+        },
+        {
+          "step": "PAGE_8",
+          "title": "Page 8 (SQ5) 응답자 성별 / SQ6) 응답자 연령 / SQ7) 귀 가구가)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_23_103404/step_008.png"
+        },
+        {
+          "step": "PAGE_14",
+          "title": "Page 14 (문1C-1) 성별 및 출생년도를 말씀해 주십시오.)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_23_103404/step_014.png"
+        },
+        {
+          "step": "PAGE_20",
+          "title": "Page 20 (문6) 귀댁에서 귀농하신 시기는 언제입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_23_103404/step_020.png"
+        },
+        {
+          "step": "PAGE_56",
+          "title": "Page 56 (H32) 현재 귀댁에서 재배하고 있는 주소득작목(작물)을 소득에서 차)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_23_103404/step_056.png"
+        },
+        {
+          "step": "PAGE_91",
+          "title": "Page 91 (문39) 각 시기 및 소득 구분별로 소득 유무에 대해 말씀해 주십시오)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_23_103404/step_091.png"
+        },
+        {
+          "step": "PAGE_114",
+          "title": "Page 114 (문52) 귀댁에서는 현재 살고 계신 지역에 계속 거주하실 계획입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_23_103404/step_114.png"
+        },
+        {
+          "step": "PAGE_118_READY",
+          "title": "Page 118 완료 직전 정지 (유선이 · 010-6786-8849)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_23_103404/step_118_final_before_submit.png"
+        }
+      ]
     },
     {
       "seq": 24,
@@ -1050,19 +1149,71 @@
       "rawPhone": "010-5419-4213",
       "sheetResult": "",
       "sheetNote": "",
-      "serverStatus": "00",
-      "visitCount": 0,
-      "lastVisitResult": "",
+      "serverStatus": "01",
+      "visitCount": 1,
+      "lastVisitResult": "컨택성공",
       "gpsLatitude": 37.698512,
       "gpsLongitude": 127.887764,
       "gpsRegionLabel": "강원 홍천군 홍천읍 (37.698512, 127.887764)",
-      "signatureStyleIndex": 7,
-      "signatureStyle": "스타일 H · 초성 강조 흘림 사인체",
+      "signatureStyleIndex": 2,
+      "signatureStyle": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
       "slotUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
       "surveyUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0% (미진행)"
+      "status": "완료직전 대기 (Page 118)",
+      "quotaStatus": "pilot_done",
+      "progress": "99% (Page 118 완료직전)",
+      "capturedSteps": [
+        {
+          "step": "VISIT_LOG",
+          "title": "방문기록 검증 (1차 2026-11-03 16:30 · 컨택성공)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_24_103408/step_00_visit_log.png"
+        },
+        {
+          "step": "PAGE_1",
+          "title": "Page 1 (T1) [2026년 귀농귀촌 실태조사 개인정보 동의서] [개인정보 수)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_24_103408/step_001.png"
+        },
+        {
+          "step": "PAGE_7_SIGNATURE",
+          "title": "Page 7 답례품 인수증 전자서명 (스타일 C · 속필 사인체 (빠른 흘림+밑줄))",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_24_103408/step_07_signature.png"
+        },
+        {
+          "step": "PAGE_8",
+          "title": "Page 8 (SQ5) 응답자 성별 / SQ6) 응답자 연령 / SQ7) 귀 가구가)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_24_103408/step_008.png"
+        },
+        {
+          "step": "PAGE_14",
+          "title": "Page 14 (문1C-1) 성별 및 출생년도를 말씀해 주십시오.)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_24_103408/step_014.png"
+        },
+        {
+          "step": "PAGE_20",
+          "title": "Page 20 (문6) 귀댁에서 귀농하신 시기는 언제입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_24_103408/step_020.png"
+        },
+        {
+          "step": "PAGE_56",
+          "title": "Page 56 (H32) 현재 귀댁에서 재배하고 있는 주소득작목(작물)을 소득에서 차)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_24_103408/step_056.png"
+        },
+        {
+          "step": "PAGE_91",
+          "title": "Page 91 (문39) 각 시기 및 소득 구분별로 소득 유무에 대해 말씀해 주십시오)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_24_103408/step_091.png"
+        },
+        {
+          "step": "PAGE_114",
+          "title": "Page 114 (문52) 귀댁에서는 현재 살고 계신 지역에 계속 거주하실 계획입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_24_103408/step_114.png"
+        },
+        {
+          "step": "PAGE_118_READY",
+          "title": "Page 118 완료 직전 정지 (김영희 · 010-5419-4213)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_24_103408/step_118_final_before_submit.png"
+        }
+      ]
     },
     {
       "seq": 25,
@@ -1091,19 +1242,66 @@
       "rawPhone": "9626 3474",
       "sheetResult": "",
       "sheetNote": "",
-      "serverStatus": "00",
-      "visitCount": 0,
-      "lastVisitResult": "",
+      "serverStatus": "01",
+      "visitCount": 1,
+      "lastVisitResult": "컨택성공",
       "gpsLatitude": 37.696874,
       "gpsLongitude": 127.888178,
       "gpsRegionLabel": "강원 홍천군 홍천읍 (37.696874, 127.888178)",
-      "signatureStyleIndex": 5,
-      "signatureStyle": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "signatureStyleIndex": 3,
+      "signatureStyle": "스타일 D · 굵은 붓펜체 (강한 필압)",
       "slotUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
       "surveyUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0% (미진행)"
+      "status": "완료직전 대기 (Page 118)",
+      "quotaStatus": "pilot_done",
+      "progress": "99% (Page 118 완료직전)",
+      "capturedSteps": [
+        {
+          "step": "VISIT_LOG",
+          "title": "방문기록 검증 (1차 2026-11-04 17:29 · 컨택성공)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_25_104141/step_00_visit_log.png"
+        },
+        {
+          "step": "PAGE_7_SIGNATURE",
+          "title": "Page 7 답례품 인수증 전자서명 (스타일 D · 굵은 붓펜체 (강한 필압))",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_25_104141/step_07_signature.png"
+        },
+        {
+          "step": "PAGE_8",
+          "title": "Page 8 (SQ5) 응답자 성별 / SQ6) 응답자 연령 / SQ7) 귀 가구가)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_25_104141/step_008.png"
+        },
+        {
+          "step": "PAGE_14",
+          "title": "Page 14 (문1C-1) 성별 및 출생년도를 말씀해 주십시오.)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_25_104141/step_014.png"
+        },
+        {
+          "step": "PAGE_20",
+          "title": "Page 20 (문6) 귀댁에서 귀농하신 시기는 언제입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_25_104141/step_020.png"
+        },
+        {
+          "step": "PAGE_56",
+          "title": "Page 56 (H32) 현재 귀댁에서 재배하고 있는 주소득작목(작물)을 소득에서 차)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_25_104141/step_056.png"
+        },
+        {
+          "step": "PAGE_91",
+          "title": "Page 91 (문39) 각 시기 및 소득 구분별로 소득 유무에 대해 말씀해 주십시오)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_25_104141/step_091.png"
+        },
+        {
+          "step": "PAGE_114",
+          "title": "Page 114 (문52) 귀댁에서는 현재 살고 계신 지역에 계속 거주하실 계획입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_25_104141/step_114.png"
+        },
+        {
+          "step": "PAGE_118_READY",
+          "title": "Page 118 완료 직전 정지 (김혜영 · 010-9626-3474)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_25_104141/step_118_final_before_submit.png"
+        }
+      ]
     },
     {
       "seq": 26,
@@ -1132,19 +1330,71 @@
       "rawPhone": "010-4972-3802",
       "sheetResult": "",
       "sheetNote": "",
-      "serverStatus": "00",
-      "visitCount": 0,
-      "lastVisitResult": "",
+      "serverStatus": "01",
+      "visitCount": 1,
+      "lastVisitResult": "컨택성공",
       "gpsLatitude": 37.831414,
       "gpsLongitude": 128.032958,
       "gpsRegionLabel": "강원 홍천군 두촌면 (37.831414, 128.032958)",
-      "signatureStyleIndex": 0,
-      "signatureStyle": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "signatureStyleIndex": 4,
+      "signatureStyle": "스타일 E · 가늘고 둥근 손글씨체",
       "slotUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
       "surveyUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0% (미진행)"
+      "status": "완료직전 대기 (Page 118)",
+      "quotaStatus": "pilot_done",
+      "progress": "99% (Page 118 완료직전)",
+      "capturedSteps": [
+        {
+          "step": "VISIT_LOG",
+          "title": "방문기록 검증 (1차 2026-11-08 17:41 · 컨택성공)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_26_104151/step_00_visit_log.png"
+        },
+        {
+          "step": "PAGE_1",
+          "title": "Page 1 (T1) [2026년 귀농귀촌 실태조사 개인정보 동의서] [개인정보 수)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_26_104151/step_001.png"
+        },
+        {
+          "step": "PAGE_7_SIGNATURE",
+          "title": "Page 7 답례품 인수증 전자서명 (스타일 E · 가늘고 둥근 손글씨체)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_26_104151/step_07_signature.png"
+        },
+        {
+          "step": "PAGE_8",
+          "title": "Page 8 (SQ5) 응답자 성별 / SQ6) 응답자 연령 / SQ7) 귀 가구가)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_26_104151/step_008.png"
+        },
+        {
+          "step": "PAGE_14",
+          "title": "Page 14 (문1C-1) 성별 및 출생년도를 말씀해 주십시오.)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_26_104151/step_014.png"
+        },
+        {
+          "step": "PAGE_20",
+          "title": "Page 20 (문6) 귀댁에서 귀농하신 시기는 언제입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_26_104151/step_020.png"
+        },
+        {
+          "step": "PAGE_56",
+          "title": "Page 56 (H32) 현재 귀댁에서 재배하고 있는 주소득작목(작물)을 소득에서 차)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_26_104151/step_056.png"
+        },
+        {
+          "step": "PAGE_91",
+          "title": "Page 91 (문39) 각 시기 및 소득 구분별로 소득 유무에 대해 말씀해 주십시오)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_26_104151/step_091.png"
+        },
+        {
+          "step": "PAGE_114",
+          "title": "Page 114 (문52) 귀댁에서는 현재 살고 계신 지역에 계속 거주하실 계획입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_26_104151/step_114.png"
+        },
+        {
+          "step": "PAGE_118_READY",
+          "title": "Page 118 완료 직전 정지 (박덕순 · 010-4972-3802)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_26_104151/step_118_final_before_submit.png"
+        }
+      ]
     },
     {
       "seq": 27,
@@ -1173,19 +1423,71 @@
       "rawPhone": "7763 7478",
       "sheetResult": "",
       "sheetNote": "",
-      "serverStatus": "00",
-      "visitCount": 0,
-      "lastVisitResult": "",
+      "serverStatus": "01",
+      "visitCount": 1,
+      "lastVisitResult": "컨택성공",
       "gpsLatitude": 37.710154,
       "gpsLongitude": 128.198138,
       "gpsRegionLabel": "강원 홍천군 서석면 (37.710154, 128.198138)",
-      "signatureStyleIndex": 3,
-      "signatureStyle": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "signatureStyleIndex": 5,
+      "signatureStyle": "스타일 F · 세로 장체 (어르신 정자풍)",
       "slotUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
       "surveyUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0% (미진행)"
+      "status": "완료직전 대기 (Page 118)",
+      "quotaStatus": "pilot_done",
+      "progress": "99% (Page 118 완료직전)",
+      "capturedSteps": [
+        {
+          "step": "VISIT_LOG",
+          "title": "방문기록 검증 (1차 2026-11-06 11:13 · 컨택성공)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_27_104161/step_00_visit_log.png"
+        },
+        {
+          "step": "PAGE_1",
+          "title": "Page 1 (T1) [2026년 귀농귀촌 실태조사 개인정보 동의서] [개인정보 수)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_27_104161/step_001.png"
+        },
+        {
+          "step": "PAGE_7_SIGNATURE",
+          "title": "Page 7 답례품 인수증 전자서명 (스타일 F · 세로 장체 (어르신 정자풍))",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_27_104161/step_07_signature.png"
+        },
+        {
+          "step": "PAGE_8",
+          "title": "Page 8 (SQ5) 응답자 성별 / SQ6) 응답자 연령 / SQ7) 귀 가구가)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_27_104161/step_008.png"
+        },
+        {
+          "step": "PAGE_14",
+          "title": "Page 14 (문1C-1) 성별 및 출생년도를 말씀해 주십시오.)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_27_104161/step_014.png"
+        },
+        {
+          "step": "PAGE_20",
+          "title": "Page 20 (문6) 귀댁에서 귀농하신 시기는 언제입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_27_104161/step_020.png"
+        },
+        {
+          "step": "PAGE_56",
+          "title": "Page 56 (H32) 현재 귀댁에서 재배하고 있는 주소득작목(작물)을 소득에서 차)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_27_104161/step_056.png"
+        },
+        {
+          "step": "PAGE_91",
+          "title": "Page 91 (문39) 각 시기 및 소득 구분별로 소득 유무에 대해 말씀해 주십시오)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_27_104161/step_091.png"
+        },
+        {
+          "step": "PAGE_114",
+          "title": "Page 114 (문52) 귀댁에서는 현재 살고 계신 지역에 계속 거주하실 계획입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_27_104161/step_114.png"
+        },
+        {
+          "step": "PAGE_118_READY",
+          "title": "Page 118 완료 직전 정지 (김옥단 · 010-7763-7478)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_27_104161/step_118_final_before_submit.png"
+        }
+      ]
     },
     {
       "seq": 28,
@@ -1214,19 +1516,71 @@
       "rawPhone": "010-4086-7673",
       "sheetResult": "",
       "sheetNote": "",
-      "serverStatus": "00",
-      "visitCount": 0,
-      "lastVisitResult": "",
+      "serverStatus": "01",
+      "visitCount": 1,
+      "lastVisitResult": "컨택성공",
       "gpsLatitude": 37.709794,
       "gpsLongitude": 128.199218,
       "gpsRegionLabel": "강원 홍천군 서석면 (37.709794, 128.199218)",
-      "signatureStyleIndex": 0,
-      "signatureStyle": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "signatureStyleIndex": 6,
+      "signatureStyle": "스타일 G · 가로 넓은 안정 사인체",
       "slotUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
       "surveyUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0% (미진행)"
+      "status": "완료직전 대기 (Page 118)",
+      "quotaStatus": "pilot_done",
+      "progress": "99% (Page 118 완료직전)",
+      "capturedSteps": [
+        {
+          "step": "VISIT_LOG",
+          "title": "방문기록 검증 (1차 2026-11-06 15:15 · 컨택성공)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_28_103421/step_00_visit_log.png"
+        },
+        {
+          "step": "PAGE_1",
+          "title": "Page 1 (T1) [2026년 귀농귀촌 실태조사 개인정보 동의서] [개인정보 수)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_28_103421/step_001.png"
+        },
+        {
+          "step": "PAGE_7_SIGNATURE",
+          "title": "Page 7 답례품 인수증 전자서명 (스타일 G · 가로 넓은 안정 사인체)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_28_103421/step_07_signature.png"
+        },
+        {
+          "step": "PAGE_8",
+          "title": "Page 8 (SQ5) 응답자 성별 / SQ6) 응답자 연령 / SQ7) 귀 가구가)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_28_103421/step_008.png"
+        },
+        {
+          "step": "PAGE_14",
+          "title": "Page 14 (문1C-1) 성별 및 출생년도를 말씀해 주십시오.)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_28_103421/step_014.png"
+        },
+        {
+          "step": "PAGE_20",
+          "title": "Page 20 (문6) 귀댁에서 귀농하신 시기는 언제입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_28_103421/step_020.png"
+        },
+        {
+          "step": "PAGE_56",
+          "title": "Page 56 (H32) 현재 귀댁에서 재배하고 있는 주소득작목(작물)을 소득에서 차)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_28_103421/step_056.png"
+        },
+        {
+          "step": "PAGE_91",
+          "title": "Page 91 (문39) 각 시기 및 소득 구분별로 소득 유무에 대해 말씀해 주십시오)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_28_103421/step_091.png"
+        },
+        {
+          "step": "PAGE_114",
+          "title": "Page 114 (문52) 귀댁에서는 현재 살고 계신 지역에 계속 거주하실 계획입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_28_103421/step_114.png"
+        },
+        {
+          "step": "PAGE_118_READY",
+          "title": "Page 118 완료 직전 정지 (이상호 · 010-4086-7673)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_28_103421/step_118_final_before_submit.png"
+        }
+      ]
     },
     {
       "seq": 29,
@@ -1255,9 +1609,9 @@
       "rawPhone": "010-8256-9941",
       "sheetResult": "",
       "sheetNote": "",
-      "serverStatus": "00",
-      "visitCount": 0,
-      "lastVisitResult": "",
+      "serverStatus": "01",
+      "visitCount": 1,
+      "lastVisitResult": "컨택성공",
       "gpsLatitude": 37.674194,
       "gpsLongitude": 127.977818,
       "gpsRegionLabel": "강원 홍천군 영귀미면 (37.674194, 127.977818)",
@@ -1265,9 +1619,56 @@
       "signatureStyle": "스타일 H · 초성 강조 흘림 사인체",
       "slotUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
       "surveyUrl": "https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0% (미진행)"
+      "status": "완료직전 대기 (Page 118)",
+      "quotaStatus": "pilot_done",
+      "progress": "99% (Page 118 완료직전)",
+      "capturedSteps": [
+        {
+          "step": "VISIT_LOG",
+          "title": "방문기록 검증 (1차 2026-11-08 13:31 · 컨택성공)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_29_104171/step_00_visit_log.png"
+        },
+        {
+          "step": "PAGE_7_SIGNATURE",
+          "title": "Page 7 답례품 인수증 전자서명 (스타일 H · 초성 강조 흘림 사인체)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_29_104171/step_07_signature.png"
+        },
+        {
+          "step": "PAGE_8",
+          "title": "Page 8 (SQ5) 응답자 성별 / SQ6) 응답자 연령 / SQ7) 귀 가구가)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_29_104171/step_008.png"
+        },
+        {
+          "step": "PAGE_14",
+          "title": "Page 14 (문1C-1) 성별 및 출생년도를 말씀해 주십시오.)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_29_104171/step_014.png"
+        },
+        {
+          "step": "PAGE_20",
+          "title": "Page 20 (문6) 귀댁에서 귀농하신 시기는 언제입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_29_104171/step_020.png"
+        },
+        {
+          "step": "PAGE_56",
+          "title": "Page 56 (H32) 현재 귀댁에서 재배하고 있는 주소득작목(작물)을 소득에서 차)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_29_104171/step_056.png"
+        },
+        {
+          "step": "PAGE_91",
+          "title": "Page 91 (문39) 각 시기 및 소득 구분별로 소득 유무에 대해 말씀해 주십시오)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_29_104171/step_091.png"
+        },
+        {
+          "step": "PAGE_114",
+          "title": "Page 114 (문52) 귀댁에서는 현재 살고 계신 지역에 계속 거주하실 계획입니까?)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_29_104171/step_114.png"
+        },
+        {
+          "step": "PAGE_118_READY",
+          "title": "Page 118 완료 직전 정지 (송기섭 · 010-8256-9941)",
+          "screenshot": "/reports/camp_gallup_return_farm_20263603/quota_29_104171/step_118_final_before_submit.png"
+        }
+      ]
     },
     {
       "seq": 30,

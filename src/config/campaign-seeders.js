@@ -219,8 +219,14 @@ export function seedInitialCampaigns({
             needGalUpdate = true;
           } else {
             for (const gItem of galList) {
-              const match = existingGallupCamp.quotaDatabase.find(q => String(q.id || q.uid) === String(gItem.id || gItem.uid));
-              if (match && gItem.quotaStatus && gItem.quotaStatus !== 'ready' && match.quotaStatus === 'ready') {
+              const match = existingGallupCamp.quotaDatabase.find(
+                q => Number(q.seq || q.index) === Number(gItem.seq || gItem.index) || String(q.id || q.uid) === String(gItem.id || gItem.uid)
+              );
+              if (
+                match &&
+                (String(match.id) !== String(gItem.id) ||
+                  (gItem.quotaStatus && gItem.quotaStatus !== 'ready' && (match.quotaStatus === 'ready' || match.status !== gItem.status)))
+              ) {
                 Object.assign(match, gItem);
                 needGalUpdate = true;
               }
