@@ -902,6 +902,7 @@ async function initSurveyDetailPage() {
             <th>가구 상세주소</th>
             <th>가구원 조사 현황</th>
             <th class="th-status">진행 상태</th>
+            <th class="text-center" style="min-width: 115px;">파일럿 테스트</th>
           </tr>
         `;
       } else if (isHrcEnergy) {
@@ -992,7 +993,7 @@ async function initSurveyDetailPage() {
     if (total === 0) {
       quotaTableBody.innerHTML = `
         <tr>
-          <td colspan="${isAssoc ? 10 : ((isHrcEnergy || isGlobalriLiteracy) ? 12 : 13)}" class="empty-table-msg">
+          <td colspan="${isAssoc ? 10 : (isHrcEnergy ? 12 : 13)}" class="empty-table-msg">
             ${isGlobalriLiteracy
               ? '아직 장착된 성인문해능력조사 대상자가 없습니다.<br>상단의 <strong>[글로벌리서치 GIFT 동기화 / LID 지정 필터]</strong> 버튼을 클릭하여 쿼터를 불러와 주세요.'
               : (isAssoc 
@@ -1029,12 +1030,23 @@ async function initSurveyDetailPage() {
           statusHtml = `<span class="badge-status error" title="${escapeHtml(item.error || '')}">오류</span>`;
         }
 
-        const ageKey = item.ageGroupKey || 'age50';
+        const ageKey = item.ageGroupKey || item.ageGroup || 'age50';
         const ageBadgeStyle = ageBadgeStyleMap[ageKey] || ageBadgeStyleMap.age50;
         const hhUrl = item.householdUrl || item.slotUrl || '#';
-        const mName = item.memberName || item.ceoName || '-';
+        const mName = item.memberName || item.respondentName || item.ceoName || '-';
         const bYear = item.birthYear ? `${item.birthYear}년` : '-';
         const ageTxt = item.age ? ` (만 ${item.age}세)` : '';
+
+        const isDone = (st === 'completed' || item.status === '완료');
+        const isRowRunning = (st === 'running');
+        let pilotActionHtml = '';
+        if (isDone) {
+          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45; cursor:not-allowed;">제출완료</button>`;
+        } else if (isRowRunning) {
+          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small" disabled><i class="fa-solid fa-spinner fa-spin"></i> 진행중</button>`;
+        } else {
+          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-globalri" data-seq="${seq}" title="${escapeHtml(mName)} (LID ${escapeHtml(item.lid || '')}) 최종 제출하지 않고 마지막 문항(F05_2)까지만 파일럿 테스트 실행">▷ 파일럿</button>`;
+        }
 
         return `
           <tr data-row-idx="${seq}">
@@ -1058,6 +1070,7 @@ async function initSurveyDetailPage() {
               </a>
             </td>
             <td class="text-center">${statusHtml}</td>
+            <td class="text-center">${pilotActionHtml}</td>
           </tr>
         `;
       }).join('');
@@ -1364,7 +1377,43 @@ async function initSurveyDetailPage() {
   // ------------------------------------------------------------------------
   // 3-1. 쿼터 테이블 인라인 편집 (대표자이름, 성별, 나이, 주요품목 등 전체 지원) 및 실시간 동기화
   // ------------------------------------------------------------------------
-  quotaTableBody.addEventListener('click', (e) => {
+  quotaTableBody.addEventListener('click', async (e) => {
+    const rowPilotBtn = e.target.closest('.btn-row-pilot-globalri');
+    if (rowPilotBtn) {
+      e.stopPropagation();
+      const targetSeq = parseInt(rowPilotBtn.getAttribute('data-seq'), 10);
+      if (!targetSeq || !currentCampaign || !Array.isArray(currentCampaign.quotaDatabase)) return;
+      const targetItem = currentCampaign.quotaDatabase.find(b => Number(b.index || b.seq) === Number(targetSeq));
+      if (!targetItem) return;
+
+      const surveyUrl = targetItem.householdUrl || targetItem.slotUrl || targetItem.surveyUrl || 'https://gift.globalri.it/login';
+      if (inputSurveyUrl) inputSurveyUrl.value = surveyUrl;
+
+      try {
+        setRunningState(true);
+        openMonitorDrawer();
+        resetTimelineChips();
+        appendLog('info', `🎯 [성인문해능력조사 단독 파일럿 시작] #${targetSeq} "${targetItem.memberName || targetItem.ceoName}" (LID ${targetItem.lid} · ${targetItem.ageGroupLabel || ''}) 최종 제출하지 않고 마지막 문항(F05_2)까지만 테스트를 진행합니다...`);
+        await saveBaseline(false);
+
+        const res = await fetch(`/api/campaigns/${campId}/pilot-run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            surveyUrl,
+            quotaIndex: targetSeq
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '파일럿 실행 실패');
+        appendLog('success', data.message);
+      } catch (err) {
+        appendLog('error', `파일럿 실행 실패: ${err.message}`);
+        setRunningState(false);
+      }
+      return;
+    }
+
     const slotBadge = e.target.closest('.quota-slot-badge');
     if (slotBadge) {
       e.stopPropagation();
@@ -4461,10 +4510,10 @@ async function initSurveyDetailPage() {
       globalriAgeGroupStats[k] = { count: 0, members: [] };
     });
     qDb.forEach(item => {
-      const k = item.ageGroupKey || 'age50';
+      const k = item.ageGroupKey || item.ageGroup || 'age50';
       if (!globalriAgeGroupStats[k]) globalriAgeGroupStats[k] = { count: 0, members: [] };
       globalriAgeGroupStats[k].count++;
-      globalriAgeGroupStats[k].members.push(`${item.memberName || item.ceoName}(${item.birthYear || ''}년생·LID ${item.lid || ''})`);
+      globalriAgeGroupStats[k].members.push(`${item.memberName || item.respondentName || item.ceoName}(${item.birthYear || ''}년생·LID ${item.lid || ''})`);
     });
 
     renderGlobalriAgeGroupCards();
@@ -7080,7 +7129,11 @@ async function initSurveyDetailPage() {
           setTimelineStep('Agree');
           setRunningState(false);
           await loadCampaign();
-          appendLog('success', `🎉 1번 쿼터 "${data.bizName || ''}" 파일럿 검증 완료! Agree.asp 안전 대기 중.`);
+          if (currentCampaign?.surveyType === 'globalri_literacy') {
+            appendLog('success', `🎉 대상자 "${data.bizName || ''}" 파일럿 테스트 완료! (최종 제출하지 않고 F05_2 문항에서 안전 대기 중)`);
+          } else {
+            appendLog('success', `🎉 1번 쿼터 "${data.bizName || ''}" 파일럿 검증 완료! Agree.asp 안전 대기 중.`);
+          }
         }
 
         // 배치 진행

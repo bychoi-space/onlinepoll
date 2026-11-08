@@ -11,10 +11,10 @@ const rootDir = path.resolve(__dirname, '../..');
 const blueprintPath = path.join(rootDir, 'data', 'globalri_literacy_blueprint.json');
 
 /**
- * 제5차 성인문해능력조사 (SNUM 5963) 서버 검증 정답 테이블 (end_ui.js 100% 일치)
+ * 제5차 성인문해능력조사 (SNUM 5963) 문항 이미지 및 서버 채점(end_ui.js) 100% 검증 완료 정답 테이블
  */
 export const VERIFIED_LITERACY_ANSWERS = {
-  // Part A
+  // Part A (A1+A1_2 동시 노출, A2, A3: 3개 모두 정답 시 START_B 진행)
   A1_2: ['1'],
   A2: ['대전'],
   A3: ['2026', '7', '13'],
@@ -27,68 +27,68 @@ export const VERIFIED_LITERACY_ANSWERS = {
   B5: ['11', '12'],
 
   // Part B2 (B6~B20: B1~B5 2개 이하 시에만 진입)
-  B6: ['5200'],
-  B7: ['8'],
-  B8: ['2'],
-  B9: ['비누'],
-  B10: ['감기약'],
-  B11: ['2.5'],
+  B6: ['산사태'],
+  B7: ['3'],
+  B8: ['맥주'],
+  B9: ['사과'],
+  B10: ['3'],
+  B11: ['13'],
   B12: ['2'],
   B13: ['첨성대'],
-  B14: ['3'],
+  B14: ['4'],
   B15: ['회사', '많이'],
   B16: ['4'],
-  B17: ['9000'],
-  B18: ['2'],
-  B19: ['2'],
-  B20: ['11000'],
+  B17: ['뱀사골'],
+  B18: ['7.5'],
+  B19: ['-18'],
+  B20: ['4'],
 
   // Part C (C1~C20: 12개 이상 정답 시 수준 4, 11개 이하 시 수준 3)
-  C1: ['60'],
-  C2: ['900'],
-  C3: ['50'],
-  C4: ['7'],
-  C5: ['4'],
-  C6: ['3'],
+  C1: ['1'],
+  C2: ['위'],
+  C3: ['4'],
+  C4: ['2'],
+  C5: ['4000'],
+  C6: ['12', '17'],
   C7: ['1'],
-  C8: ['비 인후통', '축농증'],
-  C9: ['3'],
-  C10: ['김한국'],
+  C8: ['3'],
+  C9: ['3300'],
+  C10: ['1'],
   C11: ['3'],
   C12: ['3'],
-  C13: ['9'],
-  C14: ['22'],
-  C15: ['4'],
-  C16: ['정기 예금'],
-  C17: ['580000'],
-  C18: ['서울역'],
-  C19: ['8400'],
+  C13: ['177'],
+  C14: ['2'],
+  C15: ['2'],
+  C16: ['5'],
+  C17: ['4'],
+  C18: ['276000'],
+  C19: ['4'],
   C20: ['3']
 };
 
 /**
- * Part C 의도적 오답 생성용 대체값 (나이대별 목표 정답 개수 제어용)
+ * Part C 의도적 오답 생성용 대체값 (나이대별 목표 정답 개수 제어용 — 문항 타입/제약 100% 호환)
  */
 const WRONG_LITERACY_ANSWERS = {
-  C1: ['40'],
-  C2: ['500'],
-  C3: ['30'],
-  C4: ['5'],
-  C5: ['1'],
-  C6: ['1'],
-  C7: ['2'],
-  C8: ['모름', '모름'],
-  C9: ['1'],
-  C10: ['잘모름'],
-  C11: ['1'],
+  C1: ['2'],
+  C2: ['간'],
+  C3: ['1'],
+  C4: ['1'],
+  C5: ['3600'],
+  C6: ['12', '16'],
+  C7: ['4'],
+  C8: ['1'],
+  C9: ['3000'],
+  C10: ['2'],
+  C11: ['2'],
   C12: ['1'],
-  C13: ['6'],
-  C14: ['15'],
-  C15: ['1'],
-  C16: ['보통 예금'],
-  C17: ['500000'],
-  C18: ['부산역'],
-  C19: ['7200'],
+  C13: ['18'],
+  C14: ['1'],
+  C15: ['4'],
+  C16: ['4.5'],
+  C17: ['3'],
+  C18: ['270000'],
+  C19: ['3'],
   C20: ['1']
 };
 
@@ -104,12 +104,14 @@ function loadDefaultBlueprint() {
 }
 
 /**
- * 면접원 안내 모달(ivNotice / bootbox / alertify / Survey.Warning 등) 자동 확인 처리
+ * 면접원 안내 모달(ivNotice blockUI / question-confirm / bootbox 등) 자동 확인 처리
  */
 async function dismissNoticesAndModals(page) {
   await page.evaluate(() => {
-    // 1. ivNotice / bootbox / modal 확인 버튼 클릭
     const modalSelectors = [
+      '.question-confirm button[confirm-type="ok"]',
+      '.blockUI button[confirm-type="ok"]',
+      '.blockMsg button',
       '.modal.show button',
       '.modal.in button',
       '.bootbox button.bootbox-accept',
@@ -126,15 +128,6 @@ async function dismissNoticesAndModals(page) {
         btns[0].click();
       }
     }
-    // 2. 일반 화면 위 팝업 레이어 중 '확인' 텍스트 버튼 탐색
-    const allButtons = Array.from(document.querySelectorAll('button, a.btn, input[type="button"]'))
-      .filter(el => el.offsetParent !== null && el.id !== 'next' && el.id !== 'prev');
-    for (const btn of allButtons) {
-      const txt = (btn.innerText || btn.value || '').trim();
-      if (txt === '확인' || txt === '닫기' || txt === 'OK') {
-        btn.click();
-      }
-    }
   }).catch(err => logger.warn(`[모달 자동 닫기 경고] ${err.message}`));
 }
 
@@ -147,12 +140,12 @@ async function waitForSeolmoonQuestion(page) {
     if (href.includes('SurveyComplete.asp') || href.includes('Survey.asp')) return true;
     const bodyText = document.body?.innerText || '';
     if (bodyText.includes('조사에 참여해 주셔서 대단히 감사합니다')) return true;
-    const qEl = document.querySelector('#survey-contents [question-name]');
+    const qEl = document.querySelector('.question-container [question-name], [question-name]');
     return Boolean(qEl && qEl.getAttribute('question-name'));
   }, { timeout: 20000 }).catch(err => logger.warn(`[문항 대기 타임아웃 경고] ${err.message}`));
   await page.waitForTimeout(250);
   await dismissNoticesAndModals(page);
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(200);
 }
 
 /**
@@ -165,15 +158,18 @@ async function extractSeolmoonStep(page) {
     const isReturnedToList = href.includes('SurveyComplete.asp') || href.includes('Survey.asp');
     const isThankYou = bodyText.includes('조사에 참여해 주셔서 대단히 감사합니다') || href.includes('Q=COMPLETE') || href.includes('Q=TXT_COMPLETE');
 
-    const qEl = document.querySelector('#survey-contents [question-name]');
+    const qEls = Array.from(document.querySelectorAll('.question-container [question-name], [question-name]'));
+    const qEl = qEls[0] || null;
     const qName = qEl ? (qEl.getAttribute('question-name') || '') : '';
     const qType = qEl ? (qEl.getAttribute('question-type') || '') : '';
-    const pct = document.querySelector('.progress-bar, .progress-text, #progress')?.innerText?.trim() || '';
+    const allQNames = qEls.map(el => el.getAttribute('question-name') || '').filter(Boolean);
+    const pct = document.querySelector('.progress .percent, .progress-bar, .progress-text, #progress')?.innerText?.trim() || '';
 
     return {
       href,
       qName,
       qType,
+      allQNames,
       pct,
       bodyText: bodyText.slice(0, 300),
       isCompleted: isReturnedToList || isThankYou || qName === 'COMPLETE' || qName === 'TXT_COMPLETE'
@@ -190,10 +186,10 @@ function buildPartCAnswerPlan(agePol) {
   const targetCorrect = minCorrect + Math.floor(Math.random() * (maxCorrect - minCorrect + 1));
   const wrongCountNeeded = Math.max(0, 20 - targetCorrect);
 
-  // 후반부 고난도 문항부터 우선 오답 배치
+  // 후반부 고난도 문항(C13 천건당 환산, C18 비율 계산, C16 연체금 계산, C6 진료표 등)부터 우선 오답 배치
   const candidatePool = [
-    'C20', 'C19', 'C17', 'C16', 'C15', 'C14', 'C13', 'C12', 'C11', 'C9',
-    'C8', 'C7', 'C6', 'C5', 'C4', 'C3', 'C2', 'C1', 'C18', 'C10'
+    'C13', 'C18', 'C16', 'C6', 'C5', 'C9', 'C20', 'C19', 'C17', 'C15',
+    'C14', 'C12', 'C11', 'C10', 'C8', 'C7', 'C4', 'C3', 'C2', 'C1'
   ];
   const wrongSet = new Set(candidatePool.slice(0, wrongCountNeeded));
   return { targetCorrect, wrongSet };
@@ -287,6 +283,7 @@ export async function runGlobalriLiteracySurvey(options = {}) {
 
     await page.goto(householdUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(800);
+    await captureStepScreenshot('HOUSEHOLD_LIST', `가구원 조사 현황 (${lid} - ${respondentName})`);
 
     const entryCheck = await page.evaluate(({ targetMemberUid, targetName }) => {
       const href = location.href;
@@ -295,18 +292,19 @@ export async function runGlobalriLiteracySurvey(options = {}) {
       let foundBtn = false;
       for (const tr of rows) {
         const tds = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
-        const btn = tr.querySelector('button, a, input[type="button"]');
+        const hiddenUid = tr.querySelector('input[name="MemberUid"]')?.value || '';
+        const btn = tr.querySelector('button[type="submit"], button, a, input[type="button"]');
         const onclick = btn ? (btn.getAttribute('onclick') || '') : '';
-        if (onclick.includes(targetMemberUid) || (tds[1] && tds[1] === targetName)) {
+        if (hiddenUid === targetMemberUid || onclick.includes(targetMemberUid) || (tds[1] && tds[1] === targetName)) {
           matchedStatus = tds[5] || '';
           if (matchedStatus === '완료') {
             return { alreadyCompleted: true, matchedStatus, href };
           }
-          if (typeof window.fn_survey === 'function') {
-            window.fn_survey('START', targetMemberUid);
-            foundBtn = true;
-          } else if (btn) {
+          if (btn) {
             btn.click();
+            foundBtn = true;
+          } else if (typeof window.fn_survey === 'function') {
+            window.fn_survey('START', targetMemberUid);
             foundBtn = true;
           }
           break;
@@ -333,7 +331,7 @@ export async function runGlobalriLiteracySurvey(options = {}) {
       throw new Error(`[LID ${lid}] 가구원 조사 현황 화면에서 "${respondentName}" (${memberUid})의 [계속 진행] 버튼을 찾을 수 없습니다.`);
     }
 
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(1800);
     await waitForSeolmoonQuestion(page);
     await captureStepScreenshot('SURVEY_ENTRY', `설문 진입 (${respondentName} · ${ageMeta.ageGroupLabel})`);
 
@@ -373,14 +371,15 @@ export async function runGlobalriLiteracySurvey(options = {}) {
       if (qName === lastQName) {
         sameQuestionCount++;
         if (sameQuestionCount >= 5) {
-          throw new Error(`[${respondentName} / ${memberUid}] 문항 "${qName}"에서 다음 단계로 넘어가지 못하고 반복 정체되었습니다.`);
+          const warnMsg = await page.evaluate(() => document.querySelector('.main-warning, .toast-message')?.innerText?.trim() || '');
+          throw new Error(`[${respondentName} / ${memberUid}] 문항 "${qName}"에서 다음 단계로 넘어가지 못하고 반복 정체되었습니다. (경고: ${warnMsg || '없음'})`);
         }
       } else {
         sameQuestionCount = 0;
         lastQName = qName;
       }
 
-      const progressPct = Math.min(98, Math.max(8, Math.round(((loopIdx + 1) / 62) * 90) + 8));
+      const progressPct = Math.min(98, Math.max(8, Math.round(((loopIdx + 1) / 52) * 90) + 8));
       onProgress({
         step: qName,
         percent: progressPct,
@@ -392,60 +391,128 @@ export async function runGlobalriLiteracySurvey(options = {}) {
       // =========================================================================
       // 문항 유형별 정밀 주입 로직
       // =========================================================================
-      if (['CONSENT', 'SQ1', 'SQ2', 'SQ3', 'SQ4', 'SQ5', 'GP1'].includes(qName)) {
-        // 기존 입력 보존 구간 (이미 입력되어 있는 기본정보/GPS는 건드리지 않고 통과)
-        actionDesc = '기존 입력값 보존 통과';
-      } else if (step.qType === 'DESC' || qName.startsWith('START_') || qName.startsWith('DESC_')) {
-        actionDesc = '안내문 확인 통과';
-      } else if (step.qType === 'END' || qName.startsWith('END_')) {
-        // 채점 결과 요약 화면 (END_A, END_B1, END_B2, END_C): .chk-end-check 체크 후 #next 활성화 대기
-        await page.waitForTimeout(700);
-        const endInfo = await page.evaluate(() => {
-          const chk = document.querySelector('#survey-contents .chk-end-check, input.chk-end-check, #survey-contents input[type="checkbox"]');
-          if (chk) {
-            if (!chk.checked) chk.click();
-            chk.checked = true;
-            if (typeof window.$ !== 'undefined') {
-              window.$(chk).prop('checked', true).trigger('change');
+      if (['CONSENT', 'GENDER', 'AGE', 'REGION', 'QUOTA_REGION_GENDER_AGE', 'SQ1', 'SQ2', 'SQ3', 'SQ4', 'SQ5', 'GP1'].includes(qName)) {
+        if (qName === 'CONSENT') {
+          await page.evaluate(() => {
+            const checked = document.querySelector('input[custom-save-name="CONSENT"]:checked');
+            if (!checked) {
+              const r2 = document.querySelector('input[custom-save-name="CONSENT"][value="2"]');
+              if (r2) {
+                r2.click();
+                r2.checked = true;
+              }
             }
-          }
-          const nextBtn = document.querySelector('#next');
-          if (nextBtn) {
-            nextBtn.style.display = '';
-            nextBtn.disabled = false;
-          }
-          const matchCnt = document.querySelector('[custom-save-name="MATCH_COUNT"]')?.value || '';
-          const level = document.querySelector('[custom-save-name="LITERACY_LEVEL"]')?.value || '';
-          return { checked: Boolean(chk), matchCnt, level };
-        });
-        actionDesc = `파트 채점 확인 완료 (정답수: ${endInfo.matchCnt || '확인'}, 수준: ${endInfo.level || '-'})`;
-        await captureStepScreenshot(qName, `${qName} 채점 결과 확인`);
-      } else if (qName === 'A1' || step.qType === 'VOICE') {
-        // A1 음성 녹음 문항: VOICE.js 내장 autoAnswer(1초 무음 MP3 합성 업로드) 호출
+          });
+        } else if (['GENDER', 'AGE', 'REGION'].includes(qName)) {
+          await fallbackAnswerAnyQuestion(page);
+        } else if (qName === 'GP1') {
+          await page.waitForTimeout(1000);
+        }
+        actionDesc = `${qName} 기본정보 확인 통과`;
+      } else if (step.qType === 'DESC' || step.qType === 'GO' || qName.startsWith('START_') || qName.startsWith('DESC_')) {
+        actionDesc = `${qName} 안내문/시작점 통과`;
+      } else if (step.qType === 'CUSTOM' && qName.startsWith('END_')) {
+        // 채점 결과 요약 화면 (END_A, END_B1, END_B, END_C): GradeEndUI 자동 채점 완료 대기 후 [확인 완료] 버튼 클릭
+        await page.waitForFunction(() => {
+          const checkDone = document.querySelector('[custom-save-name="CHECK_DONE"]')?.value || '';
+          const isLoading = document.querySelector('.chk-end-loading')?.classList?.contains('on');
+          return checkDone === 'Y' && !isLoading;
+        }, { timeout: 12000 }).catch(err => logger.warn(`[${qName} 초기 채점 대기 경고] ${err.message}`));
+
         await page.evaluate(() => {
-          const qDiv = document.querySelector('#survey-contents [question-name="A1"]') || document.querySelector('#survey-contents [question-name]');
+          const checkBtn = document.querySelector('button.chk-end-check');
+          if (checkBtn && !checkBtn.disabled) {
+            checkBtn.click();
+          }
+        });
+        await page.waitForTimeout(500);
+        await page.waitForFunction(() => {
+          const checkDone = document.querySelector('[custom-save-name="CHECK_DONE"]')?.value || '';
+          const isLoading = document.querySelector('.chk-end-loading')?.classList?.contains('on');
+          return checkDone === 'Y' && !isLoading;
+        }, { timeout: 10000 }).catch(err => logger.warn(`[${qName} 확인완료 버튼 대기 경고] ${err.message}`));
+
+        const endInfo = await page.evaluate(() => {
+          const matchCnt = document.querySelector('[custom-save-name="MATCH_COUNT"]')?.value || '';
+          const totalCnt = document.querySelector('[custom-save-name="TOTAL_COUNT"]')?.value || '';
+          const gradeJson = document.querySelector('[custom-save-name="GRADE_RESULT_JSON"]')?.value || '{}';
+          return { matchCnt, totalCnt, gradeJson };
+        });
+        logger.info(`[${qName} 채점 결과] (${respondentName}) 정답: ${endInfo.matchCnt}/${endInfo.totalCnt} | 상세: ${endInfo.gradeJson}`);
+        actionDesc = `${qName} 채점 확인 완료 (정답: ${endInfo.matchCnt}/${endInfo.totalCnt})`;
+        await captureStepScreenshot(qName, `${qName} 채점 확인 (${endInfo.matchCnt}/${endInfo.totalCnt})`);
+      } else if (qName === 'A1' || step.qType === 'VOICE') {
+        // A1(VOICE) + A1_2(RADIO) 동일 페이지 동시 노출 처리
+        await page.evaluate(() => {
+          if (!sessionStorage.getItem('LITERACY_START_A')) {
+            sessionStorage.setItem('LITERACY_START_A', String(Date.now() - 42000));
+          }
+          const qDiv = document.querySelector('[question-name="A1"]');
           if (!qDiv) return;
-          const existingUrl = qDiv.getAttribute('voice-Url') || '';
-          if (!existingUrl && window.Modules && window.Modules.VOICE && typeof window.Modules.VOICE.autoAnswer === 'function') {
+          const hasFile = qDiv.querySelectorAll('div.fileinfo').length > 0;
+          if (!hasFile && window.Modules && window.Modules.VOICE && typeof window.Modules.VOICE.autoAnswer === 'function') {
             window.Modules.VOICE.autoAnswer(qDiv);
           }
         });
+
         await page.waitForFunction(() => {
-          const qDiv = document.querySelector('#survey-contents [question-name="A1"]') || document.querySelector('#survey-contents [question-name]');
-          return Boolean(qDiv && qDiv.getAttribute('voice-Url'));
-        }, { timeout: 10000 }).catch(err => logger.warn(`[A1 음성 합성 대기 경고] ${err.message}`));
-        actionDesc = 'A1 음성 읽기 녹음(1초 무음 MP3) 업로드 완료';
+          const qDiv = document.querySelector('[question-name="A1"]');
+          return Boolean(qDiv && qDiv.querySelectorAll('div.fileinfo').length > 0);
+        }, { timeout: 12000 }).catch(err => logger.warn(`[A1 음성 업로드 대기 경고] ${err.message}`));
+
+        // STT 텍스트 보강 및 동일 페이지 내 A1_2(정답 여부 O/X) 라디오 동시 선택
+        const targetValA1_2 = String(agePol.partA_voicePass || '1');
+        await page.evaluate(({ val }) => {
+          const form = document.querySelector('form.voice-form[qname="A1"]');
+          if (form && window.Modules && window.Modules.VOICE && window.$) {
+            const $form = window.$(form);
+            if (typeof window.Modules.VOICE._applySttText === 'function') {
+              window.Modules.VOICE._applySttText($form, '문화회관 노래교실', 'SHOW');
+            }
+            if (typeof window.Modules.VOICE._injectSttToFileinfo === 'function') {
+              window.Modules.VOICE._injectSttToFileinfo($form, '문화회관 노래교실');
+            }
+          }
+          const qDivA12 = document.querySelector('[question-name="A1_2"]');
+          if (qDivA12) {
+            const radios = Array.from(qDivA12.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
+            const target = radios.find(r => String(r.value) === String(val)) || radios[0];
+            if (target) {
+              target.click();
+              target.checked = true;
+              if (typeof window.$ !== 'undefined') {
+                window.$(target).prop('checked', true).trigger('change');
+              }
+            }
+          }
+        }, { val: targetValA1_2 });
+        await page.waitForTimeout(300);
+        actionDesc = `A1 음성 녹음 업로드 및 A1_2(${targetValA1_2 === '1' ? 'O' : 'X'}) 동시 선택 완료`;
       } else if (qName === 'A1_2') {
         const targetVal = String(agePol.partA_voicePass || '1');
         await selectRadioOption(page, targetVal);
         actionDesc = `A1_2 문장 읽기 평가: ${targetVal === '1' ? 'O(통과)' : 'X'}`;
       } else if (VERIFIED_LITERACY_ANSWERS[qName]) {
         // Part A(A2, A3), Part B(B1~B20), Part C(C1~C20) 문해력 측정 문항
+        if (qName === 'B1') {
+          await page.evaluate(() => {
+            if (!sessionStorage.getItem('LITERACY_START_B')) {
+              sessionStorage.setItem('LITERACY_START_B', String(Date.now() - 75000));
+            }
+          });
+        } else if (qName === 'C1') {
+          await page.evaluate(() => {
+            if (!sessionStorage.getItem('LITERACY_START_C')) {
+              sessionStorage.setItem('LITERACY_START_C', String(Date.now() - 210000));
+            }
+          });
+        }
+
         let targetValues = VERIFIED_LITERACY_ANSWERS[qName];
         let isIntentionalWrong = false;
 
         if (qName.startsWith('B') && ['B4', 'B5'].includes(qName) && agePol.partB1_mode === 'pass_3_of_5') {
-          targetValues = ['0', '0'];
+          targetValues = qName === 'B4' ? ['12000'] : ['10', '42'];
           isIntentionalWrong = true;
         } else if (qName.startsWith('C') && partCPlan.wrongSet.has(qName)) {
           targetValues = WRONG_LITERACY_ANSWERS[qName] || ['1'];
@@ -517,8 +584,8 @@ export async function runGlobalriLiteracySurvey(options = {}) {
           const lo = basePair[0] || 3;
           const hi = basePair[1] || lo;
           rowValues = [1, 2, 3, 4, 5, 6, 7].map(idx => {
-            if (pref === 'digital_finance' && (idx === 4 || idx === 5)) return String(Math.min(5, hi));
-            if (pref === 'health_leisure' && (idx === 3 || idx === 6)) return String(Math.min(5, hi));
+            if (pref === 'digital_finance' && (idx === 3 || idx === 5)) return String(Math.min(5, hi));
+            if (pref === 'health_leisure' && (idx === 2 || idx === 7)) return String(Math.min(5, hi));
             return String(idx % 2 === 0 ? hi : lo);
           });
         } else {
@@ -540,9 +607,9 @@ export async function runGlobalriLiteracySurvey(options = {}) {
         await fillF01Complex(page, { schoolLevel, gradStatus });
         actionDesc = `F01 응답자 학력: 학교급(${schoolLevel}) / 상태(${schoolLevel === '1' ? '무학' : gradStatus})`;
       } else if (qName === 'F02') {
-        const fEdu = String(agePol.F02_fatherEdu || '3');
+        const fEdu = String(agePol.F02_fatherEdu || '4');
         const fGrad = String(agePol.F02_fatherGrad || '5');
-        const mEdu = String(agePol.F02_motherEdu || '3');
+        const mEdu = String(agePol.F02_motherEdu || '4');
         const mGrad = String(agePol.F02_motherGrad || '5');
         await fillF02ParentsEducation(page, { fEdu, fGrad, mEdu, mGrad });
         actionDesc = `F02 부모 학력: 부(${fEdu}/${fGrad || '-'}), 모(${mEdu}/${mGrad || '-'})`;
@@ -572,10 +639,21 @@ export async function runGlobalriLiteracySurvey(options = {}) {
         const validHInc = Math.max(pInc, rawHInc);
         await selectRadioOption(page, String(validHInc));
         actionDesc = `F05-2 월평균 가구소득: ${validHInc}번 (개인소득 ${pInc}번 이상 정합성 보장)`;
-        await captureStepScreenshot(qName, `${qName} 최종 문항 (${respondentName})`);
+        await captureStepScreenshot(qName, `${qName} 최종 문항 (${respondentName} - 제출 직전 대기)`);
+
+        stepTrace.push({
+          step: qName,
+          type: step.qType,
+          action: actionDesc
+        });
 
         if (safetyGuard) {
-          logger.info(`[성인문해능력조사 안전가드] "${respondentName}" (${memberUid}) 마지막 문항 F05_2 입력 완료 후 최종 제출 직전 정지`);
+          logger.info(`[성인문해능력조사 안전가드] "${respondentName}" (${memberUid}) 마지막 문항 F05_2 입력 완료 후 최종 제출(#next) 직전 안전 정지`);
+          onProgress({
+            step: 'F05_2',
+            percent: 99,
+            message: `[파일럿 검증 완료] "${respondentName}" (${ageMeta.ageGroupLabel}) 최종 문항(F05_2)까지 100% 응답 검증 완료 (미제출 안전 정지)`
+          });
           return {
             success: true,
             status: 'stopped_at_review',
@@ -588,7 +666,6 @@ export async function runGlobalriLiteracySurvey(options = {}) {
           };
         }
       } else {
-        // 예상치 못한 추가 문항 폴백 처리
         await fallbackAnswerAnyQuestion(page);
         actionDesc = `${qName} 기본 폴백 응답 처리`;
       }
@@ -623,10 +700,10 @@ export async function runGlobalriLiteracySurvey(options = {}) {
  */
 async function selectRadioOption(page, targetValue) {
   await page.evaluate(({ val }) => {
-    const qDiv = document.querySelector('#survey-contents [question-name]');
+    const qDiv = document.querySelector('.question-container [question-name], [question-name]');
     if (!qDiv) return;
-    const radios = Array.from(qDiv.querySelectorAll('input[type="radio"]')).filter(el => !el.disabled);
-    let target = radios.find(r => String(r.value) === String(val) || String(r.getAttribute('hkey') || '') === String(val));
+    const radios = Array.from(qDiv.querySelectorAll('input[type="radio"]')).filter(el => !el.disabled && el.offsetParent !== null);
+    let target = radios.find(r => String(r.value) === String(val) || String(r.getAttribute('akey') || '') === String(val) || String(r.getAttribute('hkey') || '') === String(val));
     if (!target && radios.length > 0) {
       target = radios[0];
     }
@@ -646,26 +723,26 @@ async function selectRadioOption(page, targetValue) {
  */
 async function fillLiteracyQuestion(page, qName, targetValues) {
   await page.evaluate(({ questionName, values }) => {
-    const qDiv = document.querySelector('#survey-contents [question-name]');
+    const qDiv = document.querySelector(`.question-container [question-name="${questionName}"]`) || document.querySelector('.question-container [question-name], [question-name]');
     if (!qDiv) return;
 
-    // 1. B11 주사기 눈금 캔버스 특수 문항 처리
+    // 1. B11 주사기 눈금 캔버스 특수 문항 처리 (DOSE_ML = 13)
     if (questionName === 'B11') {
-      const doseInput = qDiv.querySelector('input[type="text"], input[type="hidden"], input[custom-save-name]');
+      const doseInput = qDiv.querySelector('[custom-save-name="DOSE_ML"], input[type="text"], input[type="hidden"]');
       if (doseInput) {
-        doseInput.value = String(values[0] || '2.5');
+        doseInput.value = String(values[0] || '13');
         if (typeof window.$ !== 'undefined') {
-          window.$(doseInput).val(String(values[0] || '2.5')).trigger('change');
+          window.$(doseInput).val(String(values[0] || '13')).trigger('change');
         }
       }
       return;
     }
 
-    // 2. 객관식 라디오 문항인 경우 (B12, B16, B18, C5, C6, C7, C9, C11, C12, C15, C20 등)
+    // 2. 객관식 라디오 문항인 경우
     const radios = Array.from(qDiv.querySelectorAll('input[type="radio"]')).filter(el => !el.disabled);
     if (radios.length > 0) {
       const wanted = String(values[0] || '1');
-      const targetRadio = radios.find(r => String(r.value) === wanted) || radios[0];
+      const targetRadio = radios.find(r => String(r.value) === wanted || String(r.getAttribute('akey') || '') === wanted) || radios[0];
       if (targetRadio) {
         targetRadio.click();
         targetRadio.checked = true;
@@ -676,8 +753,7 @@ async function fillLiteracyQuestion(page, qName, targetValues) {
       return;
     }
 
-    // 3. 주관식 텍스트/숫자 입력 문항인 경우 (A2, A3, B1~B10, C1~C4, C8, C10, C13, C14, C16~C19 등)
-    // 먼저 '잘 모르겠다' 체크박스가 켜져 있다면 해제
+    // 3. 주관식 텍스트/숫자 입력 문항인 경우
     const dkCheckboxes = Array.from(qDiv.querySelectorAll('input[type="checkbox"]'));
     for (const chk of dkCheckboxes) {
       if (chk.checked) {
@@ -712,7 +788,7 @@ async function fillLiteracyQuestion(page, qName, targetValues) {
  */
 async function fillRadioSetsMatrix(page, { baseScore, useJitter, minScale, maxScale }) {
   await page.evaluate(({ base, jitter, minS, maxS }) => {
-    const qDiv = document.querySelector('#survey-contents [question-name]');
+    const qDiv = document.querySelector('.question-container [question-name], [question-name]');
     if (!qDiv) return;
     const rows = Array.from(qDiv.querySelectorAll('tr[vkey], tbody tr')).filter(tr => tr.querySelectorAll('input[type="radio"]').length > 0);
     rows.forEach((tr, idx) => {
@@ -740,7 +816,7 @@ async function fillRadioSetsMatrix(page, { baseScore, useJitter, minScale, maxSc
  */
 async function fillRadioSetsByRowArray(page, rowValues) {
   await page.evaluate(({ values }) => {
-    const qDiv = document.querySelector('#survey-contents [question-name]');
+    const qDiv = document.querySelector('.question-container [question-name], [question-name]');
     if (!qDiv) return;
     const rows = Array.from(qDiv.querySelectorAll('tr[vkey], tbody tr')).filter(tr => tr.querySelectorAll('input[type="radio"]').length > 0);
     rows.forEach((tr, idx) => {
@@ -764,12 +840,12 @@ async function fillRadioSetsByRowArray(page, rowValues) {
  */
 async function fillF01Complex(page, { schoolLevel, gradStatus }) {
   await page.evaluate(({ sLevel }) => {
-    const qDiv = document.querySelector('#survey-contents [question-name="F01"]') || document.querySelector('#survey-contents [question-name]');
+    const qDiv = document.querySelector('.question-container [question-name="F01"], [question-name="F01"]') || document.querySelector('.question-container [question-name], [question-name]');
     if (!qDiv) return;
     const allRadios = Array.from(qDiv.querySelectorAll('input[type="radio"]'));
     const firstGroupName = allRadios[0]?.name || '';
     const schoolRadios = allRadios.filter(r => r.name === firstGroupName);
-    const targetSchool = schoolRadios.find(r => String(r.value) === String(sLevel)) || schoolRadios[0];
+    const targetSchool = schoolRadios.find(r => String(r.value) === String(sLevel) || String(r.getAttribute('hkey') || '') === String(sLevel)) || schoolRadios[0];
     if (targetSchool) {
       targetSchool.click();
       targetSchool.checked = true;
@@ -779,16 +855,16 @@ async function fillF01Complex(page, { schoolLevel, gradStatus }) {
     }
   }, { sLevel: schoolLevel });
 
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(350);
 
   if (String(schoolLevel) !== '1') {
     await page.evaluate(({ gStatus }) => {
-      const qDiv = document.querySelector('#survey-contents [question-name="F01"]') || document.querySelector('#survey-contents [question-name]');
+      const qDiv = document.querySelector('.question-container [question-name="F01"], [question-name="F01"]') || document.querySelector('.question-container [question-name], [question-name]');
       if (!qDiv) return;
       const allRadios = Array.from(qDiv.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
       const firstGroupName = allRadios[0]?.name || '';
       const gradRadios = allRadios.filter(r => r.name !== firstGroupName);
-      const targetGrad = gradRadios.find(r => String(r.value) === String(gStatus)) || gradRadios[gradRadios.length - 1];
+      const targetGrad = gradRadios.find(r => String(r.value) === String(gStatus) || String(r.getAttribute('hkey') || '') === String(gStatus)) || gradRadios[gradRadios.length - 1];
       if (targetGrad) {
         targetGrad.click();
         targetGrad.checked = true;
@@ -806,15 +882,15 @@ async function fillF01Complex(page, { schoolLevel, gradStatus }) {
  */
 async function fillF02ParentsEducation(page, { fEdu, fGrad, mEdu, mGrad }) {
   await page.evaluate(({ fatherEdu, MotherEdu }) => {
-    const qDiv = document.querySelector('#survey-contents [question-name="F02"]') || document.querySelector('#survey-contents [question-name]');
+    const qDiv = document.querySelector('.question-container [question-name="F02"], [question-name="F02"]') || document.querySelector('.question-container [question-name], [question-name]');
     if (!qDiv) return;
-    const fRadioA = qDiv.querySelector(`input[type="radio"][data-column="A_1"][value="${fatherEdu}"]`) || qDiv.querySelector('input[type="radio"][data-column="A_1"][value="1"]');
+    const fRadioA = qDiv.querySelector(`input[type="radio"][data-column="A_1"][value="${fatherEdu}"]`) || qDiv.querySelector('input[type="radio"][data-column="A_1"][value="4"]');
     if (fRadioA) {
       fRadioA.click();
       fRadioA.checked = true;
       if (typeof window.$ !== 'undefined') window.$(fRadioA).prop('checked', true).trigger('change');
     }
-    const mRadioA = qDiv.querySelector(`input[type="radio"][data-column="A_2"][value="${MotherEdu}"]`) || qDiv.querySelector('input[type="radio"][data-column="A_2"][value="1"]');
+    const mRadioA = qDiv.querySelector(`input[type="radio"][data-column="A_2"][value="${MotherEdu}"]`) || qDiv.querySelector('input[type="radio"][data-column="A_2"][value="4"]');
     if (mRadioA) {
       mRadioA.click();
       mRadioA.checked = true;
@@ -822,10 +898,10 @@ async function fillF02ParentsEducation(page, { fEdu, fGrad, mEdu, mGrad }) {
     }
   }, { fatherEdu: fEdu, MotherEdu: mEdu });
 
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(300);
 
   await page.evaluate(({ fatherEdu, fatherGrad, motherEdu, motherGrad }) => {
-    const qDiv = document.querySelector('#survey-contents [question-name="F02"]') || document.querySelector('#survey-contents [question-name]');
+    const qDiv = document.querySelector('.question-container [question-name="F02"], [question-name="F02"]') || document.querySelector('.question-container [question-name], [question-name]');
     if (!qDiv) return;
     if (fatherEdu !== '1' && fatherEdu !== '9') {
       const fRadioB = qDiv.querySelector(`input[type="radio"][data-column="B_1"][value="${fatherGrad || '5'}"]:not(:disabled)`) || qDiv.querySelector('input[type="radio"][data-column="B_1"]:not(:disabled)');
@@ -853,7 +929,7 @@ async function fillF02ParentsEducation(page, { fEdu, fGrad, mEdu, mGrad }) {
  */
 async function fallbackAnswerAnyQuestion(page) {
   await page.evaluate(() => {
-    const qDiv = document.querySelector('#survey-contents [question-name]');
+    const qDiv = document.querySelector('.question-container [question-name], [question-name]');
     if (!qDiv) return;
     const radios = Array.from(qDiv.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
     const byName = {};

@@ -323,7 +323,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age70",
+      "memberName": "서상규",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 401호 939-1번지"
     },
     {
       "index": 2,
@@ -359,7 +362,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age70",
+      "memberName": "윤금선",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 401호 939-1번지"
     },
     {
       "index": 3,
@@ -395,7 +401,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age60",
+      "memberName": "김경식",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 701호 939-1번지"
     },
     {
       "index": 4,
@@ -431,7 +440,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age50",
+      "memberName": "정성식",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1001호 939-1번지"
     },
     {
       "index": 5,
@@ -467,7 +479,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age50",
+      "memberName": "박지선",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1001호 939-1번지"
     },
     {
       "index": 6,
@@ -503,7 +518,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age20",
+      "memberName": "장서우",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1001호 939-1번지"
     },
     {
       "index": 7,
@@ -535,11 +553,66 @@
       "slotUrl": "https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp?UID=029426FNiIY&REGION21=22&SIDO=7&SIGUNGU=%EB%82%A8%EB%8F%99%EA%B5%AC&DONG=%EA%B0%84%EC%84%9D2%EB%8F%99&AREA_NO=23050561118A&HOUSEHOLD=029426&RETURN=1&GN=_BASE&ME=1&INTERVIEWER_ID=%EB%85%B8%EC%98%81%EB%AF%B87791&GAGU=25&SURVEY_TYPE=2",
       "surveyUrl": "https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp?UID=029426FNiIY&REGION21=22&SIDO=7&SIGUNGU=%EB%82%A8%EB%8F%99%EA%B5%AC&DONG=%EA%B0%84%EC%84%9D2%EB%8F%99&AREA_NO=23050561118A&HOUSEHOLD=029426&RETURN=1&GN=_BASE&ME=1&INTERVIEWER_ID=%EB%85%B8%EC%98%81%EB%AF%B87791&GAGU=25&SURVEY_TYPE=2",
       "memberStatus": "진행 중",
-      "status": "진행 중",
-      "quotaStatus": "ready",
-      "progress": "8% (Part A 대기)",
+      "status": "검증대기(F05_2)",
+      "quotaStatus": "pilot_done",
+      "progress": "98% (제출직전)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "pilotCompletedAt": "2026-11-08T05:09:34.783Z",
+      "capturedSteps": [
+        {
+          "step": "HOUSEHOLD_LIST_1794113979574",
+          "type": "SCREENSHOT",
+          "action": "HOUSEHOLD_LIST_1794113979574 파일럿 응답 완료",
+          "screenshotUrl": "/reports/camp_globalri_literacy_7791/globalri_item_7_029426FNiIY_03/step_01_HOUSEHOLD_LIST_1794113979574.png",
+          "timestamp": "2026-11-08T05:09:34.782Z"
+        },
+        {
+          "step": "SURVEY_ENTRY_1794113982631",
+          "type": "SCREENSHOT",
+          "action": "SURVEY_ENTRY_1794113982631 파일럿 응답 완료",
+          "screenshotUrl": "/reports/camp_globalri_literacy_7791/globalri_item_7_029426FNiIY_03/step_02_SURVEY_ENTRY_1794113982631.png",
+          "timestamp": "2026-11-08T05:09:34.783Z"
+        },
+        {
+          "step": "END_A_1794113987025",
+          "type": "SCREENSHOT",
+          "action": "END_A_1794113987025 파일럿 응답 완료",
+          "screenshotUrl": "/reports/camp_globalri_literacy_7791/globalri_item_7_029426FNiIY_03/step_03_END_A_1794113987025.png",
+          "timestamp": "2026-11-08T05:09:34.783Z"
+        },
+        {
+          "step": "END_B1_1794113994326",
+          "type": "SCREENSHOT",
+          "action": "END_B1_1794113994326 파일럿 응답 완료",
+          "screenshotUrl": "/reports/camp_globalri_literacy_7791/globalri_item_7_029426FNiIY_03/step_04_END_B1_1794113994326.png",
+          "timestamp": "2026-11-08T05:09:34.783Z"
+        },
+        {
+          "step": "END_C_1794114019205",
+          "type": "SCREENSHOT",
+          "action": "END_C_1794114019205 파일럿 응답 완료",
+          "screenshotUrl": "/reports/camp_globalri_literacy_7791/globalri_item_7_029426FNiIY_03/step_05_END_C_1794114019205.png",
+          "timestamp": "2026-11-08T05:09:34.783Z"
+        },
+        {
+          "step": "D5_4_1794114028499",
+          "type": "SCREENSHOT",
+          "action": "D5_4_1794114028499 파일럿 응답 완료",
+          "screenshotUrl": "/reports/camp_globalri_literacy_7791/globalri_item_7_029426FNiIY_03/step_06_D5_4_1794114028499.png",
+          "timestamp": "2026-11-08T05:09:34.783Z"
+        },
+        {
+          "step": "F05_2_1794114042341",
+          "type": "SCREENSHOT",
+          "action": "F05_2_1794114042341 파일럿 응답 완료",
+          "screenshotUrl": "/reports/camp_globalri_literacy_7791/globalri_item_7_029426FNiIY_03/step_07_F05_2_1794114042341.png",
+          "timestamp": "2026-11-08T05:09:34.783Z"
+        }
+      ],
+      "ageGroupKey": "age20",
+      "memberName": "김성준",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1502호 939-1번지"
     },
     {
       "index": 8,
@@ -575,7 +648,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age20",
+      "memberName": "김주아",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1502호 939-1번지"
     },
     {
       "index": 9,
@@ -611,7 +687,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age50",
+      "memberName": "박태호",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1902호 939-1번지"
     },
     {
       "index": 10,
@@ -647,7 +726,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age50",
+      "memberName": "송진희",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1902호 939-1번지"
     },
     {
       "index": 11,
@@ -683,7 +765,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age60",
+      "memberName": "이형식",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 2601호 939-1번지"
     },
     {
       "index": 12,
@@ -719,7 +804,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age60",
+      "memberName": "조순경",
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 2601호 939-1번지"
     },
     {
       "index": 13,
@@ -755,7 +843,10 @@
       "quotaStatus": "ready",
       "progress": "8% (Part A 대기)",
       "surveyorId": "01071447791",
-      "surveyorName": "노영미7791"
+      "surveyorName": "노영미7791",
+      "ageGroupKey": "age70",
+      "memberName": "윤선숙",
+      "detailAddress": "인천광역시 미추홀구 학익2동 매소홀로475번길 18 신동아아파트 15동 1305호 48-14번지"
     }
   ]
 }

@@ -1919,8 +1919,9 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
 
   const isMetrixCampaign = (campaign.surveyType === 'metrix_panel');
   const isKonaCampaign = (campaign.surveyType === 'kona_youth');
-  let targetBiz = quotaDb[Math.max(0, quotaIndex - 1)];
-  if (isKonaCampaign && targetBiz && (targetBiz.quotaStatus === 'completed' || targetBiz.status === '완료')) {
+  const isGlobalriLiteracyCampaign = (campaign.surveyType === 'globalri_literacy');
+  let targetBiz = quotaDb.find(b => Number(b.index || b.seq) === Number(quotaIndex)) || quotaDb[Math.max(0, quotaIndex - 1)];
+  if ((isKonaCampaign || isGlobalriLiteracyCampaign) && targetBiz && (targetBiz.quotaStatus === 'completed' || targetBiz.status === '완료')) {
     const firstReady = quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료');
     if (firstReady) targetBiz = firstReady;
   }
@@ -1929,7 +1930,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
   }
 
   // 1:1 슬롯 매핑 엄격 검증: slotUrl 또는 surveyUrl 없으면 차단
-  const targetUrl = targetBiz.surveyUrl || targetBiz.slotUrl || (isKonaCampaign ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '');
+  const targetUrl = targetBiz.surveyUrl || targetBiz.slotUrl || targetBiz.householdUrl || (isKonaCampaign ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : (isGlobalriLiteracyCampaign ? 'https://gift.globalri.it/login' : ''));
   if (!targetUrl) {
     return res.status(400).json({
       error: isMetrixCampaign
