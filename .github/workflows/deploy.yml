@@ -32,6 +32,6 @@ jobs:
             sudo sed -i "s/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/" /etc/ssh/sshd_config 2>/dev/null || true
             sudo systemctl restart ssh 2>/dev/null || sudo systemctl restart sshd 2>/dev/null || true
             sudo systemctl restart google-guest-agent 2>/dev/null || true
-            free -h && df -h / && cd ~/onlinepoll && git fetch origin main && git checkout origin/main -- src/ public/ data/onnuri_master_db.json data/kstat_survey_blueprint.json data/kstat_assoc_blueprint.json data/metrix_survey_blueprint.json data/hrc_energy_blueprint.json data/globalri_literacy_blueprint.json data/sample_metrix_sign.png data/ceo_persona_pool.json data/quotas/ scripts/ package.json .gitignore AGENTS.md .agents/ && npm install --production=false && node scripts/safe-pm2-restart.js
+            free -h && df -h / && cd ~/onlinepoll && git fetch origin main && git checkout origin/main -- src/ public/ data/onnuri_master_db.json data/kstat_survey_blueprint.json data/kstat_assoc_blueprint.json data/metrix_survey_blueprint.json data/hrc_energy_blueprint.json data/globalri_literacy_blueprint.json data/gallup_20263603_templates.json data/sample_metrix_sign.png data/ceo_persona_pool.json data/quotas/ scripts/ package.json .gitignore AGENTS.md .agents/ && npm install --production=false && node scripts/safe-pm2-restart.js
           '
           echo "✅ [Deploy] Deployment completed successfully!"
