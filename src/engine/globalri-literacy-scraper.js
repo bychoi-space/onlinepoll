@@ -103,7 +103,9 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
     throw new Error(`글로벌리서치 로그인 실패 (HTTP ${authRes.status})`);
   }
   const authJson = await authRes.json();
-  const token = authRes.headers.get('authorization') || authRes.headers.get('Authorization') || '';
+  const token = authJson.jwt
+    ? `Bearer ${authJson.jwt}`
+    : (authRes.headers.get('authorization') || authRes.headers.get('Authorization') || '');
   const interviewerId = authJson.name || GLOBALRI_DEFAULT_CONFIG.interviewerId;
 
   // 2. 전체 리스트 조회
@@ -114,17 +116,20 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
       ...(token ? { Authorization: token } : {})
     },
     body: JSON.stringify({
-      projectID,
-      filter: [],
-      page: 1,
-      limit: 500
+      prjCode: projectID,
+      pageSize: 500,
+      pageNumber: 1,
+      filterInfo: [
+        { field: '필드 면접원', operator: 0, valueArray: [interviewerId], andOr: 0, target: 0, groupName: '_BASE', fieldType: 0 },
+        { field: '사용 여부', operator: 0, valueArray: ['O'], andOr: 0, target: 0, groupName: '_BASE', fieldType: 0 }
+      ]
     })
   });
   if (!listRes.ok) {
     throw new Error(`글로벌리서치 리스트 조회 실패 (HTTP ${listRes.status})`);
   }
   const listJson = await listRes.json();
-  const allItems = listJson.items || [];
+  const allItems = listJson.listInfoArray || listJson.items || [];
 
   // 3. LID 필터 파싱 (사용자가 직접 입력한 경우 우선 적용, 없으면 결과값1=완료 & 결과값2=완료 자동 필터)
   const parsedLids = String(lidFilter || '')
@@ -134,41 +139,65 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
     .map(s => s.padStart(6, '0'));
 
   const targetHouseholds = allItems.filter(item => {
-    const lid = String(item.listID || '').trim().padStart(6, '0');
+    const rawLid = String(item.lid || item.listID || '').trim();
+    const lid = rawLid.padStart(6, '0');
     if (parsedLids.length > 0) {
-      return parsedLids.includes(lid) || parsedLids.includes(String(item.listID || '').trim());
+      return parsedLids.includes(lid) || parsedLids.includes(rawLid);
     }
-    return String(item.mainCode) === '1' && String(item.subCode) === '101';
+    const resBase = item.groupResult?._BASE || item;
+    return String(resBase.mainCode) === '1' && String(resBase.subCode) === '101';
   });
 
   logger.info(`[글로벌리서치 성인문해능력조사] 전체 ${allItems.length}가구 중 대상 가구 ${targetHouseholds.length}가구 선별 완료 (${parsedLids.length > 0 ? `지정 LID ${parsedLids.length}건` : '결과값1=완료 & 결과값2=완료'})`);
+
+  // 기존 쿼터 파일이 있으면 기완료/Part C 완료 대상자의 상태·답안 보존을 위해 로드
+  const jsonFileName = 'quota_globalri_adult_literacy_7791.json';
+  const excelFileName = 'quota_globalri_adult_literacy_7791.xlsx';
+  const jsonFilePath = path.join(quotasDir, jsonFileName);
+  const excelFilePath = path.join(quotasDir, excelFileName);
+  let existingMembers = [];
+  if (fs.existsSync(jsonFilePath)) {
+    try {
+      const prevJson = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
+      existingMembers = Array.isArray(prevJson.data) ? prevJson.data : [];
+    } catch (_) {}
+  }
+  const existingMap = new Map(existingMembers.map(m => [String(m.memberUid || m.uid), m]));
 
   // 4. Headless Playwright로 각 가구의 Survey.asp 가구원 조사 현황 수집
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
 
-  const quotaMembers = [];
+  // 기존 멤버 순번(1~N)을 먼저 보존하고 신규 발견된 '진행 중' 가구원을 뒤에 추가
+  const quotaMembers = existingMembers.map((m, idx) => ({
+    ...m,
+    index: idx + 1,
+    seq: idx + 1
+  }));
+  const seenMemberUids = new Set(quotaMembers.map(m => String(m.memberUid || m.uid)));
   const householdSummaries = [];
 
   try {
     for (const hh of targetHouseholds) {
-      const f = hh.fields || {};
-      const lid = String(hh.listID || '').trim();
-      const householdUid = String(f['UID'] || '').trim();
+      const f = hh.groupData?._BASE || hh.fields || {};
+      const lid = String(hh.lid || hh.listID || '').trim();
+      const householdUid = String(hh.uid || f['UID'] || '').trim();
       const chuga = String(f['추가'] || '').trim();
-      const sido = String(f['시도'] || '인천광역시').trim();
-      const sigungu = String(f['시군구'] || '').trim();
-      const dong = String(f['읍면동'] || '').trim();
+      const sido = '인천광역시';
+      const sigungu = String(f['시군구명'] || f['시군구'] || '').trim();
+      const dong = String(f['읍면동명'] || f['읍면동'] || '').trim();
       const areaNo = String(f['조사구번호'] || '').trim();
-      const gagu = String(f['가구소재'] || '25').trim();
-      const address = [sido, sigungu, dong, f['도로명'], f['건물번호'], f['상세주소']].filter(Boolean).join(' ');
+      const gagu = String(f['가구유형'] || f['가구소재'] || '25').trim();
+      const region21 = String(f['지역'] || f['지역코드'] || '22').trim();
+      const sidoCode = String(f['시도명'] || f['시도코드'] || '7').trim();
+      const address = String(f['주소 통합'] || [sido, sigungu, dong, f['도로명'], f['건물번호'], f['상세주소']].filter(Boolean).join(' ')).trim();
 
       const indexUrl =
         `https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp` +
         `?UID=${encodeURIComponent(householdUid)}` +
-        `&REGION21=${encodeURIComponent(f['지역코드'] || '22')}` +
-        `&SIDO=${encodeURIComponent(f['시도코드'] || '7')}` +
+        `&REGION21=${encodeURIComponent(region21)}` +
+        `&SIDO=${encodeURIComponent(sidoCode)}` +
         `&SIGUNGU=${encodeURIComponent(sigungu)}` +
         `&DONG=${encodeURIComponent(dong)}` +
         `&AREA_NO=${encodeURIComponent(areaNo)}` +
@@ -180,7 +209,7 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
       await page.goto(indexUrl, { waitUntil: 'domcontentloaded', timeout: 25000 }).catch(err => {
         logger.warn(`[LID ${lid}] 가구 페이지 접속 지연: ${err.message}`);
       });
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(600);
 
       const extracted = await page.evaluate(() => {
         const currentUrl = location.href;
@@ -223,11 +252,17 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
 
       for (const row of targetRows) {
         const ageMeta = getAgeGroupFromBirthYear(row.birthYear);
-        const seq = quotaMembers.length + 1;
         const memberUid = row.memberUid || `${householdUid}_${String(row.no || '1').padStart(2, '0')}`;
+        if (seenMemberUids.has(memberUid)) {
+          continue;
+        }
+        seenMemberUids.add(memberUid);
+        const seq = quotaMembers.length + 1;
         const isCompleted = row.status === '완료';
+        const prev = existingMap.get(memberUid);
 
         quotaMembers.push({
+          ...(prev || {}),
           index: seq,
           seq,
           lid,
@@ -244,8 +279,8 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
           ceoAge: ageMeta.age,
           age: ageMeta.age,
           ageGroup: ageMeta.ageGroup,
-          ageGroupLabel: ageMeta.ageGroupLabel,
-          industry: ageMeta.ageGroupLabel,
+          ageGroupLabel: `${ageMeta.ageGroupLabel.replace(/\s*그룹$/, '')}${ageMeta.ageGroup === 'age70' ? '' : ' 그룹'}`,
+          industry: `${ageMeta.ageGroupLabel.replace(/\s*그룹$/, '')}${ageMeta.ageGroup === 'age70' ? '' : ' 그룹'}`,
           handledItems: `${ageMeta.ageGroupLabel} (${ageMeta.age}세 · ${row.relation})`,
           relation: row.relation,
           sido,
@@ -257,9 +292,9 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
           slotUrl: indexUrl,
           surveyUrl: indexUrl,
           memberStatus: row.status,
-          status: isCompleted ? '완료' : '진행 중',
-          quotaStatus: isCompleted ? 'completed' : 'ready',
-          progress: isCompleted ? '100%' : '8% (Part A 대기)',
+          status: prev?.status || (isCompleted ? '완료' : '진행 중'),
+          quotaStatus: prev?.quotaStatus || (isCompleted ? 'completed' : 'ready'),
+          progress: prev?.progress || (isCompleted ? '100%' : '8% (Part A 대기)'),
           surveyorId: loginId,
           surveyorName: interviewerId
         });
@@ -273,10 +308,6 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
   if (!fs.existsSync(quotasDir)) {
     fs.mkdirSync(quotasDir, { recursive: true });
   }
-  const jsonFileName = 'quota_globalri_adult_literacy_7791.json';
-  const excelFileName = 'quota_globalri_adult_literacy_7791.xlsx';
-  const jsonFilePath = path.join(quotasDir, jsonFileName);
-  const excelFilePath = path.join(quotasDir, excelFileName);
 
   const ageGroupBreakdown = {};
   quotaMembers.forEach(m => {

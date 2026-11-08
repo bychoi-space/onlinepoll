@@ -181,7 +181,15 @@ export function seedInitialCampaigns({
             const match = existingGlobalriCamp.quotaDatabase.find(
               q => String(q.memberUid || q.uid) === String(gqItem.memberUid || gqItem.uid)
             );
-            if (match && gqItem.submittedAnswers && !match.submittedAnswers) {
+            if (!match) {
+              const nextSeq = existingGlobalriCamp.quotaDatabase.length + 1;
+              existingGlobalriCamp.quotaDatabase.push({
+                ...gqItem,
+                index: nextSeq,
+                seq: nextSeq
+              });
+              needGqUpdate = true;
+            } else if (gqItem.submittedAnswers && !match.submittedAnswers) {
               match.submittedAnswers = gqItem.submittedAnswers;
               match.gradeSummary = match.gradeSummary || gqItem.gradeSummary;
               needGqUpdate = true;
@@ -189,7 +197,9 @@ export function seedInitialCampaigns({
           }
           if (needGqUpdate) {
             CampaignStore.updateCampaign(globalriCampId, {
-              quotaDatabase: existingGlobalriCamp.quotaDatabase
+              title: `[GR20260618-1-001-02] 제5차 성인문해능력조사 - 노영미7791 (총 ${existingGlobalriCamp.quotaDatabase.length}명)`,
+              quotaDatabase: existingGlobalriCamp.quotaDatabase,
+              quotaSourceFile: existingGlobalriCamp.quotaSourceFile || gqFile
             });
           }
         }
