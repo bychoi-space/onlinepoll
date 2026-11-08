@@ -307,3 +307,4 @@ export function renderGallupReturnFarmBlueprint(data, {
     btnStep2Batch.addEventListener('click', () => triggerBatchRun());
   }
 }
+

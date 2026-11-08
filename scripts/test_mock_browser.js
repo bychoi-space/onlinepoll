@@ -74,11 +74,15 @@ globalThis.document = {
 
 globalThis.window = globalThis;
 globalThis.location = {
-  search: '?id=camp_gallup_return_farm_20263603',
-  href: 'http://localhost:3000/survey-detail.html?id=camp_gallup_return_farm_20263603',
+  search: '?id=camp_globalri_literacy_7791',
+  href: 'http://localhost:3000/survey-detail.html?id=camp_globalri_literacy_7791',
   origin: 'http://localhost:3000'
 };
-globalThis.alert = (msg) => console.log('[MOCK ALERT]', msg);
+const mockAlerts = [];
+globalThis.alert = (msg) => {
+  console.log('[MOCK ALERT]', msg);
+  mockAlerts.push(String(msg));
+};
 globalThis.confirm = () => true;
 globalThis.localStorage = {
   getItem: () => null,
@@ -101,9 +105,9 @@ globalThis.fetch = async (url) => {
     return {
       ok: true,
       json: async () => ({
-        surveyType: 'gallup_return_farm',
-        isGallupReturnFarm: true,
-        policy: { stopBeforeFinalSubmit: true, diversifySignatureStyle: true },
+        surveyType: 'globalri_literacy',
+        policy: { preserveExistingInputs: true, stopAfterPartC: true },
+        ageGroups: {},
         blueprint: { stages: [] }
       })
     };
@@ -112,32 +116,27 @@ globalThis.fetch = async (url) => {
     return {
       ok: true,
       json: async () => ({
-        id: 'camp_gallup_return_farm_20263603',
-        title: '2026년 귀농귀촌 실태조사(귀농) - 강원 홍천군/철원군 (68명)',
-        surveyType: 'gallup_return_farm',
+        id: 'camp_globalri_literacy_7791',
+        title: '[GR20260618-1-001-02] 제5차 성인문해능력조사 - 노영미7791',
+        surveyType: 'globalri_literacy',
         status: 'ready',
-        targetSampleCount: 68,
         quotaDatabase: [
           {
-            seq: 68,
-            slotNo: 68,
-            sampleId: '105036',
-            sampleType: '대체표본',
-            moveYear: '2021',
-            name: '이정우',
-            age: 43,
-            sido: '강원특별자치도',
-            sigungu: '철원군',
-            address: '강원특별자치도 철원군 근남면 하오재로 1680',
-            phone: '010-2086-7682',
-            surveyCompleted: true,
-            surveyStatusText: '진행중(제출직전 대기)',
-            giftSigned: true,
-            signatureStyleIdx: 0
+            index: 9,
+            seq: 9,
+            lid: '029433',
+            memberUid: '0294334Yhp4_01',
+            memberName: '박태호',
+            age: 54,
+            birthYear: 1972,
+            ageGroup: 'age50',
+            ageGroupLabel: '50대 그룹',
+            quotaStatus: 'pilot_done',
+            status: 'Part C 완료 (수기대기)'
           }
         ],
         guidelineConfig: {
-          surveyUrl: 'https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp',
+          surveyUrl: 'https://gift.globalri.it/login',
           headless: true
         }
       })
@@ -222,7 +221,10 @@ if (!tbody.innerHTML.includes('105036')) {
 await import('../public/survey-detail.js');
 await new Promise((r) => setTimeout(r, 80));
 
-if (!elements['detail-campaign-title']?.textContent.includes('2026년 귀농귀촌 실태조사')) {
+if (mockAlerts.some(m => m.includes('실패'))) {
+  throw new Error(`Unexpected alert during loadCampaign: ${mockAlerts.join(' | ')}`);
+}
+if (!elements['detail-campaign-title']?.textContent.includes('제5차 성인문해능력조사')) {
   throw new Error(`Expected campaign title to load, got: ${elements['detail-campaign-title']?.textContent}`);
 }
 

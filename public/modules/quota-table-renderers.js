@@ -1,8 +1,8 @@
 /**
  * 설문 유형별 STEP 1 쿼터(대상자) 테이블 헤더 및 행 렌더러 모듈
  */
-import { escapeHtml } from './blueprint-utils.js';
-import { DEFAULT_GLOBALRI_AGE_POLICIES, resolveGlobalriAgeGroupKey } from './blueprint-globalri.js';
+import { escapeHtml } from './blueprint-utils.js?v=20261108_modular_v2';
+import { DEFAULT_GLOBALRI_AGE_POLICIES, resolveGlobalriAgeGroupKey } from './blueprint-globalri.js?v=20261108_modular_v2';
 
 export const GALLUP_SIG_STYLES_LABELS = [
   '정자체 (바른획)',
@@ -825,3 +825,4 @@ export function renderAssocQuotaTable({
     });
   });
 }
+

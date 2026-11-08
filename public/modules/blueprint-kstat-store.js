@@ -178,16 +178,11 @@ export const PRESET_ROTATION = {
   plannedYears: 8
 };
 
-export function renderKstatStoreStages({
-  blueprintStageGrid,
-  getBlueprintData,
-  getCurrentBaseline,
-  getGroupBaselines,
-  getActiveGroup,
-  markUnsaved
-}) {
-  const blueprintData = getBlueprintData();
-  const currentBaseline = getCurrentBaseline();
+export function renderKstatStoreStages(opts = {}) {
+  const { blueprintStageGrid } = opts;
+  const blueprintData = typeof opts.getBlueprintData === 'function' ? opts.getBlueprintData() : opts.blueprintData;
+  const currentBaseline = typeof opts.getCurrentBaseline === 'function' ? opts.getCurrentBaseline() : (opts.currentBaseline || {});
+  const markUnsaved = opts.markUnsaved || opts.onMarkUnsaved || null;
   if (!blueprintStageGrid || !blueprintData || !Array.isArray(blueprintData.stages)) return;
 
   function renderDualRangeControl(idPrefix, minKey, maxKey, minBound, maxBound, step, defaultMin, defaultMax, unit) {
@@ -903,8 +898,8 @@ export function renderKstatStoreStages({
   }).join('');
 
   // Bind slider & select events
-  const groupBaselines = getGroupBaselines();
-  const activeGroup = getActiveGroup();
+  const groupBaselines = typeof opts.getGroupBaselines === 'function' ? opts.getGroupBaselines() : (opts.groupBaselines || {});
+  const activeGroup = typeof opts.getActiveGroup === 'function' ? opts.getActiveGroup() : (opts.activeGroup || 'group1');
 
   const bindSlider = (id, valId, key, suffix = '%', onUpdate) => {
     const slider = document.getElementById(id);
@@ -1233,3 +1228,4 @@ export function renderKstatStoreStages({
     bindSelect(`select-eval-${fid}`, `eval${fid}`);
   });
 }
+

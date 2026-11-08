@@ -26,6 +26,13 @@ export function seedInitialCampaigns({
             needSave = true;
           }
         });
+        if (camp.status === 'completed' && (camp.surveyType === 'globalri_literacy' || camp.surveyType === 'gallup_return_farm')) {
+          const hasUnrunReady = camp.quotaDatabase.some(q => !q.quotaStatus || q.quotaStatus === 'ready');
+          if (hasUnrunReady) {
+            camp.status = 'ready';
+            needSave = true;
+          }
+        }
       }
       if (needSave) {
         CampaignStore.updateCampaign(camp.id, { status: camp.status, quotaDatabase: camp.quotaDatabase });
@@ -230,3 +237,4 @@ export function seedInitialCampaigns({
     }
   } catch (_) {}
 }
+

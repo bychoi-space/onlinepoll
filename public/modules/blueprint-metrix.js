@@ -615,3 +615,4 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
   bindMetrixEvents({ metrixPolicyState, appendLog });
   return metrixPolicyState;
 }
+

@@ -2,25 +2,25 @@
  * 설문조사 상세 작업실 제어 스크립트 (survey-detail.js)
  * 2-Tier 와이드 쿼터 뷰, 쿼터 항목별 진행 트래커, 2-Phase 파일럿 & 배치 파이프라인 제어
  */
-import { escapeHtml } from './modules/blueprint-utils.js';
-import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js';
-import { renderAssocBlueprint } from './modules/blueprint-assoc.js';
+import { escapeHtml } from './modules/blueprint-utils.js?v=20261108_modular_v2';
+import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261108_modular_v2';
+import { renderAssocBlueprint } from './modules/blueprint-assoc.js?v=20261108_modular_v2';
 import {
   resolveGlobalriAgeGroupKey,
   createGlobalriBlueprintController
-} from './modules/blueprint-globalri.js';
+} from './modules/blueprint-globalri.js?v=20261108_modular_v2';
 import {
   renderKonaBlueprint,
   renderHrcEnergyBlueprint,
   renderGallupReturnFarmBlueprint
-} from './modules/blueprint-gallup-hrc-kona.js';
+} from './modules/blueprint-gallup-hrc-kona.js?v=20261108_modular_v2';
 import {
   PRESET_STANDARD,
   PRESET_GROWTH,
   PRESET_TRADITIONAL,
   PRESET_ROTATION,
   renderKstatStoreStages
-} from './modules/blueprint-kstat-store.js';
+} from './modules/blueprint-kstat-store.js?v=20261108_modular_v2';
 import {
   renderQuotaTableHead,
   renderEmptyQuotaTableRow,
@@ -30,7 +30,7 @@ import {
   renderKonaQuotaTable,
   renderMetrixQuotaTable,
   renderAssocQuotaTable
-} from './modules/quota-table-renderers.js';
+} from './modules/quota-table-renderers.js?v=20261108_modular_v2';
 
 async function initSurveyDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -674,15 +674,14 @@ async function initSurveyDetailPage() {
   const globalriCtrl = createGlobalriBlueprintController({
     campId,
     getCurrentCampaign: () => currentCampaign,
-    setCurrentCampaign: (camp) => { currentCampaign = camp; },
-    getCheckedGlobalriSeqs: () => checkedGlobalriSeqs,
-    getBlueprintStageGrid: () => blueprintStageGrid,
-    getBadgeMasterStatus: () => badgeMasterStatus,
-    getBtnSaveBaseline: () => btnSaveBaseline,
-    onRenderQuotaTable: (db) => renderQuotaTable(db),
-    onMarkUnsaved: () => markUnsaved(),
-    onAppendLog: (level, msg) => appendLog(level, msg),
-    onTriggerBatchRun: () => triggerBatchRun()
+    checkedGlobalriSeqs,
+    blueprintStageGrid,
+    badgeMasterStatus,
+    btnSaveBaseline,
+    renderQuotaTable: (db) => renderQuotaTable(db),
+    markUnsaved: () => markUnsaved(),
+    appendLog: (level, msg) => appendLog(level, msg),
+    triggerBatchRun: () => triggerBatchRun()
   });
 
   // -------------------------------------------------------------
@@ -2096,9 +2095,11 @@ async function initSurveyDetailPage() {
   function renderStages() {
     renderKstatStoreStages({
       blueprintStageGrid,
-      blueprintData,
-      currentBaseline,
-      onMarkUnsaved: () => markUnsaved()
+      getBlueprintData: () => blueprintData,
+      getCurrentBaseline: () => currentBaseline,
+      getGroupBaselines: () => groupBaselines,
+      getActiveGroup: () => activeGroup,
+      markUnsaved: () => markUnsaved()
     });
   }
 

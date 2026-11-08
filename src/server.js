@@ -762,7 +762,10 @@ app.post('/api/campaigns/:id/apply-selected-guide', (req, res) => {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
   }
 
-  const { targetIndices = [], guide = {}, guideSummary = '', presetLabel = '' } = req.body;
+  const { targetIndices = [], customGuide = null, guide = {}, guideSummary = '', presetLabel = '' } = req.body;
+  const effectiveGuide = (customGuide && typeof customGuide === 'object' && Object.keys(customGuide).length > 0)
+    ? customGuide
+    : (guide && typeof guide === 'object' ? guide : {});
   if (!Array.isArray(targetIndices) || targetIndices.length === 0) {
     return res.status(400).json({ error: '가이드를 적용할 대상자를 먼저 STEP 1 쿼터 목록에서 체크해 주세요.' });
   }
@@ -775,9 +778,9 @@ app.post('/api/campaigns/:id/apply-selected-guide', (req, res) => {
   quotaDb.forEach((item, idx) => {
     const seq = Number(item.index || item.seq || (idx + 1));
     if (indexSet.has(seq)) {
-      item.customGuide = { ...guide };
+      item.customGuide = { ...effectiveGuide };
       item.guideApplied = true;
-      item.guideSummary = guideSummary || `Part C: ${guide.partC_correctCountMin ?? 18}~${guide.partC_correctCountMax ?? 20}점 · D5(${String(guide.D5_1_healthLiteracy || '4_5').replace('_', '~')})`;
+      item.guideSummary = guideSummary || `Part C: ${effectiveGuide.partC_correctCountMin ?? 18}~${effectiveGuide.partC_correctCountMax ?? 20}점 · D5(${String(effectiveGuide.D5_1_healthLiteracy || '4_5').replace('_', '~')})`;
       item.guidePresetLabel = presetLabel || '';
       item.guideUpdatedAt = new Date().toISOString();
       appliedCount++;
@@ -3153,9 +3156,26 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         await new Promise(r => setTimeout(r, 1000));
       }
 
+      const checkPool = isHrcEnergy
+        ? quotaDb.filter(b => b.selectionType === '선정')
+        : quotaDb;
+      const allQuotasFinished = checkPool.length > 0 && checkPool.every(b =>
+        b.quotaStatus === 'completed' ||
+        b.quotaStatus === 'pilot_done' ||
+        b.status === '완료' ||
+        b.status === '조사완료' ||
+        b.substitutedByUid ||
+        String(b.quotaStatus || '').includes('98%')
+      );
+      const nextCampaignStatus = allQuotasFinished ? 'completed' : 'ready';
+
       currentTask.isRunning = false;
-      CampaignStore.updateCampaign(campaign.id, { status: 'completed' });
-      logger.success(`🎉 [배치 자동화 완료] 캠페인 "${campaign.title}"의 모든 연속 설문이 완료되었습니다!`);
+      CampaignStore.updateCampaign(campaign.id, { status: nextCampaignStatus });
+      if (allQuotasFinished) {
+        logger.success(`🎉 [배치 자동화 완료] 캠페인 "${campaign.title}"의 모든 연속 설문이 완료되었습니다!`);
+      } else {
+        logger.success(`🎉 [선택 배치 완료] 캠페인 "${campaign.title}" 선택 대상 ${targets.length}건 실행이 완료되었습니다! (잔여 쿼터 대기 중)`);
+      }
       logger.broadcast({
         type: 'BATCH_COMPLETED',
         campaignId: campaign.id

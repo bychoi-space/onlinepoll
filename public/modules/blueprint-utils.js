@@ -24,3 +24,4 @@ export function getBadgeLabel(badge) {
     default: return '가변 분산';
   }
 }
+

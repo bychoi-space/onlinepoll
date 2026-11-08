@@ -216,18 +216,20 @@ export function resolveGlobalriAgeGroupKey(item) {
   return 'age50';
 }
 
-export function createGlobalriBlueprintController({
-  campId,
-  getCurrentCampaign,
-  checkedGlobalriSeqs,
-  renderQuotaTable,
-  triggerBatchRun,
-  badgeMasterStatus,
-  btnSaveBaseline,
-  blueprintStageGrid,
-  markUnsaved,
-  appendLog
-}) {
+export function createGlobalriBlueprintController(opts = {}) {
+  const {
+    campId,
+    getCurrentCampaign = () => null
+  } = opts;
+  const checkedGlobalriSeqs = opts.checkedGlobalriSeqs || (typeof opts.getCheckedGlobalriSeqs === 'function' ? opts.getCheckedGlobalriSeqs() : new Set());
+  const renderQuotaTable = opts.renderQuotaTable || opts.onRenderQuotaTable || (() => {});
+  const triggerBatchRun = opts.triggerBatchRun || opts.onTriggerBatchRun || (() => {});
+  const badgeMasterStatus = opts.badgeMasterStatus || (typeof opts.getBadgeMasterStatus === 'function' ? opts.getBadgeMasterStatus() : null);
+  const btnSaveBaseline = opts.btnSaveBaseline || (typeof opts.getBtnSaveBaseline === 'function' ? opts.getBtnSaveBaseline() : null);
+  const blueprintStageGrid = opts.blueprintStageGrid || (typeof opts.getBlueprintStageGrid === 'function' ? opts.getBlueprintStageGrid() : null);
+  const markUnsaved = opts.markUnsaved || opts.onMarkUnsaved || null;
+  const appendLog = opts.appendLog || opts.onAppendLog || null;
+
   let globalriAgePolicies = JSON.parse(JSON.stringify(DEFAULT_GLOBALRI_AGE_POLICIES));
   let activeGlobalriAgeGroup = 'age20';
   let globalriAgeGroupStats = {};
@@ -1018,6 +1020,8 @@ export function createGlobalriBlueprintController({
     applyGuideToCheckedGlobalriQuotas,
     renderGlobalriAgeGroupCards,
     renderGlobalriLiteracyBlueprint,
+    getPolicies: () => globalriAgePolicies,
     getAgePolicies: () => globalriAgePolicies
   };
 }
+
