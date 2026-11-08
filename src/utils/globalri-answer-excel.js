@@ -382,16 +382,53 @@ function autoFitColumns(rows, minWidth = 10, maxWidth = 65) {
   });
 }
 
-/**
- * 캠페인 쿼터 DB를 기반으로 응답자별 제출 문항·답변 Excel(.xlsx) 생성 및 저장
- */
-export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null }) {
-  const wb = XLSX.utils.book_new();
+export function normalizeSubmittedAnswersList(item = {}) {
+  const raw = item.submittedAnswers || item.submittedAnswersMap;
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.map(a => {
+      const code = a.questionCode || a.qCode || '';
+      const meta = LITERACY_QUESTION_META[code] || {};
+      const isOk = a.isCorrect !== false && String(a.isCorrect) !== 'X';
+      return {
+        questionCode: code,
+        part: a.part || meta.part || '기타 파트',
+        questionType: a.questionType || meta.type || '',
+        questionSummary: a.questionSummary || meta.summary || code,
+        officialAnswer: a.officialAnswer || meta.officialAnswer || '-',
+        submittedAnswer: a.submittedAnswer ?? a.answerText ?? '-',
+        isCorrect: isOk,
+        isCorrectLabel: a.isCorrectLabel || (isOk ? 'O (정답)' : 'X (목표점수 조절용 오답)'),
+        answeredAt: a.answeredAt || a.timestamp || item.pilotCompletedAt || item.completedAt || ''
+      };
+    });
+  }
+  if (typeof raw === 'object') {
+    return Object.entries(raw).map(([k, a]) => {
+      const code = a.questionCode || a.qCode || k;
+      const meta = LITERACY_QUESTION_META[code] || {};
+      const isOk = a.isCorrect !== false && String(a.isCorrect) !== 'X';
+      return {
+        questionCode: code,
+        part: a.part || meta.part || '기타 파트',
+        questionType: a.questionType || meta.type || '',
+        questionSummary: a.questionSummary || meta.summary || code,
+        officialAnswer: a.officialAnswer || meta.officialAnswer || '-',
+        submittedAnswer: a.submittedAnswer ?? a.answerText ?? '-',
+        isCorrect: isOk,
+        isCorrectLabel: a.isCorrectLabel || (isOk ? 'O (정답)' : 'X (목표점수 조절용 오답)'),
+        answeredAt: a.answeredAt || a.timestamp || item.pilotCompletedAt || item.completedAt || ''
+      };
+    });
+  }
+  return [];
+}
 
+export function buildGlobalriSheetsData({ quotaDatabase = [] }) {
   // 1) 시트 1: 응답자별 제출답변 요약 및 문항 매트릭스 (A1 ~ C20)
   const summaryRows = quotaDatabase.map((item, idx) => {
     const seq = item.index || item.seq || (idx + 1);
-    const ansList = Array.isArray(item.submittedAnswers) ? item.submittedAnswers : [];
+    const ansList = normalizeSubmittedAnswersList(item);
     const ansMap = {};
     ansList.forEach(a => {
       ansMap[a.questionCode] = a;
@@ -418,8 +455,9 @@ export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null 
     PART_A_TO_C_QUESTION_ORDER.forEach(qCode => {
       const a = ansMap[qCode];
       if (a) {
-        const mark = a.isCorrect === false || String(a.isCorrect).includes('X') ? ' [오답조절]' : ' [정답]';
-        row[qCode] = `${a.submittedAnswer}${qCode === 'A1' ? '' : mark}`;
+        const cleanVal = String(a.submittedAnswer || '').replace(/\s*\(목표점수 조절용 오답\)\s*/g, '');
+        const mark = a.isCorrect === false ? ' [오답조절]' : ' [정답]';
+        row[qCode] = `${cleanVal}${qCode === 'A1' ? '' : mark}`;
       } else {
         row[qCode] = '-';
       }
@@ -428,15 +466,11 @@ export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null 
     return row;
   });
 
-  const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
-  wsSummary['!cols'] = autoFitColumns(summaryRows, 10, 42);
-  XLSX.utils.book_append_sheet(wb, wsSummary, '1_응답자별_문항답변_현황');
-
   // 2) 시트 2: 문항별 제출답변 상세내역 (실행 완료된 응답자의 전 문항 로그)
   const detailRows = [];
   quotaDatabase.forEach((item, idx) => {
     const seq = item.index || item.seq || (idx + 1);
-    const ansList = Array.isArray(item.submittedAnswers) ? item.submittedAnswers : [];
+    const ansList = normalizeSubmittedAnswersList(item);
     ansList.forEach((a, aIdx) => {
       const meta = LITERACY_QUESTION_META[a.questionCode] || {};
       detailRows.push({
@@ -454,8 +488,8 @@ export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null 
         '문항내용 및 지문 요약': a.questionSummary || meta.summary || a.questionCode,
         '공식 정답': a.officialAnswer || meta.officialAnswer || '-',
         '제출(입력)한 답변': a.submittedAnswer,
-        '정오답 판정': a.isCorrectLabel || (a.isCorrect === false ? 'X (목표점수 조절용 오답)' : 'O (정답)'),
-        '제출일시': a.answeredAt || item.pilotCompletedAt || ''
+        '정오답 판정': a.isCorrectLabel,
+        '제출일시': a.answeredAt || item.pilotCompletedAt || item.completedAt || ''
       });
     });
   });
@@ -481,10 +515,6 @@ export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null 
     });
   }
 
-  const wsDetail = XLSX.utils.json_to_sheet(detailRows);
-  wsDetail['!cols'] = autoFitColumns(detailRows, 10, 62);
-  XLSX.utils.book_append_sheet(wb, wsDetail, '2_문항별_제출답변_상세내역');
-
   // 3) 시트 3: Part A ~ Part C 전문항(43문항) 공식 정답 참조표
   const refRows = Object.entries(LITERACY_QUESTION_META).map(([code, meta], idx) => ({
     'No': idx + 1,
@@ -496,6 +526,24 @@ export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null 
     '점수조절용 오답 예시': meta.wrongExample,
     '채점 및 분기 비고': meta.note
   }));
+
+  return { summaryRows, detailRows, refRows };
+}
+
+/**
+ * 캠페인 쿼터 DB를 기반으로 응답자별 제출 문항·답변 Excel(.xlsx) 생성 및 저장
+ */
+export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null }) {
+  const wb = XLSX.utils.book_new();
+  const { summaryRows, detailRows, refRows } = buildGlobalriSheetsData({ quotaDatabase });
+
+  const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+  wsSummary['!cols'] = autoFitColumns(summaryRows, 10, 42);
+  XLSX.utils.book_append_sheet(wb, wsSummary, '1_응답자별_문항답변_현황');
+
+  const wsDetail = XLSX.utils.json_to_sheet(detailRows);
+  wsDetail['!cols'] = autoFitColumns(detailRows, 10, 62);
+  XLSX.utils.book_append_sheet(wb, wsDetail, '2_문항별_제출답변_상세내역');
 
   const wsRef = XLSX.utils.json_to_sheet(refRows);
   wsRef['!cols'] = autoFitColumns(refRows, 10, 65);

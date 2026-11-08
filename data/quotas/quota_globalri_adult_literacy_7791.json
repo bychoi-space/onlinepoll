@@ -953,15 +953,387 @@
       "householdUrl": "https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp?UID=0294334Yhp4&REGION21=22&SIDO=7&SIGUNGU=%EB%82%A8%EB%8F%99%EA%B5%AC&DONG=%EA%B0%84%EC%84%9D2%EB%8F%99&AREA_NO=23050561118A&HOUSEHOLD=029433&RETURN=1&GN=_BASE&ME=1&INTERVIEWER_ID=%EB%85%B8%EC%98%81%EB%AF%B87791&GAGU=25&SURVEY_TYPE=2",
       "slotUrl": "https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp?UID=0294334Yhp4&REGION21=22&SIDO=7&SIGUNGU=%EB%82%A8%EB%8F%99%EA%B5%AC&DONG=%EA%B0%84%EC%84%9D2%EB%8F%99&AREA_NO=23050561118A&HOUSEHOLD=029433&RETURN=1&GN=_BASE&ME=1&INTERVIEWER_ID=%EB%85%B8%EC%98%81%EB%AF%B87791&GAGU=25&SURVEY_TYPE=2",
       "surveyUrl": "https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp?UID=0294334Yhp4&REGION21=22&SIDO=7&SIGUNGU=%EB%82%A8%EB%8F%99%EA%B5%AC&DONG=%EA%B0%84%EC%84%9D2%EB%8F%99&AREA_NO=23050561118A&HOUSEHOLD=029433&RETURN=1&GN=_BASE&ME=1&INTERVIEWER_ID=%EB%85%B8%EC%98%81%EB%AF%B87791&GAGU=25&SURVEY_TYPE=2",
-      "memberStatus": "진행 중",
-      "status": "진행 중",
-      "quotaStatus": "ready",
-      "progress": "8% (Part A 대기)",
+      "memberStatus": "Part C 완료 (수기대기)",
+      "status": "Part C 완료 (수기대기)",
+      "quotaStatus": "pilot_done",
+      "progress": "Part C 완료 (채점 15 / 20)",
       "surveyorId": "01071447791",
       "surveyorName": "노영미7791",
       "ageGroupKey": "age50",
       "memberName": "박태호",
-      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1902호 939-1번지"
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1902호 939-1번지",
+      "gradeSummary": {
+        "partA": "3 / 3",
+        "partB1": "5 / 5 (B6~B20 스킵)",
+        "partC": "15 / 20",
+        "partCDetail": "{\"C1\":\"Y\",\"C2\":\"Y\",\"C3\":\"Y\",\"C4\":\"Y\",\"C5\":\"N\",\"C6\":\"N\",\"C7\":\"Y\",\"C8\":\"Y\",\"C9\":\"Y\",\"C10\":\"Y\",\"C11\":\"Y\",\"C12\":\"Y\",\"C13\":\"N\",\"C14\":\"Y\",\"C15\":\"Y\",\"C16\":\"N\",\"C17\":\"Y\",\"C18\":\"N\",\"C19\":\"Y\",\"C20\":\"Y\"}"
+      },
+      "submittedAnswers": [
+        {
+          "questionCode": "A1",
+          "part": "Part A (선별문항)",
+          "questionType": "VOICE (음성녹음)",
+          "questionSummary": "[A1] \"문화회관 노래교실\" 안내문 문장 소리 내어 읽기 (음성녹음 파일 업로드)",
+          "officialAnswer": "음성녹음 업로드 (STT: 문화회관 노래교실)",
+          "submittedAnswer": "음성녹음 업로드 (STT: 문화회관 노래교실)",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:16:54.798Z"
+        },
+        {
+          "questionCode": "A1_2",
+          "part": "Part A (선별문항)",
+          "questionType": "RADIO (단일선택)",
+          "questionSummary": "[A1-2] 응답자가 A1 문장을 소리 내어 읽었는지 면접원 체크 (1:O, 2:X)",
+          "officialAnswer": "1 (O: 제대로 읽음)",
+          "submittedAnswer": "1 (O: 제대로 읽음)",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:16:54.798Z"
+        },
+        {
+          "questionCode": "A2",
+          "part": "Part A (선별문항)",
+          "questionType": "TEXT (단답입력)",
+          "questionSummary": "[A2] 노래교실 안내문에서 강사(박지영)의 고향(출신 지역) 찾기",
+          "officialAnswer": "대전",
+          "submittedAnswer": "대전",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:16:55.962Z"
+        },
+        {
+          "questionCode": "A3",
+          "part": "Part A (선별문항)",
+          "questionType": "TEXT (3칸 숫자)",
+          "questionSummary": "[A3] 오늘 날짜(연도 / 월 / 일) 빈칸에 숫자 쓰기",
+          "officialAnswer": "2026 / 7 / 13",
+          "submittedAnswer": "2026 / 7 / 13",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:16:57.111Z"
+        },
+        {
+          "questionCode": "B1",
+          "part": "Part B-1 (기초문해 1단계)",
+          "questionType": "TEXT (2칸 단답)",
+          "questionSummary": "[B1] 어법에 맞는 낱말 고르기 (길을 [물었다/무렀다], 병이 [나은/낳은] 뒤)",
+          "officialAnswer": "물었다 / 나은",
+          "submittedAnswer": "물었다 / 나은",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:16:59.787Z"
+        },
+        {
+          "questionCode": "B2",
+          "part": "Part B-1 (기초문해 1단계)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[B2] 간이영수증에서 발행 연도(작성 연도) 찾기",
+          "officialAnswer": "2023",
+          "submittedAnswer": "2023",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:00.921Z"
+        },
+        {
+          "questionCode": "B3",
+          "part": "Part B-1 (기초문해 1단계)",
+          "questionType": "TEXT (3칸 입력)",
+          "questionSummary": "[B3] 메모를 보고 무통장 입금의뢰서 작성 (받는 사람 / 계좌번호 / 은행명)",
+          "officialAnswer": "김명호 / 123-4567-890 / 대한은행",
+          "submittedAnswer": "김명호 / 123-4567-890 / 대한은행",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:02.071Z"
+        },
+        {
+          "questionCode": "B4",
+          "part": "Part B-1 (기초문해 1단계)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[B4] 5,000원짜리 물건 3개를 사고 지불해야 할 총 금액 계산",
+          "officialAnswer": "15000",
+          "submittedAnswer": "15000",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:03.204Z"
+        },
+        {
+          "questionCode": "B5",
+          "part": "Part B-1 (기초문해 1단계)",
+          "questionType": "TEXT (2칸 숫자)",
+          "questionSummary": "[B5] 달력을 보고 둘째 주 수요일 날짜(월 / 일) 찾기",
+          "officialAnswer": "11 / 12",
+          "submittedAnswer": "11 / 12",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:04.352Z"
+        },
+        {
+          "questionCode": "C1",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C1] 체육시설 일일 자유수영 이용요금표에서 성인 1회 이용료 고르기 (1번: 3,000원)",
+          "officialAnswer": "1",
+          "submittedAnswer": "1",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:07.058Z"
+        },
+        {
+          "questionCode": "C2",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (단답입력)",
+          "questionSummary": "[C2] 국가암검진 안내문에서 만 40세 이상 2년마다 받는 검진 부위 쓰기",
+          "officialAnswer": "위",
+          "submittedAnswer": "위",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:08.204Z"
+        },
+        {
+          "questionCode": "C3",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C3] 국가암검진 안내문을 보고 조건에 맞는 검진 대상자 고르기",
+          "officialAnswer": "4",
+          "submittedAnswer": "4",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:09.337Z"
+        },
+        {
+          "questionCode": "C4",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C4] 세탁기 취급주의 표시 기호의 의미 고르기",
+          "officialAnswer": "2",
+          "submittedAnswer": "2",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:10.479Z"
+        },
+        {
+          "questionCode": "C5",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[C5] 주차장 요금표를 보고 2시간 30분 주차 시 요금 계산 (원)",
+          "officialAnswer": "4000",
+          "submittedAnswer": "3600",
+          "isCorrect": false,
+          "isCorrectLabel": "X (목표점수 조절용 오답)",
+          "answeredAt": "2026-11-08T11:17:11.619Z"
+        },
+        {
+          "questionCode": "C6",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (2칸 숫자)",
+          "questionSummary": "[C6] 도서관 대출 규정 안내문을 보고 반납 예정 날짜(월 / 일) 계산",
+          "officialAnswer": "12 / 17",
+          "submittedAnswer": "12 / 16",
+          "isCorrect": false,
+          "isCorrectLabel": "X (목표점수 조절용 오답)",
+          "answeredAt": "2026-11-08T11:17:12.771Z"
+        },
+        {
+          "questionCode": "C7",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C7] 근로계약서 조항을 읽고 일치하는 내용 고르기",
+          "officialAnswer": "1",
+          "submittedAnswer": "1",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:13.912Z"
+        },
+        {
+          "questionCode": "C8",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C8] 보이스피싱 예방 안내문 핵심 취지 고르기",
+          "officialAnswer": "3",
+          "submittedAnswer": "3",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:15.044Z"
+        },
+        {
+          "questionCode": "C9",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[C9] 할인 쿠폰 적용 후 최종 결제 금액 계산 (원)",
+          "officialAnswer": "3300",
+          "submittedAnswer": "3300",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:16.183Z"
+        },
+        {
+          "questionCode": "C10",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C10] 전기요금 청구서 그래프 분석 문항",
+          "officialAnswer": "1",
+          "submittedAnswer": "1",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:17.318Z"
+        },
+        {
+          "questionCode": "C11",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C11] 주민참여예산 공고문 신청 자격 및 방법 이해",
+          "officialAnswer": "3",
+          "submittedAnswer": "3",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:18.448Z"
+        },
+        {
+          "questionCode": "C12",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C12] 소비자 환불 규정 표 해석 문항",
+          "officialAnswer": "3",
+          "submittedAnswer": "3",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:19.587Z"
+        },
+        {
+          "questionCode": "C13",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[C13] 열차/버스 노선별 거리 및 소요시간 합산 계산",
+          "officialAnswer": "177",
+          "submittedAnswer": "18",
+          "isCorrect": false,
+          "isCorrectLabel": "X (목표점수 조절용 오답)",
+          "answeredAt": "2026-11-08T11:17:20.724Z"
+        },
+        {
+          "questionCode": "C14",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C14] 건강검진 결과표 수치 판독 및 관리 방법 고르기",
+          "officialAnswer": "2",
+          "submittedAnswer": "2",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:21.863Z"
+        },
+        {
+          "questionCode": "C15",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C15] 신문 기사 칼럼의 중심 주장 파악하기",
+          "officialAnswer": "2",
+          "submittedAnswer": "2",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:22.996Z"
+        },
+        {
+          "questionCode": "C16",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[C16] 약품 복용량 계산 (체중 비례 1일 복용 ml 수)",
+          "officialAnswer": "5",
+          "submittedAnswer": "4.5",
+          "isCorrect": false,
+          "isCorrectLabel": "X (목표점수 조절용 오답)",
+          "answeredAt": "2026-11-08T11:17:24.131Z"
+        },
+        {
+          "questionCode": "C17",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C17] 연령별 독서율 통계 도표 해석 문항",
+          "officialAnswer": "4",
+          "submittedAnswer": "4",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:25.267Z"
+        },
+        {
+          "questionCode": "C18",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[C18] 1년 정기예금 만기 시 세전 이자 포함 수령액(또는 총이자) 계산",
+          "officialAnswer": "276000",
+          "submittedAnswer": "270000",
+          "isCorrect": false,
+          "isCorrectLabel": "X (목표점수 조절용 오답)",
+          "answeredAt": "2026-11-08T11:17:26.403Z"
+        },
+        {
+          "questionCode": "C19",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C19] 임대차 계약 안내문에서 임차인의 권리 설명 고르기",
+          "officialAnswer": "4",
+          "submittedAnswer": "4",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:27.540Z"
+        },
+        {
+          "questionCode": "C20",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C20] 국제 환경 협약 관련 시사 지문 독해 문항",
+          "officialAnswer": "3",
+          "submittedAnswer": "3",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:28.676Z"
+        }
+      ],
+      "pilotCompletedAt": "2026-11-08T11:17:31.420Z",
+      "capturedSteps": [
+        {
+          "step": "HOUSEHOLD_LIST",
+          "stepIndex": 1,
+          "title": "가구원 조사 현황 (029433 - 박태호)",
+          "file": "step_01_HOUSEHOLD_LIST_1794136611603.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_9_0294334Yhp4_01/step_01_HOUSEHOLD_LIST_1794136611603.png"
+        },
+        {
+          "step": "SURVEY_ENTRY",
+          "stepIndex": 2,
+          "title": "설문 진입 (박태호 · 50대)",
+          "file": "step_02_SURVEY_ENTRY_1794136614057.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_9_0294334Yhp4_01/step_02_SURVEY_ENTRY_1794136614057.png"
+        },
+        {
+          "step": "END_A",
+          "stepIndex": 3,
+          "title": "END_A 채점 확인 (3/3)",
+          "file": "step_03_END_A_1794136618564.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_9_0294334Yhp4_01/step_03_END_A_1794136618564.png"
+        },
+        {
+          "step": "END_B1",
+          "stepIndex": 4,
+          "title": "END_B1 채점 확인 (5/5)",
+          "file": "step_04_END_B1_1794136625795.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_9_0294334Yhp4_01/step_04_END_B1_1794136625795.png"
+        },
+        {
+          "step": "END_C",
+          "stepIndex": 5,
+          "title": "END_C 채점 확인 (15/20)",
+          "file": "step_05_END_C_1794136650128.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_9_0294334Yhp4_01/step_05_END_C_1794136650128.png"
+        },
+        {
+          "step": "D1",
+          "stepIndex": 6,
+          "title": "Part C 완료 · 수기전환 대기 (D1 진입 · 박태호)",
+          "file": "step_06_D1_1794136651273.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_9_0294334Yhp4_01/step_06_D1_1794136651273.png"
+        }
+      ]
     },
     {
       "index": 10,
@@ -992,15 +1364,387 @@
       "householdUrl": "https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp?UID=0294334Yhp4&REGION21=22&SIDO=7&SIGUNGU=%EB%82%A8%EB%8F%99%EA%B5%AC&DONG=%EA%B0%84%EC%84%9D2%EB%8F%99&AREA_NO=23050561118A&HOUSEHOLD=029433&RETURN=1&GN=_BASE&ME=1&INTERVIEWER_ID=%EB%85%B8%EC%98%81%EB%AF%B87791&GAGU=25&SURVEY_TYPE=2",
       "slotUrl": "https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp?UID=0294334Yhp4&REGION21=22&SIDO=7&SIGUNGU=%EB%82%A8%EB%8F%99%EA%B5%AC&DONG=%EA%B0%84%EC%84%9D2%EB%8F%99&AREA_NO=23050561118A&HOUSEHOLD=029433&RETURN=1&GN=_BASE&ME=1&INTERVIEWER_ID=%EB%85%B8%EC%98%81%EB%AF%B87791&GAGU=25&SURVEY_TYPE=2",
       "surveyUrl": "https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp?UID=0294334Yhp4&REGION21=22&SIDO=7&SIGUNGU=%EB%82%A8%EB%8F%99%EA%B5%AC&DONG=%EA%B0%84%EC%84%9D2%EB%8F%99&AREA_NO=23050561118A&HOUSEHOLD=029433&RETURN=1&GN=_BASE&ME=1&INTERVIEWER_ID=%EB%85%B8%EC%98%81%EB%AF%B87791&GAGU=25&SURVEY_TYPE=2",
-      "memberStatus": "진행 중",
-      "status": "진행 중",
-      "quotaStatus": "ready",
-      "progress": "8% (Part A 대기)",
+      "memberStatus": "Part C 완료 (수기대기)",
+      "status": "Part C 완료 (수기대기)",
+      "quotaStatus": "pilot_done",
+      "progress": "Part C 완료 (채점 16 / 20)",
       "surveyorId": "01071447791",
       "surveyorName": "노영미7791",
       "ageGroupKey": "age50",
       "memberName": "송진희",
-      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1902호 939-1번지"
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1902호 939-1번지",
+      "gradeSummary": {
+        "partA": "3 / 3",
+        "partB1": "5 / 5 (B6~B20 스킵)",
+        "partC": "16 / 20",
+        "partCDetail": "{\"C1\":\"Y\",\"C2\":\"Y\",\"C3\":\"Y\",\"C4\":\"Y\",\"C5\":\"Y\",\"C6\":\"N\",\"C7\":\"Y\",\"C8\":\"Y\",\"C9\":\"Y\",\"C10\":\"Y\",\"C11\":\"Y\",\"C12\":\"Y\",\"C13\":\"N\",\"C14\":\"Y\",\"C15\":\"Y\",\"C16\":\"N\",\"C17\":\"Y\",\"C18\":\"N\",\"C19\":\"Y\",\"C20\":\"Y\"}"
+      },
+      "submittedAnswers": [
+        {
+          "questionCode": "A1",
+          "part": "Part A (선별문항)",
+          "questionType": "VOICE (음성녹음)",
+          "questionSummary": "[A1] \"문화회관 노래교실\" 안내문 문장 소리 내어 읽기 (음성녹음 파일 업로드)",
+          "officialAnswer": "음성녹음 업로드 (STT: 문화회관 노래교실)",
+          "submittedAnswer": "음성녹음 업로드 (STT: 문화회관 노래교실)",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:37.961Z"
+        },
+        {
+          "questionCode": "A1_2",
+          "part": "Part A (선별문항)",
+          "questionType": "RADIO (단일선택)",
+          "questionSummary": "[A1-2] 응답자가 A1 문장을 소리 내어 읽었는지 면접원 체크 (1:O, 2:X)",
+          "officialAnswer": "1 (O: 제대로 읽음)",
+          "submittedAnswer": "1 (O: 제대로 읽음)",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:37.961Z"
+        },
+        {
+          "questionCode": "A2",
+          "part": "Part A (선별문항)",
+          "questionType": "TEXT (단답입력)",
+          "questionSummary": "[A2] 노래교실 안내문에서 강사(박지영)의 고향(출신 지역) 찾기",
+          "officialAnswer": "대전",
+          "submittedAnswer": "대전",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:39.111Z"
+        },
+        {
+          "questionCode": "A3",
+          "part": "Part A (선별문항)",
+          "questionType": "TEXT (3칸 숫자)",
+          "questionSummary": "[A3] 오늘 날짜(연도 / 월 / 일) 빈칸에 숫자 쓰기",
+          "officialAnswer": "2026 / 7 / 13",
+          "submittedAnswer": "2026 / 7 / 13",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:40.261Z"
+        },
+        {
+          "questionCode": "B1",
+          "part": "Part B-1 (기초문해 1단계)",
+          "questionType": "TEXT (2칸 단답)",
+          "questionSummary": "[B1] 어법에 맞는 낱말 고르기 (길을 [물었다/무렀다], 병이 [나은/낳은] 뒤)",
+          "officialAnswer": "물었다 / 나은",
+          "submittedAnswer": "물었다 / 나은",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:42.938Z"
+        },
+        {
+          "questionCode": "B2",
+          "part": "Part B-1 (기초문해 1단계)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[B2] 간이영수증에서 발행 연도(작성 연도) 찾기",
+          "officialAnswer": "2023",
+          "submittedAnswer": "2023",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:44.076Z"
+        },
+        {
+          "questionCode": "B3",
+          "part": "Part B-1 (기초문해 1단계)",
+          "questionType": "TEXT (3칸 입력)",
+          "questionSummary": "[B3] 메모를 보고 무통장 입금의뢰서 작성 (받는 사람 / 계좌번호 / 은행명)",
+          "officialAnswer": "김명호 / 123-4567-890 / 대한은행",
+          "submittedAnswer": "김명호 / 123-4567-890 / 대한은행",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:45.231Z"
+        },
+        {
+          "questionCode": "B4",
+          "part": "Part B-1 (기초문해 1단계)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[B4] 5,000원짜리 물건 3개를 사고 지불해야 할 총 금액 계산",
+          "officialAnswer": "15000",
+          "submittedAnswer": "15000",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:46.379Z"
+        },
+        {
+          "questionCode": "B5",
+          "part": "Part B-1 (기초문해 1단계)",
+          "questionType": "TEXT (2칸 숫자)",
+          "questionSummary": "[B5] 달력을 보고 둘째 주 수요일 날짜(월 / 일) 찾기",
+          "officialAnswer": "11 / 12",
+          "submittedAnswer": "11 / 12",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:47.522Z"
+        },
+        {
+          "questionCode": "C1",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C1] 체육시설 일일 자유수영 이용요금표에서 성인 1회 이용료 고르기 (1번: 3,000원)",
+          "officialAnswer": "1",
+          "submittedAnswer": "1",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:50.276Z"
+        },
+        {
+          "questionCode": "C2",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (단답입력)",
+          "questionSummary": "[C2] 국가암검진 안내문에서 만 40세 이상 2년마다 받는 검진 부위 쓰기",
+          "officialAnswer": "위",
+          "submittedAnswer": "위",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:51.424Z"
+        },
+        {
+          "questionCode": "C3",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C3] 국가암검진 안내문을 보고 조건에 맞는 검진 대상자 고르기",
+          "officialAnswer": "4",
+          "submittedAnswer": "4",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:52.561Z"
+        },
+        {
+          "questionCode": "C4",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C4] 세탁기 취급주의 표시 기호의 의미 고르기",
+          "officialAnswer": "2",
+          "submittedAnswer": "2",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:53.697Z"
+        },
+        {
+          "questionCode": "C5",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[C5] 주차장 요금표를 보고 2시간 30분 주차 시 요금 계산 (원)",
+          "officialAnswer": "4000",
+          "submittedAnswer": "4000",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:54.831Z"
+        },
+        {
+          "questionCode": "C6",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (2칸 숫자)",
+          "questionSummary": "[C6] 도서관 대출 규정 안내문을 보고 반납 예정 날짜(월 / 일) 계산",
+          "officialAnswer": "12 / 17",
+          "submittedAnswer": "12 / 16",
+          "isCorrect": false,
+          "isCorrectLabel": "X (목표점수 조절용 오답)",
+          "answeredAt": "2026-11-08T11:17:55.976Z"
+        },
+        {
+          "questionCode": "C7",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C7] 근로계약서 조항을 읽고 일치하는 내용 고르기",
+          "officialAnswer": "1",
+          "submittedAnswer": "1",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:57.181Z"
+        },
+        {
+          "questionCode": "C8",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C8] 보이스피싱 예방 안내문 핵심 취지 고르기",
+          "officialAnswer": "3",
+          "submittedAnswer": "3",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:58.326Z"
+        },
+        {
+          "questionCode": "C9",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[C9] 할인 쿠폰 적용 후 최종 결제 금액 계산 (원)",
+          "officialAnswer": "3300",
+          "submittedAnswer": "3300",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:17:59.464Z"
+        },
+        {
+          "questionCode": "C10",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C10] 전기요금 청구서 그래프 분석 문항",
+          "officialAnswer": "1",
+          "submittedAnswer": "1",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:18:00.606Z"
+        },
+        {
+          "questionCode": "C11",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C11] 주민참여예산 공고문 신청 자격 및 방법 이해",
+          "officialAnswer": "3",
+          "submittedAnswer": "3",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:18:01.740Z"
+        },
+        {
+          "questionCode": "C12",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C12] 소비자 환불 규정 표 해석 문항",
+          "officialAnswer": "3",
+          "submittedAnswer": "3",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:18:02.871Z"
+        },
+        {
+          "questionCode": "C13",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[C13] 열차/버스 노선별 거리 및 소요시간 합산 계산",
+          "officialAnswer": "177",
+          "submittedAnswer": "18",
+          "isCorrect": false,
+          "isCorrectLabel": "X (목표점수 조절용 오답)",
+          "answeredAt": "2026-11-08T11:18:04.001Z"
+        },
+        {
+          "questionCode": "C14",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C14] 건강검진 결과표 수치 판독 및 관리 방법 고르기",
+          "officialAnswer": "2",
+          "submittedAnswer": "2",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:18:05.136Z"
+        },
+        {
+          "questionCode": "C15",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C15] 신문 기사 칼럼의 중심 주장 파악하기",
+          "officialAnswer": "2",
+          "submittedAnswer": "2",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:18:06.268Z"
+        },
+        {
+          "questionCode": "C16",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[C16] 약품 복용량 계산 (체중 비례 1일 복용 ml 수)",
+          "officialAnswer": "5",
+          "submittedAnswer": "4.5",
+          "isCorrect": false,
+          "isCorrectLabel": "X (목표점수 조절용 오답)",
+          "answeredAt": "2026-11-08T11:18:07.408Z"
+        },
+        {
+          "questionCode": "C17",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C17] 연령별 독서율 통계 도표 해석 문항",
+          "officialAnswer": "4",
+          "submittedAnswer": "4",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:18:08.542Z"
+        },
+        {
+          "questionCode": "C18",
+          "part": "Part C (심화문해)",
+          "questionType": "TEXT (숫자입력)",
+          "questionSummary": "[C18] 1년 정기예금 만기 시 세전 이자 포함 수령액(또는 총이자) 계산",
+          "officialAnswer": "276000",
+          "submittedAnswer": "270000",
+          "isCorrect": false,
+          "isCorrectLabel": "X (목표점수 조절용 오답)",
+          "answeredAt": "2026-11-08T11:18:09.674Z"
+        },
+        {
+          "questionCode": "C19",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C19] 임대차 계약 안내문에서 임차인의 권리 설명 고르기",
+          "officialAnswer": "4",
+          "submittedAnswer": "4",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:18:10.814Z"
+        },
+        {
+          "questionCode": "C20",
+          "part": "Part C (심화문해)",
+          "questionType": "RADIO (4지선다)",
+          "questionSummary": "[C20] 국제 환경 협약 관련 시사 지문 독해 문항",
+          "officialAnswer": "3",
+          "submittedAnswer": "3",
+          "isCorrect": true,
+          "isCorrectLabel": "O (정답)",
+          "answeredAt": "2026-11-08T11:18:11.954Z"
+        }
+      ],
+      "pilotCompletedAt": "2026-11-08T11:18:14.739Z",
+      "capturedSteps": [
+        {
+          "step": "HOUSEHOLD_LIST",
+          "stepIndex": 1,
+          "title": "가구원 조사 현황 (029433 - 송진희)",
+          "file": "step_01_HOUSEHOLD_LIST_1794136654829.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_10_0294334Yhp4_02/step_01_HOUSEHOLD_LIST_1794136654829.png"
+        },
+        {
+          "step": "SURVEY_ENTRY",
+          "stepIndex": 2,
+          "title": "설문 진입 (송진희 · 50대)",
+          "file": "step_02_SURVEY_ENTRY_1794136657264.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_10_0294334Yhp4_02/step_02_SURVEY_ENTRY_1794136657264.png"
+        },
+        {
+          "step": "END_A",
+          "stepIndex": 3,
+          "title": "END_A 채점 확인 (3/3)",
+          "file": "step_03_END_A_1794136661713.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_10_0294334Yhp4_02/step_03_END_A_1794136661713.png"
+        },
+        {
+          "step": "END_B1",
+          "stepIndex": 4,
+          "title": "END_B1 채점 확인 (5/5)",
+          "file": "step_04_END_B1_1794136668968.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_10_0294334Yhp4_02/step_04_END_B1_1794136668968.png"
+        },
+        {
+          "step": "END_C",
+          "stepIndex": 5,
+          "title": "END_C 채점 확인 (16/20)",
+          "file": "step_05_END_C_1794136693404.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_10_0294334Yhp4_02/step_05_END_C_1794136693404.png"
+        },
+        {
+          "step": "D1",
+          "stepIndex": 6,
+          "title": "Part C 완료 · 수기전환 대기 (D1 진입 · 송진희)",
+          "file": "step_06_D1_1794136694576.png",
+          "url": "/reports/camp_globalri_literacy_7791/globalri_item_10_0294334Yhp4_02/step_06_D1_1794136694576.png"
+        }
+      ]
     },
     {
       "index": 11,

@@ -175,6 +175,23 @@ export function seedInitialCampaigns({
             quotaDatabase: gqList,
             quotaSourceFile: gqFile
           });
+        } else {
+          let needGqUpdate = false;
+          for (const gqItem of gqList) {
+            const match = existingGlobalriCamp.quotaDatabase.find(
+              q => String(q.memberUid || q.uid) === String(gqItem.memberUid || gqItem.uid)
+            );
+            if (match && gqItem.submittedAnswers && !match.submittedAnswers) {
+              match.submittedAnswers = gqItem.submittedAnswers;
+              match.gradeSummary = match.gradeSummary || gqItem.gradeSummary;
+              needGqUpdate = true;
+            }
+          }
+          if (needGqUpdate) {
+            CampaignStore.updateCampaign(globalriCampId, {
+              quotaDatabase: existingGlobalriCamp.quotaDatabase
+            });
+          }
         }
       } catch (_) {}
     }

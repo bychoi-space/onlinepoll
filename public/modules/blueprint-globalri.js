@@ -884,8 +884,14 @@ export function createGlobalriBlueprintController(opts = {}) {
             <button type="button" id="btn-globalri-run-selected-batch" class="btn-pill btn-pill-success font-bold" style="padding: 10px 20px; font-size: 13.5px;">
               <i class="fa-solid fa-rocket"></i> 🚀 2단계: ${escapeHtml(batchTargetDesc)} 일괄 자동 배치 시작
             </button>
+            <button type="button" id="btn-globalri-open-answers-viewer" class="btn-pill btn-pill-primary font-bold" style="padding: 10px 16px; font-size: 13px;">
+              <i class="fa-solid fa-table-list"></i> 📊 제출 문항·답변 시트 바로보기 &amp; 복사/엑셀
+            </button>
+            <a href="/api/campaigns/${escapeHtml(currentCampaign?.id || 'camp_globalri_literacy_7791')}/export-answers-xlsx" class="btn-pill btn-pill-secondary font-bold" style="padding: 10px 16px; font-size: 13px; text-decoration: none;">
+              <i class="fa-solid fa-file-excel text-success"></i> 엑셀(.xlsx) 다운로드
+            </a>
             <a href="https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary font-bold" style="padding: 10px 16px; font-size: 13px; text-decoration: none;">
-              <i class="fa-solid fa-table text-success"></i> 제출 문항·답변 구글 스프레드시트 열기
+              <i class="fa-solid fa-up-right-from-square text-success"></i> 구글 스프레드시트 열기
             </a>
           </div>
         </div>
@@ -961,6 +967,141 @@ export function createGlobalriBlueprintController(opts = {}) {
     if (btnBatchBottom) {
       btnBatchBottom.addEventListener('click', () => triggerBatchRun());
     }
+    const btnOpenViewer = document.getElementById('btn-globalri-open-answers-viewer');
+    if (btnOpenViewer) {
+      btnOpenViewer.addEventListener('click', () => openGlobalriAnswersSheetModal());
+    }
+  }
+
+  async function openGlobalriAnswersSheetModal() {
+    const currentCampaign = getCurrentCampaign();
+    const campId = currentCampaign?.id || 'camp_globalri_literacy_7791';
+    try {
+      const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/answers-sheet-data`);
+      const data = await res.json();
+      if (!data.success || !data.sheets) {
+        throw new Error(data.error || '시트 데이터를 불러올 수 없습니다.');
+      }
+
+      let modal = document.getElementById('modal-globalri-answers-sheet');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-globalri-answers-sheet';
+        modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,0.72);display:flex;align-items:center;justify-content:center;padding:24px;';
+        document.body.appendChild(modal);
+      }
+
+      const sheetTabs = [
+        { key: 'detailRows', label: '1. 문항별 제출답변 상세내역 (A1~C20 전수)' },
+        { key: 'summaryRows', label: '2. 응답자별 문항·채점 매트릭스 (13명 전체)' },
+        { key: 'refRows', label: '3. 전문항 공식 정답 참조표 (Part A~C)' }
+      ];
+      let activeTabKey = 'detailRows';
+
+      function toTsv(rows) {
+        if (!rows || rows.length === 0) return '';
+        const headers = Object.keys(rows[0]);
+        const lines = [headers.join('\t')];
+        for (const r of rows) {
+          lines.push(headers.map(h => String(r[h] ?? '').replace(/[\t\r\n]+/g, ' ')).join('\t'));
+        }
+        return lines.join('\n');
+      }
+
+      function renderModalBody() {
+        const rows = data.sheets[activeTabKey] || [];
+        const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+        modal.innerHTML = `
+          <div style="background:#ffffff;border-radius:16px;width:96vw;max-width:1520px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 25px 50px -12px rgba(0,0,0,0.35);overflow:hidden;">
+            <div style="padding:18px 24px;background:#0f172a;color:#ffffff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+              <div>
+                <h3 style="margin:0;font-size:17px;font-weight:800;">📊 제5차 성인문해능력조사 · 제출 문항·답변 통합 스프레드시트 뷰어</h3>
+                <div style="font-size:12.5px;color:#cbd5e1;margin-top:4px;">
+                  실행 완료된 대상자(#7 김성준, #9 박태호, #10 송진희 등)의 Part A ~ Part C 전 문항 제출 답변과 채점 결과입니다. <strong>[현재 시트 전체 복사]</strong> 클릭 후 구글 스프레드시트 A1 셀에 <strong>Ctrl+V</strong>를 누르면 그대로 붙여넣어집니다.
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <button type="button" id="btn-copy-globalri-tsv" class="btn-pill btn-pill-success font-bold" style="padding:9px 16px;font-size:13px;">
+                  <i class="fa-solid fa-copy"></i> 📋 현재 시트 전체 복사 (구글 시트 A1에서 Ctrl+V)
+                </button>
+                <a href="/api/campaigns/${escapeHtml(campId)}/export-answers-xlsx" class="btn-pill btn-pill-primary font-bold" style="padding:9px 15px;font-size:13px;text-decoration:none;">
+                  <i class="fa-solid fa-file-excel"></i> 📥 엑셀(.xlsx) 다운로드
+                </a>
+                <a href="https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary font-bold" style="padding:9px 15px;font-size:13px;text-decoration:none;background:#334155;color:#fff;border:none;">
+                  <i class="fa-solid fa-up-right-from-square"></i> 구글 시트 열기
+                </a>
+                <button type="button" id="btn-close-globalri-sheet-modal" style="background:transparent;border:1px solid #475569;color:#fff;border-radius:8px;padding:7px 13px;cursor:pointer;font-weight:700;">✕ 닫기</button>
+              </div>
+            </div>
+            <div style="padding:10px 24px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;flex-wrap:wrap;">
+              ${sheetTabs.map(t => `
+                <button type="button" class="globalri-sheet-tab-btn" data-tab="${t.key}" style="padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid ${activeTabKey === t.key ? '#2563eb' : '#cbd5e1'};background:${activeTabKey === t.key ? '#2563eb' : '#ffffff'};color:${activeTabKey === t.key ? '#ffffff' : '#334155'};">
+                  ${escapeHtml(t.label)} (${(data.sheets[t.key] || []).length}행)
+                </button>
+              `).join('')}
+            </div>
+            <div style="flex:1;overflow:auto;padding:16px 24px;">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap;">
+                <thead>
+                  <tr style="background:#f8fafc;position:sticky;top:0;z-index:2;">
+                    ${headers.map(h => `<th style="border:1px solid #cbd5e1;padding:8px 10px;text-align:left;font-weight:800;color:#0f172a;background:#e2e8f0;">${escapeHtml(h)}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows.map((r, rIdx) => `
+                    <tr style="background:${rIdx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                      ${headers.map(h => {
+                        const val = String(r[h] ?? '');
+                        const isWrong = val.includes('오답') || val.startsWith('X ');
+                        const isRight = val.includes('[정답]') || val.startsWith('O ');
+                        const color = isWrong ? '#dc2626' : (isRight ? '#15803d' : '#1e293b');
+                        const weight = (isWrong || isRight || h === '성명' || h === '문항코드') ? '700' : '400';
+                        return `<td style="border:1px solid #e2e8f0;padding:7px 10px;color:${color};font-weight:${weight};">${escapeHtml(val)}</td>`;
+                      }).join('')}
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+
+        modal.querySelectorAll('.globalri-sheet-tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            activeTabKey = btn.getAttribute('data-tab');
+            renderModalBody();
+          });
+        });
+
+        const btnCopy = modal.querySelector('#btn-copy-globalri-tsv');
+        if (btnCopy) {
+          btnCopy.addEventListener('click', async () => {
+            const tsv = toTsv(rows);
+            try {
+              await navigator.clipboard.writeText(tsv);
+              btnCopy.innerHTML = '<i class="fa-solid fa-check"></i> ✅ 클립보드 복사 완료! (구글 시트 A1 셀에 Ctrl+V 하세요)';
+              setTimeout(() => {
+                if (btnCopy) btnCopy.innerHTML = '<i class="fa-solid fa-copy"></i> 📋 현재 시트 전체 복사 (구글 시트 A1에서 Ctrl+V)';
+              }, 3500);
+            } catch (e) {
+              alert('클립보드 복사 실패: ' + e.message);
+            }
+          });
+        }
+
+        const btnClose = modal.querySelector('#btn-close-globalri-sheet-modal');
+        if (btnClose) {
+          btnClose.addEventListener('click', () => {
+            modal.style.display = 'none';
+          });
+        }
+      }
+
+      modal.style.display = 'flex';
+      renderModalBody();
+    } catch (err) {
+      alert('문항·답변 시트 로드 실패: ' + err.message);
+    }
   }
 
   function renderGlobalriLiteracyBlueprint(data) {
@@ -1020,6 +1161,7 @@ export function createGlobalriBlueprintController(opts = {}) {
     applyGuideToCheckedGlobalriQuotas,
     renderGlobalriAgeGroupCards,
     renderGlobalriLiteracyBlueprint,
+    openAnswersSheetModal: openGlobalriAnswersSheetModal,
     getPolicies: () => globalriAgePolicies,
     getAgePolicies: () => globalriAgePolicies
   };

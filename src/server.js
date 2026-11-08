@@ -34,7 +34,7 @@ import { scrapeHrcEnergySlots, findHrcQuotaJsonPath, HRC_ACCOUNTS } from './engi
 import { runHrcEnergySurvey } from './engine/hrc-energy-runner.js';
 import { scrapeGlobalriLiteracyQuotas, findGlobalriQuotaJsonPath, getAgeGroupFromBirthYear } from './engine/globalri-literacy-scraper.js';
 import { runGlobalriLiteracySurvey } from './engine/globalri-literacy-runner.js';
-import { buildGlobalriAnswersExcel } from './utils/globalri-answer-excel.js';
+import { buildGlobalriAnswersExcel, buildGlobalriSheetsData } from './utils/globalri-answer-excel.js';
 import {
   runGallupReturnFarmSurvey,
   syncGallupReturnFarmStatuses,
@@ -3463,6 +3463,21 @@ app.get('/api/campaigns/:id/export-answers-xlsx', (req, res) => {
   } catch (err) {
     logger.error('[문항답변 엑셀 내보내기 실패]', err);
     res.status(500).json({ error: '문항답변 엑셀 생성 실패: ' + err.message });
+  }
+});
+
+app.get('/api/campaigns/:id/answers-sheet-data', (req, res) => {
+  try {
+    const campaign = CampaignStore.getCampaignById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+    }
+    const quotaDb = campaign.quotaDatabase || [];
+    const sheets = buildGlobalriSheetsData({ quotaDatabase: quotaDb });
+    res.json({ success: true, sheets });
+  } catch (err) {
+    logger.error('[문항답변 시트 데이터 조회 실패]', err);
+    res.status(500).json({ error: '문항답변 시트 조회 실패: ' + err.message });
   }
 });
 

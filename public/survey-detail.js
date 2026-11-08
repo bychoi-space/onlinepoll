@@ -2,25 +2,25 @@
  * 설문조사 상세 작업실 제어 스크립트 (survey-detail.js)
  * 2-Tier 와이드 쿼터 뷰, 쿼터 항목별 진행 트래커, 2-Phase 파일럿 & 배치 파이프라인 제어
  */
-import { escapeHtml } from './modules/blueprint-utils.js?v=20261108_modular_v2';
-import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261108_modular_v2';
-import { renderAssocBlueprint } from './modules/blueprint-assoc.js?v=20261108_modular_v2';
+import { escapeHtml } from './modules/blueprint-utils.js?v=20261108_modular_v3';
+import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261108_modular_v3';
+import { renderAssocBlueprint } from './modules/blueprint-assoc.js?v=20261108_modular_v3';
 import {
   resolveGlobalriAgeGroupKey,
   createGlobalriBlueprintController
-} from './modules/blueprint-globalri.js?v=20261108_modular_v2';
+} from './modules/blueprint-globalri.js?v=20261108_modular_v3';
 import {
   renderKonaBlueprint,
   renderHrcEnergyBlueprint,
   renderGallupReturnFarmBlueprint
-} from './modules/blueprint-gallup-hrc-kona.js?v=20261108_modular_v2';
+} from './modules/blueprint-gallup-hrc-kona.js?v=20261108_modular_v3';
 import {
   PRESET_STANDARD,
   PRESET_GROWTH,
   PRESET_TRADITIONAL,
   PRESET_ROTATION,
   renderKstatStoreStages
-} from './modules/blueprint-kstat-store.js?v=20261108_modular_v2';
+} from './modules/blueprint-kstat-store.js?v=20261108_modular_v3';
 import {
   renderQuotaTableHead,
   renderEmptyQuotaTableRow,
@@ -30,7 +30,7 @@ import {
   renderKonaQuotaTable,
   renderMetrixQuotaTable,
   renderAssocQuotaTable
-} from './modules/quota-table-renderers.js?v=20261108_modular_v2';
+} from './modules/quota-table-renderers.js?v=20261108_modular_v3';
 
 async function initSurveyDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -387,18 +387,33 @@ async function initSurveyDetailPage() {
       if (btnSyncKstat) {
         btnSyncKstat.style.display = 'inline-flex';
         btnSyncKstat.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 글로벌리서치 GIFT 동기화 / LID 지정 필터';
+        let btnViewAns = document.getElementById('btn-view-globalri-answers-top');
+        if (!btnViewAns && btnSyncKstat.parentElement) {
+          btnViewAns = document.createElement('button');
+          btnViewAns.type = 'button';
+          btnViewAns.id = 'btn-view-globalri-answers-top';
+          btnViewAns.className = 'btn-pill btn-pill-primary font-bold';
+          btnViewAns.innerHTML = '<i class="fa-solid fa-table-list"></i> 📊 제출 문항·답변 시트 바로보기 & 복사/엑셀';
+          btnViewAns.addEventListener('click', () => {
+            if (globalriCtrl && typeof globalriCtrl.openAnswersSheetModal === 'function') {
+              globalriCtrl.openAnswersSheetModal();
+            }
+          });
+          btnSyncKstat.parentElement.insertBefore(btnViewAns, btnSyncKstat.nextSibling);
+        }
+        if (btnViewAns) btnViewAns.style.display = 'inline-flex';
         let btnExportAns = document.getElementById('btn-export-globalri-answers-top');
         const gsheetUrl = camp.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?usp=sharing';
         if (!btnExportAns && btnSyncKstat.parentElement) {
           btnExportAns = document.createElement('a');
           btnExportAns.id = 'btn-export-globalri-answers-top';
-          btnExportAns.className = 'btn-pill btn-pill-primary font-bold';
+          btnExportAns.className = 'btn-pill btn-pill-secondary font-bold';
           btnExportAns.style.textDecoration = 'none';
           btnExportAns.target = '_blank';
           btnExportAns.rel = 'noopener noreferrer';
-          btnExportAns.innerHTML = '<i class="fa-solid fa-table"></i> 제출 문항·답변 구글 스프레드시트 열기';
+          btnExportAns.innerHTML = '<i class="fa-solid fa-up-right-from-square"></i> 구글 스프레드시트 열기';
           btnExportAns.title = '제출된 Part A ~ Part C 문항과 답변, 공식 정답표, 채점 결과가 기록되는 구글 스프레드시트를 엽니다';
-          btnSyncKstat.parentElement.insertBefore(btnExportAns, btnSyncKstat.nextSibling);
+          btnSyncKstat.parentElement.insertBefore(btnExportAns, (btnViewAns || btnSyncKstat).nextSibling);
         }
         if (btnExportAns) {
           btnExportAns.href = gsheetUrl;
