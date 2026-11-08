@@ -985,6 +985,7 @@ async function initSurveyDetailPage() {
             <th>소재지 주소</th>
             <th>Kstat 슬롯 URL</th>
             <th class="th-status">진행 상태</th>
+            <th class="th-actions text-center">관리</th>
           </tr>
         `;
       } else {
@@ -1462,9 +1463,36 @@ async function initSurveyDetailPage() {
             <td title="${escapeHtml(addr)}">${escapeHtml(addrShort)}</td>
             <td>${slotTag}</td>
             <td class="text-center">${statusHtml}</td>
+            <td class="text-center">
+              <button type="button" class="btn-icon-circle btn-delete-assoc-quota-row" data-seq="${seq}" data-name="${escapeHtml(mName)}" title="이 상인회 항목을 쿼터에서 삭제">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
           </tr>
         `;
       }).join('');
+
+      quotaTableBody.querySelectorAll('.btn-delete-assoc-quota-row').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const seq = parseInt(btn.getAttribute('data-seq'), 10);
+          const name = btn.getAttribute('data-name') || `#${seq}`;
+          if (!seq || !confirm(`[#${seq} ${name}] 항목을 상인회 조사 쿼터에서 제외(삭제)하시겠습니까?`)) return;
+          try {
+            btn.disabled = true;
+            const res = await fetch(`/api/campaigns/${encodeURIComponent(campaignId)}/quota-item/${seq}`, {
+              method: 'DELETE'
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || '삭제 실패');
+            currentCampaign = data.campaign;
+            renderCampaign(currentCampaign);
+          } catch (err) {
+            alert('항목 삭제 실패: ' + err.message);
+            btn.disabled = false;
+          }
+        });
+      });
       return;
     }
 

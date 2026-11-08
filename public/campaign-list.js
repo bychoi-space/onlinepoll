@@ -1041,6 +1041,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     quotaContainer.innerHTML = quotas.map(q => {
       const cat = getQuotaCategory(q);
+      const isAssoc = (cat === 'assoc' || q.type === 'KSTAT_ASSOC' || q.surveyType === 'kstat_assoc' || String(q.fileName || '').startsWith('quota_assoc_'));
       const isHrcEnergy = (q.type === 'HRC_ENERGY_BUILDING' || q.surveyType === 'hrc_energy' || String(q.fileName || '').includes('hrc_energy'));
       const catMeta = isHrcEnergy
         ? { label: '에너지총조사 [건물]', icon: 'fa-bolt', class: 'smallbiz' }
@@ -1054,7 +1055,8 @@ document.addEventListener('DOMContentLoaded', () => {
       let industryChipsHtml = '';
       if (q.industryDistribution) {
         const iconMap = {
-          '★선정(우선)': '⭐', '대체(예비)': '🔄', '조사완료': '✅',
+          '★선정(우선)': '⭐', '대체(예비)': '🔄', '조사완료': '✅', '대기(진행대상)': '⏳',
+          '전통시장': '🏪', '골목형상점가': '🏬', '상점가': '🏬', '상인회': '🏛️',
           '농산물': '🌾', '축산물': '🥩', '수산물': '🐟',
           '가공식품': '🍱', '의류신발': '👗', '가정용품': '🏠',
           '음식점업': '🍽️', '기타소매': '🛒', '근린상권': '💈', '기타': '📦'
@@ -1074,9 +1076,11 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }
 
-      const modeBadgeText = isHrcEnergy
-        ? 'TAPI + 구글시트 층화 표본'
-        : (isStratified ? '9대 업종 층화 표본' : (isExcelUpload ? '엑셀 업로드 표본' : '단순 순차 수집'));
+      const modeBadgeText = isAssoc
+        ? 'Kstat 상인회 슬롯 표본'
+        : (isHrcEnergy
+          ? 'TAPI + 구글시트 층화 표본'
+          : (isStratified ? '9대 업종 층화 표본' : (isExcelUpload ? '엑셀 업로드 표본' : '단순 순차 수집')));
 
       return `
         <div class="campaign-card quota-card" data-filename="${escapeHtml(q.fileName)}">
@@ -1084,9 +1088,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="campaign-card-header">
               <div class="flex-center-gap-6 flex-wrap">
                 <span class="badge-category ${catMeta.class}"><i class="fa-solid ${catMeta.icon}"></i> ${catMeta.label}</span>
-                <span class="badge-quota-type b2b"><i class="fa-solid ${isHrcEnergy ? 'fa-building-circle-check' : 'fa-shop'}"></i> ${highlightQuery(escapeHtml(marketName), currentQuotaSearchQuery)}</span>
+                <span class="badge-quota-type b2b"><i class="fa-solid ${isHrcEnergy ? 'fa-building-circle-check' : (isAssoc ? 'fa-people-roof' : 'fa-shop')}"></i> ${highlightQuery(escapeHtml(marketName), currentQuotaSearchQuery)}</span>
               </div>
-              <span class="badge-status ${isStratified || isHrcEnergy ? 'success' : 'ready'}">
+              <span class="badge-status ${isStratified || isHrcEnergy || isAssoc ? 'success' : 'ready'}">
                 ${modeBadgeText}
               </span>
             </div>
@@ -1110,16 +1114,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div class="campaign-card-footer quota-card-actions">
               <a href="quota-detail.html?file=${encodeURIComponent(q.fileName)}" class="btn-pill btn-pill-primary">
-                <i class="fa-solid fa-pen-to-square"></i> 점포 상세·수정
+                <i class="fa-solid fa-pen-to-square"></i> ${isAssoc ? '항목 삭제·편집' : '점포 상세·수정'}
               </a>
               ${q.excelFileName ? `
                 <a href="/api/quota/download/${encodeURIComponent(q.excelFileName)}" class="btn-pill btn-pill-secondary btn-download-excel" title="Excel 파일 다운로드">
                   <i class="fa-solid fa-file-excel icon-excel-green"></i> 엑셀
                 </a>
               ` : ''}
-              <button type="button" class="btn-pill btn-pill-success btn-create-camp-from-quota" data-filename="${escapeHtml(q.fileName)}" data-title="${escapeHtml(q.title)}" title="이 쿼터로 새 캠페인 생성">
-                <i class="fa-solid fa-play"></i> 캠페인 시작
-              </button>
+              ${q.linkedCampaignId ? `
+                <a href="survey-detail.html?id=${encodeURIComponent(q.linkedCampaignId)}" class="btn-pill btn-pill-success" title="연동된 설문 작업실로 이동하여 조사 실행">
+                  <i class="fa-solid fa-play"></i> 조사 실행
+                </a>
+              ` : `
+                <button type="button" class="btn-pill btn-pill-success btn-create-camp-from-quota" data-filename="${escapeHtml(q.fileName)}" data-title="${escapeHtml(q.title)}" title="이 쿼터로 새 캠페인 생성">
+                  <i class="fa-solid fa-play"></i> 캠페인 시작
+                </button>
+              `}
               <button type="button" class="btn-icon-circle btn-delete-quota" data-filename="${escapeHtml(q.fileName)}" title="쿼터 삭제">
                 <i class="fa-solid fa-trash-can"></i>
               </button>

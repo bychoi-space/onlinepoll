@@ -47,6 +47,17 @@ async function initQuotaDetailPage() {
   let currentData = [];
   let isDirty = false;
   let searchTerm = '';
+  const selectedSeqSet = new Set();
+
+  function isAssocQuota() {
+    if (!originalQuota) return String(fileName || '').startsWith('quota_assoc_');
+    return (
+      originalQuota.type === 'KSTAT_ASSOC' ||
+      originalQuota.surveyType === 'kstat_assoc' ||
+      String(fileName || '').startsWith('quota_assoc_') ||
+      String(originalQuota.title || '').includes('상인회')
+    );
+  }
 
   // ------------------------------------------------------------------------
   // 1. 쿼터 상세 데이터 로드
@@ -58,7 +69,9 @@ async function initQuotaDetailPage() {
       const json = await res.json();
       originalQuota = json.quota;
       currentData = JSON.parse(JSON.stringify(originalQuota.data || []));
+      selectedSeqSet.clear();
 
+      ensureBulkDeleteToolbarButtons();
       renderHeaderInfo();
       renderDistributionKpi();
       renderTable();
@@ -66,6 +79,105 @@ async function initQuotaDetailPage() {
     } catch (err) {
       alert('쿼터 로드 실패: ' + err.message);
       window.location.href = 'index.html#quotas';
+    }
+  }
+
+  function ensureBulkDeleteToolbarButtons() {
+    const toolbarActions = document.querySelector('.grid-toolbar-actions');
+    if (!toolbarActions) return;
+
+    const thNo = document.querySelector('#quota-editor-table thead th.th-no');
+    if (thNo && !document.getElementById('chk-quota-detail-all')) {
+      thNo.innerHTML = `<label class="inline-flex-center gap-4 cursor-pointer" title="전체 선택/해제"><input type="checkbox" id="chk-quota-detail-all" /> 번호</label>`;
+      const chkAll = document.getElementById('chk-quota-detail-all');
+      if (chkAll) {
+        chkAll.addEventListener('change', () => {
+          const term = searchTerm.trim().toLowerCase();
+          const visibleItems = currentData.filter(item => {
+            if (!term) return true;
+            return (
+              String(item.companyName || '').toLowerCase().includes(term) ||
+              String(item.industry || '').toLowerCase().includes(term) ||
+              String(item.ceoName || '').toLowerCase().includes(term) ||
+              String(item.phone || '').toLowerCase().includes(term) ||
+              String(item.bizNumber || '').toLowerCase().includes(term) ||
+              String(item.handledItems || '').toLowerCase().includes(term) ||
+              String(item.mainProducts || '').toLowerCase().includes(term) ||
+              String(item.address || '').toLowerCase().includes(term)
+            );
+          });
+          visibleItems.forEach((item, idx) => {
+            const s = Number(item.seq || item.index || (idx + 1));
+            if (chkAll.checked) selectedSeqSet.add(s);
+            else selectedSeqSet.delete(s);
+          });
+          renderTable();
+        });
+      }
+    }
+
+    if (!document.getElementById('btn-delete-selected-quota-rows')) {
+      const btnDelSelected = document.createElement('button');
+      btnDelSelected.type = 'button';
+      btnDelSelected.id = 'btn-delete-selected-quota-rows';
+      btnDelSelected.className = 'btn-pill btn-pill-secondary btn-pill-small';
+      btnDelSelected.innerHTML = `<i class="fa-solid fa-trash-can text-error"></i> 선택 항목 삭제 (<span id="selected-quota-del-count">0</span>건)`;
+      btnDelSelected.addEventListener('click', async () => {
+        if (selectedSeqSet.size === 0) {
+          alert('삭제할 항목을 표 좌측 체크박스로 먼저 선택해 주세요.');
+          return;
+        }
+        if (!confirm(`선택한 ${selectedSeqSet.size}개 항목을 쿼터 및 연동된 설문 캠페인에서 삭제하시겠습니까?`)) return;
+        currentData = currentData.filter((d, idx) => !selectedSeqSet.has(Number(d.seq || d.index || (idx + 1))));
+        currentData.forEach((d, idx) => {
+          d.seq = idx + 1;
+          d.index = idx + 1;
+          d.slotIndex = idx + 1;
+        });
+        selectedSeqSet.clear();
+        badgeCount.textContent = `${currentData.length}건`;
+        renderTable();
+        renderDistributionKpi();
+        await autoSaveQuotaSilent();
+      });
+      toolbarActions.insertBefore(btnDelSelected, toolbarActions.firstChild);
+    }
+
+    if (!document.getElementById('btn-delete-completed-quota-rows')) {
+      const btnDelCompleted = document.createElement('button');
+      btnDelCompleted.type = 'button';
+      btnDelCompleted.id = 'btn-delete-completed-quota-rows';
+      btnDelCompleted.className = 'btn-pill btn-pill-secondary btn-pill-small';
+      btnDelCompleted.innerHTML = `<i class="fa-solid fa-broom"></i> 완료 항목 일괄 제외`;
+      btnDelCompleted.addEventListener('click', async () => {
+        const doneItems = currentData.filter(d => d.status === '완료' || d.quotaStatus === 'completed' || d.quotaStatus === 'used' || d.surveyCompleted);
+        if (doneItems.length === 0) {
+          alert('현재 완료 처리된 항목이 없습니다. 제외할 항목을 좌측 체크박스로 선택하거나 우측 휴지통 버튼으로 삭제해 주세요.');
+          return;
+        }
+        if (!confirm(`이미 진행 완료된 ${doneItems.length}개 항목을 쿼터에서 일괄 제외하시겠습니까?`)) return;
+        currentData = currentData.filter(d => !(d.status === '완료' || d.quotaStatus === 'completed' || d.quotaStatus === 'used' || d.surveyCompleted));
+        currentData.forEach((d, idx) => {
+          d.seq = idx + 1;
+          d.index = idx + 1;
+          d.slotIndex = idx + 1;
+        });
+        selectedSeqSet.clear();
+        badgeCount.textContent = `${currentData.length}건`;
+        renderTable();
+        renderDistributionKpi();
+        await autoSaveQuotaSilent();
+      });
+      toolbarActions.insertBefore(btnDelCompleted, toolbarActions.firstChild);
+    }
+  }
+
+  function updateSelectedDeleteBtnUI() {
+    const cntEl = document.getElementById('selected-quota-del-count');
+    if (cntEl) cntEl.textContent = String(selectedSeqSet.size);
+    const chkAll = document.getElementById('chk-quota-detail-all');
+    if (chkAll) {
+      chkAll.checked = currentData.length > 0 && selectedSeqSet.size === currentData.length;
     }
   }
 
@@ -78,8 +190,24 @@ async function initQuotaDetailPage() {
     badgeMarket.textContent = marketName;
     badgeCount.textContent = `${currentData.length}건`;
 
+    const isAssoc = isAssocQuota();
     const isStratified = originalQuota.industryDistribution && Object.keys(originalQuota.industryDistribution).length >= 5;
-    if (isStratified) {
+    if (isAssoc) {
+      badgeStratified.className = 'badge-status success';
+      badgeStratified.textContent = 'Kstat 상인회 슬롯 표본';
+      if (btnEnrich) btnEnrich.classList.add('hidden');
+      // 상인회용 컬럼 헤더 라벨 보정
+      const ths = document.querySelectorAll('#quota-editor-table thead th');
+      if (ths.length >= 12) {
+        ths[1].textContent = '시장명(상인회)';
+        ths[2].textContent = '시장유형';
+        ths[3].textContent = '시장코드';
+        ths[4].textContent = '상인회장';
+        ths[8].textContent = '등록번호';
+        ths[10].textContent = '시장분류';
+        ths[11].textContent = '조사원계정';
+      }
+    } else if (isStratified) {
       badgeStratified.className = 'badge-status success';
       badgeStratified.textContent = '9대 업종 층화 표본';
     } else {
@@ -87,14 +215,44 @@ async function initQuotaDetailPage() {
       badgeStratified.textContent = '단순 순차 수집';
     }
 
+    if (originalQuota.linkedCampaignId) {
+      btnLaunch.innerHTML = '<i class="fa-solid fa-play"></i> 연동 설문 작업실로 이동 (조사 실행)';
+      btnLaunch.title = '삭제·수정한 쿼터 상태로 연동된 설문 캠페인 작업실로 즉시 이동합니다';
+    } else {
+      btnLaunch.innerHTML = '<i class="fa-solid fa-play"></i> 이 쿼터로 캠페인 생성';
+    }
+
     const createdStr = originalQuota.createdAt ? new Date(originalQuota.createdAt).toLocaleString('ko-KR') : '-';
-    displayDesc.textContent = `대상 시장: ${marketName} · 확보 표본: ${currentData.length}건 · 최초 생성: ${createdStr}`;
+    displayDesc.textContent = `대상: ${marketName} · 현재 잔여 표본: ${currentData.length}건 · 최초 생성: ${createdStr}`;
 
     const excelName = fileName.replace('.json', '.xlsx');
     btnDownloadXlsx.href = `/api/quota/download/${encodeURIComponent(excelName)}`;
   }
 
   function renderDistributionKpi() {
+    if (isAssocQuota()) {
+      const doneCnt = currentData.filter(d => d.status === '완료' || d.quotaStatus === 'completed' || d.quotaStatus === 'used' || d.surveyCompleted).length;
+      const readyCnt = currentData.length - doneCnt;
+      const typeCounts = {};
+      currentData.forEach(item => {
+        const mt = String(item.marketType || item.industry || '상인회').trim();
+        typeCounts[mt] = (typeCounts[mt] || 0) + 1;
+      });
+      const chips = [
+        { label: '전체 상인회', icon: '🏛️', cnt: currentData.length, active: true },
+        { label: '대기(진행대상)', icon: '⏳', cnt: readyCnt, active: readyCnt > 0 },
+        { label: '조사완료', icon: '✅', cnt: doneCnt, active: doneCnt > 0 },
+        ...Object.entries(typeCounts).map(([k, v]) => ({ label: k, icon: '🏪', cnt: v, active: v > 0 }))
+      ];
+      distKpiBar.innerHTML = chips.map(c => `
+        <div class="kpi-chip ${c.active ? 'kpi-ready' : ''}">
+          <span class="kpi-label">${c.icon} ${escapeHtml(c.label)}</span>
+          <span class="kpi-val">${c.cnt}</span>
+        </div>
+      `).join('');
+      return;
+    }
+
     // 실시간 업종 집계
     const counts = {};
     const standardKeys = [
@@ -148,49 +306,64 @@ async function initQuotaDetailPage() {
     });
 
     filteredCountLabel.textContent = `전체 ${currentData.length}개 중 ${filtered.length}개 표시`;
+    updateSelectedDeleteBtnUI();
 
     if (filtered.length === 0) {
       tbody.innerHTML = `
         <tr>
           <td colspan="13" class="empty-table-msg">
-            ${term ? `"${escapeHtml(term)}" 검색 결과와 일치하는 점포가 없습니다.` : '등록된 점포 데이터가 없습니다.'}
+            ${term ? `"${escapeHtml(term)}" 검색 결과와 일치하는 항목이 없습니다.` : '등록된 쿼터 데이터가 없습니다.'}
           </td>
         </tr>
       `;
       return;
     }
 
+    const isAssoc = isAssocQuota();
+
     tbody.innerHTML = filtered.map((item, idx) => {
-      const seq = item.seq || item.index || (idx + 1);
+      const seq = Number(item.seq || item.index || (idx + 1));
+      const isChecked = selectedSeqSet.has(seq);
       const indLabel = getIndustryBadgeText(item.industry || item.handledItems);
       const hasCeo = item.ceoName && String(item.ceoName).trim() !== '' && item.ceoName !== 'null';
       const hasPhone = item.phone && String(item.phone).trim() !== '' && item.phone !== 'null';
       const hasMainProducts = item.mainProducts && String(item.mainProducts).trim() !== '' && item.mainProducts !== 'null';
       const addrVal = item.address ? (item.address.length > 28 ? item.address.slice(0, 28) + '...' : item.address) : '-';
+      const isDone = item.status === '완료' || item.quotaStatus === 'completed' || item.quotaStatus === 'used' || item.surveyCompleted;
+      const statusBadgeHtml = isAssoc
+        ? (isDone
+          ? ' <span class="badge-status success">조사완료</span>'
+          : ' <span class="badge-status ready">대기</span>')
+        : '';
 
       let slotTag = '';
       if (item.slotUrl) {
         const slotLabel = item.slotIndex ? `슬롯 #${item.slotIndex} ${escapeHtml(item.slotExtra || '')}` : `슬롯 #${seq}`;
         const kidSuffix = item.ranId ? ` (${escapeHtml(item.ranId)})` : '';
-        slotTag = `<div class="quota-slot-badge font-mono" data-slot-seq="${seq}" title="클릭하여 이 점포의 슬롯 URL 확인/수정: ${escapeHtml(item.slotUrl)}"><i class="fa-solid fa-link"></i> ${slotLabel}${kidSuffix}</div>`;
+        slotTag = `<div class="quota-slot-badge font-mono" data-slot-seq="${seq}" title="클릭하여 슬롯 URL 확인/수정: ${escapeHtml(item.slotUrl)}"><i class="fa-solid fa-link"></i> ${slotLabel}${kidSuffix}</div>`;
       } else {
-        slotTag = `<div class="quota-slot-badge unmapped font-mono" data-slot-seq="${seq}" title="클릭하여 이 점포의 슬롯 URL 직접 입력/매핑"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 미매핑 (클릭하여 입력)</div>`;
+        slotTag = `<div class="quota-slot-badge unmapped font-mono" data-slot-seq="${seq}" title="클릭하여 슬롯 URL 직접 입력/매핑"><i class="fa-solid fa-triangle-exclamation"></i> 슬롯 미매핑 (클릭하여 입력)</div>`;
       }
 
       return `
-        <tr data-seq="${seq}">
-          <td class="text-center font-mono font-bold">${seq}</td>
-          <td class="editable-quota-cell" data-seq="${seq}" data-field="companyName" title="클릭하여 상호 수정">
-            <strong>${escapeHtml(item.companyName || '-')}</strong>
+        <tr data-seq="${seq}" class="${isChecked ? 'row-focused' : ''}">
+          <td class="text-center font-mono font-bold">
+            <label class="inline-flex-center gap-6 cursor-pointer">
+              <input type="checkbox" class="chk-quota-detail-row" data-seq="${seq}" ${isChecked ? 'checked' : ''} />
+              <span>${seq}</span>
+            </label>
+          </td>
+          <td class="editable-quota-cell" data-seq="${seq}" data-field="companyName" title="클릭하여 상호(시장명) 수정">
+            <strong>${escapeHtml(item.companyName || '-')}</strong>${statusBadgeHtml}
             ${slotTag}
           </td>
-          <td class="editable-quota-cell" data-seq="${seq}" data-field="industry" title="클릭하여 업종 수정">
+          <td class="editable-quota-cell" data-seq="${seq}" data-field="industry" title="클릭하여 업종/유형 수정">
             <span class="quota-ind-badge">${escapeHtml(indLabel)}</span>
           </td>
-          <td class="editable-quota-cell font-mono" data-seq="${seq}" data-field="bizNumber" title="클릭하여 사업자번호 수정">
+          <td class="editable-quota-cell font-mono" data-seq="${seq}" data-field="bizNumber" title="클릭하여 코드/사업자번호 수정">
             <code>${escapeHtml(item.bizNumber || '-')}</code>
           </td>
-          <td class="editable-quota-cell" data-seq="${seq}" data-field="ceoName" title="클릭하여 대표자이름 수정">
+          <td class="editable-quota-cell" data-seq="${seq}" data-field="ceoName" title="클릭하여 대표자(상인회장) 수정">
             ${hasCeo ? `<span class="ceo-name-text">${escapeHtml(item.ceoName)}</span>${item.isCeoEnriched ? ' <span class="badge-enriched">보강</span>' : ''}` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
           </td>
           <td class="text-center col-gender editable-quota-cell" data-seq="${seq}" data-field="ceoGender" title="클릭하여 성별 수정">
@@ -202,20 +375,20 @@ async function initQuotaDetailPage() {
           <td class="editable-quota-cell font-mono" data-seq="${seq}" data-field="phone" title="클릭하여 연락처 수정">
             ${hasPhone ? `${escapeHtml(item.phone)}${item.isPhoneEnriched ? ' <span class="badge-enriched">보강</span>' : ''}` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
           </td>
-          <td class="editable-quota-cell font-mono" data-seq="${seq}" data-field="openDate" title="클릭하여 개업연월 수정">
+          <td class="editable-quota-cell font-mono" data-seq="${seq}" data-field="openDate" title="클릭하여 개업연월/등록번호 수정">
             ${escapeHtml(item.openDate || '-')}
           </td>
           <td class="editable-quota-cell" data-seq="${seq}" data-field="address" title="${escapeHtml(item.address || '클릭하여 주소 수정')}">
             ${escapeHtml(addrVal)}
           </td>
-          <td class="editable-quota-cell" data-seq="${seq}" data-field="handledItems" title="클릭하여 취급품목 수정">
+          <td class="editable-quota-cell" data-seq="${seq}" data-field="handledItems" title="클릭하여 취급품목/시장분류 수정">
             <span class="badge-quota-type b2b">${escapeHtml(item.handledItems || '-')}</span>
           </td>
-          <td class="editable-quota-cell" data-seq="${seq}" data-field="mainProducts" title="클릭하여 주요품목 입력/수정">
+          <td class="editable-quota-cell" data-seq="${seq}" data-field="mainProducts" title="클릭하여 주요품목/조사원계정 수정">
             ${hasMainProducts ? `<span class="badge-main-product">${escapeHtml(item.mainProducts)}</span>` : '<span class="cell-placeholder"><i class="fa-solid fa-pen"></i> 입력</span>'}
           </td>
           <td class="text-center">
-            <button type="button" class="btn-icon-circle btn-delete-row" data-seq="${seq}" title="점포 삭제">
+            <button type="button" class="btn-icon-circle btn-delete-row" data-seq="${seq}" title="이 항목을 쿼터에서 삭제">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           </td>
@@ -437,17 +610,35 @@ async function initQuotaDetailPage() {
   }
 
   function bindRowDeleteButtons() {
+    tbody.querySelectorAll('.chk-quota-detail-row').forEach(chk => {
+      chk.addEventListener('change', (e) => {
+        e.stopPropagation();
+        const seq = parseInt(chk.getAttribute('data-seq'), 10);
+        if (!seq) return;
+        if (chk.checked) selectedSeqSet.add(seq);
+        else selectedSeqSet.delete(seq);
+        const tr = chk.closest('tr');
+        if (tr) tr.classList.toggle('row-focused', chk.checked);
+        updateSelectedDeleteBtnUI();
+      });
+    });
+
     tbody.querySelectorAll('.btn-delete-row').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const seq = parseInt(btn.getAttribute('data-seq'), 10);
-        const item = currentData.find(d => (d.seq || d.index) === seq);
+        const item = currentData.find(d => Number(d.seq || d.index) === seq);
         if (!item) return;
 
-        if (confirm(`"${item.companyName || '이 점포'}"를 쿼터에서 삭제하시겠습니까?`)) {
-          currentData = currentData.filter(d => (d.seq || d.index) !== seq);
+        if (confirm(`"${item.companyName || item.marketName || '이 항목'}"를 쿼터 및 연동 캠페인에서 삭제하시겠습니까?`)) {
+          currentData = currentData.filter(d => Number(d.seq || d.index) !== seq);
           // 순번 재부여
-          currentData.forEach((d, idx) => { d.seq = idx + 1; });
+          currentData.forEach((d, idx) => {
+            d.seq = idx + 1;
+            d.index = idx + 1;
+            d.slotIndex = idx + 1;
+          });
+          selectedSeqSet.clear();
           badgeCount.textContent = `${currentData.length}건`;
           renderTable();
           renderDistributionKpi();
@@ -963,14 +1154,16 @@ async function initQuotaDetailPage() {
   });
 
   // ------------------------------------------------------------------------
-  // 7. 이 쿼터로 새 설문 캠페인 생성
+  // 7. 연동 설문 작업실 이동 또는 새 설문 캠페인 생성
   // ------------------------------------------------------------------------
   btnLaunch.addEventListener('click', async () => {
     if (isDirty) {
-      if (!confirm('아직 저장되지 않은 수정사항이 있습니다.\n먼저 저장하고 캠페인을 생성하시겠습니까?')) {
-        return;
-      }
-      await btnSave.click();
+      await autoSaveQuotaSilent();
+    }
+
+    if (originalQuota && originalQuota.linkedCampaignId) {
+      window.location.href = `survey-detail.html?id=${encodeURIComponent(originalQuota.linkedCampaignId)}`;
+      return;
     }
 
     const defaultTitle = originalQuota.title || '새로운 설문조사 캠페인';

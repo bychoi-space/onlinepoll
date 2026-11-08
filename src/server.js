@@ -1153,6 +1153,290 @@ app.post('/api/kstat/fetch-assoc-slots', async (req, res) => {
 });
 
 // ==========================================
+// [상인회 쿼터 보관함 동기화 헬퍼] 상인회 캠페인 ⇄ data/quotas/quota_assoc_*.json 양방향 동기화
+// ==========================================
+function buildAssocQuotaColumns() {
+  return [
+    { key: 'companyName', label: '상호(시장명)' },
+    { key: 'industry', label: '시장유형' },
+    { key: 'bizNumber', label: '시장코드' },
+    { key: 'ceoName', label: '상인회장' },
+    { key: 'ceoGender', label: '성별' },
+    { key: 'ceoAge', label: '나이' },
+    { key: 'phone', label: '연락처' },
+    { key: 'openDate', label: '등록번호' },
+    { key: 'address', label: '소재지 주소' },
+    { key: 'handledItems', label: '시장분류' },
+    { key: 'mainProducts', label: '조사원계정' },
+    { key: 'marketName', label: '시장명' },
+    { key: 'status', label: '진행상태' }
+  ];
+}
+
+function normalizeAssocQuotaItem(item, idx, fallbackSurveyor = '') {
+  const seq = idx + 1;
+  const marketName = item.marketName || item.companyName || '-';
+  const marketType = item.marketType || item.industry || '전통시장';
+  const marketCode = (item.marketCode && item.marketCode !== '-')
+    ? item.marketCode
+    : ((item.bizNumber && item.bizNumber !== '-') ? item.bizNumber : '');
+  const leaderName = item.leaderName || item.ceoName || '';
+  const phone = item.phone || item.leaderPhone || item.assocPhone || '';
+  const surveyorAccount = item.surveyorAccount || item.mainProducts || fallbackSurveyor || '';
+  const isDone = item.quotaStatus === 'completed' || item.quotaStatus === 'used' || item.surveyCompleted === true || item.status === '완료';
+
+  return {
+    ...item,
+    seq,
+    index: seq,
+    slotIndex: item.slotIndex || seq,
+    surveyorAccount,
+    marketCode: marketCode || item.marketCode || '',
+    regNumber: item.regNumber || '',
+    marketName,
+    companyName: marketName,
+    marketType,
+    industry: marketType,
+    bizNumber: marketCode || item.bizNumber || '-',
+    leaderName,
+    ceoName: leaderName,
+    ceoGender: item.ceoGender || '-',
+    ceoAge: item.ceoAge || null,
+    assocPhone: item.assocPhone || phone,
+    leaderPhone: item.leaderPhone || phone,
+    phone,
+    openDate: item.openDate || (item.regNumber ? `등록:${item.regNumber}` : '-'),
+    sido: item.sido || '',
+    sigungu: item.sigungu || '',
+    address: item.address || `${item.sido || ''} ${item.sigungu || ''}`.trim(),
+    handledItems: item.handledItems || marketType || '상인회',
+    mainProducts: surveyorAccount || '상인회',
+    office: item.office || '',
+    zone: item.zone || '',
+    ranId: item.ranId || item.kid || '',
+    idSel: item.idSel || (item.kid ? String(Number(item.kid) + 1) : null),
+    kid: item.kid || item.ranId || '',
+    gid: item.gid || '0',
+    slotUrl: item.slotUrl || item.surveyUrl || '',
+    surveyUrl: item.slotUrl || item.surveyUrl || '',
+    evalUrl: item.evalUrl || '',
+    quotaStatus: item.quotaStatus || (isDone ? 'completed' : 'ready'),
+    evalStatus: item.evalStatus || 'pending',
+    surveyCompleted: !!item.surveyCompleted || isDone,
+    evalCompleted: !!item.evalCompleted,
+    status: isDone ? '완료' : '대기'
+  };
+}
+
+function syncAssocCampaignToQuotaFile(camp, forceOverwrite = false) {
+  try {
+    if (!camp || !camp.id) return null;
+    const isAssocCamp = camp.surveyType === 'kstat_assoc' || String(camp.title || '').includes('상인회');
+    if (!isAssocCamp) return null;
+    if (!Array.isArray(camp.quotaDatabase) || camp.quotaDatabase.length === 0) return null;
+
+    const safeFileName = (camp.quotaConfig?.quotaFileName && camp.quotaConfig.quotaFileName.endsWith('.json'))
+      ? path.basename(camp.quotaConfig.quotaFileName)
+      : `quota_assoc_${camp.id}.json`;
+    const jsonPath = path.join(quotasDir, safeFileName);
+
+    if (!forceOverwrite && fs.existsSync(jsonPath)) {
+      if (!camp.quotaConfig || camp.quotaConfig.quotaFileName !== safeFileName) {
+        CampaignStore.updateCampaign(camp.id, {
+          quotaConfig: {
+            ...(camp.quotaConfig || {}),
+            quotaSource: 'KSTAT_ASSOC_SYNC',
+            quotaFileName: safeFileName,
+            targetCount: camp.quotaDatabase.length
+          }
+        });
+      }
+      return safeFileName;
+    }
+
+    const surveyorId = camp.kstatLoginId || camp.quotaDatabase[0]?.surveyorAccount || camp.title || '상인회';
+    const rawTitle = String(camp.title || surveyorId).trim();
+    const quotaTitle = rawTitle.includes('상인회')
+      ? (rawTitle.includes(surveyorId) ? rawTitle : `${rawTitle} (${surveyorId})`)
+      : `[상인회] ${rawTitle}${rawTitle !== surveyorId ? ` (${surveyorId})` : ' 조사쿼터'}`;
+
+    const normalizedData = camp.quotaDatabase.map((item, idx) => normalizeAssocQuotaItem(item, idx, surveyorId));
+    const columns = buildAssocQuotaColumns();
+
+    const dist = {};
+    normalizedData.forEach(d => {
+      const mt = String(d.marketType || '전통시장').trim();
+      dist[mt] = (dist[mt] || 0) + 1;
+    });
+
+    const quotaPayload = {
+      title: quotaTitle,
+      type: 'KSTAT_ASSOC',
+      surveyType: 'kstat_assoc',
+      linkedCampaignId: camp.id,
+      surveyorId,
+      surveyorName: rawTitle,
+      kstatLoginPw: camp.kstatLoginPw || '1234',
+      kstatListUrl: camp.kstatListUrl || 'https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi',
+      marketName: `전통시장 상인회 · ${surveyorId}`,
+      keyword: surveyorId,
+      count: normalizedData.length,
+      targetTotal: normalizedData.length,
+      isComplete: true,
+      industryDistribution: dist,
+      createdAt: camp.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      columns,
+      data: normalizedData
+    };
+
+    fs.writeFileSync(jsonPath, JSON.stringify(quotaPayload, null, 2), 'utf-8');
+
+    const excelName = safeFileName.replace('.json', '.xlsx');
+    const excelPath = path.join(quotasDir, excelName);
+    try {
+      exportBusinessesToExcel({
+        data: normalizedData,
+        columns,
+        filePath: excelPath
+      });
+    } catch (_) {}
+
+    if (!camp.quotaConfig || camp.quotaConfig.quotaFileName !== safeFileName || camp.quotaConfig.targetCount !== normalizedData.length) {
+      CampaignStore.updateCampaign(camp.id, {
+        quotaConfig: {
+          ...(camp.quotaConfig || {}),
+          quotaSource: 'KSTAT_ASSOC_SYNC',
+          quotaFileName: safeFileName,
+          quotaTitle,
+          marketName: quotaPayload.marketName,
+          targetCount: normalizedData.length
+        }
+      });
+    }
+    return safeFileName;
+  } catch (err) {
+    logger.error(`[상인회 쿼터 파일 동기화 오류] (${camp?.id}):`, err);
+    return null;
+  }
+}
+
+function ensureAssocCampaignQuotaFiles() {
+  try {
+    const allCamps = CampaignStore.getAllCampaigns();
+    allCamps.forEach(camp => {
+      const isAssocCamp = camp.surveyType === 'kstat_assoc' || String(camp.title || '').includes('상인회');
+      if (isAssocCamp && Array.isArray(camp.quotaDatabase) && camp.quotaDatabase.length > 0) {
+        syncAssocCampaignToQuotaFile(camp, false);
+      }
+    });
+  } catch (err) {
+    logger.error('[상인회 쿼터 보관함 자동 보장 오류]:', err);
+  }
+}
+
+// 캠페인 내 특정 쿼터 항목 단건 삭제 API (상인회 등 불필요/기완료 항목 즉시 제외)
+app.delete('/api/campaigns/:id/quota-item/:seq', (req, res) => {
+  try {
+    const campaign = CampaignStore.getCampaignById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+    }
+    const targetSeq = parseInt(req.params.seq, 10);
+    if (!targetSeq || !Array.isArray(campaign.quotaDatabase)) {
+      return res.status(400).json({ error: '유효하지 않은 순번이거나 쿼터 데이터가 없습니다.' });
+    }
+
+    const beforeLen = campaign.quotaDatabase.length;
+    const removedItem = campaign.quotaDatabase.find((item, idx) => Number(item.index || item.seq || (idx + 1)) === targetSeq);
+    const remaining = campaign.quotaDatabase
+      .filter((item, idx) => Number(item.index || item.seq || (idx + 1)) !== targetSeq)
+      .map((item, idx) => ({
+        ...item,
+        seq: idx + 1,
+        index: idx + 1,
+        slotIndex: idx + 1
+      }));
+
+    if (remaining.length === beforeLen) {
+      return res.status(404).json({ error: `순번 #${targetSeq} 항목을 찾을 수 없습니다.` });
+    }
+
+    const updated = CampaignStore.updateCampaign(campaign.id, {
+      quotaDatabase: remaining,
+      quotaConfig: {
+        ...(campaign.quotaConfig || {}),
+        targetCount: remaining.length
+      }
+    });
+
+    if (updated.surveyType === 'kstat_assoc' || String(updated.title || '').includes('상인회')) {
+      syncAssocCampaignToQuotaFile(updated, true);
+    }
+
+    logger.info(`[쿼터 항목 삭제] 캠페인 "${campaign.title}"에서 #${targetSeq} (${removedItem?.marketName || removedItem?.companyName || removedItem?.memberName || ''}) 제외 완료 (잔여: ${remaining.length}건)`);
+    res.json({
+      success: true,
+      message: `선택한 항목이 쿼터에서 삭제되었습니다. (잔여 ${remaining.length}건)`,
+      removedItem,
+      quotaDatabase: remaining,
+      campaign: updated
+    });
+  } catch (err) {
+    logger.error('[캠페인 쿼터 항목 삭제 오류]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 캠페인 내 복수 쿼터 항목 일괄 삭제 API
+app.post('/api/campaigns/:id/delete-quota-items', (req, res) => {
+  try {
+    const campaign = CampaignStore.getCampaignById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+    }
+    const { seqList } = req.body || {};
+    if (!Array.isArray(seqList) || seqList.length === 0 || !Array.isArray(campaign.quotaDatabase)) {
+      return res.status(400).json({ error: '삭제할 항목 번호 목록(seqList)이 필요합니다.' });
+    }
+    const seqSet = new Set(seqList.map(n => Number(n)));
+    const remaining = campaign.quotaDatabase
+      .filter((item, idx) => !seqSet.has(Number(item.index || item.seq || (idx + 1))))
+      .map((item, idx) => ({
+        ...item,
+        seq: idx + 1,
+        index: idx + 1,
+        slotIndex: idx + 1
+      }));
+
+    const removedCount = campaign.quotaDatabase.length - remaining.length;
+    const updated = CampaignStore.updateCampaign(campaign.id, {
+      quotaDatabase: remaining,
+      quotaConfig: {
+        ...(campaign.quotaConfig || {}),
+        targetCount: remaining.length
+      }
+    });
+
+    if (updated.surveyType === 'kstat_assoc' || String(updated.title || '').includes('상인회')) {
+      syncAssocCampaignToQuotaFile(updated, true);
+    }
+
+    logger.info(`[쿼터 일괄 삭제] 캠페인 "${campaign.title}"에서 ${removedCount}건 제외 완료 (잔여: ${remaining.length}건)`);
+    res.json({
+      success: true,
+      message: `총 ${removedCount}개 항목이 쿼터에서 삭제되었습니다. (잔여 ${remaining.length}건)`,
+      removedCount,
+      quotaDatabase: remaining,
+      campaign: updated
+    });
+  } catch (err) {
+    logger.error('[캠페인 쿼터 일괄 삭제 오류]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
 // [상인회 전용 API] 상인회 슬롯 1:1 자동 바인딩 API (완전 격리)
 // ==========================================
 app.post('/api/campaigns/:id/bind-assoc-slots', async (req, res) => {
@@ -1221,7 +1505,8 @@ app.post('/api/campaigns/:id/bind-assoc-slots', async (req, res) => {
     };
 
     const updated = CampaignStore.updateCampaign(campaign.id, updatePayload);
-    logger.success(`[상인회 슬롯 바인딩 완료] 캠페인 "${campaign.title}" ➔ 총 ${quotaDb.length}개 상인회 바인딩 성공`);
+    syncAssocCampaignToQuotaFile(updated, true);
+    logger.success(`[상인회 슬롯 바인딩 완료] 캠페인 "${campaign.title}" ➔ 총 ${quotaDb.length}개 상인회 바인딩 및 쿼터 보관함 동기화 성공`);
     logger.broadcast({
       type: 'QUOTA_UPDATED',
       quotaDatabase: quotaDb
@@ -1521,12 +1806,17 @@ app.post('/api/campaigns/:id/import-quota', (req, res) => {
   const jsonPath = path.join(quotasDir, safeFilename);
 
   if (!fs.existsSync(jsonPath)) {
+    ensureAssocCampaignQuotaFiles();
+  }
+
+  if (!fs.existsSync(jsonPath)) {
     return res.status(404).json({ error: '쿼터 파일을 찾을 수 없습니다.' });
   }
 
   try {
     const quotaMeta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
     const businesses = quotaMeta.data || [];
+    const isAssoc = (quotaMeta.type === 'KSTAT_ASSOC' || quotaMeta.surveyType === 'kstat_assoc' || safeFilename.startsWith('quota_assoc_'));
 
     if (businesses.length === 0) {
       return res.status(400).json({ error: '쿼터 파일 내에 사업자 데이터가 없습니다.' });
@@ -1534,15 +1824,23 @@ app.post('/api/campaigns/:id/import-quota', (req, res) => {
 
     // 쿼터 DB 변환
     const quotaDb = businesses.map((b, idx) => ({
+      seq: idx + 1,
       index: idx + 1,
+      slotIndex: idx + 1,
       ...b,
-      quotaStatus: 'ready',
-      usedAt: null
+      quotaStatus: b.quotaStatus || (b.status === '완료' ? 'completed' : 'ready'),
+      usedAt: b.usedAt || null
     }));
 
     const updated = CampaignStore.updateCampaign(campaign.id, {
       status: 'ready',
       quotaType: 'b2b',
+      ...(isAssoc ? {
+        surveyType: 'kstat_assoc',
+        kstatLoginId: quotaMeta.surveyorId || businesses[0]?.surveyorAccount || campaign.kstatLoginId || '가온박정순',
+        kstatLoginPw: quotaMeta.kstatLoginPw || campaign.kstatLoginPw || '1234',
+        kstatListUrl: quotaMeta.kstatListUrl || campaign.kstatListUrl || 'https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi'
+      } : {}),
       quotaConfig: {
         quotaSource: 'FILE_IMPORT',
         quotaFileName: safeFilename,
@@ -1578,6 +1876,10 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
   const jsonPath = path.join(quotasDir, safeFilename);
 
   if (!fs.existsSync(jsonPath)) {
+    ensureAssocCampaignQuotaFiles();
+  }
+
+  if (!fs.existsSync(jsonPath)) {
     return res.status(404).json({ error: '쿼터 파일을 찾을 수 없습니다.' });
   }
 
@@ -1588,7 +1890,7 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
     const campTitle = title || quotaMeta.title || `새 설문조사 (${path.basename(safeFilename, '.json')})`;
 
     const isMetrix = (quotaMeta.type === 'METRIX_PANEL');
-    const isAssoc = (quotaMeta.type === 'KSTAT_ASSOC');
+    const isAssoc = (quotaMeta.type === 'KSTAT_ASSOC' || quotaMeta.surveyType === 'kstat_assoc' || safeFilename.startsWith('quota_assoc_'));
     const isKona = (quotaMeta.type === 'KONA_YOUTH' || quotaMeta.surveyType === 'kona_youth');
     const isHrcEnergy = (quotaMeta.type === 'HRC_ENERGY_BUILDING' || quotaMeta.surveyType === 'hrc_energy' || safeFilename.includes('hrc_energy'));
 
@@ -1600,11 +1902,18 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
           ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치플랫폼)'
           : (isMetrix
             ? '메트릭스 경기도 소상공인 사업체패널 3차조사'
-            : (quotaMeta.marketName 
-              ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
-              : `${quotaMeta.keyword || '사업주'} 대상 설문조사`))),
+            : (isAssoc
+              ? `2026년 전통시장 및 상점가 조사 (상인회 전용 · 조사원: ${quotaMeta.surveyorId || businesses[0]?.surveyorAccount || ''})`
+              : (quotaMeta.marketName 
+                ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
+                : `${quotaMeta.keyword || '사업주'} 대상 설문조사`)))),
       quotaType: isKona ? 'b2c' : 'b2b',
       surveyType: isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))),
+      ...(isAssoc ? {
+        kstatLoginId: quotaMeta.surveyorId || businesses[0]?.surveyorAccount || '가온박정순',
+        kstatLoginPw: quotaMeta.kstatLoginPw || '1234',
+        kstatListUrl: quotaMeta.kstatListUrl || 'https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi'
+      } : {}),
       ...(isHrcEnergy ? {
         loginId: quotaMeta.surveyorId || '700275',
         loginPw: quotaMeta.surveyorId || '700275',
@@ -1613,18 +1922,22 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
     });
 
     const quotaDb = businesses.map((b, idx) => ({
+      seq: idx + 1,
       index: idx + 1,
+      slotIndex: idx + 1,
       ...b,
       quotaStatus: b.quotaStatus || (b.status === '완료' ? 'completed' : 'ready'),
       usedAt: null
     }));
 
-    // 기존 캠페인 중 사용자가 커스텀 설정한 masterBaseline(1/2/3그룹 가이드라인)이 있으면 신규 캠페인에 자동 복제 장착
+    // 기존 캠페인 중 사용자가 커스텀 설정한 masterBaseline이 있으면 신규 캠페인에 자동 복제 장착
     let inheritedBaseline = null;
     const allCamps = CampaignStore.getAllCampaigns();
-    const sourceWithGroups = allCamps.find(c => c.masterBaseline && c.masterBaseline.groups);
-    const sourceWithBaseline = allCamps.find(c => c.masterBaseline);
-    const bestSource = sourceWithGroups || sourceWithBaseline;
+    const bestSource = isAssoc
+      ? (allCamps.find(c => (c.surveyType === 'kstat_assoc' || String(c.title || '').includes('상인회')) && c.masterBaseline && c.masterBaseline.assocMode) ||
+         allCamps.find(c => (c.surveyType === 'kstat_assoc' || String(c.title || '').includes('상인회')) && c.masterBaseline))
+      : (allCamps.find(c => c.surveyType !== 'kstat_assoc' && c.masterBaseline && c.masterBaseline.groups) ||
+         allCamps.find(c => c.surveyType !== 'kstat_assoc' && c.masterBaseline));
     if (bestSource && bestSource.masterBaseline) {
       inheritedBaseline = JSON.parse(JSON.stringify(bestSource.masterBaseline));
       if (inheritedBaseline.groups) {
@@ -1638,7 +1951,7 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
           }
         });
       }
-      logger.info(`[마스터 기준점 자동 계승] 기존 캠페인 "${bestSource.title}"의 1/2/3그룹 기준점 설정을 신규 캠페인에 자동 복제 장착했습니다.`);
+      logger.info(`[마스터 기준점 자동 계승] 기존 캠페인 "${bestSource.title}"의 기준점 설정을 신규 캠페인에 자동 복제 장착했습니다.`);
     }
 
     const updated = CampaignStore.updateCampaign(newCamp.id, {
@@ -3979,6 +4292,7 @@ app.post('/api/quota/sync-metrix', async (req, res) => {
 // 1. 생성된 쿼터 목록 조회 (업종별 분포 및 통계 포함)
 app.get('/api/quota/list', (req, res) => {
   try {
+    ensureAssocCampaignQuotaFiles();
     const files = fs.readdirSync(quotasDir).filter(f => f.endsWith('.json'));
     const list = files.map(f => {
       const content = JSON.parse(fs.readFileSync(path.join(quotasDir, f), 'utf-8'));
@@ -3990,11 +4304,21 @@ app.get('/api/quota/list', (req, res) => {
       const industryDist = {};
       const isHrcEnergy = content.type === 'HRC_ENERGY_BUILDING' || content.surveyType === 'hrc_energy' || f.includes('hrc_energy');
       const isGlobalriLiteracy = content.type === 'GLOBALRI_ADULT_LITERACY' || content.surveyType === 'globalri_literacy' || f.includes('globalri_adult_literacy');
+      const isAssoc = content.type === 'KSTAT_ASSOC' || content.surveyType === 'kstat_assoc' || f.startsWith('quota_assoc_');
 
       if (isGlobalriLiteracy) {
         data.forEach(item => {
           const ag = String(item.ageGroupLabel || '기타').trim();
           industryDist[ag] = (industryDist[ag] || 0) + 1;
+        });
+      } else if (isAssoc) {
+        const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed' || item.quotaStatus === 'used' || item.surveyCompleted).length;
+        const readyCnt = data.length - doneCnt;
+        if (readyCnt > 0) industryDist['대기(진행대상)'] = readyCnt;
+        if (doneCnt > 0) industryDist['조사완료'] = doneCnt;
+        data.forEach(item => {
+          const mt = String(item.marketType || item.industry || '상인회').trim();
+          industryDist[mt] = (industryDist[mt] || 0) + 1;
         });
       } else if (isHrcEnergy) {
         const selCnt = data.filter(item => item.selectionType === '선정').length;
@@ -4040,13 +4364,14 @@ app.get('/api/quota/list', (req, res) => {
       return {
         fileName: f,
         title: content.title || f,
-        type: content.type || (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : 'MARKETBZ_DIRECT'),
-        surveyType: content.surveyType || (isHrcEnergy ? 'hrc_energy' : null),
+        type: content.type || (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : 'MARKETBZ_DIRECT')),
+        surveyType: content.surveyType || (isAssoc ? 'kstat_assoc' : (isHrcEnergy ? 'hrc_energy' : null)),
+        linkedCampaignId: content.linkedCampaignId || null,
         selectedCount: content.selectedCount || null,
         substituteCount: content.substituteCount || null,
         surveyorId: content.surveyorId || null,
         surveyorName: content.surveyorName || null,
-        marketName: content.marketName || (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : null),
+        marketName: content.marketName || (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : null)),
         keyword: content.keyword,
         count: content.count || data.length,
         targetTotal,
@@ -4071,6 +4396,9 @@ app.get('/api/quota/:fileName', (req, res) => {
     const safeFilename = path.basename(req.params.fileName);
     const jsonPath = path.join(quotasDir, safeFilename);
     if (!fs.existsSync(jsonPath)) {
+      ensureAssocCampaignQuotaFiles();
+    }
+    if (!fs.existsSync(jsonPath)) {
       return res.status(404).json({ error: '해당 쿼터 파일을 찾을 수 없습니다.' });
     }
 
@@ -4089,11 +4417,14 @@ app.get('/api/quota/:fileName', (req, res) => {
   }
 });
 
-// 3. 특정 쿼터 데이터 수정 및 Excel 실시간 동기화
+// 3. 특정 쿼터 데이터 수정 및 Excel 실시간 동기화 (항목 삭제 시 연동 캠페인에서도 즉시 제거)
 app.put('/api/quota/:fileName', (req, res) => {
   try {
     const safeFilename = path.basename(req.params.fileName);
     const jsonPath = path.join(quotasDir, safeFilename);
+    if (!fs.existsSync(jsonPath)) {
+      ensureAssocCampaignQuotaFiles();
+    }
     if (!fs.existsSync(jsonPath)) {
       return res.status(404).json({ error: '해당 쿼터 파일을 찾을 수 없습니다.' });
     }
@@ -4105,13 +4436,16 @@ app.put('/api/quota/:fileName', (req, res) => {
 
     const content = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
     if (title) content.title = title.trim();
+    const isAssoc = content.type === 'KSTAT_ASSOC' || content.surveyType === 'kstat_assoc' || safeFilename.startsWith('quota_assoc_');
 
     // 순번(seq) 재부여, 슬롯 메타데이터 정규화 및 데이터 갱신
     content.data = updatedData.map((item, idx) => {
-      const normalized = {
-        ...item,
-        seq: idx + 1
-      };
+      const normalized = isAssoc
+        ? normalizeAssocQuotaItem(item, idx, content.surveyorId || '')
+        : {
+            ...item,
+            seq: idx + 1
+          };
       if (normalized.slotUrl !== undefined) {
         let rawUrl = String(normalized.slotUrl || '').trim();
         if (!rawUrl) {
@@ -4123,7 +4457,9 @@ app.put('/api/quota/:fileName', (req, res) => {
           delete normalized.slotExtra;
         } else {
           if (!/^https?:\/\//i.test(rawUrl) && /^[A-Za-z0-9_-]{6,20}$/.test(rawUrl)) {
-            rawUrl = `https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=${rawUrl}&type=tapi&prid=2026070802&mnid=900001346&srt=1`;
+            rawUrl = isAssoc
+              ? `https://kstat.surveys.kr/2026/P26042401A/index.asp?KID=${rawUrl}&type=tapi&prid=2026070801&mnid=2026070801&srt=1`
+              : `https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=${rawUrl}&type=tapi&prid=2026070802&mnid=900001346&srt=1`;
           }
           normalized.slotUrl = rawUrl;
           normalized.surveyUrl = rawUrl;
@@ -4131,7 +4467,9 @@ app.put('/api/quota/:fileName', (req, res) => {
           if (kidMatch) {
             normalized.ranId = kidMatch[1];
             if (!normalized.evalUrl) {
-              normalized.evalUrl = `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${normalized.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2`;
+              normalized.evalUrl = isAssoc
+                ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${normalized.ranId}&type=tapi&prid=2026070801&mnid=2026070801&srt=2`
+                : `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${normalized.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2`;
             }
           }
           if (!normalized.slotIndex) normalized.slotIndex = idx + 1;
@@ -4141,10 +4479,10 @@ app.put('/api/quota/:fileName', (req, res) => {
       return normalized;
     });
     content.count = content.data.length;
+    content.targetTotal = content.data.length;
     content.updatedAt = new Date().toISOString();
 
-    // 표준 컬럼 순서 보장: [상호] [업종] [사업자번호] [대표자이름] [성별] [나이] [연락처] [개업연월] [주소] [취급품목] [주요품목]
-    const columns = [
+    const columns = isAssoc ? buildAssocQuotaColumns() : [
       { key: 'companyName', label: '상호' },
       { key: 'industry', label: '업종' },
       { key: 'bizNumber', label: '사업자번호' },
@@ -4175,66 +4513,81 @@ app.put('/api/quota/:fileName', (req, res) => {
       filePath: excelPath
     });
 
-    // 캠페인 DB에도 매칭되는 점포 및 수동 추가 점포가 있다면 실시간 동기화
+    // 캠페인 DB에도 삭제/수정/추가 내역을 실시간 동기화
     try {
       const allCamps = CampaignStore.getAllCampaigns();
       const syncKeys = [
-        'companyName', 'industry', 'bizNumber', 'ceoName', 'ceoGender', 'ceoAge',
-        'phone', 'openDate', 'address', 'handledItems', 'mainProducts',
-        'slotUrl', 'surveyUrl', 'evalUrl', 'slotIndex', 'slotExtra', 'ranId'
+        'companyName', 'marketName', 'industry', 'marketType', 'bizNumber', 'marketCode',
+        'ceoName', 'leaderName', 'ceoGender', 'ceoAge', 'phone', 'leaderPhone', 'assocPhone',
+        'openDate', 'address', 'handledItems', 'mainProducts', 'surveyorAccount',
+        'slotUrl', 'surveyUrl', 'evalUrl', 'slotIndex', 'slotExtra', 'ranId', 'kid', 'idSel'
       ];
       allCamps.forEach(camp => {
         if (Array.isArray(camp.quotaDatabase)) {
-          let campChanged = false;
-          camp.quotaDatabase.forEach(cItem => {
-            const matched = content.data.find(d => 
-              (d.bizNumber && d.bizNumber === cItem.bizNumber) ||
-              (d.companyName && d.companyName === cItem.companyName)
-            );
-            if (matched) {
-              syncKeys.forEach(k => {
-                if (matched[k] !== undefined) cItem[k] = matched[k];
-              });
-              campChanged = true;
-            }
-          });
-
-          // 해당 쿼터 파일을 장착한 캠페인인 경우 신규 수동 추가된 점포도 캠페인에 자동 추가
-          const isLinkedCamp = (camp.quotaConfig?.quotaFileName === safeFilename) ||
+          const isLinkedCamp = (camp.id === content.linkedCampaignId) ||
+            (camp.quotaConfig?.quotaFileName === safeFilename) ||
             (camp.quotaSourceFile === safeFilename) ||
-            (content.marketName && camp.quotaConfig?.marketName === content.marketName);
+            (isAssoc && safeFilename === `quota_assoc_${camp.id}.json`) ||
+            (!isAssoc && content.marketName && camp.quotaConfig?.marketName === content.marketName);
+
           if (isLinkedCamp) {
-            content.data.forEach(dItem => {
-              const existsInCamp = camp.quotaDatabase.some(cItem =>
-                (cItem.bizNumber && cItem.bizNumber === dItem.bizNumber) ||
-                (cItem.companyName && cItem.companyName === dItem.companyName)
+            // 연동된 캠페인은 쿼터 파일에서 삭제된 행을 캠페인에서도 즉시 제거하고 순번을 재정렬
+            const rebuiltDb = content.data.map((dItem, idx) => {
+              const existing = camp.quotaDatabase.find(cItem =>
+                (dItem.ranId && cItem.ranId && dItem.ranId === cItem.ranId) ||
+                (dItem.kid && cItem.kid && dItem.kid === cItem.kid) ||
+                (dItem.marketCode && cItem.marketCode && dItem.marketCode === cItem.marketCode) ||
+                (dItem.bizNumber && dItem.bizNumber !== '-' && cItem.bizNumber === dItem.bizNumber) ||
+                ((dItem.marketName || dItem.companyName) && (cItem.marketName === (dItem.marketName || dItem.companyName) || cItem.companyName === (dItem.companyName || dItem.marketName)))
               );
-              if (!existsInCamp && dItem.companyName) {
-                const nextIdx = camp.quotaDatabase.length + 1;
-                camp.quotaDatabase.push({
-                  ...dItem,
-                  index: nextIdx,
-                  seq: nextIdx,
-                  quotaStatus: 'ready',
-                  usedAt: null
+              return {
+                ...(existing || {}),
+                ...dItem,
+                seq: idx + 1,
+                index: idx + 1,
+                slotIndex: idx + 1,
+                quotaStatus: existing?.quotaStatus || dItem.quotaStatus || 'ready',
+                evalStatus: existing?.evalStatus || dItem.evalStatus || 'pending',
+                surveyCompleted: existing?.surveyCompleted ?? dItem.surveyCompleted ?? false,
+                evalCompleted: existing?.evalCompleted ?? dItem.evalCompleted ?? false,
+                usedAt: existing?.usedAt || dItem.usedAt || null
+              };
+            });
+            CampaignStore.updateCampaign(camp.id, {
+              quotaDatabase: rebuiltDb,
+              quotaConfig: {
+                ...(camp.quotaConfig || {}),
+                quotaFileName: safeFilename,
+                targetCount: rebuiltDb.length
+              }
+            });
+          } else {
+            let campChanged = false;
+            camp.quotaDatabase.forEach(cItem => {
+              const matched = content.data.find(d => 
+                (d.bizNumber && d.bizNumber !== '-' && d.bizNumber === cItem.bizNumber) ||
+                (d.companyName && d.companyName === cItem.companyName)
+              );
+              if (matched) {
+                syncKeys.forEach(k => {
+                  if (matched[k] !== undefined) cItem[k] = matched[k];
                 });
                 campChanged = true;
               }
             });
-          }
-
-          if (campChanged) {
-            CampaignStore.updateCampaign(camp.id, { quotaDatabase: camp.quotaDatabase });
+            if (campChanged) {
+              CampaignStore.updateCampaign(camp.id, { quotaDatabase: camp.quotaDatabase });
+            }
           }
         }
       });
     } catch (_) {}
 
-    logger.success(`[쿼터 수정 완료] "${content.title}" (${safeFilename}) ${content.count}건 갱신 및 Excel 동기화 성공!`);
+    logger.success(`[쿼터 수정 완료] "${content.title}" (${safeFilename}) ${content.count}건 갱신 및 캠페인/Excel 동기화 성공!`);
 
     res.json({
       success: true,
-      message: `조사 쿼터가 성공적으로 저장 및 Excel과 동기화되었습니다. (총 ${content.count}건)`,
+      message: `조사 쿼터가 성공적으로 저장 및 캠페인/Excel과 동기화되었습니다. (총 ${content.count}건)`,
       quota: content
     });
   } catch (err) {
