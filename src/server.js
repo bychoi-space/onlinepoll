@@ -32,6 +32,8 @@ import { runMetrixSurvey } from './engine/metrix-runner.js';
 import { runKonaSurvey } from './engine/kona-runner.js';
 import { scrapeHrcEnergySlots, findHrcQuotaJsonPath, HRC_ACCOUNTS } from './engine/hrc-energy-scraper.js';
 import { runHrcEnergySurvey } from './engine/hrc-energy-runner.js';
+import { scrapeGlobalriLiteracyQuotas, findGlobalriQuotaJsonPath, getAgeGroupFromBirthYear } from './engine/globalri-literacy-scraper.js';
+import { runGlobalriLiteracySurvey } from './engine/globalri-literacy-runner.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -251,6 +253,42 @@ try {
         });
       }
     }
+  }
+
+  // [GR20260618-1-001-02] 제5차 성인문해능력조사 (노영미7791) 자동 시드
+  const globalriCampId = 'camp_globalri_literacy_7791';
+  const existingGlobalriCamp = CampaignStore.getAllCampaigns().find(c => c.id === globalriCampId);
+  const globalriQuotaPath = findGlobalriQuotaJsonPath('7791');
+  if (globalriQuotaPath && fs.existsSync(globalriQuotaPath)) {
+    try {
+      const gqContent = JSON.parse(fs.readFileSync(globalriQuotaPath, 'utf-8'));
+      const gqFile = path.basename(globalriQuotaPath);
+      const gqList = (gqContent.data || []).map((item, idx) => ({
+        ...item,
+        index: item.index || idx + 1,
+        seq: item.seq || idx + 1,
+        quotaStatus: item.quotaStatus || 'ready'
+      }));
+      if (!existingGlobalriCamp) {
+        CampaignStore.createCampaign({
+          id: globalriCampId,
+          title: `[GR20260618-1-001-02] 제5차 성인문해능력조사 - 노영미7791 (진행중 ${gqList.length}명)`,
+          description: '글로벌리서치 통합조사시스템(GIFT) · [결과값1=완료 & 결과값2=완료] 가구 내 진행 중 가구원 조사 · 나이대별(20대/30대/40대/50대/60대/70대+) 그룹 가이드 적용',
+          quotaType: 'b2c',
+          surveyType: 'globalri_literacy',
+          loginId: '01071447791',
+          loginPw: '2038020',
+          surveyorName: '노영미7791',
+          quotaSourceFile: gqFile,
+          quotaDatabase: gqList
+        });
+      } else if (!Array.isArray(existingGlobalriCamp.quotaDatabase) || existingGlobalriCamp.quotaDatabase.length === 0) {
+        CampaignStore.updateCampaign(globalriCampId, {
+          quotaDatabase: gqList,
+          quotaSourceFile: gqFile
+        });
+      }
+    } catch (_) {}
   }
 } catch (_) {}
 
@@ -643,6 +681,63 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
     });
   }
 
+  // 글로벌리서치 제5차 성인문해능력조사 (GR20260618-1-001-02 / SNUM 5963) 나이대별 그룹 가이드 분기
+  if (campaign.surveyType === 'globalri_literacy') {
+    const globalriBlueprintPath = path.join(dataDir, 'globalri_literacy_blueprint.json');
+    let globalriBlueprint = null;
+    if (fs.existsSync(globalriBlueprintPath)) {
+      try {
+        globalriBlueprint = JSON.parse(fs.readFileSync(globalriBlueprintPath, 'utf-8'));
+      } catch (err) {
+        console.error('성인문해능력조사 블루프린트 파싱 실패:', err);
+      }
+    }
+    const defaultPolicy = globalriBlueprint?.defaultPolicy || { ageGroups: {} };
+    const savedPolicy = campaign.globalriLiteracyPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || {};
+    const mergedAgeGroups = {};
+    const ageKeys = ['age20', 'age30', 'age40', 'age50', 'age60', 'age70'];
+    ageKeys.forEach(k => {
+      mergedAgeGroups[k] = {
+        ...(defaultPolicy.ageGroups?.[k] || {}),
+        ...(savedPolicy.ageGroups?.[k] || savedPolicy.groups?.[k] || {})
+      };
+    });
+
+    const ageGroupStats = {
+      age20: { key: 'age20', label: '20대 (18~29세)', shortLabel: '20대', count: 0, members: [] },
+      age30: { key: 'age30', label: '30대 (30~39세)', shortLabel: '30대', count: 0, members: [] },
+      age40: { key: 'age40', label: '40대 (40~49세)', shortLabel: '40대', count: 0, members: [] },
+      age50: { key: 'age50', label: '50대 (50~59세)', shortLabel: '50대', count: 0, members: [] },
+      age60: { key: 'age60', label: '60대 (60~69세)', shortLabel: '60대', count: 0, members: [] },
+      age70: { key: 'age70', label: '70대 이상 (70세~)', shortLabel: '70대 이상', count: 0, members: [] }
+    };
+    (campaign.quotaDatabase || []).forEach(q => {
+      const ageInfo = getAgeGroupFromBirthYear(q.birthYear || (2026 - (q.age || q.ceoAge || 40)));
+      const gk = q.ageGroup || ageInfo.ageGroup || 'age50';
+      if (ageGroupStats[gk]) {
+        ageGroupStats[gk].count++;
+        ageGroupStats[gk].members.push(`${q.respondentName || q.ceoName || q.companyName}(${q.age || ageInfo.age}세/LID ${q.lid || '-'})`);
+      }
+    });
+
+    const effectivePolicy = {
+      ...defaultPolicy,
+      ...savedPolicy,
+      ageGroups: mergedAgeGroups
+    };
+
+    return res.json({
+      surveyType: 'globalri_literacy',
+      blueprint: globalriBlueprint,
+      policy: effectivePolicy,
+      ageGroups: mergedAgeGroups,
+      ageGroupStats,
+      campaignTitle: campaign.title,
+      slotCount: (campaign.quotaDatabase || []).length,
+      hasCustomBaseline: !!(campaign.globalriLiteracyPolicy || campaign.masterBaseline)
+    });
+  }
+
   const blueprintPath = path.join(dataDir, 'kstat_survey_blueprint.json');
   if (!fs.existsSync(blueprintPath)) {
     return res.status(404).json({ error: '마스터 설문 블루프린트 파일이 존재하지 않습니다.' });
@@ -773,6 +868,7 @@ app.post('/api/campaigns/:id/baseline', (req, res) => {
   const isMetrix = (campaign.surveyType === 'metrix_panel');
   const isKona = (campaign.surveyType === 'kona_youth');
   const isHrcEnergy = (campaign.surveyType === 'hrc_energy');
+  const isGlobalriLiteracy = (campaign.surveyType === 'globalri_literacy');
 
   CampaignStore.updateCampaign(campaign.id, {
     masterBaseline: baseline,
@@ -780,21 +876,24 @@ app.post('/api/campaigns/:id/baseline', (req, res) => {
     ...(isAssoc ? { assocPolicy: baseline.policy || baseline } : {}),
     ...(isMetrix ? { metrixPolicy: baseline.policy || baseline } : {}),
     ...(isKona ? { konaPolicy: baseline.policy || baseline } : {}),
-    ...(isHrcEnergy ? { hrcEnergyPolicy: baseline.policy || baseline } : {})
+    ...(isHrcEnergy ? { hrcEnergyPolicy: baseline.policy || baseline } : {}),
+    ...(isGlobalriLiteracy ? { globalriLiteracyPolicy: baseline.policy || baseline } : {})
   });
 
-  logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isHrcEnergy ? '에너지총조사 건물 부문 응답 규칙' : (isKona ? '코나체인 청소년 설문 기준 가이드' : (isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점')))}이 저장되었습니다! 🎯`);
+  logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isGlobalriLiteracy ? '제5차 성인문해능력조사 나이대별 그룹 가이드' : (isHrcEnergy ? '에너지총조사 건물 부문 응답 규칙' : (isKona ? '코나체인 청소년 설문 기준 가이드' : (isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점'))))}이 저장되었습니다! 🎯`);
   res.json({
     success: true,
-    message: isHrcEnergy
-      ? '2025년 기준 에너지총조사 [건물 부문] 응답 기준 가이드라인(기입력 보존 정책 포함)이 성공적으로 저장되었습니다.'
-      : (isKona
-        ? '화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-        : (isMetrix
-          ? '메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-          : (isAssoc 
-            ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
-            : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.'))),
+    message: isGlobalriLiteracy
+      ? '제5차 성인문해능력조사 나이대별(20대/30대/40대/50대/60대/70대+) 그룹 가이드라인이 성공적으로 저장되었습니다.'
+      : (isHrcEnergy
+        ? '2025년 기준 에너지총조사 [건물 부문] 응답 기준 가이드라인(기입력 보존 정책 포함)이 성공적으로 저장되었습니다.'
+        : (isKona
+          ? '화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+          : (isMetrix
+            ? '메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+            : (isAssoc 
+              ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
+              : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.')))),
     baseline
   });
 });
@@ -1215,6 +1314,84 @@ app.post('/api/quota/sync-hrc-energy', async (req, res) => {
     });
   } catch (err) {
     logger.error(`[HRC 쿼터 동기화 오류] ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// [1-3] 글로벌리서치 제5차 성인문해능력조사 (GR20260618-1-001-02) 실시간 쿼터 동기화 및 LID 필터링 API
+// ==========================================
+app.post('/api/campaigns/:id/sync-globalri-literacy', async (req, res) => {
+  const campaign = CampaignStore.getCampaignById(req.params.id);
+  if (!campaign) {
+    return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+  }
+
+  try {
+    const loginId = String(req.body?.loginId || campaign.loginId || '01071447791').trim();
+    const loginPw = String(req.body?.loginPw || campaign.loginPw || '2038020').trim();
+    const lidFilter = String(req.body?.lidFilter || '').trim();
+    const onlyInProgress = (req.body?.onlyInProgress !== false);
+
+    logger.info(`[성인문해능력조사 쿼터 동기화] 캠페인 "${campaign.title}" (면접원 ID: ${loginId}, LID 필터: ${lidFilter || '결과값1=완료 & 결과값2=완료 전체'})`);
+
+    const syncRes = await scrapeGlobalriLiteracyQuotas({
+      loginId,
+      loginPw,
+      lidFilter,
+      onlyInProgress
+    });
+
+    const updatedQuotaDb = (syncRes.quotaMembers || []).map((item, idx) => ({
+      ...item,
+      index: idx + 1,
+      seq: idx + 1
+    }));
+
+    CampaignStore.updateCampaign(campaign.id, {
+      quotaDatabase: updatedQuotaDb,
+      loginId,
+      loginPw,
+      quotaSourceFile: syncRes.jsonFileName
+    });
+
+    logger.broadcast({
+      type: 'QUOTA_UPDATED',
+      campaignId: campaign.id,
+      quotaDatabase: updatedQuotaDb
+    });
+
+    res.json({
+      success: true,
+      message: `글로벌리서치(GIFT) 실시간 동기화 완료! (${syncRes.totalHouseholdsChecked}가구 확인 ➔ '진행 중' 설문 대상 가구원 ${updatedQuotaDb.length}명 추출)`,
+      totalHouseholdsChecked: syncRes.totalHouseholdsChecked,
+      totalMembers: updatedQuotaDb.length,
+      ageGroupBreakdown: syncRes.ageGroupBreakdown,
+      quotaDatabase: updatedQuotaDb
+    });
+  } catch (err) {
+    logger.error(`[성인문해능력조사 동기화 오류] ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/quota/sync-globalri-literacy', async (req, res) => {
+  try {
+    const loginId = String(req.body?.loginId || '01071447791').trim();
+    const loginPw = String(req.body?.loginPw || '2038020').trim();
+    const lidFilter = String(req.body?.lidFilter || '').trim();
+    const syncRes = await scrapeGlobalriLiteracyQuotas({
+      loginId,
+      loginPw,
+      lidFilter
+    });
+    res.json({
+      success: true,
+      message: `제5차 성인문해능력조사 쿼터 동기화 완료 ('진행 중' 대상자 ${syncRes.totalMembers}명)`,
+      ...syncRes
+    });
+  } catch (err) {
+    logger.error(`[성인문해능력조사 쿼터 동기화 오류] ${err.message}`);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1787,9 +1964,30 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
       const isMetrix = (campaign.surveyType === 'metrix_panel');
       const isKona = (campaign.surveyType === 'kona_youth');
       const isHrcEnergy = (campaign.surveyType === 'hrc_energy');
+      const isGlobalriLiteracy = (campaign.surveyType === 'globalri_literacy');
       let result;
 
-      if (isHrcEnergy) {
+      if (isGlobalriLiteracy) {
+        logger.info(`[성인문해능력조사 파일럿 실행] 러너 가동: "${targetBiz.respondentName || targetBiz.companyName}" (LID: ${targetBiz.lid}, UID: ${targetBiz.memberUid || targetBiz.uid}, ${targetBiz.ageGroupLabel || ''})`);
+        const globalriPol = campaign.globalriLiteracyPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {};
+        result = await runGlobalriLiteracySurvey({
+          slotData: targetBiz,
+          policy: globalriPol,
+          quotaIndex: targetBiz.index || quotaIndex,
+          pilotMode: true,
+          safetyGuard: true,
+          reportDir: path.join(reportsDir, campaign.id, `globalri_item_${targetBiz.index || quotaIndex}_${targetBiz.memberUid || targetBiz.uid || ''}`),
+          onProgress: (info) => {
+            logger.info(`[성인문해능력조사 파일럿 - ${info.step}] ${info.message}`);
+            logger.broadcast({
+              type: 'PILOT_PROGRESS',
+              campaignId: campaign.id,
+              quotaIndex: targetBiz.index,
+              ...info
+            });
+          }
+        });
+      } else if (isHrcEnergy) {
         logger.info(`[에너지총조사 파일럿 실행] 건물 부문 전용 러너 가동: "${targetBiz.buildingName || targetBiz.companyName}" (UID: ${targetBiz.uid})`);
         const hrcPol = campaign.hrcEnergyPolicy || policy || {};
         result = await runHrcEnergySurvey({
@@ -1902,7 +2100,15 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
       }
 
       if (result.success) {
-        if (isHrcEnergy) {
+        if (isGlobalriLiteracy) {
+          targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
+          targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(F05_2)' : '완료';
+          targetBiz.memberStatus = (result.status === 'stopped_at_review') ? '검증대기(F05_2)' : '완료';
+          targetBiz.progress = (result.status === 'stopped_at_review') ? '98% (제출직전)' : '100%';
+          targetBiz.pilotAt = new Date().toISOString();
+          targetBiz.capturedSteps = result.capturedSteps;
+          logger.success(`🎉 [성인문해능력조사 파일럿 성공] "${targetBiz.respondentName || targetBiz.companyName}" (${targetBiz.memberUid}) ${targetBiz.status} 달성!`);
+        } else if (isHrcEnergy) {
           targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
           targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(91%)' : '완료';
           targetBiz.progress = (result.status === 'stopped_at_review') ? '91%' : '100%';
@@ -1928,7 +2134,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
         }
 
         // 조사원 평가항목 연계 실행 (점포조사 및 상인회조사 2단계 연계)
-        if (!isKona && !isHrcEnergy && isAssoc) {
+        if (!isKona && !isHrcEnergy && !isGlobalriLiteracy && isAssoc) {
           const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
           if (evalUrl) {
             logger.info(`[파일럿 2단계] "${targetBiz.marketName || targetBiz.companyName}" 상인회 조사원 평가 작성 자동 연계 시작...`);
@@ -1967,7 +2173,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
               logger.warn(`[파일럿 평가 경고] 상인회 조사원 평가 연계 중 예외: ${evalErr.message}`);
             }
           }
-        } else if (!isKona && !isMetrix && !isHrcEnergy) {
+        } else if (!isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy) {
           const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
           if (evalUrl) {
             logger.info(`[파일럿 2단계] "${targetBiz.companyName}" 조사원 평가항목 작성 자동 연계 시작...`);
@@ -2009,7 +2215,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
         }
 
         // 본설문 상태 동기화 (Kstat list.php 캐시 갱신)
-        if (!isKona && !isMetrix && !isHrcEnergy) {
+        if (!isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy) {
           const targetPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
           await syncKstatSlotStatus({
             pridSel: targetPridSel,
@@ -2089,11 +2295,14 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
   const isMetrix = (campaign.surveyType === 'metrix_panel');
   const isKona = (campaign.surveyType === 'kona_youth');
   const isHrcEnergy = (campaign.surveyType === 'hrc_energy');
-  const effectivePolicy = isHrcEnergy
-    ? (campaign.hrcEnergyPolicy || policy || {})
-    : (isKona
-      ? (campaign.konaPolicy || policy || {})
-      : (isMetrix ? (campaign.metrixPolicy || policy || {}) : (isAssoc ? (campaign.assocPolicy || policy || {}) : policy)));
+  const isGlobalriLiteracy = (campaign.surveyType === 'globalri_literacy');
+  const effectivePolicy = isGlobalriLiteracy
+    ? (campaign.globalriLiteracyPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
+    : (isHrcEnergy
+      ? (campaign.hrcEnergyPolicy || policy || {})
+      : (isKona
+        ? (campaign.konaPolicy || policy || {})
+        : (isMetrix ? (campaign.metrixPolicy || policy || {}) : (isAssoc ? (campaign.assocPolicy || policy || {}) : policy))));
 
   const skipCompletedSlots = (effectivePolicy.skipCompletedSlots !== false);
   const skipSlotIndices = (effectivePolicy.skipSlotIndices || '')
@@ -2112,11 +2321,11 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     const idx = (b.index || b.seq || b.slotIndex || 1);
     if (idx < startIndex) return false;
     if (skipSlotIndices.includes(idx)) return false;
-    if ((isMetrix || isKona || isHrcEnergy) && (b.uid || b.idx) && skipSlotUids.includes(String(b.uid || b.idx))) return false;
+    if ((isMetrix || isKona || isHrcEnergy || isGlobalriLiteracy) && (b.uid || b.memberUid || b.idx) && skipSlotUids.includes(String(b.memberUid || b.uid || b.idx))) return false;
     if (isHrcEnergy && effectivePolicy.onlySelectedByDefault !== false && b.selectionType && b.selectionType !== '선정') {
       return false; // 에너지총조사는 기본적으로 '선정' 쿼터만 실행 (오류 시 '대체' 자동 승계)
     }
-    if (b.quotaStatus === 'completed' || b.status === '완료' || b.substitutedByUid) return false;
+    if (b.quotaStatus === 'completed' || b.status === '완료' || b.memberStatus === '완료' || b.substitutedByUid) return false;
     if (skipCompletedSlots && (b.surveyCompleted === '완료' || b.surveyCompleted === true || b.status === '완료')) {
       return false;
     }
@@ -2134,7 +2343,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
   }
 
   // 1:1 슬롯 매핑 엄격 검증
-  const unmapped = (isKona || isHrcEnergy) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
+  const unmapped = (isKona || isHrcEnergy || isGlobalriLiteracy) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
   if (unmapped.length > 0) {
     return res.status(400).json({
       error: isMetrix
@@ -2183,7 +2392,27 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
 
         let result;
         try {
-          if (isHrcEnergy) {
+          if (isGlobalriLiteracy) {
+            result = await runGlobalriLiteracySurvey({
+              slotData: biz,
+              policy: effectivePolicy,
+              quotaIndex: biz.index || (i + startIndex),
+              pilotMode: false,
+              safetyGuard,
+              reportDir: path.join(reportsDir, campaign.id, `globalri_item_${biz.index || (i + startIndex)}_${biz.memberUid || biz.uid || ''}`),
+              onProgress: (info) => {
+                logger.info(`[성인문해능력조사 배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
+                logger.broadcast({
+                  type: 'BATCH_PROGRESS',
+                  campaignId: campaign.id,
+                  quotaIndex: biz.index || (i + startIndex),
+                  itemNumber: i + 1,
+                  totalItems: targets.length,
+                  ...info
+                });
+              }
+            });
+          } else if (isHrcEnergy) {
             result = await runHrcEnergySurvey({
               slotData: biz,
               policy: effectivePolicy,
@@ -2352,7 +2581,16 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         }
 
         if (result?.success) {
-          if (isHrcEnergy) {
+          if (isGlobalriLiteracy) {
+            biz.quotaStatus = (result.status === 'stopped_at_review' || safetyGuard) ? 'pilot_done' : 'completed';
+            biz.status = (result.status === 'stopped_at_review' || safetyGuard) ? '검증대기(F05_2)' : '완료';
+            biz.memberStatus = (result.status === 'stopped_at_review' || safetyGuard) ? '검증대기(F05_2)' : '완료';
+            biz.progress = (result.status === 'stopped_at_review' || safetyGuard) ? '98% (제출직전)' : '100%';
+            biz.surveyCompleted = (biz.quotaStatus === 'completed') ? '완료' : '대기';
+            biz.completedAt = new Date().toISOString();
+            biz.capturedSteps = result.capturedSteps;
+            logger.success(`🎉 [성인문해능력조사 배치 ${i + 1}/${targets.length} 완료] "${biz.respondentName || biz.companyName}" (UID: ${biz.memberUid || biz.uid}) ${biz.status} 달성!`);
+          } else if (isHrcEnergy) {
             if (!biz.substitutedByUid) {
               biz.quotaStatus = (result.status === 'stopped_at_review' || safetyGuard) ? 'pilot_done' : 'completed';
               biz.status = (result.status === 'stopped_at_review' || safetyGuard) ? '검증대기(91%)' : '완료';
@@ -2382,7 +2620,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           }
 
           // 2단계: 조사원 평가항목 작성 자동 연계 (점포조사 및 상인회조사 전수 지원)
-          if (!isKona && !isHrcEnergy && isAssoc) {
+          if (!isKona && !isHrcEnergy && !isGlobalriLiteracy && isAssoc) {
             const evalUrl = biz.evalUrl || (biz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${biz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
             if (evalUrl) {
               logger.info(`[배치 #${biz.index || (i + startIndex)} 2단계] "${biz.marketName || biz.companyName}" 상인회 조사원 평가 연계 시작...`);
@@ -2425,7 +2663,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
             } else {
               logger.success(`[상인회 배치 ${i + 1}/${targets.length} 완료] "${biz.marketName || biz.companyName}" 본 설문 완료!`);
             }
-          } else if (!isKona && !isMetrix && !isHrcEnergy) {
+          } else if (!isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy) {
             const evalUrl = biz.evalUrl || (biz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${biz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
             if (evalUrl) {
               logger.info(`[배치 #${biz.index || (i + startIndex)} 2단계] "${biz.companyName}" 조사원 평가 작성 연계 시작...`);
@@ -2471,7 +2709,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
           }
 
           // 본설문 상태 동기화 (Kstat list.php 캐시 갱신)
-          if (!isKona && !isMetrix && !isHrcEnergy) {
+          if (!isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy) {
             const batchPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
             await syncKstatSlotStatus({
               pridSel: batchPridSel,
@@ -2546,7 +2784,8 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
 
   const isKona = (campaign.surveyType === 'kona_youth');
   const isHrcEnergy = (campaign.surveyType === 'hrc_energy');
-  const targetUrl = targetBiz.slotUrl || targetBiz.surveyUrl || (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${targetBiz.uid}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''));
+  const isGlobalriLiteracy = (campaign.surveyType === 'globalri_literacy');
+  const targetUrl = targetBiz.slotUrl || targetBiz.surveyUrl || targetBiz.householdUrl || (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${targetBiz.uid}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''));
   if (!targetUrl) {
     return res.status(400).json({
       error: `[${targetBiz.companyName}] 쿼터에 설문 URL이 매핑되지 않았습니다.`
@@ -2557,26 +2796,24 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
   CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
 
   const slotNotice = targetBiz.slotIndex ? ` [Kstat 슬롯 #${targetBiz.slotIndex} ${targetBiz.slotExtra || ''}]` : '';
-  logger.info(`[개별 쿼터 테스트] "${targetBiz.buildingName || targetBiz.companyName}" (순번: #${targetBiz.index || quotaIndex})${slotNotice} 1건 실행 시작...`);
+  logger.info(`[개별 쿼터 테스트] "${targetBiz.respondentName || targetBiz.buildingName || targetBiz.companyName}" (순번: #${targetBiz.index || quotaIndex})${slotNotice} 1건 실행 시작...`);
 
   res.json({
     success: true,
-    message: `"${targetBiz.buildingName || targetBiz.companyName}" 1건 실행이 시작되었습니다.`,
+    message: `"${targetBiz.respondentName || targetBiz.buildingName || targetBiz.companyName}" 1건 실행이 시작되었습니다.`,
     targetBiz
   });
 
   (async () => {
     try {
-      const result = isHrcEnergy
-        ? await runHrcEnergySurvey({
+      const result = isGlobalriLiteracy
+        ? await runGlobalriLiteracySurvey({
             slotData: targetBiz,
-            policy: campaign.hrcEnergyPolicy || {},
-            loginId: targetBiz.surveyorId || campaign.loginId || '700275',
-            loginPw: campaign.loginPw || targetBiz.surveyorId || campaign.loginId || '700275',
+            policy: campaign.globalriLiteracyPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || {},
             quotaIndex: targetBiz.index || quotaIndex,
-            pilotMode: false,
-            safetyGuard: false,
-            reportDir: path.join(reportsDir, campaign.id, `hrc_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || ''}`),
+            pilotMode: safetyGuard,
+            safetyGuard,
+            reportDir: path.join(reportsDir, campaign.id, `globalri_item_${targetBiz.index || quotaIndex}_${targetBiz.memberUid || targetBiz.uid || ''}`),
             onProgress: (info) => {
               logger.broadcast({
                 type: 'PILOT_PROGRESS',
@@ -2586,15 +2823,16 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
               });
             }
           })
-        : (isKona
-          ? await runKonaSurvey({
-              surveyUrl: targetUrl,
+        : (isHrcEnergy
+          ? await runHrcEnergySurvey({
               slotData: targetBiz,
-              policy: campaign.konaPolicy || {},
+              policy: campaign.hrcEnergyPolicy || {},
+              loginId: targetBiz.surveyorId || campaign.loginId || '700275',
+              loginPw: campaign.loginPw || targetBiz.surveyorId || campaign.loginId || '700275',
               quotaIndex: targetBiz.index || quotaIndex,
-              pilotMode: safetyGuard,
-              safetyGuard,
-              reportDir: path.join(reportsDir, campaign.id, `kona_item_${targetBiz.index || quotaIndex}_${targetBiz.idx || ''}`),
+              pilotMode: false,
+              safetyGuard: false,
+              reportDir: path.join(reportsDir, campaign.id, `hrc_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || ''}`),
               onProgress: (info) => {
                 logger.broadcast({
                   type: 'PILOT_PROGRESS',
@@ -2604,30 +2842,54 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
                 });
               }
             })
-          : await runKstatSurvey({
-              surveyUrl: targetUrl,
-              bizData: targetBiz,
-              quotaIndex: targetBiz.index || quotaIndex,
-              guidelineConfig: {
-                ...(campaign.guidelineConfig || {}),
-                masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
-              },
-              policy: campaign.guidelineConfig?.policy || {},
-              pilotMode: true,
-              safetyGuard: true,
-              reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`),
-              onProgress: (info) => {
-                logger.broadcast({
-                  type: 'PILOT_PROGRESS',
-                  campaignId: campaign.id,
-                  quotaIndex: targetBiz.index,
-                  ...info
-                });
-              }
-            }));
+          : (isKona
+            ? await runKonaSurvey({
+                surveyUrl: targetUrl,
+                slotData: targetBiz,
+                policy: campaign.konaPolicy || {},
+                quotaIndex: targetBiz.index || quotaIndex,
+                pilotMode: safetyGuard,
+                safetyGuard,
+                reportDir: path.join(reportsDir, campaign.id, `kona_item_${targetBiz.index || quotaIndex}_${targetBiz.idx || ''}`),
+                onProgress: (info) => {
+                  logger.broadcast({
+                    type: 'PILOT_PROGRESS',
+                    campaignId: campaign.id,
+                    quotaIndex: targetBiz.index,
+                    ...info
+                  });
+                }
+              })
+            : await runKstatSurvey({
+                surveyUrl: targetUrl,
+                bizData: targetBiz,
+                quotaIndex: targetBiz.index || quotaIndex,
+                guidelineConfig: {
+                  ...(campaign.guidelineConfig || {}),
+                  masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
+                },
+                policy: campaign.guidelineConfig?.policy || {},
+                pilotMode: true,
+                safetyGuard: true,
+                reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`),
+                onProgress: (info) => {
+                  logger.broadcast({
+                    type: 'PILOT_PROGRESS',
+                    campaignId: campaign.id,
+                    quotaIndex: targetBiz.index,
+                    ...info
+                  });
+                }
+              })));
 
       if (result?.success) {
-        if (isHrcEnergy) {
+        if (isGlobalriLiteracy) {
+          targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
+          targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(F05_2)' : '완료';
+          targetBiz.memberStatus = (result.status === 'stopped_at_review') ? '검증대기(F05_2)' : '완료';
+          targetBiz.progress = (result.status === 'stopped_at_review') ? '98% (제출직전)' : '100%';
+          targetBiz.surveyCompleted = (targetBiz.quotaStatus === 'completed') ? '완료' : '대기';
+        } else if (isHrcEnergy) {
           targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
           targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(91%)' : '완료';
           targetBiz.progress = (result.status === 'stopped_at_review') ? '91%' : '100%';
@@ -2641,9 +2903,9 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
         }
         targetBiz.pilotAt = new Date().toISOString();
         targetBiz.capturedSteps = result.capturedSteps;
-        logger.success(`[개별 쿼터 테스트 성공] "${targetBiz.buildingName || targetBiz.marketName || targetBiz.companyName}" 완주 완료!`);
+        logger.success(`[개별 쿼터 테스트 성공] "${targetBiz.respondentName || targetBiz.buildingName || targetBiz.marketName || targetBiz.companyName}" 완주 완료!`);
 
-        const evalUrl = (!isKona && !isHrcEnergy) ? (targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null)) : null;
+        const evalUrl = (!isKona && !isHrcEnergy && !isGlobalriLiteracy) ? (targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null)) : null;
         if (evalUrl) {
           try {
             const evalResult = await runKstatEvaluation({
@@ -2671,7 +2933,7 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
           }
         }
 
-        if (!isKona && !isHrcEnergy) {
+        if (!isKona && !isHrcEnergy && !isGlobalriLiteracy) {
           await syncKstatSlotStatus({
             pridSel: '2026070802',
             idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
@@ -2681,7 +2943,7 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
           }).catch(() => {});
         }
 
-        if (!isKona && !isHrcEnergy && targetBiz.evalStatus === 'completed') {
+        if (!isKona && !isHrcEnergy && !isGlobalriLiteracy && targetBiz.evalStatus === 'completed') {
           const effLoginId = targetBiz.surveyorAccount || campaign.kstatLoginId || '가온김영옥';
           const effLoginPw = campaign.kstatLoginPw || '1234';
           const progRes = await saveKstatSlotProgressStatus({
@@ -3598,8 +3860,14 @@ app.get('/api/quota/list', (req, res) => {
       // 업종별 표본 분포 실시간 집계
       const industryDist = {};
       const isHrcEnergy = content.type === 'HRC_ENERGY_BUILDING' || content.surveyType === 'hrc_energy' || f.includes('hrc_energy');
+      const isGlobalriLiteracy = content.type === 'GLOBALRI_ADULT_LITERACY' || content.surveyType === 'globalri_literacy' || f.includes('globalri_adult_literacy');
 
-      if (isHrcEnergy) {
+      if (isGlobalriLiteracy) {
+        data.forEach(item => {
+          const ag = String(item.ageGroupLabel || '기타').trim();
+          industryDist[ag] = (industryDist[ag] || 0) + 1;
+        });
+      } else if (isHrcEnergy) {
         const selCnt = data.filter(item => item.selectionType === '선정').length;
         const subCnt = data.filter(item => item.selectionType === '대체').length;
         const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed').length;

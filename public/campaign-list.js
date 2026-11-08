@@ -321,11 +321,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const cat = getCampaignCategory(c);
       const isKona = (c.surveyType === 'kona_youth');
       const isHrcEnergy = (c.surveyType === 'hrc_energy');
-      const catMeta = isHrcEnergy
-        ? { label: '에너지총조사 [건물]', icon: 'fa-bolt', class: 'smallbiz' }
-        : (isKona
-          ? { label: '화성 청소년 서베이', icon: 'fa-user-graduate', class: 'smallbiz' }
-          : getCategoryMeta(cat));
+      const isGlobalriLiteracy = (c.surveyType === 'globalri_literacy');
+      const catMeta = isGlobalriLiteracy
+        ? { label: '제5차 성인문해능력조사', icon: 'fa-book-open-reader', class: 'smallbiz' }
+        : (isHrcEnergy
+          ? { label: '에너지총조사 [건물]', icon: 'fa-bolt', class: 'smallbiz' }
+          : (isKona
+            ? { label: '화성 청소년 서베이', icon: 'fa-user-graduate', class: 'smallbiz' }
+            : getCategoryMeta(cat)));
       const isAssoc = (cat === 'assoc');
       const isSmallBiz = (cat === 'smallbiz');
       const isCompleted = (c.status === 'completed');
@@ -336,16 +339,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const doneSelCount = isHrcEnergy
         ? (c.quotaDatabase || []).filter(q => q.selectionType === '선정' && (q.quotaStatus === 'completed' || q.status === '완료')).length
         : 0;
+      const litDoneCount = isGlobalriLiteracy
+        ? (c.quotaDatabase || []).filter(q => q.quotaStatus === 'completed' || q.status === '완료').length
+        : 0;
 
-      const quotaLabel = isHrcEnergy
-        ? `선정 ${selCount}건 (완료 ${doneSelCount}건) · 기입력 보존`
-        : (isKona
-          ? '청소년 만족도 (40문항/53단계)'
-          : (isAssoc 
-            ? '상인회 대상 (25단계)' 
-            : (isSmallBiz ? '소상공인 패널 (120단계)' : (c.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)'))));
-      const quotaBadgeClass = isKona ? 'b2c' : (isAssoc ? 'assoc' : (isSmallBiz || isHrcEnergy ? 'b2b' : (c.quotaType === 'b2b' ? 'b2b' : 'b2c')));
-      const quotaIcon = isHrcEnergy ? 'fa-building-circle-check' : (isKona ? 'fa-user-graduate' : (isAssoc ? 'fa-sitemap' : (isSmallBiz ? 'fa-building-user' : (c.quotaType === 'b2b' ? 'fa-building' : 'fa-user'))));
+      const quotaLabel = isGlobalriLiteracy
+        ? `진행중 대상자 ${(c.quotaDatabase || []).length}명 (완료 ${litDoneCount}명) · 나이대별 그룹 가이드`
+        : (isHrcEnergy
+          ? `선정 ${selCount}건 (완료 ${doneSelCount}건) · 기입력 보존`
+          : (isKona
+            ? '청소년 만족도 (40문항/53단계)'
+            : (isAssoc 
+              ? '상인회 대상 (25단계)' 
+              : (isSmallBiz ? '소상공인 패널 (120단계)' : (c.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)')))));
+      const quotaBadgeClass = (isKona || isGlobalriLiteracy) ? 'b2c' : (isAssoc ? 'assoc' : (isSmallBiz || isHrcEnergy ? 'b2b' : (c.quotaType === 'b2b' ? 'b2b' : 'b2c')));
+      const quotaIcon = isGlobalriLiteracy ? 'fa-book-open-reader' : (isHrcEnergy ? 'fa-building-circle-check' : (isKona ? 'fa-user-graduate' : (isAssoc ? 'fa-sitemap' : (isSmallBiz ? 'fa-building-user' : (c.quotaType === 'b2b' ? 'fa-building' : 'fa-user')))));
 
       let statusText = '대기 중';
       let statusClass = 'ready';

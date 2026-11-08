@@ -202,3 +202,41 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
 - **AJAX `GoNext` Synchronization**: Wait for `window.$.active === 0` inside `waitForRpsReady(page)` so confirmation alerts (`window.GoNext(false, true)`) do not collide with in-flight AJAX requests.
 - **Custom CSS Radio/Checkbox Visibility**: Never filter out `radio`/`checkbox` inputs using `el.offsetParent !== null`; RPS hides native inputs with CSS.
 - **Mixed Numeric + `-8:모름`/`-9:응답거절` Checkboxes (`q1460`, `q1500`, `q1650`)**: Exclude `value^="-8"` and `value^="-9"` checkboxes from `checkRadioInputs` when numeric inputs exist on the page.
+
+---
+
+## 9. Global Research (GlobalRI) 5th Adult Literacy Survey (`globalri_adult_literacy`)
+
+### 9.1 Portal Credentials & Target Project
+- **Login URL**: `https://gift.globalri.it/login`
+- **Credentials**:
+  - **ID**: `01071447791` (Interviewer ID: `노영미7791`, `실사2팀`)
+  - **Password**: `2038020`
+  - **User Type (`사용자유형`)**: `면접원` (`Type=1`, `ServiceName=GIFT-Client`)
+- **Target Project**: `[GR20260618-1-001-02	제5차 성인문해능력조사]`
+
+### 9.2 Quota & Target Household Member Rules
+1. **Household Quota Selection (`gift.globalri.it`)**:
+   - Target rows in the project grid (`/project/survey/TAPI`, `POST https://gift-list.globalri.it/api/list/get`) are those where **`[결과값1] === '완료'` (`mainCode: "1"`) AND `[결과값2] === '완료'` (`subCode: "101"`)** (or explicit `[LID]` list provided by user).
+   - Rows with `groupData._BASE['추가'] === "완료 가능"` are already finalized (`Q=LIST_COMPLETE`); rows with `추가 === ""` have active household members on `Survey.asp`.
+2. **Household Member Selection (`w3.onsurvey.kr/2026/G20260713001-001/Survey.asp`)**:
+   - On the `가구원 조사 현황` table, **ONLY members with `[진행 상태] === '진행 중'` (`[계속 진행]` button)** are survey targets.
+   - Never start or modify members whose status is `'미진행'` (`[조사 시작]`) or `'완료'`.
+3. **Preserve Pre-Filled Field Data (`CONSENT` ~ `GP1` at `8%`)**:
+   - Target `'진행 중'` members already have `CONSENT` ~ `GP1` (GPS coordinates) completed by the field interviewer and resume directly at `A1` (`8%`). Preserve all pre-existing answers.
+
+### 9.3 Survey Flow, Grading & Verified Answer Keys (`seolmoon.com`, `SNUM: 5963`)
+- **Part A (`A1`, `A1_2`, `A2`, `A3` ➔ `END_A`)**:
+  - `A1` (`VOICE`): Upload 1-sec silent MP3 via `lamejs` / `/Join/Uploader` (`Modules.VOICE.autoAnswer`), and set `A1_2 = "1"` (`O` 정답 — server grades `A1_CORRECT = "Y"` based on `A1_2 = "1"`).
+  - `A2` (`TEXT`): `"대전"`; `A3` (`TEXT`): `"2026"` / `"7"` / `"13"`.
+  - `END_A`: `3/3` correct ➔ `START_B`; `< 3` correct ➔ `LITERACY_LEVEL = "1"` and jumps directly to `D1`.
+- **Part B1 (`B1` ~ `B5` ➔ `END_B1`)**:
+  - `B1`: `"물었다"`, `"나은"`; `B2`: `"2023"`; `B3`: `"김명호"`, `"123-4567-890"`, `"대한은행"`; `B4`: `"15000"`; `B5`: `"11"`, `"12"`.
+  - `END_B1`: `>= 3` correct out of 5 ➔ **skips `B6 ~ B20` completely and jumps to `START_C`**; `< 3` correct ➔ goes to `B6 ~ B20`.
+- **Part B2 (`B6` ~ `B20` ➔ `END_B`, only if `B1~B5 < 3`)**:
+  - `B6="산사태"`, `B7="3"`, `B8="맥주"`, `B9="사과"`, `B10="3"`, `B11(DOSE_ML)="13"`, `B12="2"`, `B13="첨성대"`, `B14="4"`, `B15="회사"/"많이"`, `B16="4"`, `B17="뱀사골"`, `B18="7.5"`, `B19="-18"`, `B20="4"`.
+- **Part C (`C1` ~ `C20` ➔ `END_C`)**:
+  - `C1="1"`, `C2="위"`, `C3="4"`, `C4="2"`, `C5="4000"`, `C6="12"/"17"`, `C7="1"`, `C8="3"`, `C9="3300"`, `C10="1"`, `C11="3"`, `C12="3"`, `C13="177"`, `C14="2"`, `C15="2"`, `C16="5"`, `C17="4"`, `C18="276000"`, `C19="4"`, `C20="3"`.
+  - `END_C`: `>= 12` correct ➔ `LITERACY_LEVEL = "4"`; `< 12` correct ➔ `LITERACY_LEVEL = "3"`. Goes to `D1`.
+- **Parts D, E, F (`D1` ~ `F05_2`)**:
+  - Controlled via **Age-Group Baseline Guidelines** (STEP 2 Blueprint), ensuring demographic and attitudinal coherence (`F05_2 >= F05_1` household vs. personal income constraint, `F02` parent education disabled state handling when `H_A` is `1:무학` or `9:모름`, `F04~F04_2` conditional on `F03=1`).

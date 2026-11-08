@@ -84,6 +84,7 @@ export function createCampaign(data = {}) {
   const isMetrix = (data.surveyType === 'metrix_panel');
   const isKona = (data.surveyType === 'kona_youth');
   const isHrcEnergy = (data.surveyType === 'hrc_energy');
+  const isGlobalriLiteracy = (data.surveyType === 'globalri_literacy');
 
   let defaultAssocPolicy = null;
   if (isAssoc) {
@@ -148,12 +149,25 @@ export function createCampaign(data = {}) {
     }
   }
 
+  let defaultGlobalriPolicy = null;
+  let defaultAgeGroupBaselines = null;
+  if (isGlobalriLiteracy) {
+    const globalriBpPath = path.join(dataDir, 'globalri_literacy_blueprint.json');
+    if (fs.existsSync(globalriBpPath)) {
+      try {
+        const bp = JSON.parse(fs.readFileSync(globalriBpPath, 'utf-8'));
+        defaultGlobalriPolicy = bp.defaultPolicy || {};
+        defaultAgeGroupBaselines = bp.defaultAgeGroupBaselines || (bp.defaultPolicy && bp.defaultPolicy.ageGroups) || {};
+      } catch (_) {}
+    }
+  }
+
   const newCampaign = {
     id: data.id || ('camp_' + Date.now()),
-    title: data.title || (isHrcEnergy ? '2025년 기준 에너지총조사 (건물 부문)' : (isKona ? '2026 화성특례시 만족도 청소년 설문조사' : (isMetrix ? '2026 메트릭스 경기도 소상공인 패널조사' : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인')))),
+    title: data.title || (isGlobalriLiteracy ? '[GR20260618-1-001-02] 제5차 성인문해능력조사' : (isHrcEnergy ? '2025년 기준 에너지총조사 (건물 부문)' : (isKona ? '2026 화성특례시 만족도 청소년 설문조사' : (isMetrix ? '2026 메트릭스 경기도 소상공인 패널조사' : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인'))))),
     description: data.description || '',
     quotaType: data.quotaType || (isAssoc || isMetrix || isHrcEnergy ? 'b2b' : 'b2c'),
-    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'kona_youth' | 'hrc_energy'
+    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'kona_youth' | 'hrc_energy' | 'globalri_literacy'
     status: 'ready',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -164,7 +178,7 @@ export function createCampaign(data = {}) {
     },
     quotaDatabase: data.quotaDatabase || [],
     guidelineConfig: data.guidelineConfig || {
-      surveyUrl: isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''),
+      surveyUrl: isGlobalriLiteracy ? 'https://gift.globalri.it/login' : (isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '')),
       topic: '',
       positiveRatio: 70,
       neutralRatio: 20,
@@ -204,6 +218,19 @@ export function createCampaign(data = {}) {
         ...(defaultHrcEnergyPolicy || {}),
         ...(data.hrcEnergyPolicy || {})
       },
+      hasMasterBlueprint: true
+    } : {}),
+    ...(isGlobalriLiteracy ? {
+      loginId: data.loginId || '01071447791',
+      loginPw: data.loginPw || '2038020',
+      surveyorName: data.surveyorName || '노영미7791',
+      projectCode: data.projectCode || 'GR20260618-1-001-02',
+      quotaSourceFile: data.quotaSourceFile || 'quota_globalri_adult_literacy_7791.json',
+      globalriPolicy: {
+        ...(defaultGlobalriPolicy || {}),
+        ...(data.globalriPolicy || {})
+      },
+      ageGroupBaselines: data.ageGroupBaselines || defaultAgeGroupBaselines || {},
       hasMasterBlueprint: true
     } : {})
   };

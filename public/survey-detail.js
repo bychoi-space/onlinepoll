@@ -118,13 +118,17 @@ async function initSurveyDetailPage() {
     const isMetrix = (camp.surveyType === 'metrix_panel');
     const isKona = (camp.surveyType === 'kona_youth');
     const isHrcEnergy = (camp.surveyType === 'hrc_energy');
+    const isGlobalriLiteracy = (camp.surveyType === 'globalri_literacy');
 
     // 배지 상태
     statusBadge.className = `badge-status ${camp.status || 'ready'}`;
     statusBadge.textContent = camp.status === 'running' ? '실행 중' : (camp.status === 'completed' ? '완료' : '준비 완료');
 
     if (quotaBadge) {
-      if (isHrcEnergy) {
+      if (isGlobalriLiteracy) {
+        quotaBadge.className = 'badge-quota-type b2c';
+        quotaBadge.textContent = `성인문해능력조사 (진행중 ${(camp.quotaDatabase || []).length}명 · 나이대별 가이드)`;
+      } else if (isHrcEnergy) {
         const selCnt = (camp.quotaDatabase || []).filter(q => q.selectionType === '선정').length;
         quotaBadge.className = 'badge-quota-type b2b';
         quotaBadge.textContent = `에너지총조사 [건물] (선정 ${selCnt}건 / 기입력 보존)`;
@@ -144,9 +148,11 @@ async function initSurveyDetailPage() {
     }
 
     // 조사원 연동 계정 바인딩
-    const defaultSurveyor = isHrcEnergy
-      ? `${camp.loginId || '700275'} (${camp.surveyorName || ''})`
-      : (isKona ? '코나체인(익명)' : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : '가온김영옥'));
+    const defaultSurveyor = isGlobalriLiteracy
+      ? `${camp.loginId || '01071447791'} (${camp.surveyorName || '노영미7791'})`
+      : (isHrcEnergy
+        ? `${camp.loginId || '700275'} (${camp.surveyorName || ''})`
+        : (isKona ? '코나체인(익명)' : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : '가온김영옥')));
     const inputKstatAccountId = document.getElementById('input-kstat-account-id');
     const inputKstatAccountPw = document.getElementById('input-kstat-account-pw');
     const badgeCurrentKstatAccount = document.getElementById('badge-current-kstat-account');
@@ -159,7 +165,10 @@ async function initSurveyDetailPage() {
     // STEP 2 헤더 문구 동적 커스터마이징
     const step2TitleEl = document.querySelector('#section-master-blueprint .step-card-title');
     const step2DescEl = document.querySelector('#section-master-blueprint .font-caption.text-dim');
-    if (isHrcEnergy) {
+    if (isGlobalriLiteracy) {
+      if (step2TitleEl) step2TitleEl.textContent = '제5차 성인문해능력조사 나이대별(20대~70대+) 그룹 응답 가이드 설정';
+      if (step2DescEl) step2DescEl.textContent = '조사 대상자의 출생연도(나이대)에 따라 문해력 목표 점수(Part A~C), 문해력 자가진단(D5), 문해교육 수요(Part E), 학력·경제활동·소득(Part F) 가이드를 그룹별로 설정합니다.';
+    } else if (isHrcEnergy) {
       if (step2TitleEl) step2TitleEl.textContent = '2025년 기준 에너지총조사 [건물 부문] 응답 규칙 및 기입력 보존 정책';
       if (step2DescEl) step2DescEl.textContent = '한국리서치 TAPI(2026-89-0342C) 건물 기본정보 및 본설문(A1~E1-5) 자동화 규칙입니다. 이미 입력되어 있는 모든 항목은 절대 수정하지 않고 100% 그대로 보존합니다.';
     } else if (isKona) {
@@ -179,41 +188,49 @@ async function initSurveyDetailPage() {
     // STEP 3 캡처 버튼 문구 동적화
     const btnViewPilotCaptures = document.getElementById('btn-view-pilot-captures');
     if (btnViewPilotCaptures) {
-      btnViewPilotCaptures.textContent = isHrcEnergy ? '설문 완료 캡처 보기' : (isKona ? '제출 직전 캡처 보기' : (isAssoc ? '25단계 캡처 전체보기' : '15단계 캡처 전체보기'));
+      btnViewPilotCaptures.textContent = isGlobalriLiteracy ? '단계별 설문 캡처 보기' : (isHrcEnergy ? '설문 완료 캡처 보기' : (isKona ? '제출 직전 캡처 보기' : (isAssoc ? '25단계 캡처 전체보기' : '15단계 캡처 전체보기')));
     }
 
     // 대상 설문 요약 스트립 동적화
     const labelExecTargetMarket = document.getElementById('label-exec-target-market');
     if (labelExecTargetMarket) {
-      labelExecTargetMarket.textContent = isHrcEnergy
-        ? `2026-89-0342C 2025년 기준 에너지총조사 [건물 부문] (${camp.loginId || ''} ${camp.surveyorName || ''})`
-        : (isKona
-          ? '2026 화성특례시 만족도 청소년 설문조사 (코나체인 Event 2085)'
-          : (isMetrix
-            ? '2026 경기도 소상공인 사업체패널조사 (메트릭스 SNUM 622)'
-            : (isAssoc ? '2026 전통시장 및 상점가 실태조사 (상인회)' : '2026 전통시장 및 점포경영 실태조사')));
+      labelExecTargetMarket.textContent = isGlobalriLiteracy
+        ? `[GR20260618-1-001-02] 제5차 성인문해능력조사 (${camp.loginId || '01071447791'} ${camp.surveyorName || '노영미7791'})`
+        : (isHrcEnergy
+          ? `2026-89-0342C 2025년 기준 에너지총조사 [건물 부문] (${camp.loginId || ''} ${camp.surveyorName || ''})`
+          : (isKona
+            ? '2026 화성특례시 만족도 청소년 설문조사 (코나체인 Event 2085)'
+            : (isMetrix
+              ? '2026 경기도 소상공인 사업체패널조사 (메트릭스 SNUM 622)'
+              : (isAssoc ? '2026 전통시장 및 상점가 실태조사 (상인회)' : '2026 전통시장 및 점포경영 실태조사'))));
     }
     const badgeBlueprintStatus = document.getElementById('badge-blueprint-status');
     if (badgeBlueprintStatus) {
-      badgeBlueprintStatus.innerHTML = isHrcEnergy
-        ? '<i class="fa-solid fa-shield-halved"></i> 기입력 항목 100% 보존 &amp; 증빙 자동 생략'
-        : (isKona
-          ? '<i class="fa-solid fa-check-double"></i> 40문항/53단계 기준점 연동 완료'
-          : (isMetrix
-            ? '<i class="fa-solid fa-check-double"></i> 120단계 기준점 연동 완료'
-            : (isAssoc ? '<i class="fa-solid fa-check-double"></i> 25단계 기준점 연동 완료' : '<i class="fa-solid fa-check-double"></i> 17단계 기준점 연동 완료')));
+      badgeBlueprintStatus.innerHTML = isGlobalriLiteracy
+        ? '<i class="fa-solid fa-layer-group"></i> 나이대별(20대~70대+) 6개 그룹 가이드 활성'
+        : (isHrcEnergy
+          ? '<i class="fa-solid fa-shield-halved"></i> 기입력 항목 100% 보존 &amp; 증빙 자동 생략'
+          : (isKona
+            ? '<i class="fa-solid fa-check-double"></i> 40문항/53단계 기준점 연동 완료'
+            : (isMetrix
+              ? '<i class="fa-solid fa-check-double"></i> 120단계 기준점 연동 완료'
+              : (isAssoc ? '<i class="fa-solid fa-check-double"></i> 25단계 기준점 연동 완료' : '<i class="fa-solid fa-check-double"></i> 17단계 기준점 연동 완료'))));
     }
     const badgeExecEngine = document.getElementById('badge-exec-engine');
     if (badgeExecEngine) {
-      badgeExecEngine.textContent = isHrcEnergy
-        ? '한국리서치 TAPI 전용'
-        : (isKona ? '코나체인 리서치 전용' : (isMetrix ? '메트릭스 패널 전용' : (isAssoc ? '케이스탯 상인회 전용' : '케이스탯 TAPI 전용')));
+      badgeExecEngine.textContent = isGlobalriLiteracy
+        ? '글로벌리서치 온서베이 (SNUM 5963)'
+        : (isHrcEnergy
+          ? '한국리서치 TAPI 전용'
+          : (isKona ? '코나체인 리서치 전용' : (isMetrix ? '메트릭스 패널 전용' : (isAssoc ? '케이스탯 상인회 전용' : '케이스탯 TAPI 전용'))));
     }
     const execSurveyorLabel = document.getElementById('exec-surveyor-label');
     if (execSurveyorLabel) {
-      execSurveyorLabel.textContent = isHrcEnergy
-        ? `${camp.loginId || '700275'} (${camp.surveyorName || '조사원'})`
-        : (isKona ? '동탄구 청소년 (6001~6103)' : (isMetrix ? (camp.loginId || '강영미') : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : (camp.kstatLoginId || '가온김영옥'))));
+      execSurveyorLabel.textContent = isGlobalriLiteracy
+        ? `${camp.loginId || '01071447791'} (${camp.surveyorName || '노영미7791'})`
+        : (isHrcEnergy
+          ? `${camp.loginId || '700275'} (${camp.surveyorName || '조사원'})`
+          : (isKona ? '동탄구 청소년 (6001~6103)' : (isMetrix ? (camp.loginId || '강영미') : (isAssoc ? (camp.kstatLoginId || '가온이강윤') : (camp.kstatLoginId || '가온김영옥')))));
     }
 
     // 슬롯 바인딩 버튼 UI 튜닝
@@ -228,10 +245,72 @@ async function initSurveyDetailPage() {
       }
     }
 
-    // 에너지총조사 / 코나체인 청소년 / 메트릭스 모드 시 Kstat 전용 버튼 제어 및 STEP 3 스트립 갱신
+    // 성인문해능력조사 / 에너지총조사 / 코나체인 청소년 / 메트릭스 모드 시 Kstat 전용 버튼 제어 및 STEP 3 스트립 갱신
     const btnOpenSlotModalToolbar = document.getElementById('btn-open-slot-modal');
     const btnOpenCampaignAddMerchant = document.getElementById('btn-open-campaign-add-merchant');
-    if (isHrcEnergy) {
+    if (isGlobalriLiteracy) {
+      if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
+      if (btnOpenSlotModalToolbar) btnOpenSlotModalToolbar.style.display = 'none';
+      if (btnOpenCampaignAddMerchant) btnOpenCampaignAddMerchant.style.display = 'none';
+      const btnSyncKstat = document.getElementById('btn-sync-kstat-status');
+      if (btnSyncKstat) {
+        btnSyncKstat.style.display = 'inline-flex';
+        btnSyncKstat.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 글로벌리서치 GIFT 동기화 / LID 지정 필터';
+      }
+      if (btnEnrichCampaign) btnEnrichCampaign.style.display = 'none';
+      const kstatPill = document.getElementById('badge-kstat-account-pill');
+      if (kstatPill) {
+        const qList = camp.quotaDatabase || [];
+        const hhCnt = new Set(qList.map(q => q.lid)).size;
+        kstatPill.innerHTML = `<i class="fa-solid fa-book-open-reader text-primary-color"></i> <span>면접원: <strong>${escapeHtml(camp.loginId || '01071447791')} (${escapeHtml(camp.surveyorName || '노영미7791')})</strong> · 완료가구 <strong>${hhCnt}가구</strong> 내 진행중 <strong>${qList.length}명</strong> (나이대별 가이드)</span>`;
+      }
+
+      const badgeExec = document.getElementById('badge-exec-engine');
+      if (badgeExec) {
+        badgeExec.className = 'badge-status ready font-bold';
+        badgeExec.textContent = '글로벌리서치 온서베이 (SNUM 5963)';
+      }
+      const labelMarket = document.getElementById('label-exec-target-market');
+      if (labelMarket) {
+        labelMarket.textContent = camp.title || '[GR20260618-1-001-02] 제5차 성인문해능력조사';
+      }
+      const labelSurveyor = document.getElementById('exec-surveyor-label');
+      if (labelSurveyor) {
+        labelSurveyor.textContent = `${camp.loginId || '01071447791'} (${camp.surveyorName || '노영미7791'})`;
+      }
+      const slotCountLabel = document.getElementById('exec-slot-count-label');
+      if (slotCountLabel) {
+        slotCountLabel.textContent = `진행중 대상자 ${(camp.quotaDatabase || []).length}명 장착 완료`;
+      }
+      const badgeBp = document.getElementById('badge-blueprint-status');
+      if (badgeBp) {
+        badgeBp.className = 'badge-status badge-blueprint ready';
+        badgeBp.innerHTML = '<i class="fa-solid fa-layer-group text-success"></i> 나이대별(20대~70대+) 6개 그룹 가이드 연동 완료';
+      }
+
+      const titleBatch = document.getElementById('title-batch-automation');
+      if (titleBatch) {
+        titleBatch.textContent = `제5차 성인문해능력조사 진행중 가구원(${(camp.quotaDatabase || []).length}명) 순차 배치 자동화`;
+      }
+      const descBatch = document.getElementById('desc-batch-automation');
+      if (descBatch) {
+        descBatch.textContent = '조사 대상자의 출생연도(20대·30대·40대·50대·60대·70대 이상)에 매칭된 그룹 가이드를 바탕으로 Part A(선별)~Part C(심화문해)~Part D·E·F(배경변인)까지 자동 진행합니다.';
+      }
+      const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
+      if (safetyGuardToggle) {
+        safetyGuardToggle.textContent = '마지막 문항(F05_2 가구소득)에서 최종 제출 직전 안전 대기 (체크 해제 시 100% 최종 완료)';
+      }
+      if (checkSafetyGuard) {
+        checkSafetyGuard.checked = true;
+      }
+
+      if (btnPilot) {
+        btnPilot.classList.remove('d-none');
+        btnPilot.className = 'btn-action-secondary font-bold';
+        btnPilot.style.display = 'inline-flex';
+        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 대상자 파일럿 검증 (F05_2 안전 대기)';
+      }
+    } else if (isHrcEnergy) {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
       if (btnOpenSlotModalToolbar) btnOpenSlotModalToolbar.style.display = 'none';
       if (btnOpenCampaignAddMerchant) btnOpenCampaignAddMerchant.style.display = 'none';
@@ -434,7 +513,7 @@ async function initSurveyDetailPage() {
 
     // 버튼 상태 머신 갱신 (1번 검증 완료 및 배치 완료 제어)
     updateButtonStates();
-    if (!isAssoc && !isHrcEnergy) updateGroupStatsUI();
+    if (!isAssoc && !isHrcEnergy && !isGlobalriLiteracy) updateGroupStatsUI();
   }
 
   // -------------------------------------------------------------
@@ -459,6 +538,7 @@ async function initSurveyDetailPage() {
     if (!currentCampaign) return;
     const quotaDb = currentCampaign.quotaDatabase || [];
     const isHrcEnergy = (currentCampaign.surveyType === 'hrc_energy');
+    const isGlobalriLiteracy = (currentCampaign.surveyType === 'globalri_literacy');
     const firstQuota = quotaDb.find(b => b.index === 1) || quotaDb[0];
     const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed');
 
@@ -516,7 +596,10 @@ async function initSurveyDetailPage() {
 
       // 1) 블루프린트 상태 동기화
       if (badgeBlueprintStatus) {
-        if (isHrcEnergy) {
+        if (isGlobalriLiteracy) {
+          badgeBlueprintStatus.className = 'badge-status badge-blueprint ready';
+          badgeBlueprintStatus.innerHTML = '<i class="fa-solid fa-layer-group text-success"></i> 나이대별(20대~70대+) 6개 그룹 가이드 활성';
+        } else if (isHrcEnergy) {
           badgeBlueprintStatus.className = 'badge-status badge-blueprint ready';
           badgeBlueprintStatus.innerHTML = '<i class="fa-solid fa-shield-halved text-success"></i> 기입력 항목 100% 보존 &amp; 대체쿼터 자동승계 활성';
         } else if (currentCampaign.masterBaseline) {
@@ -532,7 +615,10 @@ async function initSurveyDetailPage() {
       const isMetrix = (currentCampaign.surveyType === 'metrix_panel');
       const isKona = (currentCampaign.surveyType === 'kona_youth');
       if (btnPilot) {
-        if (isHrcEnergy) {
+        if (isGlobalriLiteracy) {
+          btnPilot.disabled = false;
+          btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 대상자 파일럿 검증 (F05_2 안전 대기)';
+        } else if (isHrcEnergy) {
           btnPilot.disabled = false;
           btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 미완료 선정 쿼터 1건 검증 실행 (100% 완료)';
         } else if (isKona) {
@@ -551,7 +637,22 @@ async function initSurveyDetailPage() {
       }
 
       // 3) 단일 통합 배치 자동화 버튼 상태
-      if (isHrcEnergy) {
+      if (isGlobalriLiteracy) {
+        const doneCount = quotaDb.filter(b => b.quotaStatus === 'completed' || b.status === '완료' || b.quotaStatus === 'pilot_done').length;
+        const allCompleted = quotaDb.length > 0 && quotaDb.every(b => b.quotaStatus === 'completed' || b.status === '완료');
+        if (allCompleted) {
+          btnBatch.disabled = true;
+          btnBatch.innerHTML = `<i class="fa-solid fa-circle-check"></i> 진행중 대상자 ${quotaDb.length}명 전체 배치 마감 완료 (100%)`;
+        } else {
+          btnBatch.disabled = false;
+          btnBatch.className = 'btn-action-success flex-1 font-bold';
+          btnBatch.innerHTML = `<i class="fa-solid fa-play"></i> 성인문해능력조사 나이대별 배치 자동화 가동 (${doneCount}/${quotaDb.length} 진행)`;
+          if (btnRunAllBatchBottom) {
+            btnRunAllBatchBottom.disabled = false;
+            btnRunAllBatchBottom.innerHTML = '<i class="fa-solid fa-rocket"></i> 나이대별 가이드로 전체 배치 가동';
+          }
+        }
+      } else if (isHrcEnergy) {
         const selQuotas = quotaDb.filter(b => b.selectionType === '선정');
         const targetList = selQuotas.length > 0 ? selQuotas : quotaDb;
         const doneCount = targetList.filter(b => b.quotaStatus === 'completed' || b.status === '완료').length;
@@ -625,6 +726,7 @@ async function initSurveyDetailPage() {
     // KPI 카운트 집계
     const total = db.length;
     const isHrcEnergy = (currentCampaign?.surveyType === 'hrc_energy');
+    const isGlobalriLiteracy = (currentCampaign?.surveyType === 'globalri_literacy');
     let ready = 0;
     let pilot = 0;
     let completed = 0;
@@ -632,11 +734,11 @@ async function initSurveyDetailPage() {
 
     db.forEach(item => {
       const st = item.quotaStatus || item.status || 'ready';
-      if (st === 'pilot_done' || st === '진행중(98%)' || String(st).includes('98%')) pilot++;
+      if (st === 'pilot_done' || st === '진행중(98%)' || String(st).includes('98%') || String(st).includes('F05_2')) pilot++;
       else if (st === 'completed' || st === '완료') completed++;
       else ready++;
 
-      if (item.slotUrl || item.surveyUrl) mappedSlots++;
+      if (item.slotUrl || item.surveyUrl || item.householdUrl) mappedSlots++;
     });
 
     if (isHrcEnergy) {
@@ -677,7 +779,7 @@ async function initSurveyDetailPage() {
     const jumpPills = document.querySelectorAll('.quick-jump-pill');
 
     if (total === 0) {
-      if (isAssoc || isHrcEnergy) {
+      if (isAssoc || isHrcEnergy || isGlobalriLiteracy) {
         if (sectionMasterBlueprint) {
           sectionMasterBlueprint.classList.remove('hidden');
           sectionMasterBlueprint.style.display = 'block';
@@ -726,15 +828,19 @@ async function initSurveyDetailPage() {
     const execSlotCountLabel = document.getElementById('exec-slot-count-label');
     const execSurveyorLabel = document.getElementById('exec-surveyor-label');
 
-    const currentSurveyor = isHrcEnergy
-      ? `${currentCampaign?.loginId || '700275'} (${currentCampaign?.surveyorName || ''})`
-      : (currentCampaign?.kstatLoginId || (isAssoc ? '가온이강윤' : '가온김영옥'));
+    const currentSurveyor = isGlobalriLiteracy
+      ? `${currentCampaign?.loginId || '01071447791'} (${currentCampaign?.surveyorName || '노영미7791'})`
+      : (isHrcEnergy
+        ? `${currentCampaign?.loginId || '700275'} (${currentCampaign?.surveyorName || ''})`
+        : (currentCampaign?.kstatLoginId || (isAssoc ? '가온이강윤' : '가온김영옥')));
     if (assocSurveyorBadgeName) assocSurveyorBadgeName.textContent = currentSurveyor;
     if (assocBtnSurveyorName) assocBtnSurveyorName.textContent = currentSurveyor;
     if (kstatAccountNameBadge) kstatAccountNameBadge.textContent = currentSurveyor;
     if (execSurveyorLabel) execSurveyorLabel.textContent = currentSurveyor;
     if (execSlotCountLabel) {
-      if (isHrcEnergy) {
+      if (isGlobalriLiteracy) {
+        execSlotCountLabel.textContent = `진행중 대상자 ${total}명 장착`;
+      } else if (isHrcEnergy) {
         const selCnt = db.filter(i => i.selectionType === '선정').length;
         execSlotCountLabel.textContent = `선정 ${selCnt}건 / 전체 ${total}건`;
       } else {
@@ -764,7 +870,7 @@ async function initSurveyDetailPage() {
         if (quotaMountedGroup) quotaMountedGroup.classList.remove('hidden');
         if (detailsMarketbz) detailsMarketbz.style.display = 'none';
         if (btnEnrichCampaign) {
-          if (isHrcEnergy) btnEnrichCampaign.classList.add('hidden');
+          if (isHrcEnergy || isGlobalriLiteracy) btnEnrichCampaign.classList.add('hidden');
           else btnEnrichCampaign.classList.remove('hidden');
         }
         if (btnToggleQuotaReplace) btnToggleQuotaReplace.classList.remove('hidden');
@@ -781,7 +887,24 @@ async function initSurveyDetailPage() {
     // 테이블 헤더 동적 교체
     const quotaTableHead = document.getElementById('quota-table-head');
     if (quotaTableHead) {
-      if (isHrcEnergy) {
+      if (isGlobalriLiteracy) {
+        quotaTableHead.innerHTML = `
+          <tr>
+            <th class="th-no">번호</th>
+            <th>가구 LID</th>
+            <th>개인 UID</th>
+            <th>대상자 성명</th>
+            <th>성별</th>
+            <th>출생연도 (만 나이)</th>
+            <th>나이대 그룹</th>
+            <th>가구주 관계</th>
+            <th>시군구 / 읍면동</th>
+            <th>가구 상세주소</th>
+            <th>가구원 조사 현황</th>
+            <th class="th-status">진행 상태</th>
+          </tr>
+        `;
+      } else if (isHrcEnergy) {
         quotaTableHead.innerHTML = `
           <tr>
             <th class="th-no">번호</th>
@@ -869,13 +992,75 @@ async function initSurveyDetailPage() {
     if (total === 0) {
       quotaTableBody.innerHTML = `
         <tr>
-          <td colspan="${isAssoc ? 10 : (isHrcEnergy ? 12 : 13)}" class="empty-table-msg">
-            ${isAssoc 
-              ? '아직 등록된 상인회 슬롯 DB가 없습니다.<br>상단의 <strong>[Kstat 상인회 슬롯 자동 바인딩]</strong> 버튼을 클릭하여 슬롯을 장착해 주세요.' 
-              : '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.'}
+          <td colspan="${isAssoc ? 10 : ((isHrcEnergy || isGlobalriLiteracy) ? 12 : 13)}" class="empty-table-msg">
+            ${isGlobalriLiteracy
+              ? '아직 장착된 성인문해능력조사 대상자가 없습니다.<br>상단의 <strong>[글로벌리서치 GIFT 동기화 / LID 지정 필터]</strong> 버튼을 클릭하여 쿼터를 불러와 주세요.'
+              : (isAssoc 
+                ? '아직 등록된 상인회 슬롯 DB가 없습니다.<br>상단의 <strong>[Kstat 상인회 슬롯 자동 바인딩]</strong> 버튼을 클릭하여 슬롯을 장착해 주세요.' 
+                : '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.')}
           </td>
         </tr>
       `;
+      return;
+    }
+
+    // [글로벌리서치 제5차 성인문해능력조사 12개 컬럼 테이블 렌더링]
+    if (isGlobalriLiteracy) {
+      const ageBadgeStyleMap = {
+        age20: 'background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);',
+        age30: 'background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35);',
+        age40: 'background: rgba(168, 85, 247, 0.16); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35);',
+        age50: 'background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35);',
+        age60: 'background: rgba(249, 115, 22, 0.16); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35);',
+        age70: 'background: rgba(244, 63, 94, 0.16); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35);'
+      };
+      quotaTableBody.innerHTML = db.map((item, idx) => {
+        const seq = item.index || item.seq || (idx + 1);
+        const st = item.quotaStatus || 'ready';
+        const prog = item.progress || (st === 'completed' || item.status === '완료' ? '100%' : '진행 중');
+        let statusHtml = `<span class="badge-status ready">진행 중 (${escapeHtml(prog)})</span>`;
+        if (st === 'completed' || item.status === '완료') {
+          statusHtml = '<span class="badge-status success"><i class="fa-solid fa-check-double"></i> 100% 완료</span>';
+        } else if (st === 'running') {
+          statusHtml = `<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 실행중 (${escapeHtml(prog)})</span>`;
+        } else if (st === 'pilot_done') {
+          statusHtml = `<span class="badge-status pilot"><i class="fa-solid fa-flask"></i> F05_2 안전대기</span>`;
+        } else if (st === 'error') {
+          statusHtml = `<span class="badge-status error" title="${escapeHtml(item.error || '')}">오류</span>`;
+        }
+
+        const ageKey = item.ageGroupKey || 'age50';
+        const ageBadgeStyle = ageBadgeStyleMap[ageKey] || ageBadgeStyleMap.age50;
+        const hhUrl = item.householdUrl || item.slotUrl || '#';
+        const mName = item.memberName || item.ceoName || '-';
+        const bYear = item.birthYear ? `${item.birthYear}년` : '-';
+        const ageTxt = item.age ? ` (만 ${item.age}세)` : '';
+
+        return `
+          <tr data-row-idx="${seq}">
+            <td class="text-center font-mono font-bold">${seq}</td>
+            <td class="text-center font-mono font-bold text-primary-color">${escapeHtml(item.lid || '-')}</td>
+            <td class="text-center font-mono">${escapeHtml(item.memberUid || '-')}</td>
+            <td class="text-center"><strong>${escapeHtml(mName)}</strong></td>
+            <td class="text-center">${escapeHtml(item.gender || item.ceoGender || '-')}</td>
+            <td class="text-center font-mono">${escapeHtml(bYear)}${escapeHtml(ageTxt)}</td>
+            <td class="text-center">
+              <span class="badge-status font-bold" style="${ageBadgeStyle} padding: 3px 10px;">
+                ${escapeHtml(item.ageGroupLabel || '50대')}
+              </span>
+            </td>
+            <td class="text-center">${escapeHtml(item.relation || '-')}</td>
+            <td class="text-center">${escapeHtml(item.sigungu || '')} ${escapeHtml(item.dong || '')}</td>
+            <td>${escapeHtml(item.detailAddress || item.address || '-')}</td>
+            <td class="text-center">
+              <a href="${escapeHtml(hhUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small" title="가구원 조사 현황(Survey.asp) 열기">
+                <i class="fa-solid fa-users-viewfinder"></i> 가구원 현황
+              </a>
+            </td>
+            <td class="text-center">${statusHtml}</td>
+          </tr>
+        `;
+      }).join('');
       return;
     }
 
@@ -3468,6 +3653,823 @@ async function initSurveyDetailPage() {
     `).join('');
   }
 
+  // ========================================================================
+  // [글로벌리서치 제5차 성인문해능력조사] 나이대별(20대/30대/40대/50대/60대/70대+) 그룹 가이드 에디터
+  // ========================================================================
+  const GLOBALRI_AGE_GROUP_METAS = {
+    age20: { key: 'age20', name: '20대 그룹', range: '만 18~29세 (1997~2008년생)', desc: '대학생·사회초년생·청년층 (고득점 문해력 · 디지털/AI 강세 · 대졸/재학 중심)', color: '#38bdf8' },
+    age30: { key: 'age30', name: '30대 그룹', range: '만 30~39세 (1987~1996년생)', desc: '핵심 경제활동 직장인·전문직층 (문해력 만점 · 금융/디지털 우수 · 상근직 중심)', color: '#34d399' },
+    age40: { key: 'age40', name: '40대 그룹', range: '만 40~49세 (1977~1986년생)', desc: '중추 경제활동·학부모층 (문해력 우수 · 건강/금융/공공 문해 고른 분포)', color: '#c084fc' },
+    age50: { key: 'age50', name: '50대 그룹', range: '만 50~59세 (1967~1976년생)', desc: '중장년 자영업·직장인·주부층 (심화문해 16~19문항 · 고졸/대졸 · 중산층 소득)', color: '#fbbf24' },
+    age60: { key: 'age60', name: '60대 그룹', range: '만 60~69세 (1957~1966년생)', desc: '장년·은퇴 전환기층 (심화문해 13~16문항 · 건강문해 관심 · 중졸/고졸 중심)', color: '#fb923c' },
+    age70: { key: 'age70', name: '70대 이상', range: '만 70세 이상 (1956년 이전생)', desc: '고령·은퇴층 (심화문해 9~13문항 · 문해교육 수요 반영 · 초졸/중졸 중심)', color: '#fb7185' }
+  };
+
+  const DEFAULT_GLOBALRI_AGE_POLICIES = {
+    age20: {
+      preserveExistingInputs: true,
+      partA_targetScore: 3,
+      partB1_targetScore: 20,
+      partC_correctCountMin: 19,
+      partC_correctCountMax: 20,
+      D1_lifeSatisfaction: '4',
+      D2_politicalInterest: '3',
+      D3_socialStatus: '3',
+      D4_socialGathering: '2',
+      D5_1_healthLiteracy: '4_5',
+      D5_2_publicLiteracy: '4',
+      D5_3_financialLiteracy: '4',
+      D5_4_digitalAiLiteracy: '4_5',
+      E1_educationNeed: '2',
+      E1_1_participationIntent: '1',
+      E1_2_barrierReason: '1',
+      E2_programDesireMode: '3_4',
+      E2_preferredPrograms: 'digital_finance',
+      F01_1_educationLevel: '6',
+      F01_2_graduationStatus: '5',
+      F02_fatherEdu: '6',
+      F02_motherEdu: '4',
+      F03_economicActivity: '1',
+      F04_occupation: '3',
+      F04_1_employmentType: '1',
+      F04_2_workStatus: '1',
+      F05_1_personalIncome: '3',
+      F05_2_householdIncome: '5'
+    },
+    age30: {
+      preserveExistingInputs: true,
+      partA_targetScore: 3,
+      partB1_targetScore: 20,
+      partC_correctCountMin: 19,
+      partC_correctCountMax: 20,
+      D1_lifeSatisfaction: '4',
+      D2_politicalInterest: '3',
+      D3_socialStatus: '3_4',
+      D4_socialGathering: '3',
+      D5_1_healthLiteracy: '4_5',
+      D5_2_publicLiteracy: '4_5',
+      D5_3_financialLiteracy: '4_5',
+      D5_4_digitalAiLiteracy: '4_5',
+      E1_educationNeed: '2',
+      E1_1_participationIntent: '1',
+      E1_2_barrierReason: '1',
+      E2_programDesireMode: '3_4',
+      E2_preferredPrograms: 'digital_finance',
+      F01_1_educationLevel: '6',
+      F01_2_graduationStatus: '5',
+      F02_fatherEdu: '4',
+      F02_motherEdu: '4',
+      F03_economicActivity: '1',
+      F04_occupation: '2',
+      F04_1_employmentType: '1',
+      F04_2_workStatus: '1',
+      F05_1_personalIncome: '4',
+      F05_2_householdIncome: '6'
+    },
+    age40: {
+      preserveExistingInputs: true,
+      partA_targetScore: 3,
+      partB1_targetScore: 20,
+      partC_correctCountMin: 18,
+      partC_correctCountMax: 20,
+      D1_lifeSatisfaction: '3_4',
+      D2_politicalInterest: '3_4',
+      D3_socialStatus: '3',
+      D4_socialGathering: '3',
+      D5_1_healthLiteracy: '4',
+      D5_2_publicLiteracy: '4',
+      D5_3_financialLiteracy: '4',
+      D5_4_digitalAiLiteracy: '4',
+      E1_educationNeed: '2',
+      E1_1_participationIntent: '1',
+      E1_2_barrierReason: '1',
+      E2_programDesireMode: '3_4',
+      E2_preferredPrograms: 'digital_finance',
+      F01_1_educationLevel: '6',
+      F01_2_graduationStatus: '5',
+      F02_fatherEdu: '4',
+      F02_motherEdu: '3',
+      F03_economicActivity: '1',
+      F04_occupation: '3',
+      F04_1_employmentType: '1',
+      F04_2_workStatus: '1',
+      F05_1_personalIncome: '4',
+      F05_2_householdIncome: '6'
+    },
+    age50: {
+      preserveExistingInputs: true,
+      partA_targetScore: 3,
+      partB1_targetScore: 20,
+      partC_correctCountMin: 16,
+      partC_correctCountMax: 19,
+      D1_lifeSatisfaction: '3_4',
+      D2_politicalInterest: '3_4',
+      D3_socialStatus: '3',
+      D4_socialGathering: '3',
+      D5_1_healthLiteracy: '3_4',
+      D5_2_publicLiteracy: '3_4',
+      D5_3_financialLiteracy: '3_4',
+      D5_4_digitalAiLiteracy: '3',
+      E1_educationNeed: '2',
+      E1_1_participationIntent: '1',
+      E1_2_barrierReason: '1',
+      E2_programDesireMode: '2_3',
+      E2_preferredPrograms: 'health_leisure',
+      F01_1_educationLevel: '4',
+      F01_2_graduationStatus: '5',
+      F02_fatherEdu: '3',
+      F02_motherEdu: '2',
+      F03_economicActivity: '1',
+      F04_occupation: '5',
+      F04_1_employmentType: '2',
+      F04_2_workStatus: '1',
+      F05_1_personalIncome: '3',
+      F05_2_householdIncome: '5'
+    },
+    age60: {
+      preserveExistingInputs: true,
+      partA_targetScore: 3,
+      partB1_targetScore: 20,
+      partC_correctCountMin: 13,
+      partC_correctCountMax: 16,
+      D1_lifeSatisfaction: '3_4',
+      D2_politicalInterest: '4',
+      D3_socialStatus: '3',
+      D4_socialGathering: '3',
+      D5_1_healthLiteracy: '3',
+      D5_2_publicLiteracy: '3',
+      D5_3_financialLiteracy: '3',
+      D5_4_digitalAiLiteracy: '2_3',
+      E1_educationNeed: '2',
+      E1_1_participationIntent: '1',
+      E1_2_barrierReason: '1',
+      E2_programDesireMode: '2_3',
+      E2_preferredPrograms: 'health_leisure',
+      F01_1_educationLevel: '4',
+      F01_2_graduationStatus: '5',
+      F02_fatherEdu: '2',
+      F02_motherEdu: '2',
+      F03_economicActivity: '1',
+      F04_occupation: '4',
+      F04_1_employmentType: '2',
+      F04_2_workStatus: '1',
+      F05_1_personalIncome: '2',
+      F05_2_householdIncome: '3'
+    },
+    age70: {
+      preserveExistingInputs: true,
+      partA_targetScore: 3,
+      partB1_targetScore: 20,
+      partC_correctCountMin: 9,
+      partC_correctCountMax: 13,
+      D1_lifeSatisfaction: '3',
+      D2_politicalInterest: '3_4',
+      D3_socialStatus: '2_3',
+      D4_socialGathering: '3',
+      D5_1_healthLiteracy: '2_3',
+      D5_2_publicLiteracy: '2_3',
+      D5_3_financialLiteracy: '2_3',
+      D5_4_digitalAiLiteracy: '2',
+      E1_educationNeed: '1',
+      E1_1_participationIntent: '2',
+      E1_2_barrierReason: '3',
+      E2_programDesireMode: '2_3',
+      E2_preferredPrograms: 'health_leisure',
+      F01_1_educationLevel: '3',
+      F01_2_graduationStatus: '5',
+      F02_fatherEdu: '1',
+      F02_motherEdu: '1',
+      F03_economicActivity: '5',
+      F04_occupation: '9',
+      F04_1_employmentType: '1',
+      F04_2_workStatus: '4',
+      F05_1_personalIncome: '1',
+      F05_2_householdIncome: '2'
+    }
+  };
+
+  let globalriAgePolicies = JSON.parse(JSON.stringify(DEFAULT_GLOBALRI_AGE_POLICIES));
+  let activeGlobalriAgeGroup = 'age20';
+  let globalriAgeGroupStats = {};
+
+  function syncGlobalriActiveCardToState() {
+    const cur = globalriAgePolicies[activeGlobalriAgeGroup] || { ...DEFAULT_GLOBALRI_AGE_POLICIES[activeGlobalriAgeGroup] };
+    const getVal = (id, fallback) => {
+      const el = document.getElementById(id);
+      return el ? el.value : fallback;
+    };
+    const getNum = (id, fallback) => {
+      const el = document.getElementById(id);
+      if (!el) return fallback;
+      const n = parseInt(el.value, 10);
+      return isNaN(n) ? fallback : n;
+    };
+    const cbPreserve = document.getElementById('cb-globalri-preserve');
+    if (cbPreserve) cur.preserveExistingInputs = cbPreserve.checked;
+
+    cur.partA_targetScore = getNum('sel-globalri-partA-score', cur.partA_targetScore ?? 3);
+    cur.partB1_targetScore = getNum('sel-globalri-partB1-score', cur.partB1_targetScore ?? 20);
+    let cMin = Math.max(0, Math.min(20, getNum('num-globalri-partC-min', cur.partC_correctCountMin ?? 18)));
+    let cMax = Math.max(0, Math.min(20, getNum('num-globalri-partC-max', cur.partC_correctCountMax ?? 20)));
+    if (cMin > cMax) { const t = cMin; cMin = cMax; cMax = t; }
+    cur.partC_correctCountMin = cMin;
+    cur.partC_correctCountMax = cMax;
+
+    cur.D1_lifeSatisfaction = getVal('sel-globalri-D1', cur.D1_lifeSatisfaction);
+    cur.D2_politicalInterest = getVal('sel-globalri-D2', cur.D2_politicalInterest);
+    cur.D3_socialStatus = getVal('sel-globalri-D3', cur.D3_socialStatus);
+    cur.D4_socialGathering = getVal('sel-globalri-D4', cur.D4_socialGathering);
+
+    cur.D5_1_healthLiteracy = getVal('sel-globalri-D5-1', cur.D5_1_healthLiteracy);
+    cur.D5_2_publicLiteracy = getVal('sel-globalri-D5-2', cur.D5_2_publicLiteracy);
+    cur.D5_3_financialLiteracy = getVal('sel-globalri-D5-3', cur.D5_3_financialLiteracy);
+    cur.D5_4_digitalAiLiteracy = getVal('sel-globalri-D5-4', cur.D5_4_digitalAiLiteracy);
+
+    cur.E1_educationNeed = getVal('sel-globalri-E1', cur.E1_educationNeed);
+    cur.E1_1_participationIntent = getVal('sel-globalri-E1-1', cur.E1_1_participationIntent);
+    cur.E1_2_barrierReason = getVal('sel-globalri-E1-2', cur.E1_2_barrierReason);
+    cur.E2_programDesireMode = getVal('sel-globalri-E2-mode', cur.E2_programDesireMode);
+    cur.E2_preferredPrograms = getVal('sel-globalri-E2-pref', cur.E2_preferredPrograms);
+
+    cur.F01_1_educationLevel = getVal('sel-globalri-F01-1', cur.F01_1_educationLevel);
+    cur.F01_2_graduationStatus = getVal('sel-globalri-F01-2', cur.F01_2_graduationStatus);
+    cur.F02_fatherEdu = getVal('sel-globalri-F02-father', cur.F02_fatherEdu);
+    cur.F02_motherEdu = getVal('sel-globalri-F02-mother', cur.F02_motherEdu);
+
+    cur.F03_economicActivity = getVal('sel-globalri-F03', cur.F03_economicActivity);
+    cur.F04_occupation = getVal('sel-globalri-F04', cur.F04_occupation);
+    cur.F04_1_employmentType = getVal('sel-globalri-F04-1', cur.F04_1_employmentType);
+    cur.F04_2_workStatus = getVal('sel-globalri-F04-2', cur.F04_2_workStatus);
+
+    let pInc = getNum('sel-globalri-F05-1', parseInt(cur.F05_1_personalIncome || '3', 10));
+    let hInc = getNum('sel-globalri-F05-2', parseInt(cur.F05_2_householdIncome || '5', 10));
+    if (hInc < pInc) hInc = pInc;
+    cur.F05_1_personalIncome = String(pInc);
+    cur.F05_2_householdIncome = String(hInc);
+
+    globalriAgePolicies[activeGlobalriAgeGroup] = cur;
+  }
+
+  function renderGlobalriAgeGroupCards() {
+    if (!blueprintStageGrid) return;
+    const meta = GLOBALRI_AGE_GROUP_METAS[activeGlobalriAgeGroup] || GLOBALRI_AGE_GROUP_METAS.age20;
+    const p = globalriAgePolicies[activeGlobalriAgeGroup] || DEFAULT_GLOBALRI_AGE_POLICIES[activeGlobalriAgeGroup];
+    const st = globalriAgeGroupStats[activeGlobalriAgeGroup] || { count: 0, members: [] };
+    const memberPreview = (st.members && st.members.length > 0)
+      ? st.members.join(', ')
+      : '현재 쿼터에 해당 나이대 대상자 없음 (신규 LID 추가 시 자동 적용)';
+
+    const tabsHtml = Object.keys(GLOBALRI_AGE_GROUP_METAS).map(k => {
+      const m = GLOBALRI_AGE_GROUP_METAS[k];
+      const cnt = globalriAgeGroupStats[k]?.count || 0;
+      const isAct = (k === activeGlobalriAgeGroup);
+      return `
+        <button type="button" class="group-tab-btn globalri-age-tab-btn ${isAct ? 'active' : ''}" data-age-group="${k}" style="flex: 1; min-width: 135px; padding: 10px 12px; border-radius: 10px; border: 1px solid ${isAct ? m.color : 'rgba(255,255,255,0.12)'}; background: ${isAct ? 'rgba(56, 189, 248, 0.14)' : 'rgba(15, 23, 42, 0.6)'}; cursor: pointer; text-align: left;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+            <strong style="color: ${isAct ? m.color : '#e2e8f0'}; font-size: 14px;">${escapeHtml(m.name)}</strong>
+            <span class="badge-status ${cnt > 0 ? 'ready' : ''}" style="padding: 2px 7px; font-size: 11px;">${cnt}명</span>
+          </div>
+          <div class="font-caption text-dim" style="margin-top: 4px; font-size: 11px;">${escapeHtml(m.range.split(' ')[0] + ' ' + (m.range.split(' ')[1] || ''))}</div>
+        </button>
+      `;
+    }).join('');
+
+    blueprintStageGrid.innerHTML = `
+      <!-- 상단 나이대 그룹 선택 탭 & 요약 배너 (전폭) -->
+      <section class="blueprint-card full-width-card" style="grid-column: 1 / -1; width: 100%; border: 1px solid rgba(56, 189, 248, 0.35); background: rgba(15, 23, 42, 0.75);">
+        <div class="p-14">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <div>
+              <span class="blueprint-step-pill" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;"><i class="fa-solid fa-users-gear"></i> 나이대별 그룹 가이드</span>
+              <strong class="text-white ml-8" style="font-size: 15px;">조사 대상자의 출생연도(만 나이)에 따라 자동 매칭되는 6개 연령대 그룹 가이드라인</strong>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" id="btn-globalri-copy-age-all" class="btn-pill btn-pill-secondary btn-pill-small" title="현재 선택된 나이대 가이드를 20대~70대+ 전체에 동일하게 복사">
+                <i class="fa-solid fa-copy"></i> 현재 [${escapeHtml(meta.name)}] 설정을 전 연령대에 일괄 복사
+              </button>
+              <button type="button" id="btn-globalri-reset-age-defaults" class="btn-pill btn-pill-secondary btn-pill-small" title="연령대별 현실적 표준 차등 프리셋으로 초기화">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 연령별 표준 차등 기본값 복원
+              </button>
+            </div>
+          </div>
+
+          <!-- 6개 나이대 탭 바 -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+            ${tabsHtml}
+          </div>
+
+          <!-- 현재 선택된 나이대 상세 배너 -->
+          <div class="assoc-rule-box mb-0" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-left: 4px solid ${meta.color};">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge-status ready font-bold" style="color: ${meta.color};">${escapeHtml(meta.name)} (${escapeHtml(meta.range)})</span>
+                <span class="font-caption text-white font-bold">적용 대상자: <strong>${st.count}명</strong></span>
+              </div>
+              <div class="font-caption text-dim mt-4">${escapeHtml(meta.desc)}</div>
+              <div class="font-caption text-primary-color mt-4"><i class="fa-solid fa-user-tag"></i> 소속 쿼터 명단: ${escapeHtml(memberPreview)}</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <label class="custom-cb-label" style="margin-bottom: 0;">
+                <input type="checkbox" id="cb-globalri-preserve" ${p.preserveExistingInputs !== false ? 'checked' : ''} />
+                <span class="font-bold text-success"><i class="fa-solid fa-shield-halved"></i> CONSENT~GP1 및 기입력 문항 100% 보존</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 1: Part A · B · C 문해력 평가 정답 개수 가이드 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">Part A · B · C</span>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 문해력 평가 목표 점수 &amp; 정답 수</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 나이대별 정답률</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          Part A(선별 3문항, A1 음성인식 포함), Part B-1(기초 20문항), Part C(심화 20문항)에서 해당 나이대 응답자가 맞힐 목표 정답 개수를 설정합니다.
+        </div>
+        <div class="p-14">
+          <div class="grid-2col gap-10 mb-12">
+            <div>
+              <label class="figma-label font-bold">Part A 선별문항 (3문항)</label>
+              <select id="sel-globalri-partA-score" class="figma-select w-full globalri-policy-input">
+                <option value="3" ${Number(p.partA_targetScore ?? 3) === 3 ? 'selected' : ''}>3점 만점 (Part C 직행 · 권장)</option>
+                <option value="2" ${Number(p.partA_targetScore) === 2 ? 'selected' : ''}>2점 (Part B-1 경유)</option>
+              </select>
+            </div>
+            <div>
+              <label class="figma-label font-bold">Part B-1 기초문해 (진입 시)</label>
+              <select id="sel-globalri-partB1-score" class="figma-select w-full globalri-policy-input">
+                <option value="20" ${Number(p.partB1_targetScore ?? 20) === 20 ? 'selected' : ''}>20문항 만점 (Part C 진입 · 권장)</option>
+                <option value="18" ${Number(p.partB1_targetScore) === 18 ? 'selected' : ''}>18문항 정답 (Part C 진입)</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="figma-label font-bold text-primary-color">Part C 심화문해 (C1~C20, 총 20문항) 목표 정답 개수 범위</label>
+            <div class="grid-2col gap-10 mt-6">
+              <div>
+                <span class="font-caption text-dim">최소 정답 수 (0~20개)</span>
+                <input type="number" id="num-globalri-partC-min" class="figma-input w-full globalri-policy-input" min="0" max="20" value="${p.partC_correctCountMin ?? 18}" />
+              </div>
+              <div>
+                <span class="font-caption text-dim">최대 정답 수 (0~20개)</span>
+                <input type="number" id="num-globalri-partC-max" class="figma-input w-full globalri-policy-input" min="0" max="20" value="${p.partC_correctCountMax ?? 20}" />
+              </div>
+            </div>
+            <div class="font-caption text-dim mt-6">
+              * 지정된 범위(예: ${p.partC_correctCountMin ?? 18}~${p.partC_correctCountMax ?? 20}개) 내에서 정답 문항을 주입하고, 나머지 문항은 자연스러운 인접 보기를 선택합니다.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 2: Part D (D1~D4) 생활 만족도 · 정치 관심 · 사회적 지위 · 모임 빈도 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">Part D (D1~D4)</span>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 생활만족도 · 사회인식 · 모임 빈도</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 나이대별 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          D1 전반적 생활 만족도, D2 정치적 관심도, D3 사회적 지위 인식, D4 친목 모임 참여 빈도를 설정합니다.
+        </div>
+        <div class="p-14 grid-2col gap-10">
+          <div>
+            <label class="figma-label font-bold">D1. 전반적 생활 만족도</label>
+            <select id="sel-globalri-D1" class="figma-select w-full globalri-policy-input">
+              <option value="4" ${p.D1_lifeSatisfaction === '4' ? 'selected' : ''}>4. 대체로 만족하는 편</option>
+              <option value="3_4" ${p.D1_lifeSatisfaction === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~만족 자연 분산)</option>
+              <option value="4_5" ${p.D1_lifeSatisfaction === '4_5' ? 'selected' : ''}>🎲 4~5점 (만족~매우 만족)</option>
+              <option value="3" ${p.D1_lifeSatisfaction === '3' ? 'selected' : ''}>3. 보통이다</option>
+              <option value="2" ${p.D1_lifeSatisfaction === '2' ? 'selected' : ''}>2. 대체로 불만족하는 편</option>
+              <option value="5" ${p.D1_lifeSatisfaction === '5' ? 'selected' : ''}>5. 매우 만족하는 편</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">D2. 평소 정치적 관심도</label>
+            <select id="sel-globalri-D2" class="figma-select w-full globalri-policy-input">
+              <option value="3" ${p.D2_politicalInterest === '3' ? 'selected' : ''}>3. 보통이다</option>
+              <option value="3_4" ${p.D2_politicalInterest === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~높은 편 자연 분산)</option>
+              <option value="2_3" ${p.D2_politicalInterest === '2_3' ? 'selected' : ''}>🎲 2~3점 (낮은 편~보통 자연 분산)</option>
+              <option value="4" ${p.D2_politicalInterest === '4' ? 'selected' : ''}>4. 대체로 높은 편</option>
+              <option value="2" ${p.D2_politicalInterest === '2' ? 'selected' : ''}>2. 대체로 낮은 편</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">D3. 본인의 사회적 지위 인식</label>
+            <select id="sel-globalri-D3" class="figma-select w-full globalri-policy-input">
+              <option value="3" ${p.D3_socialStatus === '3' ? 'selected' : ''}>3. 중간이다 (표준)</option>
+              <option value="3_4" ${p.D3_socialStatus === '3_4' ? 'selected' : ''}>🎲 3~4점 (중간~중상 자연 분산)</option>
+              <option value="2_3" ${p.D3_socialStatus === '2_3' ? 'selected' : ''}>🎲 2~3점 (낮은 편~중간 자연 분산)</option>
+              <option value="4" ${p.D3_socialStatus === '4' ? 'selected' : ''}>4. 대체로 높은 편</option>
+              <option value="2" ${p.D3_socialStatus === '2' ? 'selected' : ''}>2. 대체로 낮은 편</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">D4. 친목 모임(동창·향우회 등) 빈도</label>
+            <select id="sel-globalri-D4" class="figma-select w-full globalri-policy-input">
+              <option value="2" ${p.D4_socialGathering === '2' ? 'selected' : ''}>2. 일주일에 2~3번</option>
+              <option value="3" ${p.D4_socialGathering === '3' ? 'selected' : ''}>3. 한 달에 2~3번 (표준)</option>
+              <option value="4" ${p.D4_socialGathering === '4' ? 'selected' : ''}>4. 한 달에 1번 이하</option>
+              <option value="1" ${p.D4_socialGathering === '1' ? 'selected' : ''}>1. 거의 매일</option>
+              <option value="5" ${p.D4_socialGathering === '5' ? 'selected' : ''}>5. 거의 만나지 않음</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 3: Part D (D5_1~D5_4) 4대 영역별 문해력 자가진단 (각 5문항 × 5점 척도) -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">Part D (D5_1~D5_4)</span>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 4대 영역 문해력 자가진단 (5점 척도)</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 나이대별 가이드</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          건강(D5_1) · 공공(D5_2) · 금융(D5_3) · 디지털/AI(D5_4) 각 5문항(1=전혀 그렇지 않다 ~ 5=매우 그렇다) 응답 분포를 설정합니다.
+        </div>
+        <div class="p-14 grid-2col gap-10">
+          <div>
+            <label class="figma-label font-bold">D5_1. 건강 문해력 (의약품·병원안내 이해)</label>
+            <select id="sel-globalri-D5-1" class="figma-select w-full globalri-policy-input">
+              <option value="4_5" ${p.D5_1_healthLiteracy === '4_5' ? 'selected' : ''}>🎲 4~5점 (우수 · 그렇다~매우 그렇다)</option>
+              <option value="4" ${p.D5_1_healthLiteracy === '4' ? 'selected' : ''}>4점 고정 (대체로 그렇다)</option>
+              <option value="3_4" ${p.D5_1_healthLiteracy === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~그렇다 자연 분산)</option>
+              <option value="3" ${p.D5_1_healthLiteracy === '3' ? 'selected' : ''}>3점 고정 (보통이다)</option>
+              <option value="2_3" ${p.D5_1_healthLiteracy === '2_3' ? 'selected' : ''}>🎲 2~3점 (다소 어려움~보통)</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">D5_2. 공공 문해력 (관공서·세금·법률서류)</label>
+            <select id="sel-globalri-D5-2" class="figma-select w-full globalri-policy-input">
+              <option value="4_5" ${p.D5_2_publicLiteracy === '4_5' ? 'selected' : ''}>🎲 4~5점 (우수 · 그렇다~매우 그렇다)</option>
+              <option value="4" ${p.D5_2_publicLiteracy === '4' ? 'selected' : ''}>4점 고정 (대체로 그렇다)</option>
+              <option value="3_4" ${p.D5_2_publicLiteracy === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~그렇다 자연 분산)</option>
+              <option value="3" ${p.D5_2_publicLiteracy === '3' ? 'selected' : ''}>3점 고정 (보통이다)</option>
+              <option value="2_3" ${p.D5_2_publicLiteracy === '2_3' ? 'selected' : ''}>🎲 2~3점 (다소 어려움~보통)</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">D5_3. 금융 문해력 (예적금·보험·대출이자)</label>
+            <select id="sel-globalri-D5-3" class="figma-select w-full globalri-policy-input">
+              <option value="4_5" ${p.D5_3_financialLiteracy === '4_5' ? 'selected' : ''}>🎲 4~5점 (우수 · 그렇다~매우 그렇다)</option>
+              <option value="4" ${p.D5_3_financialLiteracy === '4' ? 'selected' : ''}>4점 고정 (대체로 그렇다)</option>
+              <option value="3_4" ${p.D5_3_financialLiteracy === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~그렇다 자연 분산)</option>
+              <option value="3" ${p.D5_3_financialLiteracy === '3' ? 'selected' : ''}>3점 고정 (보통이다)</option>
+              <option value="2_3" ${p.D5_3_financialLiteracy === '2_3' ? 'selected' : ''}>🎲 2~3점 (다소 어려움~보통)</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">D5_4. 디지털·AI 문해력 (앱·키오스크·AI)</label>
+            <select id="sel-globalri-D5-4" class="figma-select w-full globalri-policy-input">
+              <option value="4_5" ${p.D5_4_digitalAiLiteracy === '4_5' ? 'selected' : ''}>🎲 4~5점 (우수 · 청년/중장년 강세)</option>
+              <option value="4" ${p.D5_4_digitalAiLiteracy === '4' ? 'selected' : ''}>4점 고정 (대체로 그렇다)</option>
+              <option value="3_4" ${p.D5_4_digitalAiLiteracy === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~그렇다 자연 분산)</option>
+              <option value="3" ${p.D5_4_digitalAiLiteracy === '3' ? 'selected' : ''}>3점 고정 (보통이다)</option>
+              <option value="2_3" ${p.D5_4_digitalAiLiteracy === '2_3' ? 'selected' : ''}>🎲 2~3점 (다소 어려움~보통)</option>
+              <option value="2" ${p.D5_4_digitalAiLiteracy === '2' ? 'selected' : ''}>2점 고정 (대체로 그렇지 않다)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 4: Part E (E1~E2) 성인문해교육 필요성 · 참여 의향 · 7대 교육프로그램 희망도 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">Part E (E1~E2)</span>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 성인문해교육 수요 &amp; 7대 프로그램 희망도</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 조건부 분기 연동</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          E1 필요 여부(1=필요함➔E1_1, 2=불필요➔E2 직행), E1_1 참여 의향, E1_2 미참여 사유, E2 7대 교육프로그램 참여 희망도를 설정합니다.
+        </div>
+        <div class="p-14">
+          <div class="grid-3col gap-10 mb-12" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            <div>
+              <label class="figma-label font-bold">E1. 문해교육 필요 여부</label>
+              <select id="sel-globalri-E1" class="figma-select w-full globalri-policy-input">
+                <option value="2" ${p.E1_educationNeed === '2' ? 'selected' : ''}>2. 필요하지 않음 (➔ E2 직행)</option>
+                <option value="1" ${p.E1_educationNeed === '1' ? 'selected' : ''}>1. 필요함 (➔ E1_1 진입)</option>
+              </select>
+            </div>
+            <div>
+              <label class="figma-label font-bold">E1_1. 참여 의향 (E1=1 시)</label>
+              <select id="sel-globalri-E1-1" class="figma-select w-full globalri-policy-input">
+                <option value="1" ${p.E1_1_participationIntent === '1' ? 'selected' : ''}>1. 참여 의향 있음 (➔ E2)</option>
+                <option value="2" ${p.E1_1_participationIntent === '2' ? 'selected' : ''}>2. 참여 의향 없음 (➔ E1_2)</option>
+              </select>
+            </div>
+            <div>
+              <label class="figma-label font-bold">E1_2. 불참 이유 (E1_1=2 시)</label>
+              <select id="sel-globalri-E1-2" class="figma-select w-full globalri-policy-input">
+                <option value="1" ${p.E1_2_barrierReason === '1' ? 'selected' : ''}>1. 시간 부족 (직장/가사 등)</option>
+                <option value="2" ${p.E1_2_barrierReason === '2' ? 'selected' : ''}>2. 경제적 여유 부족</option>
+                <option value="3" ${p.E1_2_barrierReason === '3' ? 'selected' : ''}>3. 건강상의 어려움</option>
+                <option value="5" ${p.E1_2_barrierReason === '5' ? 'selected' : ''}>5. 교육기관 정보 부족</option>
+                <option value="6" ${p.E1_2_barrierReason === '6' ? 'selected' : ''}>6. 교육장소 접근 어려움</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid-2col gap-10">
+            <div>
+              <label class="figma-label font-bold">E2. 7대 교육프로그램 전반적 희망도</label>
+              <select id="sel-globalri-E2-mode" class="figma-select w-full globalri-policy-input">
+                <option value="3_4" ${p.E2_programDesireMode === '3_4' ? 'selected' : ''}>🎲 3~4점 (보통~참여 희망 자연 분산)</option>
+                <option value="2_3" ${p.E2_programDesireMode === '2_3' ? 'selected' : ''}>🎲 2~3점 (별로 없음~보통 자연 분산)</option>
+                <option value="4_5" ${p.E2_programDesireMode === '4_5' ? 'selected' : ''}>🎲 4~5점 (적극 참여 희망)</option>
+                <option value="1_2" ${p.E2_programDesireMode === '1_2' ? 'selected' : ''}>🎲 1~2점 (참여 의사 낮음)</option>
+              </select>
+            </div>
+            <div>
+              <label class="figma-label font-bold">E2. 중점 선호 프로그램 가중치</label>
+              <select id="sel-globalri-E2-pref" class="figma-select w-full globalri-policy-input">
+                <option value="digital_finance" ${p.E2_preferredPrograms === 'digital_finance' ? 'selected' : ''}>금융·경제(4번) &amp; 디지털·AI(5번) 우대</option>
+                <option value="health_leisure" ${p.E2_preferredPrograms === 'health_leisure' ? 'selected' : ''}>건강·안전(3번) &amp; 문화·여가(6번) 우대</option>
+                <option value="balanced" ${p.E2_preferredPrograms === 'balanced' ? 'selected' : ''}>1~7번 전 영역 균등 배분</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 5: Part F (F01~F02) 응답자 최종학력 및 부모 학력 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">Part F (F01~F02)</span>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 본인 최종학력 &amp; 부모님 학력</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-graduation-cap"></i> 학력 정합성</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          F01 응답자 본인 최종학력(학교급·졸업여부)과 F02 아버지/어머니 학력(무학 또는 모름 선택 시 졸업여부 자동 비활성화)을 설정합니다.
+        </div>
+        <div class="p-14 grid-2col gap-10">
+          <div>
+            <label class="figma-label font-bold">F01_1. 본인 최종 학교급 (1~8)</label>
+            <select id="sel-globalri-F01-1" class="figma-select w-full globalri-policy-input">
+              <option value="6" ${p.F01_1_educationLevel === '6' ? 'selected' : ''}>6. 대학교 (4년제 이상)</option>
+              <option value="5" ${p.F01_1_educationLevel === '5' ? 'selected' : ''}>5. 대학 (2·3년제 전문대)</option>
+              <option value="4" ${p.F01_1_educationLevel === '4' ? 'selected' : ''}>4. 고등학교</option>
+              <option value="3" ${p.F01_1_educationLevel === '3' ? 'selected' : ''}>3. 중학교</option>
+              <option value="2" ${p.F01_1_educationLevel === '2' ? 'selected' : ''}>2. 초등학교</option>
+              <option value="7" ${p.F01_1_educationLevel === '7' ? 'selected' : ''}>7. 대학원 (석사 과정)</option>
+              <option value="8" ${p.F01_1_educationLevel === '8' ? 'selected' : ''}>8. 대학원 (박사 과정)</option>
+              <option value="1" ${p.F01_1_educationLevel === '1' ? 'selected' : ''}>1. 무학 (학교 다니지 않음)</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">F01_2. 본인 졸업 여부 (1~5)</label>
+            <select id="sel-globalri-F01-2" class="figma-select w-full globalri-policy-input">
+              <option value="5" ${p.F01_2_graduationStatus === '5' ? 'selected' : ''}>5. 졸업 (표준 기본값)</option>
+              <option value="1" ${p.F01_2_graduationStatus === '1' ? 'selected' : ''}>1. 재학 중 (대학생 등)</option>
+              <option value="3" ${p.F01_2_graduationStatus === '3' ? 'selected' : ''}>3. 휴학 중</option>
+              <option value="2" ${p.F01_2_graduationStatus === '2' ? 'selected' : ''}>2. 중퇴</option>
+              <option value="4" ${p.F01_2_graduationStatus === '4' ? 'selected' : ''}>4. 수료</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">F02 (부). 아버지 최종학력</label>
+            <select id="sel-globalri-F02-father" class="figma-select w-full globalri-policy-input">
+              <option value="6" ${p.F02_fatherEdu === '6' ? 'selected' : ''}>6. 대학교(4년제 이상) 졸업</option>
+              <option value="5" ${p.F02_fatherEdu === '5' ? 'selected' : ''}>5. 대학(2·3년제) 졸업</option>
+              <option value="4" ${p.F02_fatherEdu === '4' ? 'selected' : ''}>4. 고등학교 졸업</option>
+              <option value="3" ${p.F02_fatherEdu === '3' ? 'selected' : ''}>3. 중학교 졸업</option>
+              <option value="2" ${p.F02_fatherEdu === '2' ? 'selected' : ''}>2. 초등학교 졸업</option>
+              <option value="1" ${p.F02_fatherEdu === '1' ? 'selected' : ''}>1. 무학 (학교 다니지 않음)</option>
+              <option value="9" ${p.F02_fatherEdu === '9' ? 'selected' : ''}>9. 모름</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">F02 (모). 어머니 최종학력</label>
+            <select id="sel-globalri-F02-mother" class="figma-select w-full globalri-policy-input">
+              <option value="6" ${p.F02_motherEdu === '6' ? 'selected' : ''}>6. 대학교(4년제 이상) 졸업</option>
+              <option value="5" ${p.F02_motherEdu === '5' ? 'selected' : ''}>5. 대학(2·3년제) 졸업</option>
+              <option value="4" ${p.F02_motherEdu === '4' ? 'selected' : ''}>4. 고등학교 졸업</option>
+              <option value="3" ${p.F02_motherEdu === '3' ? 'selected' : ''}>3. 중학교 졸업</option>
+              <option value="2" ${p.F02_motherEdu === '2' ? 'selected' : ''}>2. 초등학교 졸업</option>
+              <option value="1" ${p.F02_motherEdu === '1' ? 'selected' : ''}>1. 무학 (학교 다니지 않음)</option>
+              <option value="9" ${p.F02_motherEdu === '9' ? 'selected' : ''}>9. 모름</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 6: Part F (F03~F05_2) 경제활동 · 직업 · 종사상 지위 · 개인/가구 소득 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill">Part F (F03~F05_2)</span>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 경제활동 · 직업 · 월간 개인/가구 소득</h3>
+          </div>
+          <span class="badge-tag-tunable"><i class="fa-solid fa-coins"></i> 소득 정합성 보장</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          F03 주된 활동(1=일하였음 선택 시 F04 직업·고용형태 진입)과 F05_1 개인소득 / F05_2 가구소득(가구소득 &ge; 개인소득 자동 보장)을 설정합니다.
+        </div>
+        <div class="p-14 grid-2col gap-10">
+          <div>
+            <label class="figma-label font-bold">F03. 지난 4주간 주된 활동</label>
+            <select id="sel-globalri-F03" class="figma-select w-full globalri-policy-input">
+              <option value="1" ${p.F03_economicActivity === '1' ? 'selected' : ''}>1. 일하였음 (취업·자영업 ➔ F04 진입)</option>
+              <option value="2" ${p.F03_economicActivity === '2' ? 'selected' : ''}>2. 구직 활동 및 취업 준비 (➔ F05_1 직행)</option>
+              <option value="3" ${p.F03_economicActivity === '3' ? 'selected' : ''}>3. 학교 재학 및 진학 준비 (➔ F05_1 직행)</option>
+              <option value="4" ${p.F03_economicActivity === '4' ? 'selected' : ''}>4. 육아·가사 (전업주부 등 ➔ F05_1 직행)</option>
+              <option value="5" ${p.F03_economicActivity === '5' ? 'selected' : ''}>5. 쉬었음 (은퇴·휴식 등 ➔ F05_1 직행)</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">F04. 직업 분류 (F03=1 일하였음 시)</label>
+            <select id="sel-globalri-F04" class="figma-select w-full globalri-policy-input">
+              <option value="3" ${p.F04_occupation === '3' ? 'selected' : ''}>3. 사무 종사자</option>
+              <option value="2" ${p.F04_occupation === '2' ? 'selected' : ''}>2. 전문가 및 관련 종사자</option>
+              <option value="4" ${p.F04_occupation === '4' ? 'selected' : ''}>4. 서비스 종사자</option>
+              <option value="5" ${p.F04_occupation === '5' ? 'selected' : ''}>5. 판매 종사자</option>
+              <option value="1" ${p.F04_occupation === '1' ? 'selected' : ''}>1. 관리자</option>
+              <option value="7" ${p.F04_occupation === '7' ? 'selected' : ''}>7. 기능원 및 관련 기능 종사자</option>
+              <option value="8" ${p.F04_occupation === '8' ? 'selected' : ''}>8. 장치·기계 조작 및 조립 종사자</option>
+              <option value="9" ${p.F04_occupation === '9' ? 'selected' : ''}>9. 단순노무 종사자</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">F04_1. 고용 형태 (F03=1 시)</label>
+            <select id="sel-globalri-F04-1" class="figma-select w-full globalri-policy-input">
+              <option value="1" ${p.F04_1_employmentType === '1' ? 'selected' : ''}>1. 임금근로자 (➔ F04_2 진입)</option>
+              <option value="2" ${p.F04_1_employmentType === '2' ? 'selected' : ''}>2. 비임금근로자 (자영업자·무급가족 ➔ F05_1)</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">F04_2. 근로 시간·지위 (F04_1=1 시)</label>
+            <select id="sel-globalri-F04-2" class="figma-select w-full globalri-policy-input">
+              <option value="1" ${p.F04_2_workStatus === '1' ? 'selected' : ''}>1. 전일제 상근근로자 (정규직)</option>
+              <option value="2" ${p.F04_2_workStatus === '2' ? 'selected' : ''}>2. 시간제 상근근로자</option>
+              <option value="3" ${p.F04_2_workStatus === '3' ? 'selected' : ''}>3. 전일제 임시·일용근로자</option>
+              <option value="4" ${p.F04_2_workStatus === '4' ? 'selected' : ''}>4. 시간제 임시·일용근로자</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">F05_1. 월평균 개인소득 (1~8)</label>
+            <select id="sel-globalri-F05-1" class="figma-select w-full globalri-policy-input">
+              <option value="1" ${p.F05_1_personalIncome === '1' ? 'selected' : ''}>1. 100만원 미만</option>
+              <option value="2" ${p.F05_1_personalIncome === '2' ? 'selected' : ''}>2. 100만원 ~ 200만원 미만</option>
+              <option value="3" ${p.F05_1_personalIncome === '3' ? 'selected' : ''}>3. 200만원 ~ 300만원 미만</option>
+              <option value="4" ${p.F05_1_personalIncome === '4' ? 'selected' : ''}>4. 300만원 ~ 400만원 미만</option>
+              <option value="5" ${p.F05_1_personalIncome === '5' ? 'selected' : ''}>5. 400만원 ~ 500만원 미만</option>
+              <option value="6" ${p.F05_1_personalIncome === '6' ? 'selected' : ''}>6. 500만원 ~ 600만원 미만</option>
+              <option value="7" ${p.F05_1_personalIncome === '7' ? 'selected' : ''}>7. 600만원 ~ 700만원 미만</option>
+              <option value="8" ${p.F05_1_personalIncome === '8' ? 'selected' : ''}>8. 700만원 이상</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">F05_2. 월평균 가구소득 (개인소득 이상 필수)</label>
+            <select id="sel-globalri-F05-2" class="figma-select w-full globalri-policy-input">
+              <option value="1" ${p.F05_2_householdIncome === '1' ? 'selected' : ''}>1. 100만원 미만</option>
+              <option value="2" ${p.F05_2_householdIncome === '2' ? 'selected' : ''}>2. 100만원 ~ 200만원 미만</option>
+              <option value="3" ${p.F05_2_householdIncome === '3' ? 'selected' : ''}>3. 200만원 ~ 300만원 미만</option>
+              <option value="4" ${p.F05_2_householdIncome === '4' ? 'selected' : ''}>4. 300만원 ~ 400만원 미만</option>
+              <option value="5" ${p.F05_2_householdIncome === '5' ? 'selected' : ''}>5. 400만원 ~ 500만원 미만</option>
+              <option value="6" ${p.F05_2_householdIncome === '6' ? 'selected' : ''}>6. 500만원 ~ 600만원 미만</option>
+              <option value="7" ${p.F05_2_householdIncome === '7' ? 'selected' : ''}>7. 600만원 ~ 700만원 미만</option>
+              <option value="8" ${p.F05_2_householdIncome === '8' ? 'selected' : ''}>8. 700만원 이상</option>
+            </select>
+          </div>
+        </div>
+      </section>
+    `;
+
+    // 나이대 탭 클릭 이벤트 바인딩
+    blueprintStageGrid.querySelectorAll('.globalri-age-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetGroup = btn.getAttribute('data-age-group');
+        if (!targetGroup || targetGroup === activeGlobalriAgeGroup) return;
+        syncGlobalriActiveCardToState();
+        activeGlobalriAgeGroup = targetGroup;
+        renderGlobalriAgeGroupCards();
+      });
+    });
+
+    // 입력 요소 변경 시 즉시 state 동기화 + 개인/가구소득 정합성 보정
+    blueprintStageGrid.querySelectorAll('.globalri-policy-input').forEach(el => {
+      el.addEventListener('change', () => {
+        if (el.id === 'sel-globalri-F05-1' || el.id === 'sel-globalri-F05-2') {
+          const selP = document.getElementById('sel-globalri-F05-1');
+          const selH = document.getElementById('sel-globalri-F05-2');
+          if (selP && selH && parseInt(selH.value, 10) < parseInt(selP.value, 10)) {
+            selH.value = selP.value;
+          }
+        }
+        syncGlobalriActiveCardToState();
+        markUnsaved();
+      });
+      el.addEventListener('input', () => {
+        syncGlobalriActiveCardToState();
+        markUnsaved();
+      });
+    });
+
+    const cbPreserve = document.getElementById('cb-globalri-preserve');
+    if (cbPreserve) {
+      cbPreserve.addEventListener('change', () => {
+        syncGlobalriActiveCardToState();
+        markUnsaved();
+      });
+    }
+
+    // 현재 나이대 설정을 전 연령대에 일괄 복사
+    const btnCopyAll = document.getElementById('btn-globalri-copy-age-all');
+    if (btnCopyAll) {
+      btnCopyAll.addEventListener('click', () => {
+        syncGlobalriActiveCardToState();
+        const src = globalriAgePolicies[activeGlobalriAgeGroup];
+        Object.keys(GLOBALRI_AGE_GROUP_METAS).forEach(k => {
+          globalriAgePolicies[k] = JSON.parse(JSON.stringify(src));
+        });
+        markUnsaved();
+        alert(`✓ [${GLOBALRI_AGE_GROUP_METAS[activeGlobalriAgeGroup].name}]의 가이드 설정이 20대·30대·40대·50대·60대·70대 이상 전체 그룹에 일괄 복사되었습니다.\n우측 상단의 [나이대별 가이드 저장] 버튼을 눌러 저장해 주세요.`);
+      });
+    }
+
+    // 연령별 표준 차등 기본값 복원
+    const btnResetDefaults = document.getElementById('btn-globalri-reset-age-defaults');
+    if (btnResetDefaults) {
+      btnResetDefaults.addEventListener('click', () => {
+        if (!confirm('20대~70대 이상 전 연령대 가이드를 연령별 표준 차등 기본값으로 복원하시겠습니까?')) return;
+        globalriAgePolicies = JSON.parse(JSON.stringify(DEFAULT_GLOBALRI_AGE_POLICIES));
+        renderGlobalriAgeGroupCards();
+        markUnsaved();
+        appendLog('info', '[프리셋 복원] 20대~70대+ 연령별 표준 차등 가이드라인이 복원되었습니다.');
+      });
+    }
+  }
+
+  function renderGlobalriLiteracyBlueprint(data) {
+    const bpSection = document.getElementById('section-master-blueprint');
+    if (bpSection) {
+      bpSection.classList.remove('hidden');
+      bpSection.style.display = 'block';
+    }
+
+    const groupNav = document.querySelector('.blueprint-group-nav-container');
+    if (groupNav) groupNav.style.display = 'none';
+
+    const presetGroup = document.querySelector('.blueprint-preset-group');
+    if (presetGroup) presetGroup.style.display = 'none';
+
+    const tplPicker = document.querySelector('.blueprint-template-picker');
+    if (tplPicker) tplPicker.style.display = 'none';
+
+    const legendWrap = document.querySelector('.blueprint-legend-inline');
+    if (legendWrap) legendWrap.style.display = 'none';
+
+    const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
+    if (titleEl) titleEl.textContent = '제5차 성인문해능력조사 나이대별(20대 · 30대 · 40대 · 50대 · 60대 · 70대+) 그룹 응답 가이드';
+
+    const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
+    if (subtitleEl) subtitleEl.textContent = '조사 대상자의 출생연도에 따라 자동 분류되는 나이대 그룹별로 문해력 목표 정답 수(Part A~C), 문해력 자가진단(D5), 문해교육 수요(Part E), 학력·직업·소득(Part F) 가이드를 설정합니다.';
+
+    if (badgeMasterStatus) {
+      badgeMasterStatus.innerHTML = '<i class="fa-solid fa-layer-group"></i> 나이대별(20대~70대+) 6개 그룹 가이드 활성';
+      badgeMasterStatus.className = 'badge-status badge-blueprint ready';
+    }
+
+    if (btnSaveBaseline) {
+      btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 나이대별 응답 가이드 저장';
+    }
+
+    const incomingGroups = data.ageGroups || data.policy?.ageGroups || data.ageGroupPolicies || data.baseline?.ageGroups || data.blueprint?.defaultPolicy?.ageGroups || {};
+    globalriAgePolicies = {};
+    Object.keys(DEFAULT_GLOBALRI_AGE_POLICIES).forEach(k => {
+      globalriAgePolicies[k] = {
+        ...DEFAULT_GLOBALRI_AGE_POLICIES[k],
+        ...(incomingGroups[k] || {})
+      };
+    });
+
+    // 쿼터 DB 기반 나이대별 통계 재집계
+    const qDb = currentCampaign?.quotaDatabase || [];
+    globalriAgeGroupStats = {};
+    Object.keys(GLOBALRI_AGE_GROUP_METAS).forEach(k => {
+      globalriAgeGroupStats[k] = { count: 0, members: [] };
+    });
+    qDb.forEach(item => {
+      const k = item.ageGroupKey || 'age50';
+      if (!globalriAgeGroupStats[k]) globalriAgeGroupStats[k] = { count: 0, members: [] };
+      globalriAgeGroupStats[k].count++;
+      globalriAgeGroupStats[k].members.push(`${item.memberName || item.ceoName}(${item.birthYear || ''}년생·LID ${item.lid || ''})`);
+    });
+
+    renderGlobalriAgeGroupCards();
+  }
+
   function renderHrcEnergyBlueprint(data) {
     const bpSection = document.getElementById('section-master-blueprint');
     if (bpSection) {
@@ -3564,6 +4566,13 @@ async function initSurveyDetailPage() {
       if (!res.ok) throw new Error('블루프린트를 불러올 수 없습니다.');
       const data = await res.json();
       blueprintData = data.blueprint;
+
+      // 글로벌리서치 제5차 성인문해능력조사 전용 블루프린트 분기 (나이대별 그룹 가이드)
+      const isGlobalriLiteracyCampaign = (data.surveyType === 'globalri_literacy' || currentCampaign?.surveyType === 'globalri_literacy');
+      if (isGlobalriLiteracyCampaign) {
+        renderGlobalriLiteracyBlueprint(data);
+        return;
+      }
 
       // 한국리서치 에너지총조사 [건물 부문] 전용 블루프린트 분기 (완전 격리)
       const isHrcEnergyCampaign = (data.surveyType === 'hrc_energy' || currentCampaign?.surveyType === 'hrc_energy');
@@ -5057,9 +6066,20 @@ async function initSurveyDetailPage() {
       const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
       const isKona = (currentCampaign?.surveyType === 'kona_youth');
       const isHrcEnergy = (currentCampaign?.surveyType === 'hrc_energy');
+      const isGlobalriLiteracy = (currentCampaign?.surveyType === 'globalri_literacy');
 
       let payload;
-      if (isHrcEnergy) {
+      if (isGlobalriLiteracy) {
+        syncGlobalriActiveCardToState();
+        payload = {
+          surveyType: 'globalri_literacy',
+          ageGroups: globalriAgePolicies || {},
+          policy: {
+            preserveExistingInputs: true,
+            safetyStopAtF05_2: true
+          }
+        };
+      } else if (isHrcEnergy) {
         payload = {
           surveyType: 'hrc_energy',
           policy: currentCampaign?.masterBaseline?.policy || {
@@ -5103,36 +6123,40 @@ async function initSurveyDetailPage() {
 
       if (btnSaveBaseline) {
         btnSaveBaseline.disabled = false;
-        btnSaveBaseline.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${isHrcEnergy ? '에너지총조사 [건물] 정책 저장 완료!' : (isKona ? '청소년 설문 기준 가이드 저장 완료!' : (isAssoc ? '상인회 정책 가이드라인 저장 완료!' : '마스터 기준점 &amp; 평가 가이드 저장 완료!'))}`;
+        btnSaveBaseline.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${isGlobalriLiteracy ? '나이대별 응답 가이드 저장 완료!' : (isHrcEnergy ? '에너지총조사 [건물] 정책 저장 완료!' : (isKona ? '청소년 설문 기준 가이드 저장 완료!' : (isAssoc ? '상인회 정책 가이드라인 저장 완료!' : '마스터 기준점 &amp; 평가 가이드 저장 완료!')))}`;
         btnSaveBaseline.className = 'btn-pill btn-pill-success';
       }
 
       if (badgeMasterStatus) {
-        badgeMasterStatus.innerHTML = isHrcEnergy
-          ? '<i class="fa-solid fa-shield-halved"></i> 기존 입력값 100% 보존 &amp; 14단계 검증 활성'
-          : (isKona
-            ? '<i class="fa-solid fa-camera"></i> 40문항 규칙 &amp; 제출 직전 캡처 활성'
-            : (isAssoc 
-              ? '<i class="fa-solid fa-check-double"></i> 상인회 25단계 블루프린트 설정 완료'
-              : '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 &amp; 평가 가이드 활성'));
+        badgeMasterStatus.innerHTML = isGlobalriLiteracy
+          ? '<i class="fa-solid fa-layer-group"></i> 나이대별(20대~70대+) 6개 그룹 가이드 저장 완료'
+          : (isHrcEnergy
+            ? '<i class="fa-solid fa-shield-halved"></i> 기존 입력값 100% 보존 &amp; 14단계 검증 활성'
+            : (isKona
+              ? '<i class="fa-solid fa-camera"></i> 40문항 규칙 &amp; 제출 직전 캡처 활성'
+              : (isAssoc 
+                ? '<i class="fa-solid fa-check-double"></i> 상인회 25단계 블루프린트 설정 완료'
+                : '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 &amp; 평가 가이드 활성')));
         badgeMasterStatus.className = 'badge-status badge-blueprint ready';
       }
 
       if (showNotification) {
-        appendLog('success', isHrcEnergy
-          ? '✓ 2025년 기준 에너지총조사 [건물] 정책 가이드라인(기존 입력값 보존 규칙)이 저장되었습니다.'
-          : (isKona
-            ? '✓ 화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-            : (isMetrix
-              ? '✓ 메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-              : (isAssoc 
-                ? '✓ 상인회 25단계 정책 가이드라인(F5~G4)이 성공적으로 저장되었습니다.'
-                : '✓ 3개 업종 그룹별 마스터 기준점 및 조사원 평가 가이드(H1~H3)가 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.'))));
+        appendLog('success', isGlobalriLiteracy
+          ? '✓ 제5차 성인문해능력조사 나이대별(20대·30대·40대·50대·60대·70대+) 응답 가이드라인이 저장되었습니다.'
+          : (isHrcEnergy
+            ? '✓ 2025년 기준 에너지총조사 [건물] 정책 가이드라인(기존 입력값 보존 규칙)이 저장되었습니다.'
+            : (isKona
+              ? '✓ 화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+              : (isMetrix
+                ? '✓ 메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+                : (isAssoc 
+                  ? '✓ 상인회 25단계 정책 가이드라인(F5~G4)이 성공적으로 저장되었습니다.'
+                  : '✓ 3개 업종 그룹별 마스터 기준점 및 조사원 평가 가이드(H1~H3)가 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.')))));
       }
 
       setTimeout(() => {
         if (btnSaveBaseline) {
-          btnSaveBaseline.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${isHrcEnergy ? '에너지총조사 [건물] 기준 가이드 저장' : (isKona ? '청소년 설문 기준 가이드 저장' : (isAssoc ? '상인회 정책 가이드 저장' : '마스터 기준점 &amp; 조사원 평가 가이드 저장'))}`;
+          btnSaveBaseline.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${isGlobalriLiteracy ? '나이대별 응답 가이드 저장' : (isHrcEnergy ? '에너지총조사 [건물] 기준 가이드 저장' : (isKona ? '청소년 설문 기준 가이드 저장' : (isAssoc ? '상인회 정책 가이드 저장' : '마스터 기준점 &amp; 조사원 평가 가이드 저장')))}`;
           btnSaveBaseline.className = 'btn-pill btn-pill-primary';
         }
       }, 2500);
@@ -5232,12 +6256,13 @@ async function initSurveyDetailPage() {
     const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
     const isKona = (currentCampaign?.surveyType === 'kona_youth');
     const isHrcEnergy = (currentCampaign?.surveyType === 'hrc_energy');
+    const isGlobalriLiteracy = (currentCampaign?.surveyType === 'globalri_literacy');
     const firstBiz = isHrcEnergy
       ? (quotaDb.find(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
-      : (isKona
+      : ((isKona || isGlobalriLiteracy)
         ? (quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
         : quotaDb[0]);
-    const firstSlot = firstBiz?.surveyUrl || firstBiz?.slotUrl || (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${firstBiz?.uid || ''}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''));
+    const firstSlot = firstBiz?.surveyUrl || firstBiz?.slotUrl || firstBiz?.householdUrl || (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${firstBiz?.uid || ''}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''));
     const targetPilotIdx = firstBiz?.index || firstBiz?.seq || 1;
 
     // 1번 쿼터 슬롯 매핑 검증
@@ -5258,7 +6283,9 @@ async function initSurveyDetailPage() {
       setRunningState(true);
       openMonitorDrawer();
       resetTimelineChips();
-      if (isHrcEnergy) {
+      if (isGlobalriLiteracy) {
+        appendLog('info', `🎯 [성인문해능력조사 파일럿 시작] "${firstBiz.memberName || firstBiz.ceoName}" (LID ${firstBiz.lid} · ${firstBiz.ageGroupLabel || ''}) 나이대별 가이드 적용 및 F05_2 직전 안전 대기를 진행합니다...`);
+      } else if (isHrcEnergy) {
         appendLog('info', `🎯 [에너지총조사 단건 실행] "${firstBiz.buildingName || firstBiz.companyName}" (UID: ${firstBiz.uid}) 기존 입력 항목을 100% 보존하며 설문을 진행합니다...`);
       } else if (isKona) {
         appendLog('info', `🎯 [코나 청소년 파일럿 시작] "${firstBiz.companyName}" (IDX: ${firstBiz.idx}) 1~40번 입력 및 제출 직전 캡처 검증을 진행합니다...`);
@@ -5300,17 +6327,18 @@ async function initSurveyDetailPage() {
     const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
     const isKona = (currentCampaign?.surveyType === 'kona_youth');
     const isHrcEnergy = (currentCampaign?.surveyType === 'hrc_energy');
+    const isGlobalriLiteracy = (currentCampaign?.surveyType === 'globalri_literacy');
     const firstQuota = quotaDb.find(b => b.index === 1) || quotaDb[0];
     const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed' || firstQuota.status === '완료' || firstQuota.quotaStatus === '진행중(98%)' || firstQuota.status === '진행중(98%)');
-    const startIdx = (isKona || isHrcEnergy) ? 1 : (firstDone ? 2 : 1);
+    const startIdx = (isKona || isHrcEnergy || isGlobalriLiteracy) ? 1 : (firstDone ? 2 : 1);
 
     // 1:1 슬롯 매핑 전수 검증
     const targets = isHrcEnergy
       ? quotaDb.filter(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료')
-      : (isKona
+      : ((isKona || isGlobalriLiteracy)
         ? quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료')
         : quotaDb.filter(b => (b.index || b.seq) >= startIdx));
-    const unmappedTargets = (isKona || isHrcEnergy) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
+    const unmappedTargets = (isKona || isHrcEnergy || isGlobalriLiteracy) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
     if (unmappedTargets.length > 0) {
       if (isMetrix) {
         alert(`⚠️ 실행 대상 패널 ${targets.length}건 중 ${unmappedTargets.length}건에 설문 참여 URL(surveyUrl)이 누락되었습니다.`);
@@ -5321,11 +6349,13 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    let surveyUrl = targets[0]?.slotUrl || targets[0]?.surveyUrl || inputSurveyUrl.value.trim() || (isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL');
+    let surveyUrl = targets[0]?.slotUrl || targets[0]?.surveyUrl || targets[0]?.householdUrl || inputSurveyUrl.value.trim() || (isGlobalriLiteracy ? 'https://gift.globalri.it/login' : (isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL'));
     const safetyGuard = checkSafetyGuard ? checkSafetyGuard.checked : (isHrcEnergy ? false : true);
     
     let confirmMsg;
-    if (isHrcEnergy) {
+    if (isGlobalriLiteracy) {
+      confirmMsg = `[제5차 성인문해능력조사 - 나이대별 그룹 가이드 배치]\n미완료 대상자 ${targets.length}명에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 대상자의 출생연도(20대·30대·40대·50대·60대·70대+)에 맞춘 그룹 가이드 자동 적용\n2. CONSENT~GP1 및 기존 입력 문항 100% 보존\n3. ${safetyGuard ? '마지막 문항(F05_2 가구소득)에서 최종 제출 직전 안전 대기' : 'F05_2까지 100% 최종 완료'}\n\n계속하시겠습니까?`;
+    } else if (isHrcEnergy) {
       confirmMsg = `[2025년 기준 에너지총조사 - 건물 부문]\n미완료 [선정] 쿼터 ${targets.length}건에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 기존에 이미 입력되어 있는 항목은 절대 건드리지 않고 100% 보존\n2. SMS/이메일 발송 버튼 절대 클릭 금지\n3. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터 자동 승계\n4. ${safetyGuard ? '91% 마지막 문항(E1-5)에서 완료 보류' : '100% 조사완료까지 즉시 완료'}\n\n계속하시겠습니까?`;
     } else if (isKona) {
       confirmMsg = safetyGuard
@@ -5346,7 +6376,9 @@ async function initSurveyDetailPage() {
     try {
       setRunningState(true);
       openMonitorDrawer();
-      if (isHrcEnergy) {
+      if (isGlobalriLiteracy) {
+        appendLog('info', `🚀 [성인문해능력조사 배치 가동 시작] 진행중 대상자 ${targets.length}명 순차 자동화 실행을 시작합니다... (나이대별 그룹 가이드 적용)`);
+      } else if (isHrcEnergy) {
         appendLog('info', `🚀 [에너지총조사 배치 가동 시작] 미완료 선정 쿼터 ${targets.length}건 순차 자동화 실행을 시작합니다... (기입력 항목 100% 보존)`);
       } else if (isKona) {
         appendLog('info', `🚀 [코나 청소년 배치 가동 시작] 미완료 ${targets.length}건 순차 자동화 실행을 시작합니다... (제출 직전 캡처 + ${safetyGuard ? '제출 보류' : '실제 최종 제출'})`);
@@ -6241,30 +7273,50 @@ async function initSurveyDetailPage() {
     });
   }
 
-  // Kstat list.php / 한국리서치 TAPI 상태 실시간 동기화 버튼
+  // Kstat list.php / 한국리서치 TAPI / 글로벌리서치 GIFT 상태 실시간 동기화 버튼
   const btnSyncKstatStatus = document.getElementById('btn-sync-kstat-status');
   if (btnSyncKstatStatus) {
     btnSyncKstatStatus.addEventListener('click', async () => {
       if (!currentCampaign?.id) return;
       const isHrcEnergy = (currentCampaign.surveyType === 'hrc_energy');
+      const isGlobalriLiteracy = (currentCampaign.surveyType === 'globalri_literacy');
+      let lidFilterInput = '';
+      if (isGlobalriLiteracy) {
+        const promptVal = prompt(
+          '[제5차 성인문해능력조사 - 글로벌리서치 GIFT 실시간 동기화]\n\n' +
+          '• 비워두고 [확인] 클릭 시: 목록에서 [결과값1=완료 & 결과값2=완료] 가구 전체의 "진행 중" 가구원을 자동으로 불러옵니다.\n' +
+          '• 특정 가구(LID)만 지정하려면 쉼표로 구분하여 입력해 주세요 (예: 029426, 006425):',
+          ''
+        );
+        if (promptVal === null) return;
+        lidFilterInput = promptVal.trim();
+      }
       const originalText = btnSyncKstatStatus.innerHTML;
       btnSyncKstatStatus.disabled = true;
-      btnSyncKstatStatus.innerHTML = isHrcEnergy
-        ? '<i class="fa-solid fa-spinner fa-spin"></i> 한국리서치 TAPI 동기화 중...'
-        : '<i class="fa-solid fa-spinner fa-spin"></i> Kstat 동기화 중...';
+      btnSyncKstatStatus.innerHTML = isGlobalriLiteracy
+        ? '<i class="fa-solid fa-spinner fa-spin"></i> 글로벌리서치 GIFT 동기화 중...'
+        : (isHrcEnergy
+          ? '<i class="fa-solid fa-spinner fa-spin"></i> 한국리서치 TAPI 동기화 중...'
+          : '<i class="fa-solid fa-spinner fa-spin"></i> Kstat 동기화 중...');
       try {
-        const endpoint = isHrcEnergy
-          ? `/api/campaigns/${currentCampaign.id}/sync-hrc-energy`
-          : `/api/campaigns/${currentCampaign.id}/sync-kstat-status`;
+        const endpoint = isGlobalriLiteracy
+          ? `/api/campaigns/${currentCampaign.id}/sync-globalri-literacy`
+          : (isHrcEnergy
+            ? `/api/campaigns/${currentCampaign.id}/sync-hrc-energy`
+            : `/api/campaigns/${currentCampaign.id}/sync-kstat-status`);
         const res = await fetch(endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          body: isGlobalriLiteracy ? JSON.stringify({ lidFilter: lidFilterInput }) : undefined
         });
         const data = await res.json();
         if (data.success) {
           alert(`✓ ${data.message}`);
-          appendLog('success', `[${isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화'}] ${data.message}`);
-          if (isHrcEnergy) await loadCampaign();
+          appendLog('success', `[${isGlobalriLiteracy ? '글로벌리서치 GIFT 동기화' : (isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화')}] ${data.message}`);
+          if (isHrcEnergy || isGlobalriLiteracy) {
+            await loadCampaign();
+            await loadBlueprint();
+          }
         } else {
           alert(`동기화 실패: ${data.error || '알 수 없는 오류'}`);
           appendLog('error', `[상태 동기화 오류] ${data.error}`);
