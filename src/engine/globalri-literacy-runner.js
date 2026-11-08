@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from '../utils/logger.js';
 import { getAgeGroupFromBirthYear } from './globalri-literacy-scraper.js';
+import { LITERACY_QUESTION_META } from '../utils/globalri-answer-excel.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -254,6 +255,9 @@ export async function runGlobalriLiteracySurvey(options = {}) {
 
   const capturedSteps = [];
   const stepTrace = [];
+  const submittedAnswers = [];
+  const gradeSummary = {};
+  const stopAfterPartC = (options.stopAfterPartC !== false && policy.stopAfterPartC !== false);
 
   async function captureStepScreenshot(stepCode, title) {
     if (!reportDir) return;
@@ -379,7 +383,33 @@ export async function runGlobalriLiteracySurvey(options = {}) {
         lastQName = qName;
       }
 
-      const progressPct = Math.min(98, Math.max(8, Math.round(((loopIdx + 1) / 52) * 90) + 8));
+      const progressPct = Math.min(98, Math.max(8, Math.round(((loopIdx + 1) / 36) * 90) + 8));
+
+      // [Part C 완료 후 D1 진입 시 자동 정지 — Part D 이후 수기 진행 모드]
+      if (stopAfterPartC && /^(D\d|E\d|F\d|DESC_D|DESC_E|DESC_F)/.test(qName)) {
+        await captureStepScreenshot(qName, `Part C 완료 · 수기전환 대기 (${qName} 진입 · ${respondentName})`);
+        logger.info(`[성인문해능력조사 Part C 완료] "${respondentName}" (${memberUid}) Part A ~ Part C 응답 및 채점 저장 완료 ➔ ${qName}(Part D) 진입 시점에서 수기 진행을 위해 자동 정지`);
+        onProgress({
+          step: 'END_C',
+          percent: 100,
+          message: `[Part C 완료 · 수기전환] "${respondentName}" (${ageMeta.ageGroupLabel}) Part A~C 채점 저장 완료 (${qName}부터 수기 작업 가능)`
+        });
+        return {
+          success: true,
+          status: 'part_c_completed',
+          stoppedAtStep: qName,
+          memberUid,
+          lid,
+          respondentName,
+          ageGroup: ageGroupKey,
+          ageGroupLabel: ageMeta.ageGroupLabel,
+          submittedAnswers,
+          gradeSummary,
+          capturedSteps,
+          stepTrace
+        };
+      }
+
       onProgress({
         step: qName,
         percent: progressPct,
@@ -438,6 +468,13 @@ export async function runGlobalriLiteracySurvey(options = {}) {
           const gradeJson = document.querySelector('[custom-save-name="GRADE_RESULT_JSON"]')?.value || '{}';
           return { matchCnt, totalCnt, gradeJson };
         });
+        if (qName === 'END_A') gradeSummary.partA = `${endInfo.matchCnt} / ${endInfo.totalCnt}`;
+        else if (qName === 'END_B1') gradeSummary.partB1 = `${endInfo.matchCnt} / ${endInfo.totalCnt} (B6~B20 스킵)`;
+        else if (qName === 'END_B') gradeSummary.partB2 = `${endInfo.matchCnt} / ${endInfo.totalCnt}`;
+        else if (qName === 'END_C') {
+          gradeSummary.partC = `${endInfo.matchCnt} / ${endInfo.totalCnt}`;
+          gradeSummary.partCDetail = endInfo.gradeJson;
+        }
         logger.info(`[${qName} 채점 결과] (${respondentName}) 정답: ${endInfo.matchCnt}/${endInfo.totalCnt} | 상세: ${endInfo.gradeJson}`);
         actionDesc = `${qName} 채점 확인 완료 (정답: ${endInfo.matchCnt}/${endInfo.totalCnt})`;
         await captureStepScreenshot(qName, `${qName} 채점 확인 (${endInfo.matchCnt}/${endInfo.totalCnt})`);
@@ -487,6 +524,28 @@ export async function runGlobalriLiteracySurvey(options = {}) {
           }
         }, { val: targetValA1_2 });
         await page.waitForTimeout(300);
+        submittedAnswers.push({
+          questionCode: 'A1',
+          part: LITERACY_QUESTION_META.A1?.part || 'Part A (선별문항)',
+          questionType: LITERACY_QUESTION_META.A1?.type || 'VOICE (음성녹음)',
+          questionSummary: LITERACY_QUESTION_META.A1?.summary || 'A1 음성녹음',
+          officialAnswer: LITERACY_QUESTION_META.A1?.officialAnswer || '음성녹음 업로드',
+          submittedAnswer: '음성녹음 업로드 (STT: 문화회관 노래교실)',
+          isCorrect: true,
+          isCorrectLabel: 'O (정답)',
+          answeredAt: new Date().toISOString()
+        });
+        submittedAnswers.push({
+          questionCode: 'A1_2',
+          part: LITERACY_QUESTION_META.A1_2?.part || 'Part A (선별문항)',
+          questionType: LITERACY_QUESTION_META.A1_2?.type || 'RADIO (단일선택)',
+          questionSummary: LITERACY_QUESTION_META.A1_2?.summary || 'A1_2 소리 내어 읽기 성공 여부',
+          officialAnswer: LITERACY_QUESTION_META.A1_2?.officialAnswer || '1 (O)',
+          submittedAnswer: targetValA1_2 === '1' ? '1 (O: 제대로 읽음)' : '2 (X)',
+          isCorrect: targetValA1_2 === '1',
+          isCorrectLabel: targetValA1_2 === '1' ? 'O (정답)' : 'X (오답)',
+          answeredAt: new Date().toISOString()
+        });
         actionDesc = `A1 음성 녹음 업로드 및 A1_2(${targetValA1_2 === '1' ? 'O' : 'X'}) 동시 선택 완료`;
       } else if (qName === 'A1_2') {
         const targetVal = String(agePol.partA_voicePass || '1');
@@ -520,6 +579,18 @@ export async function runGlobalriLiteracySurvey(options = {}) {
         }
 
         await fillLiteracyQuestion(page, qName, targetValues);
+        const qMeta = LITERACY_QUESTION_META[qName] || {};
+        submittedAnswers.push({
+          questionCode: qName,
+          part: qMeta.part || (qName.startsWith('A') ? 'Part A (선별문항)' : (qName.startsWith('B') ? 'Part B (기초문해)' : 'Part C (심화문해)')),
+          questionType: qMeta.type || step.qType,
+          questionSummary: qMeta.summary || qName,
+          officialAnswer: qMeta.officialAnswer || (VERIFIED_LITERACY_ANSWERS[qName] || []).join(' / '),
+          submittedAnswer: targetValues.join(' / '),
+          isCorrect: !isIntentionalWrong,
+          isCorrectLabel: isIntentionalWrong ? 'X (목표점수 조절용 오답)' : 'O (정답)',
+          answeredAt: new Date().toISOString()
+        });
         actionDesc = `${qName} 응답 입력: [${targetValues.join(', ')}] (${isIntentionalWrong ? '목표점수 조절용 오답' : '정답'})`;
       } else if (['D1', 'D2', 'D3', 'D4'].includes(qName)) {
         const pickFromPolicyVal = (raw, fallback = '3') => {

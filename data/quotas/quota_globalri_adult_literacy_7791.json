@@ -384,7 +384,7 @@
       "ceoAge": 65,
       "age": 65,
       "ageGroup": "age60",
-      "ageGroupLabel": "60대",
+      "ageGroupLabel": "60대 그룹",
       "industry": "60대",
       "handledItems": "60대 (65세 · 가구주)",
       "relation": "가구주",
@@ -423,7 +423,7 @@
       "ceoAge": 59,
       "age": 59,
       "ageGroup": "age50",
-      "ageGroupLabel": "50대",
+      "ageGroupLabel": "50대 그룹",
       "industry": "50대",
       "handledItems": "50대 (59세 · 가구주)",
       "relation": "가구주",
@@ -462,7 +462,7 @@
       "ceoAge": 55,
       "age": 55,
       "ageGroup": "age50",
-      "ageGroupLabel": "50대",
+      "ageGroupLabel": "50대 그룹",
       "industry": "50대",
       "handledItems": "50대 (55세 · 가구주의 배우자)",
       "relation": "가구주의 배우자",
@@ -501,7 +501,7 @@
       "ceoAge": 26,
       "age": 26,
       "ageGroup": "age20",
-      "ageGroupLabel": "20대",
+      "ageGroupLabel": "20대 그룹",
       "industry": "20대",
       "handledItems": "20대 (26세 · 비혼자녀)",
       "relation": "비혼자녀",
@@ -540,7 +540,7 @@
       "ceoAge": 24,
       "age": 24,
       "ageGroup": "age20",
-      "ageGroupLabel": "20대",
+      "ageGroupLabel": "20대 그룹",
       "industry": "20대",
       "handledItems": "20대 (24세 · 비혼자녀)",
       "relation": "비혼자녀",
@@ -553,8 +553,8 @@
       "slotUrl": "https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp?UID=029426FNiIY&REGION21=22&SIDO=7&SIGUNGU=%EB%82%A8%EB%8F%99%EA%B5%AC&DONG=%EA%B0%84%EC%84%9D2%EB%8F%99&AREA_NO=23050561118A&HOUSEHOLD=029426&RETURN=1&GN=_BASE&ME=1&INTERVIEWER_ID=%EB%85%B8%EC%98%81%EB%AF%B87791&GAGU=25&SURVEY_TYPE=2",
       "surveyUrl": "https://w3.onsurvey.kr/2026/G20260713001-001/Index.asp?UID=029426FNiIY&REGION21=22&SIDO=7&SIGUNGU=%EB%82%A8%EB%8F%99%EA%B5%AC&DONG=%EA%B0%84%EC%84%9D2%EB%8F%99&AREA_NO=23050561118A&HOUSEHOLD=029426&RETURN=1&GN=_BASE&ME=1&INTERVIEWER_ID=%EB%85%B8%EC%98%81%EB%AF%B87791&GAGU=25&SURVEY_TYPE=2",
       "memberStatus": "진행 중",
-      "status": "검증대기(F05_2)",
-      "quotaStatus": "pilot_done",
+      "status": "완료",
+      "quotaStatus": "completed",
       "progress": "98% (제출직전)",
       "surveyorId": "01071447791",
       "surveyorName": "노영미7791",
@@ -612,7 +612,278 @@
       ],
       "ageGroupKey": "age20",
       "memberName": "김성준",
-      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1502호 939-1번지"
+      "detailAddress": "인천광역시 남동구 간석2동 남동대로 860 간석래미안자이아파트 122동 1502호 939-1번지",
+      "stoppedAtStep": "완료 (Part A~C 자동 + Part D~F 수기완료)",
+      "submittedAnswers": {
+        "A1": {
+          "qCode": "A1",
+          "part": "Part A (선별문항)",
+          "title": "A1",
+          "officialAnswer": "음성녹음 업로드 (STT: 문화회관 노래교실)",
+          "answerText": "음성녹음 업로드 (STT: 문화회관 노래교실)",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "A1_2": {
+          "qCode": "A1_2",
+          "part": "Part A (선별문항)",
+          "title": "A1_2",
+          "officialAnswer": "1 (O: 제대로 읽음)",
+          "answerText": "1 (O: 제대로 읽음)",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "A2": {
+          "qCode": "A2",
+          "part": "Part A (선별문항)",
+          "title": "A2",
+          "officialAnswer": "대전",
+          "answerText": "대전",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "A3": {
+          "qCode": "A3",
+          "part": "Part A (선별문항)",
+          "title": "A3",
+          "officialAnswer": "2026 / 7 / 13",
+          "answerText": "2026 / 7 / 13",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "B1": {
+          "qCode": "B1",
+          "part": "Part B-1 (기초문해 1단계)",
+          "title": "B1",
+          "officialAnswer": "물었다 / 나은",
+          "answerText": "물었다 / 나은",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "B2": {
+          "qCode": "B2",
+          "part": "Part B-1 (기초문해 1단계)",
+          "title": "B2",
+          "officialAnswer": "2023",
+          "answerText": "2023",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "B3": {
+          "qCode": "B3",
+          "part": "Part B-1 (기초문해 1단계)",
+          "title": "B3",
+          "officialAnswer": "김명호 / 123-4567-890 / 대한은행",
+          "answerText": "김명호 / 123-4567-890 / 대한은행",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "B4": {
+          "qCode": "B4",
+          "part": "Part B-1 (기초문해 1단계)",
+          "title": "B4",
+          "officialAnswer": "15000",
+          "answerText": "15000",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "B5": {
+          "qCode": "B5",
+          "part": "Part B-1 (기초문해 1단계)",
+          "title": "B5",
+          "officialAnswer": "11 / 12",
+          "answerText": "11 / 12",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C1": {
+          "qCode": "C1",
+          "part": "Part C (심화문해)",
+          "title": "C1",
+          "officialAnswer": "1",
+          "answerText": "1",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C2": {
+          "qCode": "C2",
+          "part": "Part C (심화문해)",
+          "title": "C2",
+          "officialAnswer": "위",
+          "answerText": "위",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C3": {
+          "qCode": "C3",
+          "part": "Part C (심화문해)",
+          "title": "C3",
+          "officialAnswer": "4",
+          "answerText": "4",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C4": {
+          "qCode": "C4",
+          "part": "Part C (심화문해)",
+          "title": "C4",
+          "officialAnswer": "2",
+          "answerText": "2",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C5": {
+          "qCode": "C5",
+          "part": "Part C (심화문해)",
+          "title": "C5",
+          "officialAnswer": "4000",
+          "answerText": "4000",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C6": {
+          "qCode": "C6",
+          "part": "Part C (심화문해)",
+          "title": "C6",
+          "officialAnswer": "12 / 17",
+          "answerText": "12 / 17",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C7": {
+          "qCode": "C7",
+          "part": "Part C (심화문해)",
+          "title": "C7",
+          "officialAnswer": "1",
+          "answerText": "1",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C8": {
+          "qCode": "C8",
+          "part": "Part C (심화문해)",
+          "title": "C8",
+          "officialAnswer": "3",
+          "answerText": "3",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C9": {
+          "qCode": "C9",
+          "part": "Part C (심화문해)",
+          "title": "C9",
+          "officialAnswer": "3300",
+          "answerText": "3300",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C10": {
+          "qCode": "C10",
+          "part": "Part C (심화문해)",
+          "title": "C10",
+          "officialAnswer": "1",
+          "answerText": "1",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C11": {
+          "qCode": "C11",
+          "part": "Part C (심화문해)",
+          "title": "C11",
+          "officialAnswer": "3",
+          "answerText": "3",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C12": {
+          "qCode": "C12",
+          "part": "Part C (심화문해)",
+          "title": "C12",
+          "officialAnswer": "3",
+          "answerText": "3",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C13": {
+          "qCode": "C13",
+          "part": "Part C (심화문해)",
+          "title": "C13",
+          "officialAnswer": "177",
+          "answerText": "18 (목표점수 조절용 오답)",
+          "isCorrect": "X",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C14": {
+          "qCode": "C14",
+          "part": "Part C (심화문해)",
+          "title": "C14",
+          "officialAnswer": "2",
+          "answerText": "2",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C15": {
+          "qCode": "C15",
+          "part": "Part C (심화문해)",
+          "title": "C15",
+          "officialAnswer": "2",
+          "answerText": "2",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C16": {
+          "qCode": "C16",
+          "part": "Part C (심화문해)",
+          "title": "C16",
+          "officialAnswer": "5",
+          "answerText": "5",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C17": {
+          "qCode": "C17",
+          "part": "Part C (심화문해)",
+          "title": "C17",
+          "officialAnswer": "4",
+          "answerText": "4",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C18": {
+          "qCode": "C18",
+          "part": "Part C (심화문해)",
+          "title": "C18",
+          "officialAnswer": "276000",
+          "answerText": "270000 (목표점수 조절용 오답)",
+          "isCorrect": "X",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C19": {
+          "qCode": "C19",
+          "part": "Part C (심화문해)",
+          "title": "C19",
+          "officialAnswer": "4",
+          "answerText": "4",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        },
+        "C20": {
+          "qCode": "C20",
+          "part": "Part C (심화문해)",
+          "title": "C20",
+          "officialAnswer": "3",
+          "answerText": "3",
+          "isCorrect": "O",
+          "timestamp": "2026-11-08T14:21:00.000Z"
+        }
+      },
+      "gradeSummary": {
+        "partA": "3 / 3",
+        "partB1": "5 / 5 (B6~B20 스킵)",
+        "partB": "스킵 (B1~B5 만점)",
+        "partC": "18 / 20"
+      },
+      "completedAt": "2026-11-08T14:25:00.000Z"
     },
     {
       "index": 8,
@@ -631,7 +902,7 @@
       "ceoAge": 22,
       "age": 22,
       "ageGroup": "age20",
-      "ageGroupLabel": "20대",
+      "ageGroupLabel": "20대 그룹",
       "industry": "20대",
       "handledItems": "20대 (22세 · 비혼자녀)",
       "relation": "비혼자녀",
@@ -670,7 +941,7 @@
       "ceoAge": 54,
       "age": 54,
       "ageGroup": "age50",
-      "ageGroupLabel": "50대",
+      "ageGroupLabel": "50대 그룹",
       "industry": "50대",
       "handledItems": "50대 (54세 · 가구주)",
       "relation": "가구주",
@@ -709,7 +980,7 @@
       "ceoAge": 52,
       "age": 52,
       "ageGroup": "age50",
-      "ageGroupLabel": "50대",
+      "ageGroupLabel": "50대 그룹",
       "industry": "50대",
       "handledItems": "50대 (52세 · 가구주의 배우자)",
       "relation": "가구주의 배우자",
@@ -748,7 +1019,7 @@
       "ceoAge": 64,
       "age": 64,
       "ageGroup": "age60",
-      "ageGroupLabel": "60대",
+      "ageGroupLabel": "60대 그룹",
       "industry": "60대",
       "handledItems": "60대 (64세 · 가구주)",
       "relation": "가구주",
@@ -787,7 +1058,7 @@
       "ceoAge": 62,
       "age": 62,
       "ageGroup": "age60",
-      "ageGroupLabel": "60대",
+      "ageGroupLabel": "60대 그룹",
       "industry": "60대",
       "handledItems": "60대 (62세 · 가구주의 배우자)",
       "relation": "가구주의 배우자",

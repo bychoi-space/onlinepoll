@@ -34,6 +34,7 @@ import { scrapeHrcEnergySlots, findHrcQuotaJsonPath, HRC_ACCOUNTS } from './engi
 import { runHrcEnergySurvey } from './engine/hrc-energy-runner.js';
 import { scrapeGlobalriLiteracyQuotas, findGlobalriQuotaJsonPath, getAgeGroupFromBirthYear } from './engine/globalri-literacy-scraper.js';
 import { runGlobalriLiteracySurvey } from './engine/globalri-literacy-runner.js';
+import { buildGlobalriAnswersExcel } from './utils/globalri-answer-excel.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -713,10 +714,13 @@ app.get('/api/campaigns/:id/blueprint', (req, res) => {
     };
     (campaign.quotaDatabase || []).forEach(q => {
       const ageInfo = getAgeGroupFromBirthYear(q.birthYear || (2026 - (q.age || q.ceoAge || 40)));
-      const gk = q.ageGroup || ageInfo.ageGroup || 'age50';
+      const rawKey = String(q.ageGroupKey || q.ageGroup || '');
+      const gk = /^age(20|30|40|50|60|70)$/.test(rawKey)
+        ? rawKey
+        : (ageInfo.ageGroup || 'age50');
       if (ageGroupStats[gk]) {
         ageGroupStats[gk].count++;
-        ageGroupStats[gk].members.push(`${q.respondentName || q.ceoName || q.companyName}(${q.age || ageInfo.age}세/LID ${q.lid || '-'})`);
+        ageGroupStats[gk].members.push(`${q.memberName || q.respondentName || q.ceoName || q.companyName}(${q.age || ageInfo.age}세/LID ${q.lid || '-'})`);
       }
     });
 
@@ -2102,13 +2106,28 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
 
       if (result.success) {
         if (isGlobalriLiteracy) {
-          targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
-          targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(F05_2)' : '완료';
-          targetBiz.memberStatus = (result.status === 'stopped_at_review') ? '검증대기(F05_2)' : '완료';
-          targetBiz.progress = (result.status === 'stopped_at_review') ? '98% (제출직전)' : '100%';
+          const isPartCDone = (result.status === 'part_c_completed');
+          const isStoppedReview = (result.status === 'stopped_at_review');
+          targetBiz.quotaStatus = (isPartCDone || isStoppedReview) ? 'pilot_done' : 'completed';
+          targetBiz.status = isPartCDone ? 'Part C 완료 (수기대기)' : (isStoppedReview ? '검증대기(F05_2)' : '완료');
+          targetBiz.memberStatus = targetBiz.status;
+          targetBiz.progress = isPartCDone ? `Part C 완료 (채점 ${result.gradeSummary?.partC || '완료'})` : (isStoppedReview ? '98% (제출직전)' : '100%');
           targetBiz.pilotAt = new Date().toISOString();
+          targetBiz.pilotCompletedAt = targetBiz.pilotAt;
           targetBiz.capturedSteps = result.capturedSteps;
-          logger.success(`🎉 [성인문해능력조사 파일럿 성공] "${targetBiz.respondentName || targetBiz.companyName}" (${targetBiz.memberUid}) ${targetBiz.status} 달성!`);
+          if (Array.isArray(result.submittedAnswers) && result.submittedAnswers.length > 0) {
+            targetBiz.submittedAnswers = result.submittedAnswers;
+          }
+          if (result.gradeSummary) {
+            targetBiz.gradeSummary = result.gradeSummary;
+          }
+          try {
+            const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
+            buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+          } catch (exErr) {
+            logger.warn(`[성인문해능력조사 답변 엑셀 자동저장 경고] ${exErr.message}`);
+          }
+          logger.success(`🎉 [성인문해능력조사 Part C 완료] "${targetBiz.respondentName || targetBiz.companyName}" (${targetBiz.memberUid}) ${targetBiz.status} 달성 및 답변 엑셀 갱신 완료!`);
         } else if (isHrcEnergy) {
           targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
           targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(91%)' : '완료';
@@ -2583,13 +2602,28 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
 
         if (result?.success) {
           if (isGlobalriLiteracy) {
-            biz.quotaStatus = (result.status === 'stopped_at_review' || safetyGuard) ? 'pilot_done' : 'completed';
-            biz.status = (result.status === 'stopped_at_review' || safetyGuard) ? '검증대기(F05_2)' : '완료';
-            biz.memberStatus = (result.status === 'stopped_at_review' || safetyGuard) ? '검증대기(F05_2)' : '완료';
-            biz.progress = (result.status === 'stopped_at_review' || safetyGuard) ? '98% (제출직전)' : '100%';
+            const isPartCDone = (result.status === 'part_c_completed');
+            const isStoppedReview = (result.status === 'stopped_at_review' || safetyGuard);
+            biz.quotaStatus = (isPartCDone || isStoppedReview) ? 'pilot_done' : 'completed';
+            biz.status = isPartCDone ? 'Part C 완료 (수기대기)' : (isStoppedReview ? '검증대기(F05_2)' : '완료');
+            biz.memberStatus = biz.status;
+            biz.progress = isPartCDone ? `Part C 완료 (채점 ${result.gradeSummary?.partC || '완료'})` : (isStoppedReview ? '98% (제출직전)' : '100%');
             biz.surveyCompleted = (biz.quotaStatus === 'completed') ? '완료' : '대기';
             biz.completedAt = new Date().toISOString();
+            biz.pilotCompletedAt = biz.completedAt;
             biz.capturedSteps = result.capturedSteps;
+            if (Array.isArray(result.submittedAnswers) && result.submittedAnswers.length > 0) {
+              biz.submittedAnswers = result.submittedAnswers;
+            }
+            if (result.gradeSummary) {
+              biz.gradeSummary = result.gradeSummary;
+            }
+            try {
+              const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
+              buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+            } catch (exErr) {
+              logger.warn(`[성인문해능력조사 답변 엑셀 자동저장 경고] ${exErr.message}`);
+            }
             logger.success(`🎉 [성인문해능력조사 배치 ${i + 1}/${targets.length} 완료] "${biz.respondentName || biz.companyName}" (UID: ${biz.memberUid || biz.uid}) ${biz.status} 달성!`);
           } else if (isHrcEnergy) {
             if (!biz.substitutedByUid) {
@@ -2885,11 +2919,25 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
 
       if (result?.success) {
         if (isGlobalriLiteracy) {
-          targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
-          targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(F05_2)' : '완료';
-          targetBiz.memberStatus = (result.status === 'stopped_at_review') ? '검증대기(F05_2)' : '완료';
-          targetBiz.progress = (result.status === 'stopped_at_review') ? '98% (제출직전)' : '100%';
+          const isPartCDone = (result.status === 'part_c_completed');
+          const isStoppedReview = (result.status === 'stopped_at_review');
+          targetBiz.quotaStatus = (isPartCDone || isStoppedReview) ? 'pilot_done' : 'completed';
+          targetBiz.status = isPartCDone ? 'Part C 완료 (수기대기)' : (isStoppedReview ? '검증대기(F05_2)' : '완료');
+          targetBiz.memberStatus = targetBiz.status;
+          targetBiz.progress = isPartCDone ? `Part C 완료 (채점 ${result.gradeSummary?.partC || '완료'})` : (isStoppedReview ? '98% (제출직전)' : '100%');
           targetBiz.surveyCompleted = (targetBiz.quotaStatus === 'completed') ? '완료' : '대기';
+          if (Array.isArray(result.submittedAnswers) && result.submittedAnswers.length > 0) {
+            targetBiz.submittedAnswers = result.submittedAnswers;
+          }
+          if (result.gradeSummary) {
+            targetBiz.gradeSummary = result.gradeSummary;
+          }
+          try {
+            const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
+            buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+          } catch (exErr) {
+            logger.warn(`[성인문해능력조사 답변 엑셀 자동저장 경고] ${exErr.message}`);
+          }
         } else if (isHrcEnergy) {
           targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
           targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(91%)' : '완료';
@@ -2977,6 +3025,28 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
       CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
     }
   })();
+});
+
+// ==========================================
+// [3-3b] 성인문해능력조사 응답자별 제출 문항·답변 내역 Excel(.xlsx) 다운로드 API
+// ==========================================
+app.get('/api/campaigns/:id/export-answers-xlsx', (req, res) => {
+  try {
+    const campaign = CampaignStore.getCampaignById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+    }
+    const quotaDb = campaign.quotaDatabase || [];
+    const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
+    const buffer = buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+    const downloadName = encodeURIComponent(`제5차_성인문해능력조사_제출문항답변내역_${campaign.surveyorName || '노영미7791'}.xlsx`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${downloadName}`);
+    res.send(buffer);
+  } catch (err) {
+    logger.error('[문항답변 엑셀 내보내기 실패]', err);
+    res.status(500).json({ error: '문항답변 엑셀 생성 실패: ' + err.message });
+  }
 });
 
 // ==========================================

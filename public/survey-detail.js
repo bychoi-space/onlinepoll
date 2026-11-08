@@ -256,19 +256,33 @@ async function initSurveyDetailPage() {
       if (btnSyncKstat) {
         btnSyncKstat.style.display = 'inline-flex';
         btnSyncKstat.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 글로벌리서치 GIFT 동기화 / LID 지정 필터';
+        let btnExportAns = document.getElementById('btn-export-globalri-answers-top');
+        if (!btnExportAns && btnSyncKstat.parentElement) {
+          btnExportAns = document.createElement('a');
+          btnExportAns.id = 'btn-export-globalri-answers-top';
+          btnExportAns.className = 'btn-pill btn-pill-primary font-bold';
+          btnExportAns.style.textDecoration = 'none';
+          btnExportAns.innerHTML = '<i class="fa-solid fa-file-excel"></i> 제출 문항·답변 내역 엑셀(.xlsx) 다운로드';
+          btnExportAns.title = '제출된 Part A ~ Part C 문항과 답변, 공식 정답표, 채점 결과를 엑셀(.xlsx) 파일로 다운로드합니다';
+          btnSyncKstat.parentElement.insertBefore(btnExportAns, btnSyncKstat.nextSibling);
+        }
+        if (btnExportAns) {
+          btnExportAns.href = `/api/campaigns/${encodeURIComponent(campId)}/export-answers-xlsx`;
+          btnExportAns.style.display = 'inline-flex';
+        }
       }
       if (btnEnrichCampaign) btnEnrichCampaign.style.display = 'none';
       const kstatPill = document.getElementById('badge-kstat-account-pill');
       if (kstatPill) {
         const qList = camp.quotaDatabase || [];
         const hhCnt = new Set(qList.map(q => q.lid)).size;
-        kstatPill.innerHTML = `<i class="fa-solid fa-book-open-reader text-primary-color"></i> <span>면접원: <strong>${escapeHtml(camp.loginId || '01071447791')} (${escapeHtml(camp.surveyorName || '노영미7791')})</strong> · 완료가구 <strong>${hhCnt}가구</strong> 내 진행중 <strong>${qList.length}명</strong> (나이대별 가이드)</span>`;
+        kstatPill.innerHTML = `<i class="fa-solid fa-book-open-reader text-primary-color"></i> <span>면접원: <strong>${escapeHtml(camp.loginId || '01071447791')} (${escapeHtml(camp.surveyorName || '노영미7791')})</strong> · 완료가구 <strong>${hhCnt}가구</strong> · 대상 <strong>${qList.length}명</strong> (Part C 완료 후 D1 수기전환)</span>`;
       }
 
       const badgeExec = document.getElementById('badge-exec-engine');
       if (badgeExec) {
         badgeExec.className = 'badge-status ready font-bold';
-        badgeExec.textContent = '글로벌리서치 온서베이 (SNUM 5963)';
+        badgeExec.textContent = '글로벌리서치 온서베이 (Part A~C 자동화)';
       }
       const labelMarket = document.getElementById('label-exec-target-market');
       if (labelMarket) {
@@ -285,20 +299,20 @@ async function initSurveyDetailPage() {
       const badgeBp = document.getElementById('badge-blueprint-status');
       if (badgeBp) {
         badgeBp.className = 'badge-status badge-blueprint ready';
-        badgeBp.innerHTML = '<i class="fa-solid fa-layer-group text-success"></i> 나이대별(20대~70대+) 6개 그룹 가이드 연동 완료';
+        badgeBp.innerHTML = '<i class="fa-solid fa-layer-group text-success"></i> 나이대별(20대·50대·60대·70대+) Part A~C 가이드 활성';
       }
 
       const titleBatch = document.getElementById('title-batch-automation');
       if (titleBatch) {
-        titleBatch.textContent = `제5차 성인문해능력조사 진행중 가구원(${(camp.quotaDatabase || []).length}명) 순차 배치 자동화`;
+        titleBatch.textContent = `제5차 성인문해능력조사 대상자(${(camp.quotaDatabase || []).length}명) Part A~C 자동 진행 & 엑셀 저장`;
       }
       const descBatch = document.getElementById('desc-batch-automation');
       if (descBatch) {
-        descBatch.textContent = '조사 대상자의 출생연도(20대·30대·40대·50대·60대·70대 이상)에 매칭된 그룹 가이드를 바탕으로 Part A(선별)~Part C(심화문해)~Part D·E·F(배경변인)까지 자동 진행합니다.';
+        descBatch.textContent = '조사 대상자의 나이대 그룹 가이드에 맞춰 Part A(선별) ~ Part B(기초) ~ Part C(심화 C1~C20 및 END_C 채점 저장)까지만 자동 완료하고 D1 진입 시 수기 진행을 위해 자동 정지하며, 제출 문항·답변을 엑셀(.xlsx)로 즉시 저장합니다.';
       }
       const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
       if (safetyGuardToggle) {
-        safetyGuardToggle.textContent = '마지막 문항(F05_2 가구소득)에서 최종 제출 직전 안전 대기 (체크 해제 시 100% 최종 완료)';
+        safetyGuardToggle.textContent = 'Part C 채점 저장(END_C) 완료 직후 D1에서 자동 정지 (Part D 이후 면접원 수기 진행 · 권장)';
       }
       if (checkSafetyGuard) {
         checkSafetyGuard.checked = true;
@@ -308,7 +322,7 @@ async function initSurveyDetailPage() {
         btnPilot.classList.remove('d-none');
         btnPilot.className = 'btn-action-secondary font-bold';
         btnPilot.style.display = 'inline-flex';
-        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 대상자 파일럿 검증 (F05_2 안전 대기)';
+        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 미완료 대상자 1건 Part C까지 실행 (D1 수기대기)';
       }
     } else if (isHrcEnergy) {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
@@ -617,7 +631,7 @@ async function initSurveyDetailPage() {
       if (btnPilot) {
         if (isGlobalriLiteracy) {
           btnPilot.disabled = false;
-          btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 대상자 파일럿 검증 (F05_2 안전 대기)';
+          btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 대상자 Part C까지 실행 (D1 수기대기)';
         } else if (isHrcEnergy) {
           btnPilot.disabled = false;
           btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 미완료 선정 쿼터 1건 검증 실행 (100% 완료)';
@@ -1005,7 +1019,7 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    // [글로벌리서치 제5차 성인문해능력조사 12개 컬럼 테이블 렌더링]
+    // [글로벌리서치 제5차 성인문해능력조사 13개 컬럼 테이블 렌더링]
     if (isGlobalriLiteracy) {
       const ageBadgeStyleMap = {
         age20: 'background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);',
@@ -1015,23 +1029,33 @@ async function initSurveyDetailPage() {
         age60: 'background: rgba(249, 115, 22, 0.16); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35);',
         age70: 'background: rgba(244, 63, 94, 0.16); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35);'
       };
+      const ageLabelFallbackMap = {
+        age20: '20대',
+        age30: '30대',
+        age40: '40대',
+        age50: '50대',
+        age60: '60대',
+        age70: '70대 이상'
+      };
       quotaTableBody.innerHTML = db.map((item, idx) => {
         const seq = item.index || item.seq || (idx + 1);
         const st = item.quotaStatus || 'ready';
         const prog = item.progress || (st === 'completed' || item.status === '완료' ? '100%' : '진행 중');
+        const cScoreTxt = item.gradeSummary?.partC ? ` (C:${item.gradeSummary.partC.replace(/\s+/g, '')})` : '';
         let statusHtml = `<span class="badge-status ready">진행 중 (${escapeHtml(prog)})</span>`;
         if (st === 'completed' || item.status === '완료') {
-          statusHtml = '<span class="badge-status success"><i class="fa-solid fa-check-double"></i> 100% 완료</span>';
+          statusHtml = `<span class="badge-status success"><i class="fa-solid fa-check-double"></i> 조사완료${escapeHtml(cScoreTxt)}</span>`;
         } else if (st === 'running') {
           statusHtml = `<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 실행중 (${escapeHtml(prog)})</span>`;
-        } else if (st === 'pilot_done') {
-          statusHtml = `<span class="badge-status pilot"><i class="fa-solid fa-flask"></i> F05_2 안전대기</span>`;
+        } else if (st === 'pilot_done' || String(item.status || '').includes('Part C')) {
+          statusHtml = `<span class="badge-status pilot" title="Part A ~ Part C 채점 저장 완료 · D1부터 면접원 수기 진행 대기"><i class="fa-solid fa-clipboard-check"></i> Part C 완료${escapeHtml(cScoreTxt)}</span>`;
         } else if (st === 'error') {
           statusHtml = `<span class="badge-status error" title="${escapeHtml(item.error || '')}">오류</span>`;
         }
 
-        const ageKey = item.ageGroupKey || item.ageGroup || 'age50';
+        const ageKey = resolveGlobalriAgeGroupKey(item);
         const ageBadgeStyle = ageBadgeStyleMap[ageKey] || ageBadgeStyleMap.age50;
+        const ageDisplayLabel = item.ageGroupLabel || ageLabelFallbackMap[ageKey] || '50대';
         const hhUrl = item.householdUrl || item.slotUrl || '#';
         const mName = item.memberName || item.respondentName || item.ceoName || '-';
         const bYear = item.birthYear ? `${item.birthYear}년` : '-';
@@ -1045,7 +1069,7 @@ async function initSurveyDetailPage() {
         } else if (isRowRunning) {
           pilotActionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small" disabled><i class="fa-solid fa-spinner fa-spin"></i> 진행중</button>`;
         } else {
-          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-globalri" data-seq="${seq}" title="${escapeHtml(mName)} (LID ${escapeHtml(item.lid || '')}) 최종 제출하지 않고 마지막 문항(F05_2)까지만 파일럿 테스트 실행">▷ 파일럿</button>`;
+          pilotActionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-globalri" data-seq="${seq}" title="${escapeHtml(mName)} (LID ${escapeHtml(item.lid || '')}) Part A ~ Part C 채점까지 진행 후 D1에서 수기 대기">▷ 파일럿</button>`;
         }
 
         return `
@@ -1058,7 +1082,7 @@ async function initSurveyDetailPage() {
             <td class="text-center font-mono">${escapeHtml(bYear)}${escapeHtml(ageTxt)}</td>
             <td class="text-center">
               <span class="badge-status font-bold" style="${ageBadgeStyle} padding: 3px 10px;">
-                ${escapeHtml(item.ageGroupLabel || '50대')}
+                ${escapeHtml(ageDisplayLabel)}
               </span>
             </td>
             <td class="text-center">${escapeHtml(item.relation || '-')}</td>
@@ -1074,6 +1098,10 @@ async function initSurveyDetailPage() {
           </tr>
         `;
       }).join('');
+      rebuildGlobalriAgeGroupStats(db);
+      if (blueprintStageGrid && blueprintStageGrid.querySelector('.globalri-age-tab-btn')) {
+        renderGlobalriAgeGroupCards();
+      }
       return;
     }
 
@@ -1393,7 +1421,7 @@ async function initSurveyDetailPage() {
         setRunningState(true);
         openMonitorDrawer();
         resetTimelineChips();
-        appendLog('info', `🎯 [성인문해능력조사 단독 파일럿 시작] #${targetSeq} "${targetItem.memberName || targetItem.ceoName}" (LID ${targetItem.lid} · ${targetItem.ageGroupLabel || ''}) 최종 제출하지 않고 마지막 문항(F05_2)까지만 테스트를 진행합니다...`);
+        appendLog('info', `🎯 [성인문해능력조사 Part C 자동 실행 시작] #${targetSeq} "${targetItem.memberName || targetItem.ceoName}" (LID ${targetItem.lid} · ${targetItem.ageGroupLabel || ''}) Part A ~ Part C 채점 저장 후 D1에서 수기 진행을 위해 자동 정지합니다...`);
         await saveBaseline(false);
 
         const res = await fetch(`/api/campaigns/${campId}/pilot-run`, {
@@ -3901,6 +3929,59 @@ async function initSurveyDetailPage() {
   let activeGlobalriAgeGroup = 'age20';
   let globalriAgeGroupStats = {};
 
+  function resolveGlobalriAgeGroupKey(item) {
+    if (!item) return 'age50';
+    const rawKey = String(item.ageGroupKey || item.ageGroup || '').trim();
+    if (GLOBALRI_AGE_GROUP_METAS[rawKey]) return rawKey;
+    const lbl = String(item.ageGroupLabel || rawKey).trim();
+    if (lbl.includes('20') || lbl.includes('10')) return 'age20';
+    if (lbl.includes('30')) return 'age30';
+    if (lbl.includes('40')) return 'age40';
+    if (lbl.includes('50')) return 'age50';
+    if (lbl.includes('60')) return 'age60';
+    if (lbl.includes('70') || lbl.includes('80') || lbl.includes('90')) return 'age70';
+    const bYear = parseInt(item.birthYear, 10);
+    const ageVal = (!isNaN(bYear) && bYear > 1900) ? (2026 - bYear) : parseInt(item.age || item.ceoAge, 10);
+    if (!isNaN(ageVal)) {
+      if (ageVal < 30) return 'age20';
+      if (ageVal < 40) return 'age30';
+      if (ageVal < 50) return 'age40';
+      if (ageVal < 60) return 'age50';
+      if (ageVal < 70) return 'age60';
+      return 'age70';
+    }
+    return 'age50';
+  }
+
+  function rebuildGlobalriAgeGroupStats(qDb, fallbackStats = null) {
+    const stats = {};
+    Object.keys(GLOBALRI_AGE_GROUP_METAS).forEach(k => {
+      stats[k] = { count: 0, members: [] };
+    });
+    if (Array.isArray(qDb) && qDb.length > 0) {
+      qDb.forEach((item, idx) => {
+        const k = resolveGlobalriAgeGroupKey(item);
+        if (!stats[k]) stats[k] = { count: 0, members: [] };
+        stats[k].count++;
+        const seq = item.index || item.seq || (idx + 1);
+        const mName = item.memberName || item.respondentName || item.ceoName || item.companyName || '-';
+        const ageNum = item.age || item.ceoAge || (item.birthYear ? (2026 - Number(item.birthYear)) : '');
+        stats[k].members.push(`#${seq} ${mName}(${item.birthYear ? item.birthYear + '년생' : ''}${ageNum ? '·만' + ageNum + '세' : ''}·LID ${item.lid || ''})`);
+      });
+    } else if (fallbackStats) {
+      Object.keys(GLOBALRI_AGE_GROUP_METAS).forEach(k => {
+        if (fallbackStats[k]) {
+          stats[k] = {
+            count: fallbackStats[k].count || 0,
+            members: Array.isArray(fallbackStats[k].members) ? fallbackStats[k].members : []
+          };
+        }
+      });
+    }
+    globalriAgeGroupStats = stats;
+    return stats;
+  }
+
   function syncGlobalriActiveCardToState() {
     const cur = globalriAgePolicies[activeGlobalriAgeGroup] || { ...DEFAULT_GLOBALRI_AGE_POLICIES[activeGlobalriAgeGroup] };
     const getVal = (id, fallback) => {
@@ -4031,28 +4112,28 @@ async function initSurveyDetailPage() {
       <section class="blueprint-card">
         <div class="blueprint-card-header">
           <div class="blueprint-card-title-group">
-            <span class="blueprint-step-pill">Part A · B · C</span>
-            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 문해력 평가 목표 점수 &amp; 정답 수</h3>
+            <span class="blueprint-step-pill">Part A · B · C (자동화 구간)</span>
+            <h3 class="blueprint-stage-title">[${escapeHtml(meta.name)}] 문해력 평가 목표 점수 &amp; 정답 수 설정</h3>
           </div>
           <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 나이대별 정답률</span>
         </div>
         <div class="blueprint-stage-desc">
-          Part A(선별 3문항, A1 음성인식 포함), Part B-1(기초 20문항), Part C(심화 20문항)에서 해당 나이대 응답자가 맞힐 목표 정답 개수를 설정합니다.
+          Part A(선별 3문항, A1 음성인식 포함) ➔ Part B-1(기초 5문항) ➔ Part C(심화 C1~C20, 총 20문항)에서 해당 나이대 응답자가 맞힐 목표 정답 수를 설정합니다. <strong>END_C 채점 저장 후 D1(Part D) 진입 시 수기 전환을 위해 자동 정지</strong>합니다.
         </div>
         <div class="p-14">
           <div class="grid-2col gap-10 mb-12">
             <div>
               <label class="figma-label font-bold">Part A 선별문항 (3문항)</label>
               <select id="sel-globalri-partA-score" class="figma-select w-full globalri-policy-input">
-                <option value="3" ${Number(p.partA_targetScore ?? 3) === 3 ? 'selected' : ''}>3점 만점 (Part C 직행 · 권장)</option>
+                <option value="3" ${Number(p.partA_targetScore ?? 3) === 3 ? 'selected' : ''}>3점 만점 (Part B-1 ➔ Part C · 권장)</option>
                 <option value="2" ${Number(p.partA_targetScore) === 2 ? 'selected' : ''}>2점 (Part B-1 경유)</option>
               </select>
             </div>
             <div>
-              <label class="figma-label font-bold">Part B-1 기초문해 (진입 시)</label>
+              <label class="figma-label font-bold">Part B-1 기초문해 (5문항)</label>
               <select id="sel-globalri-partB1-score" class="figma-select w-full globalri-policy-input">
-                <option value="20" ${Number(p.partB1_targetScore ?? 20) === 20 ? 'selected' : ''}>20문항 만점 (Part C 진입 · 권장)</option>
-                <option value="18" ${Number(p.partB1_targetScore) === 18 ? 'selected' : ''}>18문항 정답 (Part C 진입)</option>
+                <option value="20" ${Number(p.partB1_targetScore ?? 20) === 20 ? 'selected' : ''}>5/5 만점 (B6~B20 스킵 ➔ Part C 진입 · 권장)</option>
+                <option value="18" ${Number(p.partB1_targetScore) === 18 ? 'selected' : ''}>4/5 정답 (Part C 진입)</option>
               </select>
             </div>
           </div>
@@ -4069,8 +4150,57 @@ async function initSurveyDetailPage() {
               </div>
             </div>
             <div class="font-caption text-dim mt-6">
-              * 지정된 범위(예: ${p.partC_correctCountMin ?? 18}~${p.partC_correctCountMax ?? 20}개) 내에서 정답 문항을 주입하고, 나머지 문항은 자연스러운 인접 보기를 선택합니다.
+              * 지정된 범위(예: ${p.partC_correctCountMin ?? 18}~${p.partC_correctCountMax ?? 20}개) 내에서 공인 정답을 자동 주입하고, 나머지 문항은 자연스러운 인접 보기를 선택합니다.
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 카드 1-2: 전 연령대 그룹 분류 현황 & 제출 문항·답변 엑셀 다운로드 -->
+      <section class="blueprint-card">
+        <div class="blueprint-card-header">
+          <div class="blueprint-card-title-group">
+            <span class="blueprint-step-pill" style="background: rgba(16, 185, 129, 0.2); color: #34d399;"><i class="fa-solid fa-file-excel"></i> 그룹 분류 &amp; 엑셀 저장</span>
+            <h3 class="blueprint-stage-title">나이대별 쿼터 분류(13명) &amp; 제출 문항·답변 엑셀 다운로드</h3>
+          </div>
+          <span class="badge-status success"><i class="fa-solid fa-check"></i> Part D 이후 수기 전환</span>
+        </div>
+        <div class="blueprint-stage-desc">
+          전체 13명 쿼터의 나이대별 그룹 분류 현황과 그룹별 Part C 목표 점수 요약입니다. 실행된 모든 문항(A1~C20)과 제출 답변, 공식 정답표, 채점 결과는 아래 엑셀 파일로 언제든 확인·다운로드할 수 있습니다.
+        </div>
+        <div class="p-14">
+          <div style="overflow-x: auto; margin-bottom: 12px;">
+            <table class="quota-clean-table" style="width: 100%; font-size: 12px;">
+              <thead>
+                <tr>
+                  <th style="padding: 6px 8px;">나이대 그룹</th>
+                  <th style="padding: 6px 8px;">인원</th>
+                  <th style="padding: 6px 8px;">Part C 목표점수</th>
+                  <th style="padding: 6px 8px; text-align: left;">소속 대상자 명단</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${Object.keys(GLOBALRI_AGE_GROUP_METAS).map(gk => {
+                  const gm = GLOBALRI_AGE_GROUP_METAS[gk];
+                  const gp = globalriAgePolicies[gk] || DEFAULT_GLOBALRI_AGE_POLICIES[gk];
+                  const gs = globalriAgeGroupStats[gk] || { count: 0, members: [] };
+                  return `
+                    <tr style="${gk === activeGlobalriAgeGroup ? 'background: rgba(56, 189, 248, 0.1);' : ''}">
+                      <td class="text-center font-bold" style="color: ${gm.color}; padding: 6px 8px;">${escapeHtml(gm.name)}</td>
+                      <td class="text-center font-mono font-bold" style="padding: 6px 8px;">${gs.count}명</td>
+                      <td class="text-center font-mono" style="padding: 6px 8px;">${gp.partC_correctCountMin ?? 18}~${gp.partC_correctCountMax ?? 20} / 20</td>
+                      <td style="padding: 6px 8px; white-space: normal; line-height: 1.4;">${gs.members.length > 0 ? escapeHtml(gs.members.join(', ')) : '<span class="text-dim">-</span>'}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+            <span class="font-caption text-dim"><i class="fa-solid fa-circle-info text-primary-color"></i> 시트1: 응답자별 A1~C20 답변 매트릭스 · 시트2: 문항별 제출 상세 · 시트3: 43문항 공식 정답표</span>
+            <a href="/api/campaigns/${encodeURIComponent(campId)}/export-answers-xlsx" class="btn-pill btn-pill-primary font-bold" style="text-decoration: none;">
+              <i class="fa-solid fa-download"></i> 제출 문항·답변 내역 엑셀(.xlsx) 다운로드
+            </a>
           </div>
         </div>
       </section>
@@ -4503,18 +4633,9 @@ async function initSurveyDetailPage() {
       };
     });
 
-    // 쿼터 DB 기반 나이대별 통계 재집계
+    // 쿼터 DB 기반 나이대별 통계 재집계 (ageGroupKey / ageGroup / ageGroupLabel / birthYear 전수 판별)
     const qDb = currentCampaign?.quotaDatabase || [];
-    globalriAgeGroupStats = {};
-    Object.keys(GLOBALRI_AGE_GROUP_METAS).forEach(k => {
-      globalriAgeGroupStats[k] = { count: 0, members: [] };
-    });
-    qDb.forEach(item => {
-      const k = item.ageGroupKey || item.ageGroup || 'age50';
-      if (!globalriAgeGroupStats[k]) globalriAgeGroupStats[k] = { count: 0, members: [] };
-      globalriAgeGroupStats[k].count++;
-      globalriAgeGroupStats[k].members.push(`${item.memberName || item.respondentName || item.ceoName}(${item.birthYear || ''}년생·LID ${item.lid || ''})`);
-    });
+    rebuildGlobalriAgeGroupStats(qDb, data.ageGroupStats || null);
 
     renderGlobalriAgeGroupCards();
   }
@@ -6125,6 +6246,7 @@ async function initSurveyDetailPage() {
           ageGroups: globalriAgePolicies || {},
           policy: {
             preserveExistingInputs: true,
+            stopAfterPartC: true,
             safetyStopAtF05_2: true
           }
         };
@@ -6333,7 +6455,7 @@ async function initSurveyDetailPage() {
       openMonitorDrawer();
       resetTimelineChips();
       if (isGlobalriLiteracy) {
-        appendLog('info', `🎯 [성인문해능력조사 파일럿 시작] "${firstBiz.memberName || firstBiz.ceoName}" (LID ${firstBiz.lid} · ${firstBiz.ageGroupLabel || ''}) 나이대별 가이드 적용 및 F05_2 직전 안전 대기를 진행합니다...`);
+        appendLog('info', `🎯 [성인문해능력조사 Part A~C 실행] "${firstBiz.memberName || firstBiz.ceoName}" (LID ${firstBiz.lid} · ${firstBiz.ageGroupLabel || ''}) 나이대별 가이드 적용 및 Part C 채점 저장 후 D1 수기 대기를 진행합니다...`);
       } else if (isHrcEnergy) {
         appendLog('info', `🎯 [에너지총조사 단건 실행] "${firstBiz.buildingName || firstBiz.companyName}" (UID: ${firstBiz.uid}) 기존 입력 항목을 100% 보존하며 설문을 진행합니다...`);
       } else if (isKona) {
@@ -6403,7 +6525,7 @@ async function initSurveyDetailPage() {
     
     let confirmMsg;
     if (isGlobalriLiteracy) {
-      confirmMsg = `[제5차 성인문해능력조사 - 나이대별 그룹 가이드 배치]\n미완료 대상자 ${targets.length}명에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 대상자의 출생연도(20대·30대·40대·50대·60대·70대+)에 맞춘 그룹 가이드 자동 적용\n2. CONSENT~GP1 및 기존 입력 문항 100% 보존\n3. ${safetyGuard ? '마지막 문항(F05_2 가구소득)에서 최종 제출 직전 안전 대기' : 'F05_2까지 100% 최종 완료'}\n\n계속하시겠습니까?`;
+      confirmMsg = `[제5차 성인문해능력조사 - 나이대별 그룹 가이드 배치 (Part A ~ Part C)]\n미완료 대상자 ${targets.length}명에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 대상자의 출생연도(20대·30대·40대·50대·60대·70대+)에 맞춘 그룹 가이드 자동 적용\n2. CONSENT~GP1 및 기존 입력 문항 100% 보존\n3. Part A ~ Part C 채점 저장(END_C) 완료 후 D1에서 즉시 정지 (Part D~F는 사용자 수기 진행)\n4. 제출 문항·답변 내역 엑셀(.xlsx) 자동 저장\n\n계속하시겠습니까?`;
     } else if (isHrcEnergy) {
       confirmMsg = `[2025년 기준 에너지총조사 - 건물 부문]\n미완료 [선정] 쿼터 ${targets.length}건에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 기존에 이미 입력되어 있는 항목은 절대 건드리지 않고 100% 보존\n2. SMS/이메일 발송 버튼 절대 클릭 금지\n3. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터 자동 승계\n4. ${safetyGuard ? '91% 마지막 문항(E1-5)에서 완료 보류' : '100% 조사완료까지 즉시 완료'}\n\n계속하시겠습니까?`;
     } else if (isKona) {
@@ -7130,7 +7252,7 @@ async function initSurveyDetailPage() {
           setRunningState(false);
           await loadCampaign();
           if (currentCampaign?.surveyType === 'globalri_literacy') {
-            appendLog('success', `🎉 대상자 "${data.bizName || ''}" 파일럿 테스트 완료! (최종 제출하지 않고 F05_2 문항에서 안전 대기 중)`);
+            appendLog('success', `🎉 대상자 "${data.bizName || ''}" Part A ~ Part C 채점 저장 완료! (D1에서 수기 진행 대기 중 · 엑셀 내역 갱신됨)`);
           } else {
             appendLog('success', `🎉 1번 쿼터 "${data.bizName || ''}" 파일럿 검증 완료! Agree.asp 안전 대기 중.`);
           }
