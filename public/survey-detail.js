@@ -257,17 +257,22 @@ async function initSurveyDetailPage() {
         btnSyncKstat.style.display = 'inline-flex';
         btnSyncKstat.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 글로벌리서치 GIFT 동기화 / LID 지정 필터';
         let btnExportAns = document.getElementById('btn-export-globalri-answers-top');
+        const gsheetUrl = camp.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?usp=sharing';
         if (!btnExportAns && btnSyncKstat.parentElement) {
           btnExportAns = document.createElement('a');
           btnExportAns.id = 'btn-export-globalri-answers-top';
           btnExportAns.className = 'btn-pill btn-pill-primary font-bold';
           btnExportAns.style.textDecoration = 'none';
-          btnExportAns.innerHTML = '<i class="fa-solid fa-file-excel"></i> 제출 문항·답변 내역 엑셀(.xlsx) 다운로드';
-          btnExportAns.title = '제출된 Part A ~ Part C 문항과 답변, 공식 정답표, 채점 결과를 엑셀(.xlsx) 파일로 다운로드합니다';
+          btnExportAns.target = '_blank';
+          btnExportAns.rel = 'noopener noreferrer';
+          btnExportAns.innerHTML = '<i class="fa-solid fa-table"></i> 제출 문항·답변 구글 스프레드시트 열기';
+          btnExportAns.title = '제출된 Part A ~ Part C 문항과 답변, 공식 정답표, 채점 결과가 기록되는 구글 스프레드시트를 엽니다';
           btnSyncKstat.parentElement.insertBefore(btnExportAns, btnSyncKstat.nextSibling);
         }
         if (btnExportAns) {
-          btnExportAns.href = `/api/campaigns/${encodeURIComponent(campId)}/export-answers-xlsx`;
+          btnExportAns.href = gsheetUrl;
+          btnExportAns.target = '_blank';
+          btnExportAns.rel = 'noopener noreferrer';
           btnExportAns.style.display = 'inline-flex';
         }
       }
@@ -304,11 +309,11 @@ async function initSurveyDetailPage() {
 
       const titleBatch = document.getElementById('title-batch-automation');
       if (titleBatch) {
-        titleBatch.textContent = `제5차 성인문해능력조사 대상자(${(camp.quotaDatabase || []).length}명) Part A~C 자동 진행 & 엑셀 저장`;
+        titleBatch.textContent = `제5차 성인문해능력조사 대상자(${(camp.quotaDatabase || []).length}명) Part A~C 자동 진행 & 구글 스프레드시트 기록`;
       }
       const descBatch = document.getElementById('desc-batch-automation');
       if (descBatch) {
-        descBatch.textContent = '조사 대상자의 나이대 그룹 가이드에 맞춰 Part A(선별) ~ Part B(기초) ~ Part C(심화 C1~C20 및 END_C 채점 저장)까지만 자동 완료하고 D1 진입 시 수기 진행을 위해 자동 정지하며, 제출 문항·답변을 엑셀(.xlsx)로 즉시 저장합니다.';
+        descBatch.textContent = '조사 대상자의 나이대 그룹 가이드에 맞춰 Part A(선별) ~ Part B(기초) ~ Part C(심화 C1~C20 및 END_C 채점 저장)까지만 자동 완료하고 D1 진입 시 수기 진행을 위해 자동 정지하며, 제출 문항·답변을 구글 스프레드시트에 기록합니다.';
       }
       const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
       if (safetyGuardToggle) {
@@ -4811,8 +4816,8 @@ async function initSurveyDetailPage() {
             <button type="button" id="btn-globalri-run-selected-batch" class="btn-pill btn-pill-success font-bold" style="padding: 10px 20px; font-size: 13.5px;">
               <i class="fa-solid fa-rocket"></i> 🚀 2단계: ${escapeHtml(batchTargetDesc)} 일괄 자동 배치 시작
             </button>
-            <a href="/api/campaigns/${encodeURIComponent(campId)}/export-answers-xlsx" class="btn-pill btn-pill-secondary font-bold" style="padding: 10px 16px; font-size: 13px; text-decoration: none;">
-              <i class="fa-solid fa-file-excel text-success"></i> 제출 문항·답변 엑셀(.xlsx) 다운로드
+            <a href="https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary font-bold" style="padding: 10px 16px; font-size: 13px; text-decoration: none;">
+              <i class="fa-solid fa-table text-success"></i> 제출 문항·답변 구글 스프레드시트 열기
             </a>
           </div>
         </div>
