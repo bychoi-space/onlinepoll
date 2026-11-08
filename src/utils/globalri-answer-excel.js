@@ -5,6 +5,10 @@
 import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
+import { chromium } from 'playwright';
+
+export const GLOBALRI_DEFAULT_GSHEET_URL =
+  'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=0#gid=0';
 
 export const LITERACY_QUESTION_META = {
   A1: {
@@ -558,5 +562,80 @@ export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null 
   }
 
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+}
+
+export async function syncGlobalriAnswersToGoogleSheet({
+  quotaDatabase = [],
+  sheetUrl = GLOBALRI_DEFAULT_GSHEET_URL
+} = {}) {
+  const { summaryRows, detailRows, refRows } = buildGlobalriSheetsData({ quotaDatabase });
+  function rowsToTsvLines(rows) {
+    if (!rows || rows.length === 0) return [];
+    const headers = Object.keys(rows[0]);
+    const lines = [headers.join('\t')];
+    for (const r of rows) {
+      lines.push(headers.map(h => String(r[h] ?? '').replace(/[\t\r\n]+/g, ' ')).join('\t'));
+    }
+    return lines;
+  }
+
+  const allLines = [
+    ['■ [1] 제5차 성인문해능력조사 (노영미7791) — 응답자별 진행현황 및 문항별(A1~C20) 제출 답변 요약 매트릭스'].join('\t'),
+    ...rowsToTsvLines(summaryRows),
+    '',
+    ['■ [2] 실행 완료 응답자 문항별 제출 답변 및 채점 상세내역 (Part A ~ Part C 전수 기록)'].join('\t'),
+    ...rowsToTsvLines(detailRows),
+    '',
+    ['■ [3] 제5차 성인문해능력조사 Part A ~ Part C 전 문항(43문항) 공식 정답 및 지문 요약 참조표'].join('\t'),
+    ...rowsToTsvLines(refRows)
+  ];
+  const fullTsv = allLines.join('\n');
+
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      permissions: ['clipboard-read', 'clipboard-write']
+    });
+    const page = await context.newPage();
+    await page.goto(sheetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForTimeout(4000);
+
+    const nameBox = page.locator('#t-name-box, .waffle-name-box');
+    if ((await nameBox.count()) > 0) {
+      await nameBox.first().click();
+      await page.keyboard.press('Control+A');
+      await page.keyboard.type('A1');
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(500);
+    } else {
+      await page.mouse.click(100, 240);
+      await page.waitForTimeout(400);
+    }
+
+    await page.evaluate(async (tsvText) => {
+      try {
+        await navigator.clipboard.writeText(tsvText);
+      } catch (_) {}
+      const dt = new DataTransfer();
+      dt.setData('text/plain', tsvText);
+      const pasteEvent = new ClipboardEvent('paste', {
+        clipboardData: dt,
+        bubbles: true,
+        cancelable: true
+      });
+      const active = document.activeElement || document.querySelector('.cell-input') || document.body;
+      active.dispatchEvent(pasteEvent);
+    }, fullTsv);
+
+    await page.waitForTimeout(1200);
+    await page.keyboard.press('Control+V');
+    await page.waitForTimeout(4500);
+    await browser.close();
+    return { success: true, lineCount: allLines.length };
+  } catch (err) {
+    await browser.close().catch(() => {});
+    return { success: false, error: err.message };
+  }
 }
 

@@ -34,7 +34,7 @@ import { scrapeHrcEnergySlots, findHrcQuotaJsonPath, HRC_ACCOUNTS } from './engi
 import { runHrcEnergySurvey } from './engine/hrc-energy-runner.js';
 import { scrapeGlobalriLiteracyQuotas, findGlobalriQuotaJsonPath, getAgeGroupFromBirthYear } from './engine/globalri-literacy-scraper.js';
 import { runGlobalriLiteracySurvey } from './engine/globalri-literacy-runner.js';
-import { buildGlobalriAnswersExcel, buildGlobalriSheetsData } from './utils/globalri-answer-excel.js';
+import { buildGlobalriAnswersExcel, buildGlobalriSheetsData, syncGlobalriAnswersToGoogleSheet } from './utils/globalri-answer-excel.js';
 import {
   runGallupReturnFarmSurvey,
   syncGallupReturnFarmStatuses,
@@ -2449,6 +2449,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
           try {
             const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
             buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+            syncGlobalriAnswersToGoogleSheet({ quotaDatabase: quotaDb }).catch(() => {});
           } catch (exErr) {
             logger.warn(`[성인문해능력조사 답변 엑셀 자동저장 경고] ${exErr.message}`);
           }
@@ -2992,6 +2993,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
             try {
               const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
               buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+              syncGlobalriAnswersToGoogleSheet({ quotaDatabase: quotaDb }).catch(() => {});
             } catch (exErr) {
               logger.warn(`[성인문해능력조사 답변 엑셀 자동저장 경고] ${exErr.message}`);
             }
@@ -3352,6 +3354,7 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
           try {
             const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
             buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+            syncGlobalriAnswersToGoogleSheet({ quotaDatabase: quotaDb }).catch(() => {});
           } catch (exErr) {
             logger.warn(`[성인문해능력조사 답변 엑셀 자동저장 경고] ${exErr.message}`);
           }
