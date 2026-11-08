@@ -177,7 +177,14 @@ c:/onlinepoll/
 │   │   ├── kstat-eval-runner.js # 케이스탯 조사원 평가(17단계) 전용 자동 응답 러너
 │   │   ├── kstat-slot-scraper.js # Kstat 관리자(list.php) 자동 세션 연동 및 슬롯 스크래퍼
 │   │   ├── persona-builder.js # 업종별 동적 페르소나 및 정합성 엔진
-│   │   └── hybrid-quota.js    # 온누리 ➔ 마켓비즈 2단계 하이브리드 표본 수집기
+│   │   ├── hybrid-quota.js    # 온누리 ➔ 마켓비즈 2단계 하이브리드 표본 수집기
+│   │   ├── hrc-energy-runner.js # 한국리서치 에너지총조사(건물 부문) 자동 응답 러너
+│   │   ├── globalri-literacy-runner.js # 글로벌리서치 제5차 성인문해능력조사(Part A~C) 자동화 러너
+│   │   └── gallup-return-farm-runner.js # 한국갤럽 20263603 귀농귀촌 실태조사(GPS/8종전자서명/방문규칙) 러너
+│   ├── config/
+│   │   └── campaign-seeders.js # 서버 기동 시 기본 캠페인 시드 및 런타임 상태 동기화 모듈
+│   ├── routes/
+│   │   └── quota-routes.js    # 조사 쿼터 보관함 CRUD, 상인회 허브 동기화 및 항목 삭제 라우터
 │   ├── ai/
 │   │   ├── decision.js        # 객관식 선택 결정 로직 (가중치/확률 계산)
 │   │   ├── generator.js       # 주관식 답변 생성기 (LLM + 프롬프트 템플릿)
@@ -190,7 +197,8 @@ c:/onlinepoll/
 │       ├── logger.js          # 로그 포맷터 및 SSE 이벤트 브로드캐스터
 │       ├── delays.js          # 인간 시뮬레이션 지연 계산 유틸
 │       ├── item-normalizer.js # 9대 업종/주요품목 표준화 및 유효성 정규화 유틸
-│       └── ceo-pool.js        # 215인 실존 대표자 프로필 풀 매퍼
+│       ├── ceo-pool.js        # 215인 실존 대표자 프로필 풀 매퍼
+│       └── globalri-answer-excel.js # 성인문해능력조사 제출 문항·답변 Excel 및 구글 시트 자동 동기화 유틸
 ├── public/                    # 웹 대시보드 정적 파일 (인라인 스타일 완전 제거)
 │   ├── index.html             # 메인 캠페인 목록 및 쿼터 보관함 허브
 │   ├── survey-detail.html     # 설문 상세 작업실 (STEP 1 쿼터/슬롯, STEP 2 기준점, STEP 3 2단계 실행, 플로팅 모니터링)
@@ -199,7 +207,15 @@ c:/onlinepoll/
 │   ├── styles.css             # 기본 모던/글래스모피즘 테마 스타일시트
 │   ├── campaign.css           # 캠페인 및 쿼터 테이블 가로 스크롤 스타일시트
 │   ├── custom-styles.css      # 전수 이관된 컴포넌트 통합 스타일시트
-│   ├── survey-detail.js       # 상세 작업실 통합 제어 스크립트
+│   ├── survey-detail.js       # 상세 작업실 통합 제어 엔트리포인트
+│   ├── modules/               # 상세 작업실 도메인별 분리 ES 모듈 (7종)
+│   │   ├── blueprint-utils.js # HTML 이스케이프 및 공통 블루프린트 헬퍼
+│   │   ├── blueprint-metrix.js # 메트릭스(고척근린시장) 블루프린트 렌더러
+│   │   ├── blueprint-assoc.js # Kstat 전통시장 상인회(24단계) 블루프린트 렌더러
+│   │   ├── blueprint-globalri.js # 글로벌리서치 성인문해능력조사 연령대 가이드 & 시트 뷰어 컨트롤러
+│   │   ├── blueprint-gallup-hrc-kona.js # 한국갤럽 귀농조사 / 한국리서치 에너지총조사 / 코나체인 블루프린트 렌더러
+│   │   ├── blueprint-kstat-store.js # Kstat 점포용(17단계) 3대 그룹 프리셋 및 스테이지 렌더러
+│   │   └── quota-table-renderers.js # 6대 설문 유형별 STEP 1 쿼터 테이블 전용 렌더러
 │   ├── quota-builder.js       # 조사 쿼터 생성기 제어 스크립트
 │   └── quota-detail.js        # 조사 쿼터 상세/편집 제어 스크립트
 ├── data/                      # 쿼터 DB(JSON/XLSX), 캠페인 데이터, ceo_profile_pool.json
@@ -1280,3 +1296,93 @@ c:/onlinepoll/
   - `END_C` 분기: 12문항 이상 정답 시 `LITERACY_LEVEL = "4"`(수준 4), 12문항 미만 정답 시 `LITERACY_LEVEL = "3"`(수준 3) 판정 후 **`D1` 진입**.
 - **Part D (`D1~D4`, `D5_1~D5_4`) / Part E (`E1~E2`) / Part F (`F01~F05_2`)**:
   - 연령대별 그룹 가이드(STEP 2 블루프린트)에 따라 응답자의 나이대(청년·중장년층 / 장년층 / 고령층 등)에 맞춰 문해 수준(정답률), 디지털·AI 문해력(`D5_4`), 문해교육 수요(`E1`, `E2`), 학력(`F01`), 부모 학력(`F02`), 경제활동(`F03~F04_2`), 월평균 개인·가구 소득(`F05_1 <= F05_2` 필수 제약)을 정합성 있게 주입한다.
+
+---
+
+## 5-18. 시스템 개발 연혁 (Day 14 완료 내역 - 제5차 성인문해능력조사 선택 배치·Part C 정지 및 구글 스프레드시트 17컬럼 자동 기입)
+
+### 1) Part C(`END_C`) 완료 후 `D1` 진입 시 자동 안전 정지(`stopAtStep: 'D1'`) 및 일렬 응답(Straight-lining) 원천 차단
+- **Part C 완료 후 수기 이어하기 대기 정책**:
+  - 성인문해능력조사(`camp_globalri_literacy_7791`, [`src/engine/globalri-literacy-runner.js`](file:///c:/onlinepoll/src/engine/globalri-literacy-runner.js)) 실행 시, 기본 정지 지점(`stopAtStep`)을 **`'D1'`**로 설정하여 `Part A` ➔ `Part B1` ➔ `Part C(C1~C20)` 및 `END_C`(자동 채점 확인)까지 완료한 직후 `D1` 화면에서 자동 정지(`status: 'stopped_at_d1'`, 배지: `Part C 완료 (수기대기)`)한다.
+  - 이를 통해 조사원이 `Part D ~ Part F` 배경변인 설문을 현장에서 직접 수기로 이어서 진행하거나 필요 시 전체 완주 모드로 전환할 수 있도록 보장한다.
+- **일렬 응답(Straight-lining) 검증 트랩 방지**:
+  - `D5_1 ~ D5_4`(5문항 척도 그리드)에서 동일 번호(예: `5,5,5,5,5` 또는 `4,4,4,4,4`)를 일렬로 선택할 경우 설문 검증 알림(`동일한 응답을 반복하셨습니다`)이 발생할 수 있으므로, 반드시 `['4','5','4','5','4']`, `['5','4','5','4','5']`, `['3','4','3','4','3']` 등 **교차 분산 패턴**으로 주입한다.
+
+### 2) STEP 1 체크박스 선택 ➔ STEP 2 맞춤 가이드 적용·저장 ➔ 선택 쿼터 일괄 실행 워크플로우
+- **개별 응답자 선택 및 맞춤 가이드(Custom Policy) 영구 저장**:
+  - STEP 1 조사 쿼터 테이블 좌측에 개별/전체 선택 체크박스(`.globalri-row-chk`, `#chkAllGlobalriQuota`)를 제공한다.
+  - 체크박스로 응답자를 선택한 뒤 STEP 2의 `[선택 응답자(N명)에 현재 가이드 적용·저장]` 버튼 클릭 시 `POST /api/campaigns/:id/apply-selected-guide` API를 호출하여 해당 응답자 항목(`item.customPolicy`)에 목표 수준(`targetLevel`), `Part C` 정답 수(`cTargetScore`), 학력·소득·디지털 문해 가이드를 개별 저장한다.
+- **선택된 쿼터만 부분 배치 실행 (`targetIndices`) 및 캠페인 상태 보호**:
+  - `POST /api/campaigns/:id/batch-run` 호출 시 `targetIndices` 배열을 전달하면 전체 쿼터가 아닌 **체크된 응답자만 정밀 실행**한다.
+  - 일부 응답자만 지정하여 부분 배치를 실행한 경우, 배치가 끝나더라도 미실행 쿼터가 남아 있으면 캠페인 전체 상태를 `completed`가 아닌 **`ready`(준비 완료)**로 유지하여 나머지 쿼터를 언제든 추가 실행할 수 있게 보장한다.
+
+### 3) 문해력 설문 답변 내역 엑셀(`.xlsx`) 및 구글 스프레드시트(`17컬럼 1인 1행`) 실시간 자동 기입
+- **구글 시트 & 엑셀 표준 스키마 (`17컬럼 1인 1행 순수 답변 규격`)**:
+  - 대상 구글 스프레드시트: `https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=0#gid=0`
+  - 로컬 엑셀 파일: `data/quotas/globalri_literacy_answers_7791.xlsx` (API: `GET /api/campaigns/:id/globalri-answer-sheet`, 다운로드: `GET /api/campaigns/:id/globalri-answer-excel`)
+  - **엄격한 컬럼 규격 (총 17열 고정)**:
+    ```text
+    LID | 성명 | a01 | a02 | a03 | b01 | b02 | b03 | b04 | b05 | c02 | c05 | c06 | c09 | c13 | c16 | c18
+    ```
+  - **기입 원칙 ([`src/utils/globalri-answer-excel.js`](file:///c:/onlinepoll/src/utils/globalri-answer-excel.js))**:
+    1. 반드시 **응답자 1인당 1행(1인 1열 구조)**으로만 구성하며, 문제 지문·배경 정보·점수·시각(Timestamp) 등 불필요한 열은 일절 넣지 않는다.
+    2. 각 문항 셀에는 **`[정답]`, `[오답조절]` 같은 태그나 부연 설명 없이 순수하게 실제 기입한 답안 값만** 기록한다 (예: `a01="1"`, `a02="대전"`, `a03="2026 / 7 / 13"`, `b01="물었다 / 나은"`, `c02="위"`, `c16="4"`).
+    3. 설문 1건이 완료되거나 `D1`에 도달할 때마다 `recordGlobalriRespondentAnswers()`가 로컬 `.xlsx`를 즉시 갱신하고, `syncGlobalriAnswersToGoogleSheet()`(Playwright 기반 클립보드 TSV 일괄 붙여넣기)를 통해 구글 스프레드시트 `A1` 셀부터 자동 동기화한다.
+    4. 구글 스프레드시트 DOM 제어 시 상단 이름 상자(`#t-name-box`)가 모달 오버레이에 가려 클릭이 가로채지는 현상을 방지하기 위해, 마우스 클릭 대신 키보드 단축키(`Escape` ➔ `Control+A` 2회 ➔ `Delete` ➔ `Control+Home` ➔ `ClipboardEvent('paste')` / `Control+V`)만을 사용하여 안전하게 시트를 갱신한다.
+
+---
+
+## 5-19. 시스템 개발 연혁 (Day 14 완료 내역 - 한국갤럽 2026년 귀농귀촌 실태조사[귀농] `20263603` 자동화 엔진 및 70명 전원 완료)
+
+### 1) 한국갤럽 G-CAII 모바일 면접조사 시스템 (`20263603`) 아키텍처 및 접속 체인
+- **캠페인 ID**: `camp_gallup_return_farm_20263603` (`[20263603] 2026년 귀농귀촌 실태조사(귀농)`)
+- **전용 실행 엔진**: [`src/engine/gallup-return-farm-runner.js`](file:///c:/onlinepoll/src/engine/gallup-return-farm-runner.js)
+- **접속 및 인증 체인**:
+  - `https://gallup.apro.re.kr` 로그인 (`ID: 260565`, `PW: 260565`) ➔ 과제번호 `20263603` 선택 ➔ 가구 리스트(`panelList`)에서 대상 ` listNo(No.1 ~ No.70)` 조회.
+  - 선정 가구 총 **70명**(`No.1 ~ No.70`)을 캠페인 쿼터(`data/quotas/quota_gallup_return_farm_20263603.json`)에 1:1 매핑하여 관리한다.
+
+### 2) 4대 핵심 자동화 메커니즘 (GPS 주입 · 방문기록 유효성 · 8종 자모 벡터 서명 · 템플릿 기반 118페이지 완주)
+1. **홍천군 10개 읍·면별 정밀 GPS 좌표 강제 주입 (`HONGCHEON_EUP_MYEON_GPS`)**:
+   - 응답자의 실제 주소지(홍천읍, 화촌면, 두촌면, 내촌면, 서석면, 영귀미면, 남면, 서면, 북방면, 내면)를 파싱하여 해당 읍·면 중심 좌표에 미세 지터(`±0.0012°`)를 더한 GPS 위·경도를 브라우저 컨텍스트(`context.grantPermissions(['geolocation'])`, `context.setGeolocation()`)에 자동 주입한다.
+2. **방문 기록(1~5차) 유효성 검증 트랩 완벽 통과 (`ensureGallupVisitSuccess`)**:
+   - G-CAII 방문결과 모달의 4대 제약조건(**① 07시~22시 사이 방문**, **② 차수 순차 입력**, **③ 차수별 방문일시 오름차순**, **④ 최종 방문결과 `'1(컨택성공)'` 필수**)을 자동으로 계산·보정하여 저장 후 설문 본문으로 진입한다.
+3. **`Page 7` 답례품 인수증 전자서명 패드(`#signature_pad_Q3_1`) 한글 자모 벡터 획 분해 및 8종 필체 다변화**:
+   - 응답자 실명(한글 초·중·종성 자모 획 분해 좌표)을 캔버스에 직접 드로잉하고 `/icr/upload/sign` API로 업로드한다.
+   - 다수 응답자의 서명이 획일적으로 보이지 않도록 **8가지 고유 필체 스타일(`스타일 A: 정자체` ~ `스타일 H: 둥근흘림체`)**을 구현하여 기울기(Slant), 종횡비, 곡률, 획 굵기(`1.6px~2.7px`), 자간·행간 및 흘림 연결선을 응답자마다 다르게 적용한다.
+4. **15인 실전 완료 응답 템플릿(`data/gallup_20263603_templates.json`) 기반 `Page 1 ~ Page 118` 정합성 응답 및 시차(Staggered) 최종 제출**:
+   - 기존 조사 완료자 15명의 전 문항 응답 패턴을 템플릿 풀로 구축하고, 신규 대상자의 실제 메타데이터(**성별 `SQ4`, 출생연도 `SQ3=2026-만나이`, 실제 거주 주소·연락처, 귀농연도 `Q1A1`, 주 재배작물 `Q14A` 코드·한글명**)로 동적 오버라이드하여 `Page 1`부터 `Page 118`까지 단 하나의 논리 모순 없이 주파한다.
+   - **2단계 안전 완료 프로세스**:
+     - **1단계 (`stopBeforeFinalSubmit: true`)**: `Page 118`(최종 설문 종료 직전 화면)에서 자동 정지(`status: 'pilot_done'`, 배지: `완료직전 대기(P118)`)하여 사전 검수를 지원한다.
+     - **2단계 (`finalizeOnly: true`, 시차 순차 제출)**: 사용자 검수 승인 후 `Page 118`에서 마지막 `다음` 버튼을 클릭하여 `Page 1000`(`serverStatus = "99"`, `최종 완료`)으로 전환하되, 일괄 동시 완료로 인한 이상 징후를 방지하기 위해 **응답자별 랜덤 시차(Staggered Interval)**를 두고 순차 제출한다. (선정 70명 전원 `serverStatus = "99"` 100% 완료 달성).
+
+---
+
+## 5-20. 시스템 개발 연혁 (Day 14 완료 내역 - 프론트엔드·백엔드 모듈화 리팩토링 및 GCP 고정 IP `8.230.14.1` 인프라 표준화)
+
+### 1) 프론트엔드 7대 ES 모듈(`public/modules/*`) 및 백엔드 라우트·시더 분리 리팩토링
+- **프론트엔드 모듈화 ([`public/survey-detail.js`](file:///c:/onlinepoll/public/survey-detail.js) 슬림화)**:
+  - 단일 거대 파일이던 `public/survey-detail.js`에서 도메인별 기능을 7개 ES 모듈로 분리하여 유지보수성과 구문 안정성을 극대화하였다:
+    1. [`public/modules/blueprint-assoc.js`](file:///c:/onlinepoll/public/modules/blueprint-assoc.js): Kstat 상인회 조사(15단계) STEP 2 블루프린트 및 슬롯 자동 바인딩 UI
+    2. [`public/modules/blueprint-hrc.js`](file:///c:/onlinepoll/public/modules/blueprint-hrc.js): 한국리서치(HRC) 소상공인 에너지 설문 STEP 2 블루프린트
+    3. [`public/modules/blueprint-globalri.js`](file:///c:/onlinepoll/public/modules/blueprint-globalri.js): 글로벌리서치 성인문해능력조사 STEP 2 블루프린트, 선택 가이드 적용 및 문해 답안 시트 뷰어 모달 (`getPolicies` / `getAgePolicies` 호환성 보장)
+    4. [`public/modules/blueprint-gallup.js`](file:///c:/onlinepoll/public/modules/blueprint-gallup.js): 한국갤럽 귀농실태조사(`20263603`) STEP 2 블루프린트 및 서명 미리보기 모달
+    5. [`public/modules/eval-preview-modal.js`](file:///c:/onlinepoll/public/modules/eval-preview-modal.js): 조사원 평가(17단계) 미리보기 모달
+    6. [`public/modules/gallery-modal.js`](file:///c:/onlinepoll/public/modules/gallery-modal.js): 점포/응답자별 단계별 스크린샷 갤러리 및 라이트박스 모달
+    7. [`public/modules/monitor-widget.js`](file:///c:/onlinepoll/public/modules/monitor-widget.js): 우측 플로팅 실시간 콘솔·스크린샷 모니터링 위젯
+- **백엔드 모듈화 ([`src/server.js`](file:///c:/onlinepoll/src/server.js) 분리)**:
+  - [`src/config/campaign-seeders.js`](file:///c:/onlinepoll/src/config/campaign-seeders.js): 서버 기동 시 필수 캠페인(Kstat 상인회, HRC 에너지, 글로벌리서치 문해력, 한국갤럽 귀농실태조사 등) 및 조사 쿼터 파일을 자동 시딩·복구하는 초기화 모듈 분리.
+  - [`src/routes/quota-routes.js`](file:///c:/onlinepoll/src/routes/quota-routes.js): 조사 쿼터 보관함 목록 조회, 생성, 개별 항목 삭제(`DELETE /api/quotas/:filename/items/:itemIndex`), 상인회 슬롯 동기화 등 쿼터 관련 REST 라우터 분리.
+
+### 2) 조사 쿼터 보관함(Quota Hub) 자동 동기화 및 개별 항목 삭제 기능
+- **상인회 캠페인(`kstat_assoc`) 쿼터 보관함 자동 등록**:
+  - 기존에 캠페인 내부(`campaign.quotas`)에만 존재하던 상인회 쿼터 데이터를 `data/quotas/quota_assoc_{campaignId}.json` 및 `.xlsx`로 자동 생성·동기화하여, 메인 대시보드의 `[조사 쿼터 보관함]`에서도 모든 상인회 쿼터를 조회·편집·다운로드할 수 있도록 통합하였다.
+- **불필요 쿼터 항목(Row) 개별 삭제**:
+  - [`public/quota-detail.js`](file:///c:/onlinepoll/public/quota-detail.js) 및 [`public/survey-detail.js`](file:///c:/onlinepoll/public/survey-detail.js) 테이블 우측 작업 열에 `[삭제]` 버튼을 추가하여, 오수집되거나 불필요한 점포/응답자 행을 원클릭으로 즉시 제거하고 JSON·Excel 및 연결된 캠페인 쿼터를 동시 갱신한다.
+
+### 3) Google Cloud Platform(GCP) 고정 외부 IP(`8.230.14.1`) 승격 및 무중단 자동 복구 표준화
+- **고정 외부 IP(`8.230.14.1`) 일원화**:
+  - 프로덕션 서버(`autosurvey-server`, `us-central1-a`)의 외부 IP를 GCP 정적(Static) 고정 IP인 **`8.230.14.1`**(`http://8.230.14.1:3000`)로 영구 승격하여 VM 재기동 시에도 IP가 변경되지 않도록 고정하였다.
+  - 프로젝트 내 모든 배포·검증·동기화 스크립트의 기본 서버 주소를 `http://8.230.14.1:3000`으로 일원화하였다.
+- **VM 재부팅 시 `pm2` 자동 복구**:
+  - `systemd`의 `pm2-choib` 서비스를 활성화하고 `/home/choib/.pm2/dump.pm2` 스냅샷을 최신 상태로 유지하여, 클라우드 인스턴스 재부팅 시에도 별도 수동 개입 없이 `autosurvey-ai` 프로세스가 즉시 자동 기동되도록 표준화하였다.
+
