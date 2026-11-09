@@ -34,7 +34,13 @@ import { scrapeHrcEnergySlots, findHrcQuotaJsonPath, HRC_ACCOUNTS } from './engi
 import { runHrcEnergySurvey } from './engine/hrc-energy-runner.js';
 import { scrapeGlobalriLiteracyQuotas, findGlobalriQuotaJsonPath, getAgeGroupFromBirthYear } from './engine/globalri-literacy-scraper.js';
 import { runGlobalriLiteracySurvey } from './engine/globalri-literacy-runner.js';
-import { buildGlobalriAnswersExcel, buildGlobalriSheetsData, syncGlobalriAnswersToGoogleSheet } from './utils/globalri-answer-excel.js';
+import {
+  buildGlobalriAnswersExcel,
+  buildGlobalriSheetsData,
+  syncGlobalriAnswersToGoogleSheet,
+  syncGlobalriQuotaAnswersFromSeolmoon,
+  persistGlobalriQuotaDatabase
+} from './utils/globalri-answer-excel.js';
 import {
   runGallupReturnFarmSurvey,
   syncGallupReturnFarmStatuses,
@@ -1543,6 +1549,16 @@ app.post('/api/campaigns/:id/sync-globalri-literacy', async (req, res) => {
       seq: idx + 1
     }));
 
+    // seolmoon.com 서버에 저장된 실제 문항·답변(ANSWER.DATA) 전수 동기화 및 구글 시트 반영
+    try {
+      await syncGlobalriQuotaAnswersFromSeolmoon({ quotaDatabase: updatedQuotaDb });
+      const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${loginId.slice(-4) || '7791'}.xlsx`);
+      buildGlobalriAnswersExcel({ quotaDatabase: updatedQuotaDb, filePath: ansXlsxPath });
+      await syncGlobalriAnswersToGoogleSheet({ quotaDatabase: updatedQuotaDb, pullFromSeolmoon: false });
+    } catch (syncAnsErr) {
+      logger.warn(`[성인문해능력조사 문항답변/구글시트 동기화 경고] ${syncAnsErr.message}`);
+    }
+
     CampaignStore.updateCampaign(campaign.id, {
       quotaDatabase: updatedQuotaDb,
       loginId,
@@ -1558,7 +1574,7 @@ app.post('/api/campaigns/:id/sync-globalri-literacy', async (req, res) => {
 
     res.json({
       success: true,
-      message: `글로벌리서치(GIFT) 실시간 동기화 완료! (${syncRes.totalHouseholdsChecked}가구 확인 ➔ '진행 중' 설문 대상 가구원 ${updatedQuotaDb.length}명 추출)`,
+      message: `글로벌리서치(GIFT) 실시간 동기화 및 구글 시트 업데이트 완료! (${syncRes.totalHouseholdsChecked}가구 확인 ➔ 설문 대상 가구원 ${updatedQuotaDb.length}명)`,
       totalHouseholdsChecked: syncRes.totalHouseholdsChecked,
       totalMembers: updatedQuotaDb.length,
       ageGroupBreakdown: syncRes.ageGroupBreakdown,
@@ -1733,6 +1749,10 @@ app.post('/api/campaigns/:id/import-quota', (req, res) => {
     const quotaMeta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
     const businesses = quotaMeta.data || [];
     const isAssoc = (quotaMeta.type === 'KSTAT_ASSOC' || quotaMeta.surveyType === 'kstat_assoc' || safeFilename.startsWith('quota_assoc_'));
+    const isGlobalriLiteracy = (quotaMeta.type === 'GLOBALRI_ADULT_LITERACY' || quotaMeta.surveyType === 'globalri_literacy' || safeFilename.includes('globalri_adult_literacy'));
+    const isGallupReturnFarm = (quotaMeta.type === 'GALLUP_RETURN_FARM' || quotaMeta.surveyType === 'gallup_return_farm' || safeFilename.includes('gallup_20263603'));
+    const isHrcEnergy = (quotaMeta.type === 'HRC_ENERGY_BUILDING' || quotaMeta.surveyType === 'hrc_energy' || safeFilename.includes('hrc_energy'));
+    const isKona = (quotaMeta.type === 'KONA_YOUTH' || quotaMeta.surveyType === 'kona_youth');
 
     if (businesses.length === 0) {
       return res.status(400).json({ error: '쿼터 파일 내에 사업자 데이터가 없습니다.' });
@@ -1750,12 +1770,30 @@ app.post('/api/campaigns/:id/import-quota', (req, res) => {
 
     const updated = CampaignStore.updateCampaign(campaign.id, {
       status: 'ready',
-      quotaType: 'b2b',
+      quotaType: (isGlobalriLiteracy || isGallupReturnFarm || isKona) ? 'b2c' : 'b2b',
       ...(isAssoc ? {
         surveyType: 'kstat_assoc',
         kstatLoginId: quotaMeta.surveyorId || businesses[0]?.surveyorAccount || campaign.kstatLoginId || '가온박정순',
         kstatLoginPw: quotaMeta.kstatLoginPw || campaign.kstatLoginPw || '1234',
         kstatListUrl: quotaMeta.kstatListUrl || campaign.kstatListUrl || 'https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi'
+      } : {}),
+      ...(isGlobalriLiteracy ? {
+        surveyType: 'globalri_literacy',
+        loginId: quotaMeta.loginId || campaign.loginId || '01071447791',
+        loginPw: quotaMeta.loginPw || campaign.loginPw || '2038020',
+        surveyorName: quotaMeta.surveyorName || campaign.surveyorName || '노영미7791',
+        quotaSourceFile: safeFilename
+      } : {}),
+      ...(isGallupReturnFarm ? {
+        surveyType: 'gallup_return_farm',
+        loginId: quotaMeta.surveyorId || campaign.loginId || '076_000009',
+        surveyorName: quotaMeta.surveyorName || campaign.surveyorName || '백영자'
+      } : {}),
+      ...(isHrcEnergy ? {
+        surveyType: 'hrc_energy',
+        loginId: quotaMeta.surveyorId || campaign.loginId || '700275',
+        loginPw: quotaMeta.surveyorId || campaign.loginPw || '700275',
+        surveyorName: quotaMeta.surveyorName || campaign.surveyorName || ''
       } : {}),
       quotaConfig: {
         quotaSource: 'FILE_IMPORT',
@@ -1836,6 +1874,12 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
         kstatLoginPw: quotaMeta.kstatLoginPw || '1234',
         kstatListUrl: quotaMeta.kstatListUrl || 'https://survey.kstat.co.kr/kstat_survey/survey/2026070801/list.php?pridSel=2026070801&josa=tapi'
       } : {}),
+      ...(isGlobalriLiteracy ? {
+        loginId: quotaMeta.loginId || '01071447791',
+        loginPw: quotaMeta.loginPw || '2038020',
+        surveyorName: quotaMeta.surveyorName || '노영미7791',
+        quotaSourceFile: safeFilename
+      } : {}),
       ...(isHrcEnergy ? {
         loginId: quotaMeta.surveyorId || '700275',
         loginPw: quotaMeta.surveyorId || '700275',
@@ -1854,17 +1898,19 @@ app.post('/api/campaigns/create-from-quota', (req, res) => {
       slotIndex: idx + 1,
       ...b,
       quotaStatus: b.quotaStatus || (b.status === '완료' ? 'completed' : 'ready'),
-      usedAt: null
+      usedAt: b.usedAt || null
     }));
 
     // 기존 캠페인 중 사용자가 커스텀 설정한 masterBaseline이 있으면 신규 캠페인에 자동 복제 장착
     let inheritedBaseline = null;
     const allCamps = CampaignStore.getAllCampaigns();
-    const bestSource = isAssoc
-      ? (allCamps.find(c => (c.surveyType === 'kstat_assoc' || String(c.title || '').includes('상인회')) && c.masterBaseline && c.masterBaseline.assocMode) ||
-         allCamps.find(c => (c.surveyType === 'kstat_assoc' || String(c.title || '').includes('상인회')) && c.masterBaseline))
-      : (allCamps.find(c => c.surveyType !== 'kstat_assoc' && c.masterBaseline && c.masterBaseline.groups) ||
-         allCamps.find(c => c.surveyType !== 'kstat_assoc' && c.masterBaseline));
+    const bestSource = isGlobalriLiteracy
+      ? allCamps.find(c => c.surveyType === 'globalri_literacy' && c.masterBaseline)
+      : (isAssoc
+        ? (allCamps.find(c => (c.surveyType === 'kstat_assoc' || String(c.title || '').includes('상인회')) && c.masterBaseline && c.masterBaseline.assocMode) ||
+           allCamps.find(c => (c.surveyType === 'kstat_assoc' || String(c.title || '').includes('상인회')) && c.masterBaseline))
+        : (allCamps.find(c => c.surveyType !== 'kstat_assoc' && c.surveyType !== 'globalri_literacy' && c.masterBaseline && c.masterBaseline.groups) ||
+           allCamps.find(c => c.surveyType !== 'kstat_assoc' && c.surveyType !== 'globalri_literacy' && c.masterBaseline)));
     if (bestSource && bestSource.masterBaseline) {
       inheritedBaseline = JSON.parse(JSON.stringify(bestSource.masterBaseline));
       if (inheritedBaseline.groups) {
@@ -2447,13 +2493,14 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
             targetBiz.gradeSummary = result.gradeSummary;
           }
           try {
+            persistGlobalriQuotaDatabase({ quotaDatabase: quotaDb });
             const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
             buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
-            syncGlobalriAnswersToGoogleSheet({ quotaDatabase: quotaDb }).catch(() => {});
+            await syncGlobalriAnswersToGoogleSheet({ quotaDatabase: quotaDb, pullFromSeolmoon: false });
           } catch (exErr) {
-            logger.warn(`[성인문해능력조사 답변 엑셀 자동저장 경고] ${exErr.message}`);
+            logger.warn(`[성인문해능력조사 답변 엑셀/구글시트 자동저장 경고] ${exErr.message}`);
           }
-          logger.success(`🎉 [성인문해능력조사 Part C 완료] "${targetBiz.respondentName || targetBiz.companyName}" (${targetBiz.memberUid}) ${targetBiz.status} 달성 및 답변 엑셀 갱신 완료!`);
+          logger.success(`🎉 [성인문해능력조사 Part C 완료] "${targetBiz.respondentName || targetBiz.companyName}" (${targetBiz.memberUid}) ${targetBiz.status} 달성 및 답변 엑셀/구글시트 갱신 완료!`);
         } else if (isHrcEnergy) {
           targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
           targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(91%)' : '완료';
@@ -2991,13 +3038,14 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
               biz.gradeSummary = result.gradeSummary;
             }
             try {
+              persistGlobalriQuotaDatabase({ quotaDatabase: quotaDb });
               const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
               buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
-              syncGlobalriAnswersToGoogleSheet({ quotaDatabase: quotaDb }).catch(() => {});
+              await syncGlobalriAnswersToGoogleSheet({ quotaDatabase: quotaDb, pullFromSeolmoon: false });
             } catch (exErr) {
-              logger.warn(`[성인문해능력조사 답변 엑셀 자동저장 경고] ${exErr.message}`);
+              logger.warn(`[성인문해능력조사 답변 엑셀/구글시트 자동저장 경고] ${exErr.message}`);
             }
-            logger.success(`🎉 [성인문해능력조사 배치 ${i + 1}/${targets.length} 완료] "${biz.respondentName || biz.companyName}" (UID: ${biz.memberUid || biz.uid}) ${biz.status} 달성!`);
+            logger.success(`🎉 [성인문해능력조사 배치 ${i + 1}/${targets.length} 완료] "${biz.respondentName || biz.companyName}" (UID: ${biz.memberUid || biz.uid}) ${biz.status} 달성 및 구글시트 갱신 완료!`);
           } else if (isHrcEnergy) {
             if (!biz.substitutedByUid) {
               biz.quotaStatus = (result.status === 'stopped_at_review' || safetyGuard) ? 'pilot_done' : 'completed';
@@ -3352,11 +3400,12 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
             targetBiz.gradeSummary = result.gradeSummary;
           }
           try {
+            persistGlobalriQuotaDatabase({ quotaDatabase: quotaDb });
             const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
             buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
-            syncGlobalriAnswersToGoogleSheet({ quotaDatabase: quotaDb }).catch(() => {});
+            await syncGlobalriAnswersToGoogleSheet({ quotaDatabase: quotaDb, pullFromSeolmoon: false });
           } catch (exErr) {
-            logger.warn(`[성인문해능력조사 답변 엑셀 자동저장 경고] ${exErr.message}`);
+            logger.warn(`[성인문해능력조사 답변 엑셀/구글시트 자동저장 경고] ${exErr.message}`);
           }
         } else if (isHrcEnergy) {
           targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
@@ -3448,15 +3497,21 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
 });
 
 // ==========================================
-// [3-3b] 성인문해능력조사 응답자별 제출 문항·답변 내역 Excel(.xlsx) 다운로드 API
+// [3-3b] 성인문해능력조사 응답자별 제출 문항·답변 내역 Excel(.xlsx) 다운로드 및 시트 동기화 API
 // ==========================================
-app.get('/api/campaigns/:id/export-answers-xlsx', (req, res) => {
+app.get('/api/campaigns/:id/export-answers-xlsx', async (req, res) => {
   try {
     const campaign = CampaignStore.getCampaignById(req.params.id);
     if (!campaign) {
       return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
     }
     const quotaDb = campaign.quotaDatabase || [];
+    if (campaign.surveyType === 'globalri_literacy' || quotaDb.some(b => b.memberUid)) {
+      const syncStats = await syncGlobalriQuotaAnswersFromSeolmoon({ quotaDatabase: quotaDb });
+      if (syncStats.updatedCount > 0) {
+        CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+      }
+    }
     const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
     const buffer = buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
     const downloadName = encodeURIComponent(`제5차_성인문해능력조사_제출문항답변내역_${campaign.surveyorName || '노영미7791'}.xlsx`);
@@ -3469,13 +3524,24 @@ app.get('/api/campaigns/:id/export-answers-xlsx', (req, res) => {
   }
 });
 
-app.get('/api/campaigns/:id/answers-sheet-data', (req, res) => {
+app.get('/api/campaigns/:id/answers-sheet-data', async (req, res) => {
   try {
     const campaign = CampaignStore.getCampaignById(req.params.id);
     if (!campaign) {
       return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
     }
     const quotaDb = campaign.quotaDatabase || [];
+    if (campaign.surveyType === 'globalri_literacy' || quotaDb.some(b => b.memberUid)) {
+      const syncStats = await syncGlobalriQuotaAnswersFromSeolmoon({ quotaDatabase: quotaDb });
+      if (syncStats.updatedCount > 0 || req.query.syncSheet === '1') {
+        CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+        const ansXlsxPath = path.join(quotasDir, `globalri_literacy_answers_${campaign.loginId?.slice(-4) || '7791'}.xlsx`);
+        buildGlobalriAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+        syncGlobalriAnswersToGoogleSheet({ quotaDatabase: quotaDb, pullFromSeolmoon: false }).catch(err => {
+          logger.warn(`[문항답변 구글시트 동기화 경고] ${err.message}`);
+        });
+      }
+    }
     const sheets = buildGlobalriSheetsData({ quotaDatabase: quotaDb });
     res.json({ success: true, sheets });
   } catch (err) {

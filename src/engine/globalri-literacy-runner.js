@@ -256,8 +256,34 @@ export async function runGlobalriLiteracySurvey(options = {}) {
 
   const capturedSteps = [];
   const stepTrace = [];
-  const submittedAnswers = [];
-  const gradeSummary = {};
+  const submittedAnswers = Array.isArray(slotData.submittedAnswers) ? [...slotData.submittedAnswers] : [];
+  const gradeSummary = slotData.gradeSummary ? { ...slotData.gradeSummary } : {};
+
+  function upsertSubmittedAnswer(entry) {
+    if (!entry || !entry.questionCode) return;
+    const idx = submittedAnswers.findIndex(a => a.questionCode === entry.questionCode);
+    if (idx >= 0) {
+      submittedAnswers[idx] = entry;
+    } else {
+      submittedAnswers.push(entry);
+    }
+  }
+
+  async function ensureSubmittedAnswersBeforeReturn() {
+    if (submittedAnswers.length >= 15) return;
+    const remoteRes = await fetchSeolmoonMemberAnswers(memberUid);
+    if (remoteRes) {
+      if (Array.isArray(remoteRes.submittedAnswers) && remoteRes.submittedAnswers.length > 0) {
+        for (const ans of remoteRes.submittedAnswers) {
+          upsertSubmittedAnswer(ans);
+        }
+      }
+      if (remoteRes.gradeSummary) {
+        Object.assign(gradeSummary, remoteRes.gradeSummary);
+      }
+    }
+  }
+
   const stopAfterPartC = (slotData.customGuide && slotData.customGuide.stopAfterPartC !== undefined)
     ? Boolean(slotData.customGuide.stopAfterPartC)
     : (options.stopAfterPartC !== false && policy.stopAfterPartC !== false && agePol.stopAfterPartC !== false);
@@ -293,7 +319,11 @@ export async function runGlobalriLiteracySurvey(options = {}) {
     await captureStepScreenshot('HOUSEHOLD_LIST', `가구원 조사 현황 (${lid} - ${respondentName})`);
 
     const entryCheck = await page.evaluate(({ targetMemberUid, targetName }) => {
-      const href = location.href;
+      const href = location.href || '';
+      const bodyText = (document.body?.innerText || '').trim();
+      if (href.includes('Complete.asp') || href.includes('Q=LIST_COMPLETE') || bodyText.includes('이미 응답') || bodyText.includes('대단히 감사합니다')) {
+        return { alreadyCompleted: true, foundBtn: false, matchedStatus: '완료', href };
+      }
       const rows = Array.from(document.querySelectorAll('table tbody tr'));
       let matchedStatus = '';
       let foundBtn = false;
@@ -321,6 +351,7 @@ export async function runGlobalriLiteracySurvey(options = {}) {
     }, { targetMemberUid: memberUid, targetName: respondentName });
 
     if (entryCheck.alreadyCompleted) {
+      await ensureSubmittedAnswersBeforeReturn();
       await captureStepScreenshot('ALREADY_COMPLETED', `${respondentName} (이미 조사 완료됨)`);
       return {
         success: true,
@@ -329,6 +360,9 @@ export async function runGlobalriLiteracySurvey(options = {}) {
         lid,
         respondentName,
         ageGroup: ageGroupKey,
+        ageGroupLabel: ageMeta.ageGroupLabel,
+        submittedAnswers,
+        gradeSummary,
         capturedSteps,
         stepTrace
       };
@@ -351,6 +385,7 @@ export async function runGlobalriLiteracySurvey(options = {}) {
       const step = await extractSeolmoonStep(page);
 
       if (step.isCompleted) {
+        await ensureSubmittedAnswersBeforeReturn();
         await captureStepScreenshot('COMPLETE', `조사 완료 (${respondentName})`);
         onProgress({
           step: 'COMPLETE',
@@ -364,6 +399,9 @@ export async function runGlobalriLiteracySurvey(options = {}) {
           lid,
           respondentName,
           ageGroup: ageGroupKey,
+          ageGroupLabel: ageMeta.ageGroupLabel,
+          submittedAnswers,
+          gradeSummary,
           capturedSteps,
           stepTrace
         };
@@ -390,6 +428,7 @@ export async function runGlobalriLiteracySurvey(options = {}) {
 
       // [Part C 완료 후 D1 진입 시 자동 정지 — Part D 이후 수기 진행 모드]
       if (stopAfterPartC && /^(D\d|E\d|F\d|DESC_D|DESC_E|DESC_F)/.test(qName)) {
+        await ensureSubmittedAnswersBeforeReturn();
         await captureStepScreenshot(qName, `Part C 완료 · 수기전환 대기 (${qName} 진입 · ${respondentName})`);
         logger.info(`[성인문해능력조사 Part C 완료] "${respondentName}" (${memberUid}) Part A ~ Part C 응답 및 채점 저장 완료 ➔ ${qName}(Part D) 진입 시점에서 수기 진행을 위해 자동 정지`);
         onProgress({
@@ -739,6 +778,7 @@ export async function runGlobalriLiteracySurvey(options = {}) {
         });
 
         if (safetyGuard) {
+          await ensureSubmittedAnswersBeforeReturn();
           logger.info(`[성인문해능력조사 안전가드] "${respondentName}" (${memberUid}) 마지막 문항 F05_2 입력 완료 후 최종 제출(#next) 직전 안전 정지`);
           onProgress({
             step: 'F05_2',
@@ -752,6 +792,9 @@ export async function runGlobalriLiteracySurvey(options = {}) {
             lid,
             respondentName,
             ageGroup: ageGroupKey,
+            ageGroupLabel: ageMeta.ageGroupLabel,
+            submittedAnswers,
+            gradeSummary,
             capturedSteps,
             stepTrace
           };

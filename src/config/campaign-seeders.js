@@ -143,7 +143,7 @@ export function seedInitialCampaigns({
       }
     }
 
-    // [GR20260618-1-001-02] 제5차 성인문해능력조사 (노영미7791) 자동 시드
+    // [GR20260618-1-001-02] 제5차 성인문해능력조사 (노영미7791) 자동 시드 및 전수 동기화
     const globalriCampId = 'camp_globalri_literacy_7791';
     const existingGlobalriCamp = CampaignStore.getAllCampaigns().find(c => c.id === globalriCampId);
     const globalriQuotaPath = findGlobalriQuotaJsonPath('7791');
@@ -160,7 +160,7 @@ export function seedInitialCampaigns({
         if (!existingGlobalriCamp) {
           CampaignStore.createCampaign({
             id: globalriCampId,
-            title: `[GR20260618-1-001-02] 제5차 성인문해능력조사 - 노영미7791 (진행중 ${gqList.length}명)`,
+            title: `[GR20260618-1-001-02] 제5차 성인문해능력조사 - 노영미7791 (총 ${gqList.length}명)`,
             description: '글로벌리서치 통합조사시스템(GIFT) · [결과값1=완료 & 결과값2=완료] 가구 내 진행 중 가구원 조사 · 나이대별(20대/30대/40대/50대/60대/70대+) 그룹 가이드 적용',
             quotaType: 'b2c',
             surveyType: 'globalri_literacy',
@@ -170,36 +170,74 @@ export function seedInitialCampaigns({
             quotaSourceFile: gqFile,
             quotaDatabase: gqList
           });
-        } else if (!Array.isArray(existingGlobalriCamp.quotaDatabase) || existingGlobalriCamp.quotaDatabase.length === 0) {
-          CampaignStore.updateCampaign(globalriCampId, {
-            quotaDatabase: gqList,
-            quotaSourceFile: gqFile
-          });
-        } else {
-          let needGqUpdate = false;
+        }
+
+        // 모든 성인문해능력조사 캠페인(기본 캠페인 및 사용자 생성 캠페인 포함)에 최신 답안·상태 동기화
+        const allGlobalriCamps = CampaignStore.getAllCampaigns().filter(c =>
+          c.id === globalriCampId ||
+          c.surveyType === 'globalri_literacy' ||
+          c.quotaSourceFile === gqFile ||
+          c.quotaConfig?.quotaFileName === gqFile ||
+          (Array.isArray(c.quotaDatabase) && c.quotaDatabase.some(q => q.memberUid && String(q.surveyUrl || '').includes('G20260713001')))
+        );
+
+        for (const targetCamp of allGlobalriCamps) {
+          if (!Array.isArray(targetCamp.quotaDatabase) || targetCamp.quotaDatabase.length === 0) {
+            CampaignStore.updateCampaign(targetCamp.id, {
+              surveyType: 'globalri_literacy',
+              quotaType: 'b2c',
+              loginId: targetCamp.loginId || '01071447791',
+              loginPw: targetCamp.loginPw || '2038020',
+              surveyorName: targetCamp.surveyorName || '노영미7791',
+              quotaDatabase: JSON.parse(JSON.stringify(gqList)),
+              quotaSourceFile: gqFile
+            });
+            continue;
+          }
+
+          let needGqUpdate = (targetCamp.surveyType !== 'globalri_literacy');
           for (const gqItem of gqList) {
-            const match = existingGlobalriCamp.quotaDatabase.find(
+            const match = targetCamp.quotaDatabase.find(
               q => String(q.memberUid || q.uid) === String(gqItem.memberUid || gqItem.uid)
             );
             if (!match) {
-              const nextSeq = existingGlobalriCamp.quotaDatabase.length + 1;
-              existingGlobalriCamp.quotaDatabase.push({
+              const nextSeq = targetCamp.quotaDatabase.length + 1;
+              targetCamp.quotaDatabase.push({
                 ...gqItem,
                 index: nextSeq,
                 seq: nextSeq
               });
               needGqUpdate = true;
-            } else if (gqItem.submittedAnswers && !match.submittedAnswers) {
-              match.submittedAnswers = gqItem.submittedAnswers;
-              match.gradeSummary = match.gradeSummary || gqItem.gradeSummary;
-              needGqUpdate = true;
+            } else {
+              const gqAnsLen = Array.isArray(gqItem.submittedAnswers) ? gqItem.submittedAnswers.length : 0;
+              const matchAnsLen = Array.isArray(match.submittedAnswers) ? match.submittedAnswers.length : 0;
+              if (gqAnsLen > matchAnsLen) {
+                match.submittedAnswers = gqItem.submittedAnswers;
+                match.gradeSummary = gqItem.gradeSummary || match.gradeSummary;
+                needGqUpdate = true;
+              }
+              if (gqItem.quotaStatus && gqItem.quotaStatus !== 'ready' && (match.quotaStatus === 'ready' || !match.quotaStatus || match.status !== gqItem.status)) {
+                match.quotaStatus = gqItem.quotaStatus;
+                match.status = gqItem.status || match.status;
+                match.memberStatus = gqItem.memberStatus || gqItem.status || match.memberStatus;
+                match.progress = gqItem.progress || match.progress;
+                match.surveyCompleted = gqItem.surveyCompleted || match.surveyCompleted;
+                needGqUpdate = true;
+              }
             }
           }
           if (needGqUpdate) {
-            CampaignStore.updateCampaign(globalriCampId, {
-              title: `[GR20260618-1-001-02] 제5차 성인문해능력조사 - 노영미7791 (총 ${existingGlobalriCamp.quotaDatabase.length}명)`,
-              quotaDatabase: existingGlobalriCamp.quotaDatabase,
-              quotaSourceFile: existingGlobalriCamp.quotaSourceFile || gqFile
+            CampaignStore.updateCampaign(targetCamp.id, {
+              surveyType: 'globalri_literacy',
+              quotaType: 'b2c',
+              loginId: targetCamp.loginId || '01071447791',
+              loginPw: targetCamp.loginPw || '2038020',
+              surveyorName: targetCamp.surveyorName || '노영미7791',
+              ...(targetCamp.id === globalriCampId ? {
+                title: `[GR20260618-1-001-02] 제5차 성인문해능력조사 - 노영미7791 (총 ${targetCamp.quotaDatabase.length}명)`
+              } : {}),
+              quotaDatabase: targetCamp.quotaDatabase,
+              quotaSourceFile: targetCamp.quotaSourceFile || gqFile
             });
           }
         }

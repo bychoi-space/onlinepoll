@@ -456,6 +456,301 @@ function cleanPureAnswer(val = '') {
     .trim();
 }
 
+export const SEOLMOON_LITERACY_ACCESS_KEY = 'ec861a8d92844eac8836';
+export const SEOLMOON_LITERACY_SNUM = 5963;
+
+/**
+ * seolmoon.com 서버(Join/GetSurvey)에서 특정 가구원(memberUid)의 실제 저장된 응답(ANSWER.DATA)과 채점결과를 직접 조회
+ */
+export async function fetchSeolmoonMemberAnswers(memberUid) {
+  const uid = String(memberUid || '').trim();
+  if (!uid) return null;
+
+  try {
+    const r1 = await fetch('https://seolmoon.com/CheckAccessKey', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: `ACCESS_KEY=${encodeURIComponent(SEOLMOON_LITERACY_ACCESS_KEY)}&UID=${encodeURIComponent(uid)}&ME=1&GN=_BASE`
+    });
+    if (!r1.ok) return null;
+
+    const cookies = r1.headers.getSetCookie
+      ? r1.headers.getSetCookie().map(c => c.split(';')[0]).join('; ')
+      : (r1.headers.get('set-cookie') || '').split(';')[0];
+    const txt1 = await r1.text();
+    const json1 = JSON.parse(txt1.replace(/^\(|\);?\s*$/g, ''));
+    if (!json1 || !json1.JOIN_TOKEN) return null;
+
+    const bodyParams = new URLSearchParams({
+      NOT_USE_CLOUD_QUESTION: 'N',
+      TEST: 'false',
+      GETS: JSON.stringify({
+        ACCESS_KEY: SEOLMOON_LITERACY_ACCESS_KEY,
+        UID: uid,
+        ME: '1',
+        GN: '_BASE',
+        SNUM: SEOLMOON_LITERACY_SNUM
+      }),
+      JOIN_TOKEN: json1.JOIN_TOKEN,
+      SNUM: String(json1.JOIN_SNUM || SEOLMOON_LITERACY_SNUM),
+      UID: json1.JOIN_UID || uid,
+      UID_ENC: json1.JOIN_UID_ENC || ''
+    });
+
+    const r2 = await fetch('https://seolmoon.com/Join/GetSurvey', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(cookies ? { Cookie: cookies } : {})
+      },
+      body: bodyParams.toString()
+    });
+    if (!r2.ok) return null;
+
+    const txt2 = await r2.text();
+    const m = txt2.match(/result:"([^"]+)"/);
+    if (!m) return null;
+
+    const inner = JSON.parse(decodeURIComponent(m[1]));
+    const ans = inner?.ANSWER || {};
+    const dataArr = Array.isArray(ans.DATA) ? ans.DATA : [];
+    const byName = {};
+    for (const d of dataArr) {
+      if (d && d.NAME) {
+        byName[d.NAME] = d;
+      }
+    }
+
+    const endA = byName.END_A || {};
+    const endB1 = byName.END_B1 || {};
+    const endB = byName.END_B || {};
+    const endC = byName.END_C || {};
+
+    const gradeSummary = {};
+    if (endA.MATCH_COUNT !== undefined) {
+      gradeSummary.partA = `${endA.MATCH_COUNT} / ${endA.TOTAL_COUNT || 3}`;
+    }
+    if (endB1.MATCH_COUNT !== undefined) {
+      gradeSummary.partB1 = `${endB1.MATCH_COUNT} / ${endB1.TOTAL_COUNT || 5} (B6~B20 스킵)`;
+    }
+    if (endB.MATCH_COUNT !== undefined) {
+      gradeSummary.partB2 = `${endB.MATCH_COUNT} / ${endB.TOTAL_COUNT || 15}`;
+    }
+    if (endC.MATCH_COUNT !== undefined) {
+      gradeSummary.partC = `${endC.MATCH_COUNT} / ${endC.TOTAL_COUNT || 20}`;
+    }
+
+    const extractRawAnswer = (qCode) => {
+      const d = byName[qCode];
+      if (!d) return null;
+      if (qCode === 'A1') {
+        return `음성녹음 업로드 (STT: ${d.TEXT1 || '문화회관 노래교실'})`;
+      }
+      if (d['1'] !== undefined && d['1'] !== '') return String(d['1']);
+      if (d.DOSE_ML !== undefined && d.DOSE_ML !== '') return String(d.DOSE_ML);
+      const t = [d.TEXT_1, d.TEXT_2, d.TEXT_3].filter(v => v !== undefined && v !== '');
+      if (t.length > 0) return t.join(' / ');
+      const n = [d.NUMBER_1, d.NUMBER_2, d.NUMBER_3].filter(v => v !== undefined && v !== '');
+      if (n.length > 0) return n.join(' / ');
+      return null;
+    };
+
+    const isQuestionCorrect = (qCode, submittedVal) => {
+      if (qCode === 'A1') return true;
+      if (qCode === 'A1_2') return String(submittedVal).startsWith('1');
+      const corrKey = `${qCode}_CORRECT`;
+      if (endA[corrKey]) return endA[corrKey] === 'Y';
+      if (endB1[corrKey]) return endB1[corrKey] === 'Y';
+      if (endB[corrKey]) return endB[corrKey] === 'Y';
+      if (endC[corrKey]) return endC[corrKey] === 'Y';
+      const meta = LITERACY_QUESTION_META[qCode];
+      if (meta && meta.officialAnswer) {
+        return cleanPureAnswer(submittedVal) === cleanPureAnswer(meta.officialAnswer);
+      }
+      return true;
+    };
+
+    const submittedAnswers = [];
+    for (const qCode of PART_A_TO_C_QUESTION_ORDER) {
+      const val = extractRawAnswer(qCode);
+      if (val === null) continue;
+      const d = byName[qCode] || {};
+      const meta = LITERACY_QUESTION_META[qCode] || {};
+      const isOk = isQuestionCorrect(qCode, val);
+      submittedAnswers.push({
+        questionCode: qCode,
+        part: meta.part || (qCode.startsWith('A') ? 'Part A (선별문항)' : (qCode.startsWith('B') ? 'Part B (기초문해)' : 'Part C (심화문해)')),
+        questionType: meta.type || '',
+        questionSummary: meta.summary || qCode,
+        officialAnswer: meta.officialAnswer || '-',
+        submittedAnswer: val,
+        isCorrect: isOk,
+        isCorrectLabel: isOk ? 'O (정답)' : 'X (목표점수 조절용 오답)',
+        answeredAt: d.DT || ans.LAST_DT || ''
+      });
+    }
+
+    const lastQ = String(ans.LAST_QUESTION || '');
+    const isCompleted = (ans.COMPLETE === 'COMPLETE' || lastQ === 'COMPLETE');
+    const isStoppedAtF05 = (!isCompleted && (lastQ === 'F05_1' || lastQ === 'F05_2' || Boolean(byName.F05_1)));
+    const isPartCDone = (!isCompleted && !isStoppedAtF05 && (Boolean(byName.END_C) || /^(D|E|F|DESC_D|DESC_E|DESC_F)/.test(lastQ)));
+
+    return {
+      memberUid: uid,
+      submittedAnswers,
+      gradeSummary,
+      isCompleted,
+      isStoppedAtF05,
+      isPartCDone,
+      lastQuestion: lastQ,
+      lastDt: ans.LAST_DT || ans.COMPLETE_DT || ''
+    };
+  } catch (err) {
+    console.warn(`[seolmoon 응답 조회 경고] (${uid}): ${err.message}`);
+    return null;
+  }
+}
+
+/**
+ * 캠페인/쿼터 리스트의 응답자들에 대해 seolmoon.com 서버의 실제 저장 답변 및 진행상태를 동기화하고 원본 JSON에 영구 반영
+ */
+export async function syncGlobalriQuotaAnswersFromSeolmoon({
+  quotaDatabase = [],
+  quotaJsonPath = null,
+  forceRefresh = false
+} = {}) {
+  const defaultJsonPath = quotaJsonPath || path.resolve(process.cwd(), 'data', 'quotas', 'quota_globalri_adult_literacy_7791.json');
+
+  // 1) 원본 쿼터 JSON 파일에 저장된 기존 답변이 있으면 1차 병합
+  if (fs.existsSync(defaultJsonPath)) {
+    try {
+      const fileObj = JSON.parse(fs.readFileSync(defaultJsonPath, 'utf-8'));
+      const fileRows = Array.isArray(fileObj.data) ? fileObj.data : [];
+      const fileByUid = new Map();
+      fileRows.forEach(r => {
+        const k = String(r.memberUid || r.uid || '').trim();
+        if (k) fileByUid.set(k, r);
+      });
+      for (const item of quotaDatabase) {
+        const k = String(item.memberUid || item.uid || '').trim();
+        const saved = fileByUid.get(k);
+        if (saved) {
+          if ((!Array.isArray(item.submittedAnswers) || item.submittedAnswers.length === 0) && Array.isArray(saved.submittedAnswers) && saved.submittedAnswers.length > 0) {
+            item.submittedAnswers = saved.submittedAnswers;
+          }
+          if (!item.gradeSummary && saved.gradeSummary) {
+            item.gradeSummary = saved.gradeSummary;
+          }
+        }
+      }
+    } catch (readErr) {
+      console.warn(`[쿼터 JSON 병합 읽기 경고] ${readErr.message}`);
+    }
+  }
+
+  // 2) submittedAnswers가 비어 있거나 forceRefresh인 대상자들을 seolmoon.com에서 병렬(6개 단위) 실시간 조회
+  const targets = quotaDatabase.filter(item => {
+    if (forceRefresh) return true;
+    const ans = normalizeSubmittedAnswersList(item);
+    return ans.length < 15;
+  });
+
+  const batchSize = 6;
+  let updatedCount = 0;
+  for (let i = 0; i < targets.length; i += batchSize) {
+    const chunk = targets.slice(i, i + batchSize);
+    const results = await Promise.all(
+      chunk.map(item => fetchSeolmoonMemberAnswers(item.memberUid || item.uid))
+    );
+    results.forEach((res, idx) => {
+      if (!res) return;
+      const item = chunk[idx];
+      if (Array.isArray(res.submittedAnswers) && res.submittedAnswers.length > 0) {
+        item.submittedAnswers = res.submittedAnswers;
+        updatedCount++;
+      }
+      if (res.gradeSummary && Object.keys(res.gradeSummary).length > 0) {
+        item.gradeSummary = { ...(item.gradeSummary || {}), ...res.gradeSummary };
+      }
+      if (res.isCompleted) {
+        item.quotaStatus = 'completed';
+        item.status = '완료';
+        item.memberStatus = '완료';
+        item.progress = '100%';
+        item.surveyCompleted = '완료';
+        item.completedAt = item.completedAt || res.lastDt || new Date().toISOString();
+      } else if (res.isStoppedAtF05) {
+        item.quotaStatus = 'pilot_done';
+        item.status = '검증대기(F05_2)';
+        item.memberStatus = '검증대기(F05_2)';
+        item.progress = '98% (제출직전)';
+        item.surveyCompleted = '대기';
+        item.pilotCompletedAt = item.pilotCompletedAt || res.lastDt || new Date().toISOString();
+      } else if (res.isPartCDone) {
+        item.quotaStatus = 'pilot_done';
+        item.status = 'Part C 완료 (수기대기)';
+        item.memberStatus = 'Part C 완료 (수기대기)';
+        item.progress = `Part C 완료 (채점 ${res.gradeSummary?.partC || '완료'})`;
+        item.surveyCompleted = '대기';
+        item.pilotCompletedAt = item.pilotCompletedAt || res.lastDt || new Date().toISOString();
+      }
+    });
+  }
+
+  // 3) 원본 쿼터 JSON 파일에 최신 상태 영구 저장
+  persistGlobalriQuotaDatabase({ quotaDatabase, quotaJsonPath: defaultJsonPath });
+
+  return { updatedCount, totalCount: quotaDatabase.length, quotaDatabase };
+}
+
+/**
+ * 캠페인 내 quotaDatabase의 submittedAnswers 및 상태를 원본 쿼터 JSON 파일에 양방향 동기화 저장
+ */
+export function persistGlobalriQuotaDatabase({
+  quotaDatabase = [],
+  quotaJsonPath = null
+} = {}) {
+  const targetPath = quotaJsonPath || path.resolve(process.cwd(), 'data', 'quotas', 'quota_globalri_adult_literacy_7791.json');
+  if (!fs.existsSync(targetPath) || !Array.isArray(quotaDatabase) || quotaDatabase.length === 0) {
+    return false;
+  }
+  try {
+    const fileObj = JSON.parse(fs.readFileSync(targetPath, 'utf-8'));
+    const existingRows = Array.isArray(fileObj.data) ? fileObj.data : [];
+    const incomingByUid = new Map();
+    quotaDatabase.forEach(item => {
+      const k = String(item.memberUid || item.uid || '').trim();
+      if (k) incomingByUid.set(k, item);
+    });
+
+    fileObj.data = existingRows.map((row, idx) => {
+      const k = String(row.memberUid || row.uid || '').trim();
+      const inc = incomingByUid.get(k);
+      if (!inc) return row;
+      return {
+        ...row,
+        ...inc,
+        index: row.index || inc.index || (idx + 1),
+        seq: row.seq || inc.seq || (idx + 1),
+        submittedAnswers: (Array.isArray(inc.submittedAnswers) && inc.submittedAnswers.length > 0)
+          ? inc.submittedAnswers
+          : (row.submittedAnswers || []),
+        gradeSummary: inc.gradeSummary || row.gradeSummary || null
+      };
+    });
+    fileObj.updatedAt = new Date().toISOString();
+    fs.writeFileSync(targetPath, JSON.stringify(fileObj, null, 2), 'utf-8');
+    return true;
+  } catch (err) {
+    console.warn(`[원본 쿼터 JSON 저장 경고] ${err.message}`);
+    return false;
+  }
+}
+
 export function buildGlobalriSheetsData({ quotaDatabase = [] }) {
   const summaryRows = quotaDatabase.map(item => {
     const ansList = normalizeSubmittedAnswersList(item);
@@ -502,10 +797,64 @@ export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null 
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 }
 
-export async function syncGlobalriAnswersToGoogleSheet({
+function resolveChromiumLaunchOptions() {
+  const opts = {
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--ignore-certificate-errors']
+  };
+  try {
+    const defaultExe = chromium.executablePath();
+    if (defaultExe && fs.existsSync(defaultExe)) {
+      return opts;
+    }
+  } catch (_) {}
+
+  const systemCandidates = [
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable'
+  ];
+  for (const cand of systemCandidates) {
+    if (fs.existsSync(cand)) {
+      opts.executablePath = cand;
+      break;
+    }
+  }
+  return opts;
+}
+
+// 배치 실행 중 다중 브라우저가 동시에 구글 시트를 열지 못하도록 직렬화 큐(Mutex) 적용
+let googleSheetSyncQueue = Promise.resolve();
+
+export function syncGlobalriAnswersToGoogleSheet(options = {}) {
+  const runTask = async () => {
+    return await _syncGlobalriAnswersToGoogleSheetImpl(options);
+  };
+  const nextPromise = googleSheetSyncQueue.then(runTask, runTask);
+  googleSheetSyncQueue = nextPromise.catch(err => {
+    console.warn(`[구글 시트 동기화 큐 경고] ${err.message}`);
+  });
+  return nextPromise;
+}
+
+async function _syncGlobalriAnswersToGoogleSheetImpl({
   quotaDatabase = [],
-  sheetUrl = GLOBALRI_DEFAULT_GSHEET_URL
+  sheetUrl = GLOBALRI_DEFAULT_GSHEET_URL,
+  quotaJsonPath = null,
+  pullFromSeolmoon = true
 } = {}) {
+  // 1) seolmoon.com 실시간 응답 및 원본 JSON 병합을 먼저 수행하여 빈 답변 덮어쓰기 원천 차단
+  if (pullFromSeolmoon && Array.isArray(quotaDatabase) && quotaDatabase.length > 0) {
+    await syncGlobalriQuotaAnswersFromSeolmoon({
+      quotaDatabase,
+      quotaJsonPath,
+      forceRefresh: false
+    });
+  } else if (Array.isArray(quotaDatabase) && quotaDatabase.length > 0) {
+    persistGlobalriQuotaDatabase({ quotaDatabase, quotaJsonPath });
+  }
+
   const { summaryRows } = buildGlobalriSheetsData({ quotaDatabase });
   function rowsToTsvLines(rows) {
     if (!rows || rows.length === 0) return [];
@@ -519,24 +868,44 @@ export async function syncGlobalriAnswersToGoogleSheet({
 
   const allLines = rowsToTsvLines(summaryRows);
   const fullTsv = allLines.join('\n');
+  const populatedRowCount = summaryRows.filter(r => r.a01 || r.a02 || r.c18).length;
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch(resolveChromiumLaunchOptions());
   try {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
-      permissions: ['clipboard-read', 'clipboard-write']
+      permissions: ['clipboard-read', 'clipboard-write'],
+      ignoreHTTPSErrors: true
     });
     const page = await context.newPage();
-    await page.goto(sheetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(sheetUrl, { waitUntil: 'domcontentloaded', timeout: 35000 });
     await page.waitForTimeout(4500);
 
-    // Dismiss any initial banner/dialog and focus grid
+    // 팝업/배너 닫기
     await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
-    await page.mouse.click(120, 260);
-    await page.waitForTimeout(400);
 
-    // Select all cells and clear previous contents
+    // 이름 상자(#t-name-box)를 통해 정확히 A1 셀로 이동
+    const focusCellA1 = async () => {
+      const nameBox = page.locator('#t-name-box, .waffle-name-box');
+      if ((await nameBox.count()) > 0) {
+        await nameBox.first().click({ timeout: 3000 }).catch(err => console.warn(`이름상자 클릭 경고: ${err.message}`));
+        await page.waitForTimeout(150);
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('A1');
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(450);
+      } else {
+        await page.mouse.click(120, 260);
+        await page.waitForTimeout(300);
+        await page.keyboard.press('Control+Home');
+        await page.waitForTimeout(350);
+      }
+    };
+
+    await focusCellA1();
+
+    // 기존 시트 전체 선택 후 삭제
     await page.keyboard.press('Control+A');
     await page.waitForTimeout(250);
     await page.keyboard.press('Control+A');
@@ -544,14 +913,16 @@ export async function syncGlobalriAnswersToGoogleSheet({
     await page.keyboard.press('Delete');
     await page.waitForTimeout(600);
 
-    // Return to A1
-    await page.keyboard.press('Control+Home');
-    await page.waitForTimeout(400);
+    // 다시 A1 셀로 정확히 복귀
+    await focusCellA1();
 
-    await page.evaluate(async (tsvText) => {
+    // Google Sheets의 숨겨진 붙여넣기 수신기(.cell-input / activeElement)에 합성 Paste 이벤트 전달
+    await page.evaluate(async ({ tsvText }) => {
       try {
         await navigator.clipboard.writeText(tsvText);
-      } catch (_) {}
+      } catch (clipErr) {
+        console.warn('클립보드 기록 경고:', clipErr.message);
+      }
       const dt = new DataTransfer();
       dt.setData('text/plain', tsvText);
       const pasteEvent = new ClipboardEvent('paste', {
@@ -559,17 +930,19 @@ export async function syncGlobalriAnswersToGoogleSheet({
         bubbles: true,
         cancelable: true
       });
-      const active = document.activeElement || document.querySelector('.cell-input') || document.body;
-      active.dispatchEvent(pasteEvent);
-    }, fullTsv);
+      const target = document.querySelector('.cell-input') || document.activeElement || document.body;
+      target.dispatchEvent(pasteEvent);
+    }, { tsvText: fullTsv });
 
-    await page.waitForTimeout(1200);
-    await page.keyboard.press('Control+V');
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(5500);
     await browser.close();
-    return { success: true, lineCount: allLines.length };
+    return {
+      success: true,
+      lineCount: allLines.length,
+      populatedRowCount
+    };
   } catch (err) {
-    await browser.close().catch(() => {});
+    await browser.close().catch(closeErr => console.warn(`브라우저 종료 경고: ${closeErr.message}`));
     return { success: false, error: err.message };
   }
 }
