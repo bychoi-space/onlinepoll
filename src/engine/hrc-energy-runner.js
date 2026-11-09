@@ -338,6 +338,23 @@ export async function runHrcEnergySurvey(options = {}) {
 
     logger.info(`[HRC 에너지총조사] UID=${uid} RPS 설문 진입: ${rpsUrl}`);
 
+    // 중간 문항에서 열렸을 경우 SQ. 일반 특성(isqpart) 처음으로 이동하여 SQ14 및 A파트 규칙 문항이 누락 없이 적용되도록 보장
+    const initCheck = await extractRpsStep(page);
+    if (!initCheck.isCompleted && initCheck.cv && initCheck.cv !== 'q1000') {
+      const clickedNav = await page.evaluate(() => {
+        const btn = document.querySelector('#qnav-bar button[onclick*="isqpart"]');
+        if (btn) {
+          btn.click();
+          return true;
+        }
+        return false;
+      });
+      if (clickedNav) {
+        await page.waitForTimeout(800);
+        await waitForRpsReady(page);
+      }
+    }
+
     // 네이버 지도에서 건물 주소의 입주업체(장소) 개수 사전 조회
     let naverPlaceCount = await fetchNaverMapPlaceCount(context, [
       basicInfoState.roadAddress || slotData.roadAddress,
@@ -349,22 +366,21 @@ export async function runHrcEnergySurvey(options = {}) {
     let trackedGrossFloorArea = 0;
     // 건물마다 30~50명 사이에서 다양한 내방객 배수 산출 (재현성 및 다양성 확보)
     const visitorMultiplier = Math.floor(Math.random() * 21) + 30; // 30 ~ 50
-    const ENFORCED_RULE_CVS = new Set(['q1400', 'q1700', 'q1800', 'q2250', 'q2350', 'q2450', 'q2500', 'q2550', 'q2600']);
+    const ENFORCED_RULE_CVS = new Set([
+      'q1400', 'q1700', 'q1800', 'q2250', 'q2350', 'q2450', 'q2500', 'q2550', 'q2600',
+      'q2900', 'q2950', 'q3000', 'q3050',
+      'q4000', 'q4200_r4', 'q4250_r4',
+      'q4500', 'q4550_r10', 'q4650_r10',
+      'q7000', 'q7050', 'q7095_r1', 'q7100_r1', 'q7150_r1', 'q7200_r1', 'q7250_r1',
+      'q8000', 'q90015_r1', 'q90020_r1'
+    ]);
+    const isEnforcedCv = (cv) =>
+      ENFORCED_RULE_CVS.has(cv) ||
+      String(cv).startsWith('q4200_r') ||
+      String(cv).startsWith('q4250_r') ||
+      String(cv).startsWith('q90015_r') ||
+      String(cv).startsWith('q90020_r');
     const stepTrace = [];
-
-    // 중간 문항에서 열렸을 경우 SQ. 일반 특성(isqpart) 처음으로 이동하여 SQ14 및 A파트 규칙 문항이 누락 없이 적용되도록 보장
-    const initCheck = await extractRpsStep(page);
-    if (!initCheck.isCompleted && initCheck.cv && initCheck.cv !== 'q1000') {
-      const sqNavUrl = await page.evaluate(() => {
-        const btn = document.querySelector('#qnav-bar button[onclick*="isqpart"]');
-        const m = (btn?.getAttribute('onclick') || '').match(/location\.href='([^']+)'/);
-        return m ? m[1] : '';
-      });
-      if (sqNavUrl) {
-        await page.goto(sqNavUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-        await waitForRpsReady(page);
-      }
-    }
 
     for (let stepIdx = 0; stepIdx < 160; stepIdx++) {
       const step = await extractRpsStep(page);
@@ -487,7 +503,7 @@ export async function runHrcEnergySurvey(options = {}) {
         return textNumberInputs.length > 0 && textNumberInputs.every(inp => inp.value !== '' && inp.value !== null);
       };
 
-      const hasExistingAnswer = preserveExisting && !ENFORCED_RULE_CVS.has(step.cv) && (
+      const hasExistingAnswer = preserveExisting && !isEnforcedCv(step.cv) && (
         step.cv === 'q1260'
           ? step.q1260Filled
           : (
@@ -507,7 +523,7 @@ export async function runHrcEnergySurvey(options = {}) {
       });
 
       let actionDesc = 'none';
-      if (step.cv !== 'q1260' && !ENFORCED_RULE_CVS.has(step.cv) && (activeInputs.length === 0 || hasExistingAnswer)) {
+      if (step.cv !== 'q1260' && !isEnforcedCv(step.cv) && (activeInputs.length === 0 || hasExistingAnswer)) {
         actionDesc = activeInputs.length === 0 ? 'info_screen' : 'preserve_existing_input';
       } else if (step.cv === 'q1260' && hasExistingAnswer) {
         actionDesc = 'preserve_existing_input (q1260)';
@@ -819,17 +835,56 @@ export async function runHrcEnergySurvey(options = {}) {
             setVal(document.querySelector('#OpenList_q2600_op1_, input[variable="q2600_op1"]'), '30', true, true);
             return 'q2600: 의료시설 허가병상 수 30개';
           }
+          // [규칙 9] T41 문항 (q2900): 쿼터별 입점시설 가이드(t41Codes) 적용
           if (cv === 'q2900') {
-            clickEl(document.querySelector('input[variable="q2900"][value="77"], #q2900_77') || document.querySelector('input[variable="q2900"][value="1"], #q2900_1'));
-            return 'q2900: 입점시설 선택';
+            const rawCodes = Array.isArray(slotData.t41Codes) && slotData.t41Codes.length > 0
+              ? slotData.t41Codes.map(String)
+              : (Array.isArray(policy.t41DefaultCodes) && policy.t41DefaultCodes.length > 0 ? policy.t41DefaultCodes.map(String) : null);
+            const allCodeList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '77'];
+            if (rawCodes && rawCodes.length > 0) {
+              const targetSet = new Set(rawCodes.includes('77') ? ['77'] : rawCodes);
+              if (targetSet.has('77')) {
+                allCodeList.filter(c => c !== '77').forEach(code => {
+                  uncheckEl(document.querySelector(`#q2900_${code}, input[variable="q2900_${code}"], input[variable="q2900"][value="${code}"]`));
+                });
+                clickEl(document.querySelector('#q2900_77, input[variable="q2900_77"], input[variable="q2900"][value="77"]'));
+              } else {
+                uncheckEl(document.querySelector('#q2900_77, input[variable="q2900_77"], input[variable="q2900"][value="77"]'));
+                allCodeList.filter(c => c !== '77').forEach(code => {
+                  const chk = document.querySelector(`#q2900_${code}, input[variable="q2900_${code}"], input[variable="q2900"][value="${code}"]`);
+                  if (targetSet.has(code)) clickEl(chk);
+                  else uncheckEl(chk);
+                });
+              }
+              return `q2900: 쿼터별 T41 가이드 적용 (${Array.from(targetSet).join(',')})`;
+            }
+            const existingChecked = Array.from(document.querySelectorAll('#QuestionView input[type="checkbox"]:checked')).map(el => el.value);
+            if (preserveExisting && existingChecked.length > 0) {
+              return `q2900: 기존 선택 입점시설 유지 (${existingChecked.join(',')})`;
+            }
+            uncheckEl(document.querySelector('#q2900_77, input[variable="q2900_77"], input[variable="q2900"][value="77"]'));
+            ['1', '2'].forEach(code => {
+              clickEl(document.querySelector(`#q2900_${code}, input[variable="q2900_${code}"], input[variable="q2900"][value="${code}"]`));
+            });
+            return 'q2900: 기본 입점시설 선택 (1:식음료시설, 2:판매시설)';
           }
+          // T42 문항 (q2950): '점유면적으로 응답 가능'(2)을 선택하여 A4-2(q3050)로 진입
           if (cv === 'q2950') {
-            clickEl(document.querySelector('input[variable="q2950"][value="2"], #q2950_2') || document.querySelector('input[variable="q2950"][value="1"], #q2950_1'));
-            return 'q2950: 선택';
+            clickEl(document.querySelector('#q2950_2, input[variable="q2950"][value="2"]') || document.querySelector('#q2950_1, input[variable="q2950"][value="1"]'));
+            return 'q2950: 점유면적으로 응답 가능(2) 선택 (➔ A4-2 진입)';
           }
-          if (cv === 'q3050') {
-            clickEl(document.querySelector('input[variable="q3050"][value="-8"], #q3050_-8'));
-            return 'q3050: 모름(-8)';
+          // [규칙 10] A4-2 문항 (q3050, q3000): 모든 쿼터가 '응답거절'(-9) 체크하여 응답
+          if (cv === 'q3050' || cv === 'q3000') {
+            document.querySelectorAll('#QuestionView input[type="checkbox"]').forEach(chk => {
+              if (String(chk.value).startsWith('-8')) {
+                uncheckEl(chk);
+              }
+            });
+            const refuseBoxes = Array.from(document.querySelectorAll('#QuestionView input[type="checkbox"]')).filter(chk =>
+              String(chk.value).startsWith('-9') || (chk.closest('label')?.innerText || '').includes('응답거절')
+            );
+            refuseBoxes.forEach(chk => clickEl(chk));
+            return `${cv}: 모든 입점시설 점유면적 '응답거절'(-9) 체크 (${refuseBoxes.length}개 시설)`;
           }
           if (cv === 'q3450') {
             clickEl(document.querySelector('input[variable="q3450"][value="2"], #q3450_2'));
@@ -894,17 +949,39 @@ export async function runHrcEnergySurvey(options = {}) {
           }
 
           // --- [B. 에너지 설비 현황 파트] ---
+          // [규칙 11] B1-1 문항 (q4000): 쿼터별 냉난방 설비 가이드(b11Codes) 적용
           if (cv === 'q4000') {
-            clickEl(document.querySelector('#q4000_4, input[variable="q4000"][value="4"]'));
+            const rawB11 = Array.isArray(slotData.b11Codes) && slotData.b11Codes.length > 0
+              ? slotData.b11Codes.map(String)
+              : (Array.isArray(policy.b11DefaultCodes) && policy.b11DefaultCodes.length > 0 ? policy.b11DefaultCodes.map(String) : null);
+            const allB11List = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '20', '21'];
+            if (rawB11 && rawB11.length > 0) {
+              const targetSet = new Set(rawB11);
+              allB11List.forEach(code => {
+                const chk = document.querySelector(`#q4000_${code}, input[variable="q4000_${code}"], input[variable="q4000"][value="${code}"]`);
+                if (targetSet.has(code)) clickEl(chk);
+                else uncheckEl(chk);
+              });
+              return `q4000: 쿼터별 B1-1 가이드 적용 (${Array.from(targetSet).join(',')})`;
+            }
+            const existingChecked = Array.from(document.querySelectorAll('#QuestionView input[type="checkbox"]:checked')).map(el => el.value);
+            if (preserveExisting && existingChecked.length > 0) {
+              return `q4000: 기존 선택 냉난방설비 유지 (${existingChecked.join(',')})`;
+            }
+            clickEl(document.querySelector('#q4000_4, input[variable="q4000_4"], input[variable="q4000"][value="4"]'));
             return 'q4000: 시스템 냉온풍기 EHP(4)';
           }
           if (cv.startsWith('q4200_r')) {
             clickEl(document.querySelector(`#${cv}_4, input[variable="${cv}"][value="4"]`) || document.querySelector(`#${cv}_1, input[variable="${cv}"][value="1"]`));
             return `${cv}: 단위 선택(4:kW)`;
           }
+          // [규칙 12] B1-4-3 문항 (q4250_r4 등): 에어컨 1대 용량(kW) * A3-1-1 입점업체수로 계산 응답
           if (cv.startsWith('q4250_r')) {
-            setVal(document.querySelector(`#OpenList_${cv}_op1_, input[variable="${cv}_op1"]`), policy.ehpCapacityKw || '150');
-            return `${cv}: 용량 150`;
+            const storeNum = Math.max(1, parseInt(String(trackedStoreCount).replace(/[^0-9]/g, ''), 10) || 10);
+            const unitKw = Number(slotData.ehpUnitKw || policy.ehpUnitKw || 5);
+            const calcKw = String(Math.max(1, Math.round(unitKw * storeNum)));
+            setVal(document.querySelector(`#OpenList_${cv}_op1_, input[variable="${cv}_op1"]`), calcKw, true, true);
+            return `${cv}: 설비 용량 ${calcKw}kW (1대 ${unitKw}kW × 입점업체 ${storeNum}개)`;
           }
           if (cv.startsWith('q4300_r')) {
             clickEl(document.querySelector(`#${cv}_31, input[variable="${cv}_31"], input[variable="${cv}"][value="31"]`) || document.querySelector(`#QuestionView input[type="checkbox"], #QuestionView input[type="radio"]`));
@@ -914,9 +991,25 @@ export async function runHrcEnergySurvey(options = {}) {
             clickEl(document.querySelector(`#${cv}_2, input[variable="${cv}_2"], input[variable="${cv}"][value="2"]`));
             return `${cv}: 아니요(2)`;
           }
+          // [규칙 13] T71 문항 (q4500): 모든 건물 '비상용 발전기'(10) 체크하여 응답
           if (cv === 'q4500') {
-            clickEl(document.querySelector('#q4500_77, input[variable="q4500"][value="77"]'));
-            return 'q4500: 77(해당사항 없음)';
+            uncheckEl(document.querySelector('#q4500_77, input[variable="q4500_77"], input[variable="q4500"][value="77"]'));
+            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '11', '12', '13', '14', '15'].forEach(code => {
+              uncheckEl(document.querySelector(`#q4500_${code}, input[variable="q4500_${code}"], input[variable="q4500"][value="${code}"]`));
+            });
+            clickEl(document.querySelector('#q4500_10, input[variable="q4500_10"], input[variable="q4500"][value="10"]'));
+            return 'q4500: 모든 건물 비상용발전기(10) 체크 응답';
+          }
+          // [규칙 14] B2.10-2 문항 (q4550_r10): 비상용발전기는 '경유'(12)로 체크하여 응답
+          if (cv === 'q4550_r10') {
+            clickEl(document.querySelector('#q4550_r10_12, input[variable="q4550_r10"][value="12"]'));
+            return 'q4550_r10: 비상용발전기 사용연료 경유(12) 체크 응답';
+          }
+          // 비상용발전기 후속 B2-10-4 문항 (q4650_r10: 비상용발전기 총용량 kW)
+          if (cv === 'q4650_r10') {
+            const genKw = String(slotData.emergencyGenKw || policy.emergencyGenKw || '120');
+            setVal(document.querySelector('#OpenList_q4650_r10_op1_, input[variable="q4650_r10_op1"]'), genKw, true, false);
+            return `q4650_r10: 비상용발전기 총용량 ${document.querySelector('#OpenList_q4650_r10_op1_, input[variable="q4650_r10_op1"]')?.value || genKw}kW`;
           }
           if (cv === 'q4700') {
             document.querySelectorAll('#QuestionView input[type="checkbox"][value="5"]').forEach(el => clickEl(el));
@@ -967,11 +1060,22 @@ export async function runHrcEnergySurvey(options = {}) {
             clickEl(document.querySelector('#q7950_77, input[variable="q7950"][value="77"]'));
             return 'q7950: 절약설비 없음(77)';
           }
+          // [규칙 15] C5-1 문항 (q8000): '전혀모른다'(1) 제외, '모르는 편이다'(3) ~ '보통이다'(5) 위주 지그재그 응답
           if (cv === 'q8000') {
+            const uidSeed = parseInt(String(slotData.uid || '1').replace(/[^0-9]/g, ''), 10) || 1;
+            const patterns = [
+              ['3', '5', '4', '3', '5', '4', '3'],
+              ['5', '3', '4', '5', '3', '4', '5'],
+              ['3', '4', '5', '3', '4', '5', '3'],
+              ['4', '3', '5', '4', '3', '5', '4']
+            ];
+            const chosenPattern = patterns[uidSeed % patterns.length];
             for (let r = 1; r <= 7; r++) {
-              clickEl(document.querySelector(`#q8000_${r}_1, input[variable="q8000_${r}"][value="1"]`));
+              const targetVal = chosenPattern[r - 1] || '3';
+              const radio = document.querySelector(`input[variable="q8000_${r}"][value="${targetVal}"], #q8000_${r}_${targetVal}`);
+              clickEl(radio);
             }
-            return 'q8000: 정부 효율개선사업 전혀 모른다(1)';
+            return `q8000: C5-1 지그재그 응답 (${chosenPattern.join(',')})`;
           }
           if (cv === 'q8050') {
             clickEl(document.querySelector('#q8050_9, input[variable="q8050"][value="9"]'));
@@ -1021,9 +1125,51 @@ export async function runHrcEnergySurvey(options = {}) {
             }
             return 'q6300: 용도별 전기 구성비 100% 입력';
           }
-          if (cv === 'q6350' || cv === 'q6800' || cv === 'q7000') {
+          if (cv === 'q6350' || cv === 'q6800') {
             clickEl(document.querySelector(`#${cv}_2, input[variable="${cv}"][value="2"]`));
             return `${cv}: 사용하지 않는다/아니요(2)`;
+          }
+          // 비상용발전기 경유(12) 선택에 따른 D4 석유제품 정합성 응답 (q7000 ~ q7250_r1)
+          if (cv === 'q7000') {
+            clickEl(document.querySelector('#q7000_1, input[variable="q7000"][value="1"]'));
+            return 'q7000: 석유제품(비상용발전기 경유) 사용한다(1)';
+          }
+          if (cv === 'q7050') {
+            clickEl(document.querySelector('#q7050_1, input[variable="q7050"][value="1"]'));
+            return 'q7050: 사용한 석유제품 1개(1)';
+          }
+          if (cv === 'q7095_r1') {
+            clickEl(document.querySelector('#q7095_r1_12, input[variable="q7095_r1"][value="12"]'));
+            return 'q7095_r1: 석유제품 종류 경유(12)';
+          }
+          if (cv === 'q7100_r1') {
+            clickEl(document.querySelector('#q7100_r1_1, input[variable="q7100_r1"][value="1"]'));
+            return 'q7100_r1: 경유 소비량 단위 리터(L)(1)';
+          }
+          if (cv === 'q7150_r1') {
+            const dieselMonthly = [0, 0, 0, 0, 0, 0, 20, 20, 10, 0, 0, 0];
+            dieselMonthly.forEach((v, i) => {
+              setVal(document.querySelector(`#OpenList_q7150_r1_op${i + 1}_, input[variable="q7150_r1_op${i + 1}"]`), String(v), true, false);
+            });
+            return 'q7150_r1: 비상용발전기 연간 경유 사용량 입력';
+          }
+          if (cv === 'q7200_r1') {
+            clickEl(document.querySelector('#q7200_r1_1, input[variable="q7200_r1"][value="1"]'));
+            return 'q7200_r1: 경유 용도별 구성비(%) 응답(1)';
+          }
+          if (cv === 'q7250_r1') {
+            const dieselRatios = {
+              q7250_r1_op1: '0',
+              q7250_r1_op2: '0',
+              q7250_r1_op3: '0',
+              q7250_r1_op4: '0',
+              q7250_r1_op6: '100',
+              q7250_r1_op7: '0'
+            };
+            for (const [k, v] of Object.entries(dieselRatios)) {
+              setVal(document.querySelector(`#OpenList_${k}_, input[variable="${k}"]`), v, true, true);
+            }
+            return 'q7250_r1: 비상발전용 경유 구성비 100% 입력';
           }
 
           // --- [E. 응답자 일반사항 파트] ---
@@ -1031,10 +1177,15 @@ export async function runHrcEnergySurvey(options = {}) {
             clickEl(document.querySelector('#q90000_1, input[variable="q90000"][value="1"]'));
             return 'q90000: 응답자 1명(1)';
           }
+          // [규칙 16] E1-2 문항 (q90015_r1): '운영, 유지, 엔지니어링'(1) 체크하여 응답
           if (cv.startsWith('q90015_r')) {
-            clickEl(document.querySelector(`#${cv}_3, input[variable="${cv}"][value="3"]`) || document.querySelector(`input[variable="${cv}"]`));
-            return `${cv}: 건물 관리(3)`;
+            ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].forEach(code => {
+              uncheckEl(document.querySelector(`#${cv}_${code}, input[variable="${cv}_${code}"], input[variable="${cv}"][value="${code}"]`));
+            });
+            clickEl(document.querySelector(`#${cv}_1, input[variable="${cv}_1"], input[variable="${cv}"][value="1"]`));
+            return `${cv}: 운영, 유지, 엔지니어링(1) 체크 응답`;
           }
+          // [규칙 17] E1-5 문항 (q90020_r1): E-MAIL '9999999@naver.com' 응답
           if (cv.startsWith('q90020_r')) {
             const rName = basicInfoState.contactName || slotData.contactName || '관리소장';
             const t1 = basicInfoState.tel1 || '010';
@@ -1044,16 +1195,15 @@ export async function runHrcEnergySurvey(options = {}) {
             setVal(document.querySelector(`#${cv}_op4, input[variable="${cv}_op4"]`), t1);
             setVal(document.querySelector(`#${cv}_op5, input[variable="${cv}_op5"]`), t2);
             setVal(document.querySelector(`#${cv}_op6, input[variable="${cv}_op6"]`), t3);
-            setVal(document.querySelector(`#${cv}_op7, input[variable="${cv}_op7"]`), `bldg${slotData.uid || '2025'}`);
+            setVal(document.querySelector(`#${cv}_op7, input[variable="${cv}_op7"]`), '9999999', true, true);
             const sel = document.querySelector(`#${cv}_op9, select[variable="${cv}_op9"]`);
             if (sel) {
               sel.value = '4'; // naver.com
               if (typeof window.domaincheck === 'function') window.domaincheck();
               sel.dispatchEvent(new Event('change', { bubbles: true }));
-            } else {
-              setVal(document.querySelector(`#${cv}_op8, input[variable="${cv}_op8"]`), 'naver.com');
             }
-            return `${cv}: 응답자(${rName}, ${t1}-${t2}-${t3}) 입력`;
+            setVal(document.querySelector(`#${cv}_op8, input[variable="${cv}_op8"]`), 'naver.com', true, true);
+            return `${cv}: 응답자(${rName}) 및 E-MAIL(9999999@naver.com) 입력`;
           }
 
           // --- [범용 폴백: 예상치 못한 조건부 문항 대응] ---

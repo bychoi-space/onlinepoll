@@ -15,6 +15,40 @@ export const GALLUP_SIG_STYLES_LABELS = [
   '이니셜 결합체'
 ];
 
+export const HRC_T41_OPTIONS = [
+  { code: '1', label: '1.식음료시설' },
+  { code: '2', label: '2.판매시설' },
+  { code: '3', label: '3.목욕장' },
+  { code: '4', label: '4.수영장' },
+  { code: '5', label: '5.아이스링크' },
+  { code: '6', label: '6.세탁시설' },
+  { code: '7', label: '7.수술실' },
+  { code: '8', label: '8.실험실' },
+  { code: '9', label: '9.냉동창고' },
+  { code: '10', label: '10.방재실' },
+  { code: '11', label: '11.전산실' },
+  { code: '12', label: '12.서버실' },
+  { code: '77', label: '77.해당없음' }
+];
+
+export const HRC_B11_OPTIONS = [
+  { code: '1', label: '1.흡수식냉온수기' },
+  { code: '2', label: '2.소형열병합' },
+  { code: '3', label: '3.GHP(가스히트펌프)' },
+  { code: '4', label: '4.시스템냉온풍기(EHP)' },
+  { code: '5', label: '5.증기보일러' },
+  { code: '6', label: '6.온수보일러' },
+  { code: '7', label: '7.지역난방' },
+  { code: '8', label: '8.축열식보일러' },
+  { code: '9', label: '9.전기난방' },
+  { code: '10', label: '10.온풍기' },
+  { code: '11', label: '11.터보식냉동기' },
+  { code: '12', label: '12.왕복동식냉동기' },
+  { code: '13', label: '13.스크류식냉동기' },
+  { code: '14', label: '14.지역냉방' },
+  { code: '15', label: '15.패키지·룸에어컨' }
+];
+
 export function renderQuotaTableHead({
   quotaTableHead,
   isGallupReturnFarm,
@@ -72,6 +106,9 @@ export function renderQuotaTableHead({
   } else if (isHrcEnergy) {
     quotaTableHead.innerHTML = `
       <tr>
+        <th class="th-no text-center" style="width: 44px;">
+          <input type="checkbox" id="cb-hrc-check-all" title="전체 쿼터 선택/해제" style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+        </th>
         <th class="th-no">번호</th>
         <th>구분</th>
         <th>UID</th>
@@ -79,6 +116,8 @@ export function renderQuotaTableHead({
         <th>건물명</th>
         <th>주용도</th>
         <th>면적규모</th>
+        <th style="min-width: 185px;">T41 입점시설 가이드</th>
+        <th style="min-width: 195px;">B1-1 냉난방설비 가이드</th>
         <th>표본층 (Cell)</th>
         <th>담당자</th>
         <th>연락처</th>
@@ -614,9 +653,93 @@ export function renderGlobalriQuotaTable({
   }
 }
 
-export function renderHrcEnergyQuotaTable({ db, quotaTableBody }) {
+export function renderHrcEnergyQuotaTable({
+  db,
+  quotaTableBody,
+  campId = '',
+  checkedHrcSeqs = new Set(),
+  onSaveGuide = null,
+  onReRender = null
+}) {
+  const tableScrollContainer = quotaTableBody.closest('.table-scroll-container');
+  let hrcBar = document.getElementById('hrc-step1-guide-bar');
+  if (!hrcBar && tableScrollContainer && tableScrollContainer.parentNode) {
+    hrcBar = document.createElement('div');
+    hrcBar.id = 'hrc-step1-guide-bar';
+    hrcBar.className = 'globalri-check-toolbar';
+    hrcBar.style.flexDirection = 'column';
+    hrcBar.style.alignItems = 'stretch';
+    hrcBar.style.gap = '10px';
+    tableScrollContainer.parentNode.insertBefore(hrcBar, tableScrollContainer);
+  }
+
+  const t41Map = Object.fromEntries(HRC_T41_OPTIONS.map(o => [o.code, o.label]));
+  const b11Map = Object.fromEntries(HRC_B11_OPTIONS.map(o => [o.code, o.label]));
+
+  if (hrcBar) {
+    hrcBar.style.display = 'flex';
+    const checkedCount = checkedHrcSeqs.size;
+    hrcBar.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 4px;">
+            <i class="fa-solid fa-Sliders text-primary-color"></i> 쿼터별 T41(입점시설) · B1-1(냉난방설비) 가이드 설정:
+          </span>
+          <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="selected_only">★ 선정 표본만 선택</button>
+          <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="uncompleted">미완료 전체 선택</button>
+          <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="all">전체 선택</button>
+          <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="badge-hrc-checked-count" class="badge-status ready font-bold" style="padding: 4px 12px; font-size: 12.5px;">
+            체크된 쿼터: <strong>${checkedCount}개 건물</strong>
+          </span>
+          <button type="button" id="btn-hrc-save-quota-guide" class="btn-pill btn-pill-primary btn-pill-small font-bold">
+            <i class="fa-solid fa-floppy-disk"></i> 체크한 쿼터(${checkedCount}개)에 T41 · B1-1 가이드 저장
+          </button>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
+        <div>
+          <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
+            <i class="fa-solid fa-store text-primary-color"></i> [T41 문항 (q2900)] 입점시설 선택 <span style="font-weight: 500; color: #64748b;">(점유면적 A4-2는 '응답거절' 자동 연동)</span>
+          </div>
+          <div id="hrc-t41-checkbox-group" style="display: flex; flex-wrap: wrap; gap: 6px;">
+            ${HRC_T41_OPTIONS.map(opt => `
+              <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; padding: 3px 8px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer;">
+                <input type="checkbox" class="cb-hrc-t41-opt" value="${opt.code}" ${['1', '2'].includes(opt.code) ? 'checked' : ''} style="accent-color: #2563eb;" />
+                <span>${escapeHtml(opt.label)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-size: 12px; font-weight: 800; color: #0f172a;">
+              <i class="fa-solid fa-temperature-Half text-primary-color"></i> [B1-1 문항 (q4000)] 냉난방 설비 선택
+            </span>
+            <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: #1e40af;">
+              <span>에어컨 1대 용량(kW):</span>
+              <input type="number" id="input-hrc-ehp-unit-kw" value="5" min="1" max="200" step="1" style="width: 56px; padding: 2px 6px; border: 1px solid #93c5fd; border-radius: 5px; font-size: 12px; text-align: right;" title="B1-4-3 용량 = 에어컨 1대 용량(kW) × A3-1-1 입점업체수" />
+              <span style="color: #64748b; font-weight: 500;">× 입점업체수</span>
+            </label>
+          </div>
+          <div id="hrc-b11-checkbox-group" style="display: flex; flex-wrap: wrap; gap: 6px;">
+            ${HRC_B11_OPTIONS.map(opt => `
+              <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; padding: 3px 8px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer;">
+                <input type="checkbox" class="cb-hrc-b11-opt" value="${opt.code}" ${opt.code === '4' ? 'checked' : ''} style="accent-color: #0284c7;" />
+                <span>${escapeHtml(opt.label)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   quotaTableBody.innerHTML = db.map((item, idx) => {
-    const seq = item.index || item.seq || (idx + 1);
+    const seq = Number(item.index || item.seq || (idx + 1));
+    const isChecked = checkedHrcSeqs.has(seq);
     const st = item.quotaStatus || item.status || 'ready';
     const prog = item.progress || (st === 'completed' || st === '완료' ? '100%' : '0%');
     let statusHtml = `<span class="badge-status ready">대기 (${escapeHtml(prog)})</span>`;
@@ -640,8 +763,22 @@ export function renderHrcEnergyQuotaTable({ db, quotaTableBody }) {
     const infoUrl = item.slotUrl || `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${encodeURIComponent(uidStr)}&page=1`;
     const bName = item.buildingName || item.companyName || `(건물 #${uidStr})`;
 
+    const t41Arr = Array.isArray(item.t41Codes) && item.t41Codes.length > 0 ? item.t41Codes.map(String) : null;
+    const t41Html = t41Arr
+      ? `<span class="badge-status success font-bold" style="padding: 2px 8px; font-size: 11px;">${escapeHtml(t41Arr.map(c => t41Map[c] || c).join(', '))}</span>`
+      : `<span class="badge-status ready" style="padding: 2px 8px; font-size: 11px;">기본 (1.식음료, 2.판매)</span>`;
+
+    const b11Arr = Array.isArray(item.b11Codes) && item.b11Codes.length > 0 ? item.b11Codes.map(String) : null;
+    const unitKwTxt = item.ehpUnitKw ? ` (1대 ${item.ehpUnitKw}kW)` : ' (1대 5kW)';
+    const b11Html = b11Arr
+      ? `<span class="badge-status pilot font-bold" style="padding: 2px 8px; font-size: 11px;">${escapeHtml(b11Arr.map(c => b11Map[c] || c).join(', '))}${escapeHtml(unitKwTxt)}</span>`
+      : `<span class="badge-status ready" style="padding: 2px 8px; font-size: 11px;">기본 (4.시스템EHP)${escapeHtml(unitKwTxt)}</span>`;
+
     return `
-      <tr data-row-idx="${seq}" style="${isSel ? '' : 'opacity: 0.86;'}">
+      <tr data-row-idx="${seq}" class="${isChecked ? 'globalri-row-checked' : ''}" style="${isSel ? '' : 'opacity: 0.86;'}">
+        <td class="text-center">
+          <input type="checkbox" class="cb-hrc-quota-row" data-seq="${seq}" data-uid="${escapeHtml(uidStr)}" ${isChecked ? 'checked' : ''} style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+        </td>
         <td class="text-center font-mono font-bold">${seq}</td>
         <td class="text-center">${selBadge}</td>
         <td class="text-center font-mono font-bold text-primary-color">${escapeHtml(uidStr)}</td>
@@ -652,6 +789,19 @@ export function renderHrcEnergyQuotaTable({ db, quotaTableBody }) {
         </td>
         <td><span class="quota-ind-badge">${escapeHtml(item.mainUse || item.industry || '-')}</span></td>
         <td class="text-center"><span class="badge-main-product">${escapeHtml(item.areaScale || '-')}</span></td>
+        <td class="text-center">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap;">
+            ${t41Html}
+            <button type="button" class="btn-pill btn-pill-secondary btn-pill-small btn-hrc-row-guide" data-seq="${seq}" title="이 건물 쿼터의 T41/B1-1 가이드를 상단 패널로 불러와 편집">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+          </div>
+        </td>
+        <td class="text-center">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap;">
+            ${b11Html}
+          </div>
+        </td>
         <td class="text-center font-mono font-caption">${escapeHtml(item.cellKey || '-')}</td>
         <td class="text-center">${escapeHtml(item.contactName || item.ceoName || '-')}</td>
         <td class="font-mono">${escapeHtml(item.phone || '-')}</td>
@@ -664,6 +814,125 @@ export function renderHrcEnergyQuotaTable({ db, quotaTableBody }) {
       </tr>
     `;
   }).join('');
+
+  const updateCheckedBadges = () => {
+    const cnt = checkedHrcSeqs.size;
+    const badgeEl = document.getElementById('badge-hrc-checked-count');
+    if (badgeEl) badgeEl.innerHTML = `체크된 쿼터: <strong>${cnt}개 건물</strong>`;
+    const saveBtn = document.getElementById('btn-hrc-save-quota-guide');
+    if (saveBtn) saveBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> 체크한 쿼터(${cnt}개)에 T41 · B1-1 가이드 저장`;
+  };
+
+  const cbAll = document.getElementById('cb-hrc-check-all');
+  const allSeqs = db.map((item, idx) => Number(item.index || item.seq || (idx + 1)));
+  if (cbAll) {
+    cbAll.checked = allSeqs.length > 0 && allSeqs.every(s => checkedHrcSeqs.has(s));
+    cbAll.onchange = () => {
+      if (cbAll.checked) allSeqs.forEach(s => checkedHrcSeqs.add(s));
+      else checkedHrcSeqs.clear();
+      if (typeof onReRender === 'function') onReRender(db);
+    };
+  }
+
+  quotaTableBody.querySelectorAll('.cb-hrc-quota-row').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const seq = Number(cb.getAttribute('data-seq'));
+      if (cb.checked) checkedHrcSeqs.add(seq);
+      else checkedHrcSeqs.delete(seq);
+      const tr = cb.closest('tr');
+      if (tr) tr.classList.toggle('globalri-row-checked', cb.checked);
+      updateCheckedBadges();
+    });
+  });
+
+  quotaTableBody.querySelectorAll('.btn-hrc-row-guide').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const seq = Number(btn.getAttribute('data-seq'));
+      const item = db.find((it, idx) => Number(it.index || it.seq || (idx + 1)) === seq);
+      checkedHrcSeqs.clear();
+      checkedHrcSeqs.add(seq);
+      quotaTableBody.querySelectorAll('.cb-hrc-quota-row').forEach(cb => {
+        const s = Number(cb.getAttribute('data-seq'));
+        cb.checked = (s === seq);
+        const tr = cb.closest('tr');
+        if (tr) tr.classList.toggle('globalri-row-checked', cb.checked);
+      });
+      updateCheckedBadges();
+      if (item && hrcBar) {
+        const t41Set = new Set(Array.isArray(item.t41Codes) && item.t41Codes.length > 0 ? item.t41Codes.map(String) : ['1', '2']);
+        hrcBar.querySelectorAll('.cb-hrc-t41-opt').forEach(chk => {
+          chk.checked = t41Set.has(chk.value);
+        });
+        const b11Set = new Set(Array.isArray(item.b11Codes) && item.b11Codes.length > 0 ? item.b11Codes.map(String) : ['4']);
+        hrcBar.querySelectorAll('.cb-hrc-b11-opt').forEach(chk => {
+          chk.checked = b11Set.has(chk.value);
+        });
+        const unitKwInput = document.getElementById('input-hrc-ehp-unit-kw');
+        if (unitKwInput) unitKwInput.value = String(item.ehpUnitKw || 5);
+        hrcBar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  });
+
+  if (hrcBar) {
+    // T41 77(해당없음) 상호배타 토글
+    hrcBar.querySelectorAll('.cb-hrc-t41-opt').forEach(chk => {
+      chk.addEventListener('change', () => {
+        if (chk.value === '77' && chk.checked) {
+          hrcBar.querySelectorAll('.cb-hrc-t41-opt').forEach(other => {
+            if (other.value !== '77') other.checked = false;
+          });
+        } else if (chk.value !== '77' && chk.checked) {
+          const noneChk = hrcBar.querySelector('.cb-hrc-t41-opt[value="77"]');
+          if (noneChk) noneChk.checked = false;
+        }
+      });
+    });
+
+    hrcBar.querySelectorAll('.hrc-quick-check-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-quick-check');
+        checkedHrcSeqs.clear();
+        db.forEach((item, idx) => {
+          const seq = Number(item.index || item.seq || (idx + 1));
+          const isDone = (item.quotaStatus === 'completed' || item.status === '완료');
+          if (mode === 'selected_only' && item.selectionType === '선정') checkedHrcSeqs.add(seq);
+          else if (mode === 'uncompleted' && !isDone) checkedHrcSeqs.add(seq);
+          else if (mode === 'all') checkedHrcSeqs.add(seq);
+        });
+        if (typeof onReRender === 'function') onReRender(db);
+      });
+    });
+
+    const saveBtn = document.getElementById('btn-hrc-save-quota-guide');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async () => {
+        if (checkedHrcSeqs.size === 0) {
+          alert('가이드를 적용할 건물 쿼터를 먼저 체크해 주세요.');
+          return;
+        }
+        const t41Codes = Array.from(hrcBar.querySelectorAll('.cb-hrc-t41-opt:checked')).map(el => el.value);
+        const b11Codes = Array.from(hrcBar.querySelectorAll('.cb-hrc-b11-opt:checked')).map(el => el.value);
+        const ehpUnitKw = Number(document.getElementById('input-hrc-ehp-unit-kw')?.value || 5) || 5;
+        if (t41Codes.length === 0) {
+          alert('T41(입점시설) 항목을 최소 1개 이상 선택해 주세요. (입점시설이 없으면 77.해당없음을 선택하세요)');
+          return;
+        }
+        if (b11Codes.length === 0) {
+          alert('B1-1(냉난방 설비) 항목을 최소 1개 이상 선택해 주세요.');
+          return;
+        }
+        if (typeof onSaveGuide === 'function') {
+          await onSaveGuide({
+            targetSeqs: Array.from(checkedHrcSeqs),
+            t41Codes,
+            b11Codes,
+            ehpUnitKw
+          });
+        }
+      });
+    }
+  }
 }
 
 export function renderKonaQuotaTable({ db, quotaTableBody }) {

@@ -2,25 +2,25 @@
  * 설문조사 상세 작업실 제어 스크립트 (survey-detail.js)
  * 2-Tier 와이드 쿼터 뷰, 쿼터 항목별 진행 트래커, 2-Phase 파일럿 & 배치 파이프라인 제어
  */
-import { escapeHtml } from './modules/blueprint-utils.js?v=20261108_modular_v3';
-import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261108_modular_v3';
-import { renderAssocBlueprint } from './modules/blueprint-assoc.js?v=20261108_modular_v3';
+import { escapeHtml } from './modules/blueprint-utils.js?v=20261108_modular_v4';
+import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261108_modular_v4';
+import { renderAssocBlueprint } from './modules/blueprint-assoc.js?v=20261108_modular_v4';
 import {
   resolveGlobalriAgeGroupKey,
   createGlobalriBlueprintController
-} from './modules/blueprint-globalri.js?v=20261108_modular_v3';
+} from './modules/blueprint-globalri.js?v=20261108_modular_v4';
 import {
   renderKonaBlueprint,
   renderHrcEnergyBlueprint,
   renderGallupReturnFarmBlueprint
-} from './modules/blueprint-gallup-hrc-kona.js?v=20261108_modular_v3';
+} from './modules/blueprint-gallup-hrc-kona.js?v=20261108_modular_v4';
 import {
   PRESET_STANDARD,
   PRESET_GROWTH,
   PRESET_TRADITIONAL,
   PRESET_ROTATION,
   renderKstatStoreStages
-} from './modules/blueprint-kstat-store.js?v=20261108_modular_v3';
+} from './modules/blueprint-kstat-store.js?v=20261108_modular_v4';
 import {
   renderQuotaTableHead,
   renderEmptyQuotaTableRow,
@@ -30,7 +30,7 @@ import {
   renderKonaQuotaTable,
   renderMetrixQuotaTable,
   renderAssocQuotaTable
-} from './modules/quota-table-renderers.js?v=20261108_modular_v3';
+} from './modules/quota-table-renderers.js?v=20261108_modular_v4';
 
 async function initSurveyDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -685,6 +685,8 @@ async function initSurveyDetailPage() {
   let gallupSelectionInitialized = false;
   let checkedGlobalriSeqs = new Set();
   let globalriSelectionInitialized = false;
+  let checkedHrcSeqs = new Set();
+  let hrcSelectionInitialized = false;
 
   const globalriCtrl = createGlobalriBlueprintController({
     campId,
@@ -1185,9 +1187,51 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    // [한국리서치 TAPI 2025년 기준 에너지총조사 건물 부문 12개 컬럼 테이블 렌더링]
+    const existingHrcBar = document.getElementById('hrc-step1-guide-bar');
+    if (!isHrcEnergy && existingHrcBar) {
+      existingHrcBar.style.display = 'none';
+    }
+
+    // [한국리서치 TAPI 2025년 기준 에너지총조사 건물 부문 테이블 렌더링 + T41/B1-1 쿼터별 가이드]
     if (isHrcEnergy) {
-      renderHrcEnergyQuotaTable({ db, quotaTableBody });
+      if (!hrcSelectionInitialized && db.length > 0) {
+        hrcSelectionInitialized = true;
+        db.forEach((item, idx) => {
+          const seq = Number(item.index || item.seq || (idx + 1));
+          const isDone = (item.quotaStatus === 'completed' || item.status === '완료');
+          if (!isDone && item.selectionType === '선정') {
+            checkedHrcSeqs.add(seq);
+          }
+        });
+      }
+
+      renderHrcEnergyQuotaTable({
+        db,
+        quotaTableBody,
+        campId,
+        checkedHrcSeqs,
+        onReRender: renderQuotaTable,
+        onSaveGuide: async ({ targetSeqs, t41Codes, b11Codes, ehpUnitKw }) => {
+          try {
+            const res = await fetch(`/api/campaigns/${campId}/hrc-quota-guide`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ targetSeqs, t41Codes, b11Codes, ehpUnitKw })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || '가이드 저장 실패');
+            if (currentCampaign && Array.isArray(data.quotaDatabase)) {
+              currentCampaign.quotaDatabase = data.quotaDatabase;
+              renderQuotaTable(currentCampaign.quotaDatabase);
+            }
+            appendLog('success', `✅ [쿼터별 가이드 저장 완료] ${data.message}`);
+            alert(data.message);
+          } catch (err) {
+            appendLog('error', `❌ [쿼터별 가이드 저장 오류] ${err.message}`);
+            alert('가이드 저장 오류: ' + err.message);
+          }
+        }
+      });
       return;
     }
 

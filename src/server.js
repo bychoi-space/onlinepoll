@@ -2243,6 +2243,87 @@ app.post('/api/campaigns/:id/bind-slots', async (req, res) => {
 });
 
 // ==========================================
+// [1-8] 한국리서치 에너지총조사(hrc_energy) 쿼터별 T41(입점시설) / B1-1(냉난방설비) 가이드 저장
+// ==========================================
+app.post('/api/campaigns/:id/hrc-quota-guide', (req, res) => {
+  try {
+    const campaign = CampaignStore.getCampaignById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+    }
+    const quotaDb = Array.isArray(campaign.quotaDatabase) ? campaign.quotaDatabase : [];
+    if (quotaDb.length === 0) {
+      return res.status(400).json({ error: '캠페인에 등록된 쿼터 데이터가 없습니다.' });
+    }
+
+    const { targetSeqs = [], targetUids = [], t41Codes, b11Codes, ehpUnitKw } = req.body || {};
+    const seqSet = new Set((Array.isArray(targetSeqs) ? targetSeqs : []).map(n => Number(n)));
+    const uidSet = new Set((Array.isArray(targetUids) ? targetUids : []).map(u => String(u).trim()));
+
+    let updatedCount = 0;
+    quotaDb.forEach((item, idx) => {
+      const seq = Number(item.index || item.seq || (idx + 1));
+      const uid = String(item.uid || '').trim();
+      if (seqSet.has(seq) || (uid && uidSet.has(uid))) {
+        if (Array.isArray(t41Codes)) {
+          item.t41Codes = t41Codes.map(String).filter(Boolean);
+        }
+        if (Array.isArray(b11Codes)) {
+          item.b11Codes = b11Codes.map(String).filter(Boolean);
+        }
+        if (ehpUnitKw !== undefined && ehpUnitKw !== null && ehpUnitKw !== '') {
+          const parsedKw = Number(ehpUnitKw);
+          if (!Number.isNaN(parsedKw) && parsedKw > 0) {
+            item.ehpUnitKw = parsedKw;
+          }
+        }
+        updatedCount++;
+      }
+    });
+
+    const updated = CampaignStore.updateCampaign(campaign.id, {
+      quotaDatabase: quotaDb
+    });
+
+    // 원본 쿼터 JSON 파일(quota_hrc_energy_260342.json 등) 동기화
+    try {
+      const hrcQuotaPath = path.join(quotasDir, 'quota_hrc_energy_260342.json');
+      if (fs.existsSync(hrcQuotaPath)) {
+        const qJson = JSON.parse(fs.readFileSync(hrcQuotaPath, 'utf8'));
+        const qList = qJson.data || qJson.merchants || [];
+        qList.forEach((qm, qIdx) => {
+          const qUid = String(qm.uid || '').trim();
+          const matched = quotaDb.find(b => (qUid && String(b.uid || '').trim() === qUid) || Number(b.index || b.seq) === Number(qm.index || qm.seq || (qIdx + 1)));
+          if (matched) {
+            if (Array.isArray(matched.t41Codes)) qm.t41Codes = matched.t41Codes;
+            if (Array.isArray(matched.b11Codes)) qm.b11Codes = matched.b11Codes;
+            if (matched.ehpUnitKw) qm.ehpUnitKw = matched.ehpUnitKw;
+          }
+        });
+        fs.writeFileSync(hrcQuotaPath, JSON.stringify(qJson, null, 2), 'utf8');
+      }
+    } catch (syncErr) {
+      logger.warn('[HRC 에너지총조사 쿼터 가이드 파일 동기화 주의]', syncErr.message);
+    }
+
+    logger.broadcast({
+      type: 'QUOTA_UPDATED',
+      quotaDatabase: updated.quotaDatabase
+    });
+
+    res.json({
+      success: true,
+      updatedCount,
+      message: `${updatedCount}개 건물 쿼터에 T41(입점시설) 및 B1-1(냉난방설비) 가이드가 저장되었습니다.`,
+      quotaDatabase: updated.quotaDatabase
+    });
+  } catch (err) {
+    logger.error('[HRC 쿼터 가이드 저장 실패]', err);
+    res.status(500).json({ error: '쿼터 가이드 저장 중 오류가 발생했습니다: ' + err.message });
+  }
+});
+
+// ==========================================
 // [3-1] 2-Phase 실행: 1번 쿼터 파일럿 시뮬레이션 (Agree 안전 대기)
 // ==========================================
 app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
