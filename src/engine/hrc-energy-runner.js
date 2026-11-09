@@ -82,8 +82,69 @@ async function extractRpsStep(page) {
 }
 
 /**
+ * 네이버 지도(map.naver.com)에서 건물 주소로 검색하여 '이 주소의 장소 N' (입주업체 수, siteCount)를 조회
+ */
+export async function fetchNaverMapPlaceCount(context, addresses = []) {
+  const validAddrs = addresses
+    .map(a => String(a || '').trim())
+    .filter(a => a.length >= 6 && /\d/.test(a));
+  if (!context || validAddrs.length === 0) return null;
+
+  const mapPage = await context.newPage();
+  try {
+    for (const addr of validAddrs) {
+      let apiData = null;
+      const onResponse = async (res) => {
+        if (res.url().includes('/p/api/search/all')) {
+          try {
+            apiData = await res.json();
+          } catch (_) {}
+        }
+      };
+      mapPage.on('response', onResponse);
+      try {
+        await mapPage.goto(`https://map.naver.com/p/search/${encodeURIComponent(addr)}`, {
+          waitUntil: 'domcontentloaded',
+          timeout: 15000
+        });
+        for (let w = 0; w < 30 && !apiData; w++) {
+          await mapPage.waitForTimeout(200);
+        }
+      } catch (err) {
+        logger.warn(`[HRC 네이버지도 조회 경고] 주소(${addr}) 접속 지연: ${err.message}`);
+      } finally {
+        mapPage.off('response', onResponse);
+      }
+
+      if (apiData?.result) {
+        const roadList = apiData.result.address?.roadAddress?.list || [];
+        const jibunList = apiData.result.address?.jibunsAddress?.list || [];
+        const candidates = [
+          roadList[0]?.siteCount,
+          jibunList[0]?.mappedAddress?.siteCount,
+          jibunList[0]?.siteCount,
+          apiData.result.place?.totalCount
+        ];
+        for (const raw of candidates) {
+          const cnt = parseInt(String(raw ?? '').replace(/[^0-9]/g, ''), 10);
+          if (Number.isFinite(cnt) && cnt > 0) {
+            logger.info(`[HRC 네이버지도 조회] 주소="${addr}" ➔ 이 주소의 장소 ${cnt}개 확인`);
+            return cnt;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn(`[HRC 네이버지도 조회 실패] ${err.message}`);
+  } finally {
+    await mapPage.close().catch(err => logger.warn(`mapPage 닫기 경고: ${err.message}`));
+  }
+  return null;
+}
+
+/**
  * 한국리서치 2025년 기준 에너지총조사 (건물 부문) 단일 슬롯 자동화 러너
- * - 핵심 원칙: 기존에 이미 입력되어 있는 항목은 절대 건드리지 않고 그대로 보존 (preserveExistingInputs: true)
+ * - 핵심 원칙: 기존에 이미 입력되어 있는 항목은 보존하되, 8대 핵심 응답 규칙 문항은 규칙에 맞춰 정확히 응답
  *
  * @param {object} options
  * @param {object} options.slotData - 쿼터 슬롯 객체 (uid, surveyorId, contactName, phone, buildingName, mainUse 등)
@@ -122,7 +183,9 @@ export async function runHrcEnergySurvey(options = {}) {
   }
 
   const capturedSteps = [];
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true }).catch(() =>
+    chromium.launch({ headless: true, executablePath: '/usr/bin/chromium' })
+  );
   const context = await browser.newContext({
     ignoreHTTPSErrors: true,
     viewport: { width: 1280, height: 920 }
@@ -143,7 +206,10 @@ export async function runHrcEnergySurvey(options = {}) {
       tel2: p2,
       tel3: p3,
       buildingName: slotData.buildingName || '',
-      roadAddress: slotData.roadAddress || ''
+      roadAddress: slotData.roadAddress || '',
+      jibunAddress: slotData.jibunAddress || '',
+      mainUse: slotData.mainUse || slotData.mainUsage || '',
+      areaScale: slotData.areaScale || ''
     };
     let rpsUrl = String(options.directRpsUrl || slotData.rpsUrl || '').trim();
 
@@ -207,10 +273,13 @@ export async function runHrcEnergySurvey(options = {}) {
         const finalP2 = fillIfEmpty('#contact1Tel2', p2);
         const finalP3 = fillIfEmpty('#contact1Tel3', p3);
 
-        // 테이블에 표시된 건물명/주소/주용도 추출
+        // 테이블에 표시된 건물명/도로명/지번/주용도/면적규모 추출
         const bodyText = document.body.innerText || '';
         let parsedBuildingName = '';
         let parsedRoadAddr = '';
+        let parsedJibunAddr = '';
+        let parsedMainUse = '';
+        let parsedAreaScale = '';
         const cells = Array.from(document.querySelectorAll('th, td'));
         for (let i = 0; i < cells.length - 1; i++) {
           const label = (cells[i].innerText || '').trim();
@@ -218,6 +287,12 @@ export async function runHrcEnergySurvey(options = {}) {
             parsedBuildingName = (cells[i + 1]?.innerText || '').trim();
           } else if (label === '도로명') {
             parsedRoadAddr = (cells[i + 1]?.innerText || '').trim();
+          } else if (label === '지번') {
+            parsedJibunAddr = (cells[i + 1]?.innerText || '').trim();
+          } else if (label === '주용도') {
+            parsedMainUse = (cells[i + 1]?.innerText || '').trim();
+          } else if (label === '면적규모') {
+            parsedAreaScale = (cells[i + 1]?.innerText || '').trim();
           }
         }
         return {
@@ -227,6 +302,9 @@ export async function runHrcEnergySurvey(options = {}) {
           tel3: finalP3 || p3,
           buildingName: parsedBuildingName,
           roadAddress: parsedRoadAddr,
+          jibunAddress: parsedJibunAddr,
+          mainUse: parsedMainUse,
+          areaScale: parsedAreaScale,
           bodySnippet: bodyText.slice(0, 600)
         };
       }, { fallbackName, p1, p2, p3, preserveExisting });
@@ -237,8 +315,17 @@ export async function runHrcEnergySurvey(options = {}) {
       if (!slotData.roadAddress && basicInfoState.roadAddress) {
         slotData.roadAddress = basicInfoState.roadAddress;
       }
+      if (!slotData.jibunAddress && basicInfoState.jibunAddress) {
+        slotData.jibunAddress = basicInfoState.jibunAddress;
+      }
+      if (!slotData.mainUse && basicInfoState.mainUse) {
+        slotData.mainUse = basicInfoState.mainUse;
+      }
+      if (!slotData.areaScale && basicInfoState.areaScale) {
+        slotData.areaScale = basicInfoState.areaScale;
+      }
 
-      logger.info(`[HRC 에너지총조사] UID=${uid} [기본정보] 확인 완료 (건물명: ${slotData.buildingName || '-'}, 응답자: ${basicInfoState.contactName}, 연락처: ${basicInfoState.tel1}-${basicInfoState.tel2}-${basicInfoState.tel3})`);
+      logger.info(`[HRC 에너지총조사] UID=${uid} [기본정보] 확인 완료 (건물명: ${slotData.buildingName || '-'}, 도로명: ${slotData.roadAddress || '-'}, 주용도: ${slotData.mainUse || '-'}, 규모: ${slotData.areaScale || '-'})`);
 
       // 4. [조사하기](#survey) 클릭하여 RPS 설문 화면으로 이동
       await Promise.all([
@@ -251,9 +338,33 @@ export async function runHrcEnergySurvey(options = {}) {
 
     logger.info(`[HRC 에너지총조사] UID=${uid} RPS 설문 진입: ${rpsUrl}`);
 
-    // 5. RPS 설문 단계별 순차 진행 (기입력 보존 원칙 적용)
-    let trackedStoreCount = String(policy.storeCount || '10');
+    // 네이버 지도에서 건물 주소의 입주업체(장소) 개수 사전 조회
+    let naverPlaceCount = await fetchNaverMapPlaceCount(context, [
+      basicInfoState.roadAddress || slotData.roadAddress,
+      basicInfoState.jibunAddress || slotData.jibunAddress
+    ]);
+
+    // 5. RPS 설문 단계별 순차 진행
+    let trackedStoreCount = String(naverPlaceCount || policy.storeCount || '10');
+    let trackedGrossFloorArea = 0;
+    // 건물마다 30~50명 사이에서 다양한 내방객 배수 산출 (재현성 및 다양성 확보)
+    const visitorMultiplier = Math.floor(Math.random() * 21) + 30; // 30 ~ 50
+    const ENFORCED_RULE_CVS = new Set(['q1400', 'q1700', 'q1800', 'q2250', 'q2350', 'q2450', 'q2500', 'q2550', 'q2600']);
     const stepTrace = [];
+
+    // 중간 문항에서 열렸을 경우 SQ. 일반 특성(isqpart) 처음으로 이동하여 SQ14 및 A파트 규칙 문항이 누락 없이 적용되도록 보장
+    const initCheck = await extractRpsStep(page);
+    if (!initCheck.isCompleted && initCheck.cv && initCheck.cv !== 'q1000') {
+      const sqNavUrl = await page.evaluate(() => {
+        const btn = document.querySelector('#qnav-bar button[onclick*="isqpart"]');
+        const m = (btn?.getAttribute('onclick') || '').match(/location\.href='([^']+)'/);
+        return m ? m[1] : '';
+      });
+      if (sqNavUrl) {
+        await page.goto(sqNavUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await waitForRpsReady(page);
+      }
+    }
 
     for (let stepIdx = 0; stepIdx < 160; stepIdx++) {
       const step = await extractRpsStep(page);
@@ -286,6 +397,38 @@ export async function runHrcEnergySurvey(options = {}) {
           stepTrace,
           capturedSteps
         };
+      }
+
+      // q1260에서 도로명/지번 주소가 확인되었고 아직 네이버지도 장소 수를 조회하지 못한 경우 즉시 보충 조회
+      if (step.cv === 'q1260' && !naverPlaceCount) {
+        const roadMatch = step.text.match(/도로명\s*주소\s*:\s*([^\n\r]+?)(?=\s*지번\s*주소|$)/);
+        const jibunMatch = step.text.match(/지번\s*주소\s*:\s*([^\n\r]+?)(?=\s*우편번호|\s*검색|$)/);
+        const op1Addr = step.inputs.find(i => i.id === 'q1260_op1')?.value || '';
+        const op4Addr = step.inputs.find(i => i.id === 'q1260_op4')?.value || '';
+        const candRoad = (roadMatch ? roadMatch[1].trim() : op1Addr).trim();
+        const candJibun = (jibunMatch ? jibunMatch[1].trim() : op4Addr).trim();
+        if (candRoad && !basicInfoState.roadAddress) basicInfoState.roadAddress = candRoad;
+        if (candJibun && !basicInfoState.jibunAddress) basicInfoState.jibunAddress = candJibun;
+        naverPlaceCount = await fetchNaverMapPlaceCount(context, [candRoad, candJibun]);
+        if (naverPlaceCount) {
+          trackedStoreCount = String(naverPlaceCount);
+        }
+      }
+
+      // q2250 진입 시점에도 아직 네이버지도 장소 수가 없으면 한 번 더 조회 시도
+      if (step.cv === 'q2250' && !naverPlaceCount) {
+        naverPlaceCount = await fetchNaverMapPlaceCount(context, [
+          basicInfoState.roadAddress || slotData.roadAddress,
+          basicInfoState.jibunAddress || slotData.jibunAddress
+        ]);
+        if (naverPlaceCount) {
+          trackedStoreCount = String(naverPlaceCount);
+        }
+      }
+
+      if (step.cv === 'q1500') {
+        const areaStr = (step.inputs.find(i => i.variable === 'q1500_op3')?.value || '').replace(/[^0-9.]/g, '');
+        if (areaStr) trackedGrossFloorArea = parseFloat(areaStr) || 0;
       }
 
       const activeInputs = step.inputs.filter(inp => {
@@ -336,10 +479,15 @@ export async function runHrcEnergySurvey(options = {}) {
           const dk2 = step.inputs.some(i => i.variable === 'q1650_2' && i.checked);
           return ((op1Val !== '' && op1Val !== '0') || dk1) && ((op2Val !== '' && op2Val !== '0') || dk2);
         }
+        if (step.cv === 'q2350') {
+          const dk1 = step.inputs.some(i => i.variable === 'q2350_1' && i.checked);
+          const dk2 = step.inputs.some(i => i.variable === 'q2350_2' && i.checked);
+          return dk1 && dk2;
+        }
         return textNumberInputs.length > 0 && textNumberInputs.every(inp => inp.value !== '' && inp.value !== null);
       };
 
-      const hasExistingAnswer = preserveExisting && (
+      const hasExistingAnswer = preserveExisting && !ENFORCED_RULE_CVS.has(step.cv) && (
         step.cv === 'q1260'
           ? step.q1260Filled
           : (
@@ -358,18 +506,23 @@ export async function runHrcEnergySurvey(options = {}) {
         message: `[UID ${uid}] (${step.pct || '진행중'}) 문항 ${step.cv} 처리 중...`
       });
 
-      if (step.cv === 'q2250') {
-        const existingStoreVal = (step.inputs.find(i => i.variable === 'q2250_op1')?.value || '').replace(/[^0-9]/g, '');
-        if (existingStoreVal) trackedStoreCount = existingStoreVal;
-      }
-
       let actionDesc = 'none';
-      if (step.cv !== 'q1260' && (activeInputs.length === 0 || hasExistingAnswer)) {
+      if (step.cv !== 'q1260' && !ENFORCED_RULE_CVS.has(step.cv) && (activeInputs.length === 0 || hasExistingAnswer)) {
         actionDesc = activeInputs.length === 0 ? 'info_screen' : 'preserve_existing_input';
       } else if (step.cv === 'q1260' && hasExistingAnswer) {
         actionDesc = 'preserve_existing_input (q1260)';
       } else {
-        actionDesc = await page.evaluate(async ({ cv, text, slotData, basicInfoState, policy, preserveExisting, trackedStoreCount }) => {
+        actionDesc = await page.evaluate(async ({
+          cv,
+          text,
+          slotData,
+          basicInfoState,
+          policy,
+          preserveExisting,
+          trackedStoreCount,
+          trackedGrossFloorArea,
+          visitorMultiplier
+        }) => {
           function clickEl(el) {
             if (!el) return false;
             if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) {
@@ -379,14 +532,23 @@ export async function runHrcEnergySurvey(options = {}) {
             return false;
           }
 
-          function setVal(el, val, allowEnable = false) {
+          function uncheckEl(el) {
+            if (!el) return false;
+            if (el.type === 'checkbox' && el.checked) {
+              el.click();
+              return true;
+            }
+            return false;
+          }
+
+          function setVal(el, val, allowEnable = false, forceOverwrite = false) {
             if (!el || el.readOnly) return false;
             if (el.disabled) {
               if (allowEnable) el.disabled = false;
               else return false;
             }
-            if (preserveExisting && (el.value || '').trim() !== '') {
-              return false; // 기입력 값 절대 보존
+            if (!forceOverwrite && preserveExisting && (el.value || '').trim() !== '') {
+              return false; // 기입력 값 보존
             }
             el.value = String(val);
             el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -463,14 +625,15 @@ export async function runHrcEnergySurvey(options = {}) {
             clickEl(matchedRadio);
             return `q1350: 주용도 선택 (${matchedRadio?.value || '1'} - ${targetUse || '기본'})`;
           }
+          // [규칙 1] SQ14 문항 (q1400): 부용도 없음(77) 100% 응답
           if (cv === 'q1400') {
-            const radios = Array.from(document.querySelectorAll('input[variable="q1400"]'));
-            const noneRadio = radios.find(r => {
-              const lbl = (r.closest('tr')?.innerText || r.closest('label')?.innerText || r.parentElement?.innerText || '').trim();
-              return r.value === '77' || r.value === '99' || lbl.includes('없음');
-            }) || radios[radios.length - 1];
+            const noneRadio = document.querySelector('#q1400_77, input[variable="q1400"][value="77"]') ||
+              Array.from(document.querySelectorAll('input[variable="q1400"]')).find(r => {
+                const lbl = (r.closest('tr')?.innerText || r.closest('label')?.innerText || r.parentElement?.innerText || '').trim();
+                return r.value === '77' || lbl.includes('부용도 없음') || lbl.includes('없음');
+              });
             clickEl(noneRadio);
-            return `q1400: 부용도 없음 (${noneRadio?.value || '77'})`;
+            return `q1400: 부용도 없음 (${noneRadio?.value || '77'}) 100% 응답`;
           }
 
           // --- [A. 건물 현황 파트] ---
@@ -548,25 +711,46 @@ export async function runHrcEnergySurvey(options = {}) {
             }
             return `q1650: 준공연월 확인 (연도=${op1?.value || '모름'}, 월=${op2?.value || '모름'})`;
           }
+          // [규칙 2] A1-9 문항 (q1700): 건축물대장 승강기수(승용,비상용 합계)에 맞춰 응답
           if (cv === 'q1700') {
-            const m = text.match(/승강기수\s*:\s*(\d+)/);
+            const infoTxt = document.querySelector('.info_txt')?.innerText || text;
+            const m = infoTxt.match(/승강기수[^:：]*[:：]\s*(\d+)/);
             const elevCount = m ? parseInt(m[1], 10) : 0;
-            if (elevCount > 0) {
+            if (elevCount >= 20) {
+              clickEl(document.querySelector('input[variable="q1700"][value="3"], #q1700_3'));
+              setVal(document.querySelector('input[variable="q1700_op3"], #OpenList_q1700_op3_'), String(elevCount), true, true);
+              return `q1700: 건축물대장 승강기수 매칭 (${elevCount}대 - 20대 이상)`;
+            } else if (elevCount > 0) {
               clickEl(document.querySelector('input[variable="q1700"][value="2"], #q1700_2'));
-              setVal(document.querySelector('input[variable="q1700_op2"], #OpenList_q1700_op2_'), String(elevCount), true);
-              return `q1700: 승강기 ${elevCount}대`;
+              setVal(document.querySelector('input[variable="q1700_op2"], #OpenList_q1700_op2_'), String(elevCount), true, true);
+              return `q1700: 건축물대장 승강기수 매칭 (${elevCount}대)`;
             } else {
               clickEl(document.querySelector('input[variable="q1700"][value="1"], #q1700_1'));
-              return 'q1700: 승강기 없음(1)';
+              return 'q1700: 건축물대장 승강기수 0대 ➔ 엘리베이터 없음(1)';
             }
           }
           if (cv === 'q1750') {
             clickEl(document.querySelector('input[variable="q1750"][value="1"], #q1750_1'));
             return 'q1750: 에스컬레이터 없음(1)';
           }
+          // [규칙 3] A1-10 문항 (q1800): 건축물 면적규모 5,000미만 ➔ 4~11인승(1), 10,000이상 ➔ 12~14인승(2)
           if (cv === 'q1800') {
-            clickEl(document.querySelector('input[variable="q1800"][value="2"], #q1800_2'));
-            return 'q1800: 12~14인승(2)';
+            const scaleStr = String(slotData.areaScale || basicInfoState.areaScale || '').trim();
+            const qCode2 = String(slotData.quotaCode2 || '').trim();
+            const isOver10000 =
+              ['1003', '1004', '1005'].includes(qCode2) ||
+              scaleStr.includes('10,000-') ||
+              scaleStr.includes('30,000') ||
+              scaleStr.includes('50,000') ||
+              scaleStr.includes('10000') ||
+              trackedGrossFloorArea >= 10000;
+            const targetCode = isOver10000 ? '2' : '1';
+            ['1', '2', '3', '4'].forEach(code => {
+              const chk = document.querySelector(`#q1800_${code}, input[variable="q1800_${code}"], input[variable="q1800"][value="${code}"]`);
+              if (code === targetCode) clickEl(chk);
+              else uncheckEl(chk);
+            });
+            return `q1800: 면적규모(${scaleStr || trackedGrossFloorArea || '기본'}) ➔ ${targetCode === '2' ? '12~14인승(2)' : '4~11인승(1)'}`;
           }
           if (cv === 'q1850') {
             clickEl(document.querySelector('input[variable="q1850"][value="2"], #q1850_2'));
@@ -576,32 +760,64 @@ export async function runHrcEnergySurvey(options = {}) {
             clickEl(document.querySelector('input[variable="q1900"][value="4"], #q1900_4'));
             return 'q1900: 개보수 안함(4)';
           }
+          // [규칙 4] A3-1-1 문항 (q2250): 네이버지도 주소 검색 입주업체(장소) 개수 입력
           if (cv === 'q2250') {
-            setVal(document.querySelector('input[variable="q2250_op1"], #OpenList_q2250_op1_'), trackedStoreCount);
-            return `q2250: 점포 총 개수 ${trackedStoreCount}`;
+            document.querySelectorAll('#QuestionView input[type="checkbox"]').forEach(chk => uncheckEl(chk));
+            setVal(document.querySelector('input[variable="q2250_op1"], #OpenList_q2250_op1_'), trackedStoreCount, true, true);
+            return `q2250: 네이버지도 입주업체 수(${trackedStoreCount}개) 입력`;
           }
           if (cv === 'q2300') {
             clickEl(document.querySelector('input[variable="q2300"][value="1"], #q2300_1'));
             return 'q2300: 점포 개수로 응답(1)';
           }
+          // [규칙 5] A3-1-2 문항 (q2350): 건물 소유주 이용과 건물 세입자 항목 모두 '모름' 응답
           if (cv === 'q2350') {
-            setVal(document.querySelector('input[variable="q2350_op1"]'), '0');
-            setVal(document.querySelector('input[variable="q2350_op2"]'), trackedStoreCount);
-            setVal(document.querySelector('input[variable="q2350_op3"]'), '0');
-            return `q2350: 세입자 운영 점포수(${trackedStoreCount}) 입력`;
+            const dk1 = document.querySelector('#q2350_1_1, input[variable="q2350_1"][value^="-8"]');
+            const dk2 = document.querySelector('#q2350_2_1, input[variable="q2350_2"][value^="-8"]');
+            clickEl(dk1);
+            clickEl(dk2);
+            return 'q2350: 건물 소유주 이용(모름) + 건물 세입자(모름) 응답';
           }
+          // [규칙 6] A3-2 문항 (q2450): '소유주가 고용한 시설관리 용역업체에서 관리'(3) 100% 응답
           if (cv === 'q2450') {
-            clickEl(document.querySelector('input[variable="q2450"][value="3"], #q2450_3') || document.querySelector('input[variable="q2450"][value="1"], #q2450_1'));
-            return 'q2450: 에너지 관리 주체 선택';
+            ['1', '2', '3', '4'].forEach(code => {
+              const chk = document.querySelector(`#q2450_${code}, input[variable="q2450_${code}"], input[variable="q2450"][value="${code}"]`);
+              if (code === '3') clickEl(chk);
+              else uncheckEl(chk);
+            });
+            return 'q2450: 소유주가 고용한 시설관리 용역업체에서 관리(3) 100% 응답';
           }
+          // [규칙 7] A3-3-1 문항 (q2500): 상근 근로자 = A3-1-1 숫자, 1일 평균 내방객 = A3-1-1 * (30~50명)
           if (cv === 'q2500') {
-            setVal(document.querySelector('input[variable="q2500_op1"]'), policy.workerCount || '20');
-            setVal(document.querySelector('input[variable="q2500_op2"]'), policy.visitorCount || '50');
-            return 'q2500: 상근근로자 20, 내방객 50';
+            document.querySelectorAll('#QuestionView input[type="checkbox"]').forEach(chk => uncheckEl(chk));
+            const storeNum = Math.max(1, parseInt(String(trackedStoreCount).replace(/[^0-9]/g, ''), 10) || 10);
+            const workerVal = String(storeNum);
+            const visitorVal = String(storeNum * (visitorMultiplier || 35));
+            setVal(document.querySelector('input[variable="q2500_op1"], #OpenList_q2500_op1_'), workerVal, true, true);
+            setVal(document.querySelector('input[variable="q2500_op2"], #OpenList_q2500_op2_'), visitorVal, true, true);
+            return `q2500: 상근근로자 ${workerVal}명(=A3-1-1), 1일 내방객 ${visitorVal}명(${storeNum}×${visitorMultiplier})`;
           }
+          // [규칙 8] T32 문항 (q2550): 쿼터가 의료시설일 경우 '의료시설'(1), 그 외 모든 쿼터는 '해당사항 없음'(77)
           if (cv === 'q2550') {
-            clickEl(document.querySelector('input[variable="q2550"][value="77"], #q2550_77'));
-            return 'q2550: 77(해당사항 없음)';
+            const mainUseStr = String(slotData.mainUse || slotData.mainUsage || basicInfoState.mainUse || '').trim();
+            const isMedical = mainUseStr.includes('의료');
+            const targetCode = isMedical ? '1' : '77';
+            ['1', '2', '3', '77'].forEach(code => {
+              const chk = document.querySelector(`#q2550_${code}, input[variable="q2550_${code}"], input[variable="q2550"][value="${code}"]`);
+              if (code === targetCode) clickEl(chk);
+              else uncheckEl(chk);
+            });
+            return `q2550: 주용도(${mainUseStr || '일반'}) ➔ ${isMedical ? '의료시설(1)' : '해당사항 없음(77)'}`;
+          }
+          // 의료시설 선택 시 후속 문항 A3-3-2 (q2600: 허가병상 수) 대응
+          if (cv === 'q2600') {
+            const dkBtn = document.querySelector('#q2600_-8, input[variable="q2600_-8"][value^="-8"]');
+            if (dkBtn) {
+              clickEl(dkBtn);
+              return 'q2600: 의료시설 허가병상 수 모름(-8)';
+            }
+            setVal(document.querySelector('#OpenList_q2600_op1_, input[variable="q2600_op1"]'), '30', true, true);
+            return 'q2600: 의료시설 허가병상 수 30개';
           }
           if (cv === 'q2900') {
             clickEl(document.querySelector('input[variable="q2900"][value="77"], #q2900_77') || document.querySelector('input[variable="q2900"][value="1"], #q2900_1'));
@@ -876,7 +1092,17 @@ export async function runHrcEnergySurvey(options = {}) {
           }
 
           return 'UNHANDLED';
-        }, { cv: step.cv, text: step.text, slotData, basicInfoState, policy, preserveExisting, trackedStoreCount });
+        }, {
+          cv: step.cv,
+          text: step.text,
+          slotData,
+          basicInfoState,
+          policy,
+          preserveExisting,
+          trackedStoreCount,
+          trackedGrossFloorArea,
+          visitorMultiplier
+        });
       }
 
       const preFilledSummary = activeInputs
