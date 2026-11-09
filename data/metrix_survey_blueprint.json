@@ -1,76 +1,138 @@
 {
   "surveyId": "metrix_panel_2026",
   "title": "2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622)",
-  "description": "메트릭스(Metrix GetData) 경기도 소상공인 실존 패널 54개 대상체 전용 마스터 블루프린트입니다. 사업체 일반현황(A1~A15), 최근 3개년 경영실적, 비용/결제 비율, 고용 및 정책 만족도, 최종 동의서 및 증빙 제출 가이드라인을 정의합니다.",
-  "version": "1.0.0",
+  "description": "메트릭스(Metrix GetData) 경기도 소상공인 실존 패널 54개 대상체 전용 마스터 블루프린트입니다. 2차년도 패널 실측 데이터(rawMeta: AA1~AA15, M8~M62) 자동 계승, 사업체 일반현황(A1~A15), 영업·디지털전환(문8~문9), 경영실적·6대영업비용·소득(문10~문13), 6대결제수단·부채구조(문14~문15), 임대차·권리금(문16~문18), 창업·경영애로·향후계획(문19~문29), 고용·근로시간·급여(문31~문39), 지원정책 만족도·희망사업(문50~문67), 최종 동의서 및 CHECK1 증빙 제출 가이드라인을 전수 정의합니다.",
+  "version": "2.0.0",
   "defaultPolicy": {
     "safetyStopAtReview": true,
     "preserveExistingInputs": true,
     "skipCompletedSlots": true,
+    "inheritPanelRawMeta": true,
     "skipSlotUids": "",
+
+    "general_bindAddressReadonly": true,
+    "general_franchiseMode": "panel_or_non_franchise",
+    "general_defaultAreaPyeong": 30,
+    "general_locationType": "1",
+    "general_founderType": "1",
+    "general_prevStatus": "1",
+
     "operating_openHour": "09",
     "operating_closeHour": "20",
     "operating_closedDays": "1",
     "operating_closedDayOfWeek": "7",
+    "digital_onlineSales": "panel_or_no",
+    "digital_smartTech": "panel_or_pos",
+
     "sales_trend2025": "maintain",
-    "cost_materialRatio": 70,
+    "sales_changeReasonRank1": "1",
+    "sales_changeReasonRank2": "2",
+    "owner_monthlyIncome": 320,
+    "cost_materialRatio": 55,
+    "cost_laborRatio": 15,
     "cost_rentRatio": 15,
-    "cost_taxRatio": 10,
-    "cost_otherRatio": 5,
-    "payment_cardRatio": 70,
-    "payment_mobileRatio": 20,
+    "cost_taxRatio": 7,
+    "cost_feeAdRatio": 4,
+    "cost_otherRatio": 4,
+
     "payment_cashRatio": 10,
-    "debt_bankRatio": 80,
+    "payment_cardRatio": 65,
+    "payment_localCurrencyRatio": 10,
+    "payment_mobileRatio": 10,
+    "payment_voucherRatio": 0,
+    "payment_transferRatio": 5,
+
+    "debt_hasDebt": "panel_or_no",
+    "debt_totalAmount": 5000,
+    "debt_bankRatio": 70,
+    "debt_secondTierRatio": 10,
     "debt_policyRatio": 20,
+    "debt_otherRatio": 0,
     "debt_reasonRank1": "1",
     "debt_reasonRank2": "2",
+
     "lease_type": "monthly_deposit",
     "lease_deposit": 2000,
-    "lease_monthlyRent": 80,
+    "lease_monthlyRent": 120,
+    "lease_contractYears": 5,
+    "goodwill_hasGoodwill": "panel_or_no",
+    "goodwill_amount": 1000,
+    "goodwill_recoveryExpect": "2",
+
+    "hardship_rank1": "3",
+    "hardship_rank2": "7",
+    "market_competitionLevel": "5",
+    "future_businessPlan": "1",
+    "future_reemploymentPlan": "2",
+
     "employee_owner": 1,
     "employee_family": 0,
-    "employee_regular": 0,
+    "employee_regular": 1,
+    "employee_temp": 0,
+    "labor_ownerWeeklyHours": 45,
+    "labor_staffWeeklyHours": 40,
+    "labor_insuranceMode": "panel_or_standard",
+    "labor_avgMonthlyWage": 300,
+    "labor_hiringDifficulty": "3",
+
+    "policy_experienceMode": "panel_or_no",
     "satisfaction_mode": "mixed_3_4",
     "desired_support_rank1": "1",
     "desired_support_rank2": "2",
+
     "open_ended_comment": "지속되는 고물가로 인해 원재료비 및 공공요금 부담이 큽니다. 경기신용보증재단 저금리 특례보증 대출 한도 확대와 상환 거치기간 연장, 점포 시설개선 지원이 지속되었으면 합니다.",
     "evidence_sign_image": "data/sample_metrix_sign.png"
   },
   "sections": [
     {
       "key": "RULES",
-      "title": "안전 실행 규칙",
-      "desc": "98% 최종 검토 전 안전 대기, 기입력 항목 보존, 완료 슬롯 건너뛰기"
+      "title": "실행 규칙 · 98% 안전 대기 & 2차년도 패널 실측치 계승",
+      "desc": "98% 최종 검토 전 안전 대기, 기입력 보존, 완료 슬롯 건너뛰기, 패널 원본(AA1~AA15, M8~M62) 자동 연동"
     },
     {
-      "key": "OPERATING",
-      "title": "영업 현황 기준 (문8-1, 문8-2)",
-      "desc": "개점/폐점 시각, 정기 휴무 빈도 및 휴무 요일"
+      "key": "PART_A_GENERAL",
+      "title": "사업체 일반현황 및 대표자 인적사항 (A1~A15)",
+      "desc": "주소 Readonly 바인딩, 프랜차이즈 여부(A5), 매장 면적(A6), 입지유형(A7), 창업형태(A8), 창업 전 지위(A15)"
     },
     {
-      "key": "FINANCIAL",
-      "title": "경영실적 & 영업비용 밸런서 (문10, 문11-1)",
-      "desc": "2025년 경영실적 추세 및 6대 영업비용 항목별 비율(합계 100%)"
+      "key": "PART_B_OPERATING_DIGITAL",
+      "title": "영업 현황 및 디지털·온라인 전환 (문8 ~ 문9-2)",
+      "desc": "개점/폐점 시각(문8-1), 정기휴무(문8-2), 온라인/배달앱 활용(문9), 키오스크·스마트기술 도입(문9-1~2)"
     },
     {
-      "key": "PAYMENT_DEBT",
-      "title": "결제수단 & 부채 구조 (문14, 문15)",
-      "desc": "고객 결제수단 비중, 대출 기관 유형 및 차입 사유 1/2순위"
+      "key": "PART_C_FINANCIAL_INCOME",
+      "title": "경영실적 추세 · 6대 영업비용 밸런서 · 대표자 소득 (문10 ~ 문13)",
+      "desc": "2025년 매출/실적 추세(문10·11), 실적 변동 사유 1·2순위(문10-1·12-1), 6대 영업비용 비율(문11-1), 대표자 월평균 순소득(문13)"
     },
     {
-      "key": "PREMISES_LABOR",
-      "title": "사업장 임대차 & 고용 인력 (문16, 문31)",
-      "desc": "점유 형태(보증부 월세 등) 및 상시 종사자 수"
+      "key": "PART_D_PAYMENT_DEBT",
+      "title": "6대 결제수단 비중 & 부채·차입 구조 (문14 ~ 문15-2)",
+      "desc": "고객 6대 결제수단 비중(문14), 부채 보유 여부 및 총액(문15), 4대 차입처 비중(문15-1), 차입 사유 1·2순위(문15-2)"
     },
     {
-      "key": "POLICY_EVAL",
-      "title": "정책 만족도 & 지원사업 가이드 (문50~문67)",
-      "desc": "5점 척도 만족도 가중치 및 경기도 희망 지원정책 1/2순위"
+      "key": "PART_E_PREMISES_GOODWILL",
+      "title": "사업장 임대차 · 계약기간 · 권리금 현황 (문16 ~ 문18)",
+      "desc": "점유 형태(문16), 보증금·월세(문16-1), 계약기간(문16-3), 권리금 유무·금액·회수전망(문17~문18)"
     },
     {
-      "key": "OPEN_ENDED",
-      "title": "주관식 코멘트 & 증빙 서류 (CHECK1)",
-      "desc": "경영 애로사항 주관식 텍스트 및 간판사진 업로드 파일"
+      "key": "PART_F_HARDSHIP_FUTURE",
+      "title": "창업 준비 · 경영 애로사항 · 상권 경쟁 · 향후 사업계획 (문19 ~ 문29)",
+      "desc": "경영 애로사항 1·2순위(문22), 상권 경쟁 체감도(문24), 향후 사업 지속 의향(문26), 폐업/전환 시 계획(문27~문29)"
+    },
+    {
+      "key": "PART_G_LABOR_WAGE",
+      "title": "고용 인력 · 주당 근무시간 · 4대보험 · 평균 급여 (문31 ~ 문39)",
+      "desc": "유형별 종사자 수(문31), 대표자/근로자 주당 근무시간 및 4대보험(문32), 월평균 급여(문34), 구인 애로사항(문37~문39)"
+    },
+    {
+      "key": "PART_H_POLICY_SUPPORT",
+      "title": "경기도 지원정책 수혜경험 · 만족도 · 희망 지원사업 (문50 ~ 문67)",
+      "desc": "지원사업 수혜 여부(문50~문62), 5점 척도 만족도 가중치(문50~문66), 향후 최우선 희망 지원정책 1·2순위(문67)"
+    },
+    {
+      "key": "PART_I_OPEN_ENDED_EVIDENCE",
+      "title": "주관식 애로사항 코멘트 & 동의서·CHECK1 증빙 서류",
+      "desc": "경영 애로사항 및 건의사항 주관식 텍스트, Step 117 2중 전자서명, Step 118 CHECK1 간판사진 업로드"
     }
   ]
 }
