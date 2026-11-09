@@ -212,6 +212,18 @@ export function syncMetrixInputsToState(metrixPolicyState) {
   const txtSignImg = document.getElementById('txt-metrix-sign-image');
   if (txtSignImg) metrixPolicyState.evidence_sign_image = txtSignImg.value;
 
+  // 10. 서울시 소상공인 패널 5차 신규 문항 (M1~M3 위기요인, N1~N6_1 AI·디지털, O1~O4 탄소중립)
+  const selSeoulM1 = document.getElementById('sel-seoul-m1-rank1');
+  if (selSeoulM1) metrixPolicyState.seoul_m1_rank1 = selSeoulM1.value;
+  const selSeoulM2 = document.getElementById('sel-seoul-m2-rank1');
+  if (selSeoulM2) metrixPolicyState.seoul_m2_rank1 = selSeoulM2.value;
+  const selSeoulM3 = document.getElementById('sel-seoul-m3-rank1');
+  if (selSeoulM3) metrixPolicyState.seoul_m3_rank1 = selSeoulM3.value;
+  const selSeoulAi = document.getElementById('sel-seoul-n2-ai-adoption');
+  if (selSeoulAi) metrixPolicyState.seoul_n2_aiAdoption = selSeoulAi.value;
+  const selSeoulCarbon = document.getElementById('sel-seoul-o1-carbon');
+  if (selSeoulCarbon) metrixPolicyState.seoul_o1_carbon = selSeoulCarbon.value;
+
   return metrixPolicyState;
 }
 
@@ -498,47 +510,74 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
   const legendWrap = document.querySelector('.blueprint-legend-inline');
   if (legendWrap) legendWrap.style.display = 'none';
 
+  const isSeoulPanel = (data.surveyType === 'metrix_seoul_panel');
+  if (!metrixPolicyState.seoul_m1_rank1) metrixPolicyState.seoul_m1_rank1 = '1';
+  if (!metrixPolicyState.seoul_m2_rank1) metrixPolicyState.seoul_m2_rank1 = '2';
+  if (!metrixPolicyState.seoul_m3_rank1) metrixPolicyState.seoul_m3_rank1 = '1';
+  if (!metrixPolicyState.seoul_n2_aiAdoption) metrixPolicyState.seoul_n2_aiAdoption = 'all_2_unused';
+  if (!metrixPolicyState.seoul_o1_carbon) metrixPolicyState.seoul_o1_carbon = '2_3_mixed';
+
   const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
-  if (titleEl) titleEl.textContent = '메트릭스 경기도 소상공인 사업체패널 3차조사 전 문항 가이드라인 (A1~A15 · 문8~문67 · 총 120단계)';
+  if (titleEl) {
+    titleEl.textContent = isSeoulPanel
+      ? '(신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차) 전 문항 가이드라인 (svyA001~svyA115 · 99% 안전 대기 · 구글시트 자동 기록)'
+      : '메트릭스 경기도 소상공인 사업체패널 3차조사 전 문항 가이드라인 (A1~A15 · 문8~문67 · 총 120단계)';
+  }
 
   const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
-  if (subtitleEl) subtitleEl.textContent = '2차년도 패널 실측 데이터(rawMeta) 자동 계승 및 일반현황·디지털전환·경영실적·비용/결제·부채·임대차/권리금·애로사항·고용/급여·지원정책·98% 안전 대기 규칙을 전수 설정합니다.';
+  if (subtitleEl) {
+    subtitleEl.textContent = isSeoulPanel
+      ? '4차년도 서버 기주입값 100% 보존 + C3(2026년 세부 비용 4항목 정합성 자동 산출) + 5차 신규 문항(M 위기대응 · N AI/디지털 · O 탄소중립) + svyA115.asp(99%) 안전 대기 및 구글 스프레드시트(시트2) 실시간 동기화를 설정합니다.'
+      : '2차년도 패널 실측 데이터(rawMeta) 자동 계승 및 일반현황·디지털전환·경영실적·비용/결제·부채·임대차/권리금·애로사항·고용/급여·지원정책·98% 안전 대기 규칙을 전수 설정합니다.';
+  }
 
   if (badgeMasterStatus) {
-    badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> 메트릭스 패널 120단계 전 문항 블루프린트 활성 (패널 실측치 계승 &amp; 98% 안전 대기)';
+    badgeMasterStatus.innerHTML = isSeoulPanel
+      ? '<i class="fa-solid fa-shield-halved"></i> 서울시 패널 5차 115단계 블루프린트 활성 (svyA115 99% 안전 대기 &amp; 구글시트 자동 기록)'
+      : '<i class="fa-solid fa-circle-check"></i> 메트릭스 패널 120단계 전 문항 블루프린트 활성 (패널 실측치 계승 &amp; 98% 안전 대기)';
     badgeMasterStatus.className = 'badge-status badge-blueprint ready';
   }
 
   if (btnSaveBaseline) {
-    btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 메트릭스 전 문항 기준 가이드 저장';
-    btnSaveBaseline.title = '메트릭스 패널조사 120단계 기준 가이드라인 설정 저장';
+    btnSaveBaseline.innerHTML = isSeoulPanel
+      ? '<i class="fa-solid fa-floppy-disk"></i> 서울시 소상공인 패널 5차 가이드 저장'
+      : '<i class="fa-solid fa-floppy-disk"></i> 메트릭스 전 문항 기준 가이드 저장';
+    btnSaveBaseline.title = isSeoulPanel
+      ? '서울시 소상공인 사업체 패널조사(5차) 기준 가이드라인 설정 저장'
+      : '메트릭스 패널조사 120단계 기준 가이드라인 설정 저장';
   }
 
   if (!blueprintStageGrid) return metrixPolicyState;
 
   blueprintStageGrid.innerHTML = `
-    <!-- 카드 0: 실행 규칙 · 98% 안전 대기 & 2차년도 패널 실측치 계승 (전폭) -->
+    <!-- 카드 0: 실행 규칙 · 안전 대기 & 종단 패널 실측치 계승 (전폭) -->
     <section class="blueprint-card assoc-rule-card full-width-card" style="grid-column: 1 / -1; width: 100%;">
       <div class="blueprint-card-header">
         <div class="blueprint-card-title-group">
           <span class="blueprint-step-pill assoc-rule-pill"><i class="fa-solid fa-shield-halved"></i> 핵심 실행 원칙</span>
-          <h3 class="blueprint-stage-title">98% 안전 대기 · 기입력 보존 · 2차년도 패널 실측 데이터(rawMeta) 자동 계승</h3>
+          <h3 class="blueprint-stage-title">${isSeoulPanel
+            ? 'svyA115.asp (99% 동의서) 절대 안전 대기 · 4차년도 서버 기주입값 보존 · 구글 스프레드시트(시트2) 자동 기록'
+            : '98% 안전 대기 · 기입력 보존 · 2차년도 패널 실측 데이터(rawMeta) 자동 계승'}</h3>
         </div>
         <div class="blueprint-card-badge-group">
-          <span class="badge-status ready"><i class="fa-solid fa-database"></i> 패널 54개 실측 DB 연동 완료</span>
+          <span class="badge-status ready"><i class="fa-solid fa-database"></i> ${isSeoulPanel ? '2010 송준희(74) + 2016 정소영(89) 총 163건 연동' : '패널 54개 실측 DB 연동 완료'}</span>
         </div>
       </div>
       <div class="blueprint-stage-desc">
-        경기도 소상공인 사업체패널조사는 <strong>3차년도 추적 조사</strong>입니다. 각 패널의 2차년도 실측 응답값(<code>AA1~AA15</code>, <code>M8~M62</code>)을 자동 계승하여 개업연월·전년도 매출/비용·임대차·종사자수 등의 시계열 모순 트랩을 원천 차단하고, 최종 제출 직전 <strong>98% 상태(Step 119)</strong>에서 안전 대기합니다.
+        ${isSeoulPanel
+          ? '2026년 서울시 소상공인 사업체 패널조사(5차)는 <strong>절대 완료(Out.asp) 처리하지 않고</strong> <code>svyA115.asp</code>(개인정보 및 패널 참여 동의서 99%) 화면에서 무조건 정지합니다. 서버가 4차년도 응답값으로 미리 채워둔 문항(개업년도·업종·매출/비용·종사자 등)은 100% 보존하며, 각 사업체의 전체 문항 응답 내역을 <strong>구글 스프레드시트(시트2, gid=506086780)</strong>에 실시간으로 기록합니다.'
+          : '경기도 소상공인 사업체패널조사는 <strong>3차년도 추적 조사</strong>입니다. 각 패널의 2차년도 실측 응답값(<code>AA1~AA15</code>, <code>M8~M62</code>)을 자동 계승하여 개업연월·전년도 매출/비용·임대차·종사자수 등의 시계열 모순 트랩을 원천 차단하고, 최종 제출 직전 <strong>98% 상태(Step 119)</strong>에서 안전 대기합니다.'}
       </div>
       <div class="p-14" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
         <div class="assoc-rule-box mb-0">
           <label class="assoc-rule-item">
             <input type="checkbox" id="cb-metrix-safety-stop" class="assoc-rule-cb" ${metrixPolicyState.safetyStopAtReview !== false ? 'checked' : ''} />
             <div>
-              <strong class="assoc-rule-title text-success"><i class="fa-solid fa-circle-check"></i> 최종 제출 직전 98% 안전 대기 [필수]</strong>
+              <strong class="assoc-rule-title text-success"><i class="fa-solid fa-circle-check"></i> ${isSeoulPanel ? 'svyA115.asp (99% 동의서) 도달 시 즉시 안전 정지 [필수]' : '최종 제출 직전 98% 안전 대기 [필수]'}</strong>
               <div class="assoc-rule-desc">
-                동의서(2중 전자서명) 및 CHECK1 간판사진 업로드까지 완료 후, Step 119 참여혜택 화면(98%)에서 정지하여 검토 가능 상태를 보존합니다.
+                ${isSeoulPanel
+                  ? 'A~O 전 문항 응답 후 svyA115.asp(99%)에 도달하면 [다음]을 누르지 않고 즉시 정지하여 절대 완료(Out.asp)되지 않도록 원천 보호합니다.'
+                  : '동의서(2중 전자서명) 및 CHECK1 간판사진 업로드까지 완료 후, Step 119 참여혜택 화면(98%)에서 정지하여 검토 가능 상태를 보존합니다.'}
               </div>
             </div>
           </label>
@@ -547,9 +586,11 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
           <label class="assoc-rule-item">
             <input type="checkbox" id="cb-metrix-inherit-rawmeta" class="assoc-rule-cb" ${metrixPolicyState.inheritPanelRawMeta !== false ? 'checked' : ''} />
             <div>
-              <strong class="assoc-rule-title text-primary-color"><i class="fa-solid fa-link"></i> 2차년도 패널 실측치(rawMeta) 스마트 계승</strong>
+              <strong class="assoc-rule-title text-primary-color"><i class="fa-solid fa-link"></i> ${isSeoulPanel ? '4차년도 서버 프리필(Pre-fill) & C3 영업비용 정합 계산' : '2차년도 패널 실측치(rawMeta) 스마트 계승'}</strong>
               <div class="assoc-rule-desc">
-                쿼터 DB 내 <code>AA1~AA15</code>(일반현황) 및 <code>M8~M62</code>(전년도 매출·임차료·종사자·급여) 값을 기본 베이스로 삼고 아래 설정 추세를 반영합니다.
+                ${isSeoulPanel
+                  ? '서버가 주입한 2025년/2026년 영업비용 총액(C3_2_4)에 맞춰 2026년 세부 비용 4항목(원재료비·임차료·공과금·수수료)을 오차 0원으로 자동 산출합니다.'
+                  : '쿼터 DB 내 AA1~AA15(일반현황) 및 M8~M62(전년도 매출·임차료·종사자·급여) 값을 기본 베이스로 삼고 아래 설정 추세를 반영합니다.'}
               </div>
             </div>
           </label>
@@ -560,7 +601,7 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
             <div>
               <strong class="assoc-rule-title">기입력된 설문 항목 100% 보존</strong>
               <div class="assoc-rule-desc">
-                설문 화면에 이미 선택된 라디오·우선순위(GRADE_CLICK)·합계 숫자·텍스트는 절대 덮어쓰지 않고 그대로 보존합니다.
+                설문 화면에 이미 선택된 라디오·우선순위(objT31)·합계 숫자·텍스트는 절대 덮어쓰지 않고 그대로 보존합니다.
               </div>
             </div>
           </label>
@@ -569,15 +610,67 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
           <label class="assoc-rule-item">
             <input type="checkbox" id="cb-metrix-skip-completed" class="assoc-rule-cb" ${metrixPolicyState.skipCompletedSlots !== false ? 'checked' : ''} />
             <div>
-              <strong class="assoc-rule-title">완료된 슬롯 건너뛰기</strong>
+              <strong class="assoc-rule-title">완료된 슬롯 건너뛰기 & 구글 시트 동기화</strong>
               <div class="assoc-rule-desc">
-                메트릭스 관리자 목록에서 이미 '완료(100%)' 상태인 쿼터는 재실행하지 않고 자동으로 건너뜁니다.
+                이미 '완료(100%)' 상태인 사업체는 건너뛰며, 실행된 모든 사업체의 문항별 응답을 구글 스프레드시트(시트2)에 자동 기록합니다.
               </div>
             </div>
           </label>
         </div>
       </div>
     </section>
+    ${isSeoulPanel ? `
+    <!-- 서울시 5차 전용 카드: 5차 신규 문항 M(경영위기) · N(AI/디지털) · O(탄소중립) 가이드 -->
+    <section class="blueprint-card full-width-card" style="grid-column: 1 / -1; width: 100%;">
+      <div class="blueprint-card-header">
+        <div class="blueprint-card-title-group">
+          <span class="blueprint-step-pill"><i class="fa-solid fa-sparkles"></i> 5차 신규 (M·N·O)</span>
+          <h3 class="blueprint-stage-title">[5차 신규 파트] M. 경영위기 및 대응 (svyA099~101) · N. AI 및 디지털 전환 (svyA102~109) · O. 탄소중립 녹색경영 (svyA110~113)</h3>
+        </div>
+        <div class="blueprint-card-badge-group">
+          <span class="badge-tag-tunable"><i class="fa-solid fa-sliders"></i> 5차 전용 빈칸 자동완성</span>
+        </div>
+      </div>
+      <div class="blueprint-stage-desc">
+        4차년도까지 없었던 5차 조사 신규 추가 문항(<code>M1~M3</code> 순위형, <code>N1~N6_1</code> 디지털·AI 활용 및 지원정책, <code>O1~O4</code> 기후변화·탄소중립 체감도)의 기본 응답 가이드를 설정합니다.
+      </div>
+      <div class="p-14">
+        <div class="qb-grid-2col mb-10">
+          <div>
+            <label class="figma-label font-bold">M1~M2 경영위기 요인 및 최우선 대응방안 (1~3순위)</label>
+            <select id="sel-seoul-m1-rank1" class="figma-select w-full">
+              <option value="1" ${metrixPolicyState.seoul_m1_rank1 === '1' ? 'selected' : ''}>1순위: 원부자재·공공요금·인건비 상승 / 마케팅·고정비 절감 (기본값)</option>
+              <option value="2" ${metrixPolicyState.seoul_m1_rank1 === '2' ? 'selected' : ''}>1순위: 소비심리 위축 및 매출 감소 / 판로 다변화</option>
+              <option value="3" ${metrixPolicyState.seoul_m1_rank1 === '3' ? 'selected' : ''}>1순위: 상권 침체 및 동종업종 경쟁 심화</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">M3 경영위기 극복을 위한 서울시 희망 지원정책 (1~3순위)</label>
+            <select id="sel-seoul-m3-rank1" class="figma-select w-full">
+              <option value="1" ${metrixPolicyState.seoul_m3_rank1 === '1' ? 'selected' : ''}>1순위: 저금리 경영안정자금·특례보증 지원 및 임대료·공공요금 완화 (기본값)</option>
+              <option value="2" ${metrixPolicyState.seoul_m3_rank1 === '2' ? 'selected' : ''}>1순위: 소비촉진 쿠폰·지역사랑상품권 발행 확대</option>
+            </select>
+          </div>
+        </div>
+        <div class="qb-grid-2col">
+          <div>
+            <label class="figma-label font-bold">N1~N6_1 디지털 기기 및 생성형 AI 활용 여부 (svyA102~109)</label>
+            <select id="sel-seoul-n2-ai-adoption" class="figma-select w-full">
+              <option value="all_2_unused" ${metrixPolicyState.seoul_n2_aiAdoption === 'all_2_unused' ? 'selected' : ''}>N1(3~4점 보통) · N2(AI 미활용=2 ➔ N3~N4 자동패스) · N5(3~4점) · N6(수혜없음=2) [권장]</option>
+              <option value="partial_used" ${metrixPolicyState.seoul_n2_aiAdoption === 'partial_used' ? 'selected' : ''}>일부 디지털/온라인 마케팅 활용 중심</option>
+            </select>
+          </div>
+          <div>
+            <label class="figma-label font-bold">O1~O4 기후변화 체감 및 탄소중립·녹색경영 실천 (svyA110~113)</label>
+            <select id="sel-seoul-o1-carbon" class="figma-select w-full">
+              <option value="2_3_mixed" ${metrixPolicyState.seoul_o1_carbon === '2_3_mixed' ? 'selected' : ''}>O1~O4 2~3점 지그재그 자연 분산 (일자리·매출전환 직결성 낮음 & 고효율 기기·냉난방 절약 실천)</option>
+              <option value="3_4_positive" ${metrixPolicyState.seoul_o1_carbon === '3_4_positive' ? 'selected' : ''}>3~4점 친환경·에너지 절약 적극 실천 중심</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+    ` : ''}
 
     <!-- 카드 1: [파트 A] 사업체 일반현황 및 대표자 인적사항 (A1 ~ A15) -->
     <section class="blueprint-card">

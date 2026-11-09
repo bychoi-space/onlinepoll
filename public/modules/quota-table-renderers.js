@@ -56,10 +56,33 @@ export function renderQuotaTableHead({
   isHrcEnergy,
   isKona,
   isMetrix,
+  isMetrixSeoul,
   isAssoc
 }) {
   if (!quotaTableHead) return;
-  if (isGallupReturnFarm) {
+  if (isMetrixSeoul) {
+    quotaTableHead.innerHTML = `
+      <tr>
+        <th class="th-no text-center" style="width: 44px;">
+          <input type="checkbox" id="cb-seoul-check-all" title="현재 필터 목록 전체 선택/해제" style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+        </th>
+        <th class="th-no">번호</th>
+        <th>조사원 계정</th>
+        <th>RESID</th>
+        <th>표본 · 패널구분</th>
+        <th>보증여부</th>
+        <th>사업체명</th>
+        <th>업종</th>
+        <th>사업자등록번호</th>
+        <th>사업장 주소</th>
+        <th>연락처</th>
+        <th>컨택결과</th>
+        <th>설문 · 시트기록</th>
+        <th class="th-status">진행 상태</th>
+        <th class="text-center" style="min-width: 115px;">개별 실행</th>
+      </tr>
+    `;
+  } else if (isGallupReturnFarm) {
     quotaTableHead.innerHTML = `
       <tr>
         <th class="th-no text-center" style="width: 44px;">
@@ -1012,6 +1035,236 @@ export function renderMetrixQuotaTable({ db, quotaTableBody }) {
       </tr>
     `;
   }).join('');
+}
+
+let currentSeoulAccountFilter = 'all'; // 'all' | '2010' | '2016'
+
+export function renderMetrixSeoulQuotaTable({
+  db,
+  quotaTableBody,
+  campId,
+  googleSheetUrl,
+  checkedSeoulSeqs,
+  onReRender,
+  onTriggerBatchRun,
+  onSyncGoogleSheet
+}) {
+  const tableScrollContainer = quotaTableBody.closest('.table-scroll-container');
+  let seoulBar = document.getElementById('seoul-panel-step1-check-bar');
+  if (!seoulBar && tableScrollContainer && tableScrollContainer.parentNode) {
+    seoulBar = document.createElement('div');
+    seoulBar.id = 'seoul-panel-step1-check-bar';
+    seoulBar.className = 'globalri-check-toolbar';
+    tableScrollContainer.parentNode.insertBefore(seoulBar, tableScrollContainer);
+  }
+
+  const getAkey = (it) => String(it.accountKey || it.akey || (String(it.surveyUrl || '').includes('2016') ? '2016' : '2010'));
+  const isItemDone = (it) => (it.quotaStatus === 'completed' || String(it.status || '').includes('완료(100%)') || it.status === '완료');
+  const isItemWait99 = (it) => (it.quotaStatus === 'pilot_done' || String(it.status || '').includes('99%') || String(it.quotaStatus || '').includes('99%'));
+
+  const list2010 = db.filter(it => getAkey(it) === '2010');
+  const list2016 = db.filter(it => getAkey(it) === '2016');
+  const uncompletedAll = db.filter(it => !isItemDone(it));
+  const uncompleted2010 = list2010.filter(it => !isItemDone(it));
+  const uncompleted2016 = list2016.filter(it => !isItemDone(it));
+  const wait99Items = db.filter(it => isItemWait99(it));
+  const completedItems = db.filter(it => isItemDone(it));
+  const answeredItems = db.filter(it => it.submittedAnswers && Object.keys(it.submittedAnswers).length > 0);
+  const checkedCount = checkedSeoulSeqs.size;
+
+  const visibleDb = db.filter(it => {
+    if (currentSeoulAccountFilter === '2010') return getAkey(it) === '2010';
+    if (currentSeoulAccountFilter === '2016') return getAkey(it) === '2016';
+    return true;
+  });
+
+  const sheetHref = googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=506086780#gid=506086780';
+
+  if (seoulBar) {
+    seoulBar.style.display = 'flex';
+    seoulBar.style.flexDirection = 'column';
+    seoulBar.style.gap = '10px';
+    seoulBar.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 4px;">
+            <i class="fa-solid fa-id-card-clip text-primary-color"></i> 조사원 계정 필터:
+          </span>
+          <button type="button" class="globalri-quick-check-btn seoul-acc-filter-btn ${currentSeoulAccountFilter === 'all' ? 'active' : ''}" data-acc-filter="all" style="${currentSeoulAccountFilter === 'all' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">전체 계정 (${db.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn seoul-acc-filter-btn ${currentSeoulAccountFilter === '2010' ? 'active' : ''}" data-acc-filter="2010" style="${currentSeoulAccountFilter === '2010' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">2010 조사원_송준희 (${list2010.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn seoul-acc-filter-btn ${currentSeoulAccountFilter === '2016' ? 'active' : ''}" data-acc-filter="2016" style="${currentSeoulAccountFilter === '2016' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">2016 조사원_정소영 (${list2016.length}건)</button>
+          <span style="margin: 0 6px; color: #cbd5e1;">|</span>
+          <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 2px;">체크 선택:</span>
+          <button type="button" class="globalri-quick-check-btn seoul-quick-check-btn" data-quick-check="uncompleted">미완료 전체 (${uncompletedAll.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn seoul-quick-check-btn" data-quick-check="acc_2010">2010 미완료 (${uncompleted2010.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn seoul-quick-check-btn" data-quick-check="acc_2016">2016 미완료 (${uncompleted2016.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn seoul-quick-check-btn" data-quick-check="wait_99">99% 대기건 (${wait99Items.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn seoul-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span id="badge-seoul-checked-count" class="badge-status ready font-bold" style="padding: 5px 12px; font-size: 12.5px;">
+            체크됨: <strong>${checkedCount}건</strong> · 99% 대기(svyA115): <strong>${wait99Items.length}건</strong> · 시트기록: <strong>${answeredItems.length}건</strong> · 완료: <strong>${completedItems.length}건</strong>
+          </span>
+          <a href="${escapeHtml(sheetHref)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="서울시 소상공인 패널조사 응답 내역 구글 스프레드시트(시트2, gid=506086780) 열기">
+            <i class="fa-solid fa-table"></i> 구글 스프레드시트 열기 (시트2)
+          </a>
+          <button type="button" id="btn-seoul-sync-gsheet" class="btn-pill btn-pill-primary btn-pill-small font-bold" title="현재까지 수집된 설문 응답 내용을 구글 스프레드시트(gid=506086780)에 즉시 반영합니다">
+            <i class="fa-solid fa-cloud-arrow-up"></i> 구글 시트 즉시 동기화
+          </button>
+          <a href="/api/campaigns/${encodeURIComponent(campId)}/export-answers-xlsx" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="응답 내역 엑셀(.xlsx) 다운로드">
+            <i class="fa-solid fa-file-excel"></i> 엑셀(.xlsx) 다운로드
+          </a>
+          <button type="button" id="btn-seoul-top-batch-run" class="btn-pill btn-pill-success btn-pill-small font-bold">
+            <i class="fa-solid fa-rocket"></i> 체크한 사업체 (${checkedCount}건) 99% 안전 대기 일괄 실행
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  quotaTableBody.innerHTML = visibleDb.map((item, idx) => {
+    const seq = Number(item.index || item.seq || (idx + 1));
+    const akey = getAkey(item);
+    const surveyorLabel = akey === '2016' ? '2016 정소영' : '2010 송준희';
+    const isDone = isItemDone(item);
+    const isWait99 = isItemWait99(item);
+    const isRowRunning = (item.quotaStatus === 'running' || item.status === '진행중');
+    const isChecked = checkedSeoulSeqs.has(seq);
+    const ansCount = item.submittedAnswers ? Object.keys(item.submittedAnswers).length : 0;
+
+    let statusHtml = `<span class="badge-status ready"><i class="fa-regular fa-clock"></i> ${escapeHtml(item.status || '미진행 대기')}</span>`;
+    if (isDone) {
+      statusHtml = `<span class="badge-status success"><i class="fa-solid fa-check-double"></i> 완료 (100%)</span>`;
+    } else if (isRowRunning) {
+      statusHtml = `<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 진행중 (${escapeHtml(item.progressRate || '')})</span>`;
+    } else if (isWait99) {
+      statusHtml = `<span class="badge-status warning font-bold" style="background: rgba(245, 158, 11, 0.18); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.45);" title="svyA115.asp(개인정보 동의서 99%)에서 안전 정지 완료"><i class="fa-solid fa-shield-halved"></i> 99% 안전대기 (svyA115)</span>`;
+    } else if (item.quotaStatus === 'error') {
+      statusHtml = `<span class="badge-status error" title="${escapeHtml(item.error || '')}">오류</span>`;
+    }
+
+    const samplePanelStr = `${item.sampleType || '본표본'} · ${item.panelType || '유지'}`;
+    const guaranteeBadge = (item.guaranteeStatus || '').includes('보증') && !(item.guaranteeStatus || '').includes('비보증')
+      ? `<span class="badge-status success font-bold" style="padding:2px 8px;">보증</span>`
+      : `<span class="badge-status ready" style="padding:2px 8px;">${escapeHtml(item.guaranteeStatus || '비보증')}</span>`;
+
+    const surveyUrl = item.surveyUrl || `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${item.resid}&fwid=S21401by41s3${akey}`;
+    const sheetBadge = ansCount > 0
+      ? `<span class="badge-status success font-mono" style="padding:2px 7px; font-size:11px;" title="구글 스프레드시트에 ${ansCount}개 문항 응답이 기록됨"><i class="fa-solid fa-table-cells"></i> ${ansCount}항목</span>`
+      : '';
+
+    let actionBtnHtml = '';
+    if (isDone) {
+      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45; cursor:not-allowed;">참여완료</button>`;
+    } else if (isRowRunning) {
+      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small" disabled><i class="fa-solid fa-spinner fa-spin"></i> 실행중</button>`;
+    } else if (isWait99) {
+      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small btn-row-pilot-seoul" data-seq="${seq}" title="${escapeHtml(item.companyName || '')} (resid=${escapeHtml(item.resid || '')}) svyA115(99%) 상태 재검증 및 시트 동기화">↻ 99% 재검증</button>`;
+    } else {
+      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-seoul" data-seq="${seq}" title="${escapeHtml(item.companyName || '')} (resid=${escapeHtml(item.resid || '')}) svyA115(99%)까지 단건 안전 실행">▷ 99% 실행</button>`;
+    }
+
+    return `
+      <tr data-row-idx="${seq}" class="${isChecked ? 'globalri-row-checked' : ''}">
+        <td class="text-center">
+          <input type="checkbox" class="cb-seoul-quota-row" data-seq="${seq}" ${isChecked ? 'checked' : ''} ${isDone ? 'disabled' : ''} style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+        </td>
+        <td class="text-center font-mono font-bold">${seq}</td>
+        <td class="text-center"><span class="badge-status ${akey === '2016' ? 'pilot' : 'ready'} font-mono font-bold" style="padding: 3px 8px;">${escapeHtml(surveyorLabel)}</span></td>
+        <td class="text-center font-mono font-bold text-primary-color">${escapeHtml(item.resid || '-')}</td>
+        <td class="text-center"><span class="badge-main-product">${escapeHtml(samplePanelStr)}</span></td>
+        <td class="text-center">${guaranteeBadge}</td>
+        <td><strong>${escapeHtml(item.companyName || '-')}</strong></td>
+        <td>${escapeHtml(item.industry || '-')}</td>
+        <td class="font-mono">${escapeHtml(item.bizNumber || '-')}</td>
+        <td title="${escapeHtml(item.address || '')}">${escapeHtml(item.address || '-')}</td>
+        <td class="font-mono">${escapeHtml(item.phone || item.mobile || '-')}</td>
+        <td class="text-center"><span class="font-caption">${escapeHtml(item.contactResult || '-')}</span></td>
+        <td class="text-center">
+          <div style="display:flex; align-items:center; justify-content:center; gap:4px; flex-wrap:wrap;">
+            <a href="${escapeHtml(surveyUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small" title="새 탭에서 설문 열기"><i class="fa-solid fa-arrow-up-right-from-square"></i> 설문</a>
+            ${sheetBadge}
+          </div>
+        </td>
+        <td class="text-center">${statusHtml}</td>
+        <td class="text-center">${actionBtnHtml}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const updateCheckedBadges = () => {
+    const cnt = checkedSeoulSeqs.size;
+    const badgeEl = document.getElementById('badge-seoul-checked-count');
+    if (badgeEl) {
+      badgeEl.innerHTML = `체크됨: <strong>${cnt}건</strong> · 99% 대기(svyA115): <strong>${wait99Items.length}건</strong> · 시트기록: <strong>${answeredItems.length}건</strong> · 완료: <strong>${completedItems.length}건</strong>`;
+    }
+    const batchBtn = document.getElementById('btn-seoul-top-batch-run');
+    if (batchBtn) {
+      batchBtn.innerHTML = `<i class="fa-solid fa-rocket"></i> 체크한 사업체 (${cnt}건) 99% 안전 대기 일괄 실행`;
+    }
+  };
+
+  const cbAll = document.getElementById('cb-seoul-check-all');
+  const selectableVisibleSeqs = visibleDb
+    .filter(it => !isItemDone(it))
+    .map(it => Number(it.index || it.seq));
+  if (cbAll) {
+    cbAll.checked = selectableVisibleSeqs.length > 0 && selectableVisibleSeqs.every(s => checkedSeoulSeqs.has(s));
+    cbAll.onchange = () => {
+      if (cbAll.checked) selectableVisibleSeqs.forEach(s => checkedSeoulSeqs.add(s));
+      else selectableVisibleSeqs.forEach(s => checkedSeoulSeqs.delete(s));
+      if (typeof onReRender === 'function') onReRender(db);
+    };
+  }
+
+  quotaTableBody.querySelectorAll('.cb-seoul-quota-row').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const seq = Number(cb.getAttribute('data-seq'));
+      if (cb.checked) checkedSeoulSeqs.add(seq);
+      else checkedSeoulSeqs.delete(seq);
+      const tr = cb.closest('tr');
+      if (tr) tr.classList.toggle('globalri-row-checked', cb.checked);
+      updateCheckedBadges();
+    });
+  });
+
+  if (seoulBar) {
+    seoulBar.querySelectorAll('.seoul-acc-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentSeoulAccountFilter = btn.getAttribute('data-acc-filter') || 'all';
+        if (typeof onReRender === 'function') onReRender(db);
+      });
+    });
+
+    seoulBar.querySelectorAll('.seoul-quick-check-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-quick-check');
+        checkedSeoulSeqs.clear();
+        db.forEach((it, idx) => {
+          const seq = Number(it.index || it.seq || (idx + 1));
+          const akey = getAkey(it);
+          const done = isItemDone(it);
+          const wait99 = isItemWait99(it);
+          if (done) return;
+          if (mode === 'uncompleted') checkedSeoulSeqs.add(seq);
+          else if (mode === 'acc_2010' && akey === '2010') checkedSeoulSeqs.add(seq);
+          else if (mode === 'acc_2016' && akey === '2016') checkedSeoulSeqs.add(seq);
+          else if (mode === 'wait_99' && wait99) checkedSeoulSeqs.add(seq);
+        });
+        if (typeof onReRender === 'function') onReRender(db);
+      });
+    });
+
+    const btnSyncSheet = document.getElementById('btn-seoul-sync-gsheet');
+    if (btnSyncSheet && typeof onSyncGoogleSheet === 'function') {
+      btnSyncSheet.addEventListener('click', onSyncGoogleSheet);
+    }
+
+    const btnTopBatch = document.getElementById('btn-seoul-top-batch-run');
+    if (btnTopBatch && typeof onTriggerBatchRun === 'function') {
+      btnTopBatch.addEventListener('click', onTriggerBatchRun);
+    }
+  }
 }
 
 export function renderAssocQuotaTable({

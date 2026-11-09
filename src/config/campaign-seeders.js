@@ -306,6 +306,84 @@ export function seedInitialCampaigns({
         }
       } catch (_) {}
     }
+
+    // [메트릭스] (신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차) (계정 2010 송준희 74건 + 2016 정소영 89건 = 총 163건) 자동 시드
+    const seoulPanelCampId = 'camp_metrix_seoul_panel_2026';
+    const existingSeoulCamp = CampaignStore.getAllCampaigns().find(c => c.id === seoulPanelCampId);
+    const seoulQuotaPath = path.join(quotasDir, 'quota_metrix_seoul_panel_163.json');
+    if (fs.existsSync(seoulQuotaPath)) {
+      try {
+        const spContent = JSON.parse(fs.readFileSync(seoulQuotaPath, 'utf-8'));
+        const spFile = path.basename(seoulQuotaPath);
+        const rawList = Array.isArray(spContent.results)
+          ? spContent.results
+          : (Array.isArray(spContent.data) ? spContent.data : []);
+        const spList = rawList.map((item, idx) => ({
+          ...item,
+          index: item.index || idx + 1,
+          seq: item.seq || idx + 1,
+          quotaStatus: item.quotaStatus || (String(item.status || '').includes('완료') ? 'completed' : 'ready')
+        }));
+
+        if (!existingSeoulCamp) {
+          CampaignStore.createCampaign({
+            id: seoulPanelCampId,
+            title: spContent.name || `[메트릭스] (신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차) - 통합 163건 (2010 송준희·2016 정소영)`,
+            description: '메트릭스 Surveybox(S21401by41s3) · 조사원 계정 2종(2010 송준희 74건 + 2016 정소영 89건) 통합 · 4차 프리필 보존 + 2026년 매출·영업비용 정합 계산 + 5차 신규 문항(M·N·O) 자동 응답 · 동의서(svyA115.asp, 99%) 도달 시 완료 전 안전 대기 및 구글 시트 자동 기록',
+            quotaType: 'b2b',
+            surveyType: 'metrix_seoul_panel',
+            accountKeys: ['2010', '2016'],
+            googleSheetUrl: 'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=506086780#gid=506086780',
+            quotaSourceFile: spFile,
+            guidelineConfig: {
+              surveyUrl: 'https://metrix.svybx.kr/sp7/S21401by41s3/mlist.asp',
+              topic: '(신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차)',
+              engine: 'metrix_seoul_panel',
+              headless: true
+            },
+            quotaDatabase: spList
+          });
+        } else {
+          let needSpUpdate = false;
+          if (!Array.isArray(existingSeoulCamp.quotaDatabase) || existingSeoulCamp.quotaDatabase.length === 0) {
+            existingSeoulCamp.quotaDatabase = spList;
+            existingSeoulCamp.quotaSourceFile = spFile;
+            needSpUpdate = true;
+          } else {
+            for (const spItem of spList) {
+              const match = existingSeoulCamp.quotaDatabase.find(
+                q => String(q.resid) === String(spItem.resid) && String(q.accountKey || q.akey) === String(spItem.accountKey || spItem.akey)
+              );
+              if (!match) {
+                existingSeoulCamp.quotaDatabase.push(spItem);
+                needSpUpdate = true;
+              } else {
+                const spAnsKeys = spItem.submittedAnswers && typeof spItem.submittedAnswers === 'object' ? Object.keys(spItem.submittedAnswers).length : 0;
+                const matchAnsKeys = match.submittedAnswers && typeof match.submittedAnswers === 'object' ? Object.keys(match.submittedAnswers).length : 0;
+                if (spAnsKeys > matchAnsKeys) {
+                  match.submittedAnswers = spItem.submittedAnswers;
+                  needSpUpdate = true;
+                }
+                if (spItem.quotaStatus && spItem.quotaStatus !== 'ready' && (match.quotaStatus === 'ready' || match.status !== spItem.status)) {
+                  match.quotaStatus = spItem.quotaStatus;
+                  match.status = spItem.status || match.status;
+                  match.progressText = spItem.progressText || match.progressText;
+                  match.progressPct = spItem.progressPct ?? match.progressPct;
+                  needSpUpdate = true;
+                }
+              }
+            }
+          }
+          if (needSpUpdate) {
+            CampaignStore.updateCampaign(seoulPanelCampId, {
+              quotaDatabase: existingSeoulCamp.quotaDatabase,
+              quotaSourceFile: existingSeoulCamp.quotaSourceFile || spFile,
+              googleSheetUrl: existingSeoulCamp.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=506086780#gid=506086780'
+            });
+          }
+        }
+      } catch (_) {}
+    }
   } catch (_) {}
 }
 

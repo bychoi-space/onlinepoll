@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'kona_youth'].includes(type)) {
       return 'special';
     }
-    if (type === 'metrix_panel') return 'smallbiz';
+    if (type === 'metrix_panel' || type === 'metrix_seoul_panel') return 'smallbiz';
     if (type === 'kstat_assoc') return 'assoc';
     if (type === 'kstat_store') return 'traditional';
 
@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (title.includes('상인회') || desc.includes('상인회 전용')) {
       return 'assoc';
     }
-    if (title.includes('메트릭스') || title.includes('소상공인 사업체패널') || desc.includes('메트릭스')) {
+    if (title.includes('메트릭스') || title.includes('소상공인 사업체패널') || title.includes('소상공인 사업체 패널') || desc.includes('메트릭스')) {
       return 'smallbiz';
     }
     return 'traditional';
@@ -188,6 +188,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getCategoryMeta(catKey, surveyType = '') {
     const sType = String(surveyType || '').toLowerCase();
+    if (sType === 'metrix_seoul_panel') {
+      return { label: '서울시 소상공인 패널 (5차)', icon: 'fa-building-user', class: 'smallbiz' };
+    }
     if (sType === 'globalri_literacy') {
       return { label: '제5차 성인문해능력조사', icon: 'fa-book-open-reader', class: 'special' };
     }
@@ -340,6 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
       q.quotaStatus === 'completed' || q.quotaStatus === 'used' || q.status === '완료' || q.surveyCompleted === true || q.serverStatus === '99'
     ).length;
 
+    const isMetrixSeoul = (sType === 'metrix_seoul_panel');
     let quotaLabel = '점포 경영실태 (17단계)';
     if (isGlobalriLiteracy) {
       quotaLabel = `대상자 ${dbCount}명 (완료 ${doneItemCount}명) · 연령대 가이드`;
@@ -351,6 +355,9 @@ document.addEventListener('DOMContentLoaded', () => {
       quotaLabel = '청소년 만족도 (40문항/53단계)';
     } else if (isAssoc) {
       quotaLabel = '상인회 실태조사 (24단계)';
+    } else if (isMetrixSeoul) {
+      const wait99Count = (c.quotaDatabase || []).filter(q => q.quotaStatus === 'pilot_done' || String(q.status || '').includes('99%')).length;
+      quotaLabel = `서울시 소상공인 패널 5차 (115단계 99% 대기 · ${wait99Count}건 대기 / 완료 ${doneItemCount}건)`;
     } else if (isSmallBiz) {
       quotaLabel = '소상공인 패널 (120단계)';
     } else if (c.quotaType === 'b2c') {
@@ -380,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const targetCount = isHrcEnergy
       ? (selCount || c.quotaConfig?.targetCount || dbCount)
-      : (c.quotaConfig?.targetCount || (isKona ? 103 : (isAssoc ? 8 : (isSmallBiz ? 54 : Math.max(dbCount, 1)))));
+      : (c.quotaConfig?.targetCount || (isKona ? 103 : (isAssoc ? 8 : (isMetrixSeoul ? 163 : (isSmallBiz ? 54 : Math.max(dbCount, 1))))));
 
     let quotaSummaryText = `${dbCount}개 점포 보유 / 목표 ${targetCount}개`;
     if (isHrcEnergy) {
@@ -393,6 +400,8 @@ document.addEventListener('DOMContentLoaded', () => {
       quotaSummaryText = `${dbCount}명 명단 확보 / 전수 ${targetCount}명`;
     } else if (isAssoc) {
       quotaSummaryText = `${dbCount}개 시장 확보 / 완료 ${doneItemCount}개`;
+    } else if (isMetrixSeoul) {
+      quotaSummaryText = `2010 송준희 74건 + 2016 정소영 89건 (총 ${dbCount}건)`;
     } else if (isSmallBiz) {
       quotaSummaryText = `${dbCount}개 패널 확보 / 전수 ${targetCount}개`;
     }
@@ -1144,7 +1153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ) {
       return 'special';
     }
-    if (sType === 'metrix_panel' || qType === 'METRIX_PANEL' || title.includes('메트릭스') || fileName.includes('metrix')) {
+    if (sType === 'metrix_panel' || sType === 'metrix_seoul_panel' || qType === 'METRIX_PANEL' || qType === 'METRIX_SEOUL_PANEL' || title.includes('메트릭스') || title.includes('서울시 소상공인') || fileName.includes('metrix')) {
       return 'smallbiz';
     }
     if (sType === 'kstat_assoc' || qType === 'KSTAT_ASSOC' || title.includes('상인회') || fileName.includes('assoc') || market.includes('상인회')) {

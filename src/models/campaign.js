@@ -82,6 +82,7 @@ export function createCampaign(data = {}) {
   const campaigns = getAllCampaigns();
   const isAssoc = (data.surveyType === 'kstat_assoc');
   const isMetrix = (data.surveyType === 'metrix_panel');
+  const isMetrixSeoul = (data.surveyType === 'metrix_seoul_panel');
   const isKona = (data.surveyType === 'kona_youth');
   const isHrcEnergy = (data.surveyType === 'hrc_energy');
   const isGlobalriLiteracy = (data.surveyType === 'globalri_literacy');
@@ -164,10 +165,10 @@ export function createCampaign(data = {}) {
 
   const newCampaign = {
     id: data.id || ('camp_' + Date.now()),
-    title: data.title || (isGlobalriLiteracy ? '[GR20260618-1-001-02] 제5차 성인문해능력조사' : (isHrcEnergy ? '2025년 기준 에너지총조사 (건물 부문)' : (isKona ? '2026 화성특례시 만족도 청소년 설문조사' : (isMetrix ? '2026 메트릭스 경기도 소상공인 패널조사' : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인'))))),
+    title: data.title || (isMetrixSeoul ? '[메트릭스] (신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차)' : (isGlobalriLiteracy ? '[GR20260618-1-001-02] 제5차 성인문해능력조사' : (isHrcEnergy ? '2025년 기준 에너지총조사 (건물 부문)' : (isKona ? '2026 화성특례시 만족도 청소년 설문조사' : (isMetrix ? '2026 메트릭스 경기도 소상공인 패널조사' : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인')))))),
     description: data.description || '',
-    quotaType: data.quotaType || (isAssoc || isMetrix || isHrcEnergy ? 'b2b' : 'b2c'),
-    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'kona_youth' | 'hrc_energy' | 'globalri_literacy'
+    quotaType: data.quotaType || (isAssoc || isMetrix || isMetrixSeoul || isHrcEnergy ? 'b2b' : 'b2c'),
+    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'metrix_seoul_panel' | 'kona_youth' | 'hrc_energy' | 'globalri_literacy'
     status: 'ready',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -178,7 +179,7 @@ export function createCampaign(data = {}) {
     },
     quotaDatabase: data.quotaDatabase || [],
     guidelineConfig: data.guidelineConfig || {
-      surveyUrl: isGlobalriLiteracy ? 'https://gift.globalri.it/login' : (isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '')),
+      surveyUrl: isMetrixSeoul ? 'https://metrix.svybx.kr/sp7/S21401by41s3/mlist.asp' : (isGlobalriLiteracy ? 'https://gift.globalri.it/login' : (isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''))),
       topic: '',
       positiveRatio: 70,
       neutralRatio: 20,
@@ -188,6 +189,41 @@ export function createCampaign(data = {}) {
       headless: true
     },
     results: [],
+    ...(isMetrixSeoul ? {
+      accountKeys: data.accountKeys || ['2010', '2016'],
+      googleSheetUrl: data.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=506086780#gid=506086780',
+      quotaSourceFile: data.quotaSourceFile || 'quota_metrix_seoul_panel_163.json',
+      surveyBlueprintPolicy: {
+        preserveExistingInputs: true,
+        haltBeforeFinalSubmit: true,
+        B8: '2',
+        M1_ranks: ['6', '12', '5'],
+        M2_ranks: ['2', '3'],
+        M3_ranks: ['5', '2', '7'],
+        N1_1: '2',
+        N1_2: '3',
+        N1_3: '2',
+        N1_4: '4',
+        N1_6: '3',
+        N1_7: '4',
+        N2_1_1: '2',
+        N2_1_2: '3',
+        N2_2_1: '2',
+        N2_2_2: '3',
+        N2_3_1: '3',
+        N2_3_2: '4',
+        N3_ranks: ['1', '2'],
+        N4: '2',
+        N5: '3',
+        N6: '1',
+        N6_1_1: '2',
+        N6_1_2: '1',
+        N6_1_3: '2',
+        O1: '1',
+        ...(data.surveyBlueprintPolicy || {})
+      },
+      hasMasterBlueprint: true
+    } : {}),
     ...(isAssoc ? {
       assocPolicy: {
         ...(defaultAssocPolicy || {}),
