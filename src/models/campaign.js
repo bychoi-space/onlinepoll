@@ -248,10 +248,20 @@ export function updateCampaign(id, updateData = {}) {
   const index = campaigns.findIndex(c => c.id === id);
   if (index === -1) return null;
 
+  const prev = campaigns[index];
+  const nowIso = new Date().toISOString();
+  let completedAt = prev.completedAt;
+  if (updateData.completedAt !== undefined) {
+    completedAt = updateData.completedAt;
+  } else if (updateData.status === 'completed' && prev.status !== 'completed') {
+    completedAt = nowIso;
+  }
+
   campaigns[index] = {
-    ...campaigns[index],
+    ...prev,
     ...updateData,
-    updatedAt: new Date().toISOString()
+    ...(completedAt ? { completedAt } : {}),
+    updatedAt: nowIso
   };
 
   fs.writeFileSync(campaignsFile, JSON.stringify(campaigns, null, 2), 'utf-8');

@@ -23,7 +23,7 @@
   <!-- CSS Stylesheets -->
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
-  <link rel="stylesheet" href="campaign.css?v=20261027_filter_v1">
+  <link rel="stylesheet" href="campaign.css?v=20261109_archive_list_v2">
   <link rel="stylesheet" href="custom-styles.css">
 </head>
 <body>
@@ -99,11 +99,11 @@
         </div>
       </section>
 
-      <!-- [신규] 카테고리 필터 (전통시장/상인회/소상공인) 및 스마트 검색/자동완성 바 -->
+      <!-- [신규] 카테고리 필터 (전통시장/상인회/소상공인/특수·국가조사) 및 스마트 검색/자동완성/뷰전환 바 -->
       <section class="campaign-filter-search-section mb-24">
         <div class="campaign-filter-search-bar">
           
-          <!-- 좌측: 카테고리 3대 탭 (전체 / 전통시장 / 상인회 / 소상공인) -->
+          <!-- 좌측: 카테고리 4대 탭 (전체 / 전통시장 / 상인회 / 소상공인 / 특수·국가조사) -->
           <div class="filter-tabs-group" role="tablist">
             <button type="button" class="filter-tab-pill active" data-category="all" id="filter-cat-all">
               <i class="fa-solid fa-layer-group"></i>
@@ -125,15 +125,38 @@
               <span>소상공인</span>
               <span class="filter-count-badge" id="badge-filter-smallbiz">0</span>
             </button>
+            <button type="button" class="filter-tab-pill" data-category="special" id="filter-cat-special">
+              <i class="fa-solid fa-landmark-flag text-teal"></i>
+              <span>특수·국가조사</span>
+              <span class="filter-count-badge" id="badge-filter-special">0</span>
+            </button>
           </div>
 
-          <!-- 우측: 상태 필터 + 스마트 검색 & 자동완성 -->
+          <!-- 우측: 상태 필터 + 정렬 + 뷰 전환 + 스마트 검색 & 자동완성 -->
           <div class="search-and-status-controls">
             <!-- 상태 빠른 필터 -->
             <div class="status-quick-filter">
-              <button type="button" class="status-chip active" data-status="all">전체 상태</button>
-              <button type="button" class="status-chip" data-status="active"><span class="status-dot-sm ready"></span>진행·대기중</button>
+              <button type="button" class="status-chip active" data-status="all" title="진행·대기중 및 오늘 완료된 항목을 상단에 표시하고, 이전 완료 항목은 하단 보관함으로 분리합니다.">전체 (진행+오늘완료)</button>
+              <button type="button" class="status-chip" data-status="active"><span class="status-dot-sm ready"></span>진행·대기만</button>
               <button type="button" class="status-chip" data-status="completed"><span class="status-dot-sm completed"></span>완료만</button>
+            </div>
+
+            <!-- 정렬 선택 -->
+            <select id="select-campaign-sort" class="sort-select-control" title="정렬 기준 선택">
+              <option value="priority">작업필요·최신순</option>
+              <option value="newest">최신 등록순</option>
+              <option value="name">가나다 이름순</option>
+              <option value="count">표본수 많은 순</option>
+            </select>
+
+            <!-- 뷰 모드 전환 토글 (카드형 vs 리스트형) -->
+            <div class="view-mode-toggle" id="campaign-view-toggle" role="group" aria-label="보기 방식 전환">
+              <button type="button" class="view-toggle-btn active" data-view="grid" title="카드형 그리드 보기">
+                <i class="fa-solid fa-grip"></i> <span>카드형</span>
+              </button>
+              <button type="button" class="view-toggle-btn" data-view="list" title="컴팩트 리스트(테이블) 보기">
+                <i class="fa-solid fa-list-ul"></i> <span>리스트형</span>
+              </button>
             </div>
 
             <!-- 검색 입력창 & 자동완성 드롭다운 -->
@@ -163,7 +186,7 @@
         </div>
       </section>
 
-      <!-- Campaigns Grid Section -->
+      <!-- Campaigns Grid / List Section -->
       <section class="campaigns-section mb-32">
         <div class="campaign-grid" id="campaign-list-container">
           <!-- JS로 동적 렌더링 -->
@@ -172,6 +195,8 @@
             <p class="empty-state-text">캠페인 목록을 불러오는 중입니다...</p>
           </div>
         </div>
+        <!-- 하단 접이식 완료 보관함 (당일 이전 완료 건 분리) -->
+        <div id="campaign-archive-section" class="completed-archive-wrapper d-none"></div>
       </section>
     </div>
 
@@ -220,11 +245,11 @@
         </div>
       </section>
 
-      <!-- [신규] 조사 쿼터 보관함 카테고리 필터 (전통시장/상인회/소상공인) 및 스마트 검색/자동완성 바 -->
+      <!-- [신규] 조사 쿼터 보관함 카테고리 필터 (전통시장/상인회/소상공인/특수·국가조사) 및 스마트 검색/자동완성/뷰전환 바 -->
       <section class="campaign-filter-search-section mb-24" id="quota-filter-search-section">
         <div class="campaign-filter-search-bar">
           
-          <!-- 좌측: 카테고리 3대 탭 (전체 / 전통시장 / 상인회 / 소상공인) -->
+          <!-- 좌측: 카테고리 4대 탭 (전체 / 전통시장 / 상인회 / 소상공인 / 특수·국가조사) -->
           <div class="filter-tabs-group" role="tablist" id="quota-filter-tabs-group">
             <button type="button" class="filter-tab-pill quota-filter-tab-pill active" data-quota-category="all" id="quota-filter-cat-all">
               <i class="fa-solid fa-layer-group"></i>
@@ -246,15 +271,45 @@
               <span>소상공인</span>
               <span class="filter-count-badge" id="badge-quota-filter-smallbiz">0</span>
             </button>
+            <button type="button" class="filter-tab-pill quota-filter-tab-pill" data-quota-category="special" id="quota-filter-cat-special">
+              <i class="fa-solid fa-landmark-flag text-teal"></i>
+              <span>특수·국가조사</span>
+              <span class="filter-count-badge" id="badge-quota-filter-special">0</span>
+            </button>
           </div>
 
-          <!-- 우측: 수집 방식 필터 + 스마트 검색 & 자동완성 -->
+          <!-- 우측: 설문상태 필터 + 수집 방식 필터 + 정렬 + 뷰 전환 + 스마트 검색 & 자동완성 -->
           <div class="search-and-status-controls">
+            <!-- 설문 진행 상태 빠른 필터 -->
+            <div class="status-quick-filter" id="quota-status-quick-filter">
+              <button type="button" class="status-chip quota-status-chip active" data-quota-status="all" title="미완료·진행중 및 오늘 설문 완료된 쿼터를 상단에 표시하고, 이전 완료 쿼터는 하단 보관함으로 분리합니다.">전체 (진행+오늘완료)</button>
+              <button type="button" class="status-chip quota-status-chip" data-quota-status="active"><span class="status-dot-sm ready"></span>작업대상만</button>
+              <button type="button" class="status-chip quota-status-chip" data-quota-status="completed"><span class="status-dot-sm completed"></span>완료만</button>
+            </div>
+
             <!-- 수집 방식 빠른 필터 -->
             <div class="status-quick-filter" id="quota-mode-quick-filter">
               <button type="button" class="status-chip quota-mode-chip active" data-quota-mode="all">전체 방식</button>
               <button type="button" class="status-chip quota-mode-chip" data-quota-mode="stratified"><span class="status-dot-sm completed"></span>층화 표본</button>
               <button type="button" class="status-chip quota-mode-chip" data-quota-mode="simple"><span class="status-dot-sm ready"></span>단순·엑셀</button>
+            </div>
+
+            <!-- 정렬 선택 -->
+            <select id="select-quota-sort" class="sort-select-control" title="정렬 기준 선택">
+              <option value="priority">작업필요·최신순</option>
+              <option value="newest">최신 생성순</option>
+              <option value="name">가나다 이름순</option>
+              <option value="count">표본수 많은 순</option>
+            </select>
+
+            <!-- 뷰 모드 전환 토글 (카드형 vs 리스트형) -->
+            <div class="view-mode-toggle" id="quota-view-toggle" role="group" aria-label="쿼터 보기 방식 전환">
+              <button type="button" class="view-toggle-btn quota-view-toggle-btn active" data-quota-view="grid" title="카드형 그리드 보기">
+                <i class="fa-solid fa-grip"></i> <span>카드형</span>
+              </button>
+              <button type="button" class="view-toggle-btn quota-view-toggle-btn" data-quota-view="list" title="컴팩트 리스트(테이블) 보기">
+                <i class="fa-solid fa-list-ul"></i> <span>리스트형</span>
+              </button>
             </div>
 
             <!-- 검색 입력창 & 자동완성 드롭다운 -->
@@ -284,7 +339,7 @@
         </div>
       </section>
 
-      <!-- Quotas Grid Section -->
+      <!-- Quotas Grid / List Section -->
       <section class="campaigns-section mb-32">
         <div class="campaign-grid" id="quota-list-container">
           <!-- JS로 동적 렌더링 -->
@@ -293,6 +348,8 @@
             <p class="empty-state-text">보관된 조사 쿼터 목록을 불러오는 중입니다...</p>
           </div>
         </div>
+        <!-- 하단 접이식 완료 쿼터 보관함 (당일 이전 설문완료 쿼터 분리) -->
+        <div id="quota-archive-section" class="completed-archive-wrapper d-none"></div>
       </section>
     </div>
 
@@ -354,7 +411,7 @@
     </div>
   </div>
 
-  <script type="module" src="campaign-list.js?v=20261108_assoc_quotas_sync"></script>
+  <script type="module" src="campaign-list.js?v=20261109_archive_list_v2"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

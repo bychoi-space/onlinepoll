@@ -750,6 +750,9 @@ export function registerQuotaRoutes({
   app.get('/api/quota/list', (req, res) => {
     try {
       ensureAssocCampaignQuotaFiles();
+      const allCampaigns = (CampaignStore && typeof CampaignStore.getAllCampaigns === 'function')
+        ? CampaignStore.getAllCampaigns()
+        : [];
       const files = fs.readdirSync(quotasDir).filter(f => f.endsWith('.json'));
       const list = files.map(f => {
         const content = JSON.parse(fs.readFileSync(path.join(quotasDir, f), 'utf-8'));
@@ -762,6 +765,8 @@ export function registerQuotaRoutes({
         const isGlobalriLiteracy = content.type === 'GLOBALRI_ADULT_LITERACY' || content.surveyType === 'globalri_literacy' || f.includes('globalri_adult_literacy');
         const isGallupReturnFarm = content.type === 'GALLUP_RETURN_FARM' || content.surveyType === 'gallup_return_farm' || f.includes('gallup_20263603');
         const isAssoc = content.type === 'KSTAT_ASSOC' || content.surveyType === 'kstat_assoc' || f.startsWith('quota_assoc_');
+        const isMetrix = content.type === 'METRIX_PANEL' || content.surveyType === 'metrix_panel' || f.toLowerCase().includes('metrix');
+        const isKona = content.type === 'KONA_YOUTH' || content.surveyType === 'kona_youth' || f.toLowerCase().includes('kona');
 
         if (isGallupReturnFarm) {
           const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed' || item.serverStatus === '99').length;
@@ -833,17 +838,46 @@ export function registerQuotaRoutes({
           ? content.isComplete
           : (data.length >= targetTotal && mbzFailedCount === 0);
 
+        const matchedCamps = allCampaigns.filter(c =>
+          (content.linkedCampaignId && c.id === content.linkedCampaignId) ||
+          c.quotaSourceFile === f ||
+          c.quotaConfig?.quotaFileName === f ||
+          (content.marketName && c.quotaConfig?.marketName && c.quotaConfig.marketName === content.marketName)
+        );
+        const linkedCamp =
+          matchedCamps.find(c => c.status === 'running') ||
+          matchedCamps.find(c => c.status === 'completed') ||
+          matchedCamps[0] ||
+          null;
+
+        const inferredSurveyType = content.surveyType ||
+          (linkedCamp ? linkedCamp.surveyType : null) ||
+          (isGallupReturnFarm ? 'gallup_return_farm' : (isGlobalriLiteracy ? 'globalri_literacy' : (isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))))));
+
+        const allDataDone = data.length > 0 && data.every(item =>
+          item.status === '완료' || item.quotaStatus === 'completed' || item.quotaStatus === 'used' || item.surveyCompleted === true || item.serverStatus === '99'
+        );
+        const effectiveCampStatus = linkedCamp
+          ? linkedCamp.status
+          : (allDataDone ? 'completed' : null);
+        const effectiveCompletedAt = (linkedCamp && linkedCamp.status === 'completed')
+          ? (linkedCamp.completedAt || linkedCamp.updatedAt || linkedCamp.createdAt)
+          : (allDataDone ? (content.updatedAt || content.createdAt) : null);
+
         return {
           fileName: f,
           title: content.title || f,
-          type: content.type || (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : 'MARKETBZ_DIRECT')),
-          surveyType: content.surveyType || (isAssoc ? 'kstat_assoc' : (isHrcEnergy ? 'hrc_energy' : null)),
-          linkedCampaignId: content.linkedCampaignId || null,
+          type: content.type || (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : (isGlobalriLiteracy ? 'GLOBALRI_ADULT_LITERACY' : (isGallupReturnFarm ? 'GALLUP_RETURN_FARM' : (isMetrix ? 'METRIX_PANEL' : 'MARKETBZ_DIRECT'))))),
+          surveyType: inferredSurveyType,
+          linkedCampaignId: linkedCamp ? linkedCamp.id : (content.linkedCampaignId || null),
+          campaignStatus: effectiveCampStatus,
+          campaignCompletedAt: effectiveCompletedAt,
+          campaignTitle: linkedCamp ? linkedCamp.title : null,
           selectedCount: content.selectedCount || null,
           substituteCount: content.substituteCount || null,
           surveyorId: content.surveyorId || null,
           surveyorName: content.surveyorName || null,
-          marketName: content.marketName || (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : null)),
+          marketName: content.marketName || (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : (isGlobalriLiteracy ? `성인문해능력조사 · ${content.surveyorName || ''}` : (isGallupReturnFarm ? `귀농귀촌 실태조사 · ${content.surveyorName || ''}` : null)))),
           keyword: content.keyword,
           count: content.count || data.length,
           targetTotal,
