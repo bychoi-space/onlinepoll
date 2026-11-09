@@ -229,6 +229,30 @@ app.get('/api/campaigns/:id', (req, res) => {
   if (!campaign) {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
   }
+
+  // 현재 서버에서 실행 중인 캠페인이 아닌데 과거 비정상 종료·교차 오염 등으로
+  // quotaStatus === 'running' 또는 campaign.status === 'running'이 남아있는 경우 즉시 'ready'로 자동 보정
+  const isThisCampaignRunning = Boolean(currentTask.isRunning && currentTask.campaignId === campaign.id);
+  if (!isThisCampaignRunning) {
+    let fixedStaleRunning = false;
+    if (Array.isArray(campaign.quotaDatabase)) {
+      campaign.quotaDatabase.forEach(item => {
+        if (item && item.quotaStatus === 'running') {
+          item.quotaStatus = 'ready';
+          fixedStaleRunning = true;
+        }
+      });
+    }
+    if (fixedStaleRunning || campaign.status === 'running') {
+      const nextStatus = (campaign.status === 'running') ? 'ready' : campaign.status;
+      CampaignStore.updateCampaign(campaign.id, {
+        quotaDatabase: campaign.quotaDatabase,
+        status: nextStatus
+      });
+      campaign.status = nextStatus;
+    }
+  }
+
   res.json(campaign);
 });
 
@@ -301,6 +325,7 @@ app.put('/api/campaigns/:id/quota', (req, res) => {
   CampaignStore.updateCampaign(campaign.id, { quotaDatabase });
   logger.broadcast({
     type: 'QUOTA_UPDATED',
+    campaignId: campaign.id,
     quotaDatabase
   });
 
@@ -801,6 +826,7 @@ app.post('/api/campaigns/:id/apply-selected-guide', (req, res) => {
 
   logger.broadcast({
     type: 'QUOTA_UPDATED',
+    campaignId: campaign.id,
     quotaDatabase: quotaDb
   });
 
@@ -983,6 +1009,7 @@ app.post('/api/campaigns/:id/bind-kstat-slots', async (req, res) => {
   logger.success(`[Kstat 슬롯 바인딩 완료] 캠페인 "${campaign.title}" (조사원: ${effectiveLoginId}) ➔ 총 ${boundCount}개 쿼터에 슬롯 바인딩 완료!`);
   logger.broadcast({
     type: 'QUOTA_UPDATED',
+    campaignId: campaign.id,
     quotaDatabase: quotaDb
   });
 
@@ -1371,6 +1398,7 @@ app.post('/api/campaigns/:id/bind-assoc-slots', async (req, res) => {
     logger.success(`[상인회 슬롯 바인딩 완료] 캠페인 "${campaign.title}" ➔ 총 ${quotaDb.length}개 상인회 바인딩 및 쿼터 보관함 동기화 성공`);
     logger.broadcast({
       type: 'QUOTA_UPDATED',
+      campaignId: campaign.id,
       quotaDatabase: quotaDb
     });
 
@@ -2225,6 +2253,7 @@ app.post('/api/campaigns/:id/bind-slots', async (req, res) => {
 
     logger.broadcast({
       type: 'QUOTA_UPDATED',
+      campaignId: campaign.id,
       quotaDatabase: updated.quotaDatabase
     });
     logger.success(`[슬롯 1:1 매핑 완료] 캠페인 "${campaign.title}": 총 ${quotaDb.length}개 중 ${mappedCount}개 슬롯 바인딩 완료!`);
@@ -2308,6 +2337,7 @@ app.post('/api/campaigns/:id/hrc-quota-guide', (req, res) => {
 
     logger.broadcast({
       type: 'QUOTA_UPDATED',
+      campaignId: campaign.id,
       quotaDatabase: updated.quotaDatabase
     });
 
@@ -2371,8 +2401,15 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
   });
 
   logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상: "${targetBiz.companyName}" (${targetBiz.idx || targetBiz.bizNumber || ''}) (슬롯: ${targetBiz.slotIndex ? '#' + targetBiz.slotIndex : '단독'})`);
+  currentTask.isRunning = true;
+  currentTask.campaignId = campaign.id;
   targetBiz.quotaStatus = 'running';
   CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'running' });
+  logger.broadcast({
+    type: 'QUOTA_UPDATED',
+    campaignId: campaign.id,
+    quotaDatabase: quotaDb
+  });
 
   res.json({
     success: true,
@@ -2717,6 +2754,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
           }
         }
 
+        currentTask.isRunning = false;
         CampaignStore.updateCampaign(campaign.id, {
           quotaDatabase: quotaDb,
           status: 'ready'
@@ -2730,6 +2768,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
           capturedSteps: result.capturedSteps
         });
       } else {
+        currentTask.isRunning = false;
         targetBiz.quotaStatus = 'error';
         CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'ready' });
         logger.error(`[파일럿 실패] ${result.error || result.message}`);
@@ -2741,6 +2780,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
         });
       }
     } catch (err) {
+      currentTask.isRunning = false;
       targetBiz.quotaStatus = 'error';
       CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'ready' });
       logger.error('[파일럿 오류]', err);
@@ -2870,6 +2910,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
         logger.broadcast({
           type: 'QUOTA_UPDATED',
+          campaignId: campaign.id,
           quotaDatabase: quotaDb
         });
 
@@ -3282,6 +3323,7 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
         logger.broadcast({
           type: 'QUOTA_UPDATED',
+          campaignId: campaign.id,
           quotaDatabase: quotaDb
         });
         await new Promise(r => setTimeout(r, 1000));
@@ -3347,8 +3389,15 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
     });
   }
 
+  currentTask.isRunning = true;
+  currentTask.campaignId = campaign.id;
   targetBiz.quotaStatus = 'running';
-  CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+  CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'running' });
+  logger.broadcast({
+    type: 'QUOTA_UPDATED',
+    campaignId: campaign.id,
+    quotaDatabase: quotaDb
+  });
 
   const slotNotice = targetBiz.slotIndex ? ` [Kstat 슬롯 #${targetBiz.slotIndex} ${targetBiz.slotExtra || ''}]` : '';
   logger.info(`[개별 쿼터 테스트] "${targetBiz.respondentName || targetBiz.buildingName || targetBiz.companyName}" (순번: #${targetBiz.index || quotaIndex})${slotNotice} 1건 실행 시작...`);
@@ -3564,15 +3613,22 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
         logger.error(`[개별 쿼터 테스트 실패] "${targetBiz.marketName || targetBiz.companyName}": ${result?.error || '테스트 오류'}`);
       }
 
-      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+      currentTask.isRunning = false;
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'ready' });
       logger.broadcast({
         type: 'QUOTA_UPDATED',
         campaignId: campaign.id,
         quotaDatabase: quotaDb
       });
     } catch (err) {
+      currentTask.isRunning = false;
       targetBiz.quotaStatus = 'error';
-      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'ready' });
+      logger.broadcast({
+        type: 'QUOTA_UPDATED',
+        campaignId: campaign.id,
+        quotaDatabase: quotaDb
+      });
     }
   })();
 });

@@ -30,7 +30,7 @@ import {
   renderKonaQuotaTable,
   renderMetrixQuotaTable,
   renderAssocQuotaTable
-} from './modules/quota-table-renderers.js?v=20261108_modular_v4';
+} from './modules/quota-table-renderers.js?v=20261109_isolation_v1';
 
 async function initSurveyDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -3325,13 +3325,15 @@ async function initSurveyDetailPage() {
           appendLog(data.level, data.message, data.timestamp);
         }
 
-        // 파일럿 진행
+        // 파일럿 진행 (현재 캠페인 이벤트만 반영)
         else if (data.type === 'PILOT_PROGRESS') {
+          if (data.campaignId && data.campaignId !== campId) return;
           setTimelineStep(data.step);
         }
 
-        // 파일럿 완료 (화면 자동 동기화)
+        // 파일럿 완료 (현재 캠페인 이벤트만 화면 자동 동기화)
         else if (data.type === 'PILOT_COMPLETED') {
+          if (data.campaignId && data.campaignId !== campId) return;
           setTimelineStep(currentCampaign?.surveyType === 'gallup_return_farm' ? 'P118(완료직전)' : 'Agree');
           setRunningState(false);
           await loadCampaign();
@@ -3344,8 +3346,17 @@ async function initSurveyDetailPage() {
           }
         }
 
-        // 배치 진행
+        // 파일럿 오류 (현재 캠페인 이벤트만 반영)
+        else if (data.type === 'PILOT_ERROR') {
+          if (data.campaignId && data.campaignId !== campId) return;
+          setRunningState(false);
+          await loadCampaign();
+          appendLog('error', `[파일럿 실패] ${data.error || '파일럿 실행 중 오류가 발생했습니다.'}`);
+        }
+
+        // 배치 진행 (현재 캠페인 이벤트만 반영)
         else if (data.type === 'BATCH_PROGRESS') {
+          if (data.campaignId && data.campaignId !== campId) return;
           setTimelineStep(data.step);
           if (data.bizName && currentActiveStoreLabel) {
             currentActiveStoreLabel.textContent = `[#${data.quotaIndex}] ${data.bizName}`;
@@ -3360,16 +3371,27 @@ async function initSurveyDetailPage() {
           }
         }
 
-        // 배치 완료 (화면 자동 동기화)
+        // 배치 완료 (현재 캠페인 이벤트만 화면 자동 동기화)
         else if (data.type === 'BATCH_COMPLETED') {
+          if (data.campaignId && data.campaignId !== campId) return;
           setTimelineStep('Agree');
           setRunningState(false);
           await loadCampaign();
           appendLog('success', '🎉 모든 쿼터의 배치 자동화가 성공적으로 완료되었습니다!');
         }
 
-        // 쿼터 업데이트
+        // 쿼터 업데이트 (타 캠페인 배치 실행 중 브로드캐스트된 QUOTA_UPDATED가 현재 캠페인 화면을 덮어쓰는 현상 원천 차단)
         else if (data.type === 'QUOTA_UPDATED') {
+          if (data.campaignId && data.campaignId !== campId) return;
+          if (!data.campaignId && currentCampaign && Array.isArray(currentCampaign.quotaDatabase) && Array.isArray(data.quotaDatabase)) {
+            const curFirst = currentCampaign.quotaDatabase[0];
+            const incFirst = data.quotaDatabase[0];
+            if (curFirst && incFirst) {
+              const curKey = String(curFirst.memberUid || curFirst.uid || curFirst.id || curFirst.ranId || curFirst.bizNumber || curFirst.companyName || '');
+              const incKey = String(incFirst.memberUid || incFirst.uid || incFirst.id || incFirst.ranId || incFirst.bizNumber || incFirst.companyName || '');
+              if (curKey && incKey && curKey !== incKey) return;
+            }
+          }
           if (currentCampaign) {
             currentCampaign.quotaDatabase = data.quotaDatabase;
             renderQuotaTable(data.quotaDatabase);
@@ -3459,7 +3481,7 @@ async function initSurveyDetailPage() {
   }
 
   // ------------------------------------------------------------------------
-  // 서버 실행 상태 동기화 (새로고침/재진입 시 자동 복원)
+  // 서버 실행 상태 동기화 (새로고침/재진입 시 자동 복원 및 비실행 캠페인 잔류 running 상태 정리)
   // ------------------------------------------------------------------------
   async function syncServerRunningState() {
     try {
@@ -3469,6 +3491,21 @@ async function initSurveyDetailPage() {
       if (data.isRunning && data.campaignId === campId) {
         setRunningState(true);
         appendLog('info', '📡 [상태 복원] 현재 원격 설문 배치가 가동 중입니다. (실시간 모니터링 연동)');
+      } else {
+        setRunningState(false);
+        if (currentCampaign && Array.isArray(currentCampaign.quotaDatabase)) {
+          let hadStaleRunning = false;
+          currentCampaign.quotaDatabase.forEach(item => {
+            if (item && item.quotaStatus === 'running') {
+              item.quotaStatus = 'ready';
+              hadStaleRunning = true;
+            }
+          });
+          if (hadStaleRunning) {
+            renderQuotaTable(currentCampaign.quotaDatabase);
+            updateButtonStates();
+          }
+        }
       }
     } catch (err) {
       console.warn('서버 상태 조회 실패:', err);

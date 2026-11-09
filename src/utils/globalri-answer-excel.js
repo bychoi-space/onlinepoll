@@ -731,9 +731,13 @@ export function persistGlobalriQuotaDatabase({
       const k = String(row.memberUid || row.uid || '').trim();
       const inc = incomingByUid.get(k);
       if (!inc) return row;
+      const safeQuotaStatus = (inc.quotaStatus === 'running')
+        ? ((row.quotaStatus && row.quotaStatus !== 'running') ? row.quotaStatus : 'ready')
+        : (inc.quotaStatus || row.quotaStatus || 'ready');
       return {
         ...row,
         ...inc,
+        quotaStatus: safeQuotaStatus,
         index: row.index || inc.index || (idx + 1),
         seq: row.seq || inc.seq || (idx + 1),
         submittedAnswers: (Array.isArray(inc.submittedAnswers) && inc.submittedAnswers.length > 0)

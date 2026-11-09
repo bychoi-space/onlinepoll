@@ -494,13 +494,14 @@ export function renderGlobalriQuotaTable({
   quotaTableBody.innerHTML = db.map((item, idx) => {
     const seq = Number(item.index || item.seq || (idx + 1));
     const st = item.quotaStatus || 'ready';
-    const prog = item.progress || (st === 'completed' || item.status === '완료' ? '100%' : '진행 중');
+    const rawProg = String(item.progress || '').trim();
+    const prog = (rawProg && rawProg !== '진행 중') ? rawProg : (st === 'completed' || item.status === '완료' ? '100%' : '미진행');
     const cScoreTxt = item.gradeSummary?.partC ? ` (C:${item.gradeSummary.partC.replace(/\s+/g, '')})` : '';
-    let statusHtml = `<span class="badge-status ready">진행 중 (${escapeHtml(prog)})</span>`;
+    let statusHtml = `<span class="badge-status ready">대기 (${escapeHtml(prog)})</span>`;
     if (st === 'completed' || item.status === '완료') {
       statusHtml = `<span class="badge-status success"><i class="fa-solid fa-check-double"></i> 조사완료${escapeHtml(cScoreTxt)}</span>`;
     } else if (st === 'running') {
-      statusHtml = `<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 실행중 (${escapeHtml(prog)})</span>`;
+      statusHtml = `<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 실행중 (${escapeHtml(rawProg || '진행 중')})</span>`;
     } else if (st === 'pilot_done' || String(item.status || '').includes('Part C') || String(item.status || '').includes('F05_2')) {
       statusHtml = `<span class="badge-status pilot" title="자동화 구간 완료 · 수기/검토 대기"><i class="fa-solid fa-clipboard-check"></i> ${escapeHtml(item.status || 'Part C 완료')}${escapeHtml(cScoreTxt)}</span>`;
     } else if (st === 'error') {
