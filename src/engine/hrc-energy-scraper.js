@@ -179,6 +179,7 @@ export async function scrapeHrcEnergySlots(options = {}) {
       surveyorName: accountMeta.surveyorName,
       totalScraped: scrapedMap.size,
       scrapedSlots: Array.from(scrapedMap.values()),
+      mergedData: updatedQuota?.data || [],
       quota: updatedQuota,
       jsonPath
     };

@@ -579,7 +579,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1001_1001 (#1)",
       "lastContactStatus": "5. 적격응답자 부재",
-      "contactCount": 1,
+      "contactCount": "1",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -596,7 +596,8 @@
       "openDate": "선정",
       "slotIndex": 1,
       "slotExtra": "선정 / 0%",
-      "ranId": "818336"
+      "ranId": "818336",
+      "siteStatus": ""
     },
     {
       "seq": 2,
@@ -619,7 +620,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1001_1001 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -636,7 +637,8 @@
       "openDate": "선정",
       "slotIndex": 2,
       "slotExtra": "선정 / 0%",
-      "ranId": "818341"
+      "ranId": "818341",
+      "siteStatus": ""
     },
     {
       "seq": 3,
@@ -659,7 +661,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1001_1001 (#3)",
       "lastContactStatus": "5. 적격응답자 부재",
-      "contactCount": 1,
+      "contactCount": "1",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -676,7 +678,8 @@
       "openDate": "선정",
       "slotIndex": 3,
       "slotExtra": "선정 / 0%",
-      "ranId": "818342"
+      "ranId": "818342",
+      "siteStatus": ""
     },
     {
       "seq": 4,
@@ -699,7 +702,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1001_1001 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -716,7 +719,8 @@
       "openDate": "선정",
       "slotIndex": 4,
       "slotExtra": "선정 / 0%",
-      "ranId": "818355"
+      "ranId": "818355",
+      "siteStatus": ""
     },
     {
       "seq": 5,
@@ -739,7 +743,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1001_1001 (#5)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -756,7 +760,8 @@
       "openDate": "선정",
       "slotIndex": 5,
       "slotExtra": "선정 / 0%",
-      "ranId": "818343"
+      "ranId": "818343",
+      "siteStatus": ""
     },
     {
       "seq": 6,
@@ -779,7 +784,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1001_1001 (#6)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -796,7 +801,8 @@
       "openDate": "대체",
       "slotIndex": 6,
       "slotExtra": "대체 / 0%",
-      "ranId": "818356"
+      "ranId": "818356",
+      "siteStatus": ""
     },
     {
       "seq": 7,
@@ -819,7 +825,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1001_1002 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -836,7 +842,8 @@
       "openDate": "선정",
       "slotIndex": 7,
       "slotExtra": "선정 / 0%",
-      "ranId": "818605"
+      "ranId": "818605",
+      "siteStatus": ""
     },
     {
       "seq": 8,
@@ -859,7 +866,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1001_1002 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -876,7 +883,8 @@
       "openDate": "선정",
       "slotIndex": 8,
       "slotExtra": "선정 / 0%",
-      "ranId": "818613"
+      "ranId": "818613",
+      "siteStatus": ""
     },
     {
       "seq": 9,
@@ -899,7 +907,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1001_1002 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -916,7 +924,8 @@
       "openDate": "선정",
       "slotIndex": 9,
       "slotExtra": "선정 / 0%",
-      "ranId": "818604"
+      "ranId": "818604",
+      "siteStatus": ""
     },
     {
       "seq": 10,
@@ -939,7 +948,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1001_1002 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -956,7 +965,8 @@
       "openDate": "선정",
       "slotIndex": 10,
       "slotExtra": "선정 / 0%",
-      "ranId": "818607"
+      "ranId": "818607",
+      "siteStatus": ""
     },
     {
       "seq": 11,
@@ -979,7 +989,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1001_1002 (#5)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -996,7 +1006,8 @@
       "openDate": "대체",
       "slotIndex": 11,
       "slotExtra": "대체 / 0%",
-      "ranId": "818608"
+      "ranId": "818608",
+      "siteStatus": ""
     },
     {
       "seq": 12,
@@ -1019,7 +1030,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1001_1002 (#6)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -1036,7 +1047,8 @@
       "openDate": "대체",
       "slotIndex": 12,
       "slotExtra": "대체 / 0%",
-      "ranId": "818611"
+      "ranId": "818611",
+      "siteStatus": ""
     },
     {
       "seq": 13,
@@ -1059,7 +1071,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1001_1002 (#7)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -1076,7 +1088,8 @@
       "openDate": "대체",
       "slotIndex": 13,
       "slotExtra": "대체 / 0%",
-      "ranId": "818612"
+      "ranId": "818612",
+      "siteStatus": ""
     },
     {
       "seq": 14,
@@ -1099,7 +1112,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1001_1002 (#8)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -1116,7 +1129,8 @@
       "openDate": "대체",
       "slotIndex": 14,
       "slotExtra": "대체 / 0%",
-      "ranId": "818606"
+      "ranId": "818606",
+      "siteStatus": ""
     },
     {
       "seq": 15,
@@ -1139,7 +1153,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1001_1003 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1003",
       "memo": "",
@@ -1156,7 +1170,8 @@
       "openDate": "선정",
       "slotIndex": 15,
       "slotExtra": "선정 / 0%",
-      "ranId": "818768"
+      "ranId": "818768",
+      "siteStatus": ""
     },
     {
       "seq": 16,
@@ -1179,7 +1194,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1001_1003 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1003",
       "memo": "",
@@ -1196,7 +1211,8 @@
       "openDate": "대체",
       "slotIndex": 16,
       "slotExtra": "대체 / 0%",
-      "ranId": "818769"
+      "ranId": "818769",
+      "siteStatus": ""
     },
     {
       "seq": 17,
@@ -1219,7 +1235,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1001_1003 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1003",
       "memo": "",
@@ -1236,7 +1252,8 @@
       "openDate": "대체",
       "slotIndex": 17,
       "slotExtra": "대체 / 0%",
-      "ranId": "818770"
+      "ranId": "818770",
+      "siteStatus": ""
     },
     {
       "seq": 18,
@@ -1259,7 +1276,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1001_1003 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1003",
       "memo": "",
@@ -1276,7 +1293,8 @@
       "openDate": "대체",
       "slotIndex": 18,
       "slotExtra": "대체 / 0%",
-      "ranId": "818771"
+      "ranId": "818771",
+      "siteStatus": ""
     },
     {
       "seq": 19,
@@ -1299,7 +1317,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1002_1001 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1002",
       "quotaCode2": "1001",
       "memo": "",
@@ -1316,7 +1334,8 @@
       "openDate": "선정",
       "slotIndex": 19,
       "slotExtra": "선정 / 0%",
-      "ranId": "818952"
+      "ranId": "818952",
+      "siteStatus": ""
     },
     {
       "seq": 20,
@@ -1339,7 +1358,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1002_1001 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1002",
       "quotaCode2": "1001",
       "memo": "",
@@ -1356,7 +1375,8 @@
       "openDate": "선정",
       "slotIndex": 20,
       "slotExtra": "선정 / 0%",
-      "ranId": "818940"
+      "ranId": "818940",
+      "siteStatus": ""
     },
     {
       "seq": 21,
@@ -1379,7 +1399,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1002_1001 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1002",
       "quotaCode2": "1001",
       "memo": "",
@@ -1396,7 +1416,8 @@
       "openDate": "선정",
       "slotIndex": 21,
       "slotExtra": "선정 / 0%",
-      "ranId": "818942"
+      "ranId": "818942",
+      "siteStatus": ""
     },
     {
       "seq": 22,
@@ -1419,7 +1440,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1002_1001 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1002",
       "quotaCode2": "1001",
       "memo": "",
@@ -1436,7 +1457,8 @@
       "openDate": "대체",
       "slotIndex": 22,
       "slotExtra": "대체 / 0%",
-      "ranId": "818951"
+      "ranId": "818951",
+      "siteStatus": ""
     },
     {
       "seq": 23,
@@ -1459,7 +1481,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1002_1002 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -1476,7 +1498,8 @@
       "openDate": "선정",
       "slotIndex": 23,
       "slotExtra": "선정 / 0%",
-      "ranId": "819148"
+      "ranId": "819148",
+      "siteStatus": ""
     },
     {
       "seq": 24,
@@ -1499,7 +1522,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1002_1002 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -1516,7 +1539,8 @@
       "openDate": "선정",
       "slotIndex": 24,
       "slotExtra": "선정 / 0%",
-      "ranId": "819150"
+      "ranId": "819150",
+      "siteStatus": ""
     },
     {
       "seq": 25,
@@ -1539,7 +1563,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1002_1002 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -1556,7 +1580,8 @@
       "openDate": "선정",
       "slotIndex": 25,
       "slotExtra": "선정 / 0%",
-      "ranId": "819149"
+      "ranId": "819149",
+      "siteStatus": ""
     },
     {
       "seq": 26,
@@ -1579,7 +1604,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1003_1001 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1003",
       "quotaCode2": "1001",
       "memo": "",
@@ -1596,7 +1621,8 @@
       "openDate": "선정",
       "slotIndex": 26,
       "slotExtra": "선정 / 0%",
-      "ranId": "819350"
+      "ranId": "819350",
+      "siteStatus": ""
     },
     {
       "seq": 27,
@@ -1619,7 +1645,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1004_1001 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -1636,7 +1662,8 @@
       "openDate": "선정",
       "slotIndex": 27,
       "slotExtra": "선정 / 0%",
-      "ranId": "819463"
+      "ranId": "819463",
+      "siteStatus": ""
     },
     {
       "seq": 28,
@@ -1659,7 +1686,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1004_1001 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -1676,7 +1703,8 @@
       "openDate": "대체",
       "slotIndex": 28,
       "slotExtra": "대체 / 0%",
-      "ranId": "819469"
+      "ranId": "819469",
+      "siteStatus": ""
     },
     {
       "seq": 29,
@@ -1699,7 +1727,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1004_1003 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1003",
       "memo": "",
@@ -1716,7 +1744,8 @@
       "openDate": "선정",
       "slotIndex": 29,
       "slotExtra": "선정 / 0%",
-      "ranId": "819581"
+      "ranId": "819581",
+      "siteStatus": ""
     },
     {
       "seq": 30,
@@ -1739,7 +1768,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1004_1003 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1003",
       "memo": "",
@@ -1756,7 +1785,8 @@
       "openDate": "대체",
       "slotIndex": 30,
       "slotExtra": "대체 / 0%",
-      "ranId": "819571"
+      "ranId": "819571",
+      "siteStatus": ""
     },
     {
       "seq": 31,
@@ -1779,7 +1809,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1004_1003 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1003",
       "memo": "",
@@ -1796,7 +1826,8 @@
       "openDate": "대체",
       "slotIndex": 31,
       "slotExtra": "대체 / 0%",
-      "ranId": "819574"
+      "ranId": "819574",
+      "siteStatus": ""
     },
     {
       "seq": 32,
@@ -1819,7 +1850,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1004_1003 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1003",
       "memo": "",
@@ -1836,7 +1867,8 @@
       "openDate": "대체",
       "slotIndex": 32,
       "slotExtra": "대체 / 0%",
-      "ranId": "819582"
+      "ranId": "819582",
+      "siteStatus": ""
     },
     {
       "seq": 33,
@@ -1859,7 +1891,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1004_1004 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1004",
       "memo": "",
@@ -1876,7 +1908,8 @@
       "openDate": "선정",
       "slotIndex": 33,
       "slotExtra": "선정 / 0%",
-      "ranId": "819619"
+      "ranId": "819619",
+      "siteStatus": ""
     },
     {
       "seq": 34,
@@ -1899,7 +1932,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1004_1005 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -1916,7 +1949,8 @@
       "openDate": "선정",
       "slotIndex": 34,
       "slotExtra": "선정 / 0%",
-      "ranId": "819632"
+      "ranId": "819632",
+      "siteStatus": ""
     },
     {
       "seq": 35,
@@ -1939,7 +1973,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1004_1005 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -1956,7 +1990,8 @@
       "openDate": "선정",
       "slotIndex": 35,
       "slotExtra": "선정 / 0%",
-      "ranId": "819630"
+      "ranId": "819630",
+      "siteStatus": ""
     },
     {
       "seq": 36,
@@ -1979,7 +2014,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1004_1005 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -1996,7 +2031,8 @@
       "openDate": "선정",
       "slotIndex": 36,
       "slotExtra": "선정 / 0%",
-      "ranId": "819631"
+      "ranId": "819631",
+      "siteStatus": ""
     },
     {
       "seq": 37,
@@ -2019,7 +2055,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1005_1001 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1001",
       "memo": "",
@@ -2036,7 +2072,8 @@
       "openDate": "선정",
       "slotIndex": 37,
       "slotExtra": "선정 / 0%",
-      "ranId": "819668"
+      "ranId": "819668",
+      "siteStatus": ""
     },
     {
       "seq": 38,
@@ -2059,7 +2096,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1005_1002 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2076,7 +2113,8 @@
       "openDate": "선정",
       "slotIndex": 38,
       "slotExtra": "선정 / 0%",
-      "ranId": "819724"
+      "ranId": "819724",
+      "siteStatus": ""
     },
     {
       "seq": 39,
@@ -2099,7 +2137,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1005_1002 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2116,7 +2154,8 @@
       "openDate": "선정",
       "slotIndex": 39,
       "slotExtra": "선정 / 0%",
-      "ranId": "819725"
+      "ranId": "819725",
+      "siteStatus": ""
     },
     {
       "seq": 40,
@@ -2139,7 +2178,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1005_1002 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2156,7 +2195,8 @@
       "openDate": "선정",
       "slotIndex": 40,
       "slotExtra": "선정 / 0%",
-      "ranId": "819726"
+      "ranId": "819726",
+      "siteStatus": ""
     },
     {
       "seq": 41,
@@ -2179,7 +2219,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1005_1002 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2196,7 +2236,8 @@
       "openDate": "선정",
       "slotIndex": 41,
       "slotExtra": "선정 / 0%",
-      "ranId": "819698"
+      "ranId": "819698",
+      "siteStatus": ""
     },
     {
       "seq": 42,
@@ -2219,7 +2260,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1005_1002 (#5)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2236,7 +2277,8 @@
       "openDate": "선정",
       "slotIndex": 42,
       "slotExtra": "선정 / 0%",
-      "ranId": "819721"
+      "ranId": "819721",
+      "siteStatus": ""
     },
     {
       "seq": 43,
@@ -2259,7 +2301,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1005_1002 (#6)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2276,7 +2318,8 @@
       "openDate": "선정",
       "slotIndex": 43,
       "slotExtra": "선정 / 0%",
-      "ranId": "819723"
+      "ranId": "819723",
+      "siteStatus": ""
     },
     {
       "seq": 44,
@@ -2299,7 +2342,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1005_1002 (#7)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2316,7 +2359,8 @@
       "openDate": "대체",
       "slotIndex": 44,
       "slotExtra": "대체 / 0%",
-      "ranId": "819693"
+      "ranId": "819693",
+      "siteStatus": ""
     },
     {
       "seq": 45,
@@ -2339,7 +2383,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1005_1002 (#8)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2356,7 +2400,8 @@
       "openDate": "대체",
       "slotIndex": 45,
       "slotExtra": "대체 / 0%",
-      "ranId": "819697"
+      "ranId": "819697",
+      "siteStatus": ""
     },
     {
       "seq": 46,
@@ -2379,7 +2424,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1005_1002 (#9)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2396,7 +2441,8 @@
       "openDate": "대체",
       "slotIndex": 46,
       "slotExtra": "대체 / 0%",
-      "ranId": "819699"
+      "ranId": "819699",
+      "siteStatus": ""
     },
     {
       "seq": 47,
@@ -2419,7 +2465,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1005_1002 (#10)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2436,7 +2482,8 @@
       "openDate": "대체",
       "slotIndex": 47,
       "slotExtra": "대체 / 0%",
-      "ranId": "819700"
+      "ranId": "819700",
+      "siteStatus": ""
     },
     {
       "seq": 48,
@@ -2459,7 +2506,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1005_1002 (#11)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -2476,7 +2523,8 @@
       "openDate": "대체",
       "slotIndex": 48,
       "slotExtra": "대체 / 0%",
-      "ranId": "819705"
+      "ranId": "819705",
+      "siteStatus": ""
     },
     {
       "seq": 49,
@@ -2499,7 +2547,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1005_1003 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1003",
       "memo": "",
@@ -2516,7 +2564,8 @@
       "openDate": "선정",
       "slotIndex": 49,
       "slotExtra": "선정 / 0%",
-      "ranId": "819762"
+      "ranId": "819762",
+      "siteStatus": ""
     },
     {
       "seq": 50,
@@ -2539,7 +2588,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1005_1003 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1003",
       "memo": "",
@@ -2556,7 +2605,8 @@
       "openDate": "선정",
       "slotIndex": 50,
       "slotExtra": "선정 / 0%",
-      "ranId": "819763"
+      "ranId": "819763",
+      "siteStatus": ""
     },
     {
       "seq": 51,
@@ -2579,7 +2629,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1005_1003 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1003",
       "memo": "",
@@ -2596,7 +2646,8 @@
       "openDate": "대체",
       "slotIndex": 51,
       "slotExtra": "대체 / 0%",
-      "ranId": "819764"
+      "ranId": "819764",
+      "siteStatus": ""
     },
     {
       "seq": 52,
@@ -2619,7 +2670,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1005_1003 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1003",
       "memo": "",
@@ -2636,7 +2687,8 @@
       "openDate": "대체",
       "slotIndex": 52,
       "slotExtra": "대체 / 0%",
-      "ranId": "819765"
+      "ranId": "819765",
+      "siteStatus": ""
     },
     {
       "seq": 53,
@@ -2659,7 +2711,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1005_1003 (#5)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1003",
       "memo": "",
@@ -2676,7 +2728,8 @@
       "openDate": "대체",
       "slotIndex": 53,
       "slotExtra": "대체 / 0%",
-      "ranId": "819766"
+      "ranId": "819766",
+      "siteStatus": ""
     },
     {
       "seq": 54,
@@ -2699,7 +2752,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1006_1001 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -2716,7 +2769,8 @@
       "openDate": "선정",
       "slotIndex": 54,
       "slotExtra": "선정 / 0%",
-      "ranId": "819957"
+      "ranId": "819957",
+      "siteStatus": ""
     },
     {
       "seq": 55,
@@ -2739,7 +2793,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1006_1001 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -2756,7 +2810,8 @@
       "openDate": "선정",
       "slotIndex": 55,
       "slotExtra": "선정 / 0%",
-      "ranId": "819946"
+      "ranId": "819946",
+      "siteStatus": ""
     },
     {
       "seq": 56,
@@ -2779,7 +2834,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1006_1001 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -2796,7 +2851,8 @@
       "openDate": "선정",
       "slotIndex": 56,
       "slotExtra": "선정 / 0%",
-      "ranId": "819949"
+      "ranId": "819949",
+      "siteStatus": ""
     },
     {
       "seq": 57,
@@ -2819,7 +2875,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1006_1001 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -2836,7 +2892,8 @@
       "openDate": "선정",
       "slotIndex": 57,
       "slotExtra": "선정 / 0%",
-      "ranId": "819951"
+      "ranId": "819951",
+      "siteStatus": ""
     },
     {
       "seq": 58,
@@ -2859,7 +2916,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1006_1001 (#5)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -2876,7 +2933,8 @@
       "openDate": "선정",
       "slotIndex": 58,
       "slotExtra": "선정 / 0%",
-      "ranId": "819952"
+      "ranId": "819952",
+      "siteStatus": ""
     },
     {
       "seq": 59,
@@ -2899,7 +2957,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1006_1001 (#6)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -2916,7 +2974,8 @@
       "openDate": "선정",
       "slotIndex": 59,
       "slotExtra": "선정 / 0%",
-      "ranId": "819953"
+      "ranId": "819953",
+      "siteStatus": ""
     },
     {
       "seq": 60,
@@ -2939,7 +2998,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1006_1001 (#7)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -2956,7 +3015,8 @@
       "openDate": "대체",
       "slotIndex": 60,
       "slotExtra": "대체 / 0%",
-      "ranId": "819954"
+      "ranId": "819954",
+      "siteStatus": ""
     },
     {
       "seq": 61,
@@ -2979,7 +3039,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1006_1001 (#8)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -2996,7 +3056,8 @@
       "openDate": "대체",
       "slotIndex": 61,
       "slotExtra": "대체 / 0%",
-      "ranId": "819955"
+      "ranId": "819955",
+      "siteStatus": ""
     },
     {
       "seq": 62,
@@ -3019,7 +3080,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1006_1001 (#9)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -3036,7 +3097,8 @@
       "openDate": "대체",
       "slotIndex": 62,
       "slotExtra": "대체 / 0%",
-      "ranId": "819958"
+      "ranId": "819958",
+      "siteStatus": ""
     },
     {
       "seq": 63,
@@ -3059,7 +3121,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1006_1001 (#10)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -3076,7 +3138,8 @@
       "openDate": "대체",
       "slotIndex": 63,
       "slotExtra": "대체 / 0%",
-      "ranId": "819959"
+      "ranId": "819959",
+      "siteStatus": ""
     },
     {
       "seq": 64,
@@ -3099,7 +3162,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1006_1001 (#11)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -3116,7 +3179,8 @@
       "openDate": "대체",
       "slotIndex": 64,
       "slotExtra": "대체 / 0%",
-      "ranId": "819960"
+      "ranId": "819960",
+      "siteStatus": ""
     },
     {
       "seq": 65,
@@ -3139,7 +3203,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1006_1001 (#12)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -3156,7 +3220,8 @@
       "openDate": "대체",
       "slotIndex": 65,
       "slotExtra": "대체 / 0%",
-      "ranId": "819971"
+      "ranId": "819971",
+      "siteStatus": ""
     },
     {
       "seq": 66,
@@ -3179,7 +3244,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1006_1001 (#13)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -3196,7 +3261,8 @@
       "openDate": "대체",
       "slotIndex": 66,
       "slotExtra": "대체 / 0%",
-      "ranId": "819972"
+      "ranId": "819972",
+      "siteStatus": ""
     },
     {
       "seq": 67,
@@ -3219,7 +3285,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1006_1001 (#14)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -3236,7 +3302,8 @@
       "openDate": "대체",
       "slotIndex": 67,
       "slotExtra": "대체 / 0%",
-      "ranId": "819974"
+      "ranId": "819974",
+      "siteStatus": ""
     },
     {
       "seq": 68,
@@ -3259,7 +3326,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1006_1001 (#15)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -3276,7 +3343,8 @@
       "openDate": "대체",
       "slotIndex": 68,
       "slotExtra": "대체 / 0%",
-      "ranId": "819975"
+      "ranId": "819975",
+      "siteStatus": ""
     },
     {
       "seq": 69,
@@ -3299,7 +3367,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1006_1001 (#16)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -3316,7 +3384,8 @@
       "openDate": "대체",
       "slotIndex": 69,
       "slotExtra": "대체 / 0%",
-      "ranId": "819976"
+      "ranId": "819976",
+      "siteStatus": ""
     },
     {
       "seq": 70,
@@ -3339,7 +3408,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1006_1003 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -3356,7 +3425,8 @@
       "openDate": "선정",
       "slotIndex": 70,
       "slotExtra": "선정 / 0%",
-      "ranId": "820642"
+      "ranId": "820642",
+      "siteStatus": ""
     },
     {
       "seq": 71,
@@ -3379,7 +3449,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1001 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3396,7 +3466,8 @@
       "openDate": "선정",
       "slotIndex": 71,
       "slotExtra": "선정 / 0%",
-      "ranId": "821043"
+      "ranId": "821043",
+      "siteStatus": ""
     },
     {
       "seq": 72,
@@ -3419,7 +3490,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1001 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3436,7 +3507,8 @@
       "openDate": "선정",
       "slotIndex": 72,
       "slotExtra": "선정 / 0%",
-      "ranId": "821051"
+      "ranId": "821051",
+      "siteStatus": ""
     },
     {
       "seq": 73,
@@ -3459,7 +3531,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1001 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3476,7 +3548,8 @@
       "openDate": "선정",
       "slotIndex": 73,
       "slotExtra": "선정 / 0%",
-      "ranId": "821055"
+      "ranId": "821055",
+      "siteStatus": ""
     },
     {
       "seq": 74,
@@ -3499,7 +3572,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1001 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3516,7 +3589,8 @@
       "openDate": "선정",
       "slotIndex": 74,
       "slotExtra": "선정 / 0%",
-      "ranId": "821069"
+      "ranId": "821069",
+      "siteStatus": ""
     },
     {
       "seq": 75,
@@ -3539,7 +3613,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#5)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3556,7 +3630,8 @@
       "openDate": "대체",
       "slotIndex": 75,
       "slotExtra": "대체 / 0%",
-      "ranId": "821073"
+      "ranId": "821073",
+      "siteStatus": ""
     },
     {
       "seq": 76,
@@ -3579,7 +3654,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#6)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3596,7 +3671,8 @@
       "openDate": "대체",
       "slotIndex": 76,
       "slotExtra": "대체 / 0%",
-      "ranId": "821077"
+      "ranId": "821077",
+      "siteStatus": ""
     },
     {
       "seq": 77,
@@ -3619,7 +3695,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#7)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3636,7 +3712,8 @@
       "openDate": "대체",
       "slotIndex": 77,
       "slotExtra": "대체 / 0%",
-      "ranId": "821085"
+      "ranId": "821085",
+      "siteStatus": ""
     },
     {
       "seq": 78,
@@ -3659,7 +3736,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#8)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3676,7 +3753,8 @@
       "openDate": "대체",
       "slotIndex": 78,
       "slotExtra": "대체 / 0%",
-      "ranId": "821089"
+      "ranId": "821089",
+      "siteStatus": ""
     },
     {
       "seq": 79,
@@ -3699,7 +3777,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#9)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3716,7 +3794,8 @@
       "openDate": "대체",
       "slotIndex": 79,
       "slotExtra": "대체 / 0%",
-      "ranId": "820989"
+      "ranId": "820989",
+      "siteStatus": ""
     },
     {
       "seq": 80,
@@ -3739,7 +3818,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#10)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3756,7 +3835,8 @@
       "openDate": "대체",
       "slotIndex": 80,
       "slotExtra": "대체 / 0%",
-      "ranId": "820990"
+      "ranId": "820990",
+      "siteStatus": ""
     },
     {
       "seq": 81,
@@ -3779,7 +3859,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#11)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3796,7 +3876,8 @@
       "openDate": "대체",
       "slotIndex": 81,
       "slotExtra": "대체 / 0%",
-      "ranId": "820991"
+      "ranId": "820991",
+      "siteStatus": ""
     },
     {
       "seq": 82,
@@ -3819,7 +3900,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#12)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3836,7 +3917,8 @@
       "openDate": "대체",
       "slotIndex": 82,
       "slotExtra": "대체 / 0%",
-      "ranId": "821040"
+      "ranId": "821040",
+      "siteStatus": ""
     },
     {
       "seq": 83,
@@ -3859,7 +3941,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#13)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3876,7 +3958,8 @@
       "openDate": "대체",
       "slotIndex": 83,
       "slotExtra": "대체 / 0%",
-      "ranId": "821041"
+      "ranId": "821041",
+      "siteStatus": ""
     },
     {
       "seq": 84,
@@ -3899,7 +3982,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#14)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3916,7 +3999,8 @@
       "openDate": "대체",
       "slotIndex": 84,
       "slotExtra": "대체 / 0%",
-      "ranId": "821042"
+      "ranId": "821042",
+      "siteStatus": ""
     },
     {
       "seq": 85,
@@ -3939,7 +4023,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#15)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3956,7 +4040,8 @@
       "openDate": "대체",
       "slotIndex": 85,
       "slotExtra": "대체 / 0%",
-      "ranId": "821044"
+      "ranId": "821044",
+      "siteStatus": ""
     },
     {
       "seq": 86,
@@ -3979,7 +4064,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#16)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -3996,7 +4081,8 @@
       "openDate": "대체",
       "slotIndex": 86,
       "slotExtra": "대체 / 0%",
-      "ranId": "821045"
+      "ranId": "821045",
+      "siteStatus": ""
     },
     {
       "seq": 87,
@@ -4019,7 +4105,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#17)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4036,7 +4122,8 @@
       "openDate": "대체",
       "slotIndex": 87,
       "slotExtra": "대체 / 0%",
-      "ranId": "821046"
+      "ranId": "821046",
+      "siteStatus": ""
     },
     {
       "seq": 88,
@@ -4059,7 +4146,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#18)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4076,7 +4163,8 @@
       "openDate": "대체",
       "slotIndex": 88,
       "slotExtra": "대체 / 0%",
-      "ranId": "821047"
+      "ranId": "821047",
+      "siteStatus": ""
     },
     {
       "seq": 89,
@@ -4099,7 +4187,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#19)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4116,7 +4204,8 @@
       "openDate": "대체",
       "slotIndex": 89,
       "slotExtra": "대체 / 0%",
-      "ranId": "821048"
+      "ranId": "821048",
+      "siteStatus": ""
     },
     {
       "seq": 90,
@@ -4139,7 +4228,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#20)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4156,7 +4245,8 @@
       "openDate": "대체",
       "slotIndex": 90,
       "slotExtra": "대체 / 0%",
-      "ranId": "821049"
+      "ranId": "821049",
+      "siteStatus": ""
     },
     {
       "seq": 91,
@@ -4179,7 +4269,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#21)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4196,7 +4286,8 @@
       "openDate": "대체",
       "slotIndex": 91,
       "slotExtra": "대체 / 0%",
-      "ranId": "821050"
+      "ranId": "821050",
+      "siteStatus": ""
     },
     {
       "seq": 92,
@@ -4219,7 +4310,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#22)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4236,7 +4327,8 @@
       "openDate": "대체",
       "slotIndex": 92,
       "slotExtra": "대체 / 0%",
-      "ranId": "821052"
+      "ranId": "821052",
+      "siteStatus": ""
     },
     {
       "seq": 93,
@@ -4259,7 +4351,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#23)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4276,7 +4368,8 @@
       "openDate": "대체",
       "slotIndex": 93,
       "slotExtra": "대체 / 0%",
-      "ranId": "821058"
+      "ranId": "821058",
+      "siteStatus": ""
     },
     {
       "seq": 94,
@@ -4299,7 +4392,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#24)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4316,7 +4409,8 @@
       "openDate": "대체",
       "slotIndex": 94,
       "slotExtra": "대체 / 0%",
-      "ranId": "821059"
+      "ranId": "821059",
+      "siteStatus": ""
     },
     {
       "seq": 95,
@@ -4339,7 +4433,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#25)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4356,7 +4450,8 @@
       "openDate": "대체",
       "slotIndex": 95,
       "slotExtra": "대체 / 0%",
-      "ranId": "821060"
+      "ranId": "821060",
+      "siteStatus": ""
     },
     {
       "seq": 96,
@@ -4379,7 +4474,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#26)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4396,7 +4491,8 @@
       "openDate": "대체",
       "slotIndex": 96,
       "slotExtra": "대체 / 0%",
-      "ranId": "821061"
+      "ranId": "821061",
+      "siteStatus": ""
     },
     {
       "seq": 97,
@@ -4419,7 +4515,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#27)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4436,7 +4532,8 @@
       "openDate": "대체",
       "slotIndex": 97,
       "slotExtra": "대체 / 0%",
-      "ranId": "821062"
+      "ranId": "821062",
+      "siteStatus": ""
     },
     {
       "seq": 98,
@@ -4459,7 +4556,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#28)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4476,7 +4573,8 @@
       "openDate": "대체",
       "slotIndex": 98,
       "slotExtra": "대체 / 0%",
-      "ranId": "821063"
+      "ranId": "821063",
+      "siteStatus": ""
     },
     {
       "seq": 99,
@@ -4499,7 +4597,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#29)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4516,7 +4614,8 @@
       "openDate": "대체",
       "slotIndex": 99,
       "slotExtra": "대체 / 0%",
-      "ranId": "821064"
+      "ranId": "821064",
+      "siteStatus": ""
     },
     {
       "seq": 100,
@@ -4539,7 +4638,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#30)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4556,7 +4655,8 @@
       "openDate": "대체",
       "slotIndex": 100,
       "slotExtra": "대체 / 0%",
-      "ranId": "821065"
+      "ranId": "821065",
+      "siteStatus": ""
     },
     {
       "seq": 101,
@@ -4579,7 +4679,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#31)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4596,7 +4696,8 @@
       "openDate": "대체",
       "slotIndex": 101,
       "slotExtra": "대체 / 0%",
-      "ranId": "821066"
+      "ranId": "821066",
+      "siteStatus": ""
     },
     {
       "seq": 102,
@@ -4619,7 +4720,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#32)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4636,7 +4737,8 @@
       "openDate": "대체",
       "slotIndex": 102,
       "slotExtra": "대체 / 0%",
-      "ranId": "821067"
+      "ranId": "821067",
+      "siteStatus": ""
     },
     {
       "seq": 103,
@@ -4659,7 +4761,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#33)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4676,7 +4778,8 @@
       "openDate": "대체",
       "slotIndex": 103,
       "slotExtra": "대체 / 0%",
-      "ranId": "821068"
+      "ranId": "821068",
+      "siteStatus": ""
     },
     {
       "seq": 104,
@@ -4699,7 +4802,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#34)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4716,7 +4819,8 @@
       "openDate": "대체",
       "slotIndex": 104,
       "slotExtra": "대체 / 0%",
-      "ranId": "821070"
+      "ranId": "821070",
+      "siteStatus": ""
     },
     {
       "seq": 105,
@@ -4739,7 +4843,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#35)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4756,7 +4860,8 @@
       "openDate": "대체",
       "slotIndex": 105,
       "slotExtra": "대체 / 0%",
-      "ranId": "821071"
+      "ranId": "821071",
+      "siteStatus": ""
     },
     {
       "seq": 106,
@@ -4779,7 +4884,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#36)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4796,7 +4901,8 @@
       "openDate": "대체",
       "slotIndex": 106,
       "slotExtra": "대체 / 0%",
-      "ranId": "821072"
+      "ranId": "821072",
+      "siteStatus": ""
     },
     {
       "seq": 107,
@@ -4819,7 +4925,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#37)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4836,7 +4942,8 @@
       "openDate": "대체",
       "slotIndex": 107,
       "slotExtra": "대체 / 0%",
-      "ranId": "821075"
+      "ranId": "821075",
+      "siteStatus": ""
     },
     {
       "seq": 108,
@@ -4859,7 +4966,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#38)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4876,7 +4983,8 @@
       "openDate": "대체",
       "slotIndex": 108,
       "slotExtra": "대체 / 0%",
-      "ranId": "821076"
+      "ranId": "821076",
+      "siteStatus": ""
     },
     {
       "seq": 109,
@@ -4899,7 +5007,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#39)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4916,7 +5024,8 @@
       "openDate": "대체",
       "slotIndex": 109,
       "slotExtra": "대체 / 0%",
-      "ranId": "821080"
+      "ranId": "821080",
+      "siteStatus": ""
     },
     {
       "seq": 110,
@@ -4939,7 +5048,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#40)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4956,7 +5065,8 @@
       "openDate": "대체",
       "slotIndex": 110,
       "slotExtra": "대체 / 0%",
-      "ranId": "821081"
+      "ranId": "821081",
+      "siteStatus": ""
     },
     {
       "seq": 111,
@@ -4979,7 +5089,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#41)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4996,7 +5106,8 @@
       "openDate": "대체",
       "slotIndex": 111,
       "slotExtra": "대체 / 0%",
-      "ranId": "821082"
+      "ranId": "821082",
+      "siteStatus": ""
     },
     {
       "seq": 112,
@@ -5019,7 +5130,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#42)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -5036,7 +5147,8 @@
       "openDate": "대체",
       "slotIndex": 112,
       "slotExtra": "대체 / 0%",
-      "ranId": "821083"
+      "ranId": "821083",
+      "siteStatus": ""
     },
     {
       "seq": 113,
@@ -5059,7 +5171,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#43)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -5076,7 +5188,8 @@
       "openDate": "대체",
       "slotIndex": 113,
       "slotExtra": "대체 / 0%",
-      "ranId": "821084"
+      "ranId": "821084",
+      "siteStatus": ""
     },
     {
       "seq": 114,
@@ -5099,7 +5212,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#44)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -5116,7 +5229,8 @@
       "openDate": "대체",
       "slotIndex": 114,
       "slotExtra": "대체 / 0%",
-      "ranId": "821088"
+      "ranId": "821088",
+      "siteStatus": ""
     },
     {
       "seq": 115,
@@ -5139,7 +5253,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#45)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -5156,7 +5270,8 @@
       "openDate": "대체",
       "slotIndex": 115,
       "slotExtra": "대체 / 0%",
-      "ranId": "821090"
+      "ranId": "821090",
+      "siteStatus": ""
     },
     {
       "seq": 116,
@@ -5179,7 +5294,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#46)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -5196,7 +5311,8 @@
       "openDate": "대체",
       "slotIndex": 116,
       "slotExtra": "대체 / 0%",
-      "ranId": "821092"
+      "ranId": "821092",
+      "siteStatus": ""
     },
     {
       "seq": 117,
@@ -5219,7 +5335,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#47)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -5236,7 +5352,8 @@
       "openDate": "대체",
       "slotIndex": 117,
       "slotExtra": "대체 / 0%",
-      "ranId": "821093"
+      "ranId": "821093",
+      "siteStatus": ""
     },
     {
       "seq": 118,
@@ -5259,7 +5376,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#48)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -5276,7 +5393,8 @@
       "openDate": "대체",
       "slotIndex": 118,
       "slotExtra": "대체 / 0%",
-      "ranId": "821094"
+      "ranId": "821094",
+      "siteStatus": ""
     },
     {
       "seq": 119,
@@ -5299,7 +5417,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#49)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -5316,7 +5434,8 @@
       "openDate": "대체",
       "slotIndex": 119,
       "slotExtra": "대체 / 0%",
-      "ranId": "821096"
+      "ranId": "821096",
+      "siteStatus": ""
     },
     {
       "seq": 120,
@@ -5339,7 +5458,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#50)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -5356,7 +5475,8 @@
       "openDate": "대체",
       "slotIndex": 120,
       "slotExtra": "대체 / 0%",
-      "ranId": "821097"
+      "ranId": "821097",
+      "siteStatus": ""
     },
     {
       "seq": 121,
@@ -5379,7 +5499,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1001 (#51)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -5396,7 +5516,8 @@
       "openDate": "대체",
       "slotIndex": 121,
       "slotExtra": "대체 / 0%",
-      "ranId": "821053"
+      "ranId": "821053",
+      "siteStatus": ""
     },
     {
       "seq": 122,
@@ -5419,7 +5540,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1002 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5436,7 +5557,8 @@
       "openDate": "선정",
       "slotIndex": 122,
       "slotExtra": "선정 / 0%",
-      "ranId": "821405"
+      "ranId": "821405",
+      "siteStatus": ""
     },
     {
       "seq": 123,
@@ -5459,7 +5581,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1002 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5476,7 +5598,8 @@
       "openDate": "선정",
       "slotIndex": 123,
       "slotExtra": "선정 / 0%",
-      "ranId": "821411"
+      "ranId": "821411",
+      "siteStatus": ""
     },
     {
       "seq": 124,
@@ -5499,7 +5622,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1002 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5516,7 +5639,8 @@
       "openDate": "선정",
       "slotIndex": 124,
       "slotExtra": "선정 / 0%",
-      "ranId": "821436"
+      "ranId": "821436",
+      "siteStatus": ""
     },
     {
       "seq": 125,
@@ -5539,7 +5663,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5556,7 +5680,8 @@
       "openDate": "대체",
       "slotIndex": 125,
       "slotExtra": "대체 / 0%",
-      "ranId": "821441"
+      "ranId": "821441",
+      "siteStatus": ""
     },
     {
       "seq": 126,
@@ -5579,7 +5704,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#5)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5596,7 +5721,8 @@
       "openDate": "대체",
       "slotIndex": 126,
       "slotExtra": "대체 / 0%",
-      "ranId": "821442"
+      "ranId": "821442",
+      "siteStatus": ""
     },
     {
       "seq": 127,
@@ -5619,7 +5745,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#6)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5636,7 +5762,8 @@
       "openDate": "대체",
       "slotIndex": 127,
       "slotExtra": "대체 / 0%",
-      "ranId": "821372"
+      "ranId": "821372",
+      "siteStatus": ""
     },
     {
       "seq": 128,
@@ -5659,7 +5786,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#7)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5676,7 +5803,8 @@
       "openDate": "대체",
       "slotIndex": 128,
       "slotExtra": "대체 / 0%",
-      "ranId": "821406"
+      "ranId": "821406",
+      "siteStatus": ""
     },
     {
       "seq": 129,
@@ -5699,7 +5827,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#8)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5716,7 +5844,8 @@
       "openDate": "대체",
       "slotIndex": 129,
       "slotExtra": "대체 / 0%",
-      "ranId": "821407"
+      "ranId": "821407",
+      "siteStatus": ""
     },
     {
       "seq": 130,
@@ -5739,7 +5868,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#9)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5756,7 +5885,8 @@
       "openDate": "대체",
       "slotIndex": 130,
       "slotExtra": "대체 / 0%",
-      "ranId": "821408"
+      "ranId": "821408",
+      "siteStatus": ""
     },
     {
       "seq": 131,
@@ -5779,7 +5909,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#10)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5796,7 +5926,8 @@
       "openDate": "대체",
       "slotIndex": 131,
       "slotExtra": "대체 / 0%",
-      "ranId": "821409"
+      "ranId": "821409",
+      "siteStatus": ""
     },
     {
       "seq": 132,
@@ -5819,7 +5950,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#11)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5836,7 +5967,8 @@
       "openDate": "대체",
       "slotIndex": 132,
       "slotExtra": "대체 / 0%",
-      "ranId": "821410"
+      "ranId": "821410",
+      "siteStatus": ""
     },
     {
       "seq": 133,
@@ -5859,7 +5991,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#12)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5876,7 +6008,8 @@
       "openDate": "대체",
       "slotIndex": 133,
       "slotExtra": "대체 / 0%",
-      "ranId": "821412"
+      "ranId": "821412",
+      "siteStatus": ""
     },
     {
       "seq": 134,
@@ -5899,7 +6032,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#13)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5916,7 +6049,8 @@
       "openDate": "대체",
       "slotIndex": 134,
       "slotExtra": "대체 / 0%",
-      "ranId": "821414"
+      "ranId": "821414",
+      "siteStatus": ""
     },
     {
       "seq": 135,
@@ -5939,7 +6073,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#14)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5956,7 +6090,8 @@
       "openDate": "대체",
       "slotIndex": 135,
       "slotExtra": "대체 / 0%",
-      "ranId": "821415"
+      "ranId": "821415",
+      "siteStatus": ""
     },
     {
       "seq": 136,
@@ -5979,7 +6114,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#15)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -5996,7 +6131,8 @@
       "openDate": "대체",
       "slotIndex": 136,
       "slotExtra": "대체 / 0%",
-      "ranId": "821417"
+      "ranId": "821417",
+      "siteStatus": ""
     },
     {
       "seq": 137,
@@ -6019,7 +6155,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#16)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6036,7 +6172,8 @@
       "openDate": "대체",
       "slotIndex": 137,
       "slotExtra": "대체 / 0%",
-      "ranId": "821418"
+      "ranId": "821418",
+      "siteStatus": ""
     },
     {
       "seq": 138,
@@ -6059,7 +6196,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#17)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6076,7 +6213,8 @@
       "openDate": "대체",
       "slotIndex": 138,
       "slotExtra": "대체 / 0%",
-      "ranId": "821419"
+      "ranId": "821419",
+      "siteStatus": ""
     },
     {
       "seq": 139,
@@ -6099,7 +6237,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#18)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6116,7 +6254,8 @@
       "openDate": "대체",
       "slotIndex": 139,
       "slotExtra": "대체 / 0%",
-      "ranId": "821420"
+      "ranId": "821420",
+      "siteStatus": ""
     },
     {
       "seq": 140,
@@ -6139,7 +6278,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#19)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6156,7 +6295,8 @@
       "openDate": "대체",
       "slotIndex": 140,
       "slotExtra": "대체 / 0%",
-      "ranId": "821421"
+      "ranId": "821421",
+      "siteStatus": ""
     },
     {
       "seq": 141,
@@ -6179,7 +6319,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#20)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6196,7 +6336,8 @@
       "openDate": "대체",
       "slotIndex": 141,
       "slotExtra": "대체 / 0%",
-      "ranId": "821422"
+      "ranId": "821422",
+      "siteStatus": ""
     },
     {
       "seq": 142,
@@ -6219,7 +6360,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#21)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6236,7 +6377,8 @@
       "openDate": "대체",
       "slotIndex": 142,
       "slotExtra": "대체 / 0%",
-      "ranId": "821423"
+      "ranId": "821423",
+      "siteStatus": ""
     },
     {
       "seq": 143,
@@ -6259,7 +6401,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#22)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6276,7 +6418,8 @@
       "openDate": "대체",
       "slotIndex": 143,
       "slotExtra": "대체 / 0%",
-      "ranId": "821425"
+      "ranId": "821425",
+      "siteStatus": ""
     },
     {
       "seq": 144,
@@ -6299,7 +6442,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#23)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6316,7 +6459,8 @@
       "openDate": "대체",
       "slotIndex": 144,
       "slotExtra": "대체 / 0%",
-      "ranId": "821426"
+      "ranId": "821426",
+      "siteStatus": ""
     },
     {
       "seq": 145,
@@ -6339,7 +6483,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#24)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6356,7 +6500,8 @@
       "openDate": "대체",
       "slotIndex": 145,
       "slotExtra": "대체 / 0%",
-      "ranId": "821428"
+      "ranId": "821428",
+      "siteStatus": ""
     },
     {
       "seq": 146,
@@ -6379,7 +6524,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#25)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6396,7 +6541,8 @@
       "openDate": "대체",
       "slotIndex": 146,
       "slotExtra": "대체 / 0%",
-      "ranId": "821431"
+      "ranId": "821431",
+      "siteStatus": ""
     },
     {
       "seq": 147,
@@ -6419,7 +6565,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#26)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6436,7 +6582,8 @@
       "openDate": "대체",
       "slotIndex": 147,
       "slotExtra": "대체 / 0%",
-      "ranId": "821432"
+      "ranId": "821432",
+      "siteStatus": ""
     },
     {
       "seq": 148,
@@ -6459,7 +6606,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#27)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6476,7 +6623,8 @@
       "openDate": "대체",
       "slotIndex": 148,
       "slotExtra": "대체 / 0%",
-      "ranId": "821433"
+      "ranId": "821433",
+      "siteStatus": ""
     },
     {
       "seq": 149,
@@ -6499,7 +6647,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#28)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6516,7 +6664,8 @@
       "openDate": "대체",
       "slotIndex": 149,
       "slotExtra": "대체 / 0%",
-      "ranId": "821435"
+      "ranId": "821435",
+      "siteStatus": ""
     },
     {
       "seq": 150,
@@ -6539,7 +6688,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#29)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6556,7 +6705,8 @@
       "openDate": "대체",
       "slotIndex": 150,
       "slotExtra": "대체 / 0%",
-      "ranId": "821437"
+      "ranId": "821437",
+      "siteStatus": ""
     },
     {
       "seq": 151,
@@ -6579,7 +6729,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#30)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6596,7 +6746,8 @@
       "openDate": "대체",
       "slotIndex": 151,
       "slotExtra": "대체 / 0%",
-      "ranId": "821438"
+      "ranId": "821438",
+      "siteStatus": ""
     },
     {
       "seq": 152,
@@ -6619,7 +6770,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#31)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6636,7 +6787,8 @@
       "openDate": "대체",
       "slotIndex": 152,
       "slotExtra": "대체 / 0%",
-      "ranId": "821439"
+      "ranId": "821439",
+      "siteStatus": ""
     },
     {
       "seq": 153,
@@ -6659,7 +6811,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#32)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6676,7 +6828,8 @@
       "openDate": "대체",
       "slotIndex": 153,
       "slotExtra": "대체 / 0%",
-      "ranId": "821440"
+      "ranId": "821440",
+      "siteStatus": ""
     },
     {
       "seq": 154,
@@ -6699,7 +6852,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1002 (#33)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -6716,7 +6869,8 @@
       "openDate": "대체",
       "slotIndex": 154,
       "slotExtra": "대체 / 0%",
-      "ranId": "821434"
+      "ranId": "821434",
+      "siteStatus": ""
     },
     {
       "seq": 155,
@@ -6739,7 +6893,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1003 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -6756,7 +6910,8 @@
       "openDate": "선정",
       "slotIndex": 155,
       "slotExtra": "선정 / 0%",
-      "ranId": "821714"
+      "ranId": "821714",
+      "siteStatus": ""
     },
     {
       "seq": 156,
@@ -6779,7 +6934,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -6796,7 +6951,8 @@
       "openDate": "대체",
       "slotIndex": 156,
       "slotExtra": "대체 / 0%",
-      "ranId": "821732"
+      "ranId": "821732",
+      "siteStatus": ""
     },
     {
       "seq": 157,
@@ -6819,7 +6975,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -6836,7 +6992,8 @@
       "openDate": "대체",
       "slotIndex": 157,
       "slotExtra": "대체 / 0%",
-      "ranId": "821744"
+      "ranId": "821744",
+      "siteStatus": ""
     },
     {
       "seq": 158,
@@ -6859,7 +7016,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -6876,7 +7033,8 @@
       "openDate": "대체",
       "slotIndex": 158,
       "slotExtra": "대체 / 0%",
-      "ranId": "821730"
+      "ranId": "821730",
+      "siteStatus": ""
     },
     {
       "seq": 159,
@@ -6899,7 +7057,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#5)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -6916,7 +7074,8 @@
       "openDate": "대체",
       "slotIndex": 159,
       "slotExtra": "대체 / 0%",
-      "ranId": "821733"
+      "ranId": "821733",
+      "siteStatus": ""
     },
     {
       "seq": 160,
@@ -6939,7 +7098,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#6)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -6956,7 +7115,8 @@
       "openDate": "대체",
       "slotIndex": 160,
       "slotExtra": "대체 / 0%",
-      "ranId": "821735"
+      "ranId": "821735",
+      "siteStatus": ""
     },
     {
       "seq": 161,
@@ -6979,7 +7139,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#7)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -6996,7 +7156,8 @@
       "openDate": "대체",
       "slotIndex": 161,
       "slotExtra": "대체 / 0%",
-      "ranId": "821736"
+      "ranId": "821736",
+      "siteStatus": ""
     },
     {
       "seq": 162,
@@ -7019,7 +7180,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#8)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -7036,7 +7197,8 @@
       "openDate": "대체",
       "slotIndex": 162,
       "slotExtra": "대체 / 0%",
-      "ranId": "821737"
+      "ranId": "821737",
+      "siteStatus": ""
     },
     {
       "seq": 163,
@@ -7059,7 +7221,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#9)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -7076,7 +7238,8 @@
       "openDate": "대체",
       "slotIndex": 163,
       "slotExtra": "대체 / 0%",
-      "ranId": "821738"
+      "ranId": "821738",
+      "siteStatus": ""
     },
     {
       "seq": 164,
@@ -7099,7 +7262,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#10)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -7116,7 +7279,8 @@
       "openDate": "대체",
       "slotIndex": 164,
       "slotExtra": "대체 / 0%",
-      "ranId": "821739"
+      "ranId": "821739",
+      "siteStatus": ""
     },
     {
       "seq": 165,
@@ -7139,7 +7303,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#11)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -7156,7 +7320,8 @@
       "openDate": "대체",
       "slotIndex": 165,
       "slotExtra": "대체 / 0%",
-      "ranId": "821740"
+      "ranId": "821740",
+      "siteStatus": ""
     },
     {
       "seq": 166,
@@ -7179,7 +7344,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#12)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -7196,7 +7361,8 @@
       "openDate": "대체",
       "slotIndex": 166,
       "slotExtra": "대체 / 0%",
-      "ranId": "821741"
+      "ranId": "821741",
+      "siteStatus": ""
     },
     {
       "seq": 167,
@@ -7219,7 +7385,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#13)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -7236,7 +7402,8 @@
       "openDate": "대체",
       "slotIndex": 167,
       "slotExtra": "대체 / 0%",
-      "ranId": "821742"
+      "ranId": "821742",
+      "siteStatus": ""
     },
     {
       "seq": 168,
@@ -7259,7 +7426,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1003 (#14)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -7276,7 +7443,8 @@
       "openDate": "대체",
       "slotIndex": 168,
       "slotExtra": "대체 / 0%",
-      "ranId": "821743"
+      "ranId": "821743",
+      "siteStatus": ""
     },
     {
       "seq": 169,
@@ -7299,7 +7467,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1004 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1004",
       "memo": "",
@@ -7316,7 +7484,8 @@
       "openDate": "선정",
       "slotIndex": 169,
       "slotExtra": "선정 / 0%",
-      "ranId": "821911"
+      "ranId": "821911",
+      "siteStatus": ""
     },
     {
       "seq": 170,
@@ -7339,7 +7508,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1005 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7356,7 +7525,8 @@
       "openDate": "선정",
       "slotIndex": 170,
       "slotExtra": "선정 / 0%",
-      "ranId": "821935"
+      "ranId": "821935",
+      "siteStatus": ""
     },
     {
       "seq": 171,
@@ -7379,7 +7549,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1005 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7396,7 +7566,8 @@
       "openDate": "선정",
       "slotIndex": 171,
       "slotExtra": "선정 / 0%",
-      "ranId": "821936"
+      "ranId": "821936",
+      "siteStatus": ""
     },
     {
       "seq": 172,
@@ -7419,7 +7590,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1005 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7436,7 +7607,8 @@
       "openDate": "선정",
       "slotIndex": 172,
       "slotExtra": "선정 / 0%",
-      "ranId": "821937"
+      "ranId": "821937",
+      "siteStatus": ""
     },
     {
       "seq": 173,
@@ -7459,7 +7631,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1005 (#4)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7476,7 +7648,8 @@
       "openDate": "선정",
       "slotIndex": 173,
       "slotExtra": "선정 / 0%",
-      "ranId": "821938"
+      "ranId": "821938",
+      "siteStatus": ""
     },
     {
       "seq": 174,
@@ -7499,7 +7672,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1005 (#5)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7516,7 +7689,8 @@
       "openDate": "선정",
       "slotIndex": 174,
       "slotExtra": "선정 / 0%",
-      "ranId": "821939"
+      "ranId": "821939",
+      "siteStatus": ""
     },
     {
       "seq": 175,
@@ -7539,7 +7713,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1005 (#6)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7556,7 +7730,8 @@
       "openDate": "선정",
       "slotIndex": 175,
       "slotExtra": "선정 / 0%",
-      "ranId": "821940"
+      "ranId": "821940",
+      "siteStatus": ""
     },
     {
       "seq": 176,
@@ -7579,7 +7754,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1007_1005 (#7)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7596,7 +7771,8 @@
       "openDate": "선정",
       "slotIndex": 176,
       "slotExtra": "선정 / 0%",
-      "ranId": "821941"
+      "ranId": "821941",
+      "siteStatus": ""
     },
     {
       "seq": 177,
@@ -7619,7 +7795,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1005 (#8)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7636,7 +7812,8 @@
       "openDate": "대체",
       "slotIndex": 177,
       "slotExtra": "대체 / 0%",
-      "ranId": "821947"
+      "ranId": "821947",
+      "siteStatus": ""
     },
     {
       "seq": 178,
@@ -7659,7 +7836,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1005 (#9)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7676,7 +7853,8 @@
       "openDate": "대체",
       "slotIndex": 178,
       "slotExtra": "대체 / 0%",
-      "ranId": "821948"
+      "ranId": "821948",
+      "siteStatus": ""
     },
     {
       "seq": 179,
@@ -7699,7 +7877,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1005 (#10)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7716,7 +7894,8 @@
       "openDate": "대체",
       "slotIndex": 179,
       "slotExtra": "대체 / 0%",
-      "ranId": "821949"
+      "ranId": "821949",
+      "siteStatus": ""
     },
     {
       "seq": 180,
@@ -7739,7 +7918,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1007_1005 (#11)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -7756,7 +7935,8 @@
       "openDate": "대체",
       "slotIndex": 180,
       "slotExtra": "대체 / 0%",
-      "ranId": "821950"
+      "ranId": "821950",
+      "siteStatus": ""
     },
     {
       "seq": 181,
@@ -7779,7 +7959,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1008_1001 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1008",
       "quotaCode2": "1001",
       "memo": "",
@@ -7796,7 +7976,8 @@
       "openDate": "선정",
       "slotIndex": 181,
       "slotExtra": "선정 / 0%",
-      "ranId": "822003"
+      "ranId": "822003",
+      "siteStatus": ""
     },
     {
       "seq": 182,
@@ -7819,7 +8000,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1008_1001 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1008",
       "quotaCode2": "1001",
       "memo": "",
@@ -7836,7 +8017,8 @@
       "openDate": "대체",
       "slotIndex": 182,
       "slotExtra": "대체 / 0%",
-      "ranId": "822004"
+      "ranId": "822004",
+      "siteStatus": ""
     },
     {
       "seq": 183,
@@ -7859,7 +8041,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1008_1001 (#3)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1008",
       "quotaCode2": "1001",
       "memo": "",
@@ -7876,7 +8058,8 @@
       "openDate": "대체",
       "slotIndex": 183,
       "slotExtra": "대체 / 0%",
-      "ranId": "822002"
+      "ranId": "822002",
+      "siteStatus": ""
     },
     {
       "seq": 184,
@@ -7899,7 +8082,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1008_1003 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1008",
       "quotaCode2": "1003",
       "memo": "",
@@ -7916,7 +8099,8 @@
       "openDate": "선정",
       "slotIndex": 184,
       "slotExtra": "선정 / 0%",
-      "ranId": "822085"
+      "ranId": "822085",
+      "siteStatus": ""
     },
     {
       "seq": 185,
@@ -7939,7 +8123,7 @@
       "handledItems": "",
       "mainProducts": "선정 · 인천_1009_1002 (#1)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1009",
       "quotaCode2": "1002",
       "memo": "",
@@ -7956,7 +8140,8 @@
       "openDate": "선정",
       "slotIndex": 185,
       "slotExtra": "선정 / 0%",
-      "ranId": "822105"
+      "ranId": "822105",
+      "siteStatus": ""
     },
     {
       "seq": 186,
@@ -7979,7 +8164,7 @@
       "handledItems": "",
       "mainProducts": "대체 · 인천_1009_1002 (#2)",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1009",
       "quotaCode2": "1002",
       "memo": "",
@@ -7996,7 +8181,8 @@
       "openDate": "대체",
       "slotIndex": 186,
       "slotExtra": "대체 / 0%",
-      "ranId": "822106"
+      "ranId": "822106",
+      "siteStatus": ""
     }
   ],
   "items": [
@@ -15441,5 +15627,6 @@
       "ranId": "822106"
     }
   ],
-  "keyword": "선정 58건 / 대체 undefined건"
+  "keyword": "선정 58건 / 대체 undefined건",
+  "updatedAt": "2026-11-10T01:18:15.435Z"
 }

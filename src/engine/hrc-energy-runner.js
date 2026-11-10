@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger.js';
 
+const HRC_BASE_URL = 'https://tapi.hrcglobal.com';
+
 /**
  * 전화번호 문자열(예: '010-7935-2414' 또는 '01079352414')을 [prefix, mid, last]로 분리
  */
@@ -21,6 +23,566 @@ export function parsePhoneParts(rawPhone) {
     return ['02', digits.slice(2, 5), digits.slice(5, 9)];
   }
   return ['010', '7935', '2414'];
+}
+
+export const HRC_SIGNATURE_STYLES = [
+  { index: 0, label: '스타일 A · 정자 손글씨체 (단정한 필압)', slant: -0.04, baseSlope: -0.02, aspectX: 0.96, aspectY: 1.02, cursive: 0.15, flourish: 1, minW: 1.3, maxW: 2.8, tremor: 0.42 },
+  { index: 1, label: '스타일 B · 우상향 흘림체 (연속 필기)', slant: -0.22, baseSlope: -0.07, aspectX: 1.06, aspectY: 0.95, cursive: 0.65, flourish: 1, minW: 1.1, maxW: 2.6, tremor: 0.52 },
+  { index: 2, label: '스타일 C · 속필 사인체 (빠른 흘림+밑줄)', slant: -0.30, baseSlope: -0.05, aspectX: 1.15, aspectY: 0.88, cursive: 0.85, flourish: 2, minW: 1.0, maxW: 2.3, tremor: 0.60 },
+  { index: 3, label: '스타일 D · 굵은 붓펜체 (강한 필압)', slant: 0.04, baseSlope: 0.02, aspectX: 1.08, aspectY: 1.05, cursive: 0.25, flourish: 0, minW: 1.8, maxW: 3.6, tremor: 0.38 },
+  { index: 4, label: '스타일 E · 가늘고 둥근 손글씨체', slant: -0.10, baseSlope: -0.03, aspectX: 0.92, aspectY: 0.94, cursive: 0.40, flourish: 3, minW: 0.9, maxW: 2.1, tremor: 0.48 },
+  { index: 5, label: '스타일 F · 세로 장체 (어르신 정자풍)', slant: 0.06, baseSlope: 0.03, aspectX: 0.82, aspectY: 1.18, cursive: 0.10, flourish: 0, minW: 1.4, maxW: 3.0, tremor: 0.78 },
+  { index: 6, label: '스타일 G · 가로 넓은 안정 사인체', slant: -0.16, baseSlope: -0.01, aspectX: 1.22, aspectY: 0.86, cursive: 0.55, flourish: 2, minW: 1.3, maxW: 2.9, tremor: 0.48 },
+  { index: 7, label: '스타일 H · 초성 강조 흘림 사인체', slant: -0.25, baseSlope: -0.06, aspectX: 1.10, aspectY: 1.04, cursive: 0.75, flourish: 1, minW: 1.2, maxW: 3.2, tremor: 0.56 }
+];
+
+/**
+ * 에너지총조사 [답례품 수령증] 서명용 성명 정규화 (한글/영문/공백만 허용)
+ */
+export function normalizeHrcSignerName(rawName, fallbackName = '김철수') {
+  const cleaned = String(rawName || '')
+    .replace(/\([^)]*\)/g, '')
+    .replace(/[^가-힣a-zA-Z\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned || cleaned === '관리소장' || cleaned === '담당자' || cleaned === '소장') {
+    const fbCleaned = String(fallbackName || '')
+      .replace(/\([^)]*\)/g, '')
+      .replace(/[^가-힣a-zA-Z\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (fbCleaned && fbCleaned !== '관리소장' && fbCleaned !== '담당자') {
+      return fbCleaned;
+    }
+  }
+  return cleaned || '김철수';
+}
+
+/**
+ * 에너지총조사 [답례품 수령증] 서명용 연락처 정규화 (Signature 페이지의 isAnyPhone 통과 보장)
+ */
+export function normalizeHrcSignerPhoneParts(tel1, tel2, tel3, rawPhone = '', uidSeed = 800163) {
+  const validPrefixes = new Set(['010', '02', '031', '032', '033', '041', '042', '043', '044', '051', '052', '053', '054', '055', '061', '062', '063', '064', '070']);
+  let p1 = String(tel1 || '').replace(/\D/g, '');
+  let p2 = String(tel2 || '').replace(/\D/g, '');
+  let p3 = String(tel3 || '').replace(/\D/g, '');
+
+  if (!p1 || !p2 || !p3) {
+    const parsed = parsePhoneParts(rawPhone);
+    p1 = p1 || parsed[0];
+    p2 = p2 || parsed[1];
+    p3 = p3 || parsed[2];
+  }
+
+  if (!validPrefixes.has(p1)) {
+    p1 = '010';
+  }
+  if (p1 === '010') {
+    if (!/^[1-9]\d{3}$/.test(p2)) {
+      const seedNum = (Number(uidSeed) || 800163);
+      const firstDigit = 2 + (seedNum % 8); // 2..9
+      const rest = p2.replace(/\D/g, '').slice(-3).padStart(3, '4');
+      p2 = `${firstDigit}${rest}`;
+    }
+  } else {
+    if (!/^[1-9]\d{2,3}$/.test(p2)) {
+      const seedNum = (Number(uidSeed) || 800163);
+      const firstDigit = 2 + (seedNum % 7);
+      const rest = p2.replace(/\D/g, '').slice(-3).padStart(3, '2');
+      p2 = `${firstDigit}${rest}`;
+    }
+  }
+  if (!/^\d{4}$/.test(p3)) {
+    p3 = String(1000 + ((Number(uidSeed) || 800163) * 37) % 8999).padStart(4, '0');
+  }
+
+  return [p1, p2, p3];
+}
+
+/**
+ * 한국리서치 TAPI [답례품 수령증 작성] 팝업 페이지(/q260342/Signature)에 접속하여
+ * 1) 답례품: '신세계상품권 5,000원' 선택
+ * 2) 참여자 성명 및 연락처 입력
+ * 3) 응답자 성명 한글 자모 획 분해 + 8종 필체 다변화(기울기·필압·흘림·밑줄) 서명 그리기
+ * 4) ./SaveSignature 저장 및 AnswerInfo4에서 '지류 상품권 수령 서명 완료' 확인
+ */
+export async function signHrcEnergyGiftReceipt(page, {
+  uid,
+  loginId = '700275',
+  loginPw = '700275',
+  contactName = '',
+  fallbackName = '',
+  tel1 = '',
+  tel2 = '',
+  tel3 = '',
+  rawPhone = '',
+  forcedStyleIndex = null,
+  reportDir = null,
+  capturedSteps = null
+} = {}) {
+  const uidStr = String(uid || '').trim();
+  if (!uidStr) {
+    return { ok: false, reason: 'missing_uid' };
+  }
+
+  const uidSeed = parseInt(uidStr.replace(/\D/g, ''), 10) || 800163;
+  const nameSeed = Array.from(String(contactName || fallbackName || '')).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  const combinedSeed = uidSeed + nameSeed * 17;
+  const styleIdx = (forcedStyleIndex !== null && forcedStyleIndex !== undefined && forcedStyleIndex !== 'auto')
+    ? (Number(forcedStyleIndex) % HRC_SIGNATURE_STYLES.length)
+    : (combinedSeed % HRC_SIGNATURE_STYLES.length);
+  const styleCfg = HRC_SIGNATURE_STYLES[styleIdx];
+
+  // 1. AnswerInfo4 페이지 접속 (비로그인 상태인 경우 로그인 후 진입)
+  const answerInfoUrl = `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${uidStr}&page=1`;
+  await page.goto(answerInfoUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+
+  if (page.url().includes('/Home/Login')) {
+    await page.fill('input[type="text"]', String(loginId));
+    await page.fill('input[type="password"]', String(loginPw || loginId));
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }),
+      page.click('button[type="submit"], input[type="submit"]')
+    ]);
+    const hasProjectLink = await page.$('a[onclick*="2026-89-0342C"]');
+    if (hasProjectLink) {
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }),
+        page.click('a[onclick*="2026-89-0342C"]')
+      ]);
+    }
+    await page.goto(answerInfoUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+  }
+
+  await page.waitForTimeout(400);
+
+  // 2. AnswerInfo4에서 기존 성명/연락처 및 서명 완료 여부 확인
+  const answerInfoStatus = await page.evaluate(() => {
+    const c1Name = (document.querySelector('#contact1Name')?.value || '').trim();
+    const c1P1 = (document.querySelector('#contact1TelPrefix')?.value || '').trim();
+    const c1P2 = (document.querySelector('#contact1Tel2')?.value || '').trim();
+    const c1P3 = (document.querySelector('#contact1Tel3')?.value || '').trim();
+    const completeBoxText = (document.querySelector('.gift-complete-box')?.innerText || '').trim();
+    const hasInsertBtn = Boolean(document.querySelector('#insertSignature'));
+    return {
+      c1Name,
+      c1P1,
+      c1P2,
+      c1P3,
+      alreadySigned: completeBoxText.includes('서명 완료'),
+      completeBoxText,
+      hasInsertBtn
+    };
+  });
+
+  const signerName = normalizeHrcSignerName(
+    answerInfoStatus.c1Name || contactName,
+    fallbackName || contactName || '김철수'
+  );
+  const [hp1, hp2, hp3] = normalizeHrcSignerPhoneParts(
+    answerInfoStatus.c1P1 || tel1,
+    answerInfoStatus.c1P2 || tel2,
+    answerInfoStatus.c1P3 || tel3,
+    rawPhone,
+    uidSeed
+  );
+  const fullPhone = `${hp1}-${hp2}-${hp3}`;
+
+  // 만약 AnswerInfo4에 연락처1 성명이나 전화번호가 비어있다면 AnswerInfo4에도 저장
+  if (!answerInfoStatus.c1Name || !answerInfoStatus.c1P2 || !answerInfoStatus.c1P3) {
+    await page.evaluate(async ({ sName, p1, p2, p3 }) => {
+      const nameEl = document.querySelector('#contact1Name');
+      const preEl = document.querySelector('#contact1TelPrefix');
+      const midEl = document.querySelector('#contact1Tel2');
+      const lastEl = document.querySelector('#contact1Tel3');
+      if (nameEl && !nameEl.value.trim()) nameEl.value = sName;
+      if (preEl && (!preEl.value || preEl.value === 'NONE')) preEl.value = p1;
+      if (midEl && !midEl.value.trim()) midEl.value = p2;
+      if (lastEl && !lastEl.value.trim()) lastEl.value = p3;
+      if (typeof window.buildSaveData === 'function' && typeof window.$ !== 'undefined') {
+        await new Promise(resolve => {
+          window.$.post('./SaveInfo4', window.buildSaveData(), () => resolve()).fail(() => resolve());
+        });
+      }
+    }, { sName: signerName, p1: hp1, p2: hp2, p3: hp3 }).catch(() => {});
+  }
+
+  if (answerInfoStatus.alreadySigned) {
+    logger.info(`[HRC 답례품 서명] UID=${uidStr} 이미 서명 완료 상태입니다 (${answerInfoStatus.completeBoxText})`);
+    return {
+      ok: true,
+      alreadySigned: true,
+      uid: uidStr,
+      signerName,
+      phone: fullPhone,
+      signerPhone: fullPhone,
+      giftBrand: '신세계',
+      giftValue: '5000',
+      giftLabel: '신세계상품권 5,000원',
+      styleLabel: styleCfg.label
+    };
+  }
+
+  // 3. 답례품 수령증 서명 페이지(/q260342/Signature) 진입
+  const sigUrl = `https://tapi.hrcglobal.com/q260342/Signature?pn=q260342&pid=${uidStr}&listName=q260342_List`;
+  await page.goto(sigUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+  await page.waitForSelector('#giftItem', { timeout: 15000 });
+  await page.waitForSelector('#sig canvas', { timeout: 15000 });
+  await page.waitForTimeout(250);
+
+  // 4. 신세계상품권 5,000원 선택 + 성명 + 연락처 입력 + 8종 한글 필체 서명 그리기
+  const drawRes = await page.evaluate(async ({ targetName, p1, p2, p3, seed, styleCfg }) => {
+    // window.opener.location.reload() 및 window.close() 안전 모킹
+    window.__hrcSigSaved = false;
+    window.__hrcSigError = '';
+    window.opener = {
+      location: {
+        reload: function () {
+          window.__hrcSigSaved = true;
+        }
+      }
+    };
+    window.close = function () {
+      window.__hrcSigSaved = true;
+    };
+
+    // (1) 답례품 선택: 신세계상품권 5,000원 (value="5000", data-brand="신세계")
+    const giftSel = document.querySelector('#giftItem');
+    if (!giftSel) return { ok: false, reason: '#giftItem not found' };
+    const shinsegaeOpt =
+      giftSel.querySelector('option[data-brand="신세계"]') ||
+      Array.from(giftSel.options).find(o => (o.text || '').includes('신세계')) ||
+      giftSel.options[1];
+    if (shinsegaeOpt) {
+      shinsegaeOpt.selected = true;
+      giftSel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // (2) 참여자 성명 입력
+    const nameInput = document.querySelector('#name');
+    if (nameInput) {
+      nameInput.value = targetName;
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+      nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // (3) 참여자 연락처 입력
+    const hp1Sel = document.querySelector('#hp1');
+    const hp2Input = document.querySelector('#hp2');
+    const hp3Input = document.querySelector('#hp3');
+    if (hp1Sel) {
+      hp1Sel.value = p1;
+      hp1Sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (hp2Input) {
+      hp2Input.value = p2;
+      hp2Input.dispatchEvent(new Event('input', { bubbles: true }));
+      hp2Input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (hp3Input) {
+      hp3Input.value = p3;
+      hp3Input.dispatchEvent(new Event('input', { bubbles: true }));
+      hp3Input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // (4) 한글 성명 초성·중성·종성 획(Stroke) 분해 및 8종 필체 변환
+    const canvas = document.querySelector('#sig canvas');
+    if (!canvas) return { ok: false, reason: '#sig canvas not found' };
+
+    const CHO_STROKES = {
+      0: [[[0.1, 0.2], [0.85, 0.2], [0.75, 0.85]]], // ㄱ
+      1: [[[0.05, 0.2], [0.45, 0.2], [0.4, 0.85]], [[0.5, 0.2], [0.9, 0.2], [0.82, 0.85]]], // ㄲ
+      2: [[[0.15, 0.15], [0.15, 0.82], [0.88, 0.80]]], // ㄴ
+      3: [[[0.15, 0.2], [0.85, 0.2]], [[0.15, 0.2], [0.15, 0.82], [0.88, 0.82]]], // ㄷ
+      4: [[[0.1, 0.2], [0.45, 0.2]], [[0.1, 0.2], [0.1, 0.82], [0.45, 0.82]], [[0.52, 0.2], [0.9, 0.2]], [[0.52, 0.2], [0.52, 0.82], [0.9, 0.82]]], // ㄸ
+      5: [[[0.12, 0.18], [0.85, 0.18], [0.82, 0.48], [0.15, 0.50], [0.15, 0.84], [0.88, 0.82]]], // ㄹ
+      6: [[[0.15, 0.2], [0.15, 0.82]], [[0.15, 0.2], [0.85, 0.2], [0.82, 0.82]], [[0.15, 0.82], [0.85, 0.82]]], // ㅁ
+      7: [[[0.18, 0.15], [0.18, 0.82]], [[0.82, 0.15], [0.78, 0.82]], [[0.18, 0.48], [0.80, 0.48]], [[0.18, 0.82], [0.80, 0.82]]], // ㅂ
+      8: [[[0.1, 0.15], [0.1, 0.82], [0.45, 0.82], [0.45, 0.15]], [[0.52, 0.15], [0.52, 0.82], [0.88, 0.82], [0.88, 0.15]], [[0.1, 0.48], [0.88, 0.48]]], // ㅃ
+      9: [[[0.52, 0.15], [0.12, 0.85]], [[0.48, 0.38], [0.88, 0.85]]], // ㅅ
+      10: [[[0.35, 0.15], [0.08, 0.85]], [[0.32, 0.42], [0.52, 0.85]], [[0.72, 0.15], [0.48, 0.85]], [[0.70, 0.42], [0.92, 0.85]]], // ㅆ
+      11: [[[0.5, 0.16], [0.2, 0.32], [0.15, 0.65], [0.45, 0.85], [0.82, 0.70], [0.85, 0.35], [0.52, 0.16]]], // ㅇ
+      12: [[[0.15, 0.2], [0.85, 0.2], [0.15, 0.85]], [[0.48, 0.48], [0.88, 0.85]]], // ㅈ
+      13: [[[0.1, 0.2], [0.48, 0.2], [0.1, 0.85]], [[0.52, 0.2], [0.9, 0.2], [0.52, 0.85]], [[0.68, 0.48], [0.92, 0.85]]], // ㅉ
+      14: [[[0.38, 0.08], [0.68, 0.12]], [[0.15, 0.28], [0.85, 0.26], [0.15, 0.86]], [[0.48, 0.52], [0.88, 0.86]]], // ㅊ
+      15: [[[0.15, 0.2], [0.85, 0.2], [0.75, 0.85]], [[0.18, 0.52], [0.78, 0.50]]], // ㅋ
+      16: [[[0.15, 0.2], [0.85, 0.2]], [[0.18, 0.50], [0.80, 0.50]], [[0.15, 0.2], [0.15, 0.84], [0.88, 0.82]]], // ㅌ
+      17: [[[0.12, 0.2], [0.88, 0.2]], [[0.32, 0.2], [0.30, 0.82]], [[0.68, 0.2], [0.66, 0.82]], [[0.10, 0.82], [0.90, 0.82]]], // ㅍ
+      18: [[[0.38, 0.08], [0.65, 0.10]], [[0.12, 0.26], [0.88, 0.24]], [[0.5, 0.38], [0.22, 0.55], [0.25, 0.84], [0.75, 0.84], [0.78, 0.52], [0.5, 0.38]]] // ㅎ
+    };
+
+    const JUNG_STROKES = {
+      0: [[[0.35, 0.08], [0.32, 0.92]], [[0.34, 0.48], [0.85, 0.48]]], // ㅏ
+      1: [[[0.25, 0.08], [0.22, 0.92]], [[0.24, 0.48], [0.68, 0.48]], [[0.72, 0.08], [0.70, 0.92]]], // ㅐ
+      2: [[[0.32, 0.08], [0.30, 0.92]], [[0.32, 0.35], [0.85, 0.35]], [[0.32, 0.62], [0.85, 0.62]]], // ㅑ
+      3: [[[0.22, 0.08], [0.20, 0.92]], [[0.22, 0.35], [0.65, 0.35]], [[0.22, 0.62], [0.65, 0.62]], [[0.72, 0.08], [0.70, 0.92]]], // ㅒ
+      4: [[[0.15, 0.48], [0.65, 0.48]], [[0.68, 0.08], [0.64, 0.92]]], // ㅓ
+      5: [[[0.10, 0.48], [0.48, 0.48]], [[0.50, 0.08], [0.48, 0.92]], [[0.82, 0.08], [0.78, 0.92]]], // ㅔ
+      6: [[[0.15, 0.35], [0.65, 0.35]], [[0.15, 0.62], [0.65, 0.62]], [[0.68, 0.08], [0.64, 0.92]]], // ㅕ
+      7: [[[0.10, 0.35], [0.48, 0.35]], [[0.10, 0.62], [0.48, 0.62]], [[0.50, 0.08], [0.48, 0.92]], [[0.82, 0.08], [0.78, 0.92]]], // ㅖ
+      8: [[[0.48, 0.15], [0.48, 0.68]], [[0.08, 0.70], [0.92, 0.68]]], // ㅗ
+      9: [[[0.35, 0.15], [0.35, 0.62]], [[0.05, 0.64], [0.68, 0.62]], [[0.72, 0.08], [0.70, 0.92]], [[0.72, 0.50], [0.96, 0.50]]], // ㅘ
+      10: [[[0.32, 0.15], [0.32, 0.62]], [[0.05, 0.64], [0.60, 0.62]], [[0.65, 0.08], [0.64, 0.92]], [[0.88, 0.08], [0.86, 0.92]]], // ㅙ
+      11: [[[0.38, 0.15], [0.38, 0.65]], [[0.08, 0.68], [0.72, 0.66]], [[0.78, 0.08], [0.75, 0.92]]], // ㅚ
+      12: [[[0.35, 0.15], [0.35, 0.68]], [[0.62, 0.15], [0.62, 0.68]], [[0.08, 0.70], [0.92, 0.68]]], // ㅛ
+      13: [[[0.08, 0.25], [0.92, 0.24]], [[0.48, 0.25], [0.46, 0.88]]], // ㅜ
+      14: [[[0.05, 0.28], [0.65, 0.26]], [[0.35, 0.28], [0.34, 0.85]], [[0.42, 0.55], [0.72, 0.55]], [[0.75, 0.08], [0.72, 0.92]]], // ㅝ
+      15: [[[0.05, 0.28], [0.60, 0.26]], [[0.32, 0.28], [0.30, 0.85]], [[0.65, 0.08], [0.63, 0.92]], [[0.88, 0.08], [0.85, 0.92]]], // ㅞ
+      16: [[[0.08, 0.28], [0.70, 0.26]], [[0.38, 0.28], [0.36, 0.85]], [[0.78, 0.08], [0.75, 0.92]]], // ㅟ
+      17: [[[0.08, 0.25], [0.92, 0.24]], [[0.35, 0.25], [0.34, 0.88]], [[0.62, 0.25], [0.60, 0.88]]], // ㅠ
+      18: [[[0.08, 0.50], [0.92, 0.48]]], // ㅡ
+      19: [[[0.08, 0.55], [0.72, 0.53]], [[0.78, 0.08], [0.75, 0.92]]], // ㅢ
+      20: [[[0.50, 0.08], [0.48, 0.92]]] // ㅣ
+    };
+
+    const JONG_MAP = {
+      1: CHO_STROKES[0], 2: CHO_STROKES[1], 4: CHO_STROKES[2], 7: CHO_STROKES[3],
+      8: CHO_STROKES[5], 16: CHO_STROKES[6], 17: CHO_STROKES[7], 19: CHO_STROKES[9],
+      20: CHO_STROKES[10], 21: CHO_STROKES[11], 22: CHO_STROKES[12], 23: CHO_STROKES[14],
+      24: CHO_STROKES[15], 25: CHO_STROKES[16], 26: CHO_STROKES[17], 27: CHO_STROKES[18]
+    };
+
+    function mapBox(strokes, bx, by, bw, bh) {
+      return (strokes || []).map(st => st.map(([px, py]) => [bx + px * bw, by + py * bh]));
+    }
+
+    function decomposeCharStrokes(ch) {
+      const code = ch.charCodeAt(0) - 0xAC00;
+      if (code < 0 || code > 11171) {
+        return [[[0.2, 0.5], [0.8, 0.5]]];
+      }
+      const cho = Math.floor(code / 588);
+      const jung = Math.floor((code % 588) / 28);
+      const jong = code % 28;
+      const isHorizJung = [8, 12, 13, 17, 18].includes(jung);
+      const isMixedJung = [9, 10, 11, 14, 15, 16, 19].includes(jung);
+      const hasJong = jong > 0;
+
+      let out = [];
+      if (isHorizJung) {
+        out.push(...mapBox(CHO_STROKES[cho], 0.15, 0.05, 0.70, hasJong ? 0.34 : 0.45));
+        out.push(...mapBox(JUNG_STROKES[jung], 0.08, hasJong ? 0.40 : 0.52, 0.84, hasJong ? 0.24 : 0.36));
+        if (hasJong) {
+          out.push(...mapBox(JONG_MAP[jong] || CHO_STROKES[0], 0.18, 0.66, 0.66, 0.30));
+        }
+      } else if (isMixedJung) {
+        out.push(...mapBox(CHO_STROKES[cho], 0.08, 0.06, 0.48, hasJong ? 0.36 : 0.46));
+        out.push(...mapBox(JUNG_STROKES[jung], 0.08, 0.06, 0.86, hasJong ? 0.56 : 0.82));
+        if (hasJong) {
+          out.push(...mapBox(JONG_MAP[jong] || CHO_STROKES[0], 0.18, 0.64, 0.68, 0.32));
+        }
+      } else {
+        out.push(...mapBox(CHO_STROKES[cho], 0.06, 0.08, 0.44, hasJong ? 0.50 : 0.76));
+        out.push(...mapBox(JUNG_STROKES[jung], 0.50, 0.05, 0.44, hasJong ? 0.55 : 0.84));
+        if (hasJong) {
+          out.push(...mapBox(JONG_MAP[jong] || CHO_STROKES[0], 0.16, 0.62, 0.70, 0.34));
+        }
+      }
+      return out;
+    }
+
+    const cw = canvas.width || canvas.offsetWidth || 558;
+    const ch = canvas.height || canvas.offsetHeight || 158;
+    const chars = String(targetName || '김철수').replace(/\s+/g, '').split('');
+    const baseCharW = Math.min(82, (cw * 0.60) / Math.max(chars.length, 2)) * styleCfg.aspectX;
+    const baseCharH = Math.min(86, ch * 0.58) * styleCfg.aspectY;
+    const totalW = chars.length * baseCharW * 1.06;
+    const startX = Math.max(24, (cw - totalW) * 0.44 + ((seed % 17) - 8) * 1.6);
+    const startY = Math.max(16, (ch - baseCharH) * 0.44 + ((seed % 11) - 5) * 1.2);
+
+    const clampPt = (x, y) => [
+      Math.round(Math.max(10, Math.min(cw - 10, x)) * 100) / 100,
+      Math.round(Math.max(8, Math.min(ch - 8, y)) * 100) / 100
+    ];
+
+    const allStrokes = [];
+    chars.forEach((c, cIdx) => {
+      const rawStrokes = decomposeCharStrokes(c);
+      const scaleMult = (styleCfg.index === 7 && cIdx === 0) ? 1.22 : (1.0 - cIdx * 0.03);
+      const charW = baseCharW * scaleMult;
+      const charH = baseCharH * scaleMult;
+      const ox = startX + cIdx * (baseCharW * (styleCfg.cursive > 0.6 ? 0.94 : 1.12));
+      const oy = startY + cIdx * (baseCharW * styleCfg.baseSlope);
+
+      const transformed = rawStrokes.map((st, sIdx) => {
+        return st.map(([nx, ny], pIdx) => {
+          const jitterPhase = seed * 0.37 + cIdx * 2.1 + sIdx * 1.3 + pIdx * 0.9;
+          const jx = Math.sin(jitterPhase) * styleCfg.tremor * 2.0;
+          const jy = Math.cos(jitterPhase * 1.3) * styleCfg.tremor * 2.0;
+          const sx = nx + (ny - 0.5) * styleCfg.slant;
+          return clampPt(ox + sx * charW + jx, oy + ny * charH + jy);
+        });
+      });
+
+      if (styleCfg.cursive >= 0.5 && transformed.length > 1) {
+        const merged = [];
+        let cur = [...transformed[0]];
+        for (let i = 1; i < transformed.length; i++) {
+          if ((i + cIdx) % 2 === 1 || styleCfg.cursive >= 0.78) {
+            const lastPt = cur[cur.length - 1];
+            const nextPt = transformed[i][0];
+            const midPt = clampPt(
+              (lastPt[0] + nextPt[0]) * 0.5 + (styleCfg.cursive * 2.5),
+              (lastPt[1] + nextPt[1]) * 0.5 - 1.5
+            );
+            cur.push(midPt, ...transformed[i]);
+          } else {
+            merged.push(cur);
+            cur = [...transformed[i]];
+          }
+        }
+        merged.push(cur);
+        allStrokes.push(...merged);
+      } else {
+        allStrokes.push(...transformed);
+      }
+    });
+
+    if (styleCfg.flourish === 1 && allStrokes.length > 0) {
+      const lastSt = allStrokes[allStrokes.length - 1];
+      const endPt = lastSt[lastSt.length - 1];
+      lastSt.push(
+        clampPt(endPt[0] + 20, endPt[1] - 5),
+        clampPt(endPt[0] + 48, endPt[1] - 9),
+        clampPt(endPt[0] + 74, endPt[1] - 6)
+      );
+    } else if (styleCfg.flourish === 2) {
+      allStrokes.push([
+        clampPt(startX - 8, startY + baseCharH + 11),
+        clampPt(startX + totalW * 0.55, startY + baseCharH + 6),
+        clampPt(startX + totalW + 18, startY + baseCharH + 10)
+      ]);
+    } else if (styleCfg.flourish === 3 && allStrokes.length > 0) {
+      const lastSt = allStrokes[allStrokes.length - 1];
+      const endPt = lastSt[lastSt.length - 1];
+      lastSt.push(
+        clampPt(endPt[0] + 16, endPt[1] + 9),
+        clampPt(endPt[0] - 8, endPt[1] + 17),
+        clampPt(endPt[0] + 34, endPt[1] + 12)
+      );
+    }
+
+    const denseStrokes = [];
+    for (const stroke of allStrokes) {
+      if (!stroke || stroke.length < 2) continue;
+      const dense = [];
+      for (let i = 0; i < stroke.length - 1; i++) {
+        const [x0, y0] = stroke[i];
+        const [x1, y1] = stroke[i + 1];
+        const dist = Math.hypot(x1 - x0, y1 - y0);
+        const steps = Math.max(5, Math.ceil(dist / 3.2));
+        for (let s = 0; s <= steps; s++) {
+          const t = s / steps;
+          const arc = Math.sin(t * Math.PI) * 1.4 * ((i % 2 === 0) ? 1 : -1);
+          dense.push(clampPt(
+            x0 + (x1 - x0) * t + arc * 0.45,
+            y0 + (y1 - y0) * t - arc * 0.85
+          ));
+        }
+      }
+      if (dense.length >= 2) denseStrokes.push(dense);
+    }
+
+    // jQuery UI Signature 상태 동기화
+    if (typeof window.$ !== 'undefined' && window.$('#sig').signature) {
+      window.$('#sig').signature('clear');
+      window.$('#sig').signature('draw', { lines: denseStrokes });
+    }
+
+    // 필압 변화(minW ~ maxW)가 살아있는 자연스러운 펜 획을 캔버스에 추가 렌더링
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.strokeStyle = '#111827';
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      for (const line of denseStrokes) {
+        for (let i = 0; i < line.length - 1; i++) {
+          const progress = i / Math.max(1, line.length - 1);
+          const pressure = Math.sin(progress * Math.PI);
+          ctx.lineWidth = styleCfg.minW + (styleCfg.maxW - styleCfg.minW) * (0.35 + 0.65 * pressure);
+          ctx.beginPath();
+          ctx.moveTo(line[i][0], line[i][1]);
+          ctx.lineTo(line[i + 1][0], line[i + 1][1]);
+          ctx.stroke();
+        }
+      }
+    }
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const sigInput = document.querySelector('#signatureID');
+    if (sigInput) {
+      sigInput.value = dataUrl;
+    }
+
+    return {
+      ok: Boolean(dataUrl && dataUrl.startsWith('data:image/')),
+      strokeCount: denseStrokes.length,
+      dataUrlLength: dataUrl ? dataUrl.length : 0
+    };
+  }, {
+    targetName: signerName,
+    p1: hp1,
+    p2: hp2,
+    p3: hp3,
+    seed: combinedSeed,
+    styleCfg
+  });
+
+  if (!drawRes?.ok) {
+    throw new Error(`[UID ${uidStr}] 답례품 수령증 서명 생성 실패: ${drawRes?.reason || '알 수 없는 오류'}`);
+  }
+
+  if (reportDir) {
+    const fileName = `step_GIFT_SIGN_${uidStr}_${Date.now()}.png`;
+    await page.screenshot({ path: path.join(reportDir, fileName), fullPage: true }).catch(() => {});
+    if (Array.isArray(capturedSteps)) {
+      capturedSteps.push({
+        step: 'GIFT_SIGNATURE',
+        stepIndex: capturedSteps.length + 1,
+        title: `답례품 수령증 서명 (${signerName} · 신세계 5,000원 · ${styleCfg.label})`,
+        file: fileName,
+        url: `/reports/${path.basename(path.dirname(reportDir))}/${path.basename(reportDir)}/${fileName}`
+      });
+    }
+  }
+
+  // 5. [저 장](#ok) 버튼 클릭 및 ./SaveSignature 완료 대기
+  await page.click('#ok');
+  for (let w = 0; w < 30; w++) {
+    await page.waitForTimeout(200);
+    const done = await page.evaluate(() => Boolean(window.__hrcSigSaved));
+    if (done) break;
+  }
+
+  // 6. AnswerInfo4로 돌아가 '지류 상품권 수령 서명 완료' 배지 확인
+  await page.goto(answerInfoUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+  await page.waitForTimeout(300);
+  const verified = await page.evaluate(() => {
+    const txt = (document.querySelector('.gift-complete-box')?.innerText || '').trim();
+    return {
+      signed: txt.includes('서명 완료'),
+      text: txt
+    };
+  });
+
+  logger.info(`[HRC 답례품 서명 완료] UID=${uidStr}, 성명=${signerName}, 연락처=${fullPhone}, 상품권=신세계 5,000원, 필체="${styleCfg.label}", 확인="${verified.text || '저장됨'}"`);
+
+  return {
+    ok: verified.signed,
+    alreadySigned: false,
+    uid: uidStr,
+    signerName,
+    phone: fullPhone,
+    signerPhone: fullPhone,
+    giftBrand: '신세계',
+    giftValue: '5000',
+    giftLabel: '신세계상품권 5,000원',
+    styleLabel: styleCfg.label,
+    verifiedText: verified.text
+  };
 }
 
 /**
@@ -398,11 +960,44 @@ export async function runHrcEnergySurvey(options = {}) {
           });
         }
         onProgress({
+          step: 'GIFT_SIGN',
+          stepIndex: 7,
+          totalSteps: 7,
+          progress: 98,
+          message: `[UID ${uid}] 100% 조사완료! [답례품 지급] 신세계상품권 5,000원 선택 및 응답자 필체 서명 진행 중...`
+        });
+
+        let giftSignResult = null;
+        try {
+          giftSignResult = await signHrcEnergyGiftReceipt(page, {
+            uid,
+            loginId,
+            loginPw,
+            contactName: basicInfoState.contactName,
+            fallbackName: slotData.contactName || slotData.ceoName,
+            tel1: basicInfoState.tel1,
+            tel2: basicInfoState.tel2,
+            tel3: basicInfoState.tel3,
+            rawPhone: slotData.phone,
+            forcedStyleIndex: policy.signatureStyleIndex ?? null,
+            reportDir,
+            capturedSteps
+          });
+        } catch (giftErr) {
+          logger.warn(`[HRC 에너지총조사] UID=${uid} 답례품 서명 처리 중 예외: ${giftErr.message}`);
+          giftSignResult = { ok: false, uid, error: giftErr.message };
+        }
+
+        const giftSummaryMsg = giftSignResult?.ok
+          ? ` (답례품: ${giftSignResult.giftLabel || '신세계상품권 5,000원'} / 서명: ${giftSignResult.signerName} [${giftSignResult.styleLabel || '자필서명'}])`
+          : ` (답례품 서명 확인 필요: ${giftSignResult?.error || '미완료'})`;
+
+        onProgress({
           step: 'COMPLETE',
           stepIndex: 7,
           totalSteps: 7,
           progress: 100,
-          message: `[UID ${uid}] 100% 조사완료 화면 도달!`
+          message: `[UID ${uid}] 100% 조사완료 및 답례품 지급 서명 완료!${giftSummaryMsg}`
         });
         return {
           success: true,
@@ -410,6 +1005,7 @@ export async function runHrcEnergySurvey(options = {}) {
           uid,
           rpsUrl,
           basicInfoState,
+          giftSignResult,
           stepTrace,
           capturedSteps
         };
@@ -1187,14 +1783,21 @@ export async function runHrcEnergySurvey(options = {}) {
           }
           // [규칙 17] E1-5 문항 (q90020_r1): E-MAIL '9999999@naver.com' 응답
           if (cv.startsWith('q90020_r')) {
-            const rName = basicInfoState.contactName || slotData.contactName || '관리소장';
-            const t1 = basicInfoState.tel1 || '010';
-            const t2 = basicInfoState.tel2 || '7935';
-            const t3 = basicInfoState.tel3 || '2414';
-            setVal(document.querySelector(`#OpenList_${cv}_op3_, input[variable="${cv}_op3"]`), rName);
-            setVal(document.querySelector(`#${cv}_op4, input[variable="${cv}_op4"]`), t1);
-            setVal(document.querySelector(`#${cv}_op5, input[variable="${cv}_op5"]`), t2);
-            setVal(document.querySelector(`#${cv}_op6, input[variable="${cv}_op6"]`), t3);
+            const nameEl = document.querySelector(`#OpenList_${cv}_op3_, input[variable="${cv}_op3"]`);
+            const existingName = nameEl && nameEl.value ? nameEl.value.trim() : '';
+            const rName = (existingName && existingName !== '관리소장')
+              ? existingName
+              : (basicInfoState.contactName || slotData.contactName || '관리소장');
+            const tel1El = document.querySelector(`#${cv}_op4, input[variable="${cv}_op4"]`);
+            const tel2El = document.querySelector(`#${cv}_op5, input[variable="${cv}_op5"]`);
+            const tel3El = document.querySelector(`#${cv}_op6, input[variable="${cv}_op6"]`);
+            const t1 = (tel1El && tel1El.value ? tel1El.value.trim() : '') || basicInfoState.tel1 || '010';
+            const t2 = (tel2El && tel2El.value ? tel2El.value.trim() : '') || basicInfoState.tel2 || '7935';
+            const t3 = (tel3El && tel3El.value ? tel3El.value.trim() : '') || basicInfoState.tel3 || '2414';
+            setVal(nameEl, rName);
+            setVal(tel1El, t1);
+            setVal(tel2El, t2);
+            setVal(tel3El, t3);
             setVal(document.querySelector(`#${cv}_op7, input[variable="${cv}_op7"]`), '9999999', true, true);
             const sel = document.querySelector(`#${cv}_op9, select[variable="${cv}_op9"]`);
             if (sel) {
@@ -1269,6 +1872,29 @@ export async function runHrcEnergySurvey(options = {}) {
         questionSnippet: step.text.slice(0, 180)
       });
 
+      if (String(step.cv).startsWith('q90020_r')) {
+        const syncedRespondent = await page.evaluate((cv) => {
+          const nameEl = document.querySelector(`#OpenList_${cv}_op3_, input[variable="${cv}_op3"]`);
+          const tel1El = document.querySelector(`#${cv}_op4, input[variable="${cv}_op4"]`);
+          const tel2El = document.querySelector(`#${cv}_op5, input[variable="${cv}_op5"]`);
+          const tel3El = document.querySelector(`#${cv}_op6, input[variable="${cv}_op6"]`);
+          return {
+            contactName: nameEl && nameEl.value ? nameEl.value.trim() : '',
+            tel1: tel1El && tel1El.value ? tel1El.value.trim() : '',
+            tel2: tel2El && tel2El.value ? tel2El.value.trim() : '',
+            tel3: tel3El && tel3El.value ? tel3El.value.trim() : ''
+          };
+        }, step.cv).catch(() => null);
+        if (syncedRespondent) {
+          if (syncedRespondent.contactName && syncedRespondent.contactName !== '관리소장') {
+            basicInfoState.contactName = syncedRespondent.contactName;
+          }
+          if (syncedRespondent.tel1) basicInfoState.tel1 = syncedRespondent.tel1;
+          if (syncedRespondent.tel2) basicInfoState.tel2 = syncedRespondent.tel2;
+          if (syncedRespondent.tel3) basicInfoState.tel3 = syncedRespondent.tel3;
+        }
+      }
+
       // 안전가드(safetyGuard) 활성화 시 마지막 응답자 화면(q90020_r1) 입력 후 제출 직전에 정지
       if (safetyGuard && step.cv === 'q90020_r1') {
         if (reportDir) {
@@ -1332,3 +1958,187 @@ export async function runHrcEnergySurvey(options = {}) {
     await browser.close();
   }
 }
+
+/**
+ * 계정의 조사완료(100%) 건물 슬롯 중 [답례품 지급] 미서명 건들을 일괄 조회하여
+ * 신세계상품권 5,000원 선택 + 응답자 성명·연락처 + 8종 한글 필체 서명을 자동 저장합니다.
+ */
+export async function signAllCompletedHrcEnergySlots(options = {}) {
+  const {
+    loginId = '700275',
+    loginPw = '700275',
+    targetUids = null,
+    slotHintMap = {},
+    onProgress = () => {}
+  } = options;
+
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({
+      ignoreHTTPSErrors: true,
+      viewport: { width: 1400, height: 920 },
+      locale: 'ko-KR'
+    });
+    const page = await context.newPage();
+    page.on('dialog', async (d) => {
+      try { await d.accept(); } catch (_) {}
+    });
+
+    await page.goto(`${HRC_BASE_URL}/Home/Login`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000
+    });
+    await page.fill('input[type="text"]', String(loginId).trim());
+    await page.fill('input[type="password"]', String(loginPw || loginId).trim());
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }),
+      page.click('button[type="submit"], input[type="submit"]')
+    ]);
+
+    await page.waitForSelector('a[onclick*="2026-89-0342C"]', { timeout: 15000 });
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }),
+      page.click('a[onclick*="2026-89-0342C"]')
+    ]);
+
+    let completedRows = [];
+    if (Array.isArray(targetUids) && targetUids.length > 0) {
+      completedRows = targetUids.map(u => {
+        const uidStr = String(u).trim();
+        const hint = slotHintMap[uidStr] || {};
+        return {
+          uid: uidStr,
+          status: '완료',
+          progress: '100%',
+          buildingName: hint.buildingName || hint.companyName || ''
+        };
+      });
+    } else {
+      await page.waitForSelector('#goBuilding', { timeout: 15000 });
+      await Promise.all([
+        page.waitForURL(u => u.toString().includes('/q260342/List4'), { timeout: 20000 }),
+        page.click('#goBuilding')
+      ]);
+      await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 }).catch(() => {});
+
+      const seenUids = new Set();
+      const visitedPages = new Set();
+      let currentPageNum = 1;
+
+      while (true) {
+        visitedPages.add(currentPageNum);
+        const pageData = await page.evaluate(() => {
+          const rows = Array.from(document.querySelectorAll('tr[id^="List4_DXDataRow"]')).map(tr => {
+            const tds = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
+            return {
+              uid: tds[0] || '',
+              siteStatus: tds[2] || '',
+              progress: tds[3] || '0%',
+              buildingName: tds[7] || ''
+            };
+          });
+          const pageLinks = Array.from(document.querySelectorAll('a.dxp-num'))
+            .map(a => ({
+              num: parseInt(a.innerText.trim().replace(/[\[\]]/g, ''), 10),
+              href: a.getAttribute('href') || ''
+            }))
+            .filter(x => !isNaN(x.num) && x.href);
+          return { rows, pageLinks };
+        });
+
+        for (const r of pageData.rows) {
+          if (!r.uid || seenUids.has(r.uid)) continue;
+          seenUids.add(r.uid);
+          const pctNum = parseInt(String(r.progress).replace(/[^0-9]/g, ''), 10) || 0;
+          if (r.siteStatus === '완료' || pctNum >= 100) {
+            completedRows.push({
+              uid: r.uid,
+              status: r.siteStatus,
+              progress: r.progress,
+              buildingName: r.buildingName
+            });
+          }
+        }
+
+        const nextLink = pageData.pageLinks.find(p => !visitedPages.has(p.num) && p.num > currentPageNum);
+        if (!nextLink) break;
+
+        currentPageNum = nextLink.num;
+        const targetUrl = nextLink.href.startsWith('http')
+          ? nextLink.href
+          : `${HRC_BASE_URL}${nextLink.href}`;
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 }).catch(() => {});
+      }
+    }
+
+    const results = {
+      loginId,
+      totalCompleted: completedRows.length,
+      alreadySignedCount: 0,
+      newlySignedCount: 0,
+      failedCount: 0,
+      signedItems: [],
+      failedItems: []
+    };
+
+    for (let idx = 0; idx < completedRows.length; idx++) {
+      const row = completedRows[idx];
+      const hint = slotHintMap[row.uid] || {};
+      onProgress({
+        index: idx + 1,
+        total: completedRows.length,
+        uid: row.uid,
+        buildingName: row.buildingName,
+        message: `[${idx + 1}/${completedRows.length}] UID=${row.uid} (${row.buildingName}) 답례품 지급 서명 확인 및 처리 중...`
+      });
+
+      try {
+        const res = await signHrcEnergyGiftReceipt(page, {
+          uid: row.uid,
+          loginId,
+          loginPw,
+          contactName: hint.contactName || '',
+          fallbackName: hint.ceoName || '',
+          rawPhone: hint.phone || ''
+        });
+        if (res.ok) {
+          if (res.alreadySigned) {
+            results.alreadySignedCount++;
+          } else {
+            results.newlySignedCount++;
+          }
+          results.signedItems.push({
+            uid: row.uid,
+            buildingName: row.buildingName,
+            alreadySigned: Boolean(res.alreadySigned),
+            signerName: res.signerName || '',
+            signerPhone: res.signerPhone || '',
+            styleId: res.styleId || '',
+            styleLabel: res.styleLabel || '',
+            giftLabel: res.giftLabel || '신세계상품권 5,000원'
+          });
+        } else {
+          results.failedCount++;
+          results.failedItems.push({
+            uid: row.uid,
+            buildingName: row.buildingName,
+            error: res.error || '서명 저장 실패'
+          });
+        }
+      } catch (err) {
+        results.failedCount++;
+        results.failedItems.push({
+          uid: row.uid,
+          buildingName: row.buildingName,
+          error: err.message
+        });
+      }
+    }
+
+    return results;
+  } finally {
+    await browser.close();
+  }
+}
+

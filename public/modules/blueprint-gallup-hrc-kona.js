@@ -90,7 +90,7 @@ export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBasel
   if (subtitleEl) subtitleEl.textContent = '한국리서치 TAPI(2026-89-0342C) 건물 기본정보 및 본설문(A1~E1-5) 자동화 규칙입니다. 기존에 이미 입력되어 있는 모든 항목은 절대 건드리지 않고 그대로 보존합니다.';
 
   if (badgeMasterStatus) {
-    badgeMasterStatus.innerHTML = '<i class="fa-solid fa-shield-halved"></i> 기입력 항목 100% 보존 &amp; 증빙 자동 생략 활성';
+    badgeMasterStatus.innerHTML = '<i class="fa-solid fa-shield-halved"></i> 기입력 보존 · 신세계 5,000원 8종 필체 자동서명 활성';
     badgeMasterStatus.className = 'badge-status badge-blueprint ready';
   }
 
@@ -105,11 +105,11 @@ export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBasel
       <div class="blueprint-card-header">
         <div class="blueprint-card-title-group">
           <span class="blueprint-step-pill" style="background: rgba(16, 185, 129, 0.2); color: #34d399;"><i class="fa-solid fa-shield-halved"></i> 핵심 보호 규칙</span>
-          <h3 class="blueprint-stage-title">에너지총조사 [건물 부문] 3대 절대 준수 규칙</h3>
+          <h3 class="blueprint-stage-title">에너지총조사 [건물 부문] 4대 절대 준수 규칙</h3>
         </div>
         <span class="badge-status success"><i class="fa-solid fa-lock"></i> 상시 강제 적용</span>
       </div>
-      <div class="p-14" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+      <div class="p-14" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
         <div class="assoc-rule-box mb-0">
           <strong class="text-success"><i class="fa-solid fa-check-double"></i> 1. 기입력 항목 100% 보존 (절대 수정 금지)</strong>
           <div class="font-caption text-dim mt-4">[기본정보] 및 본설문 모든 화면에서 이미 값이 입력되어 있거나 선택된 문항은 단 하나도 덮어쓰지 않고 그대로 유지하며 통과합니다.</div>
@@ -121,6 +121,10 @@ export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBasel
         <div class="assoc-rule-box mb-0">
           <strong class="text-primary-color"><i class="fa-solid fa-arrows-Turn-to-dots"></i> 3. [선정] 쿼터 우선 실행 &amp; [대체] 자동 승계</strong>
           <div class="font-caption text-dim mt-4">구글 시트 쿼터의 [선정] 표본을 우선 실행하며, 오류 발생 시 동일 표본층(Cell: 시도_주용도_연면적) 내 차순위 [대체] 표본을 자동으로 승계합니다.</div>
+        </div>
+        <div class="assoc-rule-box mb-0">
+          <strong style="color: #8b5cf6;"><i class="fa-solid fa-signature"></i> 4. [답례품 지급] 신세계 5,000원 &amp; 8종 필체 자동 서명</strong>
+          <div class="font-caption text-dim mt-4">조사완료(100%) 후 [서명하기]에 진입해 <strong>신세계상품권 5,000원</strong>을 선택하고, 설문응답자 성명·연락처와 <strong>8종 한글 자모 필체 변주 서명</strong>을 자동 저장합니다.</div>
         </div>
       </div>
     </section>

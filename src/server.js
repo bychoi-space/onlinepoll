@@ -39,7 +39,7 @@ import {
 } from './utils/seoul-panel-answer-excel.js';
 import { runKonaSurvey } from './engine/kona-runner.js';
 import { scrapeHrcEnergySlots, findHrcQuotaJsonPath, HRC_ACCOUNTS } from './engine/hrc-energy-scraper.js';
-import { runHrcEnergySurvey } from './engine/hrc-energy-runner.js';
+import { runHrcEnergySurvey, signAllCompletedHrcEnergySlots } from './engine/hrc-energy-runner.js';
 import { scrapeGlobalriLiteracyQuotas, findGlobalriQuotaJsonPath, getAgeGroupFromBirthYear } from './engine/globalri-literacy-scraper.js';
 import { runGlobalriLiteracySurvey } from './engine/globalri-literacy-runner.js';
 import {
@@ -1547,15 +1547,63 @@ app.post('/api/campaigns/:id/sync-hrc-energy', async (req, res) => {
       onProgress: (msg) => logger.info(`[HRC TAPI 동기화] ${msg}`)
     });
 
-    if (Array.isArray(syncRes.mergedData) && syncRes.mergedData.length > 0) {
-      const updatedQuotaDb = syncRes.mergedData.map((item, idx) => {
+    // 조사완료(100%) 슬롯 중 [답례품 지급] 미서명 건 자동 서명 (신세계상품권 5,000원 + 응답자 성명 8종 필체)
+    const slotHintMap = {};
+    (campaign.quotaDatabase || []).forEach(q => {
+      if (q.uid) slotHintMap[String(q.uid)] = q;
+    });
+    let giftSignSummary = null;
+    if (req.body?.skipGiftSign !== true) {
+      const completedUids = (syncRes.scrapedSlots || [])
+        .filter(s => s.siteStatus === '완료' || (parseInt(String(s.progress).replace(/[^0-9]/g, ''), 10) || 0) >= 100)
+        .map(s => String(s.uid));
+      if (completedUids.length > 0) {
+        giftSignSummary = await signAllCompletedHrcEnergySlots({
+          loginId,
+          loginPw,
+          targetUids: completedUids,
+          slotHintMap,
+          onProgress: (p) => logger.info(`[HRC 답례품 자동서명] ${p.message}`)
+        }).catch(err => {
+          logger.warn(`[HRC 답례품 자동서명 경고] ${err.message}`);
+          return null;
+        });
+      }
+    }
+
+    const signedUidMap = new Map(
+      (giftSignSummary?.signedItems || []).map(s => [String(s.uid), s])
+    );
+
+    const baseData = (Array.isArray(syncRes.mergedData) && syncRes.mergedData.length > 0)
+      ? syncRes.mergedData
+      : (campaign.quotaDatabase || []);
+
+    if (baseData.length > 0) {
+      const liveMap = new Map((syncRes.scrapedSlots || []).map(s => [String(s.uid), s]));
+      const updatedQuotaDb = baseData.map((item, idx) => {
         const uidStr = String(item.uid || '').trim();
+        const live = liveMap.get(uidStr);
+        const signedMeta = signedUidMap.get(uidStr);
+        const pctNum = live ? (parseInt(String(live.progress).replace(/[^0-9]/g, ''), 10) || 0) : (parseInt(String(item.progress || '').replace(/[^0-9]/g, ''), 10) || 0);
+        const isComp = (live && (live.siteStatus === '완료' || pctNum >= 100)) || item.quotaStatus === 'completed' || item.status === '완료';
         return {
           ...item,
           index: item.index || idx + 1,
           seq: item.seq || idx + 1,
+          siteStatus: live?.siteStatus || item.siteStatus,
+          progress: live?.progress || item.progress || (isComp ? '100%' : '0%'),
+          status: isComp ? '완료' : (pctNum > 0 ? `진행중(${pctNum}%)` : (item.status || '대기')),
+          quotaStatus: isComp ? 'completed' : (item.quotaStatus === 'completed' ? 'completed' : 'ready'),
+          surveyCompleted: isComp ? '완료' : (item.surveyCompleted || '대기'),
+          giftSigned: signedMeta ? true : Boolean(item.giftSigned || isComp),
+          giftBrand: '신세계',
+          giftValue: '5000',
+          giftSignerName: signedMeta?.signerName || item.giftSignerName || item.contactName || '',
+          giftSignerPhone: signedMeta?.signerPhone || item.giftSignerPhone || item.phone || '',
+          giftStyleLabel: signedMeta?.styleLabel || item.giftStyleLabel || '',
           companyName: item.buildingName || item.companyName || `건물_${uidStr}`,
-          ceoName: item.contactName || item.ceoName || '관리소장',
+          ceoName: signedMeta?.signerName || item.contactName || item.ceoName || '관리소장',
           slotUrl: `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${uidStr}&page=1`,
           surveyUrl: `https://tapi.hrcglobal.com/q260342/Survey4?pid=${uidStr}&page=1`
         };
@@ -1574,14 +1622,17 @@ app.post('/api/campaigns/:id/sync-hrc-energy', async (req, res) => {
       });
     }
 
-    const doneCount = (syncRes.mergedData || []).filter(d => d.quotaStatus === 'completed' || d.status === '완료').length;
-    logger.success(`[에너지총조사 상태 동기화 완료] 조사원 ${loginId}: 총 ${syncRes.totalScraped}건 스크랩, 완료 ${doneCount}건 반영`);
+    const doneCount = (CampaignStore.getCampaignById(campaign.id)?.quotaDatabase || []).filter(d => d.quotaStatus === 'completed' || d.status === '완료').length;
+    const newlySigned = giftSignSummary?.newlySignedCount || 0;
+    const totalSigned = (giftSignSummary?.alreadySignedCount || 0) + newlySigned;
+    logger.success(`[에너지총조사 상태 동기화 완료] 조사원 ${loginId}: 총 ${syncRes.totalScraped}건 스크랩, 완료 ${doneCount}건 (답례품 서명완료: ${totalSigned}건, 신규서명: ${newlySigned}건)`);
 
     res.json({
       success: true,
-      message: `한국리서치 TAPI(${loginId}) 실시간 동기화 완료! (총 ${syncRes.totalScraped}건 확인 / 완료 ${doneCount}건)`,
+      message: `한국리서치 TAPI(${loginId}) 실시간 동기화 완료! (총 ${syncRes.totalScraped}건 확인 / 완료 ${doneCount}건 / 신세계 5,000원 답례품 서명완료 ${totalSigned}건)`,
       totalScraped: syncRes.totalScraped,
       completedCount: doneCount,
+      giftSignSummary,
       quotaDatabase: CampaignStore.getCampaignById(campaign.id)?.quotaDatabase || []
     });
   } catch (err) {
@@ -2738,6 +2789,14 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
           targetBiz.progress = (result.status === 'stopped_at_review') ? '91%' : '100%';
           targetBiz.pilotAt = new Date().toISOString();
           targetBiz.capturedSteps = result.capturedSteps;
+          if (result.giftSignResult?.ok) {
+            targetBiz.giftSigned = true;
+            targetBiz.giftBrand = result.giftSignResult.giftBrand || '신세계';
+            targetBiz.giftValue = result.giftSignResult.giftValue || '5000';
+            targetBiz.giftSignerName = result.giftSignResult.signerName || targetBiz.contactName || '';
+            targetBiz.giftSignerPhone = result.giftSignResult.signerPhone || targetBiz.phone || '';
+            targetBiz.giftStyleLabel = result.giftSignResult.styleLabel || '';
+          }
           logger.success(`🎉 [에너지총조사 파일럿 성공] "${targetBiz.buildingName || targetBiz.companyName}" (UID: ${targetBiz.uid}) ${targetBiz.status} 달성!`);
         } else if (isKona) {
           targetBiz.quotaStatus = (result.status === 'stopped_before_submit') ? 'pilot_done' : 'completed';
@@ -3157,6 +3216,14 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
                   sub.progress = (subRes.status === 'stopped_at_review') ? '91%' : '100%';
                   sub.completedAt = new Date().toISOString();
                   sub.capturedSteps = subRes.capturedSteps;
+                  if (subRes.giftSignResult?.ok) {
+                    sub.giftSigned = true;
+                    sub.giftBrand = subRes.giftSignResult.giftBrand || '신세계';
+                    sub.giftValue = subRes.giftSignResult.giftValue || '5000';
+                    sub.giftSignerName = subRes.giftSignResult.signerName || sub.contactName || '';
+                    sub.giftSignerPhone = subRes.giftSignResult.signerPhone || sub.phone || '';
+                    sub.giftStyleLabel = subRes.giftSignResult.styleLabel || '';
+                  }
                   biz.substitutedByUid = sub.uid;
                   biz.status = `대체완료(${sub.uid})`;
                   result = subRes;
@@ -3339,6 +3406,14 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
               biz.surveyCompleted = (biz.quotaStatus === 'completed') ? '완료' : '대기';
               biz.completedAt = new Date().toISOString();
               biz.capturedSteps = result.capturedSteps;
+              if (result.giftSignResult?.ok) {
+                biz.giftSigned = true;
+                biz.giftBrand = result.giftSignResult.giftBrand || '신세계';
+                biz.giftValue = result.giftSignResult.giftValue || '5000';
+                biz.giftSignerName = result.giftSignResult.signerName || biz.contactName || '';
+                biz.giftSignerPhone = result.giftSignResult.signerPhone || biz.phone || '';
+                biz.giftStyleLabel = result.giftSignResult.styleLabel || '';
+              }
             }
             logger.success(`🎉 [에너지총조사 배치 ${i + 1}/${targets.length} 완료] "${biz.buildingName || biz.companyName}" (UID: ${biz.uid}) ${biz.status} 달성!`);
           } else if (isKona) {
@@ -3750,6 +3825,14 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
           targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(91%)' : '완료';
           targetBiz.progress = (result.status === 'stopped_at_review') ? '91%' : '100%';
           targetBiz.surveyCompleted = (targetBiz.quotaStatus === 'completed') ? '완료' : '대기';
+          if (result.giftSignResult?.ok) {
+            targetBiz.giftSigned = true;
+            targetBiz.giftBrand = result.giftSignResult.giftBrand || '신세계';
+            targetBiz.giftValue = result.giftSignResult.giftValue || '5000';
+            targetBiz.giftSignerName = result.giftSignResult.signerName || targetBiz.contactName || '';
+            targetBiz.giftSignerPhone = result.giftSignResult.signerPhone || targetBiz.phone || '';
+            targetBiz.giftStyleLabel = result.giftSignResult.styleLabel || '';
+          }
         } else {
           targetBiz.quotaStatus = (isKona && !safetyGuard) ? 'completed' : 'pilot_done';
           if (isKona) {

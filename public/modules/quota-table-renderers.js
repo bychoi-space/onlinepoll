@@ -769,7 +769,10 @@ export function renderHrcEnergyQuotaTable({
     let statusHtml = `<span class="badge-status ready">대기 (${escapeHtml(prog)})</span>`;
 
     if (st === '완료' || st === 'completed') {
-      statusHtml = '<span class="badge-status success"><i class="fa-solid fa-check-double"></i> 100% 조사완료</span>';
+      const giftTag = item.giftSigned !== false
+        ? `<div style="margin-top:3px;"><span class="badge-tag-tunable" style="padding:1px 6px;font-size:10.5px;" title="${escapeHtml(item.giftStyleLabel || '신세계상품권 5,000원 · 응답자 성명 8종 필체 서명 완료')}"><i class="fa-solid fa-signature"></i> 신세계 5천원 서명완료</span></div>`
+        : '';
+      statusHtml = `<span class="badge-status success"><i class="fa-solid fa-check-double"></i> 100% 조사완료</span>${giftTag}`;
     } else if (st === '진행중' || st === 'running') {
       statusHtml = `<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 진행중 (${escapeHtml(prog)})</span>`;
     } else if (st === 'pilot_done') {
