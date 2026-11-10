@@ -6,7 +6,7 @@
 
 ## ⚠️ [절대 준수] 시스템 개발 대전제 (Immutable Core Principles)
 
-시스템을 개발하고 운영하는 모든 과정에서 에이전트는 다음 9대 대전제를 **예외 없이 무조건 엄수**해야 합니다.
+시스템을 개발하고 운영하는 모든 과정에서 에이전트는 다음 10대 대전제를 **예외 없이 무조건 엄수**해야 합니다.
 
 1. **어떤 상황에서도 브라우저 검증은 진행하지 마라.**
    - 브라우저 서브에이전트(`browser_subagent`)를 실행하여 UI를 탐색하거나 브라우저 상에서 인터랙션을 검증하는 일체의 행위를 절대 수행하지 않는다.
@@ -40,12 +40,16 @@
 9. **설문 자동화 엔진 수정 시 터미널 헤드리스 실전 E2E 완주 검증(`Success: true`) 필수 원칙.**
    - 설문 러너(`kstat-runner.js`, `kstat-assoc-runner.js` 등)의 주입 로직이나 유효성 검사 코드를 수정한 경우, 눈대중이나 코드 수정만으로 작업을 완료 처리하는 행위를 엄격히 금지한다.
    - 반드시 실제 대상 설문 슬롯 URL을 대상으로 로컬 터널링 없는 순수 터미널 Node.js 스크립트(Playwright Headless)를 구동하여, 1단계부터 최종 관문(Agree.asp)까지 단 하나의 Alert 트랩 없이 100% 정상 통과(`Success: true`)함을 실측 확인한 후에만 커밋 및 배포를 진행한다.
+10. **설문 '완료 직전 안전 대기(Pre-Completion Safe Wait)' 절대 기본 원칙 및 완료 전제 작업 시 사전 확인 필수 원칙.**
+    - 모든 설문 자동화는 기본적으로 **'최종 제출(완료) 직전 단계 안전 대기'** 상태를 유지하여 사용자가 실제 설문 응답 내역을 직접 확인·검수할 수 있도록 보장해야 한다.
+    - 만약 사용자의 후속 지시나 특정 기능 요청(예: 설문 100% 완료 후에만 활성화되는 답례품 수령증 전자서명, 완료 후 부가 작업 등)이 대상 시스템 구조상 **'설문 최종 완료(제출) 처리'를 전제로 해야만 수행 가능한 경우**, 에이전트가 임의로 안전가드를 해제하거나 완료 처리까지 직행하는 것을 **절대 금지**한다.
+    - 이러한 충돌이 발생하면 코드를 수정하거나 실행하기 전에 반드시 사용자에게 **"해당 기능(예: 답례품 수령증 서명)을 수행하려면 설문을 100% 완료 처리해야 하며, 완료 시 설문 응답 확인·수정이 불가능해집니다. 그래도 완료 처리까지 진행할지, 아니면 해당 기능을 보류하고 완료 직전 상태로 대기할지"** 명확히 보고하고 사용자의 명시적 선택과 승인을 받은 후에만 진행해야 한다.
 
 ---
 
 ## ⚠️ [필독] 개발자 실수 재발 방지 체크리스트 및 실전 주의사항 (Failure Prevention Checklist)
 
-시스템 개발 시 자주 발생하는 치명적 휴먼 에러를 방지하기 위해 다음 5대 체크리스트를 작업 전후로 반드시 대조·확인합니다.
+시스템 개발 시 자주 발생하는 치명적 휴먼 에러를 방지하기 위해 다음 6대 체크리스트를 작업 전후로 반드시 대조·확인합니다.
 
 ### 1. [체크리스트 1] Playwright `evaluate()` 다중 인자 전달 오류 (`Too many arguments`)
 - **실패 증상**: 콘솔 로그 없이 특정 문항에서 10~15초 간격으로 `[ALERT] 🔔 [설문 알림]`이 무한 반복 발생.
@@ -108,6 +112,14 @@
     const joinYearVal = String(Math.min(2025, Math.max(baseOpenYear, onnuriYearNum, 2024)));
     ```
 
+### 6. [체크리스트 6] '완료 직전 대기' 대전제와 '완료 후속 기능(답례품 서명 등)' 간의 충돌 미확인 사고
+- **실패 증상**: 사용자가 설문 응답 내역을 사전 검수하려고 했으나, 배치가 완료 직전(예: 91% / 99%)에서 멈추지 않고 100% 조사완료까지 직행하여 웹 설문 화면 열람·수정이 잠겨버림.
+- **원인 메커니즘**:
+  - 사용자가 "답례품 수령증 서명도 해줘"라고 지시했을 때, 해당 서명 버튼(`#insertSignature`)이 100% 완료 후에만 열리는 구조라는 이유로 에이전트가 사용자에게 묻지 않고 안전가드(`safetyGuard`) 기본값을 `false`로 해제하고 완료 처리까지 묶어서 실행함.
+- **방지 수칙**:
+  - **"절대 완료하지 말고 완료 직전에 대기하라"**는 상위 원칙이 있을 때, 완료 처리를 해야만 가능한 기능 요청이 들어오면 **절대 임의로 완료 모드로 전환하지 말 것**.
+  - 반드시 작업 전에 사용자에게 **"이 기능은 설문을 100% 완료 처리해야만 수행할 수 있어 설문 응답 확인이 불가능해집니다. 완료 처리까지 진행할까요, 아니면 이 기능을 제외하고 완료 직전 상태로 대기할까요?"**라고 먼저 질문하여 확인받을 것.
+
 ---
 
 ## 1. 시스템 개요 (System Overview)
@@ -143,7 +155,7 @@ graph TD
 4. **Decision & Persona Engine (`/ai`)**:
    - 질문과 선택지를 분석하여 사용자가 지정한 가이드라인에 부합하는 옵션 결정
    - 페르소나(연령, 성별, 성향 등)를 바탕으로 풍부하고 자연스러운 주관식 문장 생성
-   - API 키 부재 시에도 안정적으로 동작하는 스마트 휴리스틱/규칙 기반 폴백(Fallback) 내장
+   - API 키 키 부재 시에도 안정적으로 동작하는 스마트 휴리스틱/규칙 기반 폴백(Fallback) 내장
 
 ---
 
@@ -168,7 +180,7 @@ c:/onlinepoll/
 ├── AGENTS.md                  # 본 시스템 기반 및 에이전트 지침서
 ├── package.json               # 프로젝트 의존성 및 스크립트 정의 ("type": "module")
 ├── src/
-│   ├── server.js              # Express 메인 엔트리포인트 및 API 라우팅
+│   ├── server.js              # Express 메인 엔트리포인트 및 도메인 라우터 부트스트래퍼
 │   ├── engine/
 │   │   ├── browser.js         # Playwright 브라우저 인스턴스 생명주기 관리
 │   │   ├── parser.js          # 설문 DOM 질문/보기 컴포넌트 분석기
@@ -176,15 +188,23 @@ c:/onlinepoll/
 │   │   ├── kstat-runner.js    # 케이스탯 15단계 본 설문 다중 iframe 실행 엔진
 │   │   ├── kstat-eval-runner.js # 케이스탯 조사원 평가(17단계) 전용 자동 응답 러너
 │   │   ├── kstat-slot-scraper.js # Kstat 관리자(list.php) 자동 세션 연동 및 슬롯 스크래퍼
+│   │   ├── metrix-runner.js   # 메트릭스 경기도 소상공인 사업체패널 3차(120단계) 자동화 러너
+│   │   ├── metrix-seoul-runner.js # 메트릭스 서울시 소상공인 사업체패널 5차(svyA001~115, 99% 대기) 러너
 │   │   ├── persona-builder.js # 업종별 동적 페르소나 및 정합성 엔진
 │   │   ├── hybrid-quota.js    # 온누리 ➔ 마켓비즈 2단계 하이브리드 표본 수집기
 │   │   ├── hrc-energy-runner.js # 한국리서치 에너지총조사(건물 부문) 자동 응답 러너
-│   │   ├── globalri-literacy-runner.js # 글로벌리서치 제5차 성인문해능력조사(Part A~C) 자동화 러너
+│   │   ├── globalri-literacy-runner.js # 글로벌리서치 제5차 성인문해능력조사(Part A~F) 자동화 러너
 │   │   └── gallup-return-farm-runner.js # 한국갤럽 20263603 귀농귀촌 실태조사(GPS/8종전자서명/방문규칙) 러너
 │   ├── config/
 │   │   └── campaign-seeders.js # 서버 기동 시 기본 캠페인 시드 및 런타임 상태 동기화 모듈
+│   ├── services/
+│   │   └── task-manager.js    # 다중 캠페인 동시 배치 실행(MAX_CONCURRENT_TASKS=2) 상태 관리자
 │   ├── routes/
-│   │   └── quota-routes.js    # 조사 쿼터 보관함 CRUD, 상인회 허브 동기화 및 항목 삭제 라우터
+│   │   ├── auth-routes.js     # 인증, 로그인, 비밀번호 변경 및 리포트/온누리 조회 라우터
+│   │   ├── campaign-routes.js # 캠페인 CRUD, 블루프린트/기준점 조회·저장, 시트 뷰어 라우터
+│   │   ├── execution-routes.js # 파일럿/배치/단건 설문 자동화 실행 및 중지 제어 라우터
+│   │   ├── sync-routes.js     # Kstat·HRC·글로벌리서치·한국갤럽·서울시패널 외부 동기화 라우터
+│   │   └── quota-routes.js    # 조사 쿼터 보관함 CRUD, 엑셀 업로드, 상인회 허브 동기화 라우터
 │   ├── ai/
 │   │   ├── decision.js        # 객관식 선택 결정 로직 (가중치/확률 계산)
 │   │   ├── generator.js       # 주관식 답변 생성기 (LLM + 프롬프트 템플릿)
@@ -194,28 +214,32 @@ c:/onlinepoll/
 │   │   ├── marketbz.js        # 마켓비즈 단독 기업 데이터 크롤링 엔진
 │   │   └── onnuri.js          # 온누리상품권 공인 가맹점 데이터 조회기
 │   └── utils/
-│       ├── logger.js          # 로그 포맷터 및 SSE 이벤트 브로드캐스터
+│       ├── logger.js          # AsyncLocalStorage 캠페인 격리 로거 및 SSE 이벤트 브로드캐스터
 │       ├── delays.js          # 인간 시뮬레이션 지연 계산 유틸
 │       ├── item-normalizer.js # 9대 업종/주요품목 표준화 및 유효성 정규화 유틸
 │       ├── ceo-pool.js        # 215인 실존 대표자 프로필 풀 매퍼
-│       └── globalri-answer-excel.js # 성인문해능력조사 제출 문항·답변 Excel 및 구글 시트 자동 동기화 유틸
+│       ├── korean-signature.js # 8종 한글 자모 필체 다변화(초·중·종성 획 분해) 전자서명 공통 모듈
+│       ├── assoc-quota-sync.js # 상인회 쿼터 보관함(JSON/Excel) 자동 동기화 헬퍼
+│       ├── globalri-answer-excel.js # 성인문해능력조사 제출 문항·답변 Excel 및 구글 시트 자동 동기화 유틸
+│       └── seoul-panel-answer-excel.js # 서울시 소상공인 패널 5차 응답 내역 Excel 및 구글 시트(시트2) 동기화 유틸
 ├── public/                    # 웹 대시보드 정적 파일 (인라인 스타일 완전 제거)
-│   ├── index.html             # 메인 캠페인 목록 및 쿼터 보관함 허브
+│   ├── index.html             # 메인 캠페인 목록, 상단 라이브 듀얼 슬롯 배너 및 쿼터 보관함 허브
 │   ├── survey-detail.html     # 설문 상세 작업실 (STEP 1 쿼터/슬롯, STEP 2 기준점, STEP 3 2단계 실행, 플로팅 모니터링)
 │   ├── quota-builder.html     # 독립형 B2B 층화 표본 쿼터 생성기 & Excel 뷰어
 │   ├── quota-detail.html      # 조사 쿼터 상세 및 스프레드시트형 점포 편집기
 │   ├── styles.css             # 기본 모던/글래스모피즘 테마 스타일시트
-│   ├── campaign.css           # 캠페인 및 쿼터 테이블 가로 스크롤 스타일시트
+│   ├── campaign.css           # 캠페인 목록, 라이브 실행 배너 및 쿼터 테이블 스타일시트
 │   ├── custom-styles.css      # 전수 이관된 컴포넌트 통합 스타일시트
+│   ├── campaign-list.js       # 메인 대시보드 제어, 실행중 필터 칩 및 실시간 SSE 진행률 컨트롤러
 │   ├── survey-detail.js       # 상세 작업실 통합 제어 엔트리포인트
 │   ├── modules/               # 상세 작업실 도메인별 분리 ES 모듈 (7종)
 │   │   ├── blueprint-utils.js # HTML 이스케이프 및 공통 블루프린트 헬퍼
-│   │   ├── blueprint-metrix.js # 메트릭스(고척근린시장) 블루프린트 렌더러
+│   │   ├── blueprint-metrix.js # 메트릭스(고척근린시장 / 경기도 120단계 / 서울시 5차 패널) 블루프린트 렌더러
 │   │   ├── blueprint-assoc.js # Kstat 전통시장 상인회(24단계) 블루프린트 렌더러
 │   │   ├── blueprint-globalri.js # 글로벌리서치 성인문해능력조사 연령대 가이드 & 시트 뷰어 컨트롤러
 │   │   ├── blueprint-gallup-hrc-kona.js # 한국갤럽 귀농조사 / 한국리서치 에너지총조사 / 코나체인 블루프린트 렌더러
 │   │   ├── blueprint-kstat-store.js # Kstat 점포용(17단계) 3대 그룹 프리셋 및 스테이지 렌더러
-│   │   └── quota-table-renderers.js # 6대 설문 유형별 STEP 1 쿼터 테이블 전용 렌더러
+│   │   └── quota-table-renderers.js # 7대 설문 유형별 STEP 1 쿼터 테이블 전용 렌더러
 │   ├── quota-builder.js       # 조사 쿼터 생성기 제어 스크립트
 │   └── quota-detail.js        # 조사 쿼터 상세/편집 제어 스크립트
 ├── data/                      # 쿼터 DB(JSON/XLSX), 캠페인 데이터, ceo_profile_pool.json
@@ -1386,3 +1410,60 @@ c:/onlinepoll/
 - **VM 재부팅 시 `pm2` 자동 복구**:
   - `systemd`의 `pm2-choib` 서비스를 활성화하고 `/home/choib/.pm2/dump.pm2` 스냅샷을 최신 상태로 유지하여, 클라우드 인스턴스 재부팅 시에도 별도 수동 개입 없이 `autosurvey-ai` 프로세스가 즉시 자동 기동되도록 표준화하였다.
 
+---
+
+## 5-21. 시스템 개발 연혁 (Day 15~16 완료 내역 - 에너지총조사 17대 규칙·4계정 확장, 메트릭스 경기 3차/서울 5차 패널, 2캠페인 동시 배치 및 백엔드 도메인 모듈화)
+
+### 1) 한국리서치 2025년 기준 에너지총조사 [건물 부문] 17대 상세 응답 규칙 및 4번째 조사원(`701494 유희정`) 확장
+- **4대 조사원 계정 체제 구축 ([`src/engine/hrc-energy-scraper.js`](file:///c:/onlinepoll/src/engine/hrc-energy-scraper.js), [`data/hrc_energy_blueprint.json`](file:///c:/onlinepoll/data/hrc_energy_blueprint.json))**:
+  - `700275 (강영미)`: 전체 219개 / 선정 70개 (`camp_hrc_energy_700275`)
+  - `700277 (강경옥)`: 전체 186개 / 선정 58개 (`camp_hrc_energy_700277`)
+  - `701493 (김정례)`: 전체 409개 / 선정 117개 (`camp_hrc_energy_701493`)
+  - `701494 (유희정)`: 전체 64개 / 선정 47개 (`camp_hrc_energy_701494` — 서울 구로구·송파구·용산구)
+- **17대 상세 응답 규칙 ([`src/engine/hrc-energy-runner.js`](file:///c:/onlinepoll/src/engine/hrc-energy-runner.js))**:
+  1. **SQ14 (`q1400`)**: `77. 부용도 없음` 100% 고정 응답.
+  2. **A1-9 (`q1700`)**: 건축물대장 승강기수(승용·비상용 합계) 파싱 후 대수 일치 응답 (`0`대일 때만 `1. 엘리베이터 없음`).
+  3. **A1-10 (`q1800`)**: 건축물 면적규모 `5,000㎡ 미만` ➔ `1. 4~11인승` / `10,000㎡ 이상`(`quotaCode2: 1003~1005`) ➔ `2. 12~14인승`.
+  4. **A3-1-1 (`q2250`)**: 네이버 지도(`map.naver.com`) 주소 검색 API(`fetchNaverMapPlaceCount`)로 해당 건물 도로명/지번 주소의 `'이 주소의 장소 N'`(입주업체 수)을 실시간 조회하여 입력 (동일 세션 내 중복 조회 방지 캐시 적용).
+  5. **A3-1-2 (`q2350`)**: 건물 소유주 이용 및 세입자 점포 수 모두 `'모름(-8)'` 체크.
+  6. **A3-2 (`q2450`)**: `3. 소유주가 고용한 시설관리 용역업체에서 관리` 100% 응답.
+  7. **A3-3-1 (`q2500`)**: 상근 근로자 수 = `A3-1-1` 입주업체 수와 동일 입력 / 1일 평균 내방객 수 = `A3-1-1 × (30~50명 난수 배수)` 계산 입력.
+  8. **T32 (`q2550`) & A3-3-2 (`q2600`)**: 주용도가 `'의료시설'`인 쿼터는 `1. 의료시설`(후속 병상 수 모름 `-8`), 그 외 모든 쿼터는 `77. 해당사항 없음`.
+  9. **T41 (`q2900`)**: STEP 1 쿼터 테이블에서 건물별로 지정한 입점시설(`slotData.t41Codes`) 가이드 반영.
+  10. **T42 (`q2950`) & A4-2 (`q3050`/`q3000`)**: 점유면적으로 응답 가능(`2`) 선택 후 모든 입점시설 점유면적에 `'응답거절(-9)'` 체크.
+  11. **B1-1 (`q4000`)**: STEP 1 쿼터 테이블에서 건물별로 지정한 냉난방 설비(`slotData.b11Codes`) 가이드 반영.
+  12. **B1-4-3 (`q4250_r4`)**: 에어컨 1대 용량(`ehpUnitKw`, 기본 `5kW`) × `A3-1-1` 입주업체 수로 설비 용량(kW) 자동 계산 입력.
+  13. **T71 (`q4500`)**: 모든 건물 `10. 비상용 발전기` 체크.
+  14. **B2.10-2 (`q4550_r10`) & B2-10-4 (`q4650_r10`) & D4 (`q7000~q7250_r1`)**: 비상용발전기 연료 `'12. 경유'` 체크, 총용량 `120kW` 입력 및 D4 석유제품(비상발전용 경유 100%) 정합 연동.
+  15. **C5-1 (`q8000`)**: 정부 효율개선사업 인지도 7문항에서 `'전혀 모른다(1)'`를 제외하고 `'모르는 편이다(3)' ~ '보통이다(5)'` 위주 지그재그 패턴 응답.
+  16. **E1-2 (`q90015_r1`)**: 건물 내 담당 업무 `'1. 운영, 유지, 엔지니어링'` 체크.
+  17. **E1-5 (`q90020_r1`)**: 응답자 이메일 `'9999999@naver.com'` 고정 응답.
+- **답례품 수령증(`/q260342/Signature`) 자동 서명 모듈 (`signHrcEnergyGiftReceipt`)**:
+  - `신세계상품권 5,000원` 선택, 응답자 성명·연락처 입력 및 공통 한글 서명 유틸([`src/utils/korean-signature.js`](file:///c:/onlinepoll/src/utils/korean-signature.js)) 기반 8종 한글 자모 필체 드로잉·저장 지원 (단, **대전제 10번**에 따라 완료 처리를 수반하므로 반드시 사용자 사전 승인 하에만 가동).
+
+### 2) 메트릭스 경기도 소상공인 패널 3차(120단계) & 서울시 소상공인 패널 5차(`svyA115` 99% 안전 대기) 구축
+- **2026 경기도 소상공인 사업체패널 3차조사 ([`src/engine/metrix-runner.js`](file:///c:/onlinepoll/src/engine/metrix-runner.js), [`public/modules/blueprint-metrix.js`](file:///c:/onlinepoll/public/modules/blueprint-metrix.js))**:
+  - 120단계 전 문항 1:1 가이드라인 UI 컨트롤러 및 2차년도 `rawMeta`(종사자 수, 영업비용, 금융·부채, 정책지원, 창업준비 등) 100% 자동 계승 러너 완성.
+- **2026년 서울시 소상공인 사업체 패널조사(5차) ([`src/engine/metrix-seoul-runner.js`](file:///c:/onlinepoll/src/engine/metrix-seoul-runner.js), [`src/utils/seoul-panel-answer-excel.js`](file:///c:/onlinepoll/src/utils/seoul-panel-answer-excel.js))**:
+  - **2개 조사원 계정 통합 (`camp_metrix_seoul_panel_2026`, 총 163개 사업체)**:
+    - `2010 (송준희)`: 74개 사업체 (`fwid=S21401by41s32010`)
+    - `2016 (정소영)`: 89개 사업체 (`fwid=S21401by41s32016`)
+  - **핵심 응답 및 99% 안전 대기 규칙**:
+    - 4차년도 기입력 데이터를 보존하고, `C3 (svyA025)` 2025년 매출액·영업비용 합계를 기반으로 2026년 세부 비용 4항목(매입원가·임차료·인건비·기타비용)을 역산 입력하며, 5차 신규 문항(M 디지털전환, N 배달앱·플랫폼, O 공제제도)을 정합성 있게 응답한다.
+    - **`svyA115.asp` (99%, 개인정보 및 패널 참여 동의서 화면)에 도달하면 절대 완료(`Out.asp`)하지 않고 즉시 안전 정지(`status: 'pilot_done'`, `동의서대기(99%/Step115)`)**한다.
+    - 매 사업체 99% 도달 즉시 로컬 엑셀(`data/quotas/seoul_panel_answers_163.xlsx`) 및 구글 스프레드시트(`시트2`, `gid=506086780`)에 전 문항 응답 내역을 실시간 동기화한다.
+
+### 3) 다중 캠페인 동시 배치 실행 (`MAX_CONCURRENT_TASKS = 2`) 및 실시간 라이브 배너
+- **최대 2개 캠페인 동시 배치 가동 ([`src/services/task-manager.js`](file:///c:/onlinepoll/src/services/task-manager.js))**:
+  - 기존 단일 작업 잠금(`currentTask`)을 `activeTasks` Map 구조(`MAX_CONCURRENT_TASKS = 2`)로 확장하여 서로 다른 2개의 설문 캠페인을 동시에 병렬 배치 실행할 수 있도록 지원한다.
+  - [`src/utils/logger.js`](file:///c:/onlinepoll/src/utils/logger.js)에 Node.js `AsyncLocalStorage`를 도입하여 각 비동기 실행 컨텍스트의 모든 로그와 SSE 이벤트에 `campaignId`를 자동 태깅함으로써, 동시 실행 중인 캠페인 간 콘솔 로그 및 진행률 섞임 현상을 원천 차단하였다.
+- **메인 대시보드 상단 라이브 듀얼 슬롯 배너 및 `실행중` 필터 ([`public/campaign-list.js`](file:///c:/onlinepoll/public/campaign-list.js), [`public/index.html`](file:///c:/onlinepoll/public/index.html))**:
+  - 메인 화면 상단에 현재 가동 중인 캠페인 슬롯(`SLOT 1`, `SLOT 2`)의 실시간 진행률 바, 처리 건수, `[작업실 이동]` 바로가기를 표시하고, 상태 필터에 `실행중` 칩을 추가하였다.
+
+### 4) 백엔드 아키텍처 도메인 모듈화 리팩토링 (`src/server.js` 슬림화)
+- **단일 거대 파일이던 `src/server.js`(4,562줄)를 289줄의 깔끔한 엔트리포인트로 축소**하고 역할별 모듈로 분리 완료:
+  - [`src/routes/auth-routes.js`](file:///c:/onlinepoll/src/routes/auth-routes.js): 세션 인증, 로그인/로그아웃, 비밀번호 변경, 리포트 및 온누리 시장 조회 API
+  - [`src/routes/campaign-routes.js`](file:///c:/onlinepoll/src/routes/campaign-routes.js): 캠페인 CRUD, 기준점/블루프린트 조회·저장, 문해력·서울시패널 시트 뷰어 API
+  - [`src/routes/execution-routes.js`](file:///c:/onlinepoll/src/routes/execution-routes.js): 범용 설문 실행, 파일럿 검증(`pilot-run`), 고속 배치(`batch-run`), 단건 실행(`run-single`), 개별 캠페인 중지(`stop`) API
+  - [`src/routes/sync-routes.js`](file:///c:/onlinepoll/src/routes/sync-routes.js): Kstat 슬롯 바인딩, 한국리서치 TAPI, 글로벌리서치 GIFT, 한국갤럽(`20263603`), 서울시 소상공인 구글시트 동기화 API
+  - [`src/utils/korean-signature.js`](file:///c:/onlinepoll/src/utils/korean-signature.js): 한국갤럽 귀농실태조사와 한국리서치 에너지총조사에서 공통 사용하는 한글 초·중·종성 획 분해 및 8종 필체 다변화 엔진 통합 모듈
