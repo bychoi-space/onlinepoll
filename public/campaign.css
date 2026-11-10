@@ -1366,3 +1366,370 @@
   background: #047857;
 }
 
+.btn-compact-open.is-running {
+  background: #0284c7;
+  border-color: #0369a1;
+}
+
+.btn-compact-open.is-running:hover {
+  background: #0369a1;
+}
+
+/* ========================================================
+   실시간 자동 배치 이중화(최대 2개 슬롯) 가동 배너 & 필터/카드 UI
+   ======================================================== */
+@keyframes pulseRunningDot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.9;
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+  }
+}
+
+.status-dot-sm.running-pulse {
+  background: #10b981;
+  animation: pulseRunningDot 1.6s infinite ease-in-out;
+}
+
+.status-chip.status-chip-running {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-chip.status-chip-running.has-running:not(.active) {
+  border-color: #34d399;
+  background: #ecfdf5;
+  color: #065f46;
+  font-weight: 700;
+}
+
+.running-chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #e2e8f0;
+  color: #475569;
+  line-height: 1;
+}
+
+.running-chip-count.is-active {
+  background: #059669;
+  color: #ffffff;
+}
+
+.status-chip.active .running-chip-count {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.live-running-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  color: #f8fafc;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
+}
+
+.live-running-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.live-running-banner-title-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.live-running-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 50px;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  color: #6ee7b7;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.live-running-subtext {
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.btn-banner-filter-running {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 50px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-banner-filter-running:hover,
+.btn-banner-filter-running.is-active {
+  background: #10b981;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.live-running-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.live-running-slot-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.live-slot-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.live-slot-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.live-slot-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 50px;
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.live-slot-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-slot-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 50px;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.btn-slot-open:hover {
+  background: #059669;
+  color: #ffffff;
+}
+
+.btn-slot-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 50px;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #fca5a5;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-slot-stop:hover {
+  background: #ef4444;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.live-slot-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+  line-height: 1.35;
+}
+
+.live-slot-title:hover {
+  color: #6ee7b7;
+  text-decoration: underline;
+}
+
+.live-slot-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.live-slot-progress-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: #a7f3d0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 캠페인 카드 및 테이블 내 가동중 스타일 */
+.campaign-card.running-card {
+  border: 2px solid #10b981;
+  box-shadow: 0 8px 26px rgba(16, 185, 129, 0.12);
+  background: linear-gradient(180deg, rgba(236, 253, 245, 0.45) 0%, #ffffff 38%);
+}
+
+.text-running-sm {
+  color: #059669;
+  margin-right: 4px;
+}
+
+.campaign-live-progress-box {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.live-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-size: 12px;
+}
+
+.live-progress-label {
+  color: #065f46;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.live-progress-value {
+  color: #047857;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.live-progress-track {
+  flex: 1;
+  width: 100%;
+  height: 7px;
+  border-radius: 50px;
+  background: rgba(16, 185, 129, 0.2);
+  overflow: hidden;
+}
+
+.live-progress-fill {
+  height: 100%;
+  border-radius: 50px;
+  background: linear-gradient(90deg, #10b981 0%, #0284c7 100%);
+  transition: width 0.35s ease;
+}
+
+.running-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.btn-pill-running {
+  background: #059669;
+  color: #ffffff;
+  border: 1px solid #047857;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-pill-running:hover {
+  background: #047857;
+  color: #ffffff;
+}
+
+.btn-stop-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 50px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.btn-stop-inline:hover {
+  background: #ef4444;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.compact-list-table tbody tr.row-running td {
+  background: rgba(236, 253, 245, 0.55);
+}
+
+.compact-live-prog-text {
+  margin-top: 3px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #059669;
+  font-variant-numeric: tabular-nums;
+}
+
+

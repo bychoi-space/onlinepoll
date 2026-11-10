@@ -23,7 +23,7 @@
   <!-- CSS Stylesheets -->
   <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="figma-base.css">
-  <link rel="stylesheet" href="campaign.css?v=20261109_archive_list_v2">
+  <link rel="stylesheet" href="campaign.css?v=20261110_dual_batch_filter">
   <link rel="stylesheet" href="custom-styles.css">
 </head>
 <body>
@@ -99,6 +99,9 @@
         </div>
       </section>
 
+      <!-- [신규] 실시간 자동 배치 이중화(최대 2개 슬롯) 가동 현황 바 -->
+      <section id="live-running-banner" class="live-running-banner d-none" aria-live="polite"></section>
+
       <!-- [신규] 카테고리 필터 (전통시장/상인회/소상공인/특수·국가조사) 및 스마트 검색/자동완성/뷰전환 바 -->
       <section class="campaign-filter-search-section mb-24">
         <div class="campaign-filter-search-bar">
@@ -137,6 +140,10 @@
             <!-- 상태 빠른 필터 -->
             <div class="status-quick-filter">
               <button type="button" class="status-chip active" data-status="all" title="진행·대기중 및 오늘 완료된 항목을 상단에 표시하고, 이전 완료 항목은 하단 보관함으로 분리합니다.">전체 (진행+오늘완료)</button>
+              <button type="button" class="status-chip status-chip-running" data-status="running" id="chip-status-running" title="현재 자동 배치가 실시간 가동 중인 캠페인(최대 2개 동시 슬롯)만 모아봅니다.">
+                <span class="status-dot-sm running-pulse"></span>배치 가동중
+                <span class="running-chip-count" id="badge-status-running">0</span>
+              </button>
               <button type="button" class="status-chip" data-status="active"><span class="status-dot-sm ready"></span>진행·대기만</button>
               <button type="button" class="status-chip" data-status="completed"><span class="status-dot-sm completed"></span>완료만</button>
             </div>
@@ -411,7 +418,7 @@
     </div>
   </div>
 
-  <script type="module" src="campaign-list.js?v=20261110_excel_fix_v1"></script>
+  <script type="module" src="campaign-list.js?v=20261110_dual_batch_filter"></script>
   <script type="module" src="nav-auth.js"></script>
 </body>
 </html>

@@ -281,9 +281,45 @@ app.get('/api/auth/check', (req, res) => {
 // [1] 캠페인(설문조사 목차) 관리 REST API
 // ==========================================
 
-// 전체 캠페인 목록 조회
+// 전체 캠페인 목록 조회 (실시간 배치 가동 슬롯 및 진행률 정보 결합 + 잔류 running 상태 자동 정합성 보정)
 app.get('/api/campaigns', (req, res) => {
-  const campaigns = CampaignStore.getAllCampaigns();
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  const activeTasks = getActiveTasksList();
+  const activeMap = new Map();
+  activeTasks.forEach((t, idx) => {
+    activeMap.set(t.campaignId, {
+      ...t,
+      slotNumber: idx + 1,
+      maxConcurrency: MAX_CONCURRENT_TASKS
+    });
+  });
+
+  const campaigns = CampaignStore.getAllCampaigns().map(camp => {
+    const liveTask = activeMap.get(camp.id) || null;
+    if (liveTask) {
+      return {
+        ...camp,
+        status: 'running',
+        liveTask
+      };
+    }
+    if (camp.status === 'running') {
+      CampaignStore.updateCampaign(camp.id, { status: 'ready' });
+      return {
+        ...camp,
+        status: 'ready',
+        liveTask: null
+      };
+    }
+    return {
+      ...camp,
+      liveTask: null
+    };
+  });
   res.json(campaigns);
 });
 

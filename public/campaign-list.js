@@ -129,8 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const badgeFilterSmallbiz = document.getElementById('badge-filter-smallbiz');
   const badgeFilterSpecial = document.getElementById('badge-filter-special');
 
-  // 상태 필터, 정렬, 뷰 전환, 검색 요소
+  // 상태 필터, 정렬, 뷰 전환, 검색 요소 & 실시간 배치 가동 배너
   const statusChips = document.querySelectorAll('.status-chip:not(.quota-mode-chip):not(.quota-status-chip)');
+  const chipStatusRunning = document.getElementById('chip-status-running');
+  const badgeStatusRunning = document.getElementById('badge-status-running');
+  const liveRunningBanner = document.getElementById('live-running-banner');
   const selectCampaignSort = document.getElementById('select-campaign-sort');
   const viewToggleBtns = document.querySelectorAll('#campaign-view-toggle .view-toggle-btn');
   const inputSearch = document.getElementById('input-campaign-search');
@@ -142,8 +145,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const PAGE_SIZE = 24;
   let allCampaigns = [];
+  let liveRunningState = {
+    activeCount: 0,
+    maxConcurrency: 2,
+    runningCampaignIds: [],
+    runningTasks: []
+  };
   let currentCategory = 'all';     // 'all' | 'traditional' | 'assoc' | 'smallbiz' | 'special'
-  let currentStatus = 'all';       // 'all' (진행+오늘완료 상단 / 이전완료 보관함) | 'active' | 'completed'
+  let currentStatus = 'all';       // 'all' (진행+오늘완료 상단 / 이전완료 보관함) | 'running' | 'active' | 'completed'
   let currentSort = 'priority';    // 'priority' | 'newest' | 'name' | 'count'
   let currentViewMode = 'grid';    // 'grid' | 'list'
   let currentSearchQuery = '';
@@ -152,6 +161,32 @@ document.addEventListener('DOMContentLoaded', () => {
   let mainVisibleLimit = PAGE_SIZE;
   let archiveExpanded = false;
   let archiveVisibleLimit = PAGE_SIZE;
+
+  function getLiveTaskForCampaign(campaignId) {
+    if (!campaignId) return null;
+    const tasks = Array.isArray(liveRunningState.runningTasks) ? liveRunningState.runningTasks : [];
+    const idx = tasks.findIndex(t => t && t.campaignId === campaignId && t.isRunning !== false);
+    if (idx >= 0) {
+      return {
+        ...tasks[idx],
+        slotNumber: idx + 1,
+        maxConcurrency: liveRunningState.maxConcurrency || 2
+      };
+    }
+    const camp = allCampaigns.find(c => c.id === campaignId);
+    if (camp && camp.liveTask && camp.liveTask.isRunning !== false) {
+      return camp.liveTask;
+    }
+    return null;
+  }
+
+  function isCampaignLiveRunning(c) {
+    if (!c) return false;
+    if (Array.isArray(liveRunningState.runningCampaignIds) && liveRunningState.runningCampaignIds.length > 0) {
+      return liveRunningState.runningCampaignIds.includes(c.id);
+    }
+    return Boolean(getLiveTaskForCampaign(c.id) || c.status === 'running');
+  }
 
   // 캠페인 카테고리 판별 (surveyType 1순위 매칭으로 '소상공인' 문구 오분류 원천 차단)
   function getCampaignCategory(c) {
@@ -258,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (currentSort === 'priority') {
         // 1순위: running -> 2순위: building -> 3순위: ready(미완료) -> 4순위: 오늘완료 -> 5순위: 이전완료
         const rank = (c) => {
-          if (c.status === 'running') return 1;
+          if (isCampaignLiveRunning(c)) return 1;
           if (c.status === 'building') return 2;
           if (c.status !== 'completed') return 3;
           if (isCampaignCompletedToday(c)) return 4;
@@ -379,11 +414,22 @@ document.addEventListener('DOMContentLoaded', () => {
               ? 'fa-sitemap'
               : (isSmallBiz ? 'fa-building-user' : 'fa-store')))));
 
+    const liveTask = getLiveTaskForCampaign(c.id) || c.liveTask || null;
+    const isRunning = isCampaignLiveRunning(c);
     let statusText = '대기 중';
     let statusClass = 'ready';
-    if (c.status === 'building') { statusText = '쿼터 DB 구축 중'; statusClass = 'building'; }
-    else if (c.status === 'running') { statusText = '설문 자동화 진행 중'; statusClass = 'running'; }
-    else if (isCompleted) { statusText = isTodayDone ? '오늘 마감 완료' : '조사 마감 완료'; statusClass = 'completed'; }
+    if (isRunning) {
+      const slotNum = liveTask?.slotNumber || 1;
+      const maxSlot = liveTask?.maxConcurrency || liveRunningState.maxConcurrency || 2;
+      statusText = `배치 가동중 (${slotNum}/${maxSlot} 슬롯)`;
+      statusClass = 'running';
+    } else if (c.status === 'building') {
+      statusText = '쿼터 DB 구축 중';
+      statusClass = 'building';
+    } else if (isCompleted) {
+      statusText = isTodayDone ? '오늘 마감 완료' : '조사 마감 완료';
+      statusClass = 'completed';
+    }
 
     const targetCount = isHrcEnergy
       ? (selCount || c.quotaConfig?.targetCount || dbCount)
@@ -431,6 +477,8 @@ document.addEventListener('DOMContentLoaded', () => {
       isSmallBiz,
       isCompleted,
       isTodayDone,
+      isRunning,
+      liveTask,
       dbCount,
       doneItemCount,
       quotaLabel,
@@ -449,7 +497,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderCampaignCardsHtml(campaigns) {
     return campaigns.map(c => {
       const info = buildCampaignDisplayInfo(c);
-      const cardClass = `campaign-card ${info.isAssoc ? 'assoc-card' : ''} ${info.isCompleted ? 'completed-card' : ''} ${info.isTodayDone ? 'completed-today-card' : ''}`;
+      const cardClass = `campaign-card ${info.isAssoc ? 'assoc-card' : ''} ${info.isRunning ? 'running-card' : ''} ${info.isCompleted ? 'completed-card' : ''} ${info.isTodayDone ? 'completed-today-card' : ''}`;
+      const progCur = Number(info.liveTask?.progress?.current || 0);
+      const progTot = Number(info.liveTask?.progress?.total || 0);
+      const progPct = progTot > 0
+        ? Math.min(100, Math.round((progCur / progTot) * 100))
+        : Number(info.liveTask?.progress?.percent || 0);
+      const slotNum = info.liveTask?.slotNumber || 1;
+      const maxSlot = info.liveTask?.maxConcurrency || liveRunningState.maxConcurrency || 2;
 
       return `
         <div class="${cardClass}" data-id="${escapeHtml(c.id)}">
@@ -460,12 +515,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="badge-quota-type ${info.quotaBadgeClass}"><i class="fa-solid ${info.quotaIcon}"></i> ${info.quotaLabel}</span>
               </div>
               <div class="flex-center-gap-6">
-                ${info.isTodayDone ? '<span class="badge-completed-today"><i class="fa-solid fa-wand-magic-sparkles"></i> 오늘 완료</span>' : (info.isCompleted ? '<span class="completed-stamp-badge"><i class="fa-solid fa-check-double"></i> 100% 완료</span>' : '')}
-                <span class="badge-status ${info.statusClass}">${info.isCompleted ? '<i class="fa-solid fa-circle-check"></i> ' : ''}${info.statusText}</span>
+                ${info.isRunning
+                  ? `<span class="badge-status running"><span class="status-dot-sm running-pulse"></span> ${escapeHtml(info.statusText)}</span>`
+                  : `${info.isTodayDone ? '<span class="badge-completed-today"><i class="fa-solid fa-wand-magic-sparkles"></i> 오늘 완료</span>' : (info.isCompleted ? '<span class="completed-stamp-badge"><i class="fa-solid fa-check-double"></i> 100% 완료</span>' : '')}
+                     <span class="badge-status ${info.statusClass}">${info.isCompleted ? '<i class="fa-solid fa-circle-check"></i> ' : ''}${info.statusText}</span>`}
               </div>
             </div>
             <h3 class="campaign-title">
-              ${info.isCompleted ? '<i class="fa-solid fa-circle-check text-success-sm"></i>' : ''}
+              ${info.isRunning ? '<i class="fa-solid fa-rotate fa-spin text-running-sm"></i> ' : (info.isCompleted ? '<i class="fa-solid fa-circle-check text-success-sm"></i>' : '')}
               ${highlightQuery(escapeHtml(c.title || '무제 캠페인'), currentSearchQuery)}
             </h3>
             <p class="campaign-desc">
@@ -474,6 +531,18 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
 
           <div>
+            ${info.isRunning ? `
+              <div class="campaign-live-progress-box">
+                <div class="live-progress-top">
+                  <span class="live-progress-label"><i class="fa-solid fa-bolt"></i> 실시간 자동 배치 가동 중 (슬롯 ${slotNum}/${maxSlot})</span>
+                  <strong class="live-progress-value">${progTot > 0 ? `${progCur}/${progTot}건 (${progPct}%)` : '초기화 및 진행 중...'}</strong>
+                </div>
+                <div class="live-progress-track">
+                  <div class="live-progress-fill" style="width: ${Math.max(6, progPct)}%;"></div>
+                </div>
+              </div>
+            ` : ''}
+
             <div class="campaign-meta-box">
               <div class="meta-item">
                 <span>조사 쿼터 DB</span>
@@ -489,9 +558,14 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="campaign-card-footer">
-              ${info.isCompleted
-                ? `<a href="survey-detail.html?id=${encodeURIComponent(c.id)}" class="btn-pill btn-pill-completed"><i class="fa-solid fa-clipboard-check"></i> 결과 및 작업실 열람 <i class="fa-solid fa-arrow-right"></i></a>`
-                : `<a href="survey-detail.html?id=${encodeURIComponent(c.id)}" class="btn-pill btn-pill-primary btn-enter-room">설문 작업실 입장 <i class="fa-solid fa-arrow-right"></i></a>`}
+              ${info.isRunning
+                ? `<div class="running-card-actions">
+                     <a href="survey-detail.html?id=${encodeURIComponent(c.id)}" class="btn-pill btn-pill-running"><i class="fa-solid fa-satellite-dish"></i> 실시간 모니터링 입장 <i class="fa-solid fa-arrow-right"></i></a>
+                     <button type="button" class="btn-stop-inline btn-stop-campaign" data-id="${escapeHtml(c.id)}" data-title="${escapeHtml(c.title || '')}" title="이 캠페인의 자동 배치만 즉시 중지합니다"><i class="fa-solid fa-stop"></i> 중지</button>
+                   </div>`
+                : (info.isCompleted
+                  ? `<a href="survey-detail.html?id=${encodeURIComponent(c.id)}" class="btn-pill btn-pill-completed"><i class="fa-solid fa-clipboard-check"></i> 결과 및 작업실 열람 <i class="fa-solid fa-arrow-right"></i></a>`
+                  : `<a href="survey-detail.html?id=${encodeURIComponent(c.id)}" class="btn-pill btn-pill-primary btn-enter-room">설문 작업실 입장 <i class="fa-solid fa-arrow-right"></i></a>`)}
               <button type="button" class="btn-icon-circle btn-delete" data-id="${escapeHtml(c.id)}" title="캠페인 삭제">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
@@ -520,15 +594,20 @@ document.addEventListener('DOMContentLoaded', () => {
           <tbody>
             ${campaigns.map(c => {
               const info = buildCampaignDisplayInfo(c);
+              const progCur = Number(info.liveTask?.progress?.current || 0);
+              const progTot = Number(info.liveTask?.progress?.total || 0);
+              const progPct = progTot > 0
+                ? Math.min(100, Math.round((progCur / progTot) * 100))
+                : Number(info.liveTask?.progress?.percent || 0);
               return `
-                <tr class="${info.isCompleted ? 'row-completed' : ''} ${info.isTodayDone ? 'row-completed-today' : ''}" data-id="${escapeHtml(c.id)}">
+                <tr class="${info.isRunning ? 'row-running' : ''} ${info.isCompleted ? 'row-completed' : ''} ${info.isTodayDone ? 'row-completed-today' : ''}" data-id="${escapeHtml(c.id)}">
                   <td class="col-cat">
                     <span class="badge-category ${info.catMeta.class}"><i class="fa-solid ${info.catMeta.icon}"></i> ${info.catMeta.label}</span>
                   </td>
                   <td class="col-title">
                     <div class="compact-title-wrap">
                       <a href="survey-detail.html?id=${encodeURIComponent(c.id)}" class="compact-main-title">
-                        ${info.isCompleted ? '<i class="fa-solid fa-circle-check text-success-sm"></i> ' : ''}
+                        ${info.isRunning ? '<i class="fa-solid fa-rotate fa-spin text-running-sm"></i> ' : (info.isCompleted ? '<i class="fa-solid fa-circle-check text-success-sm"></i> ' : '')}
                         ${highlightQuery(escapeHtml(c.title || '무제 캠페인'), currentSearchQuery)}
                       </a>
                       <span class="compact-sub-desc">${highlightQuery(escapeHtml(info.descText), currentSearchQuery)}</span>
@@ -536,19 +615,27 @@ document.addEventListener('DOMContentLoaded', () => {
                   </td>
                   <td class="col-quota">
                     <span class="compact-quota-text">${escapeHtml(info.quotaSummaryText)}</span>
+                    ${info.isRunning && progTot > 0 ? `<div class="compact-live-prog-text">실시간 진행: ${progCur}/${progTot}건 (${progPct}%)</div>` : ''}
                   </td>
                   <td class="col-status">
                     <div class="flex-center-gap-6">
-                      ${info.isTodayDone ? '<span class="badge-completed-today"><i class="fa-solid fa-wand-magic-sparkles"></i> 오늘 완료</span>' : ''}
-                      <span class="badge-status ${info.statusClass}">${info.isCompleted ? '<i class="fa-solid fa-circle-check"></i> ' : ''}${info.statusText}</span>
+                      ${info.isRunning
+                        ? `<span class="badge-status running"><span class="status-dot-sm running-pulse"></span> ${escapeHtml(info.statusText)}</span>`
+                        : `${info.isTodayDone ? '<span class="badge-completed-today"><i class="fa-solid fa-wand-magic-sparkles"></i> 오늘 완료</span>' : ''}
+                           <span class="badge-status ${info.statusClass}">${info.isCompleted ? '<i class="fa-solid fa-circle-check"></i> ' : ''}${info.statusText}</span>`}
                     </div>
                   </td>
                   <td class="col-date font-mono">${info.dateStr}</td>
                   <td class="col-actions">
                     <div class="compact-action-group">
-                      <a href="survey-detail.html?id=${encodeURIComponent(c.id)}" class="btn-compact-open ${info.isCompleted ? 'is-completed' : ''}">
-                        ${info.isCompleted ? '<i class="fa-solid fa-clipboard-check"></i> 열람' : '<i class="fa-solid fa-arrow-right"></i> 작업실'}
+                      <a href="survey-detail.html?id=${encodeURIComponent(c.id)}" class="btn-compact-open ${info.isRunning ? 'is-running' : (info.isCompleted ? 'is-completed' : '')}">
+                        ${info.isRunning ? '<i class="fa-solid fa-satellite-dish"></i> 모니터링' : (info.isCompleted ? '<i class="fa-solid fa-clipboard-check"></i> 열람' : '<i class="fa-solid fa-arrow-right"></i> 작업실')}
                       </a>
+                      ${info.isRunning ? `
+                        <button type="button" class="btn-stop-inline btn-stop-campaign" data-id="${escapeHtml(c.id)}" data-title="${escapeHtml(c.title || '')}" title="이 캠페인 배치 중지">
+                          <i class="fa-solid fa-stop"></i> 중지
+                        </button>
+                      ` : ''}
                       <button type="button" class="btn-icon-circle btn-delete" data-id="${escapeHtml(c.id)}" title="캠페인 삭제">
                         <i class="fa-solid fa-trash-can"></i>
                       </button>
@@ -563,6 +650,24 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
+  async function stopCampaignById(campaignId, campaignTitle = '') {
+    if (!campaignId) return;
+    const label = campaignTitle ? `"${campaignTitle}"` : `ID: ${campaignId}`;
+    if (!confirm(`${label} 캠페인의 자동 배치를 중지하시겠습니까?\n(동시 가동 중인 다른 캠페인 배치는 중단 없이 계속 진행됩니다.)`)) {
+      return;
+    }
+    try {
+      await fetch('/api/survey/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId })
+      });
+      await loadCampaigns();
+    } catch (err) {
+      alert('배치 중지 요청 실패: ' + err.message);
+    }
+  }
+
   function bindCampaignDeleteButtons(rootEl) {
     if (!rootEl) return;
     rootEl.querySelectorAll('.btn-delete').forEach(btn => {
@@ -575,16 +680,122 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
+    rootEl.querySelectorAll('.btn-stop-campaign').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const title = btn.getAttribute('data-title') || '';
+        await stopCampaignById(id, title);
+      });
+    });
+  }
+
+  // 상단 실시간 자동 배치 가동 현황 배너 및 '배치 가동중' 칩 카운트 동기화
+  function renderLiveRunningBannerAndChip() {
+    const runningCampaigns = allCampaigns.filter(c => isCampaignLiveRunning(c));
+    const activeCount = runningCampaigns.length;
+    const maxSlots = liveRunningState.maxConcurrency || 2;
+
+    if (badgeStatusRunning) {
+      badgeStatusRunning.textContent = String(activeCount);
+      badgeStatusRunning.classList.toggle('is-active', activeCount > 0);
+    }
+    if (chipStatusRunning) {
+      chipStatusRunning.classList.toggle('has-running', activeCount > 0);
+    }
+
+    if (!liveRunningBanner) return;
+    if (activeCount === 0) {
+      liveRunningBanner.classList.add('d-none');
+      liveRunningBanner.innerHTML = '';
+      return;
+    }
+
+    liveRunningBanner.classList.remove('d-none');
+    const isFilteringRunning = (currentStatus === 'running');
+    liveRunningBanner.innerHTML = `
+      <div class="live-running-banner-header">
+        <div class="live-running-banner-title-group">
+          <span class="live-running-pill">
+            <span class="status-dot-sm running-pulse"></span>
+            LIVE 자동 배치 가동 중 (${activeCount}/${maxSlots} 슬롯)
+          </span>
+          <span class="live-running-subtext">
+            현재 서버에서 자동 설문 배치가 실시간 실행 중입니다. 최대 ${maxSlots}개 캠페인을 동시에 병렬 가동할 수 있습니다.
+          </span>
+        </div>
+        <div class="live-running-banner-actions">
+          <button type="button" class="btn-banner-filter-running ${isFilteringRunning ? 'is-active' : ''}" id="btn-banner-toggle-running">
+            <i class="fa-solid ${isFilteringRunning ? 'fa-rotate-left' : 'fa-filter'}"></i>
+            <span>${isFilteringRunning ? '전체 캠페인 보기' : `가동중 캠페인만 모아보기 (${activeCount}건)`}</span>
+          </button>
+        </div>
+      </div>
+      <div class="live-running-slots-grid">
+        ${runningCampaigns.map((c, idx) => {
+          const info = buildCampaignDisplayInfo(c);
+          const progCur = Number(info.liveTask?.progress?.current || 0);
+          const progTot = Number(info.liveTask?.progress?.total || 0);
+          const progPct = progTot > 0
+            ? Math.min(100, Math.round((progCur / progTot) * 100))
+            : Number(info.liveTask?.progress?.percent || 0);
+          const slotNum = info.liveTask?.slotNumber || (idx + 1);
+          return `
+            <div class="live-running-slot-card">
+              <div class="live-slot-card-top">
+                <div class="live-slot-meta">
+                  <span class="live-slot-badge">슬롯 ${slotNum}/${maxSlots}</span>
+                  <span class="badge-category ${info.catMeta.class}"><i class="fa-solid ${info.catMeta.icon}"></i> ${info.catMeta.label}</span>
+                </div>
+                <div class="live-slot-btns">
+                  <a href="survey-detail.html?id=${encodeURIComponent(c.id)}" class="btn-slot-open">
+                    <i class="fa-solid fa-satellite-dish"></i> 작업실 이동
+                  </a>
+                  <button type="button" class="btn-slot-stop btn-stop-campaign" data-id="${escapeHtml(c.id)}" data-title="${escapeHtml(c.title || '')}">
+                    <i class="fa-solid fa-stop"></i> 중지
+                  </button>
+                </div>
+              </div>
+              <a href="survey-detail.html?id=${encodeURIComponent(c.id)}" class="live-slot-title">${escapeHtml(c.title || c.id)}</a>
+              <div class="live-slot-progress-row">
+                <div class="live-progress-track">
+                  <div class="live-progress-fill" style="width: ${Math.max(6, progPct)}%;"></div>
+                </div>
+                <span class="live-slot-progress-text">${progTot > 0 ? `${progCur}/${progTot}건 (${progPct}%)` : '실행 중'}</span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    document.getElementById('btn-banner-toggle-running')?.addEventListener('click', () => {
+      const nextStatus = (currentStatus === 'running') ? 'all' : 'running';
+      currentStatus = nextStatus;
+      statusChips.forEach(c => {
+        c.classList.toggle('active', c.getAttribute('data-status') === nextStatus);
+      });
+      mainVisibleLimit = PAGE_SIZE;
+      applyFiltersAndRender();
+    });
+
+    bindCampaignDeleteButtons(liveRunningBanner);
   }
 
   // 필터 적용 및 상단(진행+오늘완료) / 하단(이전완료 보관함) 분리 렌더링
   function applyFiltersAndRender() {
+    renderLiveRunningBannerAndChip();
+
     const baseFiltered = sortCampaignList(getBaseFilteredCampaigns());
 
     let mainItems = [];
     let archiveItems = [];
 
-    if (currentStatus === 'active') {
+    if (currentStatus === 'running') {
+      // '배치 가동중' 선택 시 현재 실시간 자동 배치가 가동 중인 캠페인만 표시
+      mainItems = baseFiltered.filter(c => isCampaignLiveRunning(c));
+      archiveItems = [];
+    } else if (currentStatus === 'active') {
       // '진행·대기만' 선택 시 미완료 항목만 상단 표시
       mainItems = baseFiltered.filter(c => c.status !== 'completed');
       archiveItems = [];
@@ -598,7 +809,10 @@ document.addEventListener('DOMContentLoaded', () => {
       archiveItems = baseFiltered.filter(c => c.status === 'completed' && !isCampaignCompletedToday(c));
     }
 
-    renderCampaignMainAndArchive(mainItems, archiveItems, baseFiltered.length);
+    const effectiveMatchedCount = (currentStatus === 'running')
+      ? mainItems.length
+      : baseFiltered.length;
+    renderCampaignMainAndArchive(mainItems, archiveItems, effectiveMatchedCount);
 
     // 필터 활성화 상태 안내 스트립 동기화
     const isFiltered = (currentCategory !== 'all' || currentStatus !== 'all' || !!currentSearchQuery);
@@ -610,7 +824,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const catMeta = getCategoryMeta(currentCategory);
           filterDesc.push(`카테고리: ${catMeta.label}`);
         }
-        if (currentStatus === 'completed') filterDesc.push('상태: 완료만');
+        if (currentStatus === 'running') filterDesc.push('상태: 배치 가동중만');
+        else if (currentStatus === 'completed') filterDesc.push('상태: 완료만');
         else if (currentStatus === 'active') filterDesc.push('상태: 진행·대기만');
         if (currentSearchQuery) filterDesc.push(`검색어: "${currentSearchQuery}"`);
 
@@ -644,12 +859,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (totalMatchedCount === 0) {
       campaignContainer.className = 'campaign-grid';
+      const emptyMsg = (currentStatus === 'running')
+        ? '현재 실시간으로 자동 배치가 가동 중인 설문 캠페인이 없습니다. (최대 2개 캠페인 동시 배치 지원)'
+        : '선택하신 조건(카테고리/상태/검색어)에 일치하는 캠페인이 없습니다.';
       campaignContainer.innerHTML = `
         <div class="empty-state empty-state-card">
-          <i class="fa-solid fa-filter-circle-xmark empty-state-icon"></i>
-          <p class="empty-state-text">선택하신 조건(카테고리/상태/검색어)에 일치하는 캠페인이 없습니다.</p>
+          <i class="fa-solid ${currentStatus === 'running' ? 'fa-satellite-dish' : 'fa-filter-circle-xmark'} empty-state-icon"></i>
+          <p class="empty-state-text">${emptyMsg}</p>
           <button class="btn-pill btn-pill-secondary mt-14" id="btn-empty-reset-filters">
-            <i class="fa-solid fa-rotate-left"></i> 필터 및 검색어 초기화
+            <i class="fa-solid fa-rotate-left"></i> 전체 목록으로 돌아가기
           </button>
         </div>
       `;
@@ -808,11 +1026,51 @@ document.addEventListener('DOMContentLoaded', () => {
   btnCloseModal?.addEventListener('click', () => { modal.classList.remove('is-open'); });
   btnCancelModal?.addEventListener('click', () => { modal.classList.remove('is-open'); });
 
+  function applyServerRunningStatus(statusData) {
+    if (!statusData || typeof statusData !== 'object') return;
+    const runningTasks = Array.isArray(statusData.runningTasks) ? statusData.runningTasks : [];
+    const runningIds = Array.isArray(statusData.runningCampaignIds)
+      ? statusData.runningCampaignIds
+      : runningTasks.map(t => t.campaignId).filter(Boolean);
+    const maxConcurrency = Number(statusData.maxConcurrency || 2);
+
+    liveRunningState = {
+      activeCount: runningIds.length,
+      maxConcurrency,
+      runningCampaignIds: runningIds,
+      runningTasks
+    };
+
+    allCampaigns.forEach(c => {
+      const idx = runningTasks.findIndex(t => t && t.campaignId === c.id);
+      if (idx >= 0) {
+        c.status = 'running';
+        c.liveTask = {
+          ...runningTasks[idx],
+          slotNumber: idx + 1,
+          maxConcurrency
+        };
+      } else {
+        c.liveTask = null;
+        if (c.status === 'running') {
+          c.status = 'ready';
+        }
+      }
+    });
+  }
+
   async function loadCampaigns() {
     try {
-      const res = await fetch('/api/campaigns');
+      const [res, statusRes] = await Promise.all([
+        fetch('/api/campaigns'),
+        fetch('/api/survey/status').catch(() => null)
+      ]);
       const campaigns = await res.json();
       allCampaigns = Array.isArray(campaigns) ? campaigns : [];
+      if (statusRes && statusRes.ok) {
+        const statusData = await statusRes.json().catch(() => null);
+        if (statusData) applyServerRunningStatus(statusData);
+      }
       updateCampaignStats(allCampaigns);
       updateCategoryCounts();
       applyFiltersAndRender();
@@ -822,6 +1080,88 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
+
+  async function syncRunningStatusOnly() {
+    if (document.hidden) return;
+    if (sectionCampaigns && sectionCampaigns.classList.contains('hidden')) return;
+    try {
+      const res = await fetch('/api/survey/status');
+      if (!res.ok) return;
+      const statusData = await res.json();
+      const prevKey = JSON.stringify({
+        ids: liveRunningState.runningCampaignIds,
+        progs: (liveRunningState.runningTasks || []).map(t => `${t.campaignId}:${t.progress?.current}/${t.progress?.total}`)
+      });
+      applyServerRunningStatus(statusData);
+      const nextKey = JSON.stringify({
+        ids: liveRunningState.runningCampaignIds,
+        progs: (liveRunningState.runningTasks || []).map(t => `${t.campaignId}:${t.progress?.current}/${t.progress?.total}`)
+      });
+      if (prevKey !== nextKey) {
+        applyFiltersAndRender();
+      }
+    } catch (_) {
+      // ignore transient network error
+    }
+  }
+
+  // 실시간 SSE 이벤트(/api/logs) 및 5초 주기 상태 동기화로 목록 화면에서도 진행률 즉시 반영
+  function initCampaignListLiveSync() {
+    try {
+      const es = new EventSource('/api/logs');
+      es.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (!payload) return;
+          if (payload.type === 'BATCH_PROGRESS' && payload.campaignId) {
+            const c = allCampaigns.find(item => item.id === payload.campaignId);
+            const cur = Number(payload.current || 0);
+            const tot = Number(payload.total || 0);
+            const pct = tot > 0 ? Math.min(100, Math.round((cur / tot) * 100)) : 0;
+            if (!liveRunningState.runningCampaignIds.includes(payload.campaignId)) {
+              liveRunningState.runningCampaignIds.push(payload.campaignId);
+              liveRunningState.runningTasks.push({
+                campaignId: payload.campaignId,
+                title: c?.title || payload.campaignId,
+                isRunning: true,
+                progress: { current: cur, total: tot, percent: pct }
+              });
+              liveRunningState.activeCount = liveRunningState.runningCampaignIds.length;
+            } else {
+              const t = liveRunningState.runningTasks.find(x => x.campaignId === payload.campaignId);
+              if (t) {
+                t.progress = { current: cur, total: tot, percent: pct };
+              }
+            }
+            if (c) {
+              c.status = 'running';
+              const idx = liveRunningState.runningTasks.findIndex(x => x.campaignId === c.id);
+              c.liveTask = {
+                ...(c.liveTask || {}),
+                campaignId: c.id,
+                isRunning: true,
+                slotNumber: idx >= 0 ? idx + 1 : 1,
+                maxConcurrency: liveRunningState.maxConcurrency || 2,
+                progress: { current: cur, total: tot, percent: pct }
+              };
+            }
+            applyFiltersAndRender();
+          } else if (payload.type === 'BATCH_COMPLETED') {
+            loadCampaigns();
+          } else if (payload.type === 'QUOTA_UPDATED' && payload.campaignId) {
+            const c = allCampaigns.find(item => item.id === payload.campaignId);
+            if (c && Array.isArray(payload.quotaDatabase)) {
+              c.quotaDatabase = payload.quotaDatabase;
+              applyFiltersAndRender();
+            }
+          }
+        } catch (_) {}
+      };
+    } catch (_) {}
+
+    setInterval(syncRunningStatusOnly, 5000);
+  }
+  initCampaignListLiveSync();
 
   function updateCampaignStats(campaigns) {
     if (statTotal) statTotal.textContent = `${campaigns.length}건`;
