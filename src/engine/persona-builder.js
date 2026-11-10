@@ -7,7 +7,7 @@
 // 안정적인 의사 난수 생성기 (0 ~ 1 사이 양수 반환)
 function createSeededRandom(seed) {
   let s = Math.abs(Math.sin(seed)) * 10000;
-  return function() {
+  return function () {
     s = (s * 9301 + 49297) % 233280;
     return Math.abs(s) / 233280;
   };
@@ -707,6 +707,17 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const rentRate = mb.rentAdoptionRate !== undefined ? (mb.rentAdoptionRate / 100) : 0.8;
   const isRent = rng() < rentRate;
 
+  // [규칙 보정] 점포 형태가 '자가 점포'(D1 = 1, isRent === false)인 경우:
+  // P6 영업비용 구성비(B4)의 '임차료(관리비 포함)'(B4_3)는 무조건 3~8% 사이에서 랜덤하게 입력하고,
+  // 인건비(B4_1) 및 기타(B4_4)는 유지한 채 차액을 원재료비/상품매입비(B4_2)에 합산하여 합계 100% 정합성을 보장함
+  if (!isRent) {
+    costRent = randBetween(3, 8);
+    if (hasEmployees && costLabor + costRent > remainingCost - 15) {
+      costLabor = Math.max(5, (remainingCost - 15) - costRent);
+    }
+    costRaw = 100 - (costLabor + costRent + costEtc);
+  }
+
   // [규칙 3] 보증금
   let deposit;
   if (mb.depositMin !== undefined && mb.depositMax !== undefined) {
@@ -893,7 +904,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   const hasDelivery = isFoodService ? (rng() < foodDeliveryRate) : (rng() < nonFoodDeliveryRate);
   const baseDelivRatio = mb.deliverySalesRatio !== undefined ? parseInt(mb.deliverySalesRatio, 10) : 25;
   const deliveryRatio = hasDelivery ? String(Math.max(10, Math.min(60, baseDelivRatio + randBetween(-3, 3)))) : '0';
-  
+
   const posRate = mb.posAdoptionRate !== undefined ? (mb.posAdoptionRate / 100) : 0.65;
   const hasPos = rng() < posRate;
   const posCount = hasPos ? String(mb.posCount || 1) : '0';
