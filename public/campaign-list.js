@@ -1173,12 +1173,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let linkedId = q.linkedCampaignId || null;
 
     if ((!status || !linkedId) && allCampaigns.length > 0) {
-      const matched = allCampaigns.find(c =>
+      const matchedCamps = allCampaigns.filter(c =>
         (q.linkedCampaignId && c.id === q.linkedCampaignId) ||
         c.quotaSourceFile === q.fileName ||
-        c.quotaConfig?.quotaFileName === q.fileName ||
-        (q.marketName && c.quotaConfig?.marketName && c.quotaConfig.marketName === q.marketName)
+        c.quotaConfig?.quotaFileName === q.fileName
       );
+      const matched =
+        matchedCamps.find(c => c.status === 'running') ||
+        matchedCamps.find(c => c.status === 'ready' || c.status === 'building') ||
+        matchedCamps.find(c => c.status === 'completed') ||
+        matchedCamps[0] ||
+        null;
       if (matched) {
         linkedId = matched.id;
         status = matched.status;

@@ -238,14 +238,31 @@ export function registerQuotaRoutes({
       const base64Clean = String(fileBase64).replace(/^data:.*?;base64,/, '');
       const buffer = Buffer.from(base64Clean, 'base64');
 
-      const inferredMarket = (marketName || '').trim() || path.basename(fileName, path.extname(fileName)).replace(/[^가-힣a-zA-Z0-9_\-\s]/g, '').trim() || '업로드시장';
+      const rawBaseName = path.basename(fileName || 'uploaded_quota.xlsx', path.extname(fileName || 'uploaded_quota.xlsx'))
+        .replace(/^AutoSurvey_조사쿼터_표준양식_업로드[_\-\s]*/i, '')
+        .replace(/[^가-힣a-zA-Z0-9_\-\s]/g, '')
+        .trim();
+
+      let targetCamp = campaignId ? CampaignStore.getCampaignById(campaignId) : null;
+      const campMarketFallback = (targetCamp && targetCamp.quotaConfig?.marketName) ? String(targetCamp.quotaConfig.marketName).trim() : '';
+
+      const cleanMarketInput = (marketName || '').trim().replace(/^AutoSurvey_조사쿼터_표준양식_업로드[_\-\s]*/i, '').trim();
+      const inferredMarket = cleanMarketInput || rawBaseName || campMarketFallback || '업로드시장';
+
       const parsedData = parseExcelQuotaBuffer(buffer, {
         defaultMarketName: inferredMarket,
         autoEnrich: autoEnrich !== false
       });
 
-      const finalMarketName = parsedData[0]?.marketName || inferredMarket;
-      const finalTitle = (title || '').trim() || `2026_${finalMarketName}_업종별${parsedData.length}개_조사쿼터`;
+      // 엑셀 시트 내부에 '시장명' 컬럼이 명시적으로 들어있는 경우 시트 시장명을 최우선 반영
+      const sheetMarketName = parsedData[0]?.hasSheetMarketName ? parsedData[0]?.marketName : '';
+      const finalMarketName = sheetMarketName || cleanMarketInput || parsedData[0]?.marketName || inferredMarket;
+
+      let rawTitle = (title || '').trim();
+      if (rawTitle && sheetMarketName && inferredMarket && rawTitle.includes(inferredMarket) && sheetMarketName !== inferredMarket) {
+        rawTitle = rawTitle.replace(inferredMarket, sheetMarketName);
+      }
+      const finalTitle = rawTitle || `2026_${finalMarketName}_업종별${parsedData.length}개_조사쿼터`;
 
       const columns = [
         { key: 'companyName', label: '상호' },
@@ -274,6 +291,8 @@ export function registerQuotaRoutes({
         title: finalTitle,
         type: 'ONNURI_HYBRID',
         source: 'EXCEL_UPLOAD',
+        surveyType: (targetCamp && targetCamp.surveyType) ? targetCamp.surveyType : 'kstat_store',
+        linkedCampaignId: (campaignId && targetCamp) ? campaignId : null,
         marketName: finalMarketName,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -301,26 +320,60 @@ export function registerQuotaRoutes({
       });
 
       let updatedCampaign = null;
-      if (campaignId) {
-        const targetCamp = CampaignStore.getCampaignById(campaignId);
-        if (targetCamp) {
-          const quotaDb = parsedData.map((row, i) => ({
-            index: i + 1,
-            seq: i + 1,
-            ...row,
-            quotaStatus: 'ready',
-            surveyorAccount: targetCamp.kstatLoginId || '가온김영옥'
-          }));
-          updatedCampaign = CampaignStore.updateCampaign(campaignId, {
-            quotaDatabase: quotaDb,
-            quotaSourceFile: jsonFileName
-          });
-          logger.broadcast({
-            type: 'QUOTA_UPDATED',
-            campaignId,
-            quotaDatabase: quotaDb
-          });
+      if (campaignId && targetCamp) {
+        const quotaDb = parsedData.map((row, i) => ({
+          index: i + 1,
+          seq: i + 1,
+          slotIndex: row.slotIndex || (i + 1),
+          ...row,
+          quotaStatus: 'ready',
+          usedAt: null,
+          surveyorAccount: targetCamp.kstatLoginId || '가온김영옥'
+        }));
+
+        const nextQuotaConfig = {
+          ...(targetCamp.quotaConfig || {}),
+          quotaSource: 'EXCEL_UPLOAD',
+          quotaFileName: jsonFileName,
+          quotaTitle: finalTitle,
+          marketName: finalMarketName || targetCamp.quotaConfig?.marketName || '',
+          targetCount: quotaDb.length,
+          selectedFields: columns.map(c => c.key)
+        };
+
+        let inheritedBaseline = targetCamp.masterBaseline || null;
+        let inheritedHasBlueprint = Boolean(targetCamp.hasMasterBlueprint || targetCamp.masterBaseline);
+        if (!inheritedBaseline && (!targetCamp.surveyType || targetCamp.surveyType === 'kstat_store')) {
+          const allCamps = CampaignStore.getAllCampaigns();
+          const templateCamp = allCamps.find(c =>
+            c.id !== campaignId &&
+            (!c.surveyType || c.surveyType === 'kstat_store') &&
+            c.masterBaseline &&
+            Object.keys(c.masterBaseline).length > 0
+          );
+          if (templateCamp) {
+            inheritedBaseline = JSON.parse(JSON.stringify(templateCamp.masterBaseline));
+            inheritedHasBlueprint = true;
+          }
         }
+
+        const campUpdatePayload = {
+          status: targetCamp.status === 'running' ? 'running' : 'ready',
+          quotaDatabase: quotaDb,
+          quotaSourceFile: jsonFileName,
+          quotaConfig: nextQuotaConfig
+        };
+        if (inheritedBaseline && !targetCamp.masterBaseline) {
+          campUpdatePayload.masterBaseline = inheritedBaseline;
+          campUpdatePayload.hasMasterBlueprint = inheritedHasBlueprint;
+        }
+
+        updatedCampaign = CampaignStore.updateCampaign(campaignId, campUpdatePayload);
+        logger.broadcast({
+          type: 'QUOTA_UPDATED',
+          campaignId,
+          quotaDatabase: quotaDb
+        });
       }
 
       logger.success(`[Excel 쿼터 업로드 완료] "${finalTitle}" (${parsedData.length}개 사업자 행) -> ${jsonFileName}`);
@@ -841,11 +894,11 @@ export function registerQuotaRoutes({
         const matchedCamps = allCampaigns.filter(c =>
           (content.linkedCampaignId && c.id === content.linkedCampaignId) ||
           c.quotaSourceFile === f ||
-          c.quotaConfig?.quotaFileName === f ||
-          (content.marketName && c.quotaConfig?.marketName && c.quotaConfig.marketName === content.marketName)
+          c.quotaConfig?.quotaFileName === f
         );
         const linkedCamp =
           matchedCamps.find(c => c.status === 'running') ||
+          matchedCamps.find(c => c.status === 'ready' || c.status === 'building') ||
           matchedCamps.find(c => c.status === 'completed') ||
           matchedCamps[0] ||
           null;

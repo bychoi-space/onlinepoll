@@ -192,8 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mode = inputCurrentMode.value;
     if (resumeFile) {
       btnGenerate.innerHTML = `<i class="fa-solid fa-rotate-right"></i> 실패/중단 지점부터 쿼터 이어하기 업데이트 (기존 데이터 보존)`;
-    } else if (mode === 'onnuri') {
-      } else if (mode === 'metrix') {
+    } else if (mode === 'metrix') {
       btnGenerate.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 메트릭스 패널 쿼터 실시간 동기화 (JSON & Excel)';
     } else if (mode === 'onnuri') {
       btnGenerate.innerHTML = '<i class="fa-solid fa-store"></i> 온누리 ➔ 마켓비즈 연계 쿼터 만들기 (JSON & Excel)';
@@ -316,12 +315,15 @@ document.addEventListener('DOMContentLoaded', () => {
     inputExcelFile.addEventListener('change', (e) => {
       const f = e.target.files && e.target.files[0];
       if (f) {
-        const baseName = f.name.replace(/\.[^/.]+$/, '').trim();
-        if (inputExcelMarket && !inputExcelMarket.value.trim()) {
+        const baseName = f.name
+          .replace(/\.[^/.]+$/, '')
+          .replace(/^AutoSurvey_조사쿼터_표준양식_업로드[_\-\s]*/i, '')
+          .trim();
+        if (inputExcelMarket && baseName) {
           inputExcelMarket.value = baseName;
         }
         if (inputCurrentMode.value === 'excel') {
-          const mkt = (inputExcelMarket && inputExcelMarket.value.trim()) || baseName;
+          const mkt = (inputExcelMarket && inputExcelMarket.value.trim()) || baseName || '전통시장';
           inputTitle.value = `2026_${mkt}_엑셀업로드_조사쿼터`;
         }
       }
@@ -1055,6 +1057,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(result.error || '생성 실패');
 
       appendLog('success', result.message);
+
+      if (mode === 'excel') {
+        if (inputExcelMarket && result.marketName) {
+          inputExcelMarket.value = result.marketName;
+        }
+        if (inputTitle && result.title) {
+          inputTitle.value = result.title;
+        }
+        if (inputExcelFile) {
+          inputExcelFile.value = '';
+        }
+      }
 
       // 엑셀 스프레드시트 테이블 렌더링
       renderExcelGrid(result, false);

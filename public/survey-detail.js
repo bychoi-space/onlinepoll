@@ -64,6 +64,7 @@ async function initSurveyDetailPage() {
   const selectSavedQuota = document.getElementById('select-saved-quota');
   const btnImportQuota = document.getElementById('btn-import-quota');
   const btnEnrichCampaign = document.getElementById('btn-enrich-campaign-quota');
+  let isQuotaReplaceOpen = false;
 
   // 마켓비즈 직접 검색
   const inputB2bKeyword = document.getElementById('input-b2b-keyword');
@@ -1156,6 +1157,7 @@ async function initSurveyDetailPage() {
     const detailsMarketbz = document.getElementById('details-marketbz-direct') || document.querySelector('.marketbz-direct-details');
     const btnEnrichCampaign = document.getElementById('btn-enrich-campaign-quota');
     const btnToggleQuotaReplace = document.getElementById('btn-toggle-quota-replace');
+    const btnMountedExcelUpload = document.getElementById('btn-mounted-excel-upload');
     const assocSurveyorBadgeName = document.getElementById('assoc-surveyor-badge-name');
     const assocBtnSurveyorName = document.getElementById('assoc-btn-surveyor-name');
     const kstatAccountNameBadge = document.getElementById('kstat-account-name-badge');
@@ -1191,10 +1193,14 @@ async function initSurveyDetailPage() {
       }
     }
 
+    const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
+    const isKona = (currentCampaign?.surveyType === 'kona_youth');
+
     if (isAssoc) {
       if (detailsMarketbz) detailsMarketbz.classList.add('hidden');
       if (btnEnrichCampaign) btnEnrichCampaign.classList.add('hidden');
       if (btnToggleQuotaReplace) btnToggleQuotaReplace.classList.add('hidden');
+      if (btnMountedExcelUpload) btnMountedExcelUpload.classList.add('hidden');
 
       if (total === 0) {
         if (assocBanner) assocBanner.classList.remove('hidden');
@@ -1208,23 +1214,28 @@ async function initSurveyDetailPage() {
     } else {
       if (assocBanner) assocBanner.classList.add('hidden');
       if (total > 0) {
-        if (quotaUnmountedGroup) quotaUnmountedGroup.classList.add('hidden');
+        if (quotaUnmountedGroup) quotaUnmountedGroup.classList.toggle('hidden', !isQuotaReplaceOpen);
         if (quotaMountedGroup) quotaMountedGroup.classList.remove('hidden');
         if (detailsMarketbz) detailsMarketbz.style.display = 'none';
         if (btnEnrichCampaign) {
           if (isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) btnEnrichCampaign.classList.add('hidden');
           else btnEnrichCampaign.classList.remove('hidden');
         }
+        if (btnMountedExcelUpload) {
+          if (isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul || isMetrix || isKona) {
+            btnMountedExcelUpload.classList.add('hidden');
+          } else {
+            btnMountedExcelUpload.classList.remove('hidden');
+          }
+        }
         if (btnToggleQuotaReplace) btnToggleQuotaReplace.classList.remove('hidden');
       } else {
+        isQuotaReplaceOpen = false;
         if (quotaUnmountedGroup) quotaUnmountedGroup.classList.remove('hidden');
         if (quotaMountedGroup) quotaMountedGroup.classList.add('hidden');
         if (detailsMarketbz) detailsMarketbz.style.display = 'block';
       }
     }
-
-    const isMetrix = (currentCampaign?.surveyType === 'metrix_panel');
-    const isKona = (currentCampaign?.surveyType === 'kona_youth');
 
     // 테이블 헤더 동적 교체
     const quotaTableHead = document.getElementById('quota-table-head');
@@ -1873,8 +1884,10 @@ async function initSurveyDetailPage() {
         if (!res.ok) throw new Error(data.error || '쿼터 장착 실패');
 
         appendLog('success', data.message);
+        isQuotaReplaceOpen = false;
         currentCampaign = data.campaign;
         renderCampaignDetails(currentCampaign);
+        await loadBlueprint();
         alert(data.message);
       } catch (err) {
         alert('쿼터 장착 오류: ' + err.message);
@@ -1887,27 +1900,43 @@ async function initSurveyDetailPage() {
   }
 
   const btnDirectExcelUpload = document.getElementById('btn-direct-excel-upload');
+  const btnMountedExcelUpload = document.getElementById('btn-mounted-excel-upload');
   const inputDirectExcelUpload = document.getElementById('input-direct-excel-upload');
-  if (btnDirectExcelUpload && inputDirectExcelUpload) {
-    btnDirectExcelUpload.addEventListener('click', () => inputDirectExcelUpload.click());
+  if (inputDirectExcelUpload) {
+    if (btnDirectExcelUpload) {
+      btnDirectExcelUpload.addEventListener('click', () => inputDirectExcelUpload.click());
+    }
+    if (btnMountedExcelUpload) {
+      btnMountedExcelUpload.addEventListener('click', () => inputDirectExcelUpload.click());
+    }
     inputDirectExcelUpload.addEventListener('change', async (e) => {
       const fileObj = e.target.files && e.target.files[0];
       if (!fileObj) return;
       try {
-        btnDirectExcelUpload.disabled = true;
-        btnDirectExcelUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Excel 업로드 중...';
+        if (btnDirectExcelUpload) {
+          btnDirectExcelUpload.disabled = true;
+          btnDirectExcelUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Excel 업로드 중...';
+        }
+        if (btnMountedExcelUpload) {
+          btnMountedExcelUpload.disabled = true;
+          btnMountedExcelUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Excel 업로드 중...';
+        }
         const fileBase64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
           reader.onerror = () => reject(new Error('파일 읽기에 실패했습니다.'));
           reader.readAsDataURL(fileObj);
         });
-        const marketName = fileObj.name.replace(/\.[^/.]+$/, '').trim() || '업로드시장';
+        const cleanedFileName = fileObj.name
+          .replace(/\.[^/.]+$/, '')
+          .replace(/^AutoSurvey_조사쿼터_표준양식_업로드[_\-\s]*/i, '')
+          .trim();
+        const marketName = cleanedFileName || currentCampaign?.quotaConfig?.marketName || '';
         const res = await fetch('/api/quota/upload-excel', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title: `2026_${marketName}_엑셀업로드_조사쿼터`,
+            title: '',
             marketName,
             fileName: fileObj.name,
             fileBase64,
@@ -1918,6 +1947,7 @@ async function initSurveyDetailPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Excel 업로드 실패');
         appendLog('success', data.message);
+        isQuotaReplaceOpen = false;
         await loadSavedQuotas();
         if (data.campaign) {
           currentCampaign = data.campaign;
@@ -1925,13 +1955,20 @@ async function initSurveyDetailPage() {
         } else {
           await loadCampaign();
         }
+        await loadBlueprint();
         alert(data.message);
       } catch (err) {
         alert('Excel 쿼터 업로드 오류: ' + err.message);
         appendLog('error', `Excel 쿼터 업로드 오류: ${err.message}`);
       } finally {
-        btnDirectExcelUpload.disabled = false;
-        btnDirectExcelUpload.innerHTML = '<i class="fa-solid fa-file-excel text-success-color"></i> Excel 쿼터 업로드';
+        if (btnDirectExcelUpload) {
+          btnDirectExcelUpload.disabled = false;
+          btnDirectExcelUpload.innerHTML = '<i class="fa-solid fa-file-excel text-success-color"></i> Excel 쿼터 업로드';
+        }
+        if (btnMountedExcelUpload) {
+          btnMountedExcelUpload.disabled = false;
+          btnMountedExcelUpload.innerHTML = '<i class="fa-solid fa-file-excel text-success-color"></i> Excel 쿼터 업로드';
+        }
         inputDirectExcelUpload.value = '';
       }
     });
@@ -4043,7 +4080,10 @@ async function initSurveyDetailPage() {
   if (btnToggleQuotaReplace) {
     btnToggleQuotaReplace.addEventListener('click', () => {
       const quotaUnmounted = document.getElementById('quota-unmounted-group');
-      if (quotaUnmounted) quotaUnmounted.classList.toggle('hidden');
+      if (quotaUnmounted) {
+        isQuotaReplaceOpen = quotaUnmounted.classList.contains('hidden');
+        quotaUnmounted.classList.toggle('hidden', !isQuotaReplaceOpen);
+      }
     });
   }
 

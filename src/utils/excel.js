@@ -165,37 +165,100 @@ function normalizeOpenDate(raw, index = 0) {
  */
 export function parseExcelQuotaBuffer(buffer, { defaultMarketName = '사용자업로드시장', autoEnrich = true } = {}) {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) {
+  if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
     throw new Error('엑셀 파일에 시트가 존재하지 않습니다.');
   }
 
-  const sheet = workbook.Sheets[sheetName];
-  const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+  const FIELD_ALIASES = {
+    companyName: ['상호', '상호명', '점포명', '업체명', '사업체명', '가맹점명', '가맹점', '매장명', '상점명', '점포상호', 'companyName', 'company', 'storeName', 'name'],
+    industry: ['업종', '업종명', '표준업종', '세부업종', '업태', '종목', '분류명', '표준산업분류', 'industry', 'category'],
+    bizNumber: ['사업자번호', '사업자등록번호', '사업자', '등록번호', '사업자등록', 'bizNumber', 'bizNo'],
+    ceoName: ['대표자이름', '대표자명', '대표자', '대표자성명', '성명', '이름', '점주명', '점포주', '점포주명', '응답자', '응답자명', 'ceoName', 'ceo'],
+    ceoGender: ['성별', '대표자성별', '점주성별', '응답자성별', 'ceoGender', 'gender'],
+    ceoAge: ['나이', '연령', '만나이', '대표자나이', '대표자연령', '출생연도', '생년', 'ceoAge', 'age'],
+    phone: ['연락처', '전화번호', '대표전화', '대표전화번호', '전화', '휴대전화', '핸드폰', '휴대폰', '점포전화', 'phone', 'tel', 'mobile'],
+    openDate: ['개업연월', '개업일', '개업일자', '설립일', '개업년도', '개업연도', '창업일', '등록일', 'openDate', 'openingDate'],
+    address: ['주소', '사업장주소', '도로명주소', '지번주소', '소재지', '소재지주소', '점포주소', '상세주소', 'address'],
+    handledItems: ['취급품목', '취급업종', '대분류', '9대업종', '주취급품목', 'handledItems'],
+    mainProducts: ['주요품목', '주력품목', '대표품목', '품목', '취급상품', '세부품목', '판매품목', 'mainProducts'],
+    marketName: ['시장명', '상점가명', '전통시장명', '시장', '상권명', '골목형상점가명', '대상시장', 'marketName'],
+    slotUrl: ['슬롯URL', '설문URL', 'Kstat슬롯URL', '케이스탯설문URL', 'slotUrl', 'surveyUrl', 'KID', 'kid']
+  };
+
+  function normalizeHeaderKey(str) {
+    return String(str || '')
+      .replace(/[\r\n\t\s]+/g, '')
+      .replace(/\([^)]*\)/g, '')
+      .toLowerCase();
+  }
+
+  const allNormalizedAliases = new Set();
+  const companyNormalizedAliases = new Set(FIELD_ALIASES.companyName.map(normalizeHeaderKey));
+  Object.values(FIELD_ALIASES).forEach(arr => {
+    arr.forEach(a => allNormalizedAliases.add(normalizeHeaderKey(a)));
+  });
+
+  // 시트 및 헤더 행 자동 탐색 (상단 제목 행/안내문 행이 있는 엑셀도 정확히 파싱)
+  let selectedSheet = workbook.Sheets[workbook.SheetNames[0]];
+  let bestHeaderRowIdx = 0;
+  let bestScore = -1;
+
+  for (const sName of workbook.SheetNames) {
+    const s = workbook.Sheets[sName];
+    const matrix = XLSX.utils.sheet_to_json(s, { header: 1, defval: '' });
+    if (!Array.isArray(matrix) || matrix.length === 0) continue;
+
+    const maxScanRows = Math.min(matrix.length, 15);
+    for (let r = 0; r < maxScanRows; r++) {
+      const rowCells = Array.isArray(matrix[r]) ? matrix[r] : [];
+      let score = 0;
+      let hasCompanyCol = false;
+      for (const cell of rowCells) {
+        const norm = normalizeHeaderKey(cell);
+        if (!norm) continue;
+        if (allNormalizedAliases.has(norm)) score += 2;
+        if (companyNormalizedAliases.has(norm)) {
+          score += 5;
+          hasCompanyCol = true;
+        }
+      }
+      if ((hasCompanyCol || score >= 4) && score > bestScore) {
+        bestScore = score;
+        selectedSheet = s;
+        bestHeaderRowIdx = r;
+      }
+    }
+  }
+
+  const rawRows = XLSX.utils.sheet_to_json(selectedSheet, {
+    range: bestHeaderRowIdx,
+    defval: ''
+  });
   if (!rawRows || rawRows.length === 0) {
     throw new Error('엑셀 시트에 데이터 행이 없습니다.');
   }
 
-  const FIELD_ALIASES = {
-    companyName: ['상호', '상호명', '점포명', '업체명', '가맹점명', '매장명', 'companyName', 'company', 'name'],
-    industry: ['업종', '업종명', '표준업종', '세부업종', 'industry', 'category'],
-    bizNumber: ['사업자번호', '사업자등록번호', '사업자', '등록번호', 'bizNumber', 'bizNo'],
-    ceoName: ['대표자이름', '대표자명', '대표자', '성명', '이름', '점주명', 'ceoName', 'ceo'],
-    ceoGender: ['성별', '대표자성별', 'ceoGender', 'gender'],
-    ceoAge: ['나이', '연령', '대표자나이', '대표자연령', 'ceoAge', 'age'],
-    phone: ['연락처', '전화번호', '대표전화', '대표전화번호', '전화', '휴대전화', 'phone', 'tel'],
-    openDate: ['개업연월', '개업일', '개업일자', '설립일', '개업년도', '등록일', 'openDate', 'openingDate'],
-    address: ['주소', '사업장주소', '도로명주소', '소재지', '점포주소', 'address'],
-    handledItems: ['취급품목', '취급업종', '대분류', '9대업종', 'handledItems'],
-    mainProducts: ['주요품목', '주력품목', '대표품목', '품목', '취급상품', 'mainProducts'],
-    marketName: ['시장명', '상점가명', '전통시장명', '시장', '상권명', 'marketName']
-  };
-
   function pickCellValue(rowObj, aliases) {
     const keys = Object.keys(rowObj);
+    // 1차: 정규화 완전 일치
     for (const alias of aliases) {
-      const cleanAlias = alias.replace(/\s+/g, '').toLowerCase();
-      const matchedKey = keys.find(k => k.replace(/\s+/g, '').toLowerCase() === cleanAlias);
+      const cleanAlias = normalizeHeaderKey(alias);
+      const matchedKey = keys.find(k => normalizeHeaderKey(k) === cleanAlias);
+      if (matchedKey !== undefined) {
+        const val = rowObj[matchedKey];
+        if (val !== undefined && val !== null && String(val).trim() !== '') {
+          return val;
+        }
+      }
+    }
+    // 2차: 부분 포함 일치 (예: "점포 상호명", "도로명 주소" 등)
+    for (const alias of aliases) {
+      if (alias.length < 2) continue;
+      const cleanAlias = normalizeHeaderKey(alias);
+      const matchedKey = keys.find(k => {
+        const nk = normalizeHeaderKey(k);
+        return nk && !nk.startsWith('__empty') && (nk.includes(cleanAlias) || cleanAlias.includes(nk));
+      });
       if (matchedKey !== undefined) {
         const val = rowObj[matchedKey];
         if (val !== undefined && val !== null && String(val).trim() !== '') {
@@ -214,8 +277,11 @@ export function parseExcelQuotaBuffer(buffer, { defaultMarketName = '사용자�
     const rawBiz = pickCellValue(row, FIELD_ALIASES.bizNumber);
     const rawAddress = pickCellValue(row, FIELD_ALIASES.address);
 
-    // 완전히 빈 행은 무시
+    // 완전히 빈 행이거나 헤더가 중복 삽입된 행은 무시
     if (!rawCompany && !rawBiz && !rawAddress) return;
+    if (rawCompany && companyNormalizedAliases.has(normalizeHeaderKey(rawCompany)) && (!rawBiz || normalizeHeaderKey(rawBiz).includes('사업자'))) {
+      return;
+    }
 
     const seq = resultList.length + 1;
     const companyName = rawCompany ? String(rawCompany).trim() : `점포_${seq}`;
@@ -243,15 +309,25 @@ export function parseExcelQuotaBuffer(buffer, { defaultMarketName = '사용자�
     let ceoGender = pickCellValue(row, FIELD_ALIASES.ceoGender);
     if (ceoGender) {
       const gStr = String(ceoGender).trim();
-      ceoGender = (gStr.includes('여') || gStr.toUpperCase() === 'F') ? '여' : '남';
+      ceoGender = (gStr.includes('여') || gStr.toUpperCase() === 'F' || gStr === '2') ? '여' : '남';
     } else {
       ceoGender = null;
     }
 
     let ceoAge = pickCellValue(row, FIELD_ALIASES.ceoAge);
     if (ceoAge !== null) {
-      const parsedAge = parseInt(String(ceoAge).replace(/\D/g, ''), 10);
-      ceoAge = (!isNaN(parsedAge) && parsedAge >= 20 && parsedAge <= 90) ? parsedAge : null;
+      const parsedNum = parseInt(String(ceoAge).replace(/\D/g, ''), 10);
+      if (!isNaN(parsedNum)) {
+        if (parsedNum >= 1930 && parsedNum <= 2006) {
+          ceoAge = 2026 - parsedNum;
+        } else if (parsedNum >= 20 && parsedNum <= 95) {
+          ceoAge = parsedNum;
+        } else {
+          ceoAge = null;
+        }
+      } else {
+        ceoAge = null;
+      }
     }
 
     let phone = pickCellValue(row, FIELD_ALIASES.phone);
@@ -262,11 +338,34 @@ export function parseExcelQuotaBuffer(buffer, { defaultMarketName = '사용자�
 
     let address = rawAddress ? String(rawAddress).trim() : `${marketName} 내 점포`;
 
+    const rawSlotVal = pickCellValue(row, FIELD_ALIASES.slotUrl);
+    let slotProps = {};
+    if (rawSlotVal && String(rawSlotVal).trim()) {
+      let cleanUrl = String(rawSlotVal).trim();
+      if (!/^https?:\/\//i.test(cleanUrl) && /^[A-Za-z0-9_-]{6,20}$/.test(cleanUrl)) {
+        cleanUrl = `https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=${cleanUrl}&type=tapi&prid=2026070802&mnid=900001346&srt=1`;
+      }
+      if (/^https?:\/\//i.test(cleanUrl)) {
+        const kidMatch = cleanUrl.match(/[?&]KID=([^&#\s]+)/i);
+        const ranId = kidMatch ? kidMatch[1] : null;
+        slotProps = {
+          slotIndex: seq,
+          slotUrl: cleanUrl,
+          surveyUrl: cleanUrl,
+          ...(ranId ? {
+            ranId,
+            evalUrl: `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2`
+          } : {})
+        };
+      }
+    }
+
     const item = {
       seq,
       source: 'EXCEL_UPLOAD',
       mbzStatus: 'ok',
       marketName,
+      ...(mktNameRaw ? { hasSheetMarketName: true } : {}),
       companyName,
       industry,
       bizNumber,
@@ -281,7 +380,8 @@ export function parseExcelQuotaBuffer(buffer, { defaultMarketName = '사용자�
       mainProducts,
       status: '정상가맹',
       paperAccepted: 'Y',
-      digitalAccepted: 'Y'
+      digitalAccepted: 'Y',
+      ...slotProps
     };
 
     if (autoEnrich) {
@@ -299,7 +399,7 @@ export function parseExcelQuotaBuffer(buffer, { defaultMarketName = '사용자�
   });
 
   if (resultList.length === 0) {
-    throw new Error('유효한 사업자 데이터 행을 찾을 수 없습니다. [상호] 등의 컬럼 헤더를 확인해 주세요.');
+    throw new Error('유효한 사업자 데이터 행을 찾을 수 없습니다. [상호], [사업자번호], [주소] 등의 컬럼 헤더를 확인해 주세요.');
   }
 
   return resultList;
