@@ -61,6 +61,13 @@ export function seedInitialCampaigns({
         surveyorName: '김정례',
         title: '2025년 기준 에너지총조사 [건물] - 701493 (김정례 / 선정 117건)',
         description: '한국리서치 TAPI(2026-89-0342C) 건물 부문 조사 · 서울 노원구/그외 + 인천 연수·남동·미추홀 (선정 117건 / 대체 292건 · 기입력 보존)'
+      },
+      {
+        id: 'camp_hrc_energy_701494',
+        loginId: '701494',
+        surveyorName: '유희정',
+        title: '2025년 기준 에너지총조사 [건물] - 701494 (유희정 / 선정 47건)',
+        description: '한국리서치 TAPI(2026-89-0342C) 건물 부문 조사 · 서울 구로구·송파구·용산구 (선정 47건 / 대체 17건 · 기입력 보존)'
       }
     ];
 

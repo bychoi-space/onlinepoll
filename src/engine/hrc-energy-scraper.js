@@ -13,7 +13,8 @@ const quotasDir = path.join(rootDir, 'data', 'quotas');
 export const HRC_ACCOUNTS = {
   '700275': { loginId: '700275', loginPw: '700275', surveyorName: '강영미', filePrefix: 'quota_hrc_energy_2025_700275_강영미' },
   '700277': { loginId: '700277', loginPw: '700277', surveyorName: '강경옥', filePrefix: 'quota_hrc_energy_2025_700277_강경옥' },
-  '701493': { loginId: '701493', loginPw: '701493', surveyorName: '김정례', filePrefix: 'quota_hrc_energy_2025_701493_김정례' }
+  '701493': { loginId: '701493', loginPw: '701493', surveyorName: '김정례', filePrefix: 'quota_hrc_energy_2025_701493_김정례' },
+  '701494': { loginId: '701494', loginPw: '701494', surveyorName: '유희정', filePrefix: 'quota_hrc_energy_2025_701494_유희정' }
 };
 
 /**

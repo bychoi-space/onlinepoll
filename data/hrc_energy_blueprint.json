@@ -35,6 +35,16 @@
       "selectedCount": 117,
       "substituteCount": 292,
       "quotaFile": "quota_hrc_energy_2025_701493_김정례_전체409개_선정117개.json"
+    },
+    {
+      "loginId": "701494",
+      "loginPw": "701494",
+      "surveyorName": "유희정",
+      "regionSummary": "서울 구로구·송파구·용산구",
+      "totalSlots": 64,
+      "selectedCount": 47,
+      "substituteCount": 17,
+      "quotaFile": "quota_hrc_energy_2025_701494_유희정_전체64개_선정47개.json"
     }
   ],
   "defaultPolicy": {

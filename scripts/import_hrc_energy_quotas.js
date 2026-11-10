@@ -19,7 +19,8 @@ if (!fs.existsSync(quotasDir)) {
 const ACCOUNT_SHEETS = [
   { sheetName: '강영미_700275', accountId: '700275', surveyorName: '강영미', regionDesc: '서울 (노원구/그외)' },
   { sheetName: '강경옥_700277', accountId: '700277', surveyorName: '강경옥', regionDesc: '인천 (부평구/그외)' },
-  { sheetName: '김정례_701493', accountId: '701493', surveyorName: '김정례', regionDesc: '서울 (노원구/그외) + 인천 (연수·남동·미추홀/그외)' }
+  { sheetName: '김정례_701493', accountId: '701493', surveyorName: '김정례', regionDesc: '서울 (노원구/그외) + 인천 (연수·남동·미추홀/그외)' },
+  { sheetName: '유희정-701494', accountId: '701494', surveyorName: '유희정', regionDesc: '서울 (구로구/송파구/용산구)' }
 ];
 
 export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
