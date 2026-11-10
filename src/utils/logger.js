@@ -50,17 +50,26 @@ class EventBroadcaster {
     this.clients = new Set();
     this.history = [];
     this.maxHistory = 100;
+    this.activeCampaignId = null;
+  }
+
+  /**
+   * 현재 실행 중인 활성 캠페인 ID 설정
+   */
+  setActiveCampaign(campaignId = null) {
+    this.activeCampaignId = campaignId || null;
   }
 
   /**
    * SSE 클라이언트 등록
    */
-  addClient(res) {
+  addClient(res, campaignId = null) {
     this.clients.add(res);
 
-    // 연결 시 최근 일반 텍스트 로그 히스토리만 전송 (QUOTA_CHECKPOINT 등 대형 쿼터 데이터는 과거 재생에서 엄격 제외하여 신규 접속 시 화면 오염 원천 방지)
+    // 연결 시 최근 일반 텍스트 로그 히스토리만 전송 (타 캠페인 실행 로그는 제외하여 신규 접속 시 화면 오염 원천 방지)
     this.history.forEach((data) => {
       if (data.type === 'log') {
+        if (campaignId && data.campaignId && data.campaignId !== campaignId) return;
         res.write(`data: ${JSON.stringify(data)}\n\n`);
       }
     });
@@ -87,6 +96,7 @@ class EventBroadcaster {
         id: Date.now(),
         timestamp: getKstTime(),
         channel,
+        ...(this.activeCampaignId ? { campaignId: this.activeCampaignId } : {}),
         ...typeOrData
       };
     } else {
@@ -102,6 +112,7 @@ class EventBroadcaster {
         timestamp: getKstTime(),
         type: typeOrData,
         channel,
+        ...(this.activeCampaignId ? { campaignId: this.activeCampaignId } : {}),
         ...payload
       };
     }

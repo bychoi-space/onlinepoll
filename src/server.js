@@ -168,8 +168,7 @@ app.get('/api/events', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.flushHeaders();
 
-  logger.addClient(res);
-  logger.info('실시간 이벤트 스트림이 연결되었습니다.');
+  logger.addClient(res, req.query.campaignId || null);
 });
 
 // ==========================================
@@ -2133,6 +2132,7 @@ app.post('/api/campaigns/:id/start', async (req, res) => {
     }
   });
 
+  logger.setActiveCampaign(campaign.id);
   currentTask.isRunning = true;
   currentTask.campaignId = campaign.id;
   currentTask.startTime = new Date().toISOString();
@@ -2471,6 +2471,15 @@ app.post('/api/campaigns/:id/hrc-quota-guide', (req, res) => {
 // [3-1] 2-Phase 실행: 1번 쿼터 파일럿 시뮬레이션 (Agree 안전 대기)
 // ==========================================
 app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
+  if (currentTask.isRunning) {
+    const runningCamp = currentTask.campaignId ? CampaignStore.getCampaignById(currentTask.campaignId) : null;
+    const runningLabel = runningCamp ? `"${runningCamp.title}"` : (currentTask.campaignId || '다른 캠페인');
+    logger.warn(`[단건/파일럿 가동 차단] 이미 다른 설문 작업(${runningLabel})이 가동 중입니다.`);
+    return res.status(409).json({
+      error: `이미 다른 설문 작업(${runningLabel})이 서버에서 가동 중입니다.\n진행 중인 작업이 완료되거나 [배치 중지] 후 다시 실행해 주세요.`
+    });
+  }
+
   const campaign = CampaignStore.getCampaignById(req.params.id);
   if (!campaign) {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
@@ -2515,7 +2524,9 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
     }
   });
 
+  logger.setActiveCampaign(campaign.id);
   logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상: "${targetBiz.companyName}" (${targetBiz.idx || targetBiz.bizNumber || ''}) (슬롯: ${targetBiz.slotIndex ? '#' + targetBiz.slotIndex : '단독'})`);
+  logger.setActiveCampaign(campaign.id);
   currentTask.isRunning = true;
   currentTask.campaignId = campaign.id;
   targetBiz.quotaStatus = 'running';
@@ -2939,6 +2950,7 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
           bizName: targetBiz.companyName,
           capturedSteps: result.capturedSteps
         });
+        logger.setActiveCampaign(null);
       } else {
         currentTask.isRunning = false;
         targetBiz.quotaStatus = 'error';
@@ -2950,12 +2962,14 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
           quotaIndex: targetBiz.index,
           error: result.error || result.message
         });
+        logger.setActiveCampaign(null);
       }
     } catch (err) {
       currentTask.isRunning = false;
       targetBiz.quotaStatus = 'error';
       CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'ready' });
       logger.error('[파일럿 오류]', err);
+      logger.setActiveCampaign(null);
     }
   })();
 });
@@ -2965,8 +2979,12 @@ app.post('/api/campaigns/:id/pilot-run', async (req, res) => {
 // ==========================================
 app.post('/api/campaigns/:id/batch-run', async (req, res) => {
   if (currentTask.isRunning) {
-    logger.warn('[배치 가동 차단] 이미 다른 설문 배치 또는 파일럿 작업이 가동 중입니다.');
-    return res.status(409).json({ error: '이미 다른 설문 작업이 가동 중입니다. 진행 중인 작업이 완료되거나 [배치 일시 정지] 후 다시 실행해 주세요.' });
+    const runningCamp = currentTask.campaignId ? CampaignStore.getCampaignById(currentTask.campaignId) : null;
+    const runningLabel = runningCamp ? `"${runningCamp.title}"` : (currentTask.campaignId || '다른 캠페인');
+    logger.warn(`[배치 가동 차단] 이미 다른 설문 작업(${runningLabel})이 가동 중입니다.`);
+    return res.status(409).json({
+      error: `이미 다른 설문 작업(${runningLabel})이 서버에서 가동 중입니다.\n진행 중인 작업이 완료되거나 [배치 중지] 후 다시 실행해 주세요.`
+    });
   }
 
   const campaign = CampaignStore.getCampaignById(req.params.id);
@@ -3053,7 +3071,9 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
     });
   }
 
+  logger.setActiveCampaign(campaign.id);
   logger.info(`[배치 자동화 가동] 캠페인 "${campaign.title}" 대상 ${targets.length}건 연속 실행 시작 (안전가드: ${safetyGuard ? 'ON' : 'OFF'}, 기입력보존: ${effectivePolicy.preserveExistingInputs !== false ? 'ON' : 'OFF'})`);
+  logger.setActiveCampaign(campaign.id);
   currentTask.isRunning = true;
   currentTask.campaignId = campaign.id;
   CampaignStore.updateCampaign(campaign.id, { status: 'running' });
@@ -3592,10 +3612,12 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
         type: 'BATCH_COMPLETED',
         campaignId: campaign.id
       });
+      logger.setActiveCampaign(null);
     } catch (err) {
       currentTask.isRunning = false;
       logger.error('[배치 실행 중 오류]', err);
       CampaignStore.updateCampaign(campaign.id, { status: 'ready' });
+      logger.setActiveCampaign(null);
     }
   })();
 });
@@ -3604,6 +3626,15 @@ app.post('/api/campaigns/:id/batch-run', async (req, res) => {
 // [3-3] 특정 쿼터 단독 1건 테스트 실행
 // ==========================================
 app.post('/api/campaigns/:id/run-single', async (req, res) => {
+  if (currentTask.isRunning) {
+    const runningCamp = currentTask.campaignId ? CampaignStore.getCampaignById(currentTask.campaignId) : null;
+    const runningLabel = runningCamp ? `"${runningCamp.title}"` : (currentTask.campaignId || '다른 캠페인');
+    logger.warn(`[개별 쿼터 실행 차단] 이미 다른 설문 작업(${runningLabel})이 가동 중입니다.`);
+    return res.status(409).json({
+      error: `이미 다른 설문 작업(${runningLabel})이 서버에서 가동 중입니다.\n진행 중인 작업이 완료되거나 [배치 중지] 후 다시 실행해 주세요.`
+    });
+  }
+
   const campaign = CampaignStore.getCampaignById(req.params.id);
   if (!campaign) {
     return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
@@ -3629,6 +3660,7 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
     });
   }
 
+  logger.setActiveCampaign(campaign.id);
   currentTask.isRunning = true;
   currentTask.campaignId = campaign.id;
   targetBiz.quotaStatus = 'running';
@@ -3911,6 +3943,7 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
         campaignId: campaign.id,
         quotaDatabase: quotaDb
       });
+      logger.setActiveCampaign(null);
     } catch (err) {
       currentTask.isRunning = false;
       targetBiz.quotaStatus = 'error';
@@ -3920,6 +3953,7 @@ app.post('/api/campaigns/:id/run-single', async (req, res) => {
         campaignId: campaign.id,
         quotaDatabase: quotaDb
       });
+      logger.setActiveCampaign(null);
     }
   })();
 });
@@ -4130,6 +4164,7 @@ app.post('/api/survey/stop', (req, res) => {
     }
   }
   logger.warn('설문 자동화 작업 중지 요청을 수신했습니다.');
+  logger.setActiveCampaign(null);
   res.json({ message: '작업 중지 신호를 보냈습니다.' });
 });
 

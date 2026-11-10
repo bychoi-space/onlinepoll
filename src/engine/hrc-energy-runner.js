@@ -646,10 +646,19 @@ async function extractRpsStep(page) {
 /**
  * 네이버 지도(map.naver.com)에서 건물 주소로 검색하여 '이 주소의 장소 N' (입주업체 수, siteCount)를 조회
  */
-export async function fetchNaverMapPlaceCount(context, addresses = []) {
-  const validAddrs = addresses
-    .map(a => String(a || '').trim())
-    .filter(a => a.length >= 6 && /\d/.test(a));
+export async function fetchNaverMapPlaceCount(context, addresses = [], triedSet = null) {
+  const seen = triedSet instanceof Set ? triedSet : new Set();
+  const validAddrs = [];
+  for (const rawAddr of addresses) {
+    const cleaned = String(rawAddr || '')
+      .replace(/\s*\([^)]*\)/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleaned.length >= 6 && /\d/.test(cleaned) && !seen.has(cleaned)) {
+      seen.add(cleaned);
+      validAddrs.push(cleaned);
+    }
+  }
   if (!context || validAddrs.length === 0) return null;
 
   const mapPage = await context.newPage();
@@ -667,9 +676,9 @@ export async function fetchNaverMapPlaceCount(context, addresses = []) {
       try {
         await mapPage.goto(`https://map.naver.com/p/search/${encodeURIComponent(addr)}`, {
           waitUntil: 'domcontentloaded',
-          timeout: 15000
+          timeout: 12000
         });
-        for (let w = 0; w < 30 && !apiData; w++) {
+        for (let w = 0; w < 15 && !apiData; w++) {
           await mapPage.waitForTimeout(200);
         }
       } catch (err) {
@@ -812,6 +821,7 @@ export async function runHrcEnergySurvey(options = {}) {
       const answerInfoUrl = `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${uid}&page=1`;
       await page.goto(answerInfoUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
       await page.waitForSelector('#survey', { timeout: 15000 });
+      await page.waitForTimeout(300);
 
       // [기본정보] 기존 입력값 보존하며 빈칸만 채우기 (문자/메일 발송 버튼 절대 클릭 금지!)
       basicInfoState = await page.evaluate(({ fallbackName, p1, p2, p3, preserveExisting }) => {
@@ -819,10 +829,11 @@ export async function runHrcEnergySurvey(options = {}) {
           const el = document.querySelector(sel);
           if (!el) return '';
           const cur = (el.value || '').trim();
-          if (preserveExisting && cur !== '') {
+          const isEmptyVal = cur === '' || cur.toUpperCase() === 'NONE' || cur === '없음';
+          if (preserveExisting && !isEmptyVal) {
             return cur;
           }
-          if (cur === '') {
+          if (isEmptyVal) {
             el.value = String(val);
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -887,7 +898,14 @@ export async function runHrcEnergySurvey(options = {}) {
         slotData.areaScale = basicInfoState.areaScale;
       }
 
-      logger.info(`[HRC 에너지총조사] UID=${uid} [기본정보] 확인 완료 (건물명: ${slotData.buildingName || '-'}, 도로명: ${slotData.roadAddress || '-'}, 주용도: ${slotData.mainUse || '-'}, 규모: ${slotData.areaScale || '-'})`);
+      logger.info(`[HRC 에너지총조사] UID=${uid} [기본정보] 확인 완료 (응답자: ${basicInfoState.contactName} / ${basicInfoState.tel1}-${basicInfoState.tel2}-${basicInfoState.tel3}, 건물명: ${slotData.buildingName || '-'}, 도로명: ${slotData.roadAddress || '-'})`);
+      onProgress({
+        step: 'BASIC_INFO',
+        stepIndex: 1,
+        totalSteps: 7,
+        progress: 1,
+        message: `[UID ${uid}] [기본정보] (${basicInfoState.contactName} / ${basicInfoState.tel1}-${basicInfoState.tel2}-${basicInfoState.tel3}) 입력 완료 ➔ 본설문 진입 중...`
+      });
 
       // 4. [조사하기](#survey) 클릭하여 RPS 설문 화면으로 이동
       await Promise.all([
@@ -899,6 +917,13 @@ export async function runHrcEnergySurvey(options = {}) {
     }
 
     logger.info(`[HRC 에너지총조사] UID=${uid} RPS 설문 진입: ${rpsUrl}`);
+    onProgress({
+      step: 'RPS_INIT',
+      stepIndex: 2,
+      totalSteps: 7,
+      progress: 2,
+      message: `[UID ${uid}] 본설문 진입 완료 ➔ 건물 입주업체 수 확인 및 설문 문항 진행 중...`
+    });
 
     // 중간 문항에서 열렸을 경우 SQ. 일반 특성(isqpart) 처음으로 이동하여 SQ14 및 A파트 규칙 문항이 누락 없이 적용되도록 보장
     const initCheck = await extractRpsStep(page);
@@ -917,11 +942,12 @@ export async function runHrcEnergySurvey(options = {}) {
       }
     }
 
-    // 네이버 지도에서 건물 주소의 입주업체(장소) 개수 사전 조회
+    // 네이버 지도에서 건물 주소의 입주업체(장소) 개수 사전 조회 (중복 조회 방지 캐시 적용)
+    const triedNaverAddrs = new Set();
     let naverPlaceCount = await fetchNaverMapPlaceCount(context, [
       basicInfoState.roadAddress || slotData.roadAddress,
       basicInfoState.jibunAddress || slotData.jibunAddress
-    ]);
+    ], triedNaverAddrs);
 
     // 5. RPS 설문 단계별 순차 진행
     let trackedStoreCount = String(naverPlaceCount || policy.storeCount || '10');
@@ -1021,7 +1047,7 @@ export async function runHrcEnergySurvey(options = {}) {
         const candJibun = (jibunMatch ? jibunMatch[1].trim() : op4Addr).trim();
         if (candRoad && !basicInfoState.roadAddress) basicInfoState.roadAddress = candRoad;
         if (candJibun && !basicInfoState.jibunAddress) basicInfoState.jibunAddress = candJibun;
-        naverPlaceCount = await fetchNaverMapPlaceCount(context, [candRoad, candJibun]);
+        naverPlaceCount = await fetchNaverMapPlaceCount(context, [candRoad, candJibun], triedNaverAddrs);
         if (naverPlaceCount) {
           trackedStoreCount = String(naverPlaceCount);
         }
@@ -1032,7 +1058,7 @@ export async function runHrcEnergySurvey(options = {}) {
         naverPlaceCount = await fetchNaverMapPlaceCount(context, [
           basicInfoState.roadAddress || slotData.roadAddress,
           basicInfoState.jibunAddress || slotData.jibunAddress
-        ]);
+        ], triedNaverAddrs);
         if (naverPlaceCount) {
           trackedStoreCount = String(naverPlaceCount);
         }

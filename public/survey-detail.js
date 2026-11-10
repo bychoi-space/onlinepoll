@@ -2702,7 +2702,10 @@ async function initSurveyDetailPage() {
           || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '조사완료')
           || quotaDb[0])
         : (isHrcEnergy
-          ? (quotaDb.find(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
+          ? (quotaDb.find((b, idx) => checkedHrcSeqs.has(Number(b.index || b.seq || (idx + 1))) && b.quotaStatus !== 'completed' && b.status !== '완료')
+            || quotaDb.find(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료')
+            || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료')
+            || quotaDb[0])
           : ((isKona || isGlobalriLiteracy)
             ? (quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
             : quotaDb[0])));
@@ -2761,6 +2764,7 @@ async function initSurveyDetailPage() {
     } catch (err) {
       appendLog('error', `파일럿 실행 실패: ${err.message}`);
       setRunningState(false);
+      alert(`단건/파일럿 실행 실패:\n${err.message}`);
     }
   });
 
@@ -2839,12 +2843,23 @@ async function initSurveyDetailPage() {
         alert('실행할 미완료 쿼터 항목이 없습니다.');
         return;
       }
+    } else if (isHrcEnergy) {
+      const uncompletedAll = quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료' && !b.substitutedByUid);
+      const checkedUncompleted = uncompletedAll.filter((b, idx) => checkedHrcSeqs.has(Number(b.index || b.seq || (idx + 1))));
+      if (checkedUncompleted.length > 0) {
+        targets = checkedUncompleted;
+        selectedTargetIndices = checkedUncompleted.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
+      } else {
+        targets = uncompletedAll.filter(b => b.selectionType === '선정');
+      }
+      if (targets.length === 0) {
+        alert('실행할 미완료 건물 쿼터가 없습니다.');
+        return;
+      }
     } else {
-      targets = isHrcEnergy
-        ? quotaDb.filter(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료')
-        : (isKona
-          ? quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료')
-          : quotaDb.filter(b => (b.index || b.seq) >= startIdx));
+      targets = isKona
+        ? quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료')
+        : quotaDb.filter(b => (b.index || b.seq) >= startIdx);
     }
     const unmappedTargets = (isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
     if (unmappedTargets.length > 0) {
@@ -2932,6 +2947,7 @@ async function initSurveyDetailPage() {
     } catch (err) {
       appendLog('error', `배치 실행 실패: ${err.message}`);
       setRunningState(false);
+      alert(`배치 실행 실패:\n${err.message}`);
     }
   };
 
@@ -3580,7 +3596,7 @@ async function initSurveyDetailPage() {
   // 8. SSE 실시간 스트림 구독 & 상태 업데이트
   // ------------------------------------------------------------------------
   function initEventSource() {
-    const sse = new EventSource('/api/events');
+    const sse = new EventSource(`/api/events?campaignId=${encodeURIComponent(campId || '')}`);
     sse.onmessage = async (event) => {
       try {
         const raw = JSON.parse(event.data);
@@ -3592,6 +3608,8 @@ async function initSurveyDetailPage() {
 
         // 일반 로그
         if (data.type === 'log') {
+          // [캠페인 필터링] 타 캠페인 실행 로그는 현재 캠페인 콘솔에 표시하지 않음
+          if (data.campaignId && data.campaignId !== campId) return;
           // [채널 필터링] 설문 작업실에서는 타 화면의 쿼터 생성/수집 로그를 제외
           if (data.channel === 'quota') return;
           const msg = String(data.message || '');
