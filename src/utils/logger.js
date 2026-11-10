@@ -1,6 +1,9 @@
 /**
- * 실시간 SSE 브로드캐스터 및 통합 로거
+ * 실시간 SSE 브로드캐스터 및 통합 로거 (AsyncLocalStorage 기반 멀티 캠페인 격리 지원)
  */
+import { AsyncLocalStorage } from 'async_hooks';
+
+const campaignContextStorage = new AsyncLocalStorage();
 
 const kstTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul',
@@ -49,14 +52,36 @@ class EventBroadcaster {
   constructor() {
     this.clients = new Set();
     this.history = [];
-    this.maxHistory = 100;
+    this.maxHistory = 200;
     this.activeCampaignId = null;
   }
 
   /**
-   * 현재 실행 중인 활성 캠페인 ID 설정
+   * 현재 비동기 컨텍스트 또는 전역 활성 캠페인 ID 반환
+   */
+  getCurrentCampaignId() {
+    const store = campaignContextStorage.getStore();
+    if (store && store.campaignId) {
+      return store.campaignId;
+    }
+    return this.activeCampaignId || null;
+  }
+
+  /**
+   * 특정 캠페인 컨텍스트로 비동기 함수를 감싸서 실행 (2개 동시 배치 실행 시 로그 완벽 격리)
+   */
+  runWithCampaignContext(campaignId, fn) {
+    return campaignContextStorage.run({ campaignId }, fn);
+  }
+
+  /**
+   * 현재 실행 중인 활성 캠페인 ID 설정 (하위 호환용)
    */
   setActiveCampaign(campaignId = null) {
+    const store = campaignContextStorage.getStore();
+    if (store && campaignId) {
+      store.campaignId = campaignId;
+    }
     this.activeCampaignId = campaignId || null;
   }
 
@@ -83,6 +108,7 @@ class EventBroadcaster {
    * 전체 연결된 클라이언트에 이벤트 브로드캐스트
    */
   broadcast(typeOrData, payload = {}) {
+    const currentCampId = this.getCurrentCampaignId();
     let eventData;
     if (typeof typeOrData === 'object' && typeOrData !== null) {
       const channel = typeOrData.channel || (
@@ -96,7 +122,7 @@ class EventBroadcaster {
         id: Date.now(),
         timestamp: getKstTime(),
         channel,
-        ...(this.activeCampaignId ? { campaignId: this.activeCampaignId } : {}),
+        ...(currentCampId ? { campaignId: currentCampId } : {}),
         ...typeOrData
       };
     } else {
@@ -112,7 +138,7 @@ class EventBroadcaster {
         timestamp: getKstTime(),
         type: typeOrData,
         channel,
-        ...(this.activeCampaignId ? { campaignId: this.activeCampaignId } : {}),
+        ...(currentCampId ? { campaignId: currentCampId } : {}),
         ...payload
       };
     }

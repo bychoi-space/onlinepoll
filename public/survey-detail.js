@@ -2956,12 +2956,16 @@ async function initSurveyDetailPage() {
     btnRunAllBatchBottom.addEventListener('click', triggerBatchRun);
   }
 
-  // 중지 버튼 (상단 & 하단 동기화)
+  // 중지 버튼 (상단 & 하단 동기화 — 현재 캠페인만 개별 중지하여 동시 실행 중인 다른 캠페인에 영향을 주지 않음)
   const handleStopSurvey = async () => {
     try {
-      await fetch('/api/survey/stop', { method: 'POST' });
+      await fetch('/api/survey/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId: campId })
+      });
       setRunningState(false);
-      appendLog('warn', '작업 중지 요청이 전송되었습니다.');
+      appendLog('warn', '현재 캠페인의 작업 중지 요청이 전송되었습니다.');
     } catch (err) {
       appendLog('error', `중지 요청 실패: ${err.message}`);
     }
@@ -3787,12 +3791,18 @@ async function initSurveyDetailPage() {
   // ------------------------------------------------------------------------
   async function syncServerRunningState() {
     try {
-      const res = await fetch('/api/survey/status');
+      const res = await fetch(`/api/survey/status?campaignId=${encodeURIComponent(campId || '')}`);
       if (!res.ok) return;
       const data = await res.json();
-      if (data.isRunning && data.campaignId === campId) {
+      const isThisCampaignRunning = Array.isArray(data.runningCampaignIds)
+        ? data.runningCampaignIds.includes(campId)
+        : Boolean(data.isRunning && data.campaignId === campId);
+      if (isThisCampaignRunning) {
         setRunningState(true);
-        appendLog('info', '📡 [상태 복원] 현재 원격 설문 배치가 가동 중입니다. (실시간 모니터링 연동)');
+        const slotInfo = (data.activeCount && data.maxConcurrency)
+          ? ` (동시 가동 슬롯: ${data.activeCount}/${data.maxConcurrency})`
+          : '';
+        appendLog('info', `📡 [상태 복원] 현재 원격 설문 배치가 가동 중입니다.${slotInfo} (실시간 모니터링 연동)`);
       } else {
         setRunningState(false);
         if (currentCampaign && Array.isArray(currentCampaign.quotaDatabase)) {

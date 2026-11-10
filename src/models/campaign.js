@@ -53,17 +53,36 @@ function initStore() {
 
 initStore();
 
+let cachedCampaigns = null;
+let lastLoadedMtimeMs = 0;
+
+function flushCacheToDisk(campaigns) {
+  cachedCampaigns = campaigns;
+  const tmpFile = `${campaignsFile}.tmp`;
+  fs.writeFileSync(tmpFile, JSON.stringify(campaigns, null, 2), 'utf-8');
+  fs.renameSync(tmpFile, campaignsFile);
+  try {
+    lastLoadedMtimeMs = fs.statSync(campaignsFile).mtimeMs;
+  } catch (_) {}
+}
+
 /**
  * 전체 캠페인 목록 조회
  */
 export function getAllCampaigns() {
   initStore();
   try {
+    const stat = fs.statSync(campaignsFile);
+    if (cachedCampaigns && stat.mtimeMs === lastLoadedMtimeMs) {
+      return cachedCampaigns;
+    }
     const content = fs.readFileSync(campaignsFile, 'utf-8');
-    return JSON.parse(content || '[]');
+    cachedCampaigns = JSON.parse(content || '[]');
+    lastLoadedMtimeMs = stat.mtimeMs;
+    return cachedCampaigns;
   } catch (err) {
     console.error('[CampaignStore] 읽기 실패:', err);
-    return [];
+    return cachedCampaigns || [];
   }
 }
 
@@ -272,7 +291,7 @@ export function createCampaign(data = {}) {
   };
 
   campaigns.unshift(newCampaign);
-  fs.writeFileSync(campaignsFile, JSON.stringify(campaigns, null, 2), 'utf-8');
+  flushCacheToDisk(campaigns);
   return newCampaign;
 }
 
@@ -300,7 +319,7 @@ export function updateCampaign(id, updateData = {}) {
     updatedAt: nowIso
   };
 
-  fs.writeFileSync(campaignsFile, JSON.stringify(campaigns, null, 2), 'utf-8');
+  flushCacheToDisk(campaigns);
   return campaigns[index];
 }
 
@@ -310,6 +329,6 @@ export function updateCampaign(id, updateData = {}) {
 export function deleteCampaign(id) {
   const campaigns = getAllCampaigns();
   const filtered = campaigns.filter(c => c.id !== id);
-  fs.writeFileSync(campaignsFile, JSON.stringify(filtered, null, 2), 'utf-8');
+  flushCacheToDisk(filtered);
   return true;
 }
