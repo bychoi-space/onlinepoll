@@ -25,6 +25,11 @@ import {
   syncSeoulPanelAnswersToGoogleSheet
 } from '../utils/seoul-panel-answer-excel.js';
 import { syncGallupReturnFarmStatuses } from '../engine/gallup-return-farm-runner.js';
+import {
+  scrapeMetrix622AllAccounts,
+  verifyBizStatusViaHometax,
+  METRIX_622_GOOGLE_SHEET_URL
+} from '../engine/metrix-slot-scraper.js';
 import { logger } from '../utils/logger.js';
 
 export function registerSyncRoutes({
@@ -714,4 +719,124 @@ export function registerSyncRoutes({
       res.status(500).json({ success: false, error: err.message });
     }
   });
+
+  // [경기도 소상공인 사업체패널 3차조사 SNUM=622] 3계정(강영미/김정례/노영미) + 구글시트 휴대폰 + 홈택스 폐업조회 통합 동기화 API
+  app.post('/api/campaigns/:id/sync-metrix-622', async (req, res) => {
+    try {
+      const campaign = CampaignStore.getCampaignById(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+      }
+
+      logger.info(`[경기도 소상공인 SNUM=622 통합 동기화] 캠페인 "${campaign.title}" 3계정(강영미·김정례·노영미) + 구글시트 휴대폰 + 사업자번호 폐업조회 시작...`);
+
+      const syncRes = await scrapeMetrix622AllAccounts({
+        snum: campaign.snum || '622',
+        verifyBizStatus: req.body?.verifyBizStatus !== false,
+        existingQuotaList: campaign.quotaDatabase || []
+      });
+
+      const slots = syncRes.slots || [];
+      const closedCount = slots.filter(s => s.isClosedBiz).length;
+      const phoneChangedCount = slots.filter(s => s.phoneNeedsSync).length;
+      const wait98Count = slots.filter(s => String(s.status || '').includes('98%') || s.quotaStatus === '진행중(98%)').length;
+
+      CampaignStore.updateCampaign(campaign.id, {
+        quotaDatabase: slots,
+        sparePhones: syncRes.sparePhones || [],
+        googleSheetUrl: campaign.googleSheetUrl || METRIX_622_GOOGLE_SHEET_URL,
+        quotaSourceFile: syncRes.jsonFileName || 'quota_metrix_gyeonggi_622_all.json'
+      });
+
+      logger.broadcast({
+        type: 'QUOTA_UPDATED',
+        campaignId: campaign.id,
+        quotaDatabase: slots
+      });
+
+      logger.success(`[경기도 소상공인 SNUM=622 동기화 완료] 총 ${slots.length}건 (강영미 54건·김정례 55건·노영미 62건 / 시트 휴대폰 변경대상 ${phoneChangedCount}건 / 폐업 제외 ${closedCount}건 / 98% 대기 ${wait98Count}건)`);
+
+      res.json({
+        success: true,
+        message: `메트릭스(SNUM 622) 3개 계정(${slots.length}건) + 구글시트 휴대폰(${phoneChangedCount}건 변경대상) + 국세청 사업자번호 조회(폐업 제외 ${closedCount}건) 동기화가 완료되었습니다!`,
+        totalCount: slots.length,
+        closedCount,
+        phoneChangedCount,
+        wait98Count,
+        sparePhones: syncRes.sparePhones || [],
+        quotaDatabase: slots
+      });
+    } catch (err) {
+      logger.error('[경기도 소상공인 SNUM=622 동기화 실패]', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // [경기도 소상공인 SNUM=622] 개별 사업체 폐업 제외 토글 및 시트 휴대폰 번호 즉시 수정 API
+  app.post('/api/campaigns/:id/toggle-closed-biz', (req, res) => {
+    try {
+      const campaign = CampaignStore.getCampaignById(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+      }
+      const { index, uid, isClosedBiz, excelPhone } = req.body || {};
+      const quotaDb = Array.isArray(campaign.quotaDatabase) ? campaign.quotaDatabase : [];
+      const target = quotaDb.find(q =>
+        (index !== undefined && Number(q.index || q.seq) === Number(index)) ||
+        (uid !== undefined && String(q.uid) === String(uid))
+      );
+      if (!target) {
+        return res.status(404).json({ error: '해당 사업체 항목을 찾을 수 없습니다.' });
+      }
+
+      if (typeof isClosedBiz === 'boolean') {
+        target.isClosedBiz = isClosedBiz;
+        target.manualClosedOverride = true;
+        target.bizStatus = isClosedBiz ? '폐업자(수동제외)' : '계속사업자';
+        if (isClosedBiz) {
+          target.quotaStatus = 'excluded';
+        } else {
+          target.quotaStatus = String(target.status || '').includes('완료')
+            ? 'completed'
+            : (String(target.status || '').includes('98%') ? '진행중(98%)' : 'ready');
+        }
+      }
+
+      if (typeof excelPhone === 'string') {
+        target.excelPhone = excelPhone.trim();
+        target.phone = target.excelPhone || target.serverPhone || '';
+        target.phoneNeedsSync = Boolean(target.excelPhone && target.excelPhone !== target.serverPhone);
+      }
+
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+      const ggPath = path.join(quotasDir, 'quota_metrix_gyeonggi_622_all.json');
+      if (fs.existsSync(ggPath)) {
+        try {
+          const ggJson = JSON.parse(fs.readFileSync(ggPath, 'utf-8'));
+          ggJson.data = quotaDb;
+          ggJson.rows = quotaDb;
+          ggJson.updatedAt = new Date().toISOString();
+          fs.writeFileSync(ggPath, JSON.stringify(ggJson, null, 2), 'utf-8');
+        } catch (_) {}
+      }
+
+      logger.broadcast({
+        type: 'QUOTA_UPDATED',
+        campaignId: campaign.id,
+        quotaDatabase: quotaDb
+      });
+
+      res.json({
+        success: true,
+        message: target.isClosedBiz
+          ? `[#${target.index} ${target.companyName}] 폐업 제외 처리되었습니다.`
+          : `[#${target.index} ${target.companyName}] 정상 조사 대상으로 설정되었습니다.`,
+        target,
+        quotaDatabase: quotaDb
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
 }
+

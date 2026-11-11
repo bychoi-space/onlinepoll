@@ -165,19 +165,23 @@ export function renderQuotaTableHead({
   } else if (isMetrix) {
     quotaTableHead.innerHTML = `
       <tr>
+        <th class="th-no text-center" style="width: 44px;">
+          <input type="checkbox" id="cb-metrix-check-all" title="현재 필터의 미완료 사업체(폐업 제외) 전체 선택/해제" style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+        </th>
         <th class="th-no">번호</th>
+        <th>조사원 계정</th>
         <th>UID</th>
         <th>사업체명</th>
-        <th>대표자 성명</th>
-        <th>성별</th>
-        <th>휴대폰</th>
+        <th>대표자(성별)</th>
+        <th style="min-width: 185px;">컨택 휴대폰 (구글시트 ➔ 저장)</th>
         <th>사업자등록번호</th>
-        <th>업종</th>
-        <th>분류명</th>
-        <th>지역</th>
-        <th>사업장 주소</th>
-        <th>설문 URL</th>
+        <th style="min-width: 145px;">휴폐업 조회 / 제외</th>
+        <th>업종 / 분류명</th>
+        <th style="min-width: 175px;">업종별 적용 가이드</th>
+        <th>지역 / 사업장 주소</th>
+        <th>컨택·설문 링크</th>
         <th class="th-status">진행 상태</th>
+        <th class="text-center" style="min-width: 120px;">개별 실행</th>
       </tr>
     `;
   } else if (isAssoc) {
@@ -998,46 +1002,349 @@ export function renderKonaQuotaTable({ db, quotaTableBody }) {
   }).join('');
 }
 
-export function renderMetrixQuotaTable({ db, quotaTableBody }) {
-  quotaTableBody.innerHTML = db.map((item, idx) => {
-    const seq = item.index || item.seq || (idx + 1);
-    const st = item.quotaStatus || item.status || 'ready';
-    let statusHtml = '<span class="badge-status ready">대기</span>';
+let currentMetrix622AccountFilter = 'all'; // 'all' | '강영미' | '김정례' | '노영미'
+let currentMetrix622IndustryFilter = 'all'; // 'all' | 'ind_1' .. 'ind_9'
 
-    if (st === '완료' || st === 'completed') {
+function resolveMetrix622IndustryKey(industryStr = '') {
+  const s = String(industryStr).trim();
+  if (s.startsWith('1.') || s.includes('제조')) return 'ind_1';
+  if (s.startsWith('2.') || s.includes('건설')) return 'ind_2';
+  if (s.startsWith('3.') || s.includes('도매') || s.includes('소매')) return 'ind_3';
+  if (s.startsWith('5.') || s.includes('음식') || s.includes('주점')) return 'ind_5';
+  if (s.startsWith('6.') || s.includes('전문') || s.includes('과학') || s.includes('기술')) return 'ind_6';
+  if (s.startsWith('7.') || s.includes('교육')) return 'ind_7';
+  if (s.startsWith('8.') || s.includes('예술') || s.includes('스포츠') || s.includes('여가')) return 'ind_8';
+  if (s.startsWith('9.') || s.includes('수리') || s.includes('개인')) return 'ind_9';
+  return 'ind_3';
+}
+
+const METRIX_622_IND_META = {
+  ind_1: { short: '1.제조업', guide: '08~18시 · 원재료60%/인건비18% · 계좌이체70%' },
+  ind_2: { short: '2.건설업', guide: '08~18시 · 원재료55%/인건비25% · 계좌이체75%' },
+  ind_3: { short: '3.도소매업', guide: '09~20시 · 원재료62%/임차15% · 카드65%/지역화폐10%' },
+  ind_5: { short: '5.음식·주점업', guide: '10~22시 · 배달앱ON · 원재료48%/인건비20% · 카드75%' },
+  ind_6: { short: '6.전문·과학·기술', guide: '09~18시 · 인건비35%/임차18% · 계좌이체60%' },
+  ind_7: { short: '7.교육서비스', guide: '13~21시 · 인건비30%/임차25% · 카드75%/지역화폐15%' },
+  ind_8: { short: '8.예술·스포츠·여가', guide: '10~22시 · 원재료30%/임차28% · 카드70%' },
+  ind_9: { short: '9.수리·개인서비스', guide: '10~20시 · 원재료40%/임차24% · 카드70%/지역화폐12%' }
+};
+
+export function renderMetrixQuotaTable({
+  db,
+  quotaTableBody,
+  campId,
+  googleSheetUrl,
+  metrixPolicy = {},
+  checkedMetrixSeqs = new Set(),
+  onReRender,
+  onTriggerBatchRun,
+  onSyncMetrix622,
+  onToggleClosedBiz
+}) {
+  const tableScrollContainer = quotaTableBody.closest('.table-scroll-container');
+  let metrixBar = document.getElementById('metrix-622-step1-check-bar');
+  if (!metrixBar && tableScrollContainer && tableScrollContainer.parentNode) {
+    metrixBar = document.createElement('div');
+    metrixBar.id = 'metrix-622-step1-check-bar';
+    metrixBar.className = 'globalri-check-toolbar';
+    tableScrollContainer.parentNode.insertBefore(metrixBar, tableScrollContainer);
+  }
+
+  const getAcc = (it) => String(it.surveyorId || it.loginId || '강영미').trim();
+  const getIndKey = (it) => it.industryKey || resolveMetrix622IndustryKey(it.industry);
+  const isClosed = (it) => Boolean(it.isClosedBiz || String(it.bizStatus || '').includes('폐업') || it.quotaStatus === 'excluded');
+  const isDone = (it) => (it.quotaStatus === 'completed' || it.status === '완료' || String(it.status || '').includes('완료(100%)'));
+  const isWait98 = (it) => (it.quotaStatus === '진행중(98%)' || String(it.status || '').includes('98%'));
+
+  const listKang = db.filter(it => getAcc(it) === '강영미');
+  const listKim = db.filter(it => getAcc(it) === '김정례');
+  const listNoh = db.filter(it => getAcc(it) === '노영미');
+  const closedItems = db.filter(it => isClosed(it));
+  const wait98Items = db.filter(it => !isClosed(it) && isWait98(it));
+  const completedItems = db.filter(it => !isClosed(it) && isDone(it));
+  const uncompletedActive = db.filter(it => !isClosed(it) && !isDone(it) && !isWait98(it));
+  const phoneChangedItems = db.filter(it => !isClosed(it) && Boolean(it.excelPhone && it.excelPhone !== it.serverPhone));
+  const checkedCount = checkedMetrixSeqs.size;
+
+  const visibleDb = db.filter(it => {
+    if (currentMetrix622AccountFilter !== 'all' && getAcc(it) !== currentMetrix622AccountFilter) return false;
+    if (currentMetrix622IndustryFilter !== 'all' && getIndKey(it) !== currentMetrix622IndustryFilter) return false;
+    return true;
+  });
+
+  const sheetHref = googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911';
+
+  const indCounts = {};
+  Object.keys(METRIX_622_IND_META).forEach(k => { indCounts[k] = 0; });
+  db.forEach(it => {
+    const ik = getIndKey(it);
+    indCounts[ik] = (indCounts[ik] || 0) + 1;
+  });
+
+  if (metrixBar) {
+    metrixBar.style.display = 'flex';
+    metrixBar.style.flexDirection = 'column';
+    metrixBar.style.gap = '10px';
+    metrixBar.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 4px;">
+            <i class="fa-solid fa-user-shield text-primary-color"></i> 3대 조사원 계정:
+          </span>
+          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === 'all' ? 'active' : ''}" data-acc-filter="all" style="${currentMetrix622AccountFilter === 'all' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">전체 계정 (${db.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '강영미' ? 'active' : ''}" data-acc-filter="강영미" style="${currentMetrix622AccountFilter === '강영미' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">강영미 / 5254 (${listKang.length}건 · 광주시)</button>
+          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '김정례' ? 'active' : ''}" data-acc-filter="김정례" style="${currentMetrix622AccountFilter === '김정례' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">김정례 / 3995 (${listKim.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '노영미' ? 'active' : ''}" data-acc-filter="노영미" style="${currentMetrix622AccountFilter === '노영미' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">노영미 / 7791 (${listNoh.length}건)</button>
+          <span style="margin: 0 6px; color: #cbd5e1;">|</span>
+          <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 2px;">빠른 체크(폐업 자동제외):</span>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="uncompleted_active">미완료 전체 (${uncompletedActive.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="visible_active">현재 필터 선택 (${visibleDb.filter(it => !isClosed(it) && !isDone(it)).length}건)</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="phone_changed">시트 휴대폰 변경대상 (${phoneChangedItems.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="wait_98">98% 대기건 (${wait98Items.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span id="badge-metrix-checked-count" class="badge-status ready font-bold" style="padding: 5px 12px; font-size: 12.5px;">
+            체크됨: <strong>${checkedCount}건</strong> · 시트휴대폰 변경대상: <strong>${phoneChangedItems.length}건</strong> · 폐업제외: <strong>${closedItems.length}건</strong> · 98%대기: <strong>${wait98Items.length}건</strong>
+          </span>
+          <a href="${escapeHtml(sheetHref)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="경기도 소상공인 쿼터 구글 스프레드시트(광주시 리스트 / 김정례 / 노영미-7791) 열기">
+            <i class="fa-solid fa-table"></i> 쿼터 구글시트 열기
+          </a>
+          <button type="button" id="btn-metrix-622-sync" class="btn-pill btn-pill-primary btn-pill-small font-bold" title="3개 계정(강영미·김정례·노영미) + 구글시트 휴대폰 번호 + 국세청 사업자번호 휴폐업 상태를 실시간 동기화합니다">
+            <i class="fa-solid fa-rotate"></i> 3계정·구글시트·폐업조회 동기화
+          </button>
+          <button type="button" id="btn-metrix-622-top-batch-run" class="btn-pill btn-pill-success btn-pill-small font-bold">
+            <i class="fa-solid fa-rocket"></i> 체크한 사업체 (${checkedCount}건) [컨택·휴대폰저장·설문참여] 98% 일괄 실행
+          </button>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 6px; border-top: 1px dashed #cbd5e1;">
+        <span style="font-size: 12.5px; font-weight: 800; color: #334155; margin-right: 4px;">
+          <i class="fa-solid fa-industry text-primary-color"></i> 업종별 필터 & 가이드 확인:
+        </span>
+        <button type="button" class="globalri-quick-check-btn metrix-ind-filter-btn ${currentMetrix622IndustryFilter === 'all' ? 'active' : ''}" data-ind-filter="all" style="${currentMetrix622IndustryFilter === 'all' ? 'background:#0f766e;color:#fff;border-color:#0f766e;' : ''}">전체 업종 (${db.length}건)</button>
+        ${Object.entries(METRIX_622_IND_META).map(([ik, meta]) => `
+          <button type="button" class="globalri-quick-check-btn metrix-ind-filter-btn ${currentMetrix622IndustryFilter === ik ? 'active' : ''}" data-ind-filter="${ik}" style="${currentMetrix622IndustryFilter === ik ? 'background:#0f766e;color:#fff;border-color:#0f766e;' : ''}" title="${escapeHtml(meta.guide)}">
+            ${escapeHtml(meta.short)} (${indCounts[ik] || 0}건)
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  quotaTableBody.innerHTML = visibleDb.map((item, idx) => {
+    const seq = Number(item.index || item.seq || (idx + 1));
+    const acc = getAcc(item);
+    const accPw = item.surveyorPw || (acc === '김정례' ? '3995' : (acc === '노영미' ? '7791' : '5254'));
+    const closed = isClosed(item);
+    const done = isDone(item);
+    const wait98 = isWait98(item);
+    const isRowRunning = (item.quotaStatus === 'running' || item.status === '진행중');
+    const isChecked = !closed && checkedMetrixSeqs.has(seq);
+
+    let statusHtml = '<span class="badge-status ready">대기</span>';
+    if (closed) {
+      statusHtml = '<span class="badge-status error font-bold"><i class="fa-solid fa-ban"></i> 입력제외 (폐업)</span>';
+    } else if (done) {
       statusHtml = '<span class="badge-status success"><i class="fa-solid fa-check"></i> 완료</span>';
-    } else if (st === '진행중' || st === 'running') {
+    } else if (isRowRunning) {
       statusHtml = '<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 진행중</span>';
-    } else if (st === '진행중(98%)' || String(st).includes('98%')) {
-      statusHtml = '<span class="badge-status warning font-bold" style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);"><i class="fa-solid fa-shield-halved"></i> 98% 검토대기</span>';
-    } else if (st === 'pilot_done') {
+    } else if (wait98) {
+      statusHtml = '<span class="badge-status warning font-bold" style="background: rgba(245, 158, 11, 0.18); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.45);"><i class="fa-solid fa-shield-halved"></i> 98% 검토대기</span>';
+    } else if (item.quotaStatus === 'pilot_done') {
       statusHtml = '<span class="badge-status pilot"><i class="fa-solid fa-flask"></i> 검증대기</span>';
-    } else if (st === 'error') {
-      statusHtml = '<span class="badge-status error">오류</span>';
+    } else if (item.quotaStatus === 'error') {
+      statusHtml = `<span class="badge-status error" title="${escapeHtml(item.error || '')}">오류</span>`;
     }
 
+    const excelPhone = String(item.excelPhone || '').trim();
+    const serverPhone = String(item.serverPhone || '').trim();
+    const effectivePhone = excelPhone || serverPhone || String(item.phone || '').trim();
+    const isPhoneDiff = Boolean(excelPhone && excelPhone !== serverPhone);
+    const phoneBadgeHtml = isPhoneDiff
+      ? `<span class="badge-status pilot font-mono" style="padding:1px 6px; font-size:10.5px;" title="컨택 팝업 진입 시 기존(${escapeHtml(serverPhone || '없음')}) ➔ 시트 번호(${escapeHtml(excelPhone)})로 자동 변경 후 [저장]합니다">시트변경 ➔ 저장대기</span>`
+      : (excelPhone ? `<span class="badge-status success font-mono" style="padding:1px 6px; font-size:10.5px;">시트일치</span>` : `<span class="badge-status ready font-mono" style="padding:1px 6px; font-size:10.5px;">서버번호 유지</span>`);
+
+    const bizStatusHtml = closed
+      ? `<span class="badge-status error font-bold" style="padding:2px 8px;"><i class="fa-solid fa-circle-xmark"></i> 폐업 제외</span>`
+      : `<span class="badge-status success font-bold" style="padding:2px 8px;" title="${escapeHtml(item.taxType || '부가가치세 일반과세자')}"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(item.bizStatus || '계속사업자')}</span>`;
+
+    const ik = getIndKey(item);
+    const indMeta = METRIX_622_IND_META[ik] || METRIX_622_IND_META.ind_3;
+    const polInd = metrixPolicy?.industryPolicies?.[ik] || {};
+    const indEnabled = (metrixPolicy?.useIndustryGuidelines !== false && polInd.enabled !== false);
+    const guideBadgeHtml = item.guideApplied && item.guideSummary
+      ? `<span class="badge-status pilot font-bold" style="padding:3px 8px; font-size:11px;" title="${escapeHtml(item.guideSummary)}"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml(item.guideSummary)}</span>`
+      : (indEnabled
+        ? `<span class="badge-status success" style="padding:3px 8px; font-size:11px;" title="${escapeHtml(indMeta.guide)}"><i class="fa-solid fa-sliders"></i> ${escapeHtml(indMeta.short)} 맞춤가이드</span>`
+        : `<span class="badge-status ready" style="padding:3px 8px; font-size:11px;">공통 기본가이드</span>`);
+
     const surveyUrlTag = item.surveyUrl
-      ? `<a href="${escapeHtml(item.surveyUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small" title="새 탭에서 설문 열기"><i class="fa-solid fa-arrow-up-right-from-square"></i> 설문 열기</a>`
+      ? `<a href="${escapeHtml(item.surveyUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small" title="새 탭에서 설문 열기"><i class="fa-solid fa-arrow-up-right-from-square"></i> 설문</a>`
       : '<span class="text-dim">미생성</span>';
 
+    let actionBtnHtml = '';
+    if (closed) {
+      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45; cursor:not-allowed;">폐업 제외됨</button>`;
+    } else if (done) {
+      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45; cursor:not-allowed;">완료됨</button>`;
+    } else if (isRowRunning) {
+      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small" disabled><i class="fa-solid fa-spinner fa-spin"></i> 실행중</button>`;
+    } else {
+      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-metrix" data-seq="${seq}" title="[${escapeHtml(acc)}] #${seq} ${escapeHtml(item.companyName || '')}: [컨택] 클릭 ➔ 휴대폰(${escapeHtml(effectivePhone || '-')}) 변경·[저장] ➔ [설문참여] ➔ 98% 안전 대기 실행">▷ 컨택·저장·98%</button>`;
+    }
+
+    const accBadgeClass = acc === '강영미' ? 'ready' : (acc === '김정례' ? 'pilot' : 'success');
+
     return `
-      <tr data-row-idx="${seq}">
+      <tr data-row-idx="${seq}" class="${isChecked ? 'globalri-row-checked' : ''}" style="${closed ? 'opacity: 0.52; background: rgba(239, 68, 68, 0.05);' : ''}">
+        <td class="text-center">
+          <input type="checkbox" class="cb-metrix-quota-row" data-seq="${seq}" ${isChecked ? 'checked' : ''} ${(closed || done) ? 'disabled' : ''} style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+        </td>
         <td class="text-center font-mono font-bold">${seq}</td>
-        <td class="font-mono font-bold text-primary-color">${escapeHtml(item.uid || '-')}</td>
+        <td class="text-center">
+          <span class="badge-status ${accBadgeClass} font-mono font-bold" style="padding: 3px 8px;" title="아이디: ${escapeHtml(acc)} / 비밀번호: ${escapeHtml(accPw)}">${escapeHtml(acc)} (${escapeHtml(accPw)})</span>
+        </td>
+        <td class="font-mono font-bold text-primary-color text-center">${escapeHtml(item.uid || '-')}</td>
         <td><strong>${escapeHtml(item.companyName || '-')}</strong></td>
-        <td>${escapeHtml(item.ceoName || '-')}</td>
-        <td class="text-center">${item.ceoGender ? `<span class="badge-gender ${item.ceoGender.includes('여') ? 'female' : 'male'}">${escapeHtml(item.ceoGender)}</span>` : '-'}</td>
-        <td class="font-mono">${escapeHtml(item.phone || '-')}</td>
-        <td class="font-mono">${escapeHtml(item.bizNumber || '-')}</td>
-        <td>${escapeHtml(item.industry || '-')}</td>
-        <td><span class="badge-main-product">${escapeHtml(item.bizCategory || '-')}</span></td>
-        <td>${escapeHtml(item.area || '-')}</td>
-        <td title="${escapeHtml(item.fullAddress || item.address || '')}">${escapeHtml(item.fullAddress || item.address || '-')}</td>
+        <td class="text-center">
+          ${escapeHtml(item.ceoName || '-')}
+          ${item.ceoGender ? `<div><span class="badge-gender ${item.ceoGender.includes('여') ? 'female' : 'male'}">${escapeHtml(item.ceoGender)}</span></div>` : ''}
+        </td>
+        <td>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <div style="display:flex; align-items:center; gap:4px;">
+              <input type="text" class="figma-input input-metrix-excel-phone font-mono" data-seq="${seq}" value="${escapeHtml(effectivePhone)}" placeholder="010-0000-0000" style="padding:3px 7px; font-size:12px; width:125px; height:26px;" title="컨택 팝업의 '휴대폰' 항목에 입력 후 [저장]할 번호" />
+              ${phoneBadgeHtml}
+            </div>
+            ${serverPhone && serverPhone !== effectivePhone ? `<div class="font-caption text-dim" style="font-size:10.5px;">서버 기존: ${escapeHtml(serverPhone)}</div>` : ''}
+          </div>
+        </td>
+        <td class="font-mono text-center">${escapeHtml(item.bizNumber || '-')}</td>
+        <td class="text-center">
+          <div style="display:flex; align-items:center; justify-content:center; gap:4px; flex-wrap:wrap;">
+            ${bizStatusHtml}
+            <button type="button" class="btn-pill btn-pill-secondary btn-pill-small btn-metrix-toggle-closed" data-seq="${seq}" data-closed="${closed ? '1' : '0'}" style="padding:2px 6px; font-size:10.5px;" title="사업자번호 폐업 제외 상태를 수동으로 전환합니다">
+              ${closed ? '제외해제' : '폐업제외'}
+            </button>
+          </div>
+        </td>
+        <td>
+          <div><strong>${escapeHtml(item.industry || '-')}</strong></div>
+          <div><span class="badge-main-product" style="font-size:10.5px;">${escapeHtml(item.bizCategory || '-')}</span></div>
+        </td>
+        <td class="text-center">${guideBadgeHtml}</td>
+        <td title="${escapeHtml(item.fullAddress || item.address || '')}">
+          <strong>[${escapeHtml(item.area || '-')}]</strong> ${escapeHtml(item.fullAddress || item.address || '-')}
+        </td>
         <td class="text-center">${surveyUrlTag}</td>
         <td class="text-center">${statusHtml}</td>
+        <td class="text-center">${actionBtnHtml}</td>
       </tr>
     `;
   }).join('');
+
+  const updateCheckedBadges = () => {
+    const cnt = checkedMetrixSeqs.size;
+    const badgeEl = document.getElementById('badge-metrix-checked-count');
+    if (badgeEl) {
+      badgeEl.innerHTML = `체크됨: <strong>${cnt}건</strong> · 시트휴대폰 변경대상: <strong>${phoneChangedItems.length}건</strong> · 폐업제외: <strong>${closedItems.length}건</strong> · 98%대기: <strong>${wait98Items.length}건</strong>`;
+    }
+    const batchBtn = document.getElementById('btn-metrix-622-top-batch-run');
+    if (batchBtn) {
+      batchBtn.innerHTML = `<i class="fa-solid fa-rocket"></i> 체크한 사업체 (${cnt}건) [컨택·휴대폰저장·설문참여] 98% 일괄 실행`;
+    }
+  };
+
+  const cbAll = document.getElementById('cb-metrix-check-all');
+  const selectableVisibleSeqs = visibleDb
+    .filter(it => !isClosed(it) && !isDone(it))
+    .map(it => Number(it.index || it.seq));
+  if (cbAll) {
+    cbAll.checked = selectableVisibleSeqs.length > 0 && selectableVisibleSeqs.every(s => checkedMetrixSeqs.has(s));
+    cbAll.onchange = () => {
+      if (cbAll.checked) selectableVisibleSeqs.forEach(s => checkedMetrixSeqs.add(s));
+      else selectableVisibleSeqs.forEach(s => checkedMetrixSeqs.delete(s));
+      if (typeof onReRender === 'function') onReRender(db);
+    };
+  }
+
+  quotaTableBody.querySelectorAll('.cb-metrix-quota-row').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const seq = Number(cb.getAttribute('data-seq'));
+      if (cb.checked) checkedMetrixSeqs.add(seq);
+      else checkedMetrixSeqs.delete(seq);
+      const tr = cb.closest('tr');
+      if (tr) tr.classList.toggle('globalri-row-checked', cb.checked);
+      updateCheckedBadges();
+    });
+  });
+
+  quotaTableBody.querySelectorAll('.btn-metrix-toggle-closed').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const seq = Number(btn.getAttribute('data-seq'));
+      const curClosed = btn.getAttribute('data-closed') === '1';
+      if (curClosed === false) {
+        checkedMetrixSeqs.delete(seq);
+      }
+      if (typeof onToggleClosedBiz === 'function') {
+        await onToggleClosedBiz({ index: seq, isClosedBiz: !curClosed });
+      }
+    });
+  });
+
+  quotaTableBody.querySelectorAll('.input-metrix-excel-phone').forEach(inp => {
+    inp.addEventListener('change', async () => {
+      const seq = Number(inp.getAttribute('data-seq'));
+      const newVal = inp.value.trim();
+      if (typeof onToggleClosedBiz === 'function') {
+        await onToggleClosedBiz({ index: seq, excelPhone: newVal });
+      }
+    });
+  });
+
+  if (metrixBar) {
+    metrixBar.querySelectorAll('.metrix-acc-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentMetrix622AccountFilter = btn.getAttribute('data-acc-filter') || 'all';
+        if (typeof onReRender === 'function') onReRender(db);
+      });
+    });
+
+    metrixBar.querySelectorAll('.metrix-ind-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentMetrix622IndustryFilter = btn.getAttribute('data-ind-filter') || 'all';
+        if (typeof onReRender === 'function') onReRender(db);
+      });
+    });
+
+    metrixBar.querySelectorAll('.metrix-quick-check-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-quick-check');
+        checkedMetrixSeqs.clear();
+        if (mode === 'uncompleted_active') {
+          uncompletedActive.forEach(it => checkedMetrixSeqs.add(Number(it.index || it.seq)));
+        } else if (mode === 'visible_active') {
+          visibleDb.filter(it => !isClosed(it) && !isDone(it)).forEach(it => checkedMetrixSeqs.add(Number(it.index || it.seq)));
+        } else if (mode === 'phone_changed') {
+          phoneChangedItems.forEach(it => checkedMetrixSeqs.add(Number(it.index || it.seq)));
+        } else if (mode === 'wait_98') {
+          wait98Items.forEach(it => checkedMetrixSeqs.add(Number(it.index || it.seq)));
+        }
+        if (typeof onReRender === 'function') onReRender(db);
+      });
+    });
+
+    const syncBtn = document.getElementById('btn-metrix-622-sync');
+    if (syncBtn && typeof onSyncMetrix622 === 'function') {
+      syncBtn.addEventListener('click', () => onSyncMetrix622(syncBtn));
+    }
+
+    const topBatchBtn = document.getElementById('btn-metrix-622-top-batch-run');
+    if (topBatchBtn && typeof onTriggerBatchRun === 'function') {
+      topBatchBtn.addEventListener('click', () => onTriggerBatchRun(Array.from(checkedMetrixSeqs)));
+    }
+  }
 }
 
 let currentSeoulAccountFilter = 'all'; // 'all' | '2010' | '2016'

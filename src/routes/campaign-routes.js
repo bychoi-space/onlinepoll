@@ -342,7 +342,7 @@ export function registerCampaignRoutes({
       });
     }
 
-    // 메트릭스 패널조사 전용 블루프린트 분기 (완전 격리)
+    // 메트릭스 패널조사 전용 블루프린트 분기 (완전 격리 + 8대 업종별 맞춤 가이드 및 통계)
     if (campaign.surveyType === 'metrix_panel') {
       const metrixBlueprintPath = path.join(dataDir, 'metrix_survey_blueprint.json');
       let metrixBlueprint = null;
@@ -353,14 +353,61 @@ export function registerCampaignRoutes({
           console.error('메트릭스 블루프린트 파일 파싱 실패:', err);
         }
       }
+      const defaultPol = metrixBlueprint?.defaultPolicy || {};
+      const savedPol = campaign.metrixPolicy || campaign.masterBaseline?.policy || {};
+      const defaultIndPols = defaultPol.industryPolicies || {};
+      const savedIndPols = savedPol.industryPolicies || {};
+      const mergedIndustryPolicies = {};
+      const indKeys = ['ind_1', 'ind_2', 'ind_3', 'ind_5', 'ind_6', 'ind_7', 'ind_8', 'ind_9'];
+      indKeys.forEach(k => {
+        mergedIndustryPolicies[k] = {
+          ...(defaultIndPols[k] || {}),
+          ...(savedIndPols[k] || {})
+        };
+      });
+
+      const industryStats = {
+        ind_1: { key: 'ind_1', code: '1.제조업', label: '1. 제조업', count: 0, stores: [] },
+        ind_2: { key: 'ind_2', code: '2.건설업', label: '2. 건설업', count: 0, stores: [] },
+        ind_3: { key: 'ind_3', code: '3.도매 및 소매업', label: '3. 도매 및 소매업', count: 0, stores: [] },
+        ind_5: { key: 'ind_5', code: '5.음식 및 주점업', label: '5. 음식 및 주점업', count: 0, stores: [] },
+        ind_6: { key: 'ind_6', code: '6.전문, 과학 및 기술 서비스업', label: '6. 전문·과학·기술 서비스업', count: 0, stores: [] },
+        ind_7: { key: 'ind_7', code: '7.교육 서비스업', label: '7. 교육 서비스업', count: 0, stores: [] },
+        ind_8: { key: 'ind_8', code: '8.예술, 스포츠 및 여가 관련 서비스업', label: '8. 예술·스포츠·여가 서비스업', count: 0, stores: [] },
+        ind_9: { key: 'ind_9', code: '9.수리 및 개인 서비스업', label: '9. 수리 및 개인 서비스업', count: 0, stores: [] }
+      };
+      (campaign.quotaDatabase || []).forEach(q => {
+        const s = String(q.industry || '').trim();
+        let ik = q.industryKey || 'ind_3';
+        if (!industryStats[ik]) {
+          if (s.startsWith('1.') || s.includes('제조')) ik = 'ind_1';
+          else if (s.startsWith('2.') || s.includes('건설')) ik = 'ind_2';
+          else if (s.startsWith('3.') || s.includes('도매') || s.includes('소매')) ik = 'ind_3';
+          else if (s.startsWith('5.') || s.includes('음식') || s.includes('주점')) ik = 'ind_5';
+          else if (s.startsWith('6.') || s.includes('전문') || s.includes('과학') || s.includes('기술')) ik = 'ind_6';
+          else if (s.startsWith('7.') || s.includes('교육')) ik = 'ind_7';
+          else if (s.startsWith('8.') || s.includes('예술') || s.includes('스포츠') || s.includes('여가')) ik = 'ind_8';
+          else if (s.startsWith('9.') || s.includes('수리') || s.includes('개인')) ik = 'ind_9';
+          else ik = 'ind_3';
+        }
+        if (industryStats[ik]) {
+          industryStats[ik].count++;
+          industryStats[ik].stores.push(`${q.companyName}(${q.surveyorId || '-'})`);
+        }
+      });
+
       const effectivePolicy = {
-        ...(metrixBlueprint?.defaultPolicy || {}),
-        ...(campaign.metrixPolicy || {})
+        ...defaultPol,
+        ...savedPol,
+        industryPolicies: mergedIndustryPolicies
       };
       return res.json({
         surveyType: 'metrix_panel',
         blueprint: metrixBlueprint,
         policy: effectivePolicy,
+        industryPolicies: mergedIndustryPolicies,
+        industryStats,
+        googleSheetUrl: campaign.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911',
         campaignTitle: campaign.title,
         slotCount: (campaign.quotaDatabase || []).length,
         hasCustomBaseline: !!campaign.metrixPolicy
@@ -717,11 +764,15 @@ export function registerCampaignRoutes({
       if (indexSet.has(seq)) {
         item.customGuide = { ...effectiveGuide };
         item.guideApplied = true;
-        item.guideSummary = guideSummary || `Part C: ${effectiveGuide.partC_correctCountMin ?? 18}~${effectiveGuide.partC_correctCountMax ?? 20}점 · D5(${String(effectiveGuide.D5_1_healthLiteracy || '4_5').replace('_', '~')})`;
+        if (campaign.surveyType === 'metrix_panel') {
+          item.guideSummary = guideSummary || `${presetLabel || item.industry || '맞춤가이드'} · 영업 ${effectiveGuide.operating_openHour || '09'}~${effectiveGuide.operating_closeHour || '20'}시 · 원재료 ${effectiveGuide.cost_materialRatio ?? 55}%`;
+        } else {
+          item.guideSummary = guideSummary || `Part C: ${effectiveGuide.partC_correctCountMin ?? 18}~${effectiveGuide.partC_correctCountMax ?? 20}점 · D5(${String(effectiveGuide.D5_1_healthLiteracy || '4_5').replace('_', '~')})`;
+        }
         item.guidePresetLabel = presetLabel || '';
         item.guideUpdatedAt = new Date().toISOString();
         appliedCount++;
-        appliedNames.push(`#${seq} ${item.memberName || item.respondentName || item.ceoName || '-'}`);
+        appliedNames.push(`#${seq} ${item.companyName || item.memberName || item.respondentName || item.ceoName || '-'}`);
       }
     });
 

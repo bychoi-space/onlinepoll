@@ -1,7 +1,266 @@
 import { escapeHtml } from './blueprint-utils.js';
 
+export const DEFAULT_METRIX_INDUSTRY_POLICIES = {
+  ind_1: {
+    key: 'ind_1',
+    code: '1',
+    name: '1.제조업',
+    shortName: '제조업',
+    enabled: true,
+    operating_openHour: '08',
+    operating_closeHour: '18',
+    operating_closedDays: '2',
+    operating_closedDayOfWeek: '7',
+    digital_onlineSales: '2',
+    digital_smartTech: 'panel_or_pos',
+    sales_trend2025: 'maintain',
+    cost_materialRatio: 60,
+    cost_laborRatio: 18,
+    cost_rentRatio: 10,
+    cost_taxRatio: 5,
+    cost_feeAdRatio: 3,
+    cost_otherRatio: 4,
+    payment_cashRatio: 5,
+    payment_cardRatio: 25,
+    payment_localCurrencyRatio: 0,
+    payment_mobileRatio: 0,
+    payment_voucherRatio: 0,
+    payment_transferRatio: 70,
+    owner_monthlyIncome: 380,
+    hardship_rank1: '3',
+    hardship_rank2: '4',
+    desired_support_rank1: '1',
+    desired_support_rank2: '6',
+    open_ended_comment: '원자재 가격 및 산업용 전기·가스요금 인상으로 제조 원가 부담이 큽니다. 소공인 특례보증 자금 지원과 노후 제조설비 교체 지원 확대가 필요합니다.'
+  },
+  ind_2: {
+    key: 'ind_2',
+    code: '2',
+    name: '2.건설업',
+    shortName: '건설업',
+    enabled: true,
+    operating_openHour: '08',
+    operating_closeHour: '18',
+    operating_closedDays: '2',
+    operating_closedDayOfWeek: '7',
+    digital_onlineSales: '2',
+    digital_smartTech: 'none',
+    sales_trend2025: 'decrease',
+    cost_materialRatio: 55,
+    cost_laborRatio: 25,
+    cost_rentRatio: 8,
+    cost_taxRatio: 5,
+    cost_feeAdRatio: 3,
+    cost_otherRatio: 4,
+    payment_cashRatio: 10,
+    payment_cardRatio: 20,
+    payment_localCurrencyRatio: 0,
+    payment_mobileRatio: 0,
+    payment_voucherRatio: 0,
+    payment_transferRatio: 70,
+    owner_monthlyIncome: 350,
+    hardship_rank1: '7',
+    hardship_rank2: '3',
+    desired_support_rank1: '1',
+    desired_support_rank2: '7',
+    open_ended_comment: '건설·인테리어 경기 둔화와 자재비 및 현장 인건비 상승으로 수주와 채산성이 악화되었습니다. 저금리 운영자금 지원이 절실합니다.'
+  },
+  ind_3: {
+    key: 'ind_3',
+    code: '3',
+    name: '3.도매 및 소매업',
+    shortName: '도소매업',
+    enabled: true,
+    operating_openHour: '09',
+    operating_closeHour: '20',
+    operating_closedDays: '1',
+    operating_closedDayOfWeek: '7',
+    digital_onlineSales: 'panel_or_no',
+    digital_smartTech: 'panel_or_pos',
+    sales_trend2025: 'maintain',
+    cost_materialRatio: 65,
+    cost_laborRatio: 10,
+    cost_rentRatio: 13,
+    cost_taxRatio: 5,
+    cost_feeAdRatio: 4,
+    cost_otherRatio: 3,
+    payment_cashRatio: 10,
+    payment_cardRatio: 65,
+    payment_localCurrencyRatio: 10,
+    payment_mobileRatio: 5,
+    payment_voucherRatio: 0,
+    payment_transferRatio: 10,
+    owner_monthlyIncome: 320,
+    hardship_rank1: '7',
+    hardship_rank2: '3',
+    desired_support_rank1: '1',
+    desired_support_rank2: '5',
+    open_ended_comment: '온라인 대형 플랫폼과의 경쟁 및 소비 위축으로 오프라인 매장 매출 유지가 어렵습니다. 경기지역화폐 인센티브 확대와 운전자금 지원이 필요합니다.'
+  },
+  ind_5: {
+    key: 'ind_5',
+    code: '5',
+    name: '5.음식 및 주점업',
+    shortName: '음식·주점업',
+    enabled: true,
+    operating_openHour: '10',
+    operating_closeHour: '22',
+    operating_closedDays: '1',
+    operating_closedDayOfWeek: '1',
+    digital_onlineSales: '1',
+    digital_smartTech: 'active',
+    sales_trend2025: 'decrease',
+    cost_materialRatio: 45,
+    cost_laborRatio: 20,
+    cost_rentRatio: 18,
+    cost_taxRatio: 7,
+    cost_feeAdRatio: 6,
+    cost_otherRatio: 4,
+    payment_cashRatio: 5,
+    payment_cardRatio: 75,
+    payment_localCurrencyRatio: 10,
+    payment_mobileRatio: 10,
+    payment_voucherRatio: 0,
+    payment_transferRatio: 0,
+    owner_monthlyIncome: 290,
+    hardship_rank1: '3',
+    hardship_rank2: '5',
+    desired_support_rank1: '1',
+    desired_support_rank2: '3',
+    open_ended_comment: '식자재 물가 급등과 배달앱 수수료·공공요금 부담이 매우 큽니다. 배달수수료 완화 지원 및 저금리 대환대출 확대가 필요합니다.'
+  },
+  ind_6: {
+    key: 'ind_6',
+    code: '6',
+    name: '6.전문, 과학 및 기술 서비스업',
+    shortName: '전문·기술서비스',
+    enabled: true,
+    operating_openHour: '09',
+    operating_closeHour: '19',
+    operating_closedDays: '2',
+    operating_closedDayOfWeek: '7',
+    digital_onlineSales: '2',
+    digital_smartTech: 'panel_or_pos',
+    sales_trend2025: 'maintain',
+    cost_materialRatio: 25,
+    cost_laborRatio: 30,
+    cost_rentRatio: 25,
+    cost_taxRatio: 8,
+    cost_feeAdRatio: 7,
+    cost_otherRatio: 5,
+    payment_cashRatio: 5,
+    payment_cardRatio: 45,
+    payment_localCurrencyRatio: 5,
+    payment_mobileRatio: 5,
+    payment_voucherRatio: 0,
+    payment_transferRatio: 40,
+    owner_monthlyIncome: 340,
+    hardship_rank1: '7',
+    hardship_rank2: '5',
+    desired_support_rank1: '1',
+    desired_support_rank2: '4',
+    open_ended_comment: '경기 침체로 인한 거래처 발주 감소와 사무실 임차료 부담이 큽니다. 소규모 전문서비스 사업체 대상 경영안정자금 및 마케팅 지원을 희망합니다.'
+  },
+  ind_7: {
+    key: 'ind_7',
+    code: '7',
+    name: '7.교육 서비스업',
+    shortName: '교육서비스업',
+    enabled: true,
+    operating_openHour: '11',
+    operating_closeHour: '21',
+    operating_closedDays: '1',
+    operating_closedDayOfWeek: '7',
+    digital_onlineSales: '2',
+    digital_smartTech: 'panel_or_pos',
+    sales_trend2025: 'maintain',
+    cost_materialRatio: 20,
+    cost_laborRatio: 30,
+    cost_rentRatio: 30,
+    cost_taxRatio: 8,
+    cost_feeAdRatio: 7,
+    cost_otherRatio: 5,
+    payment_cashRatio: 5,
+    payment_cardRatio: 75,
+    payment_localCurrencyRatio: 15,
+    payment_mobileRatio: 5,
+    payment_voucherRatio: 0,
+    payment_transferRatio: 0,
+    owner_monthlyIncome: 300,
+    hardship_rank1: '7',
+    hardship_rank2: '5',
+    desired_support_rank1: '5',
+    desired_support_rank2: '2',
+    open_ended_comment: '학령인구 감소와 가계 교육비 지출 축소로 수강생 모집에 어려움이 있습니다. 지역화폐 사용처 확대 및 학원·교습소 시설환경 개선 지원이 필요합니다.'
+  },
+  ind_8: {
+    key: 'ind_8',
+    code: '8',
+    name: '8.예술, 스포츠 및 여가 관련 서비스업',
+    shortName: '예술·스포츠·여가',
+    enabled: true,
+    operating_openHour: '10',
+    operating_closeHour: '22',
+    operating_closedDays: '1',
+    operating_closedDayOfWeek: '7',
+    digital_onlineSales: '2',
+    digital_smartTech: 'active',
+    sales_trend2025: 'maintain',
+    cost_materialRatio: 25,
+    cost_laborRatio: 20,
+    cost_rentRatio: 32,
+    cost_taxRatio: 12,
+    cost_feeAdRatio: 6,
+    cost_otherRatio: 5,
+    payment_cashRatio: 5,
+    payment_cardRatio: 75,
+    payment_localCurrencyRatio: 10,
+    payment_mobileRatio: 10,
+    payment_voucherRatio: 0,
+    payment_transferRatio: 0,
+    owner_monthlyIncome: 300,
+    hardship_rank1: '5',
+    hardship_rank2: '2',
+    desired_support_rank1: '6',
+    desired_support_rank2: '2',
+    open_ended_comment: '넓은 매장 면적에 따른 상가 임차료와 냉난방 전기요금 부담이 큽니다. 공공요금·임차료 보전 지원과 노후 체육·여가시설 개보수 지원을 건의합니다.'
+  },
+  ind_9: {
+    key: 'ind_9',
+    code: '9',
+    name: '9.수리 및 개인 서비스업',
+    shortName: '수리·개인서비스',
+    enabled: true,
+    operating_openHour: '10',
+    operating_closeHour: '20',
+    operating_closedDays: '1',
+    operating_closedDayOfWeek: '7',
+    digital_onlineSales: '2',
+    digital_smartTech: 'panel_or_pos',
+    sales_trend2025: 'maintain',
+    cost_materialRatio: 35,
+    cost_laborRatio: 15,
+    cost_rentRatio: 30,
+    cost_taxRatio: 8,
+    cost_feeAdRatio: 6,
+    cost_otherRatio: 6,
+    payment_cashRatio: 10,
+    payment_cardRatio: 70,
+    payment_localCurrencyRatio: 10,
+    payment_mobileRatio: 5,
+    payment_voucherRatio: 0,
+    payment_transferRatio: 5,
+    owner_monthlyIncome: 280,
+    hardship_rank1: '7',
+    hardship_rank2: '5',
+    desired_support_rank1: '2',
+    desired_support_rank2: '1',
+    open_ended_comment: '동종 개인서비스 업소 간 경쟁 심화와 미용·세탁·수리 자재비 및 월세 부담이 큽니다. 영세 1인 사업장 점포 환경개선 및 특례보증 지원을 희망합니다.'
+  }
+};
+
 export function syncMetrixInputsToState(metrixPolicyState) {
-  // 0. 실행 규칙 및 패널 계승
+  // 0. 실행 규칙 및 패널 계승 & 폐업 제외 · 컨택 휴대폰 변경 · 업종별 가이드
   const cbSafetyStop = document.getElementById('cb-metrix-safety-stop');
   if (cbSafetyStop) metrixPolicyState.safetyStopAtReview = cbSafetyStop.checked;
 
@@ -13,6 +272,15 @@ export function syncMetrixInputsToState(metrixPolicyState) {
 
   const cbInheritRawMeta = document.getElementById('cb-metrix-inherit-rawmeta');
   if (cbInheritRawMeta) metrixPolicyState.inheritPanelRawMeta = cbInheritRawMeta.checked;
+
+  const cbExcludeClosed = document.getElementById('cb-metrix-exclude-closed');
+  if (cbExcludeClosed) metrixPolicyState.excludeClosedBiz = cbExcludeClosed.checked;
+
+  const cbUpdateContactPhone = document.getElementById('cb-metrix-update-contact-phone');
+  if (cbUpdateContactPhone) metrixPolicyState.updatePhoneInContactPopup = cbUpdateContactPhone.checked;
+
+  const cbUseIndGuide = document.getElementById('cb-metrix-use-ind-guide');
+  if (cbUseIndGuide) metrixPolicyState.useIndustryGuidelines = cbUseIndGuide.checked;
 
   // 1. 사업체 일반현황 (A1~A15)
   const cbBindAddr = document.getElementById('cb-metrix-bind-address');
@@ -224,10 +492,51 @@ export function syncMetrixInputsToState(metrixPolicyState) {
   const selSeoulCarbon = document.getElementById('sel-seoul-o1-carbon');
   if (selSeoulCarbon) metrixPolicyState.seoul_o1_carbon = selSeoulCarbon.value;
 
+  // 11. 업종별 가이드 체크 상태 및 현재 선택된 업종 탭 편집값 동기화
+  if (!metrixPolicyState.industryPolicies || typeof metrixPolicyState.industryPolicies !== 'object') {
+    metrixPolicyState.industryPolicies = JSON.parse(JSON.stringify(DEFAULT_METRIX_INDUSTRY_POLICIES));
+  }
+  document.querySelectorAll('.cb-metrix-ind-enable').forEach(cb => {
+    const indKey = cb.getAttribute('data-ind-key');
+    if (indKey && metrixPolicyState.industryPolicies[indKey]) {
+      metrixPolicyState.industryPolicies[indKey].enabled = cb.checked;
+    }
+  });
+  const activeIndKey = metrixPolicyState._activeIndKey || 'ind_3';
+  if (metrixPolicyState.industryPolicies[activeIndKey]) {
+    const curInd = metrixPolicyState.industryPolicies[activeIndKey];
+    curInd.operating_openHour = metrixPolicyState.operating_openHour;
+    curInd.operating_closeHour = metrixPolicyState.operating_closeHour;
+    curInd.operating_closedDays = metrixPolicyState.operating_closedDays;
+    curInd.operating_closedDayOfWeek = metrixPolicyState.operating_closedDayOfWeek;
+    curInd.digital_onlineSales = metrixPolicyState.digital_onlineSales;
+    curInd.digital_smartTech = metrixPolicyState.digital_smartTech;
+    curInd.sales_trend2025 = metrixPolicyState.sales_trend2025;
+    curInd.cost_materialRatio = metrixPolicyState.cost_materialRatio;
+    curInd.cost_laborRatio = metrixPolicyState.cost_laborRatio;
+    curInd.cost_rentRatio = metrixPolicyState.cost_rentRatio;
+    curInd.cost_taxRatio = metrixPolicyState.cost_taxRatio;
+    curInd.cost_feeAdRatio = metrixPolicyState.cost_feeAdRatio;
+    curInd.cost_otherRatio = metrixPolicyState.cost_otherRatio;
+    curInd.payment_cashRatio = metrixPolicyState.payment_cashRatio;
+    curInd.payment_cardRatio = metrixPolicyState.payment_cardRatio;
+    curInd.payment_localCurrencyRatio = metrixPolicyState.payment_localCurrencyRatio;
+    curInd.payment_mobileRatio = metrixPolicyState.payment_mobileRatio;
+    curInd.payment_voucherRatio = metrixPolicyState.payment_voucherRatio;
+    curInd.payment_transferRatio = metrixPolicyState.payment_transferRatio;
+    curInd.owner_monthlyIncome = metrixPolicyState.owner_monthlyIncome;
+    curInd.hardship_rank1 = metrixPolicyState.hardship_rank1;
+    curInd.hardship_rank2 = metrixPolicyState.hardship_rank2;
+    curInd.desired_support_rank1 = metrixPolicyState.desired_support_rank1;
+    curInd.desired_support_rank2 = metrixPolicyState.desired_support_rank2;
+    curInd.open_ended_comment = metrixPolicyState.open_ended_comment;
+  }
+
   return metrixPolicyState;
 }
 
-export function bindMetrixEvents({ metrixPolicyState, appendLog }) {
+
+export function bindMetrixEvents({ metrixPolicyState, appendLog, onApplyIndustryGuideToChecked, onSelectIndustryQuotas }) {
   // 1. 영업비용 6대 항목 밸런서 실시간 합계 계산
   const costInputs = document.querySelectorAll('.num-metrix-cost');
   const badgeCostTotal = document.getElementById('badge-metrix-cost-total');
@@ -284,6 +593,122 @@ export function bindMetrixEvents({ metrixPolicyState, appendLog }) {
   }
   debtInputs.forEach(inp => inp.addEventListener('input', updateDebtTotal));
   updateDebtTotal();
+
+  // 3-1. 8대 업종별 가이드 탭 전환 및 체크박스 이벤트
+  function loadIndustryIntoForm(indKey) {
+    if (!metrixPolicyState.industryPolicies) {
+      metrixPolicyState.industryPolicies = JSON.parse(JSON.stringify(DEFAULT_METRIX_INDUSTRY_POLICIES));
+    }
+    const indPol = metrixPolicyState.industryPolicies[indKey];
+    if (!indPol) return;
+    metrixPolicyState._activeIndKey = indKey;
+
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val !== undefined && val !== null) el.value = String(val);
+    };
+    setVal('sel-metrix-open-hour', indPol.operating_openHour || '09');
+    setVal('sel-metrix-close-hour', indPol.operating_closeHour || '20');
+    setVal('sel-metrix-closed-days', indPol.operating_closedDays ?? '1');
+    setVal('sel-metrix-closed-dow', indPol.operating_closedDayOfWeek || '7');
+    setVal('sel-metrix-digital-online', indPol.digital_onlineSales || 'panel_or_no');
+    setVal('sel-metrix-digital-smart', indPol.digital_smartTech || 'panel_or_pos');
+    setVal('sel-metrix-sales-trend', indPol.sales_trend2025 || 'maintain');
+    setVal('num-metrix-owner-income', indPol.owner_monthlyIncome ?? 320);
+    setVal('num-metrix-cost-mat', indPol.cost_materialRatio ?? 55);
+    setVal('num-metrix-cost-labor', indPol.cost_laborRatio ?? 15);
+    setVal('num-metrix-cost-rent', indPol.cost_rentRatio ?? 15);
+    setVal('num-metrix-cost-tax', indPol.cost_taxRatio ?? 7);
+    setVal('num-metrix-cost-fee', indPol.cost_feeAdRatio ?? 4);
+    setVal('num-metrix-cost-other', indPol.cost_otherRatio ?? 4);
+    setVal('num-metrix-pay-cash', indPol.payment_cashRatio ?? 10);
+    setVal('num-metrix-pay-card', indPol.payment_cardRatio ?? 65);
+    setVal('num-metrix-pay-local', indPol.payment_localCurrencyRatio ?? 10);
+    setVal('num-metrix-pay-mobile', indPol.payment_mobileRatio ?? 10);
+    setVal('num-metrix-pay-voucher', indPol.payment_voucherRatio ?? 0);
+    setVal('num-metrix-pay-transfer', indPol.payment_transferRatio ?? 5);
+    setVal('sel-metrix-hardship-rank1', indPol.hardship_rank1 || '3');
+    setVal('sel-metrix-hardship-rank2', indPol.hardship_rank2 || '7');
+    setVal('sel-metrix-support-rank1', indPol.desired_support_rank1 || '1');
+    setVal('sel-metrix-support-rank2', indPol.desired_support_rank2 || '2');
+    setVal('txt-metrix-comment', indPol.open_ended_comment || '');
+
+    updateCostTotal();
+    updatePayTotal();
+
+    document.querySelectorAll('.metrix-ind-guide-card').forEach(card => {
+      const k = card.getAttribute('data-ind-key');
+      const isAct = (k === indKey);
+      card.style.borderColor = isAct ? '#38bdf8' : 'rgba(148,163,184,0.22)';
+      card.style.background = isAct ? 'rgba(56,189,248,0.14)' : 'rgba(15,23,42,0.55)';
+    });
+
+    const activeBanner = document.getElementById('metrix-active-ind-banner');
+    if (activeBanner) {
+      activeBanner.innerHTML = `<i class="fa-solid fa-industry text-primary-color"></i> 현재 편집 중인 업종 가이드: <strong style="color:#38bdf8;">[${escapeHtml(indPol.name)}]</strong> — 영업시간(${escapeHtml(indPol.operating_openHour)}~${escapeHtml(indPol.operating_closeHour)}시) · 원재료비 ${indPol.cost_materialRatio}% · 카드 ${indPol.payment_cardRatio}% / 계좌이체 ${indPol.payment_transferRatio}% · 월순소득 ${indPol.owner_monthlyIncome}만원`;
+    }
+  }
+
+  document.querySelectorAll('.metrix-ind-guide-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.classList.contains('cb-metrix-ind-enable')) return;
+      const targetKey = card.getAttribute('data-ind-key');
+      if (!targetKey) return;
+      // 먼저 이전 탭의 변경사항을 저장한 뒤 새 업종 로드
+      syncMetrixInputsToState(metrixPolicyState);
+      loadIndustryIntoForm(targetKey);
+      if (appendLog) {
+        const indName = metrixPolicyState.industryPolicies?.[targetKey]?.name || targetKey;
+        appendLog('info', `[업종별 가이드 선택] "${indName}" 맞춤 가이드 설정값을 아래 문항 카드에 불러왔습니다.`);
+      }
+    });
+  });
+
+  document.querySelectorAll('.cb-metrix-ind-enable').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      e.stopPropagation();
+      const indKey = cb.getAttribute('data-ind-key');
+      if (indKey && metrixPolicyState.industryPolicies?.[indKey]) {
+        metrixPolicyState.industryPolicies[indKey].enabled = cb.checked;
+      }
+      const enabledCnt = Object.values(metrixPolicyState.industryPolicies || {}).filter(p => p.enabled !== false).length;
+      const badgeCnt = document.getElementById('badge-metrix-ind-enabled-count');
+      if (badgeCnt) badgeCnt.innerHTML = `<i class="fa-solid fa-check-double"></i> ${enabledCnt}/8개 업종 가이드 체크 활성`;
+    });
+  });
+
+  const btnCheckAllInd = document.getElementById('btn-metrix-ind-check-all');
+  if (btnCheckAllInd) {
+    btnCheckAllInd.addEventListener('click', () => {
+      document.querySelectorAll('.cb-metrix-ind-enable').forEach(cb => {
+        cb.checked = true;
+        const k = cb.getAttribute('data-ind-key');
+        if (k && metrixPolicyState.industryPolicies?.[k]) metrixPolicyState.industryPolicies[k].enabled = true;
+      });
+      const badgeCnt = document.getElementById('badge-metrix-ind-enabled-count');
+      if (badgeCnt) badgeCnt.innerHTML = '<i class="fa-solid fa-check-double"></i> 8/8개 업종 가이드 체크 활성';
+      if (appendLog) appendLog('info', '✓ 8대 전 업종 맞춤 가이드 체크가 모두 활성화되었습니다.');
+    });
+  }
+
+  const btnSelectIndQuotas = document.getElementById('btn-metrix-select-active-ind-quotas');
+  if (btnSelectIndQuotas && typeof onSelectIndustryQuotas === 'function') {
+    btnSelectIndQuotas.addEventListener('click', () => {
+      syncMetrixInputsToState(metrixPolicyState);
+      const activeKey = metrixPolicyState._activeIndKey || 'ind_3';
+      onSelectIndustryQuotas(activeKey);
+    });
+  }
+
+  const btnApplyIndToChecked = document.getElementById('btn-metrix-apply-ind-to-checked');
+  if (btnApplyIndToChecked && typeof onApplyIndustryGuideToChecked === 'function') {
+    btnApplyIndToChecked.addEventListener('click', () => {
+      syncMetrixInputsToState(metrixPolicyState);
+      const activeKey = metrixPolicyState._activeIndKey || 'ind_3';
+      const indPol = metrixPolicyState.industryPolicies?.[activeKey];
+      onApplyIndustryGuideToChecked(activeKey, indPol);
+    });
+  }
 
   // 4. 빠른 프리셋 버튼 제어
   const btnPresetStd = document.getElementById('btn-metrix-preset-standard');
@@ -358,14 +783,28 @@ export function bindMetrixEvents({ metrixPolicyState, appendLog }) {
   }
 }
 
-export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline, blueprintStageGrid, appendLog }) {
+export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline, blueprintStageGrid, appendLog, onApplyIndustryGuideToChecked, onSelectIndustryQuotas }) {
   const metrixPolicyState = { ...(data.policy || data.blueprint?.defaultPolicy || {}) };
 
-  // 0. 실행 규칙 및 패널 계승 기본값
+  // 0. 실행 규칙 및 패널 계승 & 폐업 제외 · 컨택 휴대폰 변경 · 업종별 가이드 기본값
   if (metrixPolicyState.safetyStopAtReview === undefined) metrixPolicyState.safetyStopAtReview = true;
   if (metrixPolicyState.preserveExistingInputs === undefined) metrixPolicyState.preserveExistingInputs = true;
   if (metrixPolicyState.skipCompletedSlots === undefined) metrixPolicyState.skipCompletedSlots = true;
   if (metrixPolicyState.inheritPanelRawMeta === undefined) metrixPolicyState.inheritPanelRawMeta = true;
+  if (metrixPolicyState.excludeClosedBiz === undefined) metrixPolicyState.excludeClosedBiz = true;
+  if (metrixPolicyState.updatePhoneInContactPopup === undefined) metrixPolicyState.updatePhoneInContactPopup = true;
+  if (metrixPolicyState.useIndustryGuidelines === undefined) metrixPolicyState.useIndustryGuidelines = true;
+
+  const mergedIndPolicies = JSON.parse(JSON.stringify(DEFAULT_METRIX_INDUSTRY_POLICIES));
+  const incomingInd = data.industryPolicies || metrixPolicyState.industryPolicies || {};
+  Object.keys(mergedIndPolicies).forEach(k => {
+    if (incomingInd[k]) {
+      mergedIndPolicies[k] = { ...mergedIndPolicies[k], ...incomingInd[k] };
+    }
+  });
+  metrixPolicyState.industryPolicies = mergedIndPolicies;
+  if (!metrixPolicyState._activeIndKey) metrixPolicyState._activeIndKey = 'ind_3';
+  const industryStats = data.industryStats || {};
 
   // 1. 일반현황 (A1~A15) 기본값
   if (metrixPolicyState.general_bindAddressReadonly === undefined) metrixPolicyState.general_bindAddressReadonly = true;
@@ -521,33 +960,37 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
   if (titleEl) {
     titleEl.textContent = isSeoulPanel
       ? '(신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차) 전 문항 가이드라인 (svyA001~svyA115 · 99% 안전 대기 · 구글시트 자동 기록)'
-      : '메트릭스 경기도 소상공인 사업체패널 3차조사 전 문항 가이드라인 (A1~A15 · 문8~문67 · 총 120단계)';
+      : '메트릭스 경기도 소상공인 사업체패널 3차조사 (SNUM 622) · 8대 업종별 맞춤 가이드 체크 & 전 문항 기준점 (120단계)';
   }
 
   const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
   if (subtitleEl) {
     subtitleEl.textContent = isSeoulPanel
       ? '4차년도 서버 기주입값 100% 보존 + C3(2026년 세부 비용 4항목 정합성 자동 산출) + 5차 신규 문항(M 위기대응 · N AI/디지털 · O 탄소중립) + svyA115.asp(99%) 안전 대기 및 구글 스프레드시트(시트2) 실시간 동기화를 설정합니다.'
-      : '2차년도 패널 실측 데이터(rawMeta) 자동 계승 및 일반현황·디지털전환·경영실적·비용/결제·부채·임대차/권리금·애로사항·고용/급여·지원정책·98% 안전 대기 규칙을 전수 설정합니다.';
+      : '1) 사업자번호 기반 폐업 리스트 자동 제외, 2) [컨택] 팝업 휴대폰 번호를 엑셀 데이터로 변경·[저장] 후 [설문참여], 3) 8대 업종별 맞춤 가이드 체크 및 120단계(Step 119 98% 안전 대기) 기준점을 설정합니다.';
   }
 
   if (badgeMasterStatus) {
     badgeMasterStatus.innerHTML = isSeoulPanel
       ? '<i class="fa-solid fa-shield-halved"></i> 서울시 패널 5차 115단계 블루프린트 활성 (svyA115 99% 안전 대기 &amp; 구글시트 자동 기록)'
-      : '<i class="fa-solid fa-circle-check"></i> 메트릭스 패널 120단계 전 문항 블루프린트 활성 (패널 실측치 계승 &amp; 98% 안전 대기)';
+      : '<i class="fa-solid fa-circle-check"></i> 경기도 소상공인 패널 3계정(171건) · 8대 업종별 가이드 &amp; 컨택 휴대폰 저장 연동 활성';
     badgeMasterStatus.className = 'badge-status badge-blueprint ready';
   }
 
   if (btnSaveBaseline) {
     btnSaveBaseline.innerHTML = isSeoulPanel
       ? '<i class="fa-solid fa-floppy-disk"></i> 서울시 소상공인 패널 5차 가이드 저장'
-      : '<i class="fa-solid fa-floppy-disk"></i> 메트릭스 전 문항 기준 가이드 저장';
+      : '<i class="fa-solid fa-floppy-disk"></i> 경기도 패널 업종별 가이드 &amp; 기준점 저장';
     btnSaveBaseline.title = isSeoulPanel
       ? '서울시 소상공인 사업체 패널조사(5차) 기준 가이드라인 설정 저장'
-      : '메트릭스 패널조사 120단계 기준 가이드라인 설정 저장';
+      : '경기도 소상공인 패널조사 8대 업종별 가이드 및 120단계 기준점 저장';
   }
 
   if (!blueprintStageGrid) return metrixPolicyState;
+
+  const indKeys = ['ind_1', 'ind_2', 'ind_3', 'ind_5', 'ind_6', 'ind_7', 'ind_8', 'ind_9'];
+  const enabledIndCount = indKeys.filter(k => metrixPolicyState.industryPolicies?.[k]?.enabled !== false).length;
+  const activeIndObj = metrixPolicyState.industryPolicies?.[metrixPolicyState._activeIndKey] || metrixPolicyState.industryPolicies?.ind_3 || {};
 
   blueprintStageGrid.innerHTML = `
     <!-- 카드 0: 실행 규칙 · 안전 대기 & 종단 패널 실측치 계승 (전폭) -->
@@ -557,18 +1000,53 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
           <span class="blueprint-step-pill assoc-rule-pill"><i class="fa-solid fa-shield-halved"></i> 핵심 실행 원칙</span>
           <h3 class="blueprint-stage-title">${isSeoulPanel
             ? 'svyA115.asp (99% 동의서) 절대 안전 대기 · 4차년도 서버 기주입값 보존 · 구글 스프레드시트(시트2) 자동 기록'
-            : '98% 안전 대기 · 기입력 보존 · 2차년도 패널 실측 데이터(rawMeta) 자동 계승'}</h3>
+            : '사업자번호 폐업 제외 · [컨택] 팝업 휴대폰 변경·[저장] ➔ [설문참여] · 8대 업종별 가이드 · 98% 안전 대기'}</h3>
         </div>
         <div class="blueprint-card-badge-group">
-          <span class="badge-status ready"><i class="fa-solid fa-database"></i> ${isSeoulPanel ? '2010 송준희(74) + 2016 정소영(89) 총 163건 연동' : '패널 54개 실측 DB 연동 완료'}</span>
+          <span class="badge-status ready"><i class="fa-solid fa-database"></i> ${isSeoulPanel ? '2010 송준희(74) + 2016 정소영(89) 총 163건 연동' : '강영미(54) + 김정례(55) + 노영미(62) 총 171건 연동'}</span>
         </div>
       </div>
       <div class="blueprint-stage-desc">
         ${isSeoulPanel
           ? '2026년 서울시 소상공인 사업체 패널조사(5차)는 <strong>절대 완료(Out.asp) 처리하지 않고</strong> <code>svyA115.asp</code>(개인정보 및 패널 참여 동의서 99%) 화면에서 무조건 정지합니다. 서버가 4차년도 응답값으로 미리 채워둔 문항(개업년도·업종·매출/비용·종사자 등)은 100% 보존하며, 각 사업체의 전체 문항 응답 내역을 <strong>구글 스프레드시트(시트2, gid=506086780)</strong>에 실시간으로 기록합니다.'
-          : '경기도 소상공인 사업체패널조사는 <strong>3차년도 추적 조사</strong>입니다. 각 패널의 2차년도 실측 응답값(<code>AA1~AA15</code>, <code>M8~M62</code>)을 자동 계승하여 개업연월·전년도 매출/비용·임대차·종사자수 등의 시계열 모순 트랩을 원천 차단하고, 최종 제출 직전 <strong>98% 상태(Step 119)</strong>에서 안전 대기합니다.'}
+          : '1) 쿼터 데이터의 <strong>사업자번호</strong>를 조회하여 <strong>폐업인 리스트는 설문 입력에서 자동 제외</strong>합니다. 2) 메트릭스 설문목록(<code>SNUM=622</code>)에서 <strong>[컨택]</strong> 버튼을 눌러 상세 내용의 <strong>휴대폰</strong> 항목을 구글 스프레드시트 번호로 변경하고 <strong>[저장]</strong>한 뒤 <strong>[설문참여]</strong>를 눌러 시작합니다. 3) 2차년도 패널 실측치(<code>rawMeta</code>)와 <strong>업종별 맞춤 가이드</strong>를 결합하여 Step 119(98%)까지 안전 진행합니다.'}
       </div>
-      <div class="p-14" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+      <div class="p-14" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
+        ${!isSeoulPanel ? `
+        <div class="assoc-rule-box mb-0">
+          <label class="assoc-rule-item">
+            <input type="checkbox" id="cb-metrix-exclude-closed" class="assoc-rule-cb" ${metrixPolicyState.excludeClosedBiz !== false ? 'checked' : ''} />
+            <div>
+              <strong class="assoc-rule-title" style="color:#f87171;"><i class="fa-solid fa-ban"></i> 사업자번호 폐업 리스트 자동 제외 [필수]</strong>
+              <div class="assoc-rule-desc">
+                국세청 홈택스 사업자번호 상태 조회 결과 '폐업자'이거나 STEP 1에서 [폐업제외]로 지정된 사업체는 배치 및 단건 실행에서 100% 제외합니다.
+              </div>
+            </div>
+          </label>
+        </div>
+        <div class="assoc-rule-box mb-0">
+          <label class="assoc-rule-item">
+            <input type="checkbox" id="cb-metrix-update-contact-phone" class="assoc-rule-cb" ${metrixPolicyState.updatePhoneInContactPopup !== false ? 'checked' : ''} />
+            <div>
+              <strong class="assoc-rule-title" style="color:#38bdf8;"><i class="fa-solid fa-mobile-screen-button"></i> [컨택] 팝업 휴대폰 번호 변경·[저장] 후 [설문참여]</strong>
+              <div class="assoc-rule-desc">
+                설문목록에서 [컨택] 클릭 ➔ '휴대폰'(전화번호 무선) 항목을 엑셀(구글 시트) 번호로 변경 ➔ 하단 [저장] 클릭 ➔ [설문참여]로 진입합니다.
+              </div>
+            </div>
+          </label>
+        </div>
+        <div class="assoc-rule-box mb-0">
+          <label class="assoc-rule-item">
+            <input type="checkbox" id="cb-metrix-use-ind-guide" class="assoc-rule-cb" ${metrixPolicyState.useIndustryGuidelines !== false ? 'checked' : ''} />
+            <div>
+              <strong class="assoc-rule-title" style="color:#a78bfa;"><i class="fa-solid fa-industry"></i> 8대 업종별 맞춤 가이드 체크·적용</strong>
+              <div class="assoc-rule-desc">
+                사업체 업종(1.제조업 ~ 9.수리·개인서비스업)에 따라 체크된 업종별 영업시간·비용비중·결제수단·애로사항 가이드를 자동 반영합니다.
+              </div>
+            </div>
+          </label>
+        </div>
+        ` : ''}
         <div class="assoc-rule-box mb-0">
           <label class="assoc-rule-item">
             <input type="checkbox" id="cb-metrix-safety-stop" class="assoc-rule-cb" ${metrixPolicyState.safetyStopAtReview !== false ? 'checked' : ''} />
@@ -606,19 +1084,68 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
             </div>
           </label>
         </div>
-        <div class="assoc-rule-box mb-0">
-          <label class="assoc-rule-item">
-            <input type="checkbox" id="cb-metrix-skip-completed" class="assoc-rule-cb" ${metrixPolicyState.skipCompletedSlots !== false ? 'checked' : ''} />
-            <div>
-              <strong class="assoc-rule-title">완료된 슬롯 건너뛰기 & 구글 시트 동기화</strong>
-              <div class="assoc-rule-desc">
-                이미 '완료(100%)' 상태인 사업체는 건너뛰며, 실행된 모든 사업체의 문항별 응답을 구글 스프레드시트(시트2)에 자동 기록합니다.
+      </div>
+    </section>
+
+    ${!isSeoulPanel ? `
+    <!-- 카드 0-1: [업종별 가이드 체크 & 맞춤 설정] (전폭) -->
+    <section class="blueprint-card full-width-card" id="metrix-industry-guide-card" style="grid-column: 1 / -1; width: 100%; border: 1px solid rgba(56,189,248,0.35);">
+      <div class="blueprint-card-header">
+        <div class="blueprint-card-title-group">
+          <span class="blueprint-step-pill" style="background:rgba(56,189,248,0.18); color:#38bdf8;"><i class="fa-solid fa-industry"></i> 업종별 가이드 체크</span>
+          <h3 class="blueprint-stage-title">[8대 업종별 맞춤 가이드 체크 &amp; 편집] 업종을 체크·선택하여 업종별 영업시간·비용비중·결제수단·애로사항 가이드를 구성합니다</h3>
+        </div>
+        <div class="blueprint-card-badge-group" style="display:flex; gap:8px; align-items:center;">
+          <span id="badge-metrix-ind-enabled-count" class="badge-status ready"><i class="fa-solid fa-check-double"></i> ${enabledIndCount}/8개 업종 가이드 체크 활성</span>
+          <button type="button" id="btn-metrix-ind-check-all" class="btn-chip" style="font-size:11px; padding:4px 10px;"><i class="fa-solid fa-check"></i> 전 업종 체크</button>
+        </div>
+      </div>
+      <div class="blueprint-stage-desc">
+        아래 8대 업종 카드에서 <strong>체크박스(☑)</strong>로 업종별 맞춤 가이드 적용 여부를 켜거나 끌 수 있으며, <strong>업종 카드를 클릭</strong>하면 아래 상세 문항 카드(파트 B·C·D·F·H·I)에 해당 업종의 설정값이 로드되어 업종별로 세밀하게 수정·저장할 수 있습니다.
+      </div>
+      <div class="p-14">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:10px; margin-bottom:12px;">
+          ${indKeys.map(k => {
+            const p = metrixPolicyState.industryPolicies?.[k] || DEFAULT_METRIX_INDUSTRY_POLICIES[k];
+            const st = industryStats[k] || {};
+            const cnt = st.count ?? 0;
+            const readyCnt = st.ready ?? 0;
+            const doneCnt = st.done ?? 0;
+            const isAct = (metrixPolicyState._activeIndKey === k);
+            return `
+              <div class="metrix-ind-guide-card" data-ind-key="${k}" style="padding:10px 12px; border-radius:10px; border:1px solid ${isAct ? '#38bdf8' : 'rgba(148,163,184,0.22)'}; background:${isAct ? 'rgba(56,189,248,0.14)' : 'rgba(15,23,42,0.55)'}; cursor:pointer; transition:all 0.15s;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px;">
+                  <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:700; font-size:12.5px; color:#f8fafc;" onclick="event.stopPropagation();">
+                    <input type="checkbox" class="cb-metrix-ind-enable" data-ind-key="${k}" ${p.enabled !== false ? 'checked' : ''} />
+                    <span>${escapeHtml(p.name)}</span>
+                  </label>
+                  <span class="badge-quota-type metrix" style="font-size:10.5px; padding:2px 7px;">${cnt}건</span>
+                </div>
+                <div style="font-size:11px; color:#94a3b8; line-height:1.45;">
+                  <div>⏰ 영업: <strong>${escapeHtml(p.operating_openHour)}~${escapeHtml(p.operating_closeHour)}시</strong> · 소득 <strong>${p.owner_monthlyIncome}만</strong></div>
+                  <div>📊 원재료 <strong>${p.cost_materialRatio}%</strong> · 인건비 <strong>${p.cost_laborRatio}%</strong> · 임차 <strong>${p.cost_rentRatio}%</strong></div>
+                  <div>💳 카드 <strong>${p.payment_cardRatio}%</strong> · 이체 <strong>${p.payment_transferRatio}%</strong> (대기 ${readyCnt} / 완료 ${doneCnt})</div>
+                </div>
               </div>
-            </div>
-          </label>
+            `;
+          }).join('')}
+        </div>
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.75); border:1px solid rgba(56,189,248,0.25);">
+          <div id="metrix-active-ind-banner" style="font-size:12px; color:#e2e8f0;">
+            <i class="fa-solid fa-industry text-primary-color"></i> 현재 편집 중인 업종 가이드: <strong style="color:#38bdf8;">[${escapeHtml(activeIndObj.name || '3.도매 및 소매업')}]</strong> — 영업시간(${escapeHtml(activeIndObj.operating_openHour || '09')}~${escapeHtml(activeIndObj.operating_closeHour || '20')}시) · 원재료비 ${activeIndObj.cost_materialRatio ?? 65}% · 카드 ${activeIndObj.payment_cardRatio ?? 65}% / 계좌이체 ${activeIndObj.payment_transferRatio ?? 10}% · 월순소득 ${activeIndObj.owner_monthlyIncome ?? 320}만원
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" id="btn-metrix-select-active-ind-quotas" class="btn-chip" style="font-size:11.5px; padding:5px 10px; border-color:rgba(56,189,248,0.4); color:#38bdf8;" title="STEP 1 쿼터 목록에서 현재 선택된 업종의 미완료 사업체들만 체크합니다">
+              <i class="fa-solid fa-filter"></i> STEP 1에서 이 업종 사업체만 체크
+            </button>
+            <button type="button" id="btn-metrix-apply-ind-to-checked" class="btn-chip active" style="font-size:11.5px; padding:5px 12px;" title="STEP 1에서 체크된 사업체들에 현재 업종 가이드를 즉시 배정하고 저장합니다">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> STEP 1 체크된 사업체에 이 업종 가이드 배정·저장
+            </button>
+          </div>
         </div>
       </div>
     </section>
+    ` : ''}
     ${isSeoulPanel ? `
     <!-- 서울시 5차 전용 카드: 5차 신규 문항 M(경영위기) · N(AI/디지털) · O(탄소중립) 가이드 -->
     <section class="blueprint-card full-width-card" style="grid-column: 1 / -1; width: 100%;">
@@ -1324,6 +1851,6 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
     </section>
   `;
 
-  bindMetrixEvents({ metrixPolicyState, appendLog });
+  bindMetrixEvents({ metrixPolicyState, appendLog, onApplyIndustryGuideToChecked, onSelectIndustryQuotas });
   return metrixPolicyState;
 }

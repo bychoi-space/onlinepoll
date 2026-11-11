@@ -391,6 +391,124 @@ export function seedInitialCampaigns({
         }
       } catch (_) {}
     }
+
+    // [메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 3계정 통합 171건 (강영미 54건 + 김정례 55건 + 노영미 62건) 자동 시드
+    const gyeonggi622CampId = 'camp_metrix_gyeonggi_622_2026';
+    const gyeonggiQuotaPath = path.join(quotasDir, 'quota_metrix_gyeonggi_622_all.json');
+    if (fs.existsSync(gyeonggiQuotaPath)) {
+      try {
+        const ggContent = JSON.parse(fs.readFileSync(gyeonggiQuotaPath, 'utf-8'));
+        const ggFile = path.basename(gyeonggiQuotaPath);
+        const rawList = Array.isArray(ggContent.data)
+          ? ggContent.data
+          : (Array.isArray(ggContent.rows) ? ggContent.rows : []);
+        const ggList = rawList.map((item, idx) => ({
+          ...item,
+          index: item.index || idx + 1,
+          seq: item.seq || idx + 1,
+          slotIndex: item.slotIndex || idx + 1,
+          quotaStatus: item.isClosedBiz
+            ? 'excluded'
+            : (item.quotaStatus || (String(item.status || '').includes('완료') ? 'completed' : (String(item.status || '').includes('98%') ? '진행중(98%)' : 'ready')))
+        }));
+
+        let defaultMetrixPolicy = null;
+        const metrixBpPath = path.join(path.dirname(quotasDir), 'metrix_survey_blueprint.json');
+        if (fs.existsSync(metrixBpPath)) {
+          try {
+            defaultMetrixPolicy = JSON.parse(fs.readFileSync(metrixBpPath, 'utf-8'))?.defaultPolicy || null;
+          } catch (_) {}
+        }
+
+        const existingGyeonggiCamp = CampaignStore.getAllCampaigns().find(
+          c => c.id === gyeonggi622CampId || c.surveyType === 'metrix_panel'
+        );
+
+        if (!existingGyeonggiCamp) {
+          CampaignStore.createCampaign({
+            id: gyeonggi622CampId,
+            title: '[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 3계정 통합 171건 (강영미·김정례·노영미)',
+            description: '메트릭스 GetData(SNUM=622) · 3개 조사원 계정(강영미 54건 + 김정례 55건 + 노영미 62건) 통합 · 사업자번호 기반 폐업 리스트 자동 제외 · 컨택 팝업 휴대폰 번호 엑셀(구글시트) 변경 저장 후 [설문참여] · 8대 업종별 맞춤 가이드 체크 및 98%(Step 119) 안전 대기',
+            quotaType: 'b2b',
+            surveyType: 'metrix_panel',
+            snum: '622',
+            accounts: ggContent.accounts || [
+              { loginId: '강영미', loginPw: '5254', sheetName: '광주시 리스트' },
+              { loginId: '김정례', loginPw: '3995', sheetName: '김정례' },
+              { loginId: '노영미', loginPw: '7791', sheetName: '노영미-7791' }
+            ],
+            sparePhones: ggContent.sparePhones || [],
+            googleSheetUrl: ggContent.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911',
+            quotaSourceFile: ggFile,
+            hasMasterBlueprint: true,
+            metrixPolicy: defaultMetrixPolicy || {},
+            masterBaseline: { policy: defaultMetrixPolicy || {} },
+            guidelineConfig: {
+              surveyUrl: 'https://survey.metrix.co.kr/Contact/?SNUM=622',
+              topic: '2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622)',
+              engine: 'metrix_panel'
+            },
+            quotaDatabase: ggList
+          });
+        } else {
+          let needGgUpdate = false;
+          if (!Array.isArray(existingGyeonggiCamp.quotaDatabase) || existingGyeonggiCamp.quotaDatabase.length < ggList.length) {
+            existingGyeonggiCamp.quotaDatabase = ggList;
+            existingGyeonggiCamp.quotaSourceFile = ggFile;
+            needGgUpdate = true;
+          } else {
+            for (const ggItem of ggList) {
+              const match = existingGyeonggiCamp.quotaDatabase.find(
+                q => String(q.uid) === String(ggItem.uid) && (!q.surveyorId || !ggItem.surveyorId || q.surveyorId === ggItem.surveyorId)
+              );
+              if (match) {
+                if (!match.surveyorId && ggItem.surveyorId) {
+                  Object.assign(match, {
+                    surveyorId: ggItem.surveyorId,
+                    surveyorPw: ggItem.surveyorPw,
+                    sheetName: ggItem.sheetName,
+                    excelPhone: match.excelPhone || ggItem.excelPhone,
+                    serverPhone: ggItem.serverPhone,
+                    phone: match.excelPhone || ggItem.excelPhone || ggItem.serverPhone || match.phone,
+                    bizStatus: match.bizStatus || ggItem.bizStatus,
+                    taxType: match.taxType || ggItem.taxType,
+                    isClosedBiz: match.isClosedBiz ?? ggItem.isClosedBiz,
+                    industryKey: ggItem.industryKey
+                  });
+                  needGgUpdate = true;
+                }
+              }
+            }
+          }
+          if (!existingGyeonggiCamp.metrixPolicy?.industryPolicies && defaultMetrixPolicy?.industryPolicies) {
+            existingGyeonggiCamp.metrixPolicy = {
+              ...defaultMetrixPolicy,
+              ...(existingGyeonggiCamp.metrixPolicy || {}),
+              industryPolicies: {
+                ...defaultMetrixPolicy.industryPolicies,
+                ...(existingGyeonggiCamp.metrixPolicy?.industryPolicies || {})
+              }
+            };
+            needGgUpdate = true;
+          }
+          if (needGgUpdate) {
+            CampaignStore.updateCampaign(existingGyeonggiCamp.id, {
+              title: existingGyeonggiCamp.id === gyeonggi622CampId
+                ? '[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 3계정 통합 171건 (강영미·김정례·노영미)'
+                : existingGyeonggiCamp.title,
+              accounts: ggContent.accounts || existingGyeonggiCamp.accounts,
+              sparePhones: ggContent.sparePhones || existingGyeonggiCamp.sparePhones || [],
+              googleSheetUrl: existingGyeonggiCamp.googleSheetUrl || ggContent.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911',
+              quotaDatabase: existingGyeonggiCamp.quotaDatabase,
+              quotaSourceFile: existingGyeonggiCamp.quotaSourceFile || ggFile,
+              metrixPolicy: existingGyeonggiCamp.metrixPolicy,
+              hasMasterBlueprint: true
+            });
+          }
+        }
+      } catch (_) {}
+    }
   } catch (_) {}
 }
+
 

@@ -19,6 +19,7 @@
 import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
+import { getMetrixIndustryKey } from './metrix-slot-scraper.js';
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -26,6 +27,27 @@ function sleep(ms) {
 
 function jitter(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+const DEFAULT_ACCOUNT_PASSWORDS = {
+  '강영미': '5254',
+  '김정례': '3995',
+  '노영미': '7791'
+};
+
+function resolveChromiumLaunchOptions() {
+  const opts = {
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  };
+  if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH && fs.existsSync(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH)) {
+    opts.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+  } else if (fs.existsSync('/usr/bin/chromium')) {
+    opts.executablePath = '/usr/bin/chromium';
+  } else if (fs.existsSync('/usr/bin/chromium-browser')) {
+    opts.executablePath = '/usr/bin/chromium-browser';
+  }
+  return opts;
 }
 
 /**
@@ -41,13 +63,43 @@ export async function runMetrixSurvey({
   reportDir = null,
   onProgress = () => {}
 }) {
-  if (!surveyUrl) {
-    throw new Error('설문 참여 URL(surveyUrl)이 제공되지 않았습니다.');
+  if (!surveyUrl && !slotData.uid) {
+    throw new Error('설문 참여 URL(surveyUrl) 또는 대상 UID가 제공되지 않았습니다.');
   }
 
-  // 쿼터별 개별 가이드(customGuide)가 있으면 캠페인 기본 정책(policy) 위에 병합
+  // [요구사항 1] 사업자번호 기반 폐업 리스트 입력 제외 안전가드
+  if (slotData.isClosedBiz || String(slotData.bizStatus || '').includes('폐업') || slotData.quotaStatus === 'excluded') {
+    const closedMsg = `⛔ [폐업 제외] "${slotData.companyName || '사업체'}" (사업자번호: ${slotData.bizNumber || '-'})는 폐업 사업체이므로 설문 입력을 제외합니다.`;
+    console.warn(closedMsg);
+    onProgress({
+      step: 'EXCLUDED_CLOSED_BIZ',
+      stepIndex: 0,
+      totalSteps: 120,
+      message: closedMsg
+    });
+    return {
+      success: false,
+      excluded: true,
+      error: closedMsg,
+      capturedSteps: [],
+      slotData
+    };
+  }
+
+  // [요구사항 4] 업종별 맞춤 가이드(industryPolicies) 병합 + 개별 쿼터 가이드(customGuide) 병합
+  const industryKey = slotData.industryKey || getMetrixIndustryKey(slotData.industry || slotData.rawMeta?.['업종'] || '');
+  const indPolicyObj = (
+    policy.useIndustryGuidelines !== false &&
+    policy.industryPolicies &&
+    policy.industryPolicies[industryKey] &&
+    policy.industryPolicies[industryKey].enabled !== false
+  )
+    ? policy.industryPolicies[industryKey]
+    : {};
+
   const effectivePolicy = {
     ...policy,
+    ...indPolicyObj,
     ...(slotData.customGuide || {})
   };
   const rawMeta = slotData.rawMeta || {};
@@ -69,42 +121,179 @@ export async function runMetrixSurvey({
     }
   }
 
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
+  const browser = await chromium.launch(resolveChromiumLaunchOptions());
 
   const context = await browser.newContext({
     viewport: { width: 1400, height: 900 },
+    ignoreHTTPSErrors: true,
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
   });
 
-  const page = await context.newPage();
+  let page = await context.newPage();
   const capturedSteps = [];
   const dialogLog = [];
+  let phoneUpdated = false;
+  let updatedPhone = '';
 
-  page.on('dialog', async dialog => {
-    const msg = dialog.message();
-    dialogLog.push({ time: new Date().toISOString(), message: msg, type: dialog.type() });
-    console.log(`🔔 [메트릭스 알림 감지] "${msg}"`);
-    await dialog.accept().catch(err => console.warn('[Metrix Dialog Accept 경고]:', err.message));
-  });
+  const attachDialogListener = (targetPage) => {
+    targetPage.on('dialog', async dialog => {
+      const msg = dialog.message();
+      dialogLog.push({ time: new Date().toISOString(), message: msg, type: dialog.type() });
+      console.log(`🔔 [메트릭스 알림 감지] "${msg}"`);
+      await dialog.accept().catch(err => console.warn('[Metrix Dialog Accept 경고]:', err.message));
+    });
+  };
+  attachDialogListener(page);
 
   try {
-    onProgress({
-      step: 'INIT',
-      stepIndex: 1,
-      totalSteps: 120,
-      message: `[접속 시작] "${slotData.companyName || '사업체'}"(UID: ${slotData.uid}) 메트릭스 설문 페이지에 접속합니다...`
-    });
+    const loginId = String(slotData.surveyorId || slotData.loginId || '강영미').trim();
+    const loginPw = String(slotData.surveyorPw || slotData.loginPw || DEFAULT_ACCOUNT_PASSWORDS[loginId] || '5254').trim();
+    const targetExcelPhone = String(slotData.excelPhone || slotData.phone || '').trim();
+    const useContactFlow = (effectivePolicy.updatePhoneInContactPopup !== false && Boolean(slotData.uid));
 
-    console.log(`[MetrixRunner] Navigating to: ${surveyUrl}`);
-    await page.goto(surveyUrl, { waitUntil: 'networkidle' });
-    await sleep(2000);
+    if (useContactFlow) {
+      const contactPortalUrl = slotData.contactPortalUrl || 'https://survey.metrix.co.kr/Contact/?SNUM=622';
+      onProgress({
+        step: 'CONTACT_LOGIN',
+        stepIndex: 0,
+        totalSteps: 120,
+        message: `[컨택 시스템 접속] 조사원 "${loginId}" 계정 로그인 ➔ UID ${slotData.uid} (${slotData.companyName}) [컨택] 팝업 진입 중...`
+      });
+
+      await page.goto(contactPortalUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await page.waitForSelector('#id', { timeout: 10000 });
+      await page.fill('#id', loginId);
+      await page.fill('#password', loginPw);
+
+      await Promise.all([
+        page.waitForURL(u => u.toString().includes('Listdata'), { timeout: 20000 }),
+        page.click('button.login')
+      ]);
+      await sleep(1200);
+
+      // 100개씩 보기 설정
+      await page.evaluate(() => {
+        const sel = document.querySelector('select.ROW_PER_PAGE');
+        if (sel && sel.value !== '100') {
+          sel.value = '100';
+          if (typeof $ !== 'undefined') $(sel).trigger('change');
+        }
+      });
+      await sleep(1800);
+
+      // [요구사항 2] 설문목록에서 [컨택] 버튼을 누르고 '휴대폰' 항목을 엑셀 데이터로 바꾼 뒤 하단 [저장] 버튼 클릭
+      const contactOpened = await page.evaluate(({ targetUid }) => {
+        const tr = document.querySelector(`table.list-data tbody tr[data-uid="${targetUid}"], table.list-data tbody tr[data-id="${targetUid}"]`);
+        if (!tr) return { ok: false, reason: 'ROW_NOT_FOUND' };
+        const btn = tr.querySelector('button.contact-popup');
+        if (!btn) return { ok: false, reason: 'BTN_NOT_FOUND' };
+        btn.click();
+        return { ok: true };
+      }, { targetUid: String(slotData.uid) });
+
+      if (contactOpened.ok) {
+        await page.waitForSelector('#contactPopup [data-column="전화번호(무선)"]', { state: 'visible', timeout: 10000 }).catch(() => {});
+        await sleep(600);
+
+        if (targetExcelPhone) {
+          onProgress({
+            step: 'CONTACT_PHONE_SAVE',
+            stepIndex: 0,
+            totalSteps: 120,
+            message: `[컨택 휴대폰 변경·저장] "${slotData.companyName}" 휴대폰 항목을 엑셀 데이터(${targetExcelPhone})로 변경 후 [저장] 버튼을 클릭합니다...`
+          });
+
+          const saveWaitPromise = page.waitForResponse(
+            res => res.url().includes('/Contact/Listdata/SaveContactInfo'),
+            { timeout: 10000 }
+          ).catch(() => null);
+
+          await page.evaluate(({ newPhone }) => {
+            const phoneInput = document.querySelector('#contactPopup [data-column="전화번호(무선)"]');
+            if (phoneInput) {
+              phoneInput.value = newPhone;
+              if (typeof $ !== 'undefined') {
+                $(phoneInput).val(newPhone).trigger('input').trigger('change');
+              }
+            }
+            const saveBtn = document.querySelector('#contactPopup button.save-contact');
+            if (saveBtn) {
+              saveBtn.click();
+            }
+          }, { newPhone: targetExcelPhone });
+
+          await saveWaitPromise;
+          await sleep(1000);
+          phoneUpdated = true;
+          updatedPhone = targetExcelPhone;
+          slotData.phone = targetExcelPhone;
+          slotData.serverPhone = targetExcelPhone;
+          slotData.phoneNeedsSync = false;
+
+          const contactShotName = 'step_00_contact_popup_saved.png';
+          await page.screenshot({ path: path.join(targetReportDir, contactShotName), fullPage: true }).catch(() => {});
+          capturedSteps.push({
+            stepIndex: 0,
+            title: `[컨택 팝업] 휴대폰 번호(${targetExcelPhone}) 변경 및 [저장] 완료`,
+            screenshot: contactShotName,
+            time: new Date().toISOString()
+          });
+        }
+
+        // [요구사항 3] 컨택 팝업에서 [설문참여] 버튼을 눌러 설문 시작
+        onProgress({
+          step: 'CONTACT_JOIN_SURVEY',
+          stepIndex: 1,
+          totalSteps: 120,
+          message: `[컨택 팝업 ➔ 설문참여] 컨택 팝업에서 [설문참여] 버튼을 클릭하여 본 설문을 시작합니다... (적용 가이드: ${indPolicyObj.label || slotData.industry || '공통'})`
+        });
+
+        const popupPromise = context.waitForEvent('page', { timeout: 10000 }).catch(() => null);
+        await page.evaluate(() => {
+          const joinBtn = document.querySelector('#contactPopup button.join');
+          if (joinBtn) joinBtn.click();
+        });
+
+        const popupPage = await popupPromise;
+        if (popupPage) {
+          attachDialogListener(popupPage);
+          await popupPage.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+          await popupPage.waitForFunction(
+            () => {
+              const txt = (document.body?.innerText || '').trim();
+              return txt.length > 0 && txt !== 'Loading..' && !txt.startsWith('Loading..');
+            },
+            { timeout: 15000 }
+          ).catch(() => {});
+          page = popupPage;
+          await sleep(1200);
+        } else {
+          console.log(`[MetrixRunner] 팝업 창 대신 직접 설문 URL로 이동합니다: ${surveyUrl}`);
+          await page.goto(surveyUrl, { waitUntil: 'networkidle' });
+          await sleep(2000);
+        }
+      } else {
+        console.warn(`[MetrixRunner] 컨택 행(${slotData.uid})을 찾지 못해 직접 설문 URL로 이동합니다: ${surveyUrl}`);
+        await page.goto(surveyUrl, { waitUntil: 'networkidle' });
+        await sleep(2000);
+      }
+    } else {
+      onProgress({
+        step: 'INIT',
+        stepIndex: 1,
+        totalSteps: 120,
+        message: `[접속 시작] "${slotData.companyName || '사업체'}"(UID: ${slotData.uid}) 메트릭스 설문 페이지에 접속합니다...`
+      });
+
+      console.log(`[MetrixRunner] Navigating to: ${surveyUrl}`);
+      await page.goto(surveyUrl, { waitUntil: 'networkidle' });
+      await sleep(2000);
+    }
 
     let stepCount = 1;
     const maxSteps = 160;
     let consecutiveStallCount = 0;
+    let loadingRetryCount = 0;
     let lastScreenSignature = '';
     let reachedCheck1 = false;
     let check1Uploaded = false;
@@ -125,7 +314,6 @@ export async function runMetrixSurvey({
                                      !!document.querySelector('[id*="END"], [qname="END"], [data-qname="END"]');
 
         const isConsentScreen = !!document.querySelector('canvas.pad') ||
-                                !!document.querySelector('input[data-column="NUMBER_1"]') ||
                                 (bodyText.includes('동의서') && bodyText.includes('서명'));
 
         const isCheck1Screen = !!document.querySelector('input[name="CHECK1_F1"]') ||
@@ -136,11 +324,11 @@ export async function runMetrixSurvey({
         const gradeEls = Array.from(document.querySelectorAll('.s-gradeclick'));
         const hasGradeClick = gradeEls.length > 0;
         const gradeAkeys = gradeEls.map(el => el.getAttribute('akey')).filter(Boolean);
-        const gradeAlreadySelected = gradeEls.some(el =>
+        const gradeAlreadySelected = !(/1순위\s*:\s*2순위\s*:/.test(bodyText)) && gradeEls.some(el =>
           el.classList.contains('active') ||
           el.classList.contains('selected') ||
           el.classList.contains('on') ||
-          (el.innerText || '').trim().length > 0 && /[12순위]/.test(el.innerText || '')
+          /(1순위|2순위)/.test(el.innerText || '')
         );
 
         const qElements = Array.from(document.querySelectorAll('.box-question, [id^="BOX_"], .question-container, .q-item, h2, h3, .title, .q-title')).filter(el => el.offsetParent !== null);
@@ -174,6 +362,14 @@ export async function runMetrixSurvey({
       });
 
       const qTitle = screenInfo.questionTexts[0] || '진행 화면';
+      if ((qTitle === 'Loading..' || screenInfo.bodySnippet === 'Loading..') && loadingRetryCount < 10) {
+        loadingRetryCount++;
+        console.log(`[MetrixRunner Step ${stepCount}] 화면 로딩 중(Loading..) 대기 (${loadingRetryCount}/10)...`);
+        await sleep(1200);
+        continue;
+      }
+      loadingRetryCount = 0;
+
       console.log(`\n[MetrixRunner Step ${stepCount}] Q: ${qTitle} | Inputs: ${screenInfo.inputsCount} | GradeClick: ${screenInfo.hasGradeClick} | Next: ${screenInfo.nextBtnText || 'None'}`);
 
       const screenshotFileName = `step_${String(stepCount).padStart(2, '0')}.png`;
@@ -200,6 +396,8 @@ export async function runMetrixSurvey({
           success: true,
           status: 'completed',
           alreadyCompleted: true,
+          phoneUpdated,
+          updatedPhone,
           capturedSteps,
           slotData
         };
@@ -227,6 +425,8 @@ export async function runMetrixSurvey({
           isReviewReady: true,
           currentStep: 119,
           totalSteps: 120,
+          phoneUpdated,
+          updatedPhone,
           capturedSteps,
           slotData,
           message: '설문 응답 및 서명/사진 업로드가 100% 완료되었으며, 최종 제출 직전 98% 상태로 안전하게 보존되었습니다.'
@@ -446,7 +646,7 @@ export async function runMetrixSurvey({
         }
         const trendMult = trendMode === 'growth' ? 1.07 : (trendMode === 'decrease' ? 0.93 : 1.0);
 
-        // [규칙 1] 사업장 및 거주지 주소 Readonly 인풋 강제 바인딩 (A10, A14)
+        // [규칙 1] 사업장 및 거주지 주소 Readonly 인풋 강제 바인딩 (A10, A14) 및 사업체 일반현황 보호
         if (pol.general_bindAddressReadonly !== false) {
           const cityInputs = Array.from(document.querySelectorAll('input[name="CITY"]')).filter(i => i.offsetParent !== null);
           const guInputs = Array.from(document.querySelectorAll('input[name="GU"]')).filter(i => i.offsetParent !== null);
@@ -454,16 +654,83 @@ export async function runMetrixSurvey({
           const detail2Inputs = Array.from(document.querySelectorAll('input[name="DETAIL2"]')).filter(i => i.offsetParent !== null);
 
           if (cityInputs.length > 0 && typeof $ !== 'undefined') {
-            cityInputs.forEach(ci => { if (!ci.value) $(ci).val(meta['AA14 _1'] || '경기도').trigger('change'); });
+            cityInputs.forEach(ci => { if (!ci.value) $(ci).val(meta['AA14 _1'] || '경기').trigger('change'); });
             guInputs.forEach(gi => { if (!gi.value) $(gi).val(slot.district || meta.AA10 || '광주시').trigger('change'); });
             detail1Inputs.forEach(d1 => { if (!d1.value) $(d1).val(slot.road || meta['AA10 _1'] || '경충대로').trigger('change'); });
             detail2Inputs.forEach(d2 => { if (!d2.value) $(d2).val(slot.detailAddress || meta['AA10 _2'] || '101호').trigger('change'); });
           }
         }
 
-        // [규칙 2] SUM 합계 100% 밸런서 (문11-1 6대 영업비용, 문14 6대 결제수단, 문15-1 차입처별 비중 등)
+        if (bodyText.includes('사업체 일반현황')) {
+          // 개인사업자인 경우 법인등록번호 및 비고란 등 불필요 오입력 필드 초기화
+          const allTrs = Array.from(document.querySelectorAll('tr'));
+          allTrs.forEach(tr => {
+            const txt = (tr.innerText || '').replace(/\s+/g, ' ');
+            if (txt.includes('법인등록번호') && String(meta.AA2 || '1') !== '2' && slot.bizForm !== '법인') {
+              tr.querySelectorAll('input[type="text"], input[type="number"]').forEach(inp => {
+                inp.value = '';
+                if (typeof $ !== 'undefined') $(inp).val('').trigger('input').trigger('change');
+              });
+            }
+            if (txt.startsWith('비고')) {
+              tr.querySelectorAll('input[type="text"], input[type="number"]').forEach(inp => {
+                if (inp.value === '10') {
+                  inp.value = '';
+                  if (typeof $ !== 'undefined') $(inp).val('').trigger('input').trigger('change');
+                }
+              });
+            }
+          });
+          return;
+        }
+
+        // [규칙 1-2] 문31 종사자 현황 (남+여 === 내국인+외국인 행별 정합성 보장 및 SUM 밸런서 오작동 차단)
         const editableNumberInputs = Array.from(document.querySelectorAll('input[type="number"]:not([readonly]):not([disabled])')).filter(i => i.offsetParent !== null);
 
+        if (bodyText.includes('종사자 현황') || (bodyText.includes('총 종사자') && bodyText.includes('내/외국인'))) {
+          if (editableNumberInputs.length === 20) {
+            const isFemaleCeo = String(slot.ceoGender || meta['대표자 성별'] || '').includes('여') || String(meta.AA12 || '') === '2';
+            for (let r = 1; r <= 5; r++) {
+              const rowEditables = editableNumberInputs.slice((r - 1) * 4, r * 4);
+              let mVal = meta[`M31_${6 + r}`];
+              let fVal = meta[`M31_${12 + r}`];
+              let kVal = meta[`M31_${18 + r}`];
+              let aVal = meta[`M31_${24 + r}`];
+
+              if (mVal === undefined || fVal === undefined || kVal === undefined || aVal === undefined) {
+                if (r === 1) {
+                  mVal = isFemaleCeo ? '0' : '1';
+                  fVal = isFemaleCeo ? '1' : '0';
+                  kVal = '1';
+                  aVal = '0';
+                } else {
+                  mVal = '0'; fVal = '0'; kVal = '0'; aVal = '0';
+                }
+              }
+
+              // 정합성 검증: 남+여 === 내국인+외국인 보장
+              const sumGender = (parseInt(mVal, 10) || 0) + (parseInt(fVal, 10) || 0);
+              const sumNation = (parseInt(kVal, 10) || 0) + (parseInt(aVal, 10) || 0);
+              if (sumGender !== sumNation) {
+                kVal = String(sumGender);
+                aVal = '0';
+              }
+
+              const targetVals = [String(mVal), String(fVal), String(kVal), String(aVal)];
+              rowEditables.forEach((inp, cIdx) => {
+                if (inp.value !== targetVals[cIdx]) {
+                  inp.value = targetVals[cIdx];
+                  if (typeof $ !== 'undefined') {
+                    $(inp).val(targetVals[cIdx]).trigger('input').trigger('change').trigger('keyup');
+                  }
+                }
+              });
+            }
+          }
+          return;
+        }
+
+        // [규칙 2] SUM 합계 100% 밸런서 (문11-1 6대 영업비용, 문14 6대 결제수단, 문15-1 차입처별 비중 등)
         if (bodyText.includes('남은 금액') || bodyText.includes('남은 값') || (bodyText.includes('합계') && editableNumberInputs.length >= 2)) {
           // 기입력 보존 검사 (합계가 이미 맞춰져 있는 경우 보존)
           const existingSum = editableNumberInputs.reduce((acc, inp) => acc + (parseFloat(inp.value) || 0), 0);
@@ -818,6 +1085,11 @@ export async function runMetrixSurvey({
           const maxLen = input.getAttribute('maxlength');
           const rowText = (input.closest('tr, li, .q-row, .form-group, div')?.innerText || '').replace(/\s+/g, ' ');
 
+          // '기타' 옆 부속 텍스트 입력란이거나 우선순위(s-gradeclick) 화면의 부속 텍스트 인풋인 경우 오입력 방지
+          if (input.type === 'text' && (rowText.includes('기타') || document.querySelectorAll('.s-gradeclick').length > 0)) {
+            return;
+          }
+
           // 1. 숫자 인풋 분류
           if (input.type === 'number' || dataMin || dataMax || maxLen || guide.includes('만원') || guide.includes('시간') || guide.includes('명') || guide.includes('평')) {
             // (1) 문8-1 개점/폐점 시각
@@ -999,6 +1271,8 @@ export async function runMetrixSurvey({
     return {
       success: true,
       status: 'completed',
+      phoneUpdated,
+      updatedPhone,
       capturedSteps,
       slotData
     };

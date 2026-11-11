@@ -2,8 +2,8 @@
  * 설문조사 상세 작업실 제어 스크립트 (survey-detail.js)
  * 2-Tier 와이드 쿼터 뷰, 쿼터 항목별 진행 트래커, 2-Phase 파일럿 & 배치 파이프라인 제어
  */
-import { escapeHtml } from './modules/blueprint-utils.js?v=20261108_modular_v4';
-import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261109_seoul_v1';
+import { escapeHtml } from './modules/blueprint-utils.js?v=20261111_gg622_v1';
+import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261111_gg622_v1';
 import { renderAssocBlueprint } from './modules/blueprint-assoc.js?v=20261108_modular_v4';
 import {
   resolveGlobalriAgeGroupKey,
@@ -31,7 +31,8 @@ import {
   renderMetrixQuotaTable,
   renderMetrixSeoulQuotaTable,
   renderAssocQuotaTable
-} from './modules/quota-table-renderers.js?v=20261109_seoul_v1';
+} from './modules/quota-table-renderers.js?v=20261111_gg622_v1';
+
 
 async function initSurveyDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -701,43 +702,75 @@ async function initSurveyDetailPage() {
       if (btnOpenSlotModalToolbar) btnOpenSlotModalToolbar.style.display = 'none';
       if (btnOpenCampaignAddMerchant) btnOpenCampaignAddMerchant.style.display = 'none';
       const btnSyncKstat = document.getElementById('btn-sync-kstat-status');
-      if (btnSyncKstat) btnSyncKstat.style.display = 'none';
+      if (btnSyncKstat) {
+        btnSyncKstat.style.display = 'inline-flex';
+        btnSyncKstat.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 3계정·구글시트·폐업조회 동기화';
+        let btnExportAns = document.getElementById('btn-export-globalri-answers-top');
+        const gsheetUrl = camp.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911';
+        if (!btnExportAns && btnSyncKstat.parentElement) {
+          btnExportAns = document.createElement('a');
+          btnExportAns.id = 'btn-export-globalri-answers-top';
+          btnExportAns.className = 'btn-pill btn-pill-primary font-bold';
+          btnExportAns.style.textDecoration = 'none';
+          btnExportAns.target = '_blank';
+          btnExportAns.rel = 'noopener noreferrer';
+          btnSyncKstat.parentElement.insertBefore(btnExportAns, btnSyncKstat.nextSibling);
+        }
+        if (btnExportAns) {
+          btnExportAns.href = gsheetUrl;
+          btnExportAns.target = '_blank';
+          btnExportAns.rel = 'noopener noreferrer';
+          btnExportAns.innerHTML = '<i class="fa-solid fa-table"></i> 쿼터 구글 스프레드시트 열기';
+          btnExportAns.title = '경기도 소상공인 설문조사 쿼터 데이터 (강영미·김정례·노영미) 구글 스프레드시트를 엽니다';
+          btnExportAns.style.display = 'inline-flex';
+        }
+      }
       if (btnEnrichCampaign) btnEnrichCampaign.style.display = 'none';
+      const qList = camp.quotaDatabase || [];
+      const closedCnt = qList.filter(q => q.isClosedBiz || String(q.bizStatus || '').includes('폐업') || q.quotaStatus === 'excluded').length;
+      const wait98Cnt = qList.filter(q => q.quotaStatus === 'pilot_done' || String(q.quotaStatus || '').includes('98%') || String(q.status || '').includes('98%')).length;
+      const doneCnt = qList.filter(q => q.quotaStatus === 'completed' || q.status === '완료').length;
+
+      if (quotaBadge) {
+        quotaBadge.className = 'badge-quota-type metrix';
+        quotaBadge.textContent = `경기도 소상공인 3차 (총 ${qList.length}건 · 폐업제외 ${closedCnt} · 98%대기 ${wait98Cnt} · 완료 ${doneCnt})`;
+      }
+
       const kstatPill = document.getElementById('badge-kstat-account-pill');
       if (kstatPill) {
-        kstatPill.innerHTML = '<i class="fa-solid fa-user-check text-primary-color"></i> <span>조사원: <strong>강영미</strong> (SNUM 622)</span>';
+        kstatPill.innerHTML = `<i class="fa-solid fa-users text-primary-color"></i> <span>조사원 3계정 통합: <strong>강영미(5254) · 김정례(3995) · 노영미(7791)</strong> · 총 <strong>${qList.length}건</strong> (폐업제외 ${closedCnt}건)</span>`;
       }
 
       // STEP 3 스트립 갱신
       const badgeExec = document.getElementById('badge-exec-engine');
       if (badgeExec) {
         badgeExec.className = 'badge-status ready font-bold';
-        badgeExec.textContent = '메트릭스 GetData (SNUM 622)';
+        badgeExec.textContent = '메트릭스 컨택·휴대폰저장·설문참여 (SNUM 622)';
       }
       const labelMarket = document.getElementById('label-exec-target-market');
       if (labelMarket) {
-        labelMarket.textContent = camp.title || '2026 경기도 소상공인 사업체패널 3차조사';
+        labelMarket.textContent = camp.title || '2026 경기도 소상공인 사업체패널 3차조사 (강영미·김정례·노영미)';
       }
       const labelSurveyor = document.getElementById('exec-surveyor-label');
       if (labelSurveyor) {
-        labelSurveyor.textContent = '강영미';
+        labelSurveyor.textContent = '강영미(5254) · 김정례(3995) · 노영미(7791)';
       }
       const slotCountLabel = document.getElementById('exec-slot-count-label');
       if (slotCountLabel) {
-        slotCountLabel.textContent = `${(camp.quotaDatabase || []).length}건 바인딩 완료`;
+        slotCountLabel.textContent = `3계정 ${qList.length}건 바인딩 (유효 ${qList.length - closedCnt}건 / 폐업제외 ${closedCnt}건)`;
       }
       const badgeBp = document.getElementById('badge-blueprint-status');
       if (badgeBp) {
         badgeBp.className = 'badge-status badge-blueprint ready';
-        badgeBp.innerHTML = '<i class="fa-solid fa-shield-halved text-success"></i> 98% 안전 대기 가이드 연동 완료';
+        badgeBp.innerHTML = '<i class="fa-solid fa-shield-halved text-success"></i> 폐업제외 · [컨택] 휴대폰 저장 · 8대 업종별 가이드 · 98% 안전 대기';
       }
 
       // STEP 3 카드 설명 및 버튼 텍스트 최적화
       const titleBatch = document.getElementById('title-batch-automation');
-      if (titleBatch) titleBatch.textContent = '메트릭스 패널 54개 순차 배치 자동화 (98% 안전 대기)';
+      if (titleBatch) titleBatch.textContent = `경기도 소상공인 패널 3계정(${qList.length}건) 체크 사업체 순차 배치 자동화 (컨택 휴대폰 저장 ➔ 설문참여 ➔ 98% 대기)`;
       const descBatch = document.getElementById('desc-batch-automation');
       if (descBatch) {
-        descBatch.textContent = '설정된 영업시간, 비용 비율, 100% 밸런서, 전자서명 및 간판사진을 주입하여 최종 제출 직전(98% 안전 대기)까지 안전하게 순차 진행합니다.';
+        descBatch.textContent = '1) 사업자번호 폐업 리스트를 자동 제외하고, 2) 설문목록 [컨택] 팝업에서 휴대폰 번호를 엑셀(구글 시트) 데이터로 변경·[저장] 후 [설문참여]를 클릭하여 시작하며, 3) 8대 업종별 맞춤 가이드 및 전자서명·간판사진을 주입하여 Step 119(98% 안전 대기)까지 진행합니다.';
       }
       const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
       if (safetyGuardToggle) {
@@ -752,7 +785,7 @@ async function initSurveyDetailPage() {
         btnPilot.classList.remove('d-none');
         btnPilot.className = 'btn-action-secondary font-bold';
         btnPilot.style.display = 'inline-flex';
-        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 단일 파일럿 검증 (98%)';
+        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 미완료 사업체 1건 [컨택·휴대폰저장·98%] 단건 실행';
       }
     } else {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'inline-flex';
@@ -780,7 +813,7 @@ async function initSurveyDetailPage() {
 
     // 버튼 상태 머신 갱신 (1번 검증 완료 및 배치 완료 제어)
     updateButtonStates();
-    if (!isAssoc && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) updateGroupStatsUI();
+    if (!isAssoc && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && !isMetrix) updateGroupStatsUI();
   }
 
   let checkedGallupSeqs = new Set();
@@ -791,6 +824,9 @@ async function initSurveyDetailPage() {
   let hrcSelectionInitialized = false;
   let checkedSeoulSeqs = new Set();
   let seoulSelectionInitialized = false;
+  let checkedMetrixSeqs = new Set();
+  let metrixSelectionInitialized = false;
+
 
   const globalriCtrl = createGlobalriBlueprintController({
     campId,
@@ -1421,9 +1457,72 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    // [메트릭스 패널 전용 13개 컬럼 테이블 렌더링]
+    const existingMetrixBar = document.getElementById('metrix-step1-check-bar');
+    if (!isMetrix && existingMetrixBar) {
+      existingMetrixBar.style.display = 'none';
+    }
+
+    // [메트릭스 경기도 소상공인 패널 3계정 통합 테이블 렌더링]
     if (isMetrix) {
-      renderMetrixQuotaTable({ db, quotaTableBody });
+      if (!metrixSelectionInitialized && db.length > 0) {
+        metrixSelectionInitialized = true;
+        db.forEach((item, idx) => {
+          const seq = Number(item.index || item.seq || (idx + 1));
+          const isClosed = Boolean(item.isClosedBiz || String(item.bizStatus || '').includes('폐업') || item.quotaStatus === 'excluded');
+          const isDone = (item.quotaStatus === 'completed' || item.status === '완료');
+          const isWait98 = (item.quotaStatus === 'pilot_done' || String(item.quotaStatus || '').includes('98%') || String(item.status || '').includes('98%'));
+          if (!isClosed && !isDone && !isWait98) {
+            checkedMetrixSeqs.add(seq);
+          }
+        });
+      }
+
+      renderMetrixQuotaTable({
+        db,
+        quotaTableBody,
+        campId,
+        googleSheetUrl: currentCampaign?.googleSheetUrl,
+        metrixPolicy: metrixPolicyState || currentCampaign?.masterBaseline?.policy || {},
+        checkedMetrixSeqs,
+        onReRender: renderQuotaTable,
+        onTriggerBatchRun: () => triggerBatchRun(),
+        onSyncMetrix622: async () => {
+          const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/sync-metrix-622`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ checkClosedBiz: true })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.error || '3계정·구글시트·폐업조회 동기화 실패');
+          appendLog('success', `✅ [경기도 소상공인 3계정 동기화] ${data.message}`);
+          await loadCampaign();
+          await loadBlueprint();
+          alert(data.message);
+        },
+        onToggleClosedBiz: async (seq, isClosedBiz, excelPhone) => {
+          try {
+            const payload = { seq };
+            if (isClosedBiz !== null && isClosedBiz !== undefined) payload.isClosedBiz = isClosedBiz;
+            if (excelPhone !== undefined) payload.excelPhone = excelPhone;
+            const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/toggle-closed-biz`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || '업데이트 실패');
+            if (currentCampaign && Array.isArray(data.quotaDatabase)) {
+              currentCampaign.quotaDatabase = data.quotaDatabase;
+              if (isClosedBiz === true) checkedMetrixSeqs.delete(Number(seq));
+              renderCampaignDetails(currentCampaign);
+            }
+            appendLog('info', `✓ ${data.message}`);
+          } catch (err) {
+            appendLog('error', `업데이트 실패: ${err.message}`);
+            alert('업데이트 실패: ' + err.message);
+          }
+        }
+      });
       return;
     }
 
@@ -1557,6 +1656,46 @@ async function initSurveyDetailPage() {
   // 3-1. 쿼터 테이블 인라인 편집 (대표자이름, 성별, 나이, 주요품목 등 전체 지원) 및 실시간 동기화
   // ------------------------------------------------------------------------
   quotaTableBody.addEventListener('click', async (e) => {
+    const metrixPilotBtn = e.target.closest('.btn-row-pilot-metrix');
+    if (metrixPilotBtn) {
+      e.stopPropagation();
+      const targetSeq = parseInt(metrixPilotBtn.getAttribute('data-seq'), 10);
+      if (!targetSeq || !currentCampaign || !Array.isArray(currentCampaign.quotaDatabase)) return;
+      const targetItem = currentCampaign.quotaDatabase.find(b => Number(b.index || b.seq) === Number(targetSeq));
+      if (!targetItem) return;
+      if (targetItem.isClosedBiz || String(targetItem.bizStatus || '').includes('폐업') || targetItem.quotaStatus === 'excluded') {
+        alert(`⚠️ #${targetSeq} "${targetItem.companyName}" 사업체는 폐업 제외 대상이므로 설문을 실행할 수 없습니다.`);
+        return;
+      }
+
+      const surveyUrl = targetItem.surveyUrl || targetItem.slotUrl || currentCampaign?.guidelineConfig?.surveyUrl || 'https://survey.metrix.co.kr/Contact/?SNUM=622';
+      if (inputSurveyUrl) inputSurveyUrl.value = surveyUrl;
+
+      try {
+        setRunningState(true);
+        openMonitorDrawer();
+        resetTimelineChips();
+        appendLog('info', `🎯 [경기도 소상공인 패널 단건 실행] #${targetSeq} "${targetItem.companyName}" (UID=${targetItem.uid}, 조사원=${targetItem.surveyorId || '강영미'}) [컨택] 클릭 ➔ 휴대폰(${targetItem.excelPhone || targetItem.phone || ''}) 저장 ➔ [설문참여] ➔ Step 119(98% 안전 대기)를 시작합니다...`);
+        await saveBaseline(false);
+
+        const res = await fetch(`/api/campaigns/${campId}/pilot-run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            surveyUrl,
+            quotaIndex: targetSeq
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '단건 실행 실패');
+        appendLog('success', data.message);
+      } catch (err) {
+        appendLog('error', `단건 실행 실패: ${err.message}`);
+        setRunningState(false);
+      }
+      return;
+    }
+
     const seoulPilotBtn = e.target.closest('.btn-row-pilot-seoul');
     if (seoulPilotBtn) {
       e.stopPropagation();
@@ -1592,6 +1731,7 @@ async function initSurveyDetailPage() {
       }
       return;
     }
+
 
     const gallupPilotBtn = e.target.closest('.btn-row-pilot-gallup');
     if (gallupPilotBtn) {
@@ -2334,8 +2474,58 @@ async function initSurveyDetailPage() {
           blueprintStageGrid,
           badgeMasterStatus,
           btnSaveBaseline,
-          appendLog
+          appendLog,
+          onSelectIndustryQuotas: (indKey) => {
+            if (!currentCampaign || !Array.isArray(currentCampaign.quotaDatabase)) return;
+            checkedMetrixSeqs.clear();
+            currentCampaign.quotaDatabase.forEach((item, idx) => {
+              const seq = Number(item.index || item.seq || (idx + 1));
+              const isClosed = Boolean(item.isClosedBiz || String(item.bizStatus || '').includes('폐업') || item.quotaStatus === 'excluded');
+              const isDone = (item.quotaStatus === 'completed' || item.status === '완료');
+              const itemInd = item.industryKey || `ind_${String(item.industry || '').match(/^(\d)/)?.[1] || '3'}`;
+              if (!isClosed && !isDone && itemInd === indKey) {
+                checkedMetrixSeqs.add(seq);
+              }
+            });
+            renderQuotaTable(currentCampaign.quotaDatabase);
+            const indName = metrixPolicyState?.industryPolicies?.[indKey]?.name || indKey;
+            appendLog('info', `✓ STEP 1 쿼터 목록에서 [${indName}] 미완료·정상 사업체 ${checkedMetrixSeqs.size}건만 선택(체크)되었습니다.`);
+            alert(`STEP 1 쿼터 목록에서 [${indName}] 미완료·정상 사업체 ${checkedMetrixSeqs.size}건이 체크되었습니다.`);
+          },
+          onApplyIndustryGuideToChecked: async (indKey, indPolicy) => {
+            try {
+              await saveBaseline(false);
+              const targetSeqs = Array.from(checkedMetrixSeqs);
+              if (targetSeqs.length === 0) {
+                alert('STEP 1에서 가이드를 적용할 사업체를 먼저 체크해 주세요.');
+                return;
+              }
+              const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/apply-selected-guide`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  selectedSeqs: targetSeqs,
+                  groupKey: indKey,
+                  policy: indPolicy || {}
+                })
+              });
+              const result = await res.json();
+              if (!res.ok) throw new Error(result.error || '업종 가이드 적용 실패');
+              if (currentCampaign && Array.isArray(result.quotaDatabase)) {
+                currentCampaign.quotaDatabase = result.quotaDatabase;
+                renderQuotaTable(currentCampaign.quotaDatabase);
+              }
+              appendLog('success', `✅ [업종별 가이드 배정 완료] ${result.message}`);
+              alert(result.message);
+            } catch (err) {
+              appendLog('error', `업종별 가이드 적용 실패: ${err.message}`);
+              alert('업종별 가이드 적용 실패: ' + err.message);
+            }
+          }
         });
+        if (currentCampaign && currentCampaign.surveyType === 'metrix_panel') {
+          renderQuotaTable(currentCampaign.quotaDatabase || []);
+        }
         return;
       }
 
@@ -2568,7 +2758,9 @@ async function initSurveyDetailPage() {
                 ? '<i class="fa-solid fa-check-double"></i> 상인회 25단계 블루프린트 설정 완료'
                 : (isMetrixSeoul
                   ? '<i class="fa-solid fa-shield-halved"></i> 서울시 소상공인 패널(5차) svyA115(99%) 안전 대기 &amp; 구글 시트 기록 활성'
-                  : '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 &amp; 평가 가이드 활성'))));
+                  : (isMetrix
+                    ? '<i class="fa-solid fa-check-double"></i> 경기도 소상공인 패널 8대 업종별 가이드 &amp; 120단계 기준점 저장 완료'
+                    : '<i class="fa-solid fa-check-double"></i> 3개 업종 그룹별 마스터 기준점 &amp; 평가 가이드 활성')))));
         badgeMasterStatus.className = 'badge-status badge-blueprint ready';
       }
 
@@ -2580,7 +2772,7 @@ async function initSurveyDetailPage() {
             : (isKona
               ? '✓ 화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
               : ((isMetrix || isMetrixSeoul)
-                ? '✓ 소상공인 사업체 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+                ? '✓ 소상공인 사업체 패널조사 업종별 가이드라인 및 기준점이 성공적으로 저장되었습니다.'
                 : (isAssoc 
                   ? '✓ 상인회 25단계 정책 가이드라인(F5~G4)이 성공적으로 저장되었습니다.'
                   : '✓ 3개 업종 그룹별 마스터 기준점 및 조사원 평가 가이드(H1~H3)가 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.')))));
@@ -2588,7 +2780,7 @@ async function initSurveyDetailPage() {
 
       setTimeout(() => {
         if (btnSaveBaseline) {
-          btnSaveBaseline.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${isGlobalriLiteracy ? '나이대별 응답 가이드 저장' : (isHrcEnergy ? '에너지총조사 [건물] 기준 가이드 저장' : (isKona ? '청소년 설문 기준 가이드 저장' : (isAssoc ? '상인회 정책 가이드 저장' : '마스터 기준점 &amp; 조사원 평가 가이드 저장')))}`;
+          btnSaveBaseline.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${isGlobalriLiteracy ? '나이대별 응답 가이드 저장' : (isHrcEnergy ? '에너지총조사 [건물] 기준 가이드 저장' : (isKona ? '청소년 설문 기준 가이드 저장' : (isAssoc ? '상인회 정책 가이드 저장' : (isMetrix ? '경기도 패널 업종별 가이드 &amp; 기준점 저장' : '마스터 기준점 &amp; 조사원 평가 가이드 저장'))))}`;
           btnSaveBaseline.className = 'btn-pill btn-pill-primary';
         }
       }, 2500);
@@ -2691,25 +2883,31 @@ async function initSurveyDetailPage() {
     const isHrcEnergy = (currentCampaign?.surveyType === 'hrc_energy');
     const isGlobalriLiteracy = (currentCampaign?.surveyType === 'globalri_literacy');
     const isGallupReturnFarm = (currentCampaign?.surveyType === 'gallup_return_farm');
-    const firstBiz = isMetrixSeoul
-      ? (quotaDb.find(b => checkedSeoulSeqs.has(Number(b.index || b.seq)) && b.quotaStatus !== 'completed' && !String(b.status || '').includes('완료(100%)'))
-        || quotaDb.find(b => b.quotaStatus !== 'completed' && !String(b.status || '').includes('완료(100%)') && b.quotaStatus !== 'pilot_done')
-        || quotaDb.find(b => b.quotaStatus !== 'completed' && !String(b.status || '').includes('완료(100%)'))
-        || quotaDb[0])
-      : (isGallupReturnFarm
-        ? (quotaDb.find(b => checkedGallupSeqs.has(Number(b.index || b.seq)) && b.quotaStatus !== 'completed' && b.status !== '조사완료')
-          || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '조사완료' && b.quotaStatus !== 'pilot_done')
-          || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '조사완료')
+    const isNotClosed = (b) => !b.isClosedBiz && !String(b.bizStatus || '').includes('폐업') && b.quotaStatus !== 'excluded';
+    const firstBiz = isMetrix
+      ? (quotaDb.find(b => isNotClosed(b) && checkedMetrixSeqs.has(Number(b.index || b.seq)) && b.quotaStatus !== 'completed' && b.status !== '완료')
+        || quotaDb.find(b => isNotClosed(b) && b.quotaStatus !== 'completed' && b.status !== '완료' && b.quotaStatus !== 'pilot_done' && !String(b.quotaStatus || '').includes('98%'))
+        || quotaDb.find(b => isNotClosed(b) && b.quotaStatus !== 'completed' && b.status !== '완료')
+        || quotaDb.find(b => isNotClosed(b)))
+      : (isMetrixSeoul
+        ? (quotaDb.find(b => checkedSeoulSeqs.has(Number(b.index || b.seq)) && b.quotaStatus !== 'completed' && !String(b.status || '').includes('완료(100%)'))
+          || quotaDb.find(b => b.quotaStatus !== 'completed' && !String(b.status || '').includes('완료(100%)') && b.quotaStatus !== 'pilot_done')
+          || quotaDb.find(b => b.quotaStatus !== 'completed' && !String(b.status || '').includes('완료(100%)'))
           || quotaDb[0])
-        : (isHrcEnergy
-          ? (quotaDb.find((b, idx) => checkedHrcSeqs.has(Number(b.index || b.seq || (idx + 1))) && b.quotaStatus !== 'completed' && b.status !== '완료')
-            || quotaDb.find(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료')
-            || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료')
+        : (isGallupReturnFarm
+          ? (quotaDb.find(b => checkedGallupSeqs.has(Number(b.index || b.seq)) && b.quotaStatus !== 'completed' && b.status !== '조사완료')
+            || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '조사완료' && b.quotaStatus !== 'pilot_done')
+            || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '조사완료')
             || quotaDb[0])
-          : ((isKona || isGlobalriLiteracy)
-            ? (quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
-            : quotaDb[0])));
-    const firstSlot = firstBiz?.surveyUrl || firstBiz?.slotUrl || firstBiz?.householdUrl || (isMetrixSeoul ? 'https://metrix.svybx.kr/sp7/S21401by41s3/mlist.asp' : (isGallupReturnFarm ? 'https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W' : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${firstBiz?.uid || ''}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''))));
+          : (isHrcEnergy
+            ? (quotaDb.find((b, idx) => checkedHrcSeqs.has(Number(b.index || b.seq || (idx + 1))) && b.quotaStatus !== 'completed' && b.status !== '완료')
+              || quotaDb.find(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료')
+              || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료')
+              || quotaDb[0])
+            : ((isKona || isGlobalriLiteracy)
+              ? (quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
+              : quotaDb[0]))));
+    const firstSlot = firstBiz?.surveyUrl || firstBiz?.slotUrl || firstBiz?.householdUrl || (isMetrix ? 'https://survey.metrix.co.kr/Contact/?SNUM=622' : (isMetrixSeoul ? 'https://metrix.svybx.kr/sp7/S21401by41s3/mlist.asp' : (isGallupReturnFarm ? 'https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W' : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${firstBiz?.uid || ''}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '')))));
     const targetPilotIdx = firstBiz?.index || firstBiz?.seq || 1;
 
     // 1번 쿼터 슬롯 매핑 검증
@@ -2741,7 +2939,7 @@ async function initSurveyDetailPage() {
       } else if (isKona) {
         appendLog('info', `🎯 [코나 청소년 파일럿 시작] "${firstBiz.companyName}" (IDX: ${firstBiz.idx}) 1~40번 입력 및 제출 직전 캡처 검증을 진행합니다...`);
       } else if (isMetrix) {
-        appendLog('info', `🎯 [메트릭스 1번 파일럿 시작] "${firstBiz.companyName}" (UID: ${firstBiz.uid}) 98% 안전 대기 완주를 진행합니다...`);
+        appendLog('info', `🎯 [경기도 소상공인 패널 단건 실행] #${targetPilotIdx} "${firstBiz.companyName}" (UID: ${firstBiz.uid}, 조사원: ${firstBiz.surveyorId || '강영미'}) [컨택] 휴대폰 저장 ➔ [설문참여] ➔ 98% 안전 대기 완주를 진행합니다...`);
       } else {
         appendLog('info', `🎯 [1번 단일 검증 시작] "${firstBiz.companyName}" 점포로 Q1부터 Agree.asp까지 안전 완주를 진행합니다... (슬롯: #${firstBiz.slotIndex || 1})`);
       }
@@ -2784,12 +2982,36 @@ async function initSurveyDetailPage() {
     const isGallupReturnFarm = (currentCampaign?.surveyType === 'gallup_return_farm');
     const firstQuota = quotaDb.find(b => b.index === 1) || quotaDb[0];
     const firstDone = firstQuota && (firstQuota.quotaStatus === 'pilot_done' || firstQuota.quotaStatus === 'completed' || firstQuota.status === '완료' || firstQuota.quotaStatus === '진행중(98%)' || firstQuota.status === '진행중(98%)');
-    const startIdx = (isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) ? 1 : (firstDone ? 2 : 1);
+    const startIdx = (isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul || isMetrix) ? 1 : (firstDone ? 2 : 1);
 
     // 1:1 슬롯 매핑 전수 검증 및 선택 항목 필터링
     let selectedTargetIndices = null;
     let targets = [];
-    if (isMetrixSeoul) {
+    if (isMetrix) {
+      const validAll = quotaDb.filter(b =>
+        !b.isClosedBiz &&
+        !String(b.bizStatus || '').includes('폐업') &&
+        b.quotaStatus !== 'excluded' &&
+        b.quotaStatus !== 'completed' &&
+        b.status !== '완료'
+      );
+      const checkedValid = validAll.filter((b, idx) => checkedMetrixSeqs.has(Number(b.index || b.seq || (idx + 1))));
+      const readyOnly = validAll.filter(b => b.quotaStatus !== 'pilot_done' && !String(b.quotaStatus || '').includes('98%') && !String(b.status || '').includes('98%'));
+      if (checkedValid.length > 0) {
+        targets = checkedValid;
+        selectedTargetIndices = checkedValid.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
+      } else if (readyOnly.length > 0) {
+        targets = readyOnly;
+        selectedTargetIndices = readyOnly.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
+      } else {
+        targets = validAll;
+        selectedTargetIndices = validAll.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
+      }
+      if (targets.length === 0) {
+        alert('실행할 미완료(정상 영업) 사업체가 없습니다. (폐업 제외 대상은 자동 제외됩니다)');
+        return;
+      }
+    } else if (isMetrixSeoul) {
       const uncompletedAll = quotaDb.filter(b => b.quotaStatus !== 'completed' && !String(b.status || '').includes('완료(100%)') && b.status !== '완료');
       const checkedUncompleted = uncompletedAll.filter((b, idx) => checkedSeoulSeqs.has(Number(b.index || b.seq || (idx + 1))));
       const readyOnly = uncompletedAll.filter(b => b.quotaStatus !== 'pilot_done' && !String(b.status || '').includes('99%'));
@@ -2892,14 +3114,16 @@ async function initSurveyDetailPage() {
         ? `[화성특례시 청소년 설문조사]\n미완료 ${targets.length}명(IDX ${targets[0]?.idx}~${targets[targets.length - 1]?.idx})에 대해 제출 직전 안전 대기(캡처만 수행) 모드로 배치를 시작하시겠습니까?`
         : `[화성특례시 청소년 설문조사]\n미완료 ${targets.length}명(IDX ${targets[0]?.idx}~${targets[targets.length - 1]?.idx})에 대해 배치 자동화를 시작합니다.\n\n📸 매 회차 제출 직전 스크린샷을 자동 촬영·보관한 후 실제 제출(제출하기 클릭)을 완료합니다. 계속하시겠습니까?`;
     } else if (isMetrix) {
+      const targetNameList = targets.slice(0, 8).map(b => `#${b.index || b.seq} ${b.companyName}(${b.surveyorId || '강영미'})`).join(', ') + (targets.length > 8 ? ` 외 ${targets.length - 8}건` : '');
       confirmMsg = safetyGuard
-        ? `[메트릭스 패널 54개 대상]\n잔여 ${targets.length}개 사업체에 대해 배치 자동화를 시작합니다.\n\n🛡️ [최종 제출 직전 98% 안전 대기 원칙 적용]\n전 문항 답변, 전자서명 및 간판사진 업로드가 완료된 후 최종 제출 직전(Step 119)에서 정지되어 사용자가 직접 검토/수정할 수 있습니다.\n\n계속 진행하시겠습니까?`
-        : `⚠️ 경고: 최종 제출 안전가드가 해제되어 있습니다!\n잔여 ${targets.length}개 사업체가 실제로 최종 제출(100% 완료) 마감 처리됩니다. 계속하시겠습니까?`;
+        ? `[2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 선택 사업체 일괄 자동 배치]\n선택된 사업체 ${targets.length}건(${targetNameList})에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 사업자번호 기반 폐업 리스트 자동 제외\n2. 설문목록 [컨택] 클릭 ➔ '휴대폰' 항목을 엑셀(구글 시트) 번호로 변경 후 하단 [저장] 클릭\n3. 컨택 팝업에서 [설문참여] 클릭하여 설문 시작\n4. 8대 업종별 맞춤 가이드 + 2차년도 패널 실측치(rawMeta) 반영 및 Step 119(98% 안전 대기)에서 정지\n\n계속 진행하시겠습니까?`
+        : `⚠️ 경고: 최종 제출 안전가드가 해제되어 있습니다!\n선택된 ${targets.length}개 사업체가 실제로 최종 제출(100% 완료) 마감 처리됩니다. 계속하시겠습니까?`;
     } else {
       confirmMsg = safetyGuard
         ? `${targets.length}개 대상 슬롯에 대해 배치 자동화를 시작합니다. (각 점포/상인회별 1:1 슬롯, 최종 동의 단계 안전 대기)`
         : `⚠️ 주의: 최종 제출 안전가드가 해제되어 있습니다!\n${targets.length}건의 설문이 각 점포별 1:1 슬롯으로 실제 최종 제출 마감됩니다. 계속하시겠습니까?`;
     }
+
 
     if (!confirm(confirmMsg)) return;
 
@@ -3879,11 +4103,12 @@ async function initSurveyDetailPage() {
     });
   }
 
-  // Kstat list.php / 한국리서치 TAPI / 글로벌리서치 GIFT / 서울시 패널 구글시트 실시간 동기화 버튼
+  // Kstat list.php / 한국리서치 TAPI / 글로벌리서치 GIFT / 서울시 패널 구글시트 / 경기도 622 3계정·구글시트·폐업조회 실시간 동기화 버튼
   const btnSyncKstatStatus = document.getElementById('btn-sync-kstat-status');
   if (btnSyncKstatStatus) {
     btnSyncKstatStatus.addEventListener('click', async () => {
       if (!currentCampaign?.id) return;
+      const isMetrix = (currentCampaign.surveyType === 'metrix_panel');
       const isHrcEnergy = (currentCampaign.surveyType === 'hrc_energy');
       const isGlobalriLiteracy = (currentCampaign.surveyType === 'globalri_literacy');
       const isGallupReturnFarm = (currentCampaign.surveyType === 'gallup_return_farm');
@@ -3901,35 +4126,41 @@ async function initSurveyDetailPage() {
       }
       const originalText = btnSyncKstatStatus.innerHTML;
       btnSyncKstatStatus.disabled = true;
-      btnSyncKstatStatus.innerHTML = isMetrixSeoul
-        ? '<i class="fa-solid fa-spinner fa-spin"></i> 구글 스프레드시트(시트2) 동기화 중...'
-        : (isGallupReturnFarm
-          ? '<i class="fa-solid fa-spinner fa-spin"></i> 한국갤럽(20263603) 동기화 중...'
-          : (isGlobalriLiteracy
-            ? '<i class="fa-solid fa-spinner fa-spin"></i> 글로벌리서치 GIFT 동기화 중...'
-            : (isHrcEnergy
-              ? '<i class="fa-solid fa-spinner fa-spin"></i> 한국리서치 TAPI 동기화 중...'
-              : '<i class="fa-solid fa-spinner fa-spin"></i> Kstat 동기화 중...')));
-      try {
-        const endpoint = isMetrixSeoul
-          ? `/api/campaigns/${currentCampaign.id}/sync-seoul-panel-sheet`
+      btnSyncKstatStatus.innerHTML = isMetrix
+        ? '<i class="fa-solid fa-spinner fa-spin"></i> 3계정·구글시트·폐업조회 동기화 중...'
+        : (isMetrixSeoul
+          ? '<i class="fa-solid fa-spinner fa-spin"></i> 구글 스프레드시트(시트2) 동기화 중...'
           : (isGallupReturnFarm
-            ? `/api/campaigns/${currentCampaign.id}/sync-gallup-status`
+            ? '<i class="fa-solid fa-spinner fa-spin"></i> 한국갤럽(20263603) 동기화 중...'
             : (isGlobalriLiteracy
-              ? `/api/campaigns/${currentCampaign.id}/sync-globalri-literacy`
+              ? '<i class="fa-solid fa-spinner fa-spin"></i> 글로벌리서치 GIFT 동기화 중...'
               : (isHrcEnergy
-                ? `/api/campaigns/${currentCampaign.id}/sync-hrc-energy`
-                : `/api/campaigns/${currentCampaign.id}/sync-kstat-status`)));
+                ? '<i class="fa-solid fa-spinner fa-spin"></i> 한국리서치 TAPI 동기화 중...'
+                : '<i class="fa-solid fa-spinner fa-spin"></i> Kstat 동기화 중...'))));
+      try {
+        const endpoint = isMetrix
+          ? `/api/campaigns/${currentCampaign.id}/sync-metrix-622`
+          : (isMetrixSeoul
+            ? `/api/campaigns/${currentCampaign.id}/sync-seoul-panel-sheet`
+            : (isGallupReturnFarm
+              ? `/api/campaigns/${currentCampaign.id}/sync-gallup-status`
+              : (isGlobalriLiteracy
+                ? `/api/campaigns/${currentCampaign.id}/sync-globalri-literacy`
+                : (isHrcEnergy
+                  ? `/api/campaigns/${currentCampaign.id}/sync-hrc-energy`
+                  : `/api/campaigns/${currentCampaign.id}/sync-kstat-status`))));
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: isGlobalriLiteracy ? JSON.stringify({ lidFilter: lidFilterInput }) : undefined
+          body: isGlobalriLiteracy
+            ? JSON.stringify({ lidFilter: lidFilterInput })
+            : (isMetrix ? JSON.stringify({ checkClosedBiz: true }) : undefined)
         });
         const data = await res.json();
         if (data.success) {
           alert(`✓ ${data.message}`);
-          appendLog('success', `[${isMetrixSeoul ? '서울시 패널 구글시트 동기화' : (isGallupReturnFarm ? '한국갤럽 상태 동기화' : (isGlobalriLiteracy ? '글로벌리서치 GIFT 동기화' : (isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화')))}] ${data.message}`);
-          if (isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) {
+          appendLog('success', `[${isMetrix ? '경기도 622 3계정·구글시트·폐업 동기화' : (isMetrixSeoul ? '서울시 패널 구글시트 동기화' : (isGallupReturnFarm ? '한국갤럽 상태 동기화' : (isGlobalriLiteracy ? '글로벌리서치 GIFT 동기화' : (isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화'))))}] ${data.message}`);
+          if (isMetrix || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) {
             await loadCampaign();
             await loadBlueprint();
           }

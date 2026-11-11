@@ -713,6 +713,9 @@ export function registerExecutionRoutes({
 
     const targets = quotaDb.filter(b => {
       const idx = Number(b.index || b.seq || b.slotIndex || 1);
+      if (b.isClosedBiz || String(b.bizStatus || '').includes('폐업') || b.quotaStatus === 'excluded') {
+        return false;
+      }
       if (selectedIndexSet) {
         if (!selectedIndexSet.has(idx)) return false;
         if (b.quotaStatus === 'completed' || String(b.status || '').includes('완료') || b.memberStatus === '완료') return false;
@@ -1129,6 +1132,11 @@ export function registerExecutionRoutes({
             } else if (isMetrix) {
               biz.quotaStatus = (result.status === 'stopped_at_review') ? '진행중(98%)' : (safetyGuard ? '진행중(98%)' : 'completed');
               biz.status = (result.status === 'stopped_at_review') ? '진행중(98%)' : (safetyGuard ? '진행중(98%)' : '완료');
+              if (result.phoneUpdated && result.updatedPhone) {
+                biz.serverPhone = result.updatedPhone;
+                biz.phone = result.updatedPhone;
+                biz.phoneNeedsSync = false;
+              }
               biz.completedAt = new Date().toISOString();
               biz.capturedSteps = result.capturedSteps;
               logger.success(`🎉 [메트릭스 배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" (UID: ${biz.uid}) ${biz.quotaStatus} 달성!`);
@@ -1272,6 +1280,8 @@ export function registerExecutionRoutes({
           ? quotaDb.filter(b => b.selectionType === '선정')
           : quotaDb;
         const allQuotasFinished = checkPool.length > 0 && checkPool.every(b =>
+          b.isClosedBiz ||
+          b.quotaStatus === 'excluded' ||
           b.quotaStatus === 'completed' ||
           b.quotaStatus === 'pilot_done' ||
           b.status === '완료' ||
@@ -1322,6 +1332,13 @@ export function registerExecutionRoutes({
       return res.status(404).json({ error: '해당 순번의 쿼터 사업자를 찾을 수 없습니다.' });
     }
 
+    if (targetBiz.isClosedBiz || String(targetBiz.bizStatus || '').includes('폐업') || targetBiz.quotaStatus === 'excluded') {
+      return res.status(400).json({
+        error: `[폐업 제외 대상] "${targetBiz.companyName}" (사업자번호: ${targetBiz.bizNumber || '-'})는 폐업 제외 대상이므로 설문 입력을 진행할 수 없습니다.`
+      });
+    }
+
+    const isMetrix = (campaign.surveyType === 'metrix_panel');
     const isKona = (campaign.surveyType === 'kona_youth');
     const isHrcEnergy = (campaign.surveyType === 'hrc_energy');
     const isGlobalriLiteracy = (campaign.surveyType === 'globalri_literacy');
@@ -1354,7 +1371,25 @@ export function registerExecutionRoutes({
 
     logger.runWithCampaignContext(campaign.id, () => (async () => {
       try {
-        const result = isMetrixSeoul
+        const result = isMetrix
+          ? await runMetrixSurvey({
+              surveyUrl: targetUrl,
+              slotData: targetBiz,
+              policy: campaign.metrixPolicy || campaign.masterBaseline?.policy || {},
+              quotaIndex: targetBiz.index || quotaIndex,
+              pilotMode: true,
+              safetyGuard: true,
+              reportDir: path.join(reportsDir, campaign.id, `metrix_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || ''}`),
+              onProgress: (info) => {
+                logger.broadcast({
+                  type: 'PILOT_PROGRESS',
+                  campaignId: campaign.id,
+                  quotaIndex: targetBiz.index,
+                  ...info
+                });
+              }
+            })
+          : (isMetrixSeoul
           ? await runMetrixSeoulSurvey({
               campaign,
               policy: campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || {},
@@ -1461,10 +1496,18 @@ export function registerExecutionRoutes({
                           ...info
                         });
                       }
-                    })))));
+                    }))))));
 
         if (result?.success) {
-          if (isMetrixSeoul) {
+          if (isMetrix) {
+            targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? '진행중(98%)' : 'completed';
+            targetBiz.status = (result.status === 'stopped_at_review') ? '진행중(98%)' : '완료';
+            if (result.phoneUpdated && result.updatedPhone) {
+              targetBiz.serverPhone = result.updatedPhone;
+              targetBiz.phone = result.updatedPhone;
+              targetBiz.phoneNeedsSync = false;
+            }
+          } else if (isMetrixSeoul) {
             if (result.alreadyCompleted) {
               targetBiz.quotaStatus = 'completed';
               targetBiz.status = '완료(100%)';
@@ -1548,7 +1591,7 @@ export function registerExecutionRoutes({
           targetBiz.capturedSteps = result.capturedSteps;
           logger.success(`[개별 쿼터 테스트 성공] "${targetBiz.respondentName || targetBiz.buildingName || targetBiz.marketName || targetBiz.companyName}" 완주 완료!`);
 
-          const evalUrl = (!isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) ? (targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null)) : null;
+          const evalUrl = (!isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) ? (targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null)) : null;
           if (evalUrl) {
             try {
               const evalResult = await runKstatEvaluation({
