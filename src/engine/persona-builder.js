@@ -241,7 +241,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   let employeeTemp = 0;
   let employeeFamily = 0;
 
-  // 1) 가족 종사자 수 (A10_1) 결정: 레인지 설정 시 엄격 반영 (0명 허용), 미설정 시 autoEmp/기본값 반영
+  // 1) 무급 가족 종사자 수 (A10_3) 결정: 레인지 설정 시 엄격 반영 (0명 허용), 미설정 시 autoEmp/기본값 반영
   if (mb.employeeFamilyMin !== undefined && mb.employeeFamilyMax !== undefined) {
     const minFam = Math.max(0, parseInt(mb.employeeFamilyMin, 10));
     const maxFam = Math.max(minFam, parseInt(mb.employeeFamilyMax, 10));
@@ -267,7 +267,7 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     employeeFamily = Math.max(0, baseFamily);
   }
 
-  // 2) 상시 유급 종업원 수 (A10_2) 및 임시/일용 종업원 수 (A10_3) 결정
+  // 2) 상용근로자 수 (A10_1) 및 임시·일용직 종업원 수 (A10_2) 결정
   if (mb.employeeRegularMin !== undefined && mb.employeeRegularMax !== undefined) {
     const minReg = Math.max(0, parseInt(mb.employeeRegularMin, 10));
     const maxReg = Math.max(minReg, parseInt(mb.employeeRegularMax, 10));

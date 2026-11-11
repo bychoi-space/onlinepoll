@@ -677,9 +677,17 @@ export async function runKstatSurvey({
 
         const fA10 = page.frame({ url: /\/A10\.asp/i });
         if (fA10) {
-          await safeFill(fA10, 'input[name="A10_1"]', persona.employees.family);
-          await safeFill(fA10, 'input[name="A10_2"]', persona.employees.regular);
-          await safeFill(fA10, 'input[name="A10_3"]', persona.employees.temp);
+          // Kstat A10.asp 실제 필드 정의:
+          // A10_1 = 상용근로자, A10_2 = 임시·일용직, A10_3 = 무급 가족 종사자
+          await safeFill(fA10, 'input[name="A10_1"]', persona.employees.regular);
+          await safeFill(fA10, 'input[name="A10_2"]', persona.employees.temp);
+          await safeFill(fA10, 'input[name="A10_3"]', persona.employees.family);
+          await fA10.evaluate(() => {
+            if (typeof PlusValue === 'function') PlusValue('A10_1,A10_2,A10_3');
+            const sumEl = document.getElementById('SumValue');
+            const a10Sum = document.getElementById('A10_SUM') || document.querySelector('input[name="A10_SUM"]');
+            if (sumEl && a10Sum) a10Sum.value = sumEl.textContent.trim();
+          }).catch(err => console.error('A10 sum sync error:', err));
         }
       }
 
@@ -928,15 +936,41 @@ export async function runKstatSurvey({
         }
       }
 
-      // P6: 영업비용 구성비 (B4 - 합계 100% 필수)
+      // P6: 영업비용 구성비 (B4 - 합계 100% 필수, A10 상용/임시직 종업원 존재 시 B4_1 > 0 필수)
       else if (stepName === 'P6') {
         const fB4 = page.frame({ url: /\/B4\.asp/i });
         if (fB4) {
-          await safeFill(fB4, '#B4_1, input[name="B4_1"]', persona.costs.labor);
-          await safeFill(fB4, '#B4_2, input[name="B4_2"]', persona.costs.raw);
-          await safeFill(fB4, '#B4_3, input[name="B4_3"]', persona.costs.rent);
-          await safeFill(fB4, '#TB4_4, input[name="TB4_4"]', persona.costs.etcText || '세금');
-          await safeFill(fB4, '#B4_4, input[name="B4_4"]', persona.costs.etc);
+          const paidEmpCount = (parseInt(persona.employees?.regular || '0', 10) || 0) + (parseInt(persona.employees?.temp || '0', 10) || 0);
+          let nLabor = parseInt(persona.costs?.labor || '0', 10) || 0;
+          let nRaw = parseInt(persona.costs?.raw || '65', 10) || 65;
+          let nRent = parseInt(persona.costs?.rent || '30', 10) || 30;
+          let nEtc = parseInt(persona.costs?.etc || '5', 10) || 5;
+
+          // [교차 검증 안전장치] 상용/임시직 종업원이 있는데 인건비(B4_1)가 0%인 경우 최소 20% 자동 배정
+          if (paidEmpCount > 0 && nLabor <= 0) {
+            nLabor = 20;
+            if (nRaw > 30) {
+              nRaw -= 20;
+            } else {
+              nRent = Math.max(5, 100 - nLabor - nRaw - nEtc);
+            }
+          } else if (paidEmpCount === 0 && nLabor > 0) {
+            // 유급 종업원이 0명인데 인건비가 있는 경우 원재료비로 흡수하여 0% 정렬
+            nRaw += nLabor;
+            nLabor = 0;
+          }
+
+          // 합계 100% 보장
+          const sumB4 = nLabor + nRaw + nRent + nEtc;
+          if (sumB4 !== 100) {
+            nRaw = Math.max(5, nRaw + (100 - sumB4));
+          }
+
+          await safeFill(fB4, '#B4_1, input[name="B4_1"]', String(nLabor));
+          await safeFill(fB4, '#B4_2, input[name="B4_2"]', String(nRaw));
+          await safeFill(fB4, '#B4_3, input[name="B4_3"]', String(nRent));
+          await safeFill(fB4, '#TB4_4, input[name="TB4_4"]', persona.costs?.etcText || '세금');
+          await safeFill(fB4, '#B4_4, input[name="B4_4"]', String(nEtc));
         }
       }
 
