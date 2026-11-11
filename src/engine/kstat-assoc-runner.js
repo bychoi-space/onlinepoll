@@ -1614,16 +1614,30 @@ export async function runKstatAssocSurvey(options = {}) {
                   curB6C.value = formatted;
                   if (typeof $ !== 'undefined') $('#B6C').val(formatted).trigger('input').trigger('change');
                 }
-              }
-
-              // B6D 팩스 유무 신규 라디오 공란 시 2(무) 기본 선택
-              if (!document.querySelector('input[name="B6D"]:checked')) {
-                const opt2 = document.querySelector('input[name="B6D"][value="2"]');
-                if (opt2) {
-                  if (!opt2.checked) opt2.click();
-                  opt2.checked = true;
-                  opt2.dispatchEvent(new Event('change', { bubbles: true }));
-                  if (typeof $ !== 'undefined') $(opt2).prop('checked', true).trigger('change');
+                // B6A=1(사무실 있음)일 때만 B6D 팩스 유무 공란 시 2(무) 기본 선택
+                if (!document.querySelector('input[name="B6D"]:checked')) {
+                  const opt2 = document.querySelector('input[name="B6D"][value="2"]');
+                  if (opt2) {
+                    opt2.disabled = false;
+                    if (!opt2.checked) opt2.click();
+                    opt2.checked = true;
+                    opt2.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(opt2).prop('checked', true).trigger('change');
+                  }
+                }
+              } else {
+                // B6A=2(사무실 없음)일 때는 toggleB6A 규칙과 동일하게 주소/전화/팩스 초기화 및 B6D 해제
+                if (typeof toggleB6A === 'function') {
+                  toggleB6A();
+                } else {
+                  ['#B6B1', '#B6B2', '#B6B3', '#B6B4', '#B6C', '#B6D_FAX'].forEach(sel => {
+                    const el = document.querySelector(sel);
+                    if (el) { el.value = ''; el.disabled = true; }
+                  });
+                  document.querySelectorAll('input[name="B6D"]').forEach(r => {
+                    r.checked = false;
+                    r.disabled = true;
+                  });
                 }
               }
             }, { preserveExisting, marketAddr, marketPhone });
@@ -1928,9 +1942,11 @@ export async function runKstatAssocSurvey(options = {}) {
         if (c3Frame) {
           try {
             isParking = await c3Frame.evaluate(({ preserveExisting }) => {
-              const pc3Val = document.querySelector('input[name="PC3"]:checked')?.value || '2';
+              const allScripts = Array.from(document.scripts).map(s => s.textContent || '').join('\n');
+              const scriptPc3 = allScripts.match(/['"]PC3['"]\s*:\s*['"]([^'"]+)['"]/)?.[1];
+              const pc3Val = document.querySelector('input[name="PC3"]:checked')?.value || scriptPc3 || '2';
               const curChecked = document.querySelector('input[name="C3"]:checked');
-              const targetVal = (!preserveExisting || !curChecked) ? pc3Val : curChecked.value;
+              const targetVal = (pc3Val === '1') ? '1' : ((!preserveExisting || !curChecked) ? pc3Val : curChecked.value);
               const targetC3 = document.querySelector(`input[name="C3"][value="${targetVal}"]`) || document.querySelector('input[name="C3"][value="2"]');
               if (targetC3) {
                 if (!targetC3.checked) targetC3.click();
@@ -2262,14 +2278,17 @@ export async function runKstatAssocSurvey(options = {}) {
         if (d1Frame) {
           try {
             isMarketingActive = await d1Frame.evaluate(({ hasFestival, preserveExisting }) => {
+              const allScripts = Array.from(document.scripts).map(s => s.textContent || '').join('\n');
+              const scriptPd1 = allScripts.match(/['"]PD1['"]\s*:\s*['"]([^'"]+)['"]/)?.[1];
+              const pd1Val = document.querySelector('input[name="PD1"]:checked')?.value || scriptPd1;
               const curChecked = document.querySelector('input[name="D1"]:checked');
               let targetVal = '2'; // 기본값 미실시
-              if (curChecked) {
+              if (pd1Val === '1' || hasFestival) {
+                targetVal = '1';
+              } else if (preserveExisting && curChecked) {
                 targetVal = curChecked.value;
-              } else {
-                const pd1Val = document.querySelector('input[name="PD1"]:checked')?.value;
-                if (pd1Val) targetVal = pd1Val;
-                else targetVal = hasFestival ? '1' : '2';
+              } else if (pd1Val) {
+                targetVal = pd1Val;
               }
 
               const target = document.querySelector(`input[name="D1"][value="${targetVal}"]`) || document.querySelector('input[name="D1"][value="2"]');
@@ -2593,13 +2612,16 @@ export async function runKstatAssocSurvey(options = {}) {
         for (const f of page.frames()) {
           try {
             await f.evaluate(({ preserveExisting }) => {
+              const allScripts = Array.from(document.scripts).map(s => s.textContent || '').join('\n');
               for (let i = 1; i <= 5; i++) {
                 const radios = document.querySelectorAll(`input[name="D2_${i}"]`);
                 if (radios.length > 0) {
+                  const scriptPrev = allScripts.match(new RegExp(`['"]PD2_${i}['"]\\s*:\\s*['"]([^'"]+)['"]`))?.[1];
+                  const prevVal = document.querySelector(`input[name="PD2_${i}"]:checked`)?.value || scriptPrev || '1';
                   const cur = document.querySelector(`input[name="D2_${i}"]:checked`);
-                  if (!preserveExisting || !cur) {
-                    const prevVal = document.querySelector(`input[name="PD2_${i}"]:checked`)?.value || '1';
-                    const targetRadio = document.querySelector(`input[name="D2_${i}"][value="${prevVal}"]`) || radios[0];
+                  if (prevVal === '1' || !preserveExisting || !cur) {
+                    const targetVal = prevVal === '1' ? '1' : prevVal;
+                    const targetRadio = document.querySelector(`input[name="D2_${i}"][value="${targetVal}"]`) || radios[0];
                     if (targetRadio) {
                       if (!targetRadio.checked) targetRadio.click();
                       targetRadio.checked = true;
@@ -2634,12 +2656,15 @@ export async function runKstatAssocSurvey(options = {}) {
         // 1. frame_D3: 수혜 여부 미러링 및 건수 필드 제어
         const d3Frame = page.frames().find(f => f.url().includes('D3.asp') || f.name() === 'frame_D3');
         let isBenefit = false;
+        let benefitCount = 1;
         if (d3Frame) {
           try {
-            isBenefit = await d3Frame.evaluate(({ preserveExisting }) => {
-              const prevVal = document.querySelector('input[name="PD3"]:checked')?.value || '2';
+            const d3Res = await d3Frame.evaluate(({ preserveExisting }) => {
+              const allScripts = Array.from(document.scripts).map(s => s.textContent || '').join('\n');
+              const scriptPd3 = allScripts.match(/['"]PD3['"]\s*:\s*['"]([^'"]+)['"]/)?.[1];
+              const prevVal = document.querySelector('input[name="PD3"]:checked')?.value || scriptPd3 || '2';
               const curChecked = document.querySelector('input[name="D3"]:checked');
-              const targetVal = (!preserveExisting || !curChecked) ? prevVal : curChecked.value;
+              const targetVal = (prevVal === '1') ? '1' : ((!preserveExisting || !curChecked) ? prevVal : curChecked.value);
               const targetRadio = document.querySelector(`input[name="D3"][value="${targetVal}"]`) || document.querySelector('input[name="D3"][value="2"]');
               if (targetRadio) {
                 if (!targetRadio.checked) targetRadio.click();
@@ -2648,34 +2673,40 @@ export async function runKstatAssocSurvey(options = {}) {
                 if (typeof $ !== 'undefined') $(targetRadio).prop('checked', true).trigger('change');
               }
 
-              // 건수 필드 (#TD3_1)
+              // 건수 필드 (#TD3_1): D3A 전년도 세부 행이 없을 때 다중 빈 행 Alert 방지를 위해 기본 1건 설정
               const cntInp = document.querySelector('#TD3_1, input[name="TD3_1"]');
+              let cntNum = 1;
               if (cntInp) {
                 if (targetVal === '1') {
-                  const pCnt = document.querySelector('#TPD3_1')?.value || '1';
                   cntInp.disabled = false;
-                  cntInp.value = pCnt.trim() || '1';
+                  const existingCnt = parseInt((cntInp.value || '').trim(), 10);
+                  cntNum = (preserveExisting && !isNaN(existingCnt) && existingCnt >= 1 && existingCnt <= 20) ? existingCnt : 1;
+                  cntInp.value = String(cntNum);
                   cntInp.dispatchEvent(new Event('input', { bubbles: true }));
                   cntInp.dispatchEvent(new Event('change', { bubbles: true }));
                 } else {
                   cntInp.value = '';
                   cntInp.disabled = true;
+                  cntNum = 0;
                 }
               }
-              return targetVal === '1';
+              return { isBenefit: targetVal === '1', cntNum };
             }, { preserveExisting });
+            isBenefit = d3Res.isBenefit;
+            benefitCount = d3Res.cntNum || 1;
           } catch (err) {
             console.error('[P14 D3 frame 주입 오류]:', err);
           }
         }
 
-        // 2. frame_D3A & frame_D3B: 수혜(1)인 경우 세부 내역 및 만족도 주입
+        // 2. frame_D3A & frame_D3B: 수혜(1)인 경우 세부 내역(1..benefitCount 전체 블록) 및 만족도 주입
         if (isBenefit) {
           const d3aFrame = page.frames().find(f => f.url().includes('D3A.asp') || f.name() === 'frame_D3A');
           if (d3aFrame) {
             try {
-              await d3aFrame.evaluate(() => {
-                const getP = (id) => document.querySelector('#' + id)?.value || '';
+              await d3aFrame.evaluate(({ count }) => {
+                const getP = (id) => document.querySelector('#' + id)?.value?.trim() || '';
+                const getCur = (id) => document.querySelector('#' + id)?.value?.trim() || '';
                 const setVal = (id, val) => {
                   const el = document.querySelector('#' + id) || document.querySelector(`input[name="${id}"]`);
                   if (el) {
@@ -2686,12 +2717,19 @@ export async function runKstatAssocSurvey(options = {}) {
                     if (typeof $ !== 'undefined') $(el).val(val).trigger('input').trigger('change');
                   }
                 };
-                setVal('D3AA_1', getP('PD3AA_1') || '소상공인시장진흥공단');
-                setVal('D3AB_1', getP('PD3AB_1') || '전통시장 활성화 지원사업');
-                setVal('D3AC_1', getP('PD3AC_1') || '시장 시설개선 및 마케팅');
-                setVal('D3AD_1', getP('PD3AD_1') || '1000');
-              });
-            } catch (_) {}
+                if (typeof syncD3ACount === 'function') {
+                  try { syncD3ACount(); } catch (_) {}
+                }
+                for (let gi = 1; gi <= Math.min(20, Math.max(1, count)); gi++) {
+                  setVal(`D3AA_${gi}`, getCur(`D3AA_${gi}`) || getP(`PD3AA_${gi}`) || '소상공인시장진흥공단');
+                  setVal(`D3AB_${gi}`, getCur(`D3AB_${gi}`) || getP(`PD3AB_${gi}`) || '전통시장 활성화 지원사업');
+                  setVal(`D3AC_${gi}`, getCur(`D3AC_${gi}`) || getP(`PD3AC_${gi}`) || '시장 시설개선 및 마케팅');
+                  setVal(`D3AD_${gi}`, getCur(`D3AD_${gi}`) || getP(`PD3AD_${gi}`) || '1000');
+                }
+              }, { count: benefitCount });
+            } catch (err) {
+              console.error('[P14 D3A 주입 오류]:', err);
+            }
           }
 
           const d3bFrame = page.frames().find(f => f.url().includes('D3B.asp') || f.name() === 'frame_D3B');
@@ -2710,7 +2748,9 @@ export async function runKstatAssocSurvey(options = {}) {
                   }
                 });
               });
-            } catch (_) {}
+            } catch (err) {
+              console.error('[P14 D3B 주입 오류]:', err);
+            }
           }
         }
 
@@ -2735,8 +2775,9 @@ export async function runKstatAssocSurvey(options = {}) {
         if (d4Frame) {
           try {
             isCollab = await d4Frame.evaluate(() => {
-              // 전년도 응답 최우선 미러링 (미실시 2가 기본)
-              const prevVal = document.querySelector('input[name="PD4"]:checked')?.value || '2';
+              const allScripts = Array.from(document.scripts).map(s => s.textContent || '').join('\n');
+              const scriptPd4 = allScripts.match(/['"]PD4['"]\s*:\s*['"]([^'"]+)['"]/)?.[1];
+              const prevVal = document.querySelector('input[name="PD4"]:checked')?.value || scriptPd4 || '2';
               const targetVal = prevVal;
               const targetRadio = document.querySelector(`input[name="D4"][value="${targetVal}"]`) || document.querySelector('input[name="D4"][value="2"]');
               if (targetRadio) {
@@ -2759,7 +2800,8 @@ export async function runKstatAssocSurvey(options = {}) {
               const d4aInp = document.querySelector('#D4A_1, input[name="D4A_1"]');
               if (d4aInp) {
                 if (isCollab) {
-                  const getP = (id) => document.querySelector('#' + id)?.value || '';
+                  const getP = (id) => document.querySelector('#' + id)?.value?.trim() || '';
+                  const getCur = (id) => document.querySelector('#' + id)?.value?.trim() || '';
                   const setVal = (id, val) => {
                     const el = document.querySelector('#' + id) || document.querySelector(`input[name="${id}"]`);
                     if (el) {
@@ -2769,18 +2811,34 @@ export async function runKstatAssocSurvey(options = {}) {
                       el.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                   };
-                  setVal('D4A_1', getP('PD4A_1') || '인근 상권 공동 마케팅 협력');
-                  setVal('D4B_1', getP('PD4B_1') || '인근 상인회');
-                  setVal('D4C_1', getP('PD4C_1') || '정례 회의 및 상생 협약');
+                  setVal('D4A_1', getCur('D4A_1') || getP('PD4A_1') || '인근 상권 공동 마케팅 협력');
+                  setVal('D4B_1', getCur('D4B_1') || getP('PD4B_1') || '인근 상인회');
+                  setVal('D4C_1', getCur('D4C_1') || getP('PD4C_1') || '정례 회의 및 상생 협약');
+                  setVal('D4D_1', getCur('D4D_1') || getP('PD4D_1') || '2024');
+                  setVal('D4E_1', getCur('D4E_1') || getP('PD4E_1') || '1000');
+                  const cbF = document.querySelector('#D4F_1_1, input[name="D4F_1_1"]');
+                  if (cbF && !document.querySelector('input[type="checkbox"][name^="D4F_1_"]:checked')) {
+                    cbF.click();
+                    cbF.checked = true;
+                    cbF.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                  const rG = document.querySelector('input[name="D4G_1"]:checked') || document.querySelector('input[name="D4G_1"][value="4"]');
+                  if (rG && !rG.checked) {
+                    rG.click();
+                    rG.checked = true;
+                    rG.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
                 } else {
-                  ['D4A_1', 'D4B_1', 'D4C_1'].forEach(id => {
+                  ['D4A_1', 'D4B_1', 'D4C_1', 'D4D_1', 'D4E_1'].forEach(id => {
                     const el = document.querySelector('#' + id) || document.querySelector(`input[name="${id}"]`);
                     if (el) { el.value = ''; el.disabled = true; }
                   });
                 }
               }
             }, { isCollab });
-          } catch (_) {}
+          } catch (err) {
+            console.error('[P15 D4A frame 주입 오류]:', err);
+          }
         }
 
         await captureStep('P15', 'P15_상권협력D4');
@@ -2804,8 +2862,9 @@ export async function runKstatAssocSurvey(options = {}) {
         if (d5Frame) {
           try {
             isEducation = await d5Frame.evaluate(() => {
-              // 전년도 응답 최우선 미러링 (미실시 2가 기본)
-              const prevVal = document.querySelector('input[name="PD5"]:checked')?.value || '2';
+              const allScripts = Array.from(document.scripts).map(s => s.textContent || '').join('\n');
+              const scriptPd5 = allScripts.match(/['"]PD5['"]\s*:\s*['"]([^'"]+)['"]/)?.[1];
+              const prevVal = document.querySelector('input[name="PD5"]:checked')?.value || scriptPd5 || '2';
               const targetVal = prevVal;
               const targetRadio = document.querySelector(`input[name="D5"][value="${targetVal}"]`) || document.querySelector('input[name="D5"][value="2"]');
               if (targetRadio) {
@@ -3220,14 +3279,22 @@ export async function runKstatAssocSurvey(options = {}) {
                 const tf3_6 = document.querySelector('#TF3_6, input[name="TF3_6"]');
                 if (tf3_6) tf3_6.value = '';
 
-                const hasChecked = Array.from(f3Checkboxes).filter(c => c.name !== 'F3_6').some(c => c.checked);
-                if (!hasChecked) {
-                  const f3_2 = document.querySelector('#F3_2, input[name="F3_2"]') || document.querySelector('#F3_1, input[name="F3_1"]');
-                  if (f3_2) {
-                    if (!f3_2.checked) f3_2.click();
-                    f3_2.checked = true;
-                    f3_2.dispatchEvent(new Event('change', { bubbles: true }));
+                if (f1_4 > 0) {
+                  const hasChecked = Array.from(f3Checkboxes).filter(c => c.name !== 'F3_6').some(c => c.checked);
+                  if (!hasChecked) {
+                    const f3_2 = document.querySelector('#F3_2, input[name="F3_2"]') || document.querySelector('#F3_1, input[name="F3_1"]');
+                    if (f3_2) {
+                      if (!f3_2.checked) f3_2.click();
+                      f3_2.checked = true;
+                      f3_2.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
                   }
+                } else {
+                  f3Checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    cb.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(cb).prop('checked', false).trigger('change');
+                  });
                 }
               }
               const f4Inputs = document.querySelectorAll('input[name^="F4"]:not([type="hidden"])');
@@ -4226,10 +4293,10 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
           b5d.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
-        // B6: 팩스 유무 신규 라디오
-        if (document.querySelector('input[name="B6D"]') && !document.querySelector('input[name="B6D"]:checked')) {
+        // B6: 사무실 있음(B6A=1)일 때만 팩스 유무 신규 라디오 기본 2 선택
+        if (document.querySelector('input[name="B6A"]:checked')?.value === '1' && document.querySelector('input[name="B6D"]') && !document.querySelector('input[name="B6D"]:checked')) {
           const opt2 = document.querySelector('input[name="B6D"][value="2"]');
-          if (opt2) {
+          if (opt2 && !opt2.disabled) {
             opt2.checked = true;
             opt2.dispatchEvent(new Event('change', { bubbles: true }));
           }

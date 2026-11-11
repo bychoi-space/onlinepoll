@@ -117,10 +117,17 @@ export async function scrapeKstatAssocSlots(listUrl, options = {}) {
       }).filter(r => r.ran_id && r.ran_id.length > 3);
     });
 
-    logger.info(`[Kstat 상인회 슬롯 스크래퍼] 총 ${rows.length}개 상인회 슬롯 추출 성공.`);
+    const seenRanIds = new Set();
+    const uniqueRows = rows.filter(r => {
+      if (seenRanIds.has(r.ran_id)) return false;
+      seenRanIds.add(r.ran_id);
+      return true;
+    });
+
+    logger.info(`[Kstat 상인회 슬롯 스크래퍼] 총 ${uniqueRows.length}개 고유 상인회 슬롯 추출 성공 (원본 행: ${rows.length}개).`);
 
     // 5. 상인회 전용 규격화 및 URL 조립 (P26042401A / P26042401AA)
-    const formattedSlots = rows.map((s, idx) => {
+    const formattedSlots = uniqueRows.map((s, idx) => {
       const surveyUrl = `https://kstat.surveys.kr/2026/P26042401A/index.asp?KID=${s.ran_id}&type=tapi&prid=${detectedPrid}&mnid=${detectedMnid}&srt=1`;
       const evalUrl = `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${s.ran_id}&type=tapi&prid=${detectedPrid}&mnid=${detectedMnid}&srt=2`;
 
