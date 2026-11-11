@@ -51,8 +51,17 @@ export async function runKstatAssocSurvey(options = {}) {
   ).trim();
   logger.info(`[상인회 러너] 시작 ➔ 대상 시장: "${marketName}" (슬롯: #${quotaIndex}, 조사원: "${effectiveSurveyor}"), 파일럿=${pilotMode}, 기입력보존=${preserveExisting}, URL=${surveyUrl}`);
 
-  const browser = await chromium.launch({ headless: true });
+  const launchOpts = { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] };
+  if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH && fs.existsSync(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH)) {
+    launchOpts.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+  } else if (fs.existsSync('/usr/bin/chromium')) {
+    launchOpts.executablePath = '/usr/bin/chromium';
+  } else if (fs.existsSync('/usr/bin/chromium-browser')) {
+    launchOpts.executablePath = '/usr/bin/chromium-browser';
+  }
+  const browser = await chromium.launch(launchOpts);
   const context = await browser.newContext({
+    ignoreHTTPSErrors: true,
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     viewport: { width: 1400, height: 1000 }
   });
@@ -1194,30 +1203,35 @@ export async function runKstatAssocSurvey(options = {}) {
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
-        // 1. B1.asp: 운영여부 및 개설년도 2024년과 동일하게 입력
+        // 1. B1.asp: 운영여부 및 개설년도 (전년도 PB1이 1이거나 신규 상점가/관리주체 상인회인 경우 반드시 1 운영으로 입력)
         const b1Frame = page.frames().find(f => f.url().includes('B1.asp'));
         if (b1Frame) {
           try {
             await b1Frame.evaluate(({ preserveExisting }) => {
-              const pb1Val = document.querySelector('input[name="PB1"]:checked')?.value || '1';
-              const targetB1 = document.querySelector(`input[name="B1"][value="${pb1Val}"]`) || document.querySelector('input[name="B1"][value="1"]');
-              if (targetB1 && (!preserveExisting || !document.querySelector('input[name="B1"]:checked'))) {
+              const pb1Val = document.querySelector('input[name="PB1"]:checked')?.value || '';
+              // 전년도 PB1이 명시적으로 '2'(미운영)가 아닌 한, 상인회 조사 대상(A3A=1)은 '1'(운영) 선택 보장
+              const targetVal = (pb1Val === '2') ? '2' : '1';
+              const curChecked = document.querySelector('input[name="B1"]:checked');
+              const targetB1 = document.querySelector(`input[name="B1"][value="${targetVal}"]`) || document.querySelector('input[name="B1"][value="1"]');
+              if (targetB1 && (!preserveExisting || !curChecked || (targetVal === '1' && curChecked.value !== '1'))) {
                 if (!targetB1.checked) targetB1.click();
                 targetB1.checked = true;
                 targetB1.dispatchEvent(new Event('change', { bubbles: true }));
                 if (typeof $ !== 'undefined') $(targetB1).prop('checked', true).trigger('change');
               }
 
-              // 운영 중(1)인 경우 개설년도 2024년(TPB1_1)과 100% 동일하게 입력
-              const curB1 = document.querySelector('input[name="B1"]:checked')?.value || pb1Val;
+              // 운영 중(1)인 경우 개설년도 2024년(TPB1_1) 미러링 (신규 지정 상점가는 2023 기본값)
+              const curB1 = document.querySelector('input[name="B1"]:checked')?.value || targetVal;
               if (curB1 === '1') {
-                const prevYear = document.querySelector('#TPB1_1')?.value || document.querySelector('input[name="TPB1_1"]')?.value || '2020';
+                const rawPrevYear = document.querySelector('#TPB1_1')?.value || document.querySelector('input[name="TPB1_1"]')?.value || '';
+                const safeYear = (rawPrevYear && rawPrevYear.trim() !== '') ? rawPrevYear.trim() : '2023';
                 const tb1 = document.querySelector('#TB1_1') || document.querySelector('input[name="TB1_1"]');
                 if (tb1) {
-                  tb1.value = prevYear.trim();
+                  tb1.disabled = false;
+                  tb1.value = safeYear;
                   tb1.dispatchEvent(new Event('input', { bubbles: true }));
                   tb1.dispatchEvent(new Event('change', { bubbles: true }));
-                  if (typeof $ !== 'undefined') $(tb1).val(prevYear.trim()).trigger('input').trigger('change');
+                  if (typeof $ !== 'undefined') $(tb1).val(safeYear).trigger('input').trigger('change');
                 }
               }
             }, { preserveExisting });
@@ -3097,65 +3111,116 @@ export async function runKstatAssocSurvey(options = {}) {
       }
 
       // ------------------------------------------
-      // 2-0) P20 (F1 ~ F4: 빈 점포 현황 수치 '0' 주입)
+      // 2-0) P20 (F1 ~ F4: 빈 점포 현황 - A6_2_1 빈점포 수 및 전년도 PF1~PF4 정합성 동기화)
       // ------------------------------------------
       if (currUrl.includes('P20') || currPageName === 'P20') {
-        onProgress({ step: 'P20', message: `[P20] F1~F4 빈 점포 수치 '0' 자동 응답 중...` });
+        onProgress({ step: 'P20', message: `[P20] F1~F4 빈 점포 현황 (A6-2-1 빈점포 수 및 전년도 값 정합 동기화) 중...` });
         await syncAllChildFrames(page);
         await delay(200);
 
         await mirrorPrevYearToCurrent(page, { preserveExisting });
 
-        // F1.asp: 항목 모두 '0'으로 입력 및 calcF1_4 호출
+        // A6_2_1 (2025년 12월 말 빈점포 수)를 A6.asp에서 직접 조회하여 F1_1과 100% 일치 보장
+        const a6EmptyVal = await page.evaluate(async () => {
+          try {
+            const idKey = document.querySelector('input[name="IDKey"]')?.value || document.querySelector('input[name="VC_ID"]')?.value || '';
+            if (!idKey) return null;
+            const body = new URLSearchParams({ IDKey: idKey, VC_ID: idKey, ResType: 'TAPI', PVALUE: '2' }).toString();
+            const res = await fetch('A6.asp', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+            const html = await res.text();
+            const mCurr = html.match(/'A6_2_1'\s*:\s*'([^']*)'/);
+            const mPrev = html.match(/'PA6_2_1'\s*:\s*'([^']*)'/);
+            if (mCurr && mCurr[1] !== '') return mCurr[1];
+            if (mPrev && mPrev[1] !== '') return mPrev[1];
+          } catch (_) {}
+          return null;
+        }).catch(() => null);
+
+        // F1.asp: A6_2_1(2025년 12월 말 빈점포 수) 및 전년도 PF1_1/PF1_4와 정합 동기화
         const f1Frame = page.frames().find(f => f.url().includes('F1.asp'));
+        let targetF1_4 = 0;
         if (f1Frame) {
           try {
-            await f1Frame.evaluate(() => {
-              ['F1_1', 'F1_2', 'F1_3', 'F1_4'].forEach(name => {
+            targetF1_4 = await f1Frame.evaluate(({ a6Empty }) => {
+              const pf1_1 = document.querySelector('input[name="PF1_1"]')?.value?.trim() || '';
+              const pf1_4 = document.querySelector('input[name="PF1_4"]')?.value?.trim() || '';
+              const baseEmpty = (a6Empty !== null && a6Empty !== '') ? parseInt(a6Empty, 10) : (parseInt(pf1_1, 10) || 0);
+              const safeF1_1 = (!isNaN(baseEmpty) && baseEmpty >= 0) ? baseEmpty : 0;
+              const rawPf1_4 = parseInt(pf1_4, 10);
+              const safeF1_4 = (safeF1_1 > 0)
+                ? ((!isNaN(rawPf1_4) && rawPf1_4 > 0) ? rawPf1_4 : safeF1_1)
+                : 0;
+              // F1_1 + F1_2(신규발생) - F1_3(해소) = F1_4(현재 빈점포) 공식 충족
+              const diff = safeF1_4 - safeF1_1;
+              const safeF1_2 = diff > 0 ? diff : 0;
+              const safeF1_3 = diff < 0 ? Math.abs(diff) : 0;
+
+              const mapVals = {
+                F1_1: String(safeF1_1),
+                F1_2: String(safeF1_2),
+                F1_3: String(safeF1_3),
+                F1_4: String(safeF1_4)
+              };
+              Object.entries(mapVals).forEach(([name, val]) => {
                 const inp = document.querySelector(`input[name="${name}"]`);
                 if (inp) {
-                  inp.value = '0';
+                  inp.disabled = false;
+                  inp.value = val;
                   inp.dispatchEvent(new Event('input', { bubbles: true }));
                   inp.dispatchEvent(new Event('change', { bubbles: true }));
-                  if (typeof $ !== 'undefined') $(inp).val('0').trigger('input').trigger('change');
+                  if (typeof $ !== 'undefined') $(inp).val(val).trigger('input').trigger('change');
                 }
               });
               if (typeof calcF1_4 === 'function') calcF1_4();
-            });
-          } catch (_) {}
+              return safeF1_4;
+            }, { a6Empty: a6EmptyVal });
+          } catch (err) {
+            console.error('[P20 F1 frame 주입 오류]:', err);
+          }
         }
 
-        // F2.asp: 빈점포 상태별 개수 모두 '0' 주입
+        // F2.asp: F1_4 > 0이면 전년도 PF2A_1~PF2A_4 미러링(또는 F2A_2 배정), 0이면 모두 0
         const f2Frame = page.frames().find(f => f.url().includes('F2.asp'));
         if (f2Frame) {
           try {
-            await f2Frame.evaluate(() => {
-              ['F2A_1', 'F2A_2', 'F2A_3', 'F2A_4'].forEach(name => {
+            await f2Frame.evaluate(({ f1_4 }) => {
+              const setInp = (name, val) => {
                 const inp = document.querySelector(`input[name="${name}"]`);
                 if (inp) {
-                  inp.value = '0';
+                  inp.disabled = false;
+                  inp.value = String(val);
                   inp.dispatchEvent(new Event('input', { bubbles: true }));
                   inp.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(inp).val(String(val)).trigger('input').trigger('change');
                 }
-              });
-              for (let i = 1; i <= 4; i++) {
-                ['1', '2'].forEach(sub => {
-                  const bInp = document.querySelector(`input[name="F2B_${i}_${sub}"]`);
-                  if (bInp) {
-                    bInp.value = '0';
-                    bInp.dispatchEvent(new Event('input', { bubbles: true }));
-                    bInp.dispatchEvent(new Event('change', { bubbles: true }));
-                  }
-                });
+              };
+
+              if (f1_4 > 0) {
+                const pf2 = [1, 2, 3, 4].map(i => parseInt(document.querySelector(`input[name="PF2A_${i}"]`)?.value || '0', 10) || 0);
+                const pfSum = pf2.reduce((a, b) => a + b, 0);
+                const f2a = (pfSum === f1_4) ? pf2 : [0, f1_4, 0, 0];
+                for (let i = 1; i <= 4; i++) {
+                  const cnt = f2a[i - 1];
+                  setInp(`F2A_${i}`, cnt);
+                  setInp(`F2B_${i}_1`, cnt > 0 ? 1 : 0);
+                  setInp(`F2B_${i}_2`, 0);
+                }
+              } else {
+                ['F2A_1', 'F2A_2', 'F2A_3', 'F2A_4'].forEach(name => setInp(name, 0));
+                for (let i = 1; i <= 4; i++) {
+                  ['1', '2'].forEach(sub => setInp(`F2B_${i}_${sub}`, 0));
+                }
               }
-            });
-          } catch (_) {}
+            }, { f1_4: targetF1_4 });
+          } catch (err) {
+            console.error('[P20 F2 frame 주입 오류]:', err);
+          }
         }
 
-        // F3.asp & F4.asp 안전망
+        // F3.asp & F4.asp: 전년도 PF4* 미러링 및 합계(F4E_4 === F1_4) 정합성 보장
         for (const f of page.frames()) {
           try {
-            await f.evaluate(() => {
+            await f.evaluate(({ f1_4 }) => {
               const f3Checkboxes = document.querySelectorAll('input[type="checkbox"][name^="F3"]');
               if (f3Checkboxes.length > 0) {
                 const f3_6 = document.querySelector('#F3_6, input[name="F3_6"]');
@@ -3173,13 +3238,41 @@ export async function runKstatAssocSurvey(options = {}) {
                   }
                 }
               }
-              const f4Inputs = document.querySelectorAll('input[name^="F4"]:not([readonly]):not([type="hidden"])');
+              const f4Inputs = document.querySelectorAll('input[name^="F4"]:not([type="hidden"])');
               if (f4Inputs.length > 0) {
-                f4Inputs.forEach(inp => { if (!inp.value) inp.value = '0'; });
-                const f4Total = document.querySelector('#F4E_4, input[name="F4E_4"]');
-                if (f4Total) f4Total.value = '0';
+                const setF4 = (name, val) => {
+                  const el = document.querySelector(`input[name="${name}"]`);
+                  if (el) {
+                    el.disabled = false;
+                    el.value = String(val);
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(el).val(String(val)).trigger('input').trigger('change');
+                  }
+                };
+                const pfTotal = parseInt(document.querySelector('input[name="PF4E_4"]')?.value || '0', 10) || 0;
+                if (f1_4 > 0 && pfTotal === f1_4) {
+                  ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+                    [1, 2, 3, 4].forEach(row => {
+                      const pVal = document.querySelector(`input[name="PF4${col}_${row}"]`)?.value?.trim();
+                      setF4(`F4${col}_${row}`, (pVal !== undefined && pVal !== '') ? pVal : '0');
+                    });
+                  });
+                } else if (f1_4 > 0) {
+                  ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+                    [1, 2, 3, 4].forEach(row => setF4(`F4${col}_${row}`, '0'));
+                  });
+                  setF4('F4A_2', f1_4);
+                  setF4('F4E_2', f1_4);
+                  setF4('F4A_4', f1_4);
+                  setF4('F4E_4', f1_4);
+                } else {
+                  ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+                    [1, 2, 3, 4].forEach(row => setF4(`F4${col}_${row}`, '0'));
+                  });
+                }
               }
-            });
+            }, { f1_4: targetF1_4 });
           } catch (_) {}
         }
 
@@ -3304,16 +3397,37 @@ export async function runKstatAssocSurvey(options = {}) {
       }
 
       // ------------------------------------------
-      // 4) P23 (G3, G4: 문화콘텐츠 및 기후재해 대비 - G4 랜덤하게 일부 미체크)
+      // 4) P23 (G3, G4: 문화콘텐츠 및 기후재해 대비 - C1 냉방/난방/아케이드 교차검증 연동)
       // ------------------------------------------
       if (currUrl.includes('P23') || currPageName === 'P23') {
-        onProgress({ step: 'P23', message: `[P23] G3 문화 및 G4 기후재해 시설(랜덤 분산) 응답 중...` });
+        onProgress({ step: 'P23', message: `[P23] G3 문화 및 G4 기후재해 시설(C1 냉방/난방/아케이드 교차검증 연동) 응답 중...` });
         await syncAllChildFrames(page);
         await delay(200);
 
+        // P7(C1)의 냉방시설(C1_5_1), 난방시설(C1_6_1), 아케이드(C1_9_1) 보유여부를 조회하여 G4 보유여부(_H) 모순 원천 차단
+        const c1FacilityFlags = await page.evaluate(async () => {
+          try {
+            const idKey = document.querySelector('input[name="IDKey"]')?.value || document.querySelector('input[name="VC_ID"]')?.value || '';
+            if (!idKey) return { hasCooling: false, hasHeating: false, hasArcade: false };
+            const body = new URLSearchParams({ IDKey: idKey, VC_ID: idKey, ResType: 'TAPI', PVALUE: '2' }).toString();
+            const res = await fetch('P7.asp', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+            const html = await res.text();
+            const c5 = html.match(/'C1_5_1'\s*:\s*'([^']*)'/)?.[1] || '2';
+            const c6 = html.match(/'C1_6_1'\s*:\s*'([^']*)'/)?.[1] || '2';
+            const c9 = html.match(/'C1_9_1'\s*:\s*'([^']*)'/)?.[1] || '2';
+            return {
+              hasCooling: c5 === '1',
+              hasHeating: c6 === '1',
+              hasArcade: c9 === '1'
+            };
+          } catch (_) {
+            return { hasCooling: false, hasHeating: false, hasArcade: false };
+          }
+        }).catch(() => ({ hasCooling: false, hasHeating: false, hasArcade: false }));
+
         for (const f of page.frames()) {
           try {
-            await f.evaluate(({ preserveExisting }) => {
+            await f.evaluate(({ preserveExisting, c1Flags }) => {
               // G3: 라디오가 이미 체크되어 있으면 보존, 없을 때만 2번(없다) 선택
               if (document.querySelector('input[name^="G3"]')) {
                 const g3Checked = document.querySelector('input[name^="G3"][type="radio"]:checked');
@@ -3338,15 +3452,14 @@ export async function runKstatAssocSurvey(options = {}) {
                 }
               }
 
-              // G4: '보유여부(_H)', '필요여부(_N)' 모두 체크하지 않고 랜덤하게 일부 미체크
-              // (단, 카테고리별 최소 1개는 체크하여 설문 유효성 통과 보장, 기타_ETC는 체크 제외)
+              // G4: C1-5(냉방), C1-6(난방), C1-9(아케이드) 보유여부와 100% 정합성 보장
               if (document.querySelector('input[name^="G4"]')) {
                 const g4Checked = document.querySelectorAll('input[type="checkbox"][name^="G4"]:checked');
                 if (!preserveExisting || g4Checked.length === 0) {
                   const sections = [
-                    { prefix: 'G4_1', max: 6 },
-                    { prefix: 'G4_2', max: 5 },
-                    { prefix: 'G4_3', max: 5 }
+                    { prefix: 'G4_1', max: 6, allowH: !!c1Flags?.hasCooling },
+                    { prefix: 'G4_2', max: 5, allowH: !!c1Flags?.hasHeating },
+                    { prefix: 'G4_3', max: 5, allowH: true }
                   ];
 
                   sections.forEach(sec => {
@@ -3358,7 +3471,8 @@ export async function runKstatAssocSurvey(options = {}) {
                       const cbN = document.querySelector(`input[type="checkbox"][name="${sec.prefix}_${idx}_N"]`);
 
                       if (cbH) {
-                        const shouldCheckH = Math.random() < 0.60;
+                        const isArcadeBlocked = (sec.prefix === 'G4_1' && idx === 4 && !c1Flags?.hasArcade);
+                        const shouldCheckH = sec.allowH && !isArcadeBlocked && (Math.random() < 0.60);
                         if (shouldCheckH) {
                           cbH.checked = true;
                           cbH.dispatchEvent(new Event('change', { bubbles: true }));
@@ -3380,7 +3494,7 @@ export async function runKstatAssocSurvey(options = {}) {
                       }
                     }
 
-                    if (checkedH === 0) {
+                    if (sec.allowH && checkedH === 0) {
                       const firstH = document.querySelector(`input[type="checkbox"][name="${sec.prefix}_1_H"]`);
                       if (firstH) { firstH.checked = true; firstH.dispatchEvent(new Event('change', { bubbles: true })); }
                     }
@@ -3411,6 +3525,43 @@ export async function runKstatAssocSurvey(options = {}) {
                   }
                 }
 
+                // [교차검증 강제 보정] 기존 저장분(preserveExisting)이 있더라도 C1-5/C1-6/C1-9와 모순되는 _H 체크는 무조건 해제
+                if (!c1Flags?.hasCooling) {
+                  for (let idx = 1; idx <= 7; idx++) {
+                    const cbH = document.querySelector(`input[type="checkbox"][name="G4_1_${idx}_H"]`);
+                    if (cbH && cbH.checked) {
+                      cbH.checked = false;
+                      cbH.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                  }
+                  const anyN1 = Array.from(document.querySelectorAll('input[type="checkbox"][name^="G4_1_"][name$="_N"]:checked')).length > 0;
+                  if (!anyN1) {
+                    const n1 = document.querySelector('input[type="checkbox"][name="G4_1_1_N"]');
+                    if (n1) { n1.checked = true; n1.dispatchEvent(new Event('change', { bubbles: true })); }
+                  }
+                } else if (!c1Flags?.hasArcade) {
+                  const cbArc = document.querySelector('input[type="checkbox"][name="G4_1_4_H"]');
+                  if (cbArc && cbArc.checked) {
+                    cbArc.checked = false;
+                    cbArc.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                }
+
+                if (!c1Flags?.hasHeating) {
+                  for (let idx = 1; idx <= 6; idx++) {
+                    const cbH = document.querySelector(`input[type="checkbox"][name="G4_2_${idx}_H"]`);
+                    if (cbH && cbH.checked) {
+                      cbH.checked = false;
+                      cbH.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                  }
+                  const anyN2 = Array.from(document.querySelectorAll('input[type="checkbox"][name^="G4_2_"][name$="_N"]:checked')).length > 0;
+                  if (!anyN2) {
+                    const n2 = document.querySelector('input[type="checkbox"][name="G4_2_1_N"]');
+                    if (n2) { n2.checked = true; n2.dispatchEvent(new Event('change', { bubbles: true })); }
+                  }
+                }
+
                 // G4 기타(_ETC) 체크박스 해제 및 텍스트 공란 보장
                 ['G4_1_7_ETC', 'G4_2_6_ETC', 'G4_3_6_ETC', 'G4_4_6_ETC'].forEach(name => {
                   const cb = document.querySelector(`input[name="${name}"]`);
@@ -3419,7 +3570,7 @@ export async function runKstatAssocSurvey(options = {}) {
                   if (txt) txt.value = '';
                 });
               }
-            }, { preserveExisting });
+            }, { preserveExisting, c1Flags: c1FacilityFlags });
           } catch (_) {}
         }
 
@@ -3856,7 +4007,10 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
           if (!curChecked || isForbiddenNeed) {
             const vals = groups[gName].map(r => r.value);
             let target;
-            if (vals.includes('1') && vals.includes('2') && vals.length === 2) {
+            if (gName === 'B1') {
+              // B1(상인회 운영 여부)은 상인회 조사 특성상 전년도 값이 공란(신규 시장 등)이어도 1(운영)이 기본값
+              target = groups[gName].find(r => r.value === '1') || groups[gName][0];
+            } else if (vals.includes('1') && vals.includes('2') && vals.length === 2) {
               // 2지선다(유/무): 2(무/없음)가 안전 (1 선택 시 추가 상세문항 Alert 방어)
               target = groups[gName].find(r => r.value === '2') || groups[gName][0];
             } else if (vals.length >= 4 || isFacilityNeed) {
@@ -4070,7 +4224,7 @@ async function mirrorPrevYearToCurrent(page, { preserveExisting = true } = {}) {
             if (!inp.value) inp.value = '0';
           });
           const f4e4 = document.querySelector('input[name="F4E_4"]');
-          if (f4e4) f4e4.value = '0';
+          if (f4e4 && (!f4e4.value || f4e4.value.trim() === '')) f4e4.value = '0';
         }
         // B5: 상인회비 및 총회 실시
         const b5d = document.querySelector('input[name="B5D"]');
@@ -4117,7 +4271,7 @@ async function healUnansweredAssocFields(page) {
   for (const f of frames) {
     try {
       await f.evaluate(() => {
-        // 1. 미선택 라디오: 2지선다는 2(무/없음) 우선, 척도형은 3(보통) 또는 4(만족)
+        // 1. 미선택 라디오: 2지선다는 2(무/없음) 우선(단, B1 상인회는 1 우선), 척도형은 3(보통) 또는 4(만족)
         const radios = Array.from(document.querySelectorAll('input[type="radio"]:not([disabled])'));
         const groups = {};
         radios.forEach(r => {
@@ -4131,7 +4285,9 @@ async function healUnansweredAssocFields(page) {
           if (!curChecked || isForbiddenNeed) {
             const vals = groups[gName].map(r => r.value);
             let target;
-            if (vals.includes('1') && vals.includes('2') && vals.length === 2) {
+            if (gName === 'B1') {
+              target = groups[gName].find(r => r.value === '1') || groups[gName][0];
+            } else if (vals.includes('1') && vals.includes('2') && vals.length === 2) {
               target = groups[gName].find(r => r.value === '2') || groups[gName][0];
             } else if (vals.length >= 4 || isFacilityNeed) {
               const validHighVals = ['3', '4', '5'].filter(v => vals.includes(v));
