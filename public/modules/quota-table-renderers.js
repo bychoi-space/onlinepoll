@@ -1110,6 +1110,12 @@ export function renderMetrixQuotaTable({
           <a href="${escapeHtml(sheetHref)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="경기도 소상공인 쿼터 구글 스프레드시트(광주시 리스트 / 김정례 / 노영미-7791) 열기">
             <i class="fa-solid fa-table"></i> 쿼터 구글시트 열기
           </a>
+          <a href="https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit#gid=1267463010" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none; background:#eff6ff; color:#1d4ed8; border-color:#93c5fd;" title="실행된 설문의 전 문항 응답내역이 자동 기록되는 '오토서베이_응답내역' 구글 시트 탭 열기">
+            <i class="fa-solid fa-file-Spreadsheet fa-clipboard-check"></i> 응답내역 시트 열기
+          </a>
+          ${campId ? `<a href="/api/campaigns/${encodeURIComponent(campId)}/gyeonggi-panel-answers-excel" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="진행된 설문 응답내역 엑셀(.xlsx) 다운로드">
+            <i class="fa-solid fa-file-excel"></i> 응답내역 엑셀
+          </a>` : ''}
           <button type="button" id="btn-metrix-622-sync" class="btn-pill btn-pill-primary btn-pill-small font-bold" title="3개 계정(강영미·김정례·노영미) + 구글시트 휴대폰 번호 + 국세청 사업자번호 휴폐업 상태를 실시간 동기화합니다">
             <i class="fa-solid fa-rotate"></i> 3계정·구글시트·폐업조회 동기화
           </button>
@@ -1173,11 +1179,17 @@ export function renderMetrixQuotaTable({
     const indMeta = METRIX_622_IND_META[ik] || METRIX_622_IND_META.ind_3;
     const polInd = metrixPolicy?.industryPolicies?.[ik] || {};
     const indEnabled = (metrixPolicy?.useIndustryGuidelines !== false && polInd.enabled !== false);
-    const guideBadgeHtml = item.guideApplied && item.guideSummary
+    const guarRaw = String(item.guaranteeSupport || item.rawMeta?.['보증지원여부'] || '').trim().toUpperCase();
+    const guarBadgeHtml = guarRaw === 'O'
+      ? `<div style="margin-top:3px;"><span class="badge-status success font-mono" style="padding:1px 6px; font-size:10px;" title="엑셀 보증지원여부=O ➔ 문15-3 ④정책자금(중소벤처기업진흥공단 등) 자동 체크">보증 O (정책자금✓)</span></div>`
+      : (guarRaw === 'X'
+        ? `<div style="margin-top:3px;"><span class="badge-status ready font-mono" style="padding:1px 6px; font-size:10px;" title="엑셀 보증지원여부=X ➔ 문15-3 ④정책자금 체크 제외">보증 X (정책자금 제외)</span></div>`
+        : '');
+    const guideBadgeHtml = (item.guideApplied && item.guideSummary
       ? `<span class="badge-status pilot font-bold" style="padding:3px 8px; font-size:11px;" title="${escapeHtml(item.guideSummary)}"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml(item.guideSummary)}</span>`
       : (indEnabled
         ? `<span class="badge-status success" style="padding:3px 8px; font-size:11px;" title="${escapeHtml(indMeta.guide)}"><i class="fa-solid fa-sliders"></i> ${escapeHtml(indMeta.short)} 맞춤가이드</span>`
-        : `<span class="badge-status ready" style="padding:3px 8px; font-size:11px;">공통 기본가이드</span>`);
+        : `<span class="badge-status ready" style="padding:3px 8px; font-size:11px;">공통 기본가이드</span>`)) + guarBadgeHtml;
 
     const surveyUrlTag = item.surveyUrl
       ? `<a href="${escapeHtml(item.surveyUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small" title="새 탭에서 설문 열기"><i class="fa-solid fa-arrow-up-right-from-square"></i> 설문</a>`

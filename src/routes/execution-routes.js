@@ -30,6 +30,12 @@ import {
   syncSeoulPanelAnswersToGoogleSheet
 } from '../utils/seoul-panel-answer-excel.js';
 import {
+  GYEONGGI_PANEL_DEFAULT_GSHEET_URL,
+  buildGyeonggiPanelAnswersExcel,
+  persistGyeonggiPanelQuotaDatabase,
+  syncGyeonggiPanelAnswersToGoogleSheet
+} from '../utils/gyeonggi-panel-answer-excel.js';
+import {
   MAX_CONCURRENT_TASKS,
   getActiveTasksList,
   isCampaignTaskRunning,
@@ -191,8 +197,8 @@ export function registerExecutionRoutes({
     const isGlobalriLiteracyCampaign = (campaign.surveyType === 'globalri_literacy');
     const isGallupReturnFarmCampaign = (campaign.surveyType === 'gallup_return_farm');
     let targetBiz = quotaDb.find(b => Number(b.index || b.seq) === Number(quotaIndex)) || quotaDb[Math.max(0, quotaIndex - 1)];
-    if ((isKonaCampaign || isGlobalriLiteracyCampaign || isGallupReturnFarmCampaign || isMetrixSeoulCampaign) && targetBiz && (targetBiz.quotaStatus === 'completed' || String(targetBiz.status || '').includes('완료'))) {
-      const firstReady = quotaDb.find(b => b.quotaStatus !== 'completed' && !String(b.status || '').includes('완료'));
+    if ((isMetrixCampaign || isKonaCampaign || isGlobalriLiteracyCampaign || isGallupReturnFarmCampaign || isMetrixSeoulCampaign) && targetBiz && (targetBiz.isClosedBiz || targetBiz.quotaStatus === 'excluded' || targetBiz.quotaStatus === 'completed' || String(targetBiz.status || '').includes('완료') || (isMetrixCampaign && String(targetBiz.status || '').includes('98%')))) {
+      const firstReady = quotaDb.find(b => !b.isClosedBiz && b.quotaStatus !== 'excluded' && b.quotaStatus !== 'completed' && !String(b.status || '').includes('완료') && !(isMetrixCampaign && String(b.status || '').includes('98%')));
       if (firstReady) targetBiz = firstReady;
     }
     if (!targetBiz) {
@@ -348,8 +354,8 @@ export function registerExecutionRoutes({
             }
           });
         } else if (isMetrix) {
-          logger.info(`[메트릭스 파일럿 실행] 메트릭스 전용 러너 가동: "${targetBiz.companyName}" (UID: ${targetBiz.uid})`);
-          const metrixPol = campaign.metrixPolicy || policy || {};
+          logger.info(`[메트릭스 파일럿 실행] 메트릭스 전용 러너 가동: "${targetBiz.companyName}" (UID: ${targetBiz.uid}, 보증지원여부: ${targetBiz.guaranteeSupport || '-'})`);
+          const metrixPol = campaign.metrixPolicy || campaign.masterBaseline?.policy || policy || {};
           result = await runMetrixSurvey({
             surveyUrl: targetUrl,
             slotData: targetBiz,
@@ -357,6 +363,7 @@ export function registerExecutionRoutes({
             quotaIndex: targetBiz.index || quotaIndex,
             pilotMode: true,
             safetyGuard: true,
+            haltOnBlock: true,
             reportDir: path.join(reportsDir, campaign.id, `metrix_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || ''}`),
             onProgress: (info) => {
               logger.info(`[메트릭스 파일럿 - ${info.step}] ${info.message}`);
@@ -508,9 +515,28 @@ export function registerExecutionRoutes({
           } else if (isMetrix) {
             targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? '진행중(98%)' : 'pilot_done';
             targetBiz.status = (result.status === 'stopped_at_review') ? '진행중(98%)' : '완료';
+            if (result.phoneUpdated && result.updatedPhone) {
+              targetBiz.serverPhone = result.updatedPhone;
+              targetBiz.phone = result.updatedPhone;
+              targetBiz.phoneNeedsSync = false;
+            }
             targetBiz.pilotAt = new Date().toISOString();
             targetBiz.capturedSteps = result.capturedSteps;
-            logger.success(`🎉 [메트릭스 파일럿 성공] "${targetBiz.companyName}" (UID: ${targetBiz.uid}) 메트릭스 설문 시뮬레이션 완료 (${targetBiz.quotaStatus})!`);
+            if (Array.isArray(result.submittedAnswers) && result.submittedAnswers.length > 0) {
+              targetBiz.submittedAnswers = result.submittedAnswers;
+            }
+            try {
+              persistGyeonggiPanelQuotaDatabase({ quotaDatabase: quotaDb });
+              const ansXlsxPath = path.join(quotasDir, 'gyeonggi_panel_622_answers.xlsx');
+              buildGyeonggiPanelAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+              await syncGyeonggiPanelAnswersToGoogleSheet({
+                quotaDatabase: quotaDb,
+                sheetUrl: campaign.googleSheetUrl || GYEONGGI_PANEL_DEFAULT_GSHEET_URL
+              });
+            } catch (exErr) {
+              logger.warn(`[경기도 소상공인 패널 답변 엑셀/구글시트 자동저장 경고] ${exErr.message}`);
+            }
+            logger.success(`🎉 [메트릭스 파일럿 성공] "${targetBiz.companyName}" (UID: ${targetBiz.uid}) 메트릭스 설문 시뮬레이션 완료 (${targetBiz.quotaStatus}) 및 구글 스프레드시트('오토서베이_응답내역') 기록 완료!`);
           } else {
             targetBiz.quotaStatus = 'pilot_done';
             targetBiz.pilotAt = new Date().toISOString();
@@ -969,6 +995,7 @@ export function registerExecutionRoutes({
                 quotaIndex: biz.index || (i + startIndex),
                 pilotMode: false,
                 safetyGuard,
+                haltOnBlock: true,
                 reportDir: path.join(reportsDir, campaign.id, `metrix_item_${biz.index || (i + startIndex)}_${biz.uid || ''}`),
                 onProgress: (info) => {
                   logger.info(`[메트릭스 배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
@@ -1139,7 +1166,21 @@ export function registerExecutionRoutes({
               }
               biz.completedAt = new Date().toISOString();
               biz.capturedSteps = result.capturedSteps;
-              logger.success(`🎉 [메트릭스 배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" (UID: ${biz.uid}) ${biz.quotaStatus} 달성!`);
+              if (Array.isArray(result.submittedAnswers) && result.submittedAnswers.length > 0) {
+                biz.submittedAnswers = result.submittedAnswers;
+              }
+              try {
+                persistGyeonggiPanelQuotaDatabase({ quotaDatabase: quotaDb });
+                const ansXlsxPath = path.join(quotasDir, 'gyeonggi_panel_622_answers.xlsx');
+                buildGyeonggiPanelAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+                await syncGyeonggiPanelAnswersToGoogleSheet({
+                  quotaDatabase: quotaDb,
+                  sheetUrl: campaign.googleSheetUrl || GYEONGGI_PANEL_DEFAULT_GSHEET_URL
+                });
+              } catch (exErr) {
+                logger.warn(`[경기도 소상공인 패널 답변 엑셀/구글시트 자동저장 경고] ${exErr.message}`);
+              }
+              logger.success(`🎉 [메트릭스 배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" (UID: ${biz.uid}) ${biz.quotaStatus} 달성 및 구글 시트('오토서베이_응답내역') 기록 완료!`);
             } else {
               biz.quotaStatus = safetyGuard ? 'pilot_done' : 'completed';
               biz.completedAt = new Date().toISOString();
@@ -1262,9 +1303,35 @@ export function registerExecutionRoutes({
               }
             }
           } else {
-            biz.quotaStatus = 'error';
-            biz.error = result?.error || '설문 실행 오류';
-            logger.error(`[배치 ${i + 1}/${targets.length} 실패] "${biz.buildingName || biz.marketName || biz.companyName}": ${result?.error || '설문 실행 오류'}`);
+            if (isMetrix && result?.excluded) {
+              biz.quotaStatus = 'excluded';
+              biz.error = result?.error || '';
+              logger.warn(result?.error || `[폐업 제외] "${biz.companyName}" 제외 처리`);
+            } else {
+              biz.quotaStatus = 'error';
+              biz.error = result?.error || '설문 실행 오류';
+              if (isMetrix && Array.isArray(result?.submittedAnswers) && result.submittedAnswers.length > 0) {
+                biz.submittedAnswers = result.submittedAnswers;
+              }
+              logger.error(`[배치 ${i + 1}/${targets.length} 실패] "${biz.buildingName || biz.marketName || biz.companyName}": ${result?.error || '설문 실행 오류'}`);
+              if (isMetrix) {
+                const haltNotice = `🛑 [스킵 금지 · 배치 즉시 중단] "${biz.companyName}" (UID: ${biz.uid}) 진행 중 막힘이 발생하여 다음 대상으로 넘어가지 않고 배치를 즉시 중단했습니다. 사유: ${result?.error || '설문 진행 차단'}`;
+                logger.error(haltNotice);
+                CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+                logger.broadcast({
+                  type: 'QUOTA_UPDATED',
+                  campaignId: campaign.id,
+                  quotaDatabase: quotaDb
+                });
+                logger.broadcast({
+                  type: 'PILOT_ERROR',
+                  campaignId: campaign.id,
+                  quotaIndex: biz.index,
+                  error: haltNotice
+                });
+                break;
+              }
+            }
           }
 
           CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
@@ -1378,7 +1445,8 @@ export function registerExecutionRoutes({
               policy: campaign.metrixPolicy || campaign.masterBaseline?.policy || {},
               quotaIndex: targetBiz.index || quotaIndex,
               pilotMode: true,
-              safetyGuard: true,
+              safetyGuard: (safetyGuard !== false),
+              haltOnBlock: true,
               reportDir: path.join(reportsDir, campaign.id, `metrix_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || ''}`),
               onProgress: (info) => {
                 logger.broadcast({
@@ -1507,6 +1575,21 @@ export function registerExecutionRoutes({
               targetBiz.phone = result.updatedPhone;
               targetBiz.phoneNeedsSync = false;
             }
+            targetBiz.pilotAt = new Date().toISOString();
+            if (Array.isArray(result.submittedAnswers) && result.submittedAnswers.length > 0) {
+              targetBiz.submittedAnswers = result.submittedAnswers;
+            }
+            try {
+              persistGyeonggiPanelQuotaDatabase({ quotaDatabase: quotaDb });
+              const ansXlsxPath = path.join(quotasDir, 'gyeonggi_panel_622_answers.xlsx');
+              buildGyeonggiPanelAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
+              await syncGyeonggiPanelAnswersToGoogleSheet({
+                quotaDatabase: quotaDb,
+                sheetUrl: campaign.googleSheetUrl || GYEONGGI_PANEL_DEFAULT_GSHEET_URL
+              });
+            } catch (exErr) {
+              logger.warn(`[경기도 소상공인 패널 답변 엑셀/구글시트 자동저장 경고] ${exErr.message}`);
+            }
           } else if (isMetrixSeoul) {
             if (result.alreadyCompleted) {
               targetBiz.quotaStatus = 'completed';
@@ -1619,7 +1702,7 @@ export function registerExecutionRoutes({
             }
           }
 
-          if (!isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) {
+          if (!isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) {
             await syncKstatSlotStatus({
               pridSel: '2026070802',
               idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
@@ -1629,7 +1712,7 @@ export function registerExecutionRoutes({
             }).catch(() => {});
           }
 
-          if (!isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && targetBiz.evalStatus === 'completed') {
+          if (!isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && targetBiz.evalStatus === 'completed') {
             const effLoginId = targetBiz.surveyorAccount || campaign.kstatLoginId || '가온김영옥';
             const effLoginPw = campaign.kstatLoginPw || '1234';
             const progRes = await saveKstatSlotProgressStatus({
@@ -1648,6 +1731,9 @@ export function registerExecutionRoutes({
         } else {
           targetBiz.quotaStatus = 'error';
           targetBiz.error = result?.error || '테스트 오류';
+          if (isMetrix && Array.isArray(result?.submittedAnswers) && result.submittedAnswers.length > 0) {
+            targetBiz.submittedAnswers = result.submittedAnswers;
+          }
           logger.error(`[개별 쿼터 테스트 실패] "${targetBiz.marketName || targetBiz.companyName}": ${result?.error || '테스트 오류'}`);
         }
 
@@ -1737,6 +1823,25 @@ export function registerExecutionRoutes({
       res.json(reports);
     } catch (err) {
       res.status(500).json({ error: '리포트 목록을 불러오지 못했습니다.' });
+    }
+  });
+
+  // 경기도 소상공인 패널(SNUM=622) 응답 내역 엑셀 다운로드 API
+  app.get('/api/campaigns/:id/gyeonggi-panel-answers-excel', (req, res) => {
+    try {
+      const campaign = CampaignStore.getCampaignById(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+      }
+      const buffer = buildGyeonggiPanelAnswersExcel({
+        quotaDatabase: campaign.quotaDatabase || []
+      });
+      const filename = encodeURIComponent(`경기도소상공인패널_응답내역_${campaign.id}.xlsx`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`);
+      res.send(buffer);
+    } catch (err) {
+      res.status(500).json({ error: `경기도 패널 응답 내역 엑셀 생성 실패: ${err.message}` });
     }
   });
 }

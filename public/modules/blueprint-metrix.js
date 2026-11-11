@@ -26,6 +26,8 @@ export const DEFAULT_METRIX_INDUSTRY_POLICIES = {
     payment_mobileRatio: 0,
     payment_voucherRatio: 0,
     payment_transferRatio: 70,
+    funding_guaranteeRule: 'excel_sync',
+    funding_whenGuaranteeX: '1',
     owner_monthlyIncome: 380,
     hardship_rank1: '3',
     hardship_rank2: '4',
@@ -58,6 +60,8 @@ export const DEFAULT_METRIX_INDUSTRY_POLICIES = {
     payment_mobileRatio: 0,
     payment_voucherRatio: 0,
     payment_transferRatio: 70,
+    funding_guaranteeRule: 'excel_sync',
+    funding_whenGuaranteeX: '1',
     owner_monthlyIncome: 350,
     hardship_rank1: '7',
     hardship_rank2: '3',
@@ -90,6 +94,8 @@ export const DEFAULT_METRIX_INDUSTRY_POLICIES = {
     payment_mobileRatio: 5,
     payment_voucherRatio: 0,
     payment_transferRatio: 10,
+    funding_guaranteeRule: 'excel_sync',
+    funding_whenGuaranteeX: '1',
     owner_monthlyIncome: 320,
     hardship_rank1: '7',
     hardship_rank2: '3',
@@ -122,6 +128,8 @@ export const DEFAULT_METRIX_INDUSTRY_POLICIES = {
     payment_mobileRatio: 10,
     payment_voucherRatio: 0,
     payment_transferRatio: 0,
+    funding_guaranteeRule: 'excel_sync',
+    funding_whenGuaranteeX: '1',
     owner_monthlyIncome: 290,
     hardship_rank1: '3',
     hardship_rank2: '5',
@@ -154,6 +162,8 @@ export const DEFAULT_METRIX_INDUSTRY_POLICIES = {
     payment_mobileRatio: 5,
     payment_voucherRatio: 0,
     payment_transferRatio: 40,
+    funding_guaranteeRule: 'excel_sync',
+    funding_whenGuaranteeX: '1',
     owner_monthlyIncome: 340,
     hardship_rank1: '7',
     hardship_rank2: '5',
@@ -186,6 +196,8 @@ export const DEFAULT_METRIX_INDUSTRY_POLICIES = {
     payment_mobileRatio: 5,
     payment_voucherRatio: 0,
     payment_transferRatio: 0,
+    funding_guaranteeRule: 'excel_sync',
+    funding_whenGuaranteeX: '1',
     owner_monthlyIncome: 300,
     hardship_rank1: '7',
     hardship_rank2: '5',
@@ -218,6 +230,8 @@ export const DEFAULT_METRIX_INDUSTRY_POLICIES = {
     payment_mobileRatio: 10,
     payment_voucherRatio: 0,
     payment_transferRatio: 0,
+    funding_guaranteeRule: 'excel_sync',
+    funding_whenGuaranteeX: '1',
     owner_monthlyIncome: 300,
     hardship_rank1: '5',
     hardship_rank2: '2',
@@ -250,6 +264,8 @@ export const DEFAULT_METRIX_INDUSTRY_POLICIES = {
     payment_mobileRatio: 5,
     payment_voucherRatio: 0,
     payment_transferRatio: 5,
+    funding_guaranteeRule: 'excel_sync',
+    funding_whenGuaranteeX: '1',
     owner_monthlyIncome: 280,
     hardship_rank1: '7',
     hardship_rank2: '5',
@@ -351,7 +367,7 @@ export function syncMetrixInputsToState(metrixPolicyState) {
   const numCostOther = document.getElementById('num-metrix-cost-other');
   if (numCostOther) metrixPolicyState.cost_otherRatio = Number(numCostOther.value) || 0;
 
-  // 4. 6대 결제수단 & 부채 구조 (문14 ~ 문15-2)
+  // 4. 6대 결제수단 & 부채·자금조달 구조 (문14 ~ 문15-3)
   const numPayCash = document.getElementById('num-metrix-pay-cash');
   if (numPayCash) metrixPolicyState.payment_cashRatio = Number(numPayCash.value) || 0;
 
@@ -393,6 +409,12 @@ export function syncMetrixInputsToState(metrixPolicyState) {
 
   const selDebtRank2 = document.getElementById('sel-metrix-debt-rank2');
   if (selDebtRank2) metrixPolicyState.debt_reasonRank2 = selDebtRank2.value;
+
+  const selFundingGuarRule = document.getElementById('sel-metrix-funding-guarantee-rule');
+  if (selFundingGuarRule) metrixPolicyState.funding_guaranteeRule = selFundingGuarRule.value;
+
+  const selFundingWhenX = document.getElementById('sel-metrix-funding-when-x');
+  if (selFundingWhenX) metrixPolicyState.funding_whenGuaranteeX = selFundingWhenX.value;
 
   // 5. 사업장 임대차 · 계약기간 · 권리금 (문16 ~ 문18)
   const selLeaseType = document.getElementById('sel-metrix-lease-type');
@@ -524,6 +546,8 @@ export function syncMetrixInputsToState(metrixPolicyState) {
     curInd.payment_mobileRatio = metrixPolicyState.payment_mobileRatio;
     curInd.payment_voucherRatio = metrixPolicyState.payment_voucherRatio;
     curInd.payment_transferRatio = metrixPolicyState.payment_transferRatio;
+    curInd.funding_guaranteeRule = metrixPolicyState.funding_guaranteeRule;
+    curInd.funding_whenGuaranteeX = metrixPolicyState.funding_whenGuaranteeX;
     curInd.owner_monthlyIncome = metrixPolicyState.owner_monthlyIncome;
     curInd.hardship_rank1 = metrixPolicyState.hardship_rank1;
     curInd.hardship_rank2 = metrixPolicyState.hardship_rank2;
@@ -627,6 +651,8 @@ export function bindMetrixEvents({ metrixPolicyState, appendLog, onApplyIndustry
     setVal('num-metrix-pay-mobile', indPol.payment_mobileRatio ?? 10);
     setVal('num-metrix-pay-voucher', indPol.payment_voucherRatio ?? 0);
     setVal('num-metrix-pay-transfer', indPol.payment_transferRatio ?? 5);
+    setVal('sel-metrix-funding-guarantee-rule', indPol.funding_guaranteeRule || metrixPolicyState.funding_guaranteeRule || 'excel_sync');
+    setVal('sel-metrix-funding-when-x', indPol.funding_whenGuaranteeX || metrixPolicyState.funding_whenGuaranteeX || '1');
     setVal('sel-metrix-hardship-rank1', indPol.hardship_rank1 || '3');
     setVal('sel-metrix-hardship-rank2', indPol.hardship_rank2 || '7');
     setVal('sel-metrix-support-rank1', indPol.desired_support_rank1 || '1');
@@ -875,6 +901,8 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
   }
   if (!metrixPolicyState.debt_reasonRank1) metrixPolicyState.debt_reasonRank1 = '1';
   if (!metrixPolicyState.debt_reasonRank2) metrixPolicyState.debt_reasonRank2 = '2';
+  if (!metrixPolicyState.funding_guaranteeRule) metrixPolicyState.funding_guaranteeRule = 'excel_sync';
+  if (!metrixPolicyState.funding_whenGuaranteeX) metrixPolicyState.funding_whenGuaranteeX = '1';
 
   // 5. 사업장 임대차 · 계약기간 · 권리금 (문16~문18)
   if (!metrixPolicyState.lease_type) metrixPolicyState.lease_type = 'monthly_deposit';
@@ -1435,19 +1463,19 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
       </div>
     </section>
 
-    <!-- 카드 4: [파트 D] 6대 결제수단 비중 & 부채·차입 구조 (문14 ~ 문15-2) -->
+    <!-- 카드 4: [파트 D] 6대 결제수단 비중 & 부채·자금조달 구조 (문14 ~ 문15-3) -->
     <section class="blueprint-card">
       <div class="blueprint-card-header">
         <div class="blueprint-card-title-group">
-          <span class="blueprint-step-pill"><i class="fa-solid fa-credit-card"></i> 문14·문15</span>
-          <h3 class="blueprint-stage-title">[파트 D] 6대 결제수단 비중 &amp; 부채·차입 구조</h3>
+          <span class="blueprint-step-pill"><i class="fa-solid fa-credit-card"></i> 문14·문15~15-3</span>
+          <h3 class="blueprint-stage-title">[파트 D] 6대 결제수단 비중 &amp; 부채·자금조달 구조</h3>
         </div>
         <div class="blueprint-card-badge-group">
-          <span class="badge-tag-fixed"><i class="fa-solid fa-scale-balanced"></i> M14·M15 100% 매칭</span>
+          <span class="badge-tag-fixed"><i class="fa-solid fa-scale-balanced"></i> M14·M15·문15-3 보증연동</span>
         </div>
       </div>
       <div class="blueprint-stage-desc">
-        문14 6대 결제수단 비중(현금·카드·지역화폐·간편결제·상품권·계좌이체)과 문15 부채 보유 여부, 총 부채액, 4대 차입처 비중(합계 100%), 차입 사유 1·2순위를 설정합니다.
+        문14 6대 결제수단 비중, 문15 부채 보유 여부·총액·차입처 비중(합계 100%)·차입 사유 1·2순위 및 <strong>문15-3 사업자금 조달 경로(엑셀 보증지원여부 O/X 정책자금 연동 선택가이드)</strong>를 설정합니다.
       </div>
       <div class="p-14">
         <label class="figma-label font-bold mb-6">문14 고객 결제수단 6대 비중 (M14 ~ M14_5, 합계 100%)</label>
@@ -1522,7 +1550,7 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
         </div>
 
         <label class="figma-label font-bold mb-6">문15-2 주된 대출/차입 사유 (1순위 · 2순위)</label>
-        <div class="qb-grid-2col">
+        <div class="qb-grid-2col mb-12">
           <div>
             <span class="font-caption text-dim">1순위 사유 (M15-2)</span>
             <select id="sel-metrix-debt-rank1" class="figma-select w-full">
@@ -1546,6 +1574,35 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
               <option value="6" ${metrixPolicyState.debt_reasonRank2 === '6' ? 'selected' : ''}>6. 창업 및 사업장 인수 자금</option>
               <option value="7" ${metrixPolicyState.debt_reasonRank2 === '7' ? 'selected' : ''}>7. 기타 가계·경영 겸용 자금</option>
             </select>
+          </div>
+        </div>
+
+        <div style="padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(15, 23, 42, 0.6);">
+          <label class="figma-label font-bold mb-6" style="color: #38bdf8;">
+            <i class="fa-solid fa-file-shield"></i> 문15-3 최근 1년간 사업자금을 조달한 경로 — 엑셀 [보증지원여부] O/X 선택가이드
+          </label>
+          <div class="font-caption text-dim mb-8" style="line-height: 1.45;">
+            쿼터 엑셀(구글 시트)의 <code>보증지원여부</code> 값이 <strong>O</strong>이면 <strong>④ 정책자금(중소벤처기업진흥공단 등)</strong>을 체크하고, <strong>X</strong>이면 <strong>④ 정책자금을 절대 체크하지 않도록</strong> 제어합니다.
+          </div>
+          <div class="qb-grid-2col">
+            <div>
+              <span class="font-caption text-dim">보증지원여부(O/X) 연동 규칙</span>
+              <select id="sel-metrix-funding-guarantee-rule" class="figma-select w-full">
+                <option value="excel_sync" ${metrixPolicyState.funding_guaranteeRule === 'excel_sync' ? 'selected' : ''}>[필수 권장] 엑셀 보증지원 O ➔ ④ 정책자금 체크 / X ➔ 정책자금 미체크</option>
+                <option value="excel_sync_with_bank" ${metrixPolicyState.funding_guaranteeRule === 'excel_sync_with_bank' ? 'selected' : ''}>엑셀 보증지원 O ➔ ① 시중은행 + ④ 정책자금 복수 체크 / X ➔ 정책자금 미체크</option>
+                <option value="force_policy" ${metrixPolicyState.funding_guaranteeRule === 'force_policy' ? 'selected' : ''}>전체 ④ 정책자금(중소벤처기업진흥공단 등) 체크</option>
+                <option value="force_no_policy" ${metrixPolicyState.funding_guaranteeRule === 'force_no_policy' ? 'selected' : ''}>전체 ④ 정책자금 체크 제외 (비정책자금만 선택)</option>
+              </select>
+            </div>
+            <div>
+              <span class="font-caption text-dim">보증지원여부 X일 때 대체 선택지 (④ 정책자금 제외)</span>
+              <select id="sel-metrix-funding-when-x" class="figma-select w-full">
+                <option value="1" ${metrixPolicyState.funding_whenGuaranteeX === '1' ? 'selected' : ''}>1. 시중은행(일반대출) 체크 — 정책자금 미체크 (기본값)</option>
+                <option value="2" ${metrixPolicyState.funding_whenGuaranteeX === '2' ? 'selected' : ''}>2. 인터넷은행(카카오뱅크·케이뱅크 등) 체크 — 정책자금 미체크</option>
+                <option value="3" ${metrixPolicyState.funding_whenGuaranteeX === '3' ? 'selected' : ''}>3. 제2금융권(저축은행·캐피탈 등) 체크 — 정책자금 미체크</option>
+                <option value="6" ${metrixPolicyState.funding_whenGuaranteeX === '6' ? 'selected' : ''}>6. 자금조달 없음 체크 — 정책자금 미체크</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

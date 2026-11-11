@@ -779,10 +779,11 @@ export function registerSyncRoutes({
       if (!campaign) {
         return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
       }
-      const { index, uid, isClosedBiz, excelPhone } = req.body || {};
+      const { index, seq, uid, isClosedBiz, excelPhone } = req.body || {};
+      const targetIdx = index !== undefined ? index : seq;
       const quotaDb = Array.isArray(campaign.quotaDatabase) ? campaign.quotaDatabase : [];
       const target = quotaDb.find(q =>
-        (index !== undefined && Number(q.index || q.seq) === Number(index)) ||
+        (targetIdx !== undefined && Number(q.index || q.seq) === Number(targetIdx)) ||
         (uid !== undefined && String(q.uid) === String(uid))
       );
       if (!target) {
@@ -817,7 +818,9 @@ export function registerSyncRoutes({
           ggJson.rows = quotaDb;
           ggJson.updatedAt = new Date().toISOString();
           fs.writeFileSync(ggPath, JSON.stringify(ggJson, null, 2), 'utf-8');
-        } catch (_) {}
+        } catch (err) {
+          logger.warn(`[Metrix 622 쿼터 JSON 저장 경고] ${err.message}`);
+        }
       }
 
       logger.broadcast({
@@ -826,11 +829,15 @@ export function registerSyncRoutes({
         quotaDatabase: quotaDb
       });
 
+      const statusMsg = typeof excelPhone === 'string' && typeof isClosedBiz !== 'boolean'
+        ? `[#${target.index} ${target.companyName}] 컨택 휴대폰 번호가 "${target.phone}"(으)로 수정되었습니다.`
+        : (target.isClosedBiz
+          ? `[#${target.index} ${target.companyName}] 폐업 제외 처리되었습니다.`
+          : `[#${target.index} ${target.companyName}] 정상 조사 대상으로 설정되었습니다.`);
+
       res.json({
         success: true,
-        message: target.isClosedBiz
-          ? `[#${target.index} ${target.companyName}] 폐업 제외 처리되었습니다.`
-          : `[#${target.index} ${target.companyName}] 정상 조사 대상으로 설정되었습니다.`,
+        message: statusMsg,
         target,
         quotaDatabase: quotaDb
       });

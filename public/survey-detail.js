@@ -2,8 +2,8 @@
  * 설문조사 상세 작업실 제어 스크립트 (survey-detail.js)
  * 2-Tier 와이드 쿼터 뷰, 쿼터 항목별 진행 트래커, 2-Phase 파일럿 & 배치 파이프라인 제어
  */
-import { escapeHtml } from './modules/blueprint-utils.js?v=20261111_gg622_v1';
-import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261111_gg622_v1';
+import { escapeHtml } from './modules/blueprint-utils.js?v=20261111_gg622_v2';
+import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261111_gg622_v2';
 import { renderAssocBlueprint } from './modules/blueprint-assoc.js?v=20261108_modular_v4';
 import {
   resolveGlobalriAgeGroupKey,
@@ -31,7 +31,7 @@ import {
   renderMetrixQuotaTable,
   renderMetrixSeoulQuotaTable,
   renderAssocQuotaTable
-} from './modules/quota-table-renderers.js?v=20261111_gg622_v1';
+} from './modules/quota-table-renderers.js?v=20261111_gg622_v2';
 
 
 async function initSurveyDetailPage() {
@@ -1499,11 +1499,14 @@ async function initSurveyDetailPage() {
           await loadBlueprint();
           alert(data.message);
         },
-        onToggleClosedBiz: async (seq, isClosedBiz, excelPhone) => {
+        onToggleClosedBiz: async (seqOrPayload, isClosedBizArg, excelPhoneArg) => {
           try {
-            const payload = { seq };
-            if (isClosedBiz !== null && isClosedBiz !== undefined) payload.isClosedBiz = isClosedBiz;
-            if (excelPhone !== undefined) payload.excelPhone = excelPhone;
+            const payload = (seqOrPayload && typeof seqOrPayload === 'object')
+              ? { ...seqOrPayload }
+              : { index: seqOrPayload, seq: seqOrPayload };
+            if (payload.index === undefined && payload.seq !== undefined) payload.index = payload.seq;
+            if (isClosedBizArg !== null && isClosedBizArg !== undefined) payload.isClosedBiz = isClosedBizArg;
+            if (excelPhoneArg !== undefined) payload.excelPhone = excelPhoneArg;
             const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/toggle-closed-biz`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1513,7 +1516,7 @@ async function initSurveyDetailPage() {
             if (!res.ok || !data.success) throw new Error(data.error || '업데이트 실패');
             if (currentCampaign && Array.isArray(data.quotaDatabase)) {
               currentCampaign.quotaDatabase = data.quotaDatabase;
-              if (isClosedBiz === true) checkedMetrixSeqs.delete(Number(seq));
+              if (payload.isClosedBiz === true) checkedMetrixSeqs.delete(Number(payload.index || payload.seq));
               renderCampaignDetails(currentCampaign);
             }
             appendLog('info', `✓ ${data.message}`);

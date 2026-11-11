@@ -51,70 +51,75 @@ export async function verifyBizStatusViaHometax(bizNumbers = []) {
 
   const browser = await launchChromium({ headless: true });
   try {
-    const context = await browser.newContext({ ignoreHTTPSErrors: true });
-    const page = await context.newPage();
-    await page.route('**/*app.js*', route => route.abort());
-    await page.goto(
-      'https://teht.hometax.go.kr/websquare/websquare.html?w2xPath=/ui/ab/a/a/UTEABAAA13.xml',
-      { waitUntil: 'domcontentloaded', timeout: 20000 }
-    );
-
-    const chunkSize = 25;
+    const chunkSize = 20;
     for (let i = 0; i < cleanNumbers.length; i += chunkSize) {
       const chunk = cleanNumbers.slice(i, i + chunkSize);
-      const batchRes = await page.evaluate(async ({ nums }) => {
-        const out = [];
-        for (const bNo of nums) {
-          try {
-            const payload = {
-              dongCode: bNo.substring(3, 5),
-              inqrTrgtClCd: '1',
-              mobYn: 'N',
-              psbSearch: 'Y',
-              pubcUserNo: '',
-              txprDscmNo: bNo,
-              userReqInfoVO: {}
-            };
-            const res = await fetch('/wqAction.do?actionId=ATTABZAA001R08&screenId=UTEABAAA13&popupYn=false&realScreenId=', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-              body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            out.push({
-              bizNo: bNo,
-              trtCntn: data.trtCntn || '',
-              smpcBmanTrtCntn: data.smpcBmanTrtCntn || '',
-              nrgtTxprYn: data.nrgtTxprYn || ''
-            });
-          } catch (e) {
-            out.push({ bizNo: bNo, trtCntn: '', error: e.message });
-          }
-        }
-        return out;
-      }, { nums: chunk });
+      const context = await browser.newContext({ ignoreHTTPSErrors: true });
+      try {
+        const page = await context.newPage();
+        await page.route('**/*app.js*', route => route.abort());
+        await page.goto(
+          'https://teht.hometax.go.kr/websquare/websquare.html?w2xPath=/ui/ab/a/a/UTEABAAA13.xml',
+          { waitUntil: 'domcontentloaded', timeout: 20000 }
+        );
 
-      for (const item of batchRes) {
-        const trt = String(item.trtCntn || '').trim();
-        const smpc = String(item.smpcBmanTrtCntn || '').trim();
-        const isClosed = trt.includes('폐업') || smpc.includes('폐업') || item.nrgtTxprYn === 'Y';
-        const isSuspended = trt.includes('휴업') || smpc.includes('휴업');
-        const bizStatus = isClosed ? '폐업자' : (isSuspended ? '휴업자' : '계속사업자');
-        const taxType = trt ? trt.replace(/\s*입니다\.?\s*$/, '').trim() : '부가가치세 일반과세자';
-        resultMap.set(item.bizNo, {
-          bizNo: item.bizNo,
-          trtCntn: trt,
-          taxType,
-          bizStatus,
-          isClosed,
-          isSuspended
-        });
+        const batchRes = await page.evaluate(async ({ nums }) => {
+          const out = [];
+          for (const bNo of nums) {
+            try {
+              const payload = {
+                dongCode: bNo.substring(3, 5),
+                inqrTrgtClCd: '1',
+                mobYn: 'N',
+                psbSearch: 'Y',
+                pubcUserNo: '',
+                txprDscmNo: bNo,
+                userReqInfoVO: {}
+              };
+              const res = await fetch('/wqAction.do?actionId=ATTABZAA001R08&screenId=UTEABAAA13&popupYn=false&realScreenId=', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+                body: JSON.stringify(payload)
+              });
+              const data = await res.json();
+              out.push({
+                bizNo: bNo,
+                trtCntn: data.trtCntn || '',
+                smpcBmanTrtCntn: data.smpcBmanTrtCntn || '',
+                nrgtTxprYn: data.nrgtTxprYn || ''
+              });
+            } catch (e) {
+              out.push({ bizNo: bNo, trtCntn: '', error: e.message });
+            }
+          }
+          return out;
+        }, { nums: chunk });
+
+        for (const item of batchRes) {
+          const trt = String(item.trtCntn || '').trim();
+          const smpc = String(item.smpcBmanTrtCntn || '').trim();
+          if (!trt && !smpc && item.nrgtTxprYn !== 'Y') continue;
+          const isClosed = trt.includes('폐업') || smpc.includes('폐업') || item.nrgtTxprYn === 'Y';
+          const isSuspended = trt.includes('휴업') || smpc.includes('휴업');
+          const bizStatus = isClosed ? '폐업자' : (isSuspended ? '휴업자' : '계속사업자');
+          const taxType = trt ? trt.replace(/\s*입니다\.?\s*$/, '').trim() : '부가가치세 일반과세자';
+          resultMap.set(item.bizNo, {
+            bizNo: item.bizNo,
+            trtCntn: trt,
+            taxType,
+            bizStatus,
+            isClosed,
+            isSuspended
+          });
+        }
+      } finally {
+        await context.close().catch(e => logger.warn(`[홈택스 컨텍스트 종료 경고] ${e.message}`));
       }
     }
   } catch (err) {
     logger.warn(`[홈택스 사업자번호 휴폐업 조회 경고] ${err.message}`);
   } finally {
-    await browser.close().catch(() => {});
+    await browser.close().catch(e => logger.warn(`[홈택스 브라우저 종료 경고] ${e.message}`));
   }
   return resultMap;
 }
@@ -179,7 +184,8 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
     snum = '622',
     accounts = METRIX_622_ACCOUNTS,
     verifyBizStatus = true,
-    existingQuotaList = []
+    existingQuotaList = [],
+    skipSaveFiles = false
   } = options;
 
   logger.info(`[Metrix 622 3계정 통합 동기화] 시작: 계정=${accounts.map(a => a.loginId).join(', ')}`);
@@ -210,15 +216,19 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
       const page = await context.newPage();
       const loginUrl = `https://survey.metrix.co.kr/Contact/?SNUM=${snum}`;
       await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
-      await page.waitForSelector('#id', { timeout: 10000 });
+      await page.waitForSelector('#id', { timeout: 15000 });
       await page.fill('#id', acc.loginId);
       await page.fill('#password', acc.loginPw);
 
       await Promise.all([
-        page.waitForURL(u => u.toString().includes('Listdata'), { timeout: 20000 }),
+        page.waitForURL(u => u.toString().includes('Listdata'), { waitUntil: 'domcontentloaded', timeout: 25000 }),
         page.click('button.login')
       ]);
-      await page.waitForTimeout(1200);
+      await page.waitForSelector('table.list-data', { timeout: 15000 });
+      await page.waitForSelector('select.ROW_PER_PAGE', { timeout: 10000 }).catch(e => {
+        logger.warn(`[Metrix 622 동기화] ROW_PER_PAGE 대기 경고 (${acc.loginId}): ${e.message}`);
+      });
+      await page.waitForTimeout(1000);
 
       const sessionInfo = await page.evaluate(() => {
         const realAk = (window.ACCESS_KEYS || []).find(k => k.NAME === 'REAL')?._id || '3dd82dbba73344d1a7f4';
@@ -242,10 +252,11 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
         const sel = document.querySelector('select.ROW_PER_PAGE');
         if (sel) {
           sel.value = '100';
-          if (typeof $ !== 'undefined') $(sel).trigger('change');
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+          if (typeof $ !== 'undefined') $(sel).val('100').trigger('change');
         }
       });
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(2500);
 
       const rows = await page.evaluate(({ sessionInfo }) => {
         const trs = Array.from(document.querySelectorAll('table.list-data tbody tr'));
@@ -310,6 +321,11 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
         const effectivePhone = excelPhone || r.serverPhone || prev.phone || '';
         const phoneNeedsSync = Boolean(excelPhone && excelPhone !== r.serverPhone);
         const industryKey = getMetrixIndustryKey(r.industry);
+        const rawGuar = String(sRow['보증지원여부'] || r.rawMeta?.['보증지원여부'] || prev.guaranteeSupport || '').trim().toUpperCase();
+        const guaranteeSupport = rawGuar === 'O' ? 'O' : (rawGuar === 'X' ? 'X' : rawGuar);
+        const normalizedStatus = (String(r.status).trim() === '98%' || (prev.status === '진행중(98%)' && String(r.status).includes('98%')))
+          ? '진행중(98%)'
+          : r.status;
 
         allSlots.push({
           ...prev,
@@ -336,6 +352,7 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
           taxType: prev.taxType || '부가가치세 일반과세자',
           isClosedBiz: Boolean(prev.isClosedBiz),
           manualClosedOverride: Boolean(prev.manualClosedOverride),
+          guaranteeSupport,
           industry: r.industry,
           industryKey,
           bizCategory: r.bizCategory,
@@ -345,7 +362,7 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
           road: r.road,
           detailAddress: r.detailAddress,
           fullAddress: r.fullAddress,
-          status: r.status,
+          status: normalizedStatus,
           contactResult: r.contactResult,
           lastContactTime: r.lastContactTime,
           contactPortalUrl: `https://survey.metrix.co.kr/Contact/?SNUM=${snum}`,
@@ -360,7 +377,7 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
       await context.close();
     }
   } finally {
-    await browser.close().catch(() => {});
+    await browser.close().catch(e => logger.warn(`[Metrix 622 브라우저 종료 경고] ${e.message}`));
   }
 
   // 홈택스 사업자번호 휴폐업 실시간 검증
@@ -400,6 +417,7 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
     { key: 'serverPhone', label: '서버 휴대폰(기존)' },
     { key: 'bizNumber', label: '사업자등록번호' },
     { key: 'bizStatus', label: '휴폐업조회' },
+    { key: 'guaranteeSupport', label: '보증지원여부' },
     { key: 'industry', label: '업종' },
     { key: 'bizCategory', label: '분류명' },
     { key: 'area', label: '지역' },
@@ -434,39 +452,44 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
     fs.mkdirSync(quotasDir, { recursive: true });
   }
 
-  const jsonPath = path.join(quotasDir, 'quota_metrix_gyeonggi_622_all.json');
-  fs.writeFileSync(jsonPath, JSON.stringify(quotaDbData, null, 2), 'utf8');
+  const fileSuffix = accounts.length >= METRIX_622_ACCOUNTS.length ? 'all' : accounts.map(a => a.loginId).join('_');
+  const jsonPath = path.join(quotasDir, `quota_metrix_gyeonggi_622_${fileSuffix}.json`);
+  const xlsxPath = path.join(quotasDir, `quota_metrix_gyeonggi_622_${fileSuffix}.xlsx`);
 
-  const xlsxRows = allSlots.map(s => ({
-    '순번': s.index,
-    '조사원': s.surveyorId,
-    '시트명': s.sheetName,
-    'UID': s.uid,
-    '사업체명': s.companyName,
-    '대표자 성명': s.ceoName,
-    '대표자 성별': s.ceoGender,
-    '구글시트 휴대폰': s.excelPhone,
-    '서버 기존 휴대폰': s.serverPhone,
-    '적용 휴대폰': s.phone,
-    '사업자등록번호': s.bizNumber,
-    '과세유형': s.taxType,
-    '휴폐업상태': s.bizStatus,
-    '폐업제외여부': s.isClosedBiz ? '제외(폐업)' : '정상대상',
-    '업종': s.industry,
-    '분류명': s.bizCategory,
-    '사업자형태': s.bizForm,
-    '지역': s.area,
-    '전체주소': s.fullAddress,
-    '진행상태': s.status,
-    '컨택결과': s.contactResult,
-    '최종컨택시각': s.lastContactTime,
-    '설문URL': s.surveyUrl
-  }));
-  const wsOut = XLSX.utils.json_to_sheet(xlsxRows);
-  const wbOut = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wbOut, wsOut, '경기도소상공인_171개');
-  const xlsxPath = path.join(quotasDir, 'quota_metrix_gyeonggi_622_all.xlsx');
-  fs.writeFileSync(xlsxPath, XLSX.write(wbOut, { type: 'buffer', bookType: 'xlsx' }));
+  if (!skipSaveFiles) {
+    fs.writeFileSync(jsonPath, JSON.stringify(quotaDbData, null, 2), 'utf8');
+
+    const xlsxRows = allSlots.map(s => ({
+      '순번': s.index,
+      '조사원': s.surveyorId,
+      '시트명': s.sheetName,
+      'UID': s.uid,
+      '사업체명': s.companyName,
+      '대표자 성명': s.ceoName,
+      '대표자 성별': s.ceoGender,
+      '구글시트 휴대폰': s.excelPhone,
+      '서버 기존 휴대폰': s.serverPhone,
+      '적용 휴대폰': s.phone,
+      '사업자등록번호': s.bizNumber,
+      '과세유형': s.taxType,
+      '휴폐업상태': s.bizStatus,
+      '폐업제외여부': s.isClosedBiz ? '제외(폐업)' : '정상대상',
+      '보증지원여부': s.guaranteeSupport || '',
+      '업종': s.industry,
+      '분류명': s.bizCategory,
+      '사업자형태': s.bizForm,
+      '지역': s.area,
+      '전체주소': s.fullAddress,
+      '진행상태': s.status,
+      '컨택결과': s.contactResult,
+      '최종컨택시각': s.lastContactTime,
+      '설문URL': s.surveyUrl
+    }));
+    const wsOut = XLSX.utils.json_to_sheet(xlsxRows);
+    const wbOut = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wbOut, wsOut, '경기도소상공인_171개');
+    fs.writeFileSync(xlsxPath, XLSX.write(wbOut, { type: 'buffer', bookType: 'xlsx' }));
+  }
 
   return {
     success: true,

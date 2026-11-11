@@ -420,11 +420,11 @@ export function seedInitialCampaigns({
           } catch (_) {}
         }
 
-        const existingGyeonggiCamp = CampaignStore.getAllCampaigns().find(
-          c => c.id === gyeonggi622CampId || c.surveyType === 'metrix_panel'
+        const existingGyeonggiCamps = CampaignStore.getAllCampaigns().filter(
+          c => c.id === gyeonggi622CampId || c.id === 'camp_1793069358602' || c.surveyType === 'metrix_panel'
         );
 
-        if (!existingGyeonggiCamp) {
+        if (existingGyeonggiCamps.length === 0) {
           CampaignStore.createCampaign({
             id: gyeonggi622CampId,
             title: '[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 3계정 통합 171건 (강영미·김정례·노영미)',
@@ -451,59 +451,148 @@ export function seedInitialCampaigns({
             quotaDatabase: ggList
           });
         } else {
-          let needGgUpdate = false;
-          if (!Array.isArray(existingGyeonggiCamp.quotaDatabase) || existingGyeonggiCamp.quotaDatabase.length < ggList.length) {
-            existingGyeonggiCamp.quotaDatabase = ggList;
-            existingGyeonggiCamp.quotaSourceFile = ggFile;
-            needGgUpdate = true;
-          } else {
-            for (const ggItem of ggList) {
-              const match = existingGyeonggiCamp.quotaDatabase.find(
-                q => String(q.uid) === String(ggItem.uid) && (!q.surveyorId || !ggItem.surveyorId || q.surveyorId === ggItem.surveyorId)
-              );
-              if (match) {
+          for (const existingGyeonggiCamp of existingGyeonggiCamps) {
+            let needGgUpdate = false;
+            if (!Array.isArray(existingGyeonggiCamp.quotaDatabase) || existingGyeonggiCamp.quotaDatabase.length < ggList.length) {
+              const prevByKey = new Map();
+              (existingGyeonggiCamp.quotaDatabase || []).forEach(q => {
+                if (q && q.uid) prevByKey.set(`${q.surveyorId || ''}::${q.uid}`, q);
+              });
+              existingGyeonggiCamp.quotaDatabase = ggList.map(ggItem => {
+                const prev = prevByKey.get(`${ggItem.surveyorId || ''}::${ggItem.uid}`) || prevByKey.get(`::${ggItem.uid}`);
+                if (!prev) return ggItem;
+                const prevAnsLen = Array.isArray(prev.submittedAnswers) ? prev.submittedAnswers.length : 0;
+                const ggAnsLen = Array.isArray(ggItem.submittedAnswers) ? ggItem.submittedAnswers.length : 0;
+                return {
+                  ...ggItem,
+                  customGuide: prev.customGuide || ggItem.customGuide,
+                  manualClosedOverride: prev.manualClosedOverride || false,
+                  isClosedBiz: prev.manualClosedOverride ? prev.isClosedBiz : ggItem.isClosedBiz,
+                  bizStatus: prev.manualClosedOverride ? prev.bizStatus : ggItem.bizStatus,
+                  quotaStatus: prev.manualClosedOverride && prev.isClosedBiz
+                    ? 'excluded'
+                    : (ggItem.quotaStatus !== 'ready' ? ggItem.quotaStatus : (prev.quotaStatus || ggItem.quotaStatus)),
+                  status: ggItem.status || prev.status || '',
+                  submittedAnswers: ggAnsLen >= prevAnsLen ? (ggItem.submittedAnswers || []) : prev.submittedAnswers,
+                  pilotAt: ggItem.pilotAt || prev.pilotAt || ''
+                };
+              });
+              existingGyeonggiCamp.quotaSourceFile = ggFile;
+              needGgUpdate = true;
+            } else {
+              for (const ggItem of ggList) {
+                const match = existingGyeonggiCamp.quotaDatabase.find(
+                  q => String(q.uid) === String(ggItem.uid) && (!q.surveyorId || !ggItem.surveyorId || q.surveyorId === ggItem.surveyorId)
+                );
+                if (!match) continue;
+
                 if (!match.surveyorId && ggItem.surveyorId) {
-                  Object.assign(match, {
-                    surveyorId: ggItem.surveyorId,
-                    surveyorPw: ggItem.surveyorPw,
-                    sheetName: ggItem.sheetName,
-                    excelPhone: match.excelPhone || ggItem.excelPhone,
-                    serverPhone: ggItem.serverPhone,
-                    phone: match.excelPhone || ggItem.excelPhone || ggItem.serverPhone || match.phone,
-                    bizStatus: match.bizStatus || ggItem.bizStatus,
-                    taxType: match.taxType || ggItem.taxType,
-                    isClosedBiz: match.isClosedBiz ?? ggItem.isClosedBiz,
-                    industryKey: ggItem.industryKey
-                  });
+                  match.surveyorId = ggItem.surveyorId;
+                  match.surveyorPw = ggItem.surveyorPw;
+                  match.sheetName = ggItem.sheetName;
+                  needGgUpdate = true;
+                }
+                if (ggItem.guaranteeSupport && match.guaranteeSupport !== ggItem.guaranteeSupport) {
+                  match.guaranteeSupport = ggItem.guaranteeSupport;
+                  needGgUpdate = true;
+                }
+                if (ggItem.industryKey && !match.industryKey) {
+                  match.industryKey = ggItem.industryKey;
+                  needGgUpdate = true;
+                }
+                if (!match.manualClosedOverride) {
+                  if (ggItem.taxType && match.taxType !== ggItem.taxType) {
+                    match.taxType = ggItem.taxType;
+                    match.bizVerifiedAt = ggItem.bizVerifiedAt || match.bizVerifiedAt;
+                    needGgUpdate = true;
+                  }
+                  if (match.isClosedBiz !== ggItem.isClosedBiz || (ggItem.bizStatus && match.bizStatus !== ggItem.bizStatus)) {
+                    match.isClosedBiz = ggItem.isClosedBiz;
+                    match.bizStatus = ggItem.bizStatus;
+                    if (!match.isClosedBiz && match.quotaStatus === 'excluded') {
+                      match.quotaStatus = 'ready';
+                    } else if (match.isClosedBiz) {
+                      match.quotaStatus = 'excluded';
+                    }
+                    needGgUpdate = true;
+                  }
+                }
+                const ggAnsLen = Array.isArray(ggItem.submittedAnswers) ? ggItem.submittedAnswers.length : 0;
+                const matchAnsLen = Array.isArray(match.submittedAnswers) ? match.submittedAnswers.length : 0;
+                if (ggAnsLen > matchAnsLen) {
+                  match.submittedAnswers = ggItem.submittedAnswers;
+                  match.pilotAt = ggItem.pilotAt || match.pilotAt;
+                  match.capturedSteps = ggItem.capturedSteps || match.capturedSteps;
+                  needGgUpdate = true;
+                }
+                if (ggItem.quotaStatus && ggItem.quotaStatus !== 'ready' && (match.quotaStatus === 'ready' || !match.quotaStatus)) {
+                  match.quotaStatus = ggItem.quotaStatus;
+                  match.status = ggItem.status || match.status;
+                  if (ggItem.phoneNeedsSync === false && ggItem.serverPhone) {
+                    match.phone = ggItem.phone || match.phone;
+                    match.serverPhone = ggItem.serverPhone;
+                    match.phoneNeedsSync = false;
+                  }
                   needGgUpdate = true;
                 }
               }
             }
-          }
-          if (!existingGyeonggiCamp.metrixPolicy?.industryPolicies && defaultMetrixPolicy?.industryPolicies) {
-            existingGyeonggiCamp.metrixPolicy = {
-              ...defaultMetrixPolicy,
-              ...(existingGyeonggiCamp.metrixPolicy || {}),
-              industryPolicies: {
-                ...defaultMetrixPolicy.industryPolicies,
-                ...(existingGyeonggiCamp.metrixPolicy?.industryPolicies || {})
+
+            // 사용자의 업종별 맞춤 가이드(metrixPolicy / industryPolicies)를 절대 덮어쓰지 않고 신규 문15-3 기본 키만 보충
+            const curPol = existingGyeonggiCamp.metrixPolicy || existingGyeonggiCamp.masterBaseline?.policy || {};
+            if (!curPol.industryPolicies && defaultMetrixPolicy?.industryPolicies) {
+              existingGyeonggiCamp.metrixPolicy = {
+                ...defaultMetrixPolicy,
+                ...curPol,
+                industryPolicies: {
+                  ...defaultMetrixPolicy.industryPolicies,
+                  ...(curPol.industryPolicies || {})
+                }
+              };
+              needGgUpdate = true;
+            } else {
+              if (!existingGyeonggiCamp.metrixPolicy) {
+                existingGyeonggiCamp.metrixPolicy = { ...curPol };
+                needGgUpdate = true;
               }
-            };
-            needGgUpdate = true;
-          }
-          if (needGgUpdate) {
-            CampaignStore.updateCampaign(existingGyeonggiCamp.id, {
-              title: existingGyeonggiCamp.id === gyeonggi622CampId
-                ? '[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 3계정 통합 171건 (강영미·김정례·노영미)'
-                : existingGyeonggiCamp.title,
-              accounts: ggContent.accounts || existingGyeonggiCamp.accounts,
-              sparePhones: ggContent.sparePhones || existingGyeonggiCamp.sparePhones || [],
-              googleSheetUrl: existingGyeonggiCamp.googleSheetUrl || ggContent.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911',
-              quotaDatabase: existingGyeonggiCamp.quotaDatabase,
-              quotaSourceFile: existingGyeonggiCamp.quotaSourceFile || ggFile,
-              metrixPolicy: existingGyeonggiCamp.metrixPolicy,
-              hasMasterBlueprint: true
-            });
+              if (existingGyeonggiCamp.metrixPolicy.funding_guaranteeRule === undefined) {
+                existingGyeonggiCamp.metrixPolicy.funding_guaranteeRule = 'excel_sync';
+                needGgUpdate = true;
+              }
+              if (existingGyeonggiCamp.metrixPolicy.funding_whenGuaranteeX === undefined) {
+                existingGyeonggiCamp.metrixPolicy.funding_whenGuaranteeX = '1';
+                needGgUpdate = true;
+              }
+              if (existingGyeonggiCamp.metrixPolicy.industryPolicies && typeof existingGyeonggiCamp.metrixPolicy.industryPolicies === 'object') {
+                for (const indObj of Object.values(existingGyeonggiCamp.metrixPolicy.industryPolicies)) {
+                  if (indObj && typeof indObj === 'object') {
+                    if (indObj.funding_guaranteeRule === undefined) {
+                      indObj.funding_guaranteeRule = 'excel_sync';
+                      needGgUpdate = true;
+                    }
+                    if (indObj.funding_whenGuaranteeX === undefined) {
+                      indObj.funding_whenGuaranteeX = '1';
+                      needGgUpdate = true;
+                    }
+                  }
+                }
+              }
+            }
+
+            if (needGgUpdate) {
+              CampaignStore.updateCampaign(existingGyeonggiCamp.id, {
+                title: existingGyeonggiCamp.id === gyeonggi622CampId
+                  ? '[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 3계정 통합 171건 (강영미·김정례·노영미)'
+                  : existingGyeonggiCamp.title,
+                accounts: ggContent.accounts || existingGyeonggiCamp.accounts,
+                sparePhones: ggContent.sparePhones || existingGyeonggiCamp.sparePhones || [],
+                googleSheetUrl: existingGyeonggiCamp.googleSheetUrl || ggContent.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911',
+                quotaDatabase: existingGyeonggiCamp.quotaDatabase,
+                quotaSourceFile: existingGyeonggiCamp.quotaSourceFile || ggFile,
+                metrixPolicy: existingGyeonggiCamp.metrixPolicy,
+                hasMasterBlueprint: true
+              });
+            }
           }
         }
       } catch (_) {}
