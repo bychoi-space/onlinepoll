@@ -2,7 +2,7 @@
  * 브라우저 자동화 세션 오케스트레이터 (Browser Automation Session)
  * Playwright 브라우저 생명주기 관리 및 전체 설문 응답 프로세스를 제어합니다.
  */
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { parseQuestions } from './parser.js';
@@ -50,11 +50,9 @@ export async function runSurveySession(options = {}) {
 
   // 2. 브라우저 런치
   logger.info(`브라우저(Chromium)를 시작합니다... (모드: ${headless ? 'Headless' : '직접 창 표시(Headed)'})`);
-  const browser = await chromium.launch({
+  const browser = await launchChromium({
     headless: !!headless,
     args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
       '--disable-blink-features=AutomationControlled' // 안티-디텍션 기본 인자
     ]
   });

@@ -16,10 +16,10 @@
  *    - [파트 I] 주관식 코멘트 & 동의서(Step 117 2중 서명·연락처 3분할) & CHECK1(Step 118 간판사진 업로드) & Step 119(98% 안전 대기)
  */
 
-import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 import { getMetrixIndustryKey } from './metrix-slot-scraper.js';
+import { launchChromium } from '../utils/chromium-launcher.js';
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -34,21 +34,6 @@ const DEFAULT_ACCOUNT_PASSWORDS = {
   '김정례': '3995',
   '노영미': '7791'
 };
-
-function resolveChromiumLaunchOptions() {
-  const opts = {
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  };
-  if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH && fs.existsSync(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH)) {
-    opts.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-  } else if (fs.existsSync('/usr/bin/chromium')) {
-    opts.executablePath = '/usr/bin/chromium';
-  } else if (fs.existsSync('/usr/bin/chromium-browser')) {
-    opts.executablePath = '/usr/bin/chromium-browser';
-  }
-  return opts;
-}
 
 /**
  * 메트릭스 경기도 소상공인 패널 설문조사 실행 메인 엔트리포인트
@@ -121,7 +106,7 @@ export async function runMetrixSurvey({
     }
   }
 
-  const browser = await chromium.launch(resolveChromiumLaunchOptions());
+  const browser = await launchChromium({ headless: true });
 
   const context = await browser.newContext({
     viewport: { width: 1400, height: 900 },

@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -165,7 +165,7 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
   const existingMap = new Map(existingMembers.map(m => [String(m.memberUid || m.uid), m]));
 
   // 4. Headless Playwright로 각 가구의 Survey.asp 가구원 조사 현황 수집
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
 

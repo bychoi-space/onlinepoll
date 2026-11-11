@@ -1,18 +1,5 @@
-import { chromium } from 'playwright';
-import fs from 'fs';
 import { logger } from '../utils/logger.js';
-
-function resolveChromiumLaunchOptions() {
-  const opts = { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] };
-  if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH && fs.existsSync(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH)) {
-    opts.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-  } else if (fs.existsSync('/usr/bin/chromium')) {
-    opts.executablePath = '/usr/bin/chromium';
-  } else if (fs.existsSync('/usr/bin/chromium-browser')) {
-    opts.executablePath = '/usr/bin/chromium-browser';
-  }
-  return opts;
-}
+import { launchChromium } from '../utils/chromium-launcher.js';
 
 /**
  * 케이스탯 TAPI 관리자 리스트(list.php)에서 슬롯 정보 및 고유 키(ran_id)를 전수 스크랩하는 모듈
@@ -34,7 +21,7 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
   const pridMatch = listUrl.match(/survey\/([0-9]+)/);
   const targetPrid = pridMatch ? pridMatch[1] : '2026070802';
 
-  const browser = await chromium.launch(resolveChromiumLaunchOptions());
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({
     ignoreHTTPSErrors: true,
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'

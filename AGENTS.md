@@ -181,47 +181,58 @@ c:/onlinepoll/
 ├── package.json               # 프로젝트 의존성 및 스크립트 정의 ("type": "module")
 ├── src/
 │   ├── server.js              # Express 메인 엔트리포인트 및 도메인 라우터 부트스트래퍼
+│   ├── models/
+│   │   └── campaign.js        # 설문 캠페인 및 런타임 쿼터 DB 영속 스토어 (원자적 임시파일 쓰기)
 │   ├── engine/
 │   │   ├── browser.js         # Playwright 브라우저 인스턴스 생명주기 관리
 │   │   ├── parser.js          # 설문 DOM 질문/보기 컴포넌트 분석기
 │   │   ├── actor.js           # 인간다운 상호작용(클릭, 스크롤, 타이핑) 수행기
-│   │   ├── kstat-runner.js    # 케이스탯 15단계 본 설문 다중 iframe 실행 엔진
-│   │   ├── kstat-eval-runner.js # 케이스탯 조사원 평가(17단계) 전용 자동 응답 러너
-│   │   ├── kstat-slot-scraper.js # Kstat 관리자(list.php) 자동 세션 연동 및 슬롯 스크래퍼
-│   │   ├── metrix-runner.js   # 메트릭스 경기도 소상공인 사업체패널 3차(120단계) 자동화 러너
-│   │   ├── metrix-seoul-runner.js # 메트릭스 서울시 소상공인 사업체패널 5차(svyA001~115, 99% 대기) 러너
-│   │   ├── persona-builder.js # 업종별 동적 페르소나 및 정합성 엔진
+│   │   ├── enricher.js        # 9대 업종/주요품목 표준화 및 215인 실존 대표자 페르소나 풀 보강기
+│   │   ├── persona-builder.js # 업종별 동적 페르소나 및 재무·고용 정합성 엔진
 │   │   ├── hybrid-quota.js    # 온누리 ➔ 마켓비즈 2단계 하이브리드 표본 수집기
+│   │   ├── marketbz.js        # 마켓비즈 실존 기업 데이터 크롤링 엔진
+│   │   ├── onnuri.js          # 온누리상품권 공인 가맹점 마스터 DB 조회기
+│   │   ├── kstat-runner.js    # 케이스탯 점포주 조사(2026070802) 15단계 다중 iframe 실행 엔진
+│   │   ├── kstat-eval-runner.js # 케이스탯 점포주 조사원 평가(17단계) 자동 응답 러너
+│   │   ├── kstat-slot-scraper.js # 케이스탯 점포주 관리자(list.php) 슬롯 스크래퍼
+│   │   ├── kstat-sync.js      # 케이스탯 실시간 슬롯 완료 현황 동기화 모듈
+│   │   ├── kstat-assoc-runner.js # 케이스탯 전통시장 상인회 조사(2026070801) 24단계 실행 엔진
+│   │   ├── kstat-assoc-eval-runner.js # 케이스탯 상인회 조사원 평가 전용 자동 응답 러너
+│   │   ├── kstat-assoc-slot-scraper.js # 케이스탯 상인회 관리자(list.php) 슬롯 스크래퍼
+│   │   ├── metrix-runner.js   # 메트릭스 경기도 소상공인 사업체패널 3차(SNUM=622, 120단계) 자동화 러너
+│   │   ├── metrix-slot-scraper.js # 메트릭스 경기도 패널 3계정·구글시트·홈택스 폐업조회 통합 스크래퍼
+│   │   ├── metrix-seoul-runner.js # 메트릭스 서울시 소상공인 사업체패널 5차(svyA001~115, 99% 대기) 러너
 │   │   ├── hrc-energy-runner.js # 한국리서치 에너지총조사(건물 부문) 자동 응답 러너
+│   │   ├── hrc-energy-scraper.js # 한국리서치 에너지총조사 조사구/표본 스크래퍼
 │   │   ├── globalri-literacy-runner.js # 글로벌리서치 제5차 성인문해능력조사(Part A~F) 자동화 러너
-│   │   └── gallup-return-farm-runner.js # 한국갤럽 20263603 귀농귀촌 실태조사(GPS/8종전자서명/방문규칙) 러너
+│   │   ├── globalri-literacy-scraper.js # 글로벌리서치 성인문해능력조사 리스트 스크래퍼
+│   │   ├── gallup-return-farm-runner.js # 한국갤럽 20263603 귀농귀촌 실태조사(GPS/8종전자서명/방문규칙) 러너
+│   │   └── kona-runner.js     # 코나체인 청년 설문 자동화 러너
 │   ├── config/
 │   │   └── campaign-seeders.js # 서버 기동 시 기본 캠페인 시드 및 런타임 상태 동기화 모듈
 │   ├── services/
 │   │   └── task-manager.js    # 다중 캠페인 동시 배치 실행(MAX_CONCURRENT_TASKS=2) 상태 관리자
 │   ├── routes/
-│   │   ├── auth-routes.js     # 인증, 로그인, 비밀번호 변경 및 리포트/온누리 조회 라우터
+│   │   ├── auth-routes.js     # 패스코드 인증(HttpOnly 쿠키), 접근 게이트 및 실시간 SSE 라우터
 │   │   ├── campaign-routes.js # 캠페인 CRUD, 블루프린트/기준점 조회·저장, 시트 뷰어 라우터
 │   │   ├── execution-routes.js # 파일럿/배치/단건 설문 자동화 실행 및 중지 제어 라우터
-│   │   ├── sync-routes.js     # Kstat·HRC·글로벌리서치·한국갤럽·서울시패널 외부 동기화 라우터
-│   │   └── quota-routes.js    # 조사 쿼터 보관함 CRUD, 엑셀 업로드, 상인회 허브 동기화 라우터
+│   │   ├── sync-routes.js     # Kstat·HRC·글로벌리서치·한국갤럽·메트릭스 패널 외부 동기화 라우터
+│   │   └── quota-routes.js    # 조사 쿼터 보관함 CRUD(mtime 캐시), 엑셀 업로드, 상인회 허브 동기화 라우터
 │   ├── ai/
+│   │   ├── b2b-mapper.js      # B2B 사업자 프로필 필드-문항 지능형 매퍼
 │   │   ├── decision.js        # 객관식 선택 결정 로직 (가중치/확률 계산)
 │   │   ├── generator.js       # 주관식 답변 생성기 (LLM + 프롬프트 템플릿)
 │   │   └── persona.js         # 가상 응답자 프로필 생성기
-│   ├── b2b/
-│   │   ├── hybrid-quota-builder.js # 온누리상품권 ➔ 마켓비즈 2단계 하이브리드 엔진
-│   │   ├── marketbz.js        # 마켓비즈 단독 기업 데이터 크롤링 엔진
-│   │   └── onnuri.js          # 온누리상품권 공인 가맹점 데이터 조회기
 │   └── utils/
+│       ├── chromium-launcher.js # 크로스 플랫폼 Playwright Chromium 실행 경로·플래그 통합 런처
 │       ├── logger.js          # AsyncLocalStorage 캠페인 격리 로거 및 SSE 이벤트 브로드캐스터
 │       ├── delays.js          # 인간 시뮬레이션 지연 계산 유틸
-│       ├── item-normalizer.js # 9대 업종/주요품목 표준화 및 유효성 정규화 유틸
-│       ├── ceo-pool.js        # 215인 실존 대표자 프로필 풀 매퍼
+│       ├── excel.js           # 조사 쿼터 데이터 Excel(.xlsx) 직렬화 및 내보내기 유틸
 │       ├── korean-signature.js # 8종 한글 자모 필체 다변화(초·중·종성 획 분해) 전자서명 공통 모듈
+│       ├── market-festival-finder.js # 전통시장 공동마케팅·축제 실측 이력 탐색 유틸
 │       ├── assoc-quota-sync.js # 상인회 쿼터 보관함(JSON/Excel) 자동 동기화 헬퍼
 │       ├── globalri-answer-excel.js # 성인문해능력조사 제출 문항·답변 Excel 및 구글 시트 자동 동기화 유틸
-│       └── seoul-panel-answer-excel.js # 서울시 소상공인 패널 5차 응답 내역 Excel 및 구글 시트(시트2) 동기화 유틸
+│       └── seoul-panel-answer-excel.js # 서울시 소상공인 패널 5차 응답 내역 Excel 및 구글 시트 동기화 유틸
 ├── public/                    # 웹 대시보드 정적 파일 (인라인 스타일 완전 제거)
 │   ├── index.html             # 메인 캠페인 목록, 상단 라이브 듀얼 슬롯 배너 및 쿼터 보관함 허브
 │   ├── survey-detail.html     # 설문 상세 작업실 (STEP 1 쿼터/슬롯, STEP 2 기준점, STEP 3 2단계 실행, 플로팅 모니터링)
@@ -239,12 +250,12 @@ c:/onlinepoll/
 │   │   ├── blueprint-globalri.js # 글로벌리서치 성인문해능력조사 연령대 가이드 & 시트 뷰어 컨트롤러
 │   │   ├── blueprint-gallup-hrc-kona.js # 한국갤럽 귀농조사 / 한국리서치 에너지총조사 / 코나체인 블루프린트 렌더러
 │   │   ├── blueprint-kstat-store.js # Kstat 점포용(17단계) 3대 그룹 프리셋 및 스테이지 렌더러
-│   │   └── quota-table-renderers.js # 7대 설문 유형별 STEP 1 쿼터 테이블 전용 렌더러
+│   │   └── quota-table-renderers.js # 설문 유형별 STEP 1 쿼터 테이블 전용 렌더러
 │   ├── quota-builder.js       # 조사 쿼터 생성기 제어 스크립트
 │   └── quota-detail.js        # 조사 쿼터 상세/편집 제어 스크립트
-├── data/                      # 쿼터 DB(JSON/XLSX), 캠페인 데이터, ceo_profile_pool.json
-├── reports/                   # 점포별 15단계 스크린샷 갤러리 및 실행 결과 격리 보관소
-└── scripts/                   # 진단 및 단일 기능 검증용 ESM 스크립트 모음
+├── data/                      # 쿼터 DB(JSON/XLSX), 캠페인 런타임 DB(Git 제외), 블루프린트, ceo_persona_pool.json
+├── reports/                   # 점포별 단계 스크린샷 갤러리 및 실행 결과 격리 보관소
+└── scripts/                   # 배포 안전 재기동(safe-pm2-restart.js), 정적 검증(test_mock_browser.js) 및 진단용 ESM 스크립트
 ```
 
 ---

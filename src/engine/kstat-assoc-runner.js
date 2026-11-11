@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 import path from 'path';
 import fs from 'fs';
 import { logger } from '../utils/logger.js';
@@ -51,15 +51,7 @@ export async function runKstatAssocSurvey(options = {}) {
   ).trim();
   logger.info(`[상인회 러너] 시작 ➔ 대상 시장: "${marketName}" (슬롯: #${quotaIndex}, 조사원: "${effectiveSurveyor}"), 파일럿=${pilotMode}, 기입력보존=${preserveExisting}, URL=${surveyUrl}`);
 
-  const launchOpts = { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] };
-  if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH && fs.existsSync(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH)) {
-    launchOpts.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-  } else if (fs.existsSync('/usr/bin/chromium')) {
-    launchOpts.executablePath = '/usr/bin/chromium';
-  } else if (fs.existsSync('/usr/bin/chromium-browser')) {
-    launchOpts.executablePath = '/usr/bin/chromium-browser';
-  }
-  const browser = await chromium.launch(launchOpts);
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({
     ignoreHTTPSErrors: true,
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',

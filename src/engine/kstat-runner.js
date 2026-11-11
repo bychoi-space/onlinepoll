@@ -5,7 +5,7 @@
  * 3) 다중 iframe 안전 주입 및 스크린샷 캡처
  */
 
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 import fs from 'fs';
 import path from 'path';
 import { generateQuotaPersona } from './persona-builder.js';
@@ -478,7 +478,7 @@ export async function runKstatSurvey({
   // 2. 쿼터별 동적 페르소나 생성 (업종분류, 연령, 매출, 결제비중 등 가변 데이터)
   const persona = generateQuotaPersona(bizData, quotaIndex, guidelineConfig);
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     viewport: { width: 1280, height: 960 }

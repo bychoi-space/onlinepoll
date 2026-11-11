@@ -7,7 +7,7 @@
  * 3. 답례품 인수증 전자서명 패드(Page 7, Q3-1) 응답자별 8종 한글 자모 필체·기울기·필압·흘림 변형 서명 생성 및 업로드
  * 4. 최종 제출 직전 페이지(Page 118 - NAME/PHONE/ADDR)까지 전 문항 응답 및 DB 임시저장 후 [조사완료] 클릭 직전 안전 정지
  */
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -424,9 +424,9 @@ export async function runGallupReturnFarmSurvey({
     message: `[GPS 위치 설정] 강원특별자치도 홍천군 ${gps.eupMyeon} (${gps.latitude}, ${gps.longitude}) 브라우저 위치권한 주입 완료`
   });
 
-  const browser = await chromium.launch({
+  const browser = await launchChromium({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']
+    args: ['--disable-blink-features=AutomationControlled']
   });
 
   const context = await browser.newContext({

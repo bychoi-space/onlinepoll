@@ -5,7 +5,7 @@
 import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
-import { chromium } from 'playwright';
+import { launchChromium } from './chromium-launcher.js';
 
 export const GLOBALRI_DEFAULT_GSHEET_URL =
   'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=0#gid=0';
@@ -801,33 +801,6 @@ export function buildGlobalriAnswersExcel({ quotaDatabase = [], filePath = null 
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 }
 
-function resolveChromiumLaunchOptions() {
-  const opts = {
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--ignore-certificate-errors']
-  };
-  try {
-    const defaultExe = chromium.executablePath();
-    if (defaultExe && fs.existsSync(defaultExe)) {
-      return opts;
-    }
-  } catch (_) {}
-
-  const systemCandidates = [
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-    '/usr/bin/google-chrome',
-    '/usr/bin/google-chrome-stable'
-  ];
-  for (const cand of systemCandidates) {
-    if (fs.existsSync(cand)) {
-      opts.executablePath = cand;
-      break;
-    }
-  }
-  return opts;
-}
-
 // 배치 실행 중 다중 브라우저가 동시에 구글 시트를 열지 못하도록 직렬화 큐(Mutex) 적용
 let googleSheetSyncQueue = Promise.resolve();
 
@@ -874,7 +847,7 @@ async function _syncGlobalriAnswersToGoogleSheetImpl({
   const fullTsv = allLines.join('\n');
   const populatedRowCount = summaryRows.filter(r => r.a01 || r.a02 || r.c18).length;
 
-  const browser = await chromium.launch(resolveChromiumLaunchOptions());
+  const browser = await launchChromium({ headless: true, args: ['--ignore-certificate-errors'] });
   try {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },

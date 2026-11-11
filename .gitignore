@@ -17,6 +17,7 @@ data/*
 !data/sample_metrix_sign.png
 !data/ceo_persona_pool.json
 data/campaigns.json
+*.tmp
 !data/quotas/
 !data/quotas/*
 reports/*.json
@@ -29,6 +30,7 @@ scratch/
 reports/test_*
 scripts/*_dump.*
 scripts/*.html
+scripts/*.json
 scripts/*_dump.json
 scripts/merchant_assoc_*.html
 scripts/merchant_assoc_*.json

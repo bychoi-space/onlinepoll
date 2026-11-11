@@ -4,7 +4,7 @@
  * 2차: 마켓비즈(marketbz.com)에서 사업자번호 기반 상세 기업정보 1:1 결합(Enrichment)
  */
 
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 import { getMarketMerchants, getStratifiedMarketMerchants } from './onnuri.js';
 import { enrichBusinessData, fillMissingCeoPersona, hasCompleteAddress, searchAddressByCompany, ensureRoadAddress, normalizeRoadAddress } from './enricher.js';
 import { logger } from '../utils/logger.js';
@@ -591,10 +591,7 @@ export async function buildHybridOnnuriQuota({
   }
 
   // 2단계: 마켓비즈 플랫폼 로그인 및 1:1 결합(Enrichment)
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
   });

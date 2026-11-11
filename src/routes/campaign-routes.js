@@ -180,43 +180,76 @@ export function registerCampaignRoutes({
       quotaDatabase
     });
 
-    // 2. 연관된 쿼터 파일(JSON & XLSX) 동기화 (수동 추가 점포 및 슬롯 URL 포함)
+    // 2. 연관된 쿼터 파일(JSON & XLSX)만 선별 동기화 (무관한 대용량 쿼터 파일 스캔 방지 및 O(1) 매칭)
     try {
-      const quotaFiles = fs.readdirSync(quotasDir).filter(f => f.endsWith('.json'));
-      const linkedQuotaFile = campaign.quotaConfig?.quotaFileName || campaign.quotaSourceFile || null;
-      for (const qf of quotaFiles) {
-        const qPath = path.join(quotasDir, qf);
-        const qContent = JSON.parse(fs.readFileSync(qPath, 'utf-8'));
-        if (Array.isArray(qContent.data) && qContent.data.length > 0) {
-          let matched = false;
-          const syncKeys = [
-            'companyName', 'industry', 'bizNumber', 'ceoName', 'ceoGender', 'ceoAge',
-            'phone', 'openDate', 'address', 'handledItems', 'mainProducts',
-            'slotUrl', 'surveyUrl', 'evalUrl', 'slotIndex', 'slotExtra', 'ranId'
-          ];
-          qContent.data.forEach(qItem => {
-            const matchedCampItem = quotaDatabase.find(c =>
-              (c.bizNumber && c.bizNumber === qItem.bizNumber) ||
-              (c.companyName && c.companyName === qItem.companyName)
-            );
-            if (matchedCampItem) {
-              syncKeys.forEach(k => {
-                if (matchedCampItem[k] !== undefined) qItem[k] = matchedCampItem[k];
-              });
-              matched = true;
-            }
-          });
+      const rawLinkedFile = campaign.quotaConfig?.quotaFileName || campaign.quotaSourceFile || campaign.quotaFileName || null;
+      let targetFiles = [];
+      if (rawLinkedFile) {
+        const safeLinked = path.basename(rawLinkedFile);
+        if (fs.existsSync(path.join(quotasDir, safeLinked))) {
+          targetFiles = [safeLinked];
+        }
+      } else if (campaign.quotaConfig?.marketName) {
+        const targetMarket = String(campaign.quotaConfig.marketName).trim();
+        if (targetMarket) {
+          targetFiles = fs.readdirSync(quotasDir).filter(f => f.endsWith('.json') && f.includes(targetMarket));
+        }
+      }
 
-          // 현재 캠페인과 직접 연결된 쿼터 파일인 경우, 캠페인에서 수동 추가된 신규 점포도 원본 쿼터 파일에 반영
-          const isLinkedFile = (linkedQuotaFile && qf === linkedQuotaFile) ||
-            (!linkedQuotaFile && qContent.marketName && campaign.quotaConfig?.marketName === qContent.marketName);
-          if (isLinkedFile) {
-            quotaDatabase.forEach(cItem => {
-              const existsInFile = qContent.data.some(qItem =>
-                (qItem.bizNumber && qItem.bizNumber === cItem.bizNumber) ||
-                (qItem.companyName && qItem.companyName === cItem.companyName)
-              );
-              if (!existsInFile && cItem.companyName) {
+      if (targetFiles.length > 0) {
+        const campByUid = new Map();
+        const campByBizNo = new Map();
+        const campByName = new Map();
+        for (const c of quotaDatabase) {
+          if (!c || typeof c !== 'object') continue;
+          if (c.uid) campByUid.set(String(c.uid), c);
+          if (c.bizNumber) campByBizNo.set(String(c.bizNumber), c);
+          if (c.companyName) campByName.set(String(c.companyName), c);
+        }
+
+        const syncKeys = [
+          'companyName', 'industry', 'bizNumber', 'ceoName', 'ceoGender', 'ceoAge',
+          'phone', 'openDate', 'address', 'handledItems', 'mainProducts',
+          'slotUrl', 'surveyUrl', 'evalUrl', 'slotIndex', 'slotExtra', 'ranId', 'customGuide'
+        ];
+
+        for (const qf of targetFiles) {
+          const qPath = path.join(quotasDir, qf);
+          const qContent = JSON.parse(fs.readFileSync(qPath, 'utf-8'));
+          if (Array.isArray(qContent.data) && qContent.data.length > 0) {
+            let matched = false;
+            const existingUidSet = new Set();
+            const existingBizSet = new Set();
+            const existingNameSet = new Set();
+
+            for (const qItem of qContent.data) {
+              const matchedCampItem =
+                (qItem.uid && campByUid.get(String(qItem.uid))) ||
+                (qItem.bizNumber && campByBizNo.get(String(qItem.bizNumber))) ||
+                (qItem.companyName && campByName.get(String(qItem.companyName))) ||
+                null;
+
+              if (matchedCampItem) {
+                for (const k of syncKeys) {
+                  if (matchedCampItem[k] !== undefined) qItem[k] = matchedCampItem[k];
+                }
+                matched = true;
+              }
+
+              if (qItem.uid) existingUidSet.add(String(qItem.uid));
+              if (qItem.bizNumber) existingBizSet.add(String(qItem.bizNumber));
+              if (qItem.companyName) existingNameSet.add(String(qItem.companyName));
+            }
+
+            // 캠페인에서 수동 추가된 신규 점포도 연결된 원본 쿼터 파일에 반영
+            for (const cItem of quotaDatabase) {
+              if (!cItem || !cItem.companyName) continue;
+              const existsInFile =
+                (cItem.uid && existingUidSet.has(String(cItem.uid))) ||
+                (cItem.bizNumber && existingBizSet.has(String(cItem.bizNumber))) ||
+                existingNameSet.has(String(cItem.companyName));
+
+              if (!existsInFile) {
                 const newSeq = qContent.data.length + 1;
                 qContent.data.push({
                   seq: newSeq,
@@ -245,22 +278,27 @@ export function registerCampaignRoutes({
                     ranId: cItem.ranId || null
                   } : {})
                 });
+                if (cItem.uid) existingUidSet.add(String(cItem.uid));
+                if (cItem.bizNumber) existingBizSet.add(String(cItem.bizNumber));
+                existingNameSet.add(String(cItem.companyName));
                 matched = true;
               }
-            });
-          }
+            }
 
-          if (matched) {
-            qContent.count = qContent.data.length;
-            qContent.updatedAt = new Date().toISOString();
-            fs.writeFileSync(qPath, JSON.stringify(qContent, null, 2), 'utf-8');
-            const xlsxPath = path.join(quotasDir, qf.replace('.json', '.xlsx'));
-            exportBusinessesToExcel({
-              data: qContent.data,
-              columns: qContent.columns,
-              filePath: xlsxPath
-            });
-            logger.info(`[쿼터 동기화] "${qf}" 및 Excel 동기화 완료`);
+            if (matched) {
+              qContent.count = qContent.data.length;
+              qContent.updatedAt = new Date().toISOString();
+              const tmpQPath = `${qPath}.${process.pid}.${Date.now()}.tmp`;
+              fs.writeFileSync(tmpQPath, JSON.stringify(qContent, null, 2), 'utf-8');
+              fs.renameSync(tmpQPath, qPath);
+              const xlsxPath = path.join(quotasDir, qf.replace('.json', '.xlsx'));
+              exportBusinessesToExcel({
+                data: qContent.data,
+                columns: qContent.columns,
+                filePath: xlsxPath
+              });
+              logger.info(`[쿼터 동기화] "${qf}" 및 Excel 동기화 완료`);
+            }
           }
         }
       }

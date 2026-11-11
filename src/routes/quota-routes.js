@@ -799,6 +799,9 @@ export function registerQuotaRoutes({
   });
 
   // [쿼터 관리 허브 API]
+  // 파일 변경 시각(mtimeMs) 및 크기(size) 기반 쿼터 메타데이터 인메모리 캐시 (대용량 JSON 반복 파싱 방지)
+  const quotaSummaryCache = new Map();
+
   // 1. 생성된 쿼터 목록 조회 (업종별 분포 및 통계 포함)
   app.get('/api/quota/list', (req, res) => {
     try {
@@ -807,92 +810,135 @@ export function registerQuotaRoutes({
         ? CampaignStore.getAllCampaigns()
         : [];
       const files = fs.readdirSync(quotasDir).filter(f => f.endsWith('.json'));
+      const activeFileSet = new Set(files);
+      for (const cachedKey of quotaSummaryCache.keys()) {
+        if (!activeFileSet.has(cachedKey)) {
+          quotaSummaryCache.delete(cachedKey);
+        }
+      }
+
       const list = files.map(f => {
-        const content = JSON.parse(fs.readFileSync(path.join(quotasDir, f), 'utf-8'));
+        const jsonPath = path.join(quotasDir, f);
+        const stat = fs.statSync(jsonPath);
         const excelName = f.replace('.json', '.xlsx');
         const hasExcel = fs.existsSync(path.join(quotasDir, excelName));
-        const data = content.data || content.rows || [];
 
-        const industryDist = {};
-        const isHrcEnergy = content.type === 'HRC_ENERGY_BUILDING' || content.surveyType === 'hrc_energy' || f.includes('hrc_energy');
-        const isGlobalriLiteracy = content.type === 'GLOBALRI_ADULT_LITERACY' || content.surveyType === 'globalri_literacy' || f.includes('globalri_adult_literacy');
-        const isGallupReturnFarm = content.type === 'GALLUP_RETURN_FARM' || content.surveyType === 'gallup_return_farm' || f.includes('gallup_20263603');
-        const isAssoc = content.type === 'KSTAT_ASSOC' || content.surveyType === 'kstat_assoc' || f.startsWith('quota_assoc_');
-        const isMetrix = content.type === 'METRIX_PANEL' || content.surveyType === 'metrix_panel' || f.toLowerCase().includes('metrix');
-        const isKona = content.type === 'KONA_YOUTH' || content.surveyType === 'kona_youth' || f.toLowerCase().includes('kona');
+        let meta = quotaSummaryCache.get(f);
+        if (!meta || meta.mtimeMs !== stat.mtimeMs || meta.size !== stat.size) {
+          const content = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+          const data = content.data || content.rows || [];
 
-        if (isGallupReturnFarm) {
-          const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed' || item.serverStatus === '99').length;
-          const pilotCnt = data.filter(item => item.quotaStatus === 'pilot_done' || String(item.status || '').includes('완료직전') || item.serverStatus === '01').length;
-          const readyCnt = data.length - doneCnt - pilotCnt;
-          if (readyCnt > 0) industryDist['대기(미진행)'] = readyCnt;
-          if (pilotCnt > 0) industryDist['완료직전/진행중'] = pilotCnt;
-          if (doneCnt > 0) industryDist['조사완료(99)'] = doneCnt;
-          const eupCounts = {};
-          data.forEach(item => {
-            const eup = String(item.eupMyeon || '홍천군').trim();
-            eupCounts[eup] = (eupCounts[eup] || 0) + 1;
-          });
-          Object.entries(eupCounts).slice(0, 5).forEach(([eup, c]) => {
-            industryDist[eup] = c;
-          });
-        } else if (isGlobalriLiteracy) {
-          data.forEach(item => {
-            const ag = String(item.ageGroupLabel || '기타').trim();
-            industryDist[ag] = (industryDist[ag] || 0) + 1;
-          });
-        } else if (isAssoc) {
-          const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed' || item.quotaStatus === 'used' || item.surveyCompleted).length;
-          const readyCnt = data.length - doneCnt;
-          if (readyCnt > 0) industryDist['대기(진행대상)'] = readyCnt;
-          if (doneCnt > 0) industryDist['조사완료'] = doneCnt;
-          data.forEach(item => {
-            const mt = String(item.marketType || item.industry || '상인회').trim();
-            industryDist[mt] = (industryDist[mt] || 0) + 1;
-          });
-        } else if (isHrcEnergy) {
-          const selCnt = data.filter(item => item.selectionType === '선정').length;
-          const subCnt = data.filter(item => item.selectionType === '대체').length;
-          const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed').length;
-          industryDist['★선정(우선)'] = selCnt;
-          industryDist['대체(예비)'] = subCnt;
-          if (doneCnt > 0) industryDist['조사완료'] = doneCnt;
-          const usageCounts = {};
-          data.filter(item => item.selectionType === '선정').forEach(item => {
-            const u = String(item.mainUsage || '기타건물').trim();
-            usageCounts[u] = (usageCounts[u] || 0) + 1;
-          });
-          Object.entries(usageCounts).slice(0, 5).forEach(([u, c]) => {
-            industryDist[u] = c;
-          });
-        } else {
-          const standardKeys = [
-            { key: '농산물', label: '농산물' },
-            { key: '축산물', label: '축산물' },
-            { key: '수산물', label: '수산물' },
-            { key: '가공식품', label: '가공식품' },
-            { key: '의류', label: '의류신발' },
-            { key: '가정용품', label: '가정용품' },
-            { key: '음식점', label: '음식점업' },
-            { key: '기타소매', label: '기타소매' },
-            { key: '근린상권', label: '근린상권' }
-          ];
+          const industryDist = {};
+          const isHrcEnergy = content.type === 'HRC_ENERGY_BUILDING' || content.surveyType === 'hrc_energy' || f.includes('hrc_energy');
+          const isGlobalriLiteracy = content.type === 'GLOBALRI_ADULT_LITERACY' || content.surveyType === 'globalri_literacy' || f.includes('globalri_adult_literacy');
+          const isGallupReturnFarm = content.type === 'GALLUP_RETURN_FARM' || content.surveyType === 'gallup_return_farm' || f.includes('gallup_20263603');
+          const isAssoc = content.type === 'KSTAT_ASSOC' || content.surveyType === 'kstat_assoc' || f.startsWith('quota_assoc_');
+          const isMetrix = content.type === 'METRIX_PANEL' || content.surveyType === 'metrix_panel' || f.toLowerCase().includes('metrix');
+          const isKona = content.type === 'KONA_YOUTH' || content.surveyType === 'kona_youth' || f.toLowerCase().includes('kona');
 
-          data.forEach(item => {
-            const raw = String(item.handledItems || item.industry || '기타');
-            const matched = standardKeys.find(s => raw.includes(s.key))?.label || '기타';
-            industryDist[matched] = (industryDist[matched] || 0) + 1;
-          });
+          if (isGallupReturnFarm) {
+            const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed' || item.serverStatus === '99').length;
+            const pilotCnt = data.filter(item => item.quotaStatus === 'pilot_done' || String(item.status || '').includes('완료직전') || item.serverStatus === '01').length;
+            const readyCnt = data.length - doneCnt - pilotCnt;
+            if (readyCnt > 0) industryDist['대기(미진행)'] = readyCnt;
+            if (pilotCnt > 0) industryDist['완료직전/진행중'] = pilotCnt;
+            if (doneCnt > 0) industryDist['조사완료(99)'] = doneCnt;
+            const eupCounts = {};
+            data.forEach(item => {
+              const eup = String(item.eupMyeon || '홍천군').trim();
+              eupCounts[eup] = (eupCounts[eup] || 0) + 1;
+            });
+            Object.entries(eupCounts).slice(0, 5).forEach(([eup, c]) => {
+              industryDist[eup] = c;
+            });
+          } else if (isGlobalriLiteracy) {
+            data.forEach(item => {
+              const ag = String(item.ageGroupLabel || '기타').trim();
+              industryDist[ag] = (industryDist[ag] || 0) + 1;
+            });
+          } else if (isAssoc) {
+            const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed' || item.quotaStatus === 'used' || item.surveyCompleted).length;
+            const readyCnt = data.length - doneCnt;
+            if (readyCnt > 0) industryDist['대기(진행대상)'] = readyCnt;
+            if (doneCnt > 0) industryDist['조사완료'] = doneCnt;
+            data.forEach(item => {
+              const mt = String(item.marketType || item.industry || '상인회').trim();
+              industryDist[mt] = (industryDist[mt] || 0) + 1;
+            });
+          } else if (isHrcEnergy) {
+            const selCnt = data.filter(item => item.selectionType === '선정').length;
+            const subCnt = data.filter(item => item.selectionType === '대체').length;
+            const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed').length;
+            industryDist['★선정(우선)'] = selCnt;
+            industryDist['대체(예비)'] = subCnt;
+            if (doneCnt > 0) industryDist['조사완료'] = doneCnt;
+            const usageCounts = {};
+            data.filter(item => item.selectionType === '선정').forEach(item => {
+              const u = String(item.mainUsage || '기타건물').trim();
+              usageCounts[u] = (usageCounts[u] || 0) + 1;
+            });
+            Object.entries(usageCounts).slice(0, 5).forEach(([u, c]) => {
+              industryDist[u] = c;
+            });
+          } else {
+            const standardKeys = [
+              { key: '농산물', label: '농산물' },
+              { key: '축산물', label: '축산물' },
+              { key: '수산물', label: '수산물' },
+              { key: '가공식품', label: '가공식품' },
+              { key: '의류', label: '의류신발' },
+              { key: '가정용품', label: '가정용품' },
+              { key: '음식점', label: '음식점업' },
+              { key: '기타소매', label: '기타소매' },
+              { key: '근린상권', label: '근린상권' }
+            ];
+
+            data.forEach(item => {
+              const raw = String(item.handledItems || item.industry || '기타');
+              const matched = standardKeys.find(s => raw.includes(s.key))?.label || '기타';
+              industryDist[matched] = (industryDist[matched] || 0) + 1;
+            });
+          }
+
+          const mbzFailedCount = data.filter(item => item.mbzStatus === 'failed').length;
+          const targetTotal = content.targetTotal || content.count || data.length;
+          const isComplete = content.isComplete !== undefined
+            ? content.isComplete
+            : (data.length >= targetTotal && mbzFailedCount === 0);
+
+          const allDataDone = data.length > 0 && data.every(item =>
+            item.status === '완료' || item.quotaStatus === 'completed' || item.quotaStatus === 'used' || item.surveyCompleted === true || item.serverStatus === '99'
+          );
+
+          meta = {
+            mtimeMs: stat.mtimeMs,
+            size: stat.size,
+            title: content.title || f,
+            rawType: content.type || (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : (isGlobalriLiteracy ? 'GLOBALRI_ADULT_LITERACY' : (isGallupReturnFarm ? 'GALLUP_RETURN_FARM' : (isMetrix ? 'METRIX_PANEL' : 'MARKETBZ_DIRECT'))))),
+            rawSurveyType: content.surveyType || null,
+            fallbackSurveyType: isGallupReturnFarm ? 'gallup_return_farm' : (isGlobalriLiteracy ? 'globalri_literacy' : (isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))))),
+            rawLinkedCampaignId: content.linkedCampaignId || null,
+            selectedCount: content.selectedCount || null,
+            substituteCount: content.substituteCount || null,
+            surveyorId: content.surveyorId || null,
+            surveyorName: content.surveyorName || null,
+            marketName: content.marketName || (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : (isGlobalriLiteracy ? `성인문해능력조사 · ${content.surveyorName || ''}` : (isGallupReturnFarm ? `귀농귀촌 실태조사 · ${content.surveyorName || ''}` : null)))),
+            keyword: content.keyword,
+            count: content.count || data.length,
+            targetTotal,
+            mbzFailedCount,
+            isComplete,
+            requestParams: content.requestParams || null,
+            createdAt: content.createdAt,
+            updatedAt: content.updatedAt || content.createdAt,
+            industryDistribution: Object.keys(industryDist).length > 0 ? industryDist : null,
+            allDataDone
+          };
+          quotaSummaryCache.set(f, meta);
         }
 
-        const mbzFailedCount = data.filter(item => item.mbzStatus === 'failed').length;
-        const targetTotal = content.targetTotal || content.count || data.length;
-        const isComplete = content.isComplete !== undefined
-          ? content.isComplete
-          : (data.length >= targetTotal && mbzFailedCount === 0);
-
         const matchedCamps = allCampaigns.filter(c =>
-          (content.linkedCampaignId && c.id === content.linkedCampaignId) ||
+          (meta.rawLinkedCampaignId && c.id === meta.rawLinkedCampaignId) ||
           c.quotaSourceFile === f ||
           c.quotaConfig?.quotaFileName === f
         );
@@ -903,43 +949,40 @@ export function registerQuotaRoutes({
           matchedCamps[0] ||
           null;
 
-        const inferredSurveyType = content.surveyType ||
+        const inferredSurveyType = meta.rawSurveyType ||
           (linkedCamp ? linkedCamp.surveyType : null) ||
-          (isGallupReturnFarm ? 'gallup_return_farm' : (isGlobalriLiteracy ? 'globalri_literacy' : (isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))))));
+          meta.fallbackSurveyType;
 
-        const allDataDone = data.length > 0 && data.every(item =>
-          item.status === '완료' || item.quotaStatus === 'completed' || item.quotaStatus === 'used' || item.surveyCompleted === true || item.serverStatus === '99'
-        );
         const effectiveCampStatus = linkedCamp
           ? linkedCamp.status
-          : (allDataDone ? 'completed' : null);
+          : (meta.allDataDone ? 'completed' : null);
         const effectiveCompletedAt = (linkedCamp && linkedCamp.status === 'completed')
           ? (linkedCamp.completedAt || linkedCamp.updatedAt || linkedCamp.createdAt)
-          : (allDataDone ? (content.updatedAt || content.createdAt) : null);
+          : (meta.allDataDone ? meta.updatedAt : null);
 
         return {
           fileName: f,
-          title: content.title || f,
-          type: content.type || (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : (isGlobalriLiteracy ? 'GLOBALRI_ADULT_LITERACY' : (isGallupReturnFarm ? 'GALLUP_RETURN_FARM' : (isMetrix ? 'METRIX_PANEL' : 'MARKETBZ_DIRECT'))))),
+          title: meta.title,
+          type: meta.rawType,
           surveyType: inferredSurveyType,
-          linkedCampaignId: linkedCamp ? linkedCamp.id : (content.linkedCampaignId || null),
+          linkedCampaignId: linkedCamp ? linkedCamp.id : meta.rawLinkedCampaignId,
           campaignStatus: effectiveCampStatus,
           campaignCompletedAt: effectiveCompletedAt,
           campaignTitle: linkedCamp ? linkedCamp.title : null,
-          selectedCount: content.selectedCount || null,
-          substituteCount: content.substituteCount || null,
-          surveyorId: content.surveyorId || null,
-          surveyorName: content.surveyorName || null,
-          marketName: content.marketName || (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : (isGlobalriLiteracy ? `성인문해능력조사 · ${content.surveyorName || ''}` : (isGallupReturnFarm ? `귀농귀촌 실태조사 · ${content.surveyorName || ''}` : null)))),
-          keyword: content.keyword,
-          count: content.count || data.length,
-          targetTotal,
-          mbzFailedCount,
-          isComplete,
-          requestParams: content.requestParams || null,
-          createdAt: content.createdAt,
-          updatedAt: content.updatedAt || content.createdAt,
-          industryDistribution: Object.keys(industryDist).length > 0 ? industryDist : null,
+          selectedCount: meta.selectedCount,
+          substituteCount: meta.substituteCount,
+          surveyorId: meta.surveyorId,
+          surveyorName: meta.surveyorName,
+          marketName: meta.marketName,
+          keyword: meta.keyword,
+          count: meta.count,
+          targetTotal: meta.targetTotal,
+          mbzFailedCount: meta.mbzFailedCount,
+          isComplete: meta.isComplete,
+          requestParams: meta.requestParams,
+          createdAt: meta.createdAt,
+          updatedAt: meta.updatedAt,
+          industryDistribution: meta.industryDistribution,
           excelFileName: hasExcel ? excelName : null
         };
       }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

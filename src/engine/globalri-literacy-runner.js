@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -239,7 +239,7 @@ export async function runGlobalriLiteracySurvey(options = {}) {
 
   logger.info(`[성인문해능력조사 러너] #${quotaIndex} "${respondentName}" (LID: ${lid}, UID: ${memberUid}, ${ageMeta.age}세/${ageMeta.ageGroupLabel}) 설문 시작 — 목표 Part C 정답수: ${partCPlan.targetCorrect}/20개${slotData.customGuide ? ' [개별 지정 가이드 적용]' : ''}`);
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 920 },
     permissions: ['geolocation'],

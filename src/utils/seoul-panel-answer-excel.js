@@ -5,7 +5,7 @@
 import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
-import { chromium } from 'playwright';
+import { launchChromium } from './chromium-launcher.js';
 
 export const SEOUL_PANEL_DEFAULT_GSHEET_URL =
   'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=506086780#gid=506086780';
@@ -308,33 +308,6 @@ export function buildSeoulPanelAnswersExcel({ quotaDatabase = [], filePath = nul
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 }
 
-function resolveChromiumLaunchOptions() {
-  const opts = {
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--ignore-certificate-errors']
-  };
-  try {
-    const defaultExe = chromium.executablePath();
-    if (defaultExe && fs.existsSync(defaultExe)) {
-      return opts;
-    }
-  } catch (_) {}
-
-  const systemCandidates = [
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-    '/usr/bin/google-chrome',
-    '/usr/bin/google-chrome-stable'
-  ];
-  for (const cand of systemCandidates) {
-    if (fs.existsSync(cand)) {
-      opts.executablePath = cand;
-      break;
-    }
-  }
-  return opts;
-}
-
 let seoulSheetSyncQueue = Promise.resolve();
 
 export function syncSeoulPanelAnswersToGoogleSheet(options = {}) {
@@ -374,7 +347,7 @@ async function _syncSeoulPanelAnswersToGoogleSheetImpl({
     r => r['A1_사업체명'] || r['C1_영업시간'] || r['K1_경기동향(26년실적/27년전망)']
   ).length;
 
-  const browser = await chromium.launch(resolveChromiumLaunchOptions());
+  const browser = await launchChromium({ headless: true, args: ['--ignore-certificate-errors'] });
   try {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },

@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger.js';
@@ -566,9 +566,7 @@ export async function runHrcEnergySurvey(options = {}) {
   }
 
   const capturedSteps = [];
-  const browser = await chromium.launch({ headless: true }).catch(() =>
-    chromium.launch({ headless: true, executablePath: '/usr/bin/chromium' })
-  );
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({
     ignoreHTTPSErrors: true,
     viewport: { width: 1280, height: 920 }
@@ -1810,7 +1808,7 @@ export async function signAllCompletedHrcEnergySlots(options = {}) {
     onProgress = () => {}
   } = options;
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchChromium({ headless: true });
   try {
     const context = await browser.newContext({
       ignoreHTTPSErrors: true,

@@ -55,15 +55,24 @@ initStore();
 
 let cachedCampaigns = null;
 let lastLoadedMtimeMs = 0;
+let writeSeq = 0;
 
 function flushCacheToDisk(campaigns) {
   cachedCampaigns = campaigns;
-  const tmpFile = `${campaignsFile}.tmp`;
-  fs.writeFileSync(tmpFile, JSON.stringify(campaigns, null, 2), 'utf-8');
-  fs.renameSync(tmpFile, campaignsFile);
+  const serialized = JSON.stringify(campaigns, null, 2);
+  const tmpFile = `${campaignsFile}.${process.pid}.${Date.now()}_${++writeSeq}.tmp`;
   try {
-    lastLoadedMtimeMs = fs.statSync(campaignsFile).mtimeMs;
-  } catch (_) {}
+    fs.writeFileSync(tmpFile, serialized, 'utf-8');
+    fs.renameSync(tmpFile, campaignsFile);
+    try {
+      lastLoadedMtimeMs = fs.statSync(campaignsFile).mtimeMs;
+    } catch (_) {}
+  } catch (err) {
+    try {
+      if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+    } catch (_) {}
+    throw err;
+  }
 }
 
 /**

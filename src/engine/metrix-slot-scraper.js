@@ -1,8 +1,8 @@
-import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 import * as XLSX from 'xlsx';
 import { logger } from '../utils/logger.js';
+import { launchChromium } from '../utils/chromium-launcher.js';
 
 export const METRIX_622_GOOGLE_SHEET_ID = '1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM';
 export const METRIX_622_GOOGLE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${METRIX_622_GOOGLE_SHEET_ID}/edit?gid=1453131911#gid=1453131911`;
@@ -37,18 +37,6 @@ export function getMetrixIndustryKey(industryStr = '') {
   return 'ind_3';
 }
 
-function getChromiumLaunchOptions(headless = true) {
-  const opts = { headless };
-  if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH && fs.existsSync(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH)) {
-    opts.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-  } else if (fs.existsSync('/usr/bin/chromium')) {
-    opts.executablePath = '/usr/bin/chromium';
-  } else if (fs.existsSync('/usr/bin/chromium-browser')) {
-    opts.executablePath = '/usr/bin/chromium-browser';
-  }
-  return opts;
-}
-
 /**
  * 국세청 홈택스(teht.hometax.go.kr ATTABZAA001R08) 실시간 사업자등록상태(계속/휴업/폐업) 일괄 조회
  * @param {string[]} bizNumbers
@@ -61,7 +49,7 @@ export async function verifyBizStatusViaHometax(bizNumbers = []) {
   const resultMap = new Map();
   if (cleanNumbers.length === 0) return resultMap;
 
-  const browser = await chromium.launch(getChromiumLaunchOptions(true));
+  const browser = await launchChromium({ headless: true });
   try {
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await context.newPage();
@@ -207,7 +195,7 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
     }
   }
 
-  const browser = await chromium.launch(getChromiumLaunchOptions(true));
+  const browser = await launchChromium({ headless: true });
   const allSlots = [];
   const sessionsByAccount = {};
   let globalIndex = 1;

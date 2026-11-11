@@ -6,7 +6,7 @@
  * 3) Survey_End.asp 안착 및 최종 완료 반환
  */
 
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger.js';
@@ -144,7 +144,7 @@ export async function runKstatEvaluation({
 
   try {
     if (!page) {
-      browser = await chromium.launch({ headless: true });
+      browser = await launchChromium({ headless: true });
       const context = await browser.newContext({
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         viewport: { width: 1280, height: 900 }

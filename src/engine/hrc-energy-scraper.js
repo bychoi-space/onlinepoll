@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -42,7 +42,7 @@ export async function scrapeHrcEnergySlots(options = {}) {
 
   logger.info(`[HRC 에너지총조사 스크래퍼] 시작: 계정=${loginId} (${accountMeta.surveyorName})`);
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({
     ignoreHTTPSErrors: true,
     viewport: { width: 1400, height: 900 }

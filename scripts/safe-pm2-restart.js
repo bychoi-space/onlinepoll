@@ -1,7 +1,8 @@
 import { execSync, spawn } from 'child_process';
 import crypto from 'crypto';
 
-const AUTH_COOKIE = 'autosurvey_auth=' + crypto.createHmac('sha256', 'autosurvey_secure_salt_2026').update('2265').digest('hex');
+const MASTER_PASSWORD = String(process.env.SYSTEM_ACCESS_PASSWORD || '2265').trim();
+const AUTH_COOKIE = 'autosurvey_auth=' + crypto.createHmac('sha256', 'autosurvey_secure_salt_2026').update(MASTER_PASSWORD).digest('hex');
 
 async function checkIsRunning() {
   try {

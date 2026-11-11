@@ -2,10 +2,10 @@
  * MarketBz (marketbz.com) 실존 비즈니스 데이터 스크래퍼
  * 인증 계정을 통해 로그인 후, 실제 사업자 정보를 수집하여 B2B 설문에 공급합니다.
  */
-import { chromium } from 'playwright';
 import { enrichBusinessData, applyCeoPersonaPoolToQuota } from './enricher.js';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
+import { launchChromium } from '../utils/chromium-launcher.js';
 
 const MARKETBZ_BASE_URL = 'https://marketbz.com';
 const DEFAULT_ACCOUNT = {
@@ -71,10 +71,7 @@ export async function fetchMarketBzBusinesses({
   const isResumeMode = Array.isArray(existingData) && existingData.length > 0;
   logger.info(`[MarketBz] 사업자 데이터 ${isResumeMode ? '이어하기(Resume) ' : ''}수집을 시작합니다. (키워드: "${keyword}", 목표: ${count}개, 기존: ${existingData.length}건)`);
 
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
+  const browser = await launchChromium({ headless: true });
 
   const context = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',

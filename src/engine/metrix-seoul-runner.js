@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 
 /**
  * [(신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차)] 전용 안전 대기 러너
@@ -26,24 +26,6 @@ function pickDeterministicName(seedStr = '') {
     h = (h * 31 + s.charCodeAt(i)) >>> 0;
   }
   return FALLBACK_KOREAN_NAMES[h % FALLBACK_KOREAN_NAMES.length];
-}
-
-function resolveChromiumLaunchOptions() {
-  const opts = {
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--ignore-certificate-errors']
-  };
-  try {
-    const defaultExe = chromium.executablePath();
-    if (defaultExe && fs.existsSync(defaultExe)) return opts;
-  } catch (_) {}
-  for (const cand of ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome']) {
-    if (fs.existsSync(cand)) {
-      opts.executablePath = cand;
-      break;
-    }
-  }
-  return opts;
 }
 
 export async function runMetrixSeoulSurvey({
@@ -85,7 +67,7 @@ export async function runMetrixSeoulSurvey({
   let ownBrowser = null;
   let page = externalPage;
   if (!page) {
-    ownBrowser = await chromium.launch(resolveChromiumLaunchOptions());
+    ownBrowser = await launchChromium({ headless: true, args: ['--ignore-certificate-errors'] });
     const context = await ownBrowser.newContext({
       viewport: { width: 1280, height: 900 },
       ignoreHTTPSErrors: true

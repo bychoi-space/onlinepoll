@@ -1,18 +1,5 @@
-import { chromium } from 'playwright';
-import fs from 'fs';
 import { logger } from '../utils/logger.js';
-
-function resolveChromiumLaunchOptions() {
-  const opts = { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] };
-  if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH && fs.existsSync(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH)) {
-    opts.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-  } else if (fs.existsSync('/usr/bin/chromium')) {
-    opts.executablePath = '/usr/bin/chromium';
-  } else if (fs.existsSync('/usr/bin/chromium-browser')) {
-    opts.executablePath = '/usr/bin/chromium-browser';
-  }
-  return opts;
-}
+import { launchChromium } from '../utils/chromium-launcher.js';
 
 /**
  * [상인회 조사 전용] 케이스탯 TAPI 관리자 리스트(2026070801/list.php)에서
@@ -34,7 +21,7 @@ export async function scrapeKstatAssocSlots(listUrl, options = {}) {
   const targetPrid = '2026070801';
   const targetListUrl = listUrl || `https://survey.kstat.co.kr/kstat_survey/survey/${targetPrid}/list.php?pridSel=${targetPrid}&josa=tapi`;
 
-  const browser = await chromium.launch(resolveChromiumLaunchOptions());
+  const browser = await launchChromium({ headless: true });
   const context = await browser.newContext({
     ignoreHTTPSErrors: true,
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'

@@ -13,6 +13,14 @@ function generateAuthToken(password) {
 }
 
 const VALID_AUTH_TOKEN = generateAuthToken(MASTER_PASSWORD);
+const VALID_AUTH_TOKEN_BUF = Buffer.from(VALID_AUTH_TOKEN, 'utf8');
+
+function isValidAuthToken(candidate) {
+  if (typeof candidate !== 'string' || !candidate) return false;
+  const candidateBuf = Buffer.from(candidate, 'utf8');
+  if (candidateBuf.length !== VALID_AUTH_TOKEN_BUF.length) return false;
+  return crypto.timingSafeEqual(candidateBuf, VALID_AUTH_TOKEN_BUF);
+}
 
 export function parseCookies(req) {
   const list = {};
@@ -48,7 +56,7 @@ export function authGate(req, res, next) {
   const cookies = parseCookies(req);
   const token = cookies[AUTH_COOKIE_NAME];
 
-  if (token && token === VALID_AUTH_TOKEN) {
+  if (isValidAuthToken(token)) {
     return next();
   }
 
@@ -81,9 +89,9 @@ export function registerAuthAndSseRoutes(app) {
       return res.status(400).json({ success: false, error: '비밀번호를 입력해 주세요.' });
     }
 
-    if (String(password).trim() === MASTER_PASSWORD) {
+    if (isValidAuthToken(generateAuthToken(password))) {
       const maxAgeSec = 7 * 24 * 60 * 60; // 7일
-      res.setHeader('Set-Cookie', `${AUTH_COOKIE_NAME}=${VALID_AUTH_TOKEN}; Path=/; Max-Age=${maxAgeSec}; SameSite=Lax`);
+      res.setHeader('Set-Cookie', `${AUTH_COOKIE_NAME}=${VALID_AUTH_TOKEN}; Path=/; Max-Age=${maxAgeSec}; HttpOnly; SameSite=Lax`);
       logger.info('🔑 시스템 관리자 패스코드 인증 성공');
       return res.json({ success: true, message: '인증 성공' });
     }
@@ -93,7 +101,7 @@ export function registerAuthAndSseRoutes(app) {
   });
 
   app.post('/api/auth/logout', (req, res) => {
-    res.setHeader('Set-Cookie', `${AUTH_COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax`);
+    res.setHeader('Set-Cookie', `${AUTH_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`);
     logger.info('🔒 시스템 관리자 로그아웃 완료');
     return res.json({ success: true, message: '로그아웃되었습니다.' });
   });
@@ -101,7 +109,7 @@ export function registerAuthAndSseRoutes(app) {
   app.get('/api/auth/check', (req, res) => {
     const cookies = parseCookies(req);
     const token = cookies[AUTH_COOKIE_NAME];
-    const authenticated = token === VALID_AUTH_TOKEN;
+    const authenticated = isValidAuthToken(token);
     res.json({ authenticated });
   });
 }

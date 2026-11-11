@@ -8,7 +8,7 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { chromium } from 'playwright';
+import { launchChromium } from '../utils/chromium-launcher.js';
 
 const DONG_OPTIONS = [
   '동탄1동', '동탄2동', '동탄3동', '동탄4동', '동탄5동',
@@ -496,7 +496,7 @@ export async function runKonaSurvey(options = {}) {
       message: `[IDX ${idx}] 코나체인 청소년 설문 클린 세션 기동 중... (${persona.dongLabel} / 만${persona.q2_age}세 / ${persona.q3_genderIdx === 1 ? '여' : '남'} / ${persona.q4_schoolIdx === 1 ? '고' : '중'})`
     });
 
-    browser = await chromium.launch({ headless: true });
+    browser = await launchChromium({ headless: true });
     const context = await browser.newContext({
       viewport: { width: 1280, height: 1080 },
       locale: 'ko-KR'
