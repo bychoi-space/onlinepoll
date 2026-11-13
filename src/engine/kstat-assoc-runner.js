@@ -871,8 +871,8 @@ export async function runKstatAssocSurvey(options = {}) {
                     if (typeof calculateA6 === 'function') calculateA6();
                   }, { tCount: targetCount });
                 } else if (targetCount === 0 && a6aCurrentSum === 0) {
-                  // 둘 다 0인 신규/미등록 시장인 경우: 기본 영업점포 10개 배정
-                  targetCount = 10;
+                  // 둘 다 0인 신규/미등록 시장인 경우: 상인회 가입점포 기본값(40개) 이상이 되도록 기본 영업점포 40개 배정
+                  targetCount = 40;
                   await a6Frame.evaluate(({ tCount }) => {
                     const rentEl = document.querySelector('#A6_1_2');
                     if (rentEl) {
@@ -1502,33 +1502,57 @@ export async function runKstatAssocSurvey(options = {}) {
         if (b5Frame) {
           try {
             await b5Frame.evaluate(({ preserveExisting, assemblyVal }) => {
-              // B5-1 가입점포 수
-              const pb5a = document.querySelector('#PB5A')?.value;
+              const scriptPrev = {};
+              try {
+                const allScripts = Array.from(document.scripts).map(s => s.textContent || '').join('\n');
+                const m = allScripts.match(/var\s+prevData\s*=\s*(\{[\s\S]*?\});/);
+                if (m && m[1]) {
+                  const re = /['"]([^'"]+)['"]\s*:\s*['"]([^'"]*)['"]/g;
+                  let kv;
+                  while ((kv = re.exec(m[1])) !== null) {
+                    if (kv[2] !== '') scriptPrev[kv[1]] = kv[2];
+                  }
+                }
+              } catch (_) {}
+              const getPrev = (k) => scriptPrev[k] || (typeof prevData !== 'undefined' && prevData && prevData[k]) || document.querySelector('#' + k)?.value || '';
+
+              // B5-1 가입점포 수 (전년도 PB5A 대비 ±50% & 20개 이상 급변 방지)
+              const pb5a = String(getPrev('PB5A')).trim();
               const b5a = document.querySelector('#B5A');
-              if (b5a && (!preserveExisting || !b5a.value || b5a.value.trim() === '')) {
-                b5a.value = (pb5a && pb5a.trim() !== '') ? pb5a.trim() : '40';
-                b5a.dispatchEvent(new Event('input', { bubbles: true }));
-                b5a.dispatchEvent(new Event('change', { bubbles: true }));
+              if (b5a) {
+                const curNum = parseInt(b5a.value || '0', 10) || 0;
+                const prevNum = parseInt(pb5a || '0', 10) || 0;
+                const isSudden = prevNum > 0 && Math.abs(curNum - prevNum) >= 20 && (Math.abs(curNum - prevNum) / prevNum) >= 0.5;
+                if (!preserveExisting || !b5a.value || b5a.value.trim() === '' || isSudden) {
+                  b5a.value = pb5a !== '' ? pb5a : '40';
+                  b5a.dispatchEvent(new Event('input', { bubbles: true }));
+                  b5a.dispatchEvent(new Event('change', { bubbles: true }));
+                }
               }
 
               // B5-2 월 상인회비 금액
-              const pb5b = document.querySelector('#PB5B')?.value;
+              const pb5b = String(getPrev('PB5B')).trim();
               const b5b = document.querySelector('#B5B');
               if (b5b && (!preserveExisting || !b5b.value || b5b.value.trim() === '')) {
-                b5b.value = (pb5b && pb5b.trim() !== '') ? pb5b.trim() : '2';
+                b5b.value = pb5b !== '' ? pb5b : '2';
                 b5b.dispatchEvent(new Event('input', { bubbles: true }));
                 b5b.dispatchEvent(new Event('change', { bubbles: true }));
               }
 
               // B5-3 상인회비 납부점포 수 (B5A 이하 정합성 보장)
-              const pb5c = document.querySelector('#PB5C')?.value;
+              const pb5c = String(getPrev('PB5C')).trim();
               const b5c = document.querySelector('#B5C');
-              if (b5c && (!preserveExisting || !b5c.value || b5c.value.trim() === '')) {
+              if (b5c) {
                 const limitVal = parseInt(b5a?.value || '40', 10);
-                const rawVal = pb5c && pb5c.trim() !== '' ? parseInt(pb5c.trim(), 10) : limitVal;
-                b5c.value = String(Math.min(rawVal, limitVal));
-                b5c.dispatchEvent(new Event('input', { bubbles: true }));
-                b5c.dispatchEvent(new Event('change', { bubbles: true }));
+                const curC = parseInt(b5c.value || '0', 10) || 0;
+                const prevC = parseInt(pb5c || '0', 10) || 0;
+                const isSuddenC = prevC > 0 && Math.abs(curC - prevC) >= 20 && (Math.abs(curC - prevC) / prevC) >= 0.5;
+                if (!preserveExisting || !b5c.value || b5c.value.trim() === '' || curC > limitVal || isSuddenC) {
+                  const rawVal = pb5c !== '' ? parseInt(pb5c, 10) : limitVal;
+                  b5c.value = String(Math.min(rawVal, limitVal));
+                  b5c.dispatchEvent(new Event('input', { bubbles: true }));
+                  b5c.dispatchEvent(new Event('change', { bubbles: true }));
+                }
               }
 
               // B5-4 상인회 총회 실시 (사용자 정책값 0~10회 또는 랜덤 반영)
@@ -1803,6 +1827,29 @@ export async function runKstatAssocSurvey(options = {}) {
 
             if (typeof window.toggleDependentFields === 'function') {
               try { window.toggleDependentFields(idx); } catch (_) {}
+            }
+          }
+
+          // [교차검증] C1-4(장애인화장실)가 '있음(1)'이면 C1-3(공동화장실)도 '있음(1)'으로 연동 보장
+          const c1_4Have = document.querySelector('input[name="C1_4_1"]:checked')?.value;
+          const c1_3Have = document.querySelector('input[name="C1_3_1"]:checked')?.value;
+          if (c1_4Have === '1' && c1_3Have !== '1') {
+            const optYes3 = document.querySelector('input[name="C1_3_1"][value="1"]');
+            if (optYes3) {
+              if (!optYes3.checked) optYes3.click();
+              optYes3.checked = true;
+              optYes3.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            const cnt3 = document.querySelector('input[name="C1_3_2"]');
+            const cnt4Val = document.querySelector('input[name="C1_4_2"]')?.value?.trim() || '1';
+            if (cnt3) {
+              cnt3.disabled = false;
+              cnt3.value = cnt4Val;
+              cnt3.dispatchEvent(new Event('input', { bubbles: true }));
+              cnt3.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (typeof window.toggleDependentFields === 'function') {
+              try { window.toggleDependentFields(3); } catch (_) {}
             }
           }
         }, { preserveExisting, needRatingPolicy });
@@ -3087,10 +3134,16 @@ export async function runKstatAssocSurvey(options = {}) {
                   }
                 }
                 const inpAB = document.querySelector('#E2AB, input[name="E2AB"]');
-                if (inpAB && (!inpAB.value || inpAB.value.trim() === '')) {
-                  const prevAB = document.querySelector('#PE2AB')?.value || '1000';
+                if (inpAB) {
+                  let rawAB = (inpAB.value && inpAB.value.trim() !== '')
+                    ? inpAB.value.trim()
+                    : (document.querySelector('#PE2AB')?.value?.trim() || '100');
+                  const numAB = parseInt(rawAB, 10) || 100;
+                  if (numAB >= 10000) {
+                    rawAB = String(Math.max(10, Math.round(numAB / 100)));
+                  }
                   inpAB.disabled = false;
-                  inpAB.value = prevAB.trim() || '1000';
+                  inpAB.value = rawAB;
                   inpAB.dispatchEvent(new Event('input', { bubbles: true }));
                   inpAB.dispatchEvent(new Event('change', { bubbles: true }));
                 }
@@ -3530,7 +3583,7 @@ export async function runKstatAssocSurvey(options = {}) {
                       const cbN = document.querySelector(`input[type="checkbox"][name="${sec.prefix}_${idx}_N"]`);
 
                       if (cbH) {
-                        const isArcadeBlocked = (sec.prefix === 'G4_1' && idx === 4 && !c1Flags?.hasArcade);
+                        const isArcadeBlocked = (sec.prefix === 'G4_1' && idx === 6 && !c1Flags?.hasArcade);
                         const shouldCheckH = sec.allowH && !isArcadeBlocked && (Math.random() < 0.60);
                         if (shouldCheckH) {
                           cbH.checked = true;
@@ -3599,7 +3652,7 @@ export async function runKstatAssocSurvey(options = {}) {
                     if (n1) { n1.checked = true; n1.dispatchEvent(new Event('change', { bubbles: true })); }
                   }
                 } else if (!c1Flags?.hasArcade) {
-                  const cbArc = document.querySelector('input[type="checkbox"][name="G4_1_4_H"]');
+                  const cbArc = document.querySelector('input[type="checkbox"][name="G4_1_6_H"]');
                   if (cbArc && cbArc.checked) {
                     cbArc.checked = false;
                     cbArc.dispatchEvent(new Event('change', { bubbles: true }));
