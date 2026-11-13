@@ -35,7 +35,7 @@
     "010-9601-0302"
   ],
   "createdAt": "2026-11-11T08:41:38.259Z",
-  "updatedAt": "2026-11-11T09:57:57.474Z",
+  "updatedAt": "2026-11-13T02:50:43.669Z",
   "count": 171,
   "targetTotal": 171,
   "isComplete": true,
@@ -99,6 +99,14 @@
     {
       "key": "serverPhone",
       "label": "서버 휴대폰(기존)"
+    },
+    {
+      "key": "excelDeposit",
+      "label": "보증금(만원)"
+    },
+    {
+      "key": "excelMonthlyRent",
+      "label": "월세(만원)"
     },
     {
       "key": "bizNumber",
@@ -1288,7 +1296,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 2,
@@ -2449,7 +2458,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 3,
@@ -3885,7 +3895,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 70
     },
     {
       "index": 4,
@@ -4971,7 +4982,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 5,
@@ -4989,8 +5001,8 @@
       "ceoGender": "여성",
       "phone": "010-8421-6508",
       "excelPhone": "010-8421-6508",
-      "serverPhone": "010-8421-6508",
-      "phoneNeedsSync": false,
+      "serverPhone": "010-5651-4065",
+      "phoneNeedsSync": true,
       "bizNumber": "6095589331",
       "corpNumber": "",
       "bizStatus": "계속사업자",
@@ -5007,8 +5019,8 @@
       "road": "광여로",
       "detailAddress": "845",
       "fullAddress": "광주시 광여로 845",
-      "status": "진행중(98%)",
-      "quotaStatus": "review_ready",
+      "status": "",
+      "quotaStatus": "ready",
       "contactResult": "",
       "lastContactTime": "",
       "contactPortalUrl": "https://survey.metrix.co.kr/Contact/?SNUM=622",
@@ -6014,495 +6026,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "pilotAt": "2026-11-11T09:57:57.161Z",
-      "submittedAnswers": [
-        {
-          "stepIndex": 1,
-          "questionCode": "STEP_1",
-          "questionTitle": "경기도 소상공인 사업체패널 3차조사(신규/제조업)",
-          "submittedAnswer": "(응답 확인됨)"
-        },
-        {
-          "stepIndex": 2,
-          "questionCode": "STEP_2",
-          "questionTitle": "조사표 작성요령",
-          "submittedAnswer": "(응답 확인됨)"
-        },
-        {
-          "stepIndex": 3,
-          "questionCode": "A1~A15",
-          "questionTitle": "사업체명(간판명)",
-          "submittedAnswer": "업종: [5] 음식 및 주점업 | 사업장 유형: [2] 프랜차이즈 가맹점 아님 | 사업장 위치: [1] 지상 층 | 사업장 입지: [1] 상가지역 | 대표자 성별: [2] 여성 | 대표자 실거주지: [1] 경기도 내 | 최근 1년 이내 대표자 사업체 업종 관련 자격증 취득: [1] 자격증 없음 ; 사업체명(간판명): 만선순대국 / 사업자형태: 609 / 사업자형태: 55 / 사업자형태: 89331 / 주사업: 순대,쌀,채소 / 주사업: 조리 / 주사업: 음식판매 / 사업장 면적: 35 / 사업장 위치: 1 / 영업 시작일: 2021 / 영업 시작일: 01 / 영업 시작일: 03 / 시/도: 경기 / 시/도: 광주시 / 도로명: 광여로 / 상세주소: 845 / 대표자 성명: 이성순 / 대표자 연령: 1961 / 시/도: 경기 / 시/도: 광주시 / 도로명: 광여로"
-        },
-        {
-          "stepIndex": 4,
-          "questionCode": "문7",
-          "questionTitle": "문7",
-          "submittedAnswer": "[2] 아니오"
-        },
-        {
-          "stepIndex": 5,
-          "questionCode": "Q8",
-          "questionTitle": "Part 2. 경영현황",
-          "submittedAnswer": "[1] 정해진 영업시간에 맞추어 영업함"
-        },
-        {
-          "stepIndex": 6,
-          "questionCode": "문8-1",
-          "questionTitle": "문8-1",
-          "submittedAnswer": "11 / 21"
-        },
-        {
-          "stepIndex": 7,
-          "questionCode": "문9",
-          "questionTitle": "문9",
-          "submittedAnswer": "[1] 있음"
-        },
-        {
-          "stepIndex": 8,
-          "questionCode": "문9_1",
-          "questionTitle": "문9_1",
-          "submittedAnswer": "정기적 휴무 비정기적 휴무 기타: [1] 정기적 휴무 | 정기적 휴무 비정기적 휴무 기타: [2] 주기준 : 주 당 일 휴무 ; 정기적 휴무 비정기적 휴무 기타: 1 / 정기적 휴무 비정기적 휴무 기타: 1"
-        },
-        {
-          "stepIndex": 9,
-          "questionCode": "문9-2",
-          "questionTitle": "문9-2",
-          "submittedAnswer": "[1] 휴무 요일"
-        },
-        {
-          "stepIndex": 10,
-          "questionCode": "문10",
-          "questionTitle": "문10",
-          "submittedAnswer": "[1] 철저히 분리하여 관리(사업용 계좌와 개인 계좌를 구분)"
-        },
-        {
-          "stepIndex": 11,
-          "questionCode": "문11",
-          "questionTitle": "문11",
-          "submittedAnswer": "매출액: 32500 / 매출액: 30000 / 매출액: 32500 / 영업비용: 23580 / 영업비용: 24000 / 영업비용: 23580 / 영업이익 (매출액-영업비용): 8920 / 영업이익 (매출액-영업비용): 6000 / 영업이익 (매출액-영업비용): 8920"
-        },
-        {
-          "stepIndex": 12,
-          "questionCode": "문11-1",
-          "questionTitle": "문11-1",
-          "submittedAnswer": "1) 재료/원자재/상품 구입비용: 11318 / 1) 재료/원자재/상품 구입비용: 48 / 2) 임차비용: 3773 / 2) 임차비용: 16 / 3) 세금 및 공과금: 1415 / 3) 세금 및 공과금: 6 / 4) 대표자 인건비: 1651 / 4) 대표자 인건비: 7 / 5) 종업원 인건비: 3065 / 5) 종업원 인건비: 13 / 6) 기타: 2358 / 6) 기타: 10"
-        },
-        {
-          "stepIndex": 13,
-          "questionCode": "문12",
-          "questionTitle": "문12",
-          "submittedAnswer": "[3] 보통"
-        },
-        {
-          "stepIndex": 14,
-          "questionCode": "문12-1",
-          "questionTitle": "문12-1",
-          "submittedAnswer": "1순위: 매출 증가·감소 / 2순위: 이익(수익성) 증가·감소 1 매출 증가·감소 2 이익(수익성) 증가·감소 비용부담(임차료·"
-        },
-        {
-          "stepIndex": 15,
-          "questionCode": "문13",
-          "questionTitle": "문13",
-          "submittedAnswer": "500"
-        },
-        {
-          "stepIndex": 16,
-          "questionCode": "문14",
-          "questionTitle": "문14",
-          "submittedAnswer": "현금(수표): 10% / 카드(신용,체크): 40% / 민간 간편결제(카카오페이, 네이버페이 등): 40% / 경기지역화폐(지역사랑상품권): 5% / 어음: 0% / 기타(제로페이, 온누리상품권,문화상품권, 외식상품권, 기프티콘 등): 5%"
-        },
-        {
-          "stepIndex": 17,
-          "questionCode": "문15",
-          "questionTitle": "문15",
-          "submittedAnswer": "[1] 있음"
-        },
-        {
-          "stepIndex": 18,
-          "questionCode": "문15-1",
-          "questionTitle": "문15-1",
-          "submittedAnswer": "부채 총액: 1 / 부채 총액: 0 / 은행권: 100% / 저축은행: 0% / 여신(캐피탈, 보험 등): 0% / 지인: 0% / 기타 기관: 0%"
-        },
-        {
-          "stepIndex": 19,
-          "questionCode": "문15-2",
-          "questionTitle": "문15-2",
-          "submittedAnswer": "1순위: 사업 확장을 위해 / 2순위: 1 사업 확장을 위해 사업장 인테리어를 위해 거래처 대금 지급, 재료비(원부자재) 가격 상"
-        },
-        {
-          "stepIndex": 20,
-          "questionCode": "문15-3",
-          "questionTitle": "문15-3",
-          "submittedAnswer": "[1] 시중은행(일반대출)"
-        },
-        {
-          "stepIndex": 21,
-          "questionCode": "문16",
-          "questionTitle": "문16",
-          "submittedAnswer": "[2] 임차(전대차 포함)"
-        },
-        {
-          "stepIndex": 22,
-          "questionCode": "문16-1",
-          "questionTitle": "문16-1",
-          "submittedAnswer": "[1] 보증금 있는 월세(반전세 포함) →보증금: 억 만원, 월 세: 억 만원 ; 보증금 있는 월세(반전세 포함) →보증금: 억 만원, 월 세: 억 만원: 1500 / 보증금 있는 월세(반전세 포함) →보증금: 억 만원, 월 세: 억 만원: 1500 / 보증금 있는 월세(반전세 포함) →보증금: 억 만원, 월 세: 억 만원: 1500 / 보증금 있는 월세(반전세 포함) →보증금: 억 만원, 월 세: 억 만원: 1500"
-        },
-        {
-          "stepIndex": 23,
-          "questionCode": "문16-2",
-          "questionTitle": "문16-2",
-          "submittedAnswer": "[2] 없음"
-        },
-        {
-          "stepIndex": 24,
-          "questionCode": "문17",
-          "questionTitle": "문17",
-          "submittedAnswer": "[1] 권리금 있었음"
-        },
-        {
-          "stepIndex": 25,
-          "questionCode": "문17-1",
-          "questionTitle": "문17-1",
-          "submittedAnswer": "0 / 1000"
-        },
-        {
-          "stepIndex": 26,
-          "questionCode": "문18",
-          "questionTitle": "문18",
-          "submittedAnswer": "[2] 아니오"
-        },
-        {
-          "stepIndex": 27,
-          "questionCode": "문19",
-          "questionTitle": "문19",
-          "submittedAnswer": "[1] 예 → 가입시기:년 월 ; 예 → 가입시기:년 월: 2021 / 예 → 가입시기:년 월: 2"
-        },
-        {
-          "stepIndex": 28,
-          "questionCode": "문21",
-          "questionTitle": "문21",
-          "submittedAnswer": "[6] 기타 ; 기타: 없다"
-        },
-        {
-          "stepIndex": 29,
-          "questionCode": "문22",
-          "questionTitle": "문22",
-          "submittedAnswer": "1순위: 부채상환 / 2순위: 보증금·월세 상권 쇠퇴 동일 업종 경쟁 심화 원재료비·재료매입비 최저임금 영향(인건비) 2"
-        },
-        {
-          "stepIndex": 30,
-          "questionCode": "문23",
-          "questionTitle": "문23",
-          "submittedAnswer": "[2] 없음"
-        },
-        {
-          "stepIndex": 31,
-          "questionCode": "문24",
-          "questionTitle": "문24",
-          "submittedAnswer": "[2] 신제품 또는 신규 서비스 개발, [6] 고객 서비스 개선(고객 관리, CS 강화 등)"
-        },
-        {
-          "stepIndex": 32,
-          "questionCode": "문25",
-          "questionTitle": "문25",
-          "submittedAnswer": "[2] 없음"
-        },
-        {
-          "stepIndex": 33,
-          "questionCode": "Q26",
-          "questionTitle": "Part 3. 디지털화 현황",
-          "submittedAnswer": "[2] 아니오"
-        },
-        {
-          "stepIndex": 34,
-          "questionCode": "문27",
-          "questionTitle": "문27",
-          "submittedAnswer": "[2] 활용 안함"
-        },
-        {
-          "stepIndex": 35,
-          "questionCode": "문28",
-          "questionTitle": "문28",
-          "submittedAnswer": "[1] 해당없음 | 온라인 마케팅 (예: SNS 광고, 검색엔진 최적화, 인플루언서 협업 등): [1] 해당없음 | 매장 운영(온라인 예약, 서빙로봇, 키오스크, 비대면 결제, 자동 예약): [1] 해당없음 | 제조/생산 관련(자동 조리, 제품생산 자동화 로봇, 스마트 제조): [1] 해당없음"
-        },
-        {
-          "stepIndex": 36,
-          "questionCode": "문28-2",
-          "questionTitle": "문28-2",
-          "submittedAnswer": "[1] PC, 스마트폰을 활용해 문서 작성, 온라인 결제, 사진/영상 편집 등을 원활히 수행할 수 있다. | [1] 필요한 정보를 온라인에서 검색하여 활용 할 수 있다. | [1] 온라인 플랫폼에 상품을 등록하고 판매관리를 직접 할 수 있다. | [1] SNS를 활용해 상품이나 서비스를 홍보할 수 있다. | [1] 온라인 거래 시 기본적 보안 관리 능력을 갖추고 있다. (보안프로그램 활용, 데이터 백업 등) | [1] 생성형 AI를 활용해 제품 사진·메뉴판· 광고물 등을 제작하고 판매/홍보에 활용할 수 있다"
-        },
-        {
-          "stepIndex": 37,
-          "questionCode": "문29",
-          "questionTitle": "문29",
-          "submittedAnswer": "[2] 없음"
-        },
-        {
-          "stepIndex": 38,
-          "questionCode": "Q31",
-          "questionTitle": "Part 4. 종사자 현황",
-          "submittedAnswer": "4 / 0 / 4 / 4 / 0 / ① 대표자: 1 / ① 대표자: 0 / ① 대표자: 1 / ① 대표자: 1 / ① 대표자: 0 / ② 종업원: 3 / ② 종업원: 0 / ② 종업원: 3 / ② 종업원: 3 / ② 종업원: 0 / ②-2. 임시/일용직 (아르바이트 포함): 0 / ②-2. 임시/일용직 (아르바이트 포함): 0 / ②-2. 임시/일용직 (아르바이트 포함): 0 / ②-2. 임시/일용직 (아르바이트 포함): 0 / ②-2. 임시/일용직 (아르바이트 포함): 0 / ③ 무급가족종사자: 0 / ③ 무급가족종사자: 0 / ③ 무급가족종사자: 0 / ③ 무급가족종사자: 0 / ③ 무급가족종사자: 0 / ④ 기타 종사자 (임원, 프리랜서, 실적제 직원 등): 0 / ④ 기타 종사자 (임원, 프리랜서, 실적제 직원 등): 0 / ④ 기타 종사자 (임원, 프리랜서, 실적제 직원 등): 0"
-        },
-        {
-          "stepIndex": 39,
-          "questionCode": "문32",
-          "questionTitle": "문32",
-          "submittedAnswer": "대표자: [1] 정기적 휴무 | 대표자: [2] 주 당 일 휴무 | 종업원(일용직 제외): [1] 정기적 휴무 | 종업원(일용직 제외): [2] 주 당 일 휴무 ; 대표자: 45시간 / 대표자: 1 / 대표자: 1일 / 종업원(일용직 제외): 40시간 / 종업원(일용직 제외): 1 / 종업원(일용직 제외): 1일"
-        },
-        {
-          "stepIndex": 40,
-          "questionCode": "문33",
-          "questionTitle": "문33",
-          "submittedAnswer": "1 / 6"
-        },
-        {
-          "stepIndex": 41,
-          "questionCode": "문34",
-          "questionTitle": "문34",
-          "submittedAnswer": "330"
-        },
-        {
-          "stepIndex": 42,
-          "questionCode": "문35",
-          "questionTitle": "문35",
-          "submittedAnswer": "[2] 변동 없음"
-        },
-        {
-          "stepIndex": 43,
-          "questionCode": "문36",
-          "questionTitle": "문36",
-          "submittedAnswer": "[2] 유지할 것이다"
-        },
-        {
-          "stepIndex": 44,
-          "questionCode": "Q41",
-          "questionTitle": "Part 6. 현재 운영 사업장의 이전 계획 및 전망",
-          "submittedAnswer": "[2] 아니오"
-        },
-        {
-          "stepIndex": 45,
-          "questionCode": "문42",
-          "questionTitle": "문42",
-          "submittedAnswer": "[2] 아니오"
-        },
-        {
-          "stepIndex": 46,
-          "questionCode": "문43",
-          "questionTitle": "문43",
-          "submittedAnswer": "[2] 아니오"
-        },
-        {
-          "stepIndex": 47,
-          "questionCode": "문43-4",
-          "questionTitle": "문43-4",
-          "submittedAnswer": "1순위: 매출액 및 영업이익 양호 / 2순위: 경기회복 기대 1 매출액 및 영업이익 양호 2 경기회복 기대 폐업비용 부담 (대출금 상환 "
-        },
-        {
-          "stepIndex": 48,
-          "questionCode": "문44",
-          "questionTitle": "문44",
-          "submittedAnswer": "[1] 투자/확장 계획 없음"
-        },
-        {
-          "stepIndex": 49,
-          "questionCode": "Q56_1",
-          "questionTitle": "Part 9. 경기동향 및 만족도",
-          "submittedAnswer": "[4] 1) 판매실적(매출) | [4] 2) 자금사정 | [3] 3) 비용상황 | [3] 4) 구매자 수 | [4] 5) 귀사만의 경기전반 ; 식자재 물가 상승과 배달앱 수수료, 공공요금 인상으로 영세 외식업체의 부담이 매우 큽니다. 공공배달앱 활성화와 저금리 대환대출 및 임대료·공과금 지원이 절실합니다."
-        },
-        {
-          "stepIndex": 50,
-          "questionCode": "문56-2",
-          "questionTitle": "문56-2",
-          "submittedAnswer": "[4] 1) 판매실적(매출) | [3] 2) 자금사정 | [3] 3) 비용상황 | [3] 4) 구매자 수 | [3] 5) 귀사만의 경기전반"
-        },
-        {
-          "stepIndex": 51,
-          "questionCode": "문57",
-          "questionTitle": "문57",
-          "submittedAnswer": "[4] 1) 현재 직업의 만족도 | [3] 2) 종합적인 삶의 만족도 | [3] 3) 업무 피로도"
-        },
-        {
-          "stepIndex": 52,
-          "questionCode": "문58",
-          "questionTitle": "문58",
-          "submittedAnswer": "[4] 사업 운영을 통한 경제적 안정성 | [3] 고객/거래처 관계 및 신뢰 | [3] 일/가정/여가의 균형 | [4] 사업 성장 가능성"
-        },
-        {
-          "stepIndex": 53,
-          "questionCode": "문59",
-          "questionTitle": "문59",
-          "submittedAnswer": "[3] 교통·물류 인프라(도로, 대중교통, 물류망 등) | [3] 산업·상업 기반시설(전력, 통신, 상하수도 등) | [3] 인력 수급 환경(지역 내 인재 확보 용이성) | [3] 지자체의 기업 지원 태도(행정 서비스, 지원사업 접근성 등) | [3] 기업 활동을 위한 지역 이미지·여건(지역 상권, 주민 태도 등) | [4] 전반적인 지역 사업 환경 종합 만족도"
-        },
-        {
-          "stepIndex": 54,
-          "questionCode": "Q60",
-          "questionTitle": "Part 10. 소상공인 대상 경기신용보증재단 지원사업",
-          "submittedAnswer": "[2] 거의 모른다"
-        },
-        {
-          "stepIndex": 55,
-          "questionCode": "문60-1",
-          "questionTitle": "문60-1",
-          "submittedAnswer": "[2] 주변 사람 소개"
-        },
-        {
-          "stepIndex": 56,
-          "questionCode": "문61",
-          "questionTitle": "문61",
-          "submittedAnswer": "[2] 거의 모른다"
-        },
-        {
-          "stepIndex": 57,
-          "questionCode": "문61-1",
-          "questionTitle": "문61-1",
-          "submittedAnswer": "[2] 주변 사람 소개"
-        },
-        {
-          "stepIndex": 58,
-          "questionCode": "문62",
-          "questionTitle": "문62",
-          "submittedAnswer": "지원 여부: [2] 신청하지 않음 | 지원 여부: [2] 신청하지 않음 | 지원 여부: [2] 신청하지 않음"
-        },
-        {
-          "stepIndex": 59,
-          "questionCode": "Q62_7",
-          "questionTitle": "신용보증 지원",
-          "submittedAnswer": "[2] 자금이 필요하지 않아서"
-        },
-        {
-          "stepIndex": 60,
-          "questionCode": "Q62_12",
-          "questionTitle": "중소기업육성자금 지원",
-          "submittedAnswer": "[2] 자금이 필요하지 않아서"
-        },
-        {
-          "stepIndex": 61,
-          "questionCode": "문62-13",
-          "questionTitle": "문62-13",
-          "submittedAnswer": "[3] 지원금액 확대 | [3] 지원금액 확대 | [3] 지원대상 확대 | [4] 지원대상 확대 | [4] 금리 및 보증료 하향조정 | [4] 금리 및 보증료 하향조정 | [4] 신속한 지원체계 | [3] 신속한 지원체계 | [3] 지원자격 요건 강화 | [4] 지원자격 요건 강화 | [3] 정책홍보 강화 | [3] 정책홍보 강화 | [4] 절차, 서류 간소화 | [4] 절차, 서류 간소화"
-        },
-        {
-          "stepIndex": 62,
-          "questionCode": "문63",
-          "questionTitle": "문63",
-          "submittedAnswer": "[2] 들어본적 있음"
-        },
-        {
-          "stepIndex": 63,
-          "questionCode": "문63-1",
-          "questionTitle": "문63-1",
-          "submittedAnswer": "[4] 오히려 불리할 것"
-        },
-        {
-          "stepIndex": 64,
-          "questionCode": "문64",
-          "questionTitle": "문64",
-          "submittedAnswer": "소기업 소상공인 전환보증 (기존 대출 상환기간 연장): [1] 알고 있음 | 소기업 소상공인 전환보증 (기존 대출 상환기간 연장): [2] 이용경험 없음 | 금융기관 특별출연 협약보증 (은행 특별 우대로 한도 상향): [1] 알고 있음 | 금융기관 특별출연 협약보증 (은행 특별 우대로 한도 상향): [2] 이용경험 없음 | 균형발전 기회UP 특례보증 (여성기업, 청년, 장애인 등 우대지원): [2] 모름 | 경기도 소상공인지원자금 (이차보전 저금리 지원): [2] 모름 | [2] 모름"
-        },
-        {
-          "stepIndex": 65,
-          "questionCode": "Q65",
-          "questionTitle": "Part 11. 경기신용보증재단 이 외 소상공인 대상 지원사업",
-          "submittedAnswer": "창업교육: [2] 신청하지 않음 | 컨설팅: [2] 신청하지 않음 | 상권분석: [2] 신청하지 않음 | 디지털 전환: [2] 신청하지 않음 | 점포개선: [2] 신청하지 않음 | 재기지원: [2] 신청하지 않음 | 폐업지원: [2] 신청하지 않음 | 고용지원: [2] 신청하지 않음 | 금융지원: [2] 신청하지 않음 | 세제지원: [2] 신청하지 않음"
-        },
-        {
-          "stepIndex": 66,
-          "questionCode": "문66",
-          "questionTitle": "문66",
-          "submittedAnswer": "[2] 거의 모른다"
-        },
-        {
-          "stepIndex": 67,
-          "questionCode": "문66-1",
-          "questionTitle": "문66-1",
-          "submittedAnswer": "[2] 주변 사람 소개"
-        },
-        {
-          "stepIndex": 68,
-          "questionCode": "문66-2",
-          "questionTitle": "문66-2",
-          "submittedAnswer": "[1] 기관마다 서류를 중복제출 해야 함"
-        },
-        {
-          "stepIndex": 69,
-          "questionCode": "문67",
-          "questionTitle": "문67",
-          "submittedAnswer": "1순위: 창업교육 / 2순위: 컨설팅 3순위 : 1 창업교육 2 컨설팅 상권분석 디지털전환 점포개선 재기지원 폐업지원 고"
-        },
-        {
-          "stepIndex": 70,
-          "questionCode": "문68",
-          "questionTitle": "문68",
-          "submittedAnswer": "1순위: 지정학적 위기 / 2순위: 미국관세 3순위 : 1 지정학적 위기 2 미국관세 환율이슈 기준금리 인상 고유가 최저임금 "
-        },
-        {
-          "stepIndex": 71,
-          "questionCode": "문93",
-          "questionTitle": "문93",
-          "submittedAnswer": "[4] 8~15일"
-        },
-        {
-          "stepIndex": 72,
-          "questionCode": "문94",
-          "questionTitle": "문94",
-          "submittedAnswer": "[4] 생성형 AI를 활용하면 사업 운영 업무를 더 신속하고 효율적으로 처리할 수 있다. | [3] 생성형 AI는 내 사업의 생산성과 경쟁력을 높이는 데 도움이 될 수 있다. | [3] 생성형 AI는 사업 관련 의사결정이나 문제 해결의 질을 높이는 데 도움이 될 수 있다."
-        },
-        {
-          "stepIndex": 73,
-          "questionCode": "문95",
-          "questionTitle": "문95",
-          "submittedAnswer": "[4] 생성형 AI 사용법을 배우는 것은 나에게 쉽다. | [4] 원하는 결과를 얻기 위해 생성형 AI에 질문이나 지시(프롬프트)를 작성하는 방법은 이해하기 쉽다."
-        },
-        {
-          "stepIndex": 74,
-          "questionCode": "문96",
-          "questionTitle": "문96",
-          "submittedAnswer": "[3] 나에게 중요한 사람이나 사업 관계자는 내가 생성형 AI를 활용하는 것이 좋다고 생각한다. | [4] 내가 참고하는 업계 관계자나 관련 기관은 사업에 생성형 AI를 활용하는 것을 권장하는 편이다."
-        },
-        {
-          "stepIndex": 75,
-          "questionCode": "문97",
-          "questionTitle": "문97",
-          "submittedAnswer": "[3] 생성형 AI를 활용하는 데 필요한 기기·인터넷·계정 등의 자원을 갖추고 있다. | [3] 생성형 AI를 사업에 활용하는 데 필요한 기본적인 지식이나 능력을 갖추고 있다. | [3] 생성형 AI 사용 중 어려움이 생기면 필요한 도움이나 정보를 구할 수 있다."
-        },
-        {
-          "stepIndex": 76,
-          "questionCode": "문98",
-          "questionTitle": "문98",
-          "submittedAnswer": "[4] 생성형 AI에 드는 비용은 얻을 수 있는 사업상 혜택을 고려하면 합리적이다. | [4] 필요한 기능을 위해 유료 생성형 AI를 이용하는 것은 비용 대비 가치가 있다고 생각한다."
-        },
-        {
-          "stepIndex": 77,
-          "questionCode": "문99",
-          "questionTitle": "문99",
-          "submittedAnswer": "[4] 사업 운영에서 생성형 AI를 사용하는 것은 이미 나의 습관이 되었다. | [4] 업무 중 필요가 생기면 별다른 고민 없이 생성형 AI를 사용하게 된다."
-        },
-        {
-          "stepIndex": 78,
-          "questionCode": "문100",
-          "questionTitle": "문100",
-          "submittedAnswer": "[2] 향후 1년 동안 사업 운영에 생성형 AI를 사용하거나 계속 사용할 의향이 있다. | [2] 향후 사업 운영에서 생성형 AI를 정기적으로 활용할 계획이다. | [2] 사업 업무에 필요할 때 생성형 AI를 적극 활용할 계획이다."
-        },
-        {
-          "stepIndex": 79,
-          "questionCode": "CONSENT_동의서서명",
-          "questionTitle": "「경기도 소상공인 사업체 패널조사」",
-          "submittedAnswer": "연락처(010-8421-6508) 기입 · 개인정보/패널동의 체크 · 2중 전자서명(2건) 완료"
-        },
-        {
-          "stepIndex": 80,
-          "questionCode": "CHECK1_증빙업로드",
-          "questionTitle": "CHECK1",
-          "submittedAnswer": "간판사진 업로드 완료 (sample_metrix_sign.png)"
-        },
-        {
-          "stepIndex": 81,
-          "questionCode": "STEP119_안전대기",
-          "questionTitle": "참여혜택 안내 (최종 제출 직전 98% 안전 대기)",
-          "submittedAnswer": "98% 검토 대기 정지 완료 (미제출 안전보존)"
-        }
-      ]
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 6,
@@ -7443,7 +6968,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 120
     },
     {
       "index": 7,
@@ -8492,7 +8018,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 8,
@@ -9433,7 +8960,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 9,
@@ -10350,7 +9878,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 10,
@@ -11393,7 +10922,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 120
     },
     {
       "index": 11,
@@ -12394,7 +11924,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 350
     },
     {
       "index": 12,
@@ -12412,8 +11943,8 @@
       "ceoGender": "여성",
       "phone": "010-9914-8409",
       "excelPhone": "010-9914-8409",
-      "serverPhone": "010-9914-8409",
-      "phoneNeedsSync": false,
+      "serverPhone": "010-5562-5274",
+      "phoneNeedsSync": true,
       "bizNumber": "8250501378",
       "corpNumber": "",
       "bizStatus": "계속사업자",
@@ -12430,8 +11961,8 @@
       "road": "상태길",
       "detailAddress": "73-72, 3층 301호",
       "fullAddress": "광주시 상태길 73-72, 3층 301호",
-      "status": "진행중(98%)",
-      "quotaStatus": "review_ready",
+      "status": "",
+      "quotaStatus": "ready",
       "contactResult": "",
       "lastContactTime": "",
       "contactPortalUrl": "https://survey.metrix.co.kr/Contact/?SNUM=622",
@@ -13473,561 +13004,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "pilotAt": "2026-11-11T09:57:57.161Z",
-      "submittedAnswers": [
-        {
-          "stepIndex": 1,
-          "questionCode": "STEP_1",
-          "questionTitle": "경기도 소상공인 사업체패널 3차조사(신규/제조업)",
-          "submittedAnswer": "(응답 확인됨)"
-        },
-        {
-          "stepIndex": 2,
-          "questionCode": "STEP_2",
-          "questionTitle": "조사표 작성요령",
-          "submittedAnswer": "(응답 확인됨)"
-        },
-        {
-          "stepIndex": 3,
-          "questionCode": "A1~A15",
-          "questionTitle": "사업체명(간판명)",
-          "submittedAnswer": "업종: [3] 도매 및 소매업 | 사업장 유형: [2] 프랜차이즈 가맹점 아님 | 사업장 위치: [1] 지상 층 | 사업장 입지: [1] 상가지역 | 대표자 성별: [2] 여성 | 대표자 실거주지: [1] 경기도 내 | 최근 1년 이내 대표자 사업체 업종 관련 자격증 취득: [1] 자격증 없음 ; 사업체명(간판명): 소울쉘터(Soul Shelter) / 사업자등록번호 : --: 825 / 사업자등록번호 : --: 05 / 사업자등록번호 : --: 01378 / 주사업: 캠핑용품 / 주사업: 영업을 통해 / 주사업: 판 / 약 평: 20 / 지상 층: 3 / 년 월 일: 2019 / 년 월 일: 07 / 년 월 일: 01 / 검색: 경기 / 검색: 광주시 / 도로명: 상태길 / 상세주소: 73-72, 3층 301호 / 대표자 성명: 김현정 / 출생년도: 년: 1978 / 검색: 경기 / 검색: 광주시 / 도로명: 상태길"
-        },
-        {
-          "stepIndex": 4,
-          "questionCode": "문7",
-          "questionTitle": "문7",
-          "submittedAnswer": "[2] 아니오"
-        },
-        {
-          "stepIndex": 5,
-          "questionCode": "Q8",
-          "questionTitle": "Part 2. 경영현황",
-          "submittedAnswer": "[1] 정해진 영업시간에 맞추어 영업함"
-        },
-        {
-          "stepIndex": 6,
-          "questionCode": "문8-1",
-          "questionTitle": "문8-1",
-          "submittedAnswer": "9 / 18"
-        },
-        {
-          "stepIndex": 7,
-          "questionCode": "문9",
-          "questionTitle": "문9",
-          "submittedAnswer": "[1] 있음"
-        },
-        {
-          "stepIndex": 8,
-          "questionCode": "문9_1",
-          "questionTitle": "문9_1",
-          "submittedAnswer": "정기적 휴무 비정기적 휴무 기타: [1] 정기적 휴무 | 정기적 휴무 비정기적 휴무 기타: [2] 주기준 : 주 당 일 휴무 ; 주기준 : 주 당 일 휴무: 1 / 주기준 : 주 당 일 휴무: 1"
-        },
-        {
-          "stepIndex": 9,
-          "questionCode": "문9-2",
-          "questionTitle": "문9-2",
-          "submittedAnswer": "[1] 휴무 요일"
-        },
-        {
-          "stepIndex": 10,
-          "questionCode": "문10",
-          "questionTitle": "문10",
-          "submittedAnswer": "[1] 철저히 분리하여 관리(사업용 계좌와 개인 계좌를 구분)"
-        },
-        {
-          "stepIndex": 11,
-          "questionCode": "문11",
-          "questionTitle": "문11",
-          "submittedAnswer": "만원 7,464만원: 7464 / 만원 6,500만원: 6500 / 만원 7,464만원: 7464 / 만원 5,000만원: 5000 / 만원 4,300만원: 4300 / 만원 5,000만원: 5000 / 만원 2,464만원: 2464 / 만원 2,200만원: 2200 / 만원 2,464만원: 2464"
-        },
-        {
-          "stepIndex": 12,
-          "questionCode": "문11-1",
-          "questionTitle": "문11-1",
-          "submittedAnswer": "만원 3,100만원: 3100 / %: 62 / 만원 500만원: 500 / %: 10 / 만원 750만원: 750 / %: 15 / 만원 300만원: 300 / %: 6 / 만원 150만원: 150 / %: 3 / 만원 200만원: 200 / %: 4"
-        },
-        {
-          "stepIndex": 13,
-          "questionCode": "문12",
-          "questionTitle": "문12",
-          "submittedAnswer": "[3] 보통"
-        },
-        {
-          "stepIndex": 14,
-          "questionCode": "문12-1",
-          "questionTitle": "문12-1",
-          "submittedAnswer": "1순위: 매출 증가·감소 / 2순위: 이익(수익성) 증가·감소 1 매출 증가·감소 2 이익(수익성) 증가·감소 비용부담(임차료·"
-        },
-        {
-          "stepIndex": 15,
-          "questionCode": "문13",
-          "questionTitle": "문13",
-          "submittedAnswer": "1200"
-        },
-        {
-          "stepIndex": 16,
-          "questionCode": "문14",
-          "questionTitle": "문14",
-          "submittedAnswer": "(응답 확인됨)"
-        },
-        {
-          "stepIndex": 17,
-          "questionCode": "문15",
-          "questionTitle": "문15",
-          "submittedAnswer": "[1] 있음"
-        },
-        {
-          "stepIndex": 18,
-          "questionCode": "문15-1",
-          "questionTitle": "문15-1",
-          "submittedAnswer": "총 억 만원: 80 / 총 억 만원: 20"
-        },
-        {
-          "stepIndex": 19,
-          "questionCode": "문15-2",
-          "questionTitle": "문15-2",
-          "submittedAnswer": "1순위: 낮은 금리를 적용받기 위해 / 2순위: 거래처 대금 지급, 재료비(원부자재) 가격 상승 사업 확장을 위해 사업장 인테리어를 위해 "
-        },
-        {
-          "stepIndex": 20,
-          "questionCode": "문15-3",
-          "questionTitle": "문15-3",
-          "submittedAnswer": "[4] 정책자금(중소벤처기업진흥공단 등)"
-        },
-        {
-          "stepIndex": 21,
-          "questionCode": "문16",
-          "questionTitle": "문16",
-          "submittedAnswer": "[2] 임차(전대차 포함)"
-        },
-        {
-          "stepIndex": 22,
-          "questionCode": "문16-1",
-          "questionTitle": "문16-1",
-          "submittedAnswer": "[1] 보증금 있는 월세(반전세 포함) →보증금: 억 만원, 월 세: 억 만원 ; 보증금 있는 월세(반전세 포함) →보증금: 억 만원, 월 세: 억 만원: 3000 / 보증금 있는 월세(반전세 포함) →보증금: 억 만원, 월 세: 억 만원: 2022 / 보증금 있는 월세(반전세 포함) →보증금: 억 만원, 월 세: 억 만원: 3000 / 보증금 있는 월세(반전세 포함) →보증금: 억 만원, 월 세: 억 만원: 2022"
-        },
-        {
-          "stepIndex": 23,
-          "questionCode": "문16-2",
-          "questionTitle": "문16-2",
-          "submittedAnswer": "[2] 없음"
-        },
-        {
-          "stepIndex": 24,
-          "questionCode": "문17",
-          "questionTitle": "문17",
-          "submittedAnswer": "[2] 권리금 없었음"
-        },
-        {
-          "stepIndex": 25,
-          "questionCode": "문18",
-          "questionTitle": "문18",
-          "submittedAnswer": "[1] 예"
-        },
-        {
-          "stepIndex": 26,
-          "questionCode": "문18-1",
-          "questionTitle": "문18-1",
-          "submittedAnswer": "[3] 보통"
-        },
-        {
-          "stepIndex": 27,
-          "questionCode": "문19",
-          "questionTitle": "문19",
-          "submittedAnswer": "[2] 아니오"
-        },
-        {
-          "stepIndex": 28,
-          "questionCode": "문21",
-          "questionTitle": "문21",
-          "submittedAnswer": "[5] 가족·돌봄 부담 등으로 사업 운영에 필요한 시간 확보 어려움"
-        },
-        {
-          "stepIndex": 29,
-          "questionCode": "문22",
-          "questionTitle": "문22",
-          "submittedAnswer": "1순위: 상권 쇠퇴 / 2순위: 동일 업종 경쟁 심화 1 상권 쇠퇴 2 동일 업종 경쟁 심화 원재료비·재료매입비 최저임금 "
-        },
-        {
-          "stepIndex": 30,
-          "questionCode": "문23",
-          "questionTitle": "문23",
-          "submittedAnswer": "[1] 있음"
-        },
-        {
-          "stepIndex": 31,
-          "questionCode": "문23-1",
-          "questionTitle": "문23-1",
-          "submittedAnswer": "[1] 휴업·단축영업"
-        },
-        {
-          "stepIndex": 32,
-          "questionCode": "문24",
-          "questionTitle": "문24",
-          "submittedAnswer": "[3] 기존 제품·서비스의 품질 개선, [4] 생산성 향상(설비·공정 개선, 자동화·디지털 도입 등)"
-        },
-        {
-          "stepIndex": 33,
-          "questionCode": "문25",
-          "questionTitle": "문25",
-          "submittedAnswer": "[2] 없음"
-        },
-        {
-          "stepIndex": 34,
-          "questionCode": "Q26",
-          "questionTitle": "Part 3. 디지털화 현황",
-          "submittedAnswer": "[2] 아니오"
-        },
-        {
-          "stepIndex": 35,
-          "questionCode": "문27",
-          "questionTitle": "문27",
-          "submittedAnswer": "[2] 활용 안함"
-        },
-        {
-          "stepIndex": 36,
-          "questionCode": "문28",
-          "questionTitle": "문28",
-          "submittedAnswer": "[1] 해당없음 | 온라인 마케팅 (예: SNS 광고, 검색엔진 최적화, 인플루언서 협업 등): [1] 해당없음 | 매장 운영(온라인 예약, 서빙로봇, 키오스크, 비대면 결제, 자동 예약): [1] 해당없음 | 제조/생산 관련(자동 조리, 제품생산 자동화 로봇, 스마트 제조): [1] 해당없음"
-        },
-        {
-          "stepIndex": 37,
-          "questionCode": "문28-2",
-          "questionTitle": "문28-2",
-          "submittedAnswer": "[1] PC, 스마트폰을 활용해 문서 작성, 온라인 결제, 사진/영상 편집 등을 원활히 수행할 수 있다. | [1] 필요한 정보를 온라인에서 검색하여 활용 할 수 있다. | [1] 온라인 플랫폼에 상품을 등록하고 판매관리를 직접 할 수 있다. | [1] SNS를 활용해 상품이나 서비스를 홍보할 수 있다. | [1] 온라인 거래 시 기본적 보안 관리 능력을 갖추고 있다. (보안프로그램 활용, 데이터 백업 등) | [1] 생성형 AI를 활용해 제품 사진·메뉴판· 광고물 등을 제작하고 판매/홍보에 활용할 수 있다"
-        },
-        {
-          "stepIndex": 38,
-          "questionCode": "문29",
-          "questionTitle": "문29",
-          "submittedAnswer": "[2] 없음"
-        },
-        {
-          "stepIndex": 39,
-          "questionCode": "Q31",
-          "questionTitle": "Part 4. 종사자 현황",
-          "submittedAnswer": "3 / 2 / 1 / 3 / 0 / ① 대표자: 1 / ① 대표자: 0 / ① 대표자: 1 / ① 대표자: 1 / ① 대표자: 0 / ② 종업원: 1 / ② 종업원: 1 / ② 종업원: 0 / ② 종업원: 1 / ② 종업원: 0 / ②-2. 임시/일용직 (아르바이트 포함): 0 / ②-2. 임시/일용직 (아르바이트 포함): 0 / ②-2. 임시/일용직 (아르바이트 포함): 0 / ②-2. 임시/일용직 (아르바이트 포함): 0 / ②-2. 임시/일용직 (아르바이트 포함): 0 / ③ 무급가족종사자: 1 / ③ 무급가족종사자: 1 / ③ 무급가족종사자: 0 / ③ 무급가족종사자: 1"
-        },
-        {
-          "stepIndex": 40,
-          "questionCode": "문32",
-          "questionTitle": "문32",
-          "submittedAnswer": "대표자: [1] 정기적 휴무 | 대표자: [2] 주 당 일 휴무 | 종업원(일용직 제외): [1] 정기적 휴무 | 종업원(일용직 제외): [2] 주 당 일 휴무 | 무급가족종사자: [1] 정기적 휴무 | 무급가족종사자: [2] 주 당 일 휴무 ; 주당 평균 시간: 48 / 주 당 일 휴무: 1 / 주 당 일 휴무: 1 / 주당 평균 시간: 48 / 주 당 일 휴무: 1 / 주 당 일 휴무: 1 / 주당 평균 시간: 40 / 주 당 일 휴무: 1 / 주 당 일 휴무: 2"
-        },
-        {
-          "stepIndex": 41,
-          "questionCode": "문33",
-          "questionTitle": "문33",
-          "submittedAnswer": "1 / 6"
-        },
-        {
-          "stepIndex": 42,
-          "questionCode": "문34",
-          "questionTitle": "문34",
-          "submittedAnswer": "300"
-        },
-        {
-          "stepIndex": 43,
-          "questionCode": "문35",
-          "questionTitle": "문35",
-          "submittedAnswer": "[2] 변동 없음"
-        },
-        {
-          "stepIndex": 44,
-          "questionCode": "문36",
-          "questionTitle": "문36",
-          "submittedAnswer": "[2] 유지할 것이다"
-        },
-        {
-          "stepIndex": 45,
-          "questionCode": "Q41",
-          "questionTitle": "Part 6. 현재 운영 사업장의 이전 계획 및 전망",
-          "submittedAnswer": "[1] 예"
-        },
-        {
-          "stepIndex": 46,
-          "questionCode": "문41-1",
-          "questionTitle": "문41-1",
-          "submittedAnswer": "1"
-        },
-        {
-          "stepIndex": 47,
-          "questionCode": "문41-2",
-          "questionTitle": "문41-2",
-          "submittedAnswer": "2022 / 7"
-        },
-        {
-          "stepIndex": 48,
-          "questionCode": "문41-3",
-          "questionTitle": "문41-3",
-          "submittedAnswer": "검색: 경기 / 검색: 광주시 / 도로명: 상태길 / 상세주소: 73-72, 3층 301호"
-        },
-        {
-          "stepIndex": 49,
-          "questionCode": "문41-4",
-          "questionTitle": "문41-4",
-          "submittedAnswer": "[2] 상권쇠퇴"
-        },
-        {
-          "stepIndex": 50,
-          "questionCode": "문42",
-          "questionTitle": "문42",
-          "submittedAnswer": "[1] 예"
-        },
-        {
-          "stepIndex": 51,
-          "questionCode": "문42-1",
-          "questionTitle": "문42-1",
-          "submittedAnswer": "[2] 상권쇠퇴"
-        },
-        {
-          "stepIndex": 52,
-          "questionCode": "문43",
-          "questionTitle": "문43",
-          "submittedAnswer": "[2] 아니오"
-        },
-        {
-          "stepIndex": 53,
-          "questionCode": "문43-4",
-          "questionTitle": "문43-4",
-          "submittedAnswer": "1순위: 매출액 및 영업이익 양호 / 2순위: 경기회복 기대 1 매출액 및 영업이익 양호 2 경기회복 기대 폐업비용 부담 (대출금 상환 "
-        },
-        {
-          "stepIndex": 54,
-          "questionCode": "문44",
-          "questionTitle": "문44",
-          "submittedAnswer": "[1] 투자/확장 계획 없음"
-        },
-        {
-          "stepIndex": 55,
-          "questionCode": "Q56_1",
-          "questionTitle": "Part 9. 경기동향 및 만족도",
-          "submittedAnswer": "[3] 1) 판매실적(매출) | [4] 2) 자금사정 | [3] 3) 비용상황 | [4] 4) 구매자 수 | [4] 5) 귀사만의 경기전반 ; 온라인 플랫폼 편중과 소비 위축으로 오프라인 도소매 매출 유지가 쉽지 않습니다. 지역화폐 인센티브 확대와 소상공인 경영안정자금 지원이 지속되었으면 합니다."
-        },
-        {
-          "stepIndex": 56,
-          "questionCode": "문56-2",
-          "questionTitle": "문56-2",
-          "submittedAnswer": "[3] 1) 판매실적(매출) | [4] 2) 자금사정 | [4] 3) 비용상황 | [3] 4) 구매자 수 | [3] 5) 귀사만의 경기전반"
-        },
-        {
-          "stepIndex": 57,
-          "questionCode": "문57",
-          "questionTitle": "문57",
-          "submittedAnswer": "[3] 1) 현재 직업의 만족도 | [3] 2) 종합적인 삶의 만족도 | [3] 3) 업무 피로도"
-        },
-        {
-          "stepIndex": 58,
-          "questionCode": "문58",
-          "questionTitle": "문58",
-          "submittedAnswer": "[3] 사업 운영을 통한 경제적 안정성 | [3] 고객/거래처 관계 및 신뢰 | [4] 일/가정/여가의 균형 | [3] 사업 성장 가능성"
-        },
-        {
-          "stepIndex": 59,
-          "questionCode": "문59",
-          "questionTitle": "문59",
-          "submittedAnswer": "[3] 교통·물류 인프라(도로, 대중교통, 물류망 등) | [4] 산업·상업 기반시설(전력, 통신, 상하수도 등) | [4] 인력 수급 환경(지역 내 인재 확보 용이성) | [4] 지자체의 기업 지원 태도(행정 서비스, 지원사업 접근성 등) | [3] 기업 활동을 위한 지역 이미지·여건(지역 상권, 주민 태도 등) | [4] 전반적인 지역 사업 환경 종합 만족도"
-        },
-        {
-          "stepIndex": 60,
-          "questionCode": "Q60",
-          "questionTitle": "Part 10. 소상공인 대상 경기신용보증재단 지원사업",
-          "submittedAnswer": "[2] 거의 모른다"
-        },
-        {
-          "stepIndex": 61,
-          "questionCode": "문60-1",
-          "questionTitle": "문60-1",
-          "submittedAnswer": "[2] 주변 사람 소개"
-        },
-        {
-          "stepIndex": 62,
-          "questionCode": "문61",
-          "questionTitle": "문61",
-          "submittedAnswer": "[2] 거의 모른다"
-        },
-        {
-          "stepIndex": 63,
-          "questionCode": "문61-1",
-          "questionTitle": "문61-1",
-          "submittedAnswer": "[2] 주변 사람 소개"
-        },
-        {
-          "stepIndex": 64,
-          "questionCode": "문62",
-          "questionTitle": "문62",
-          "submittedAnswer": "지원 여부: [1] 지원받음 → 연도: | 지원 여부: [2] 신청하지 않음 | 지원 여부: [2] 신청하지 않음 ; 지원받음 → 연도:: 2022"
-        },
-        {
-          "stepIndex": 65,
-          "questionCode": "Q62_1",
-          "questionTitle": "신용보증 지원",
-          "submittedAnswer": "[2] 사업장 확장"
-        },
-        {
-          "stepIndex": 66,
-          "questionCode": "Q62_2",
-          "questionTitle": "신용보증 지원",
-          "submittedAnswer": "[4] 5천만 원 ~ 1억 원 미만"
-        },
-        {
-          "stepIndex": 67,
-          "questionCode": "Q62_3",
-          "questionTitle": "신용보증 지원",
-          "submittedAnswer": "[2] 폐업을 고려 했을 것"
-        },
-        {
-          "stepIndex": 68,
-          "questionCode": "Q62_4",
-          "questionTitle": "신용보증 지원",
-          "submittedAnswer": "[4] 지원사업은 소상공인 경쟁력 강화를 위해 꼭 필요한 사업이다. | [3] 지원사업으로 필요한 금액을 지원받았다. | [4] 지원업체 지원 절차는 편리하다. | [4] 신용보증제도는 경기도의 의도대로 효율적으로 집행되고 있다. | [3] 전반적으로 지원사업 참여 시 의도했던 목적을 달성했다."
-        },
-        {
-          "stepIndex": 69,
-          "questionCode": "Q62_5",
-          "questionTitle": "신용보증 지원",
-          "submittedAnswer": "[3] 지원사업은 소상공인 사업 영위에 도움이 된다. | [3] 지원사업은 사업 성장(매출 증가, 고객 증가, 사업 확장 등)에 도움이 된다."
-        },
-        {
-          "stepIndex": 70,
-          "questionCode": "Q62_6",
-          "questionTitle": "신용보증 지원",
-          "submittedAnswer": "[4] 지원사업에 전반적으로 만족한다. | [3] 향후 기회가 주어진다면, 지원사업에 다시 참여할 의향이 있다. | [3] 지원사업을 다른 소상공인에게 추천(권유)할 의향이 있다."
-        },
-        {
-          "stepIndex": 71,
-          "questionCode": "Q62_12",
-          "questionTitle": "중소기업육성자금 지원",
-          "submittedAnswer": "[2] 자금이 필요하지 않아서"
-        },
-        {
-          "stepIndex": 72,
-          "questionCode": "문62-13",
-          "questionTitle": "문62-13",
-          "submittedAnswer": "[3] 지원금액 확대 | [3] 지원금액 확대 | [3] 지원대상 확대 | [3] 지원대상 확대 | [4] 금리 및 보증료 하향조정 | [3] 금리 및 보증료 하향조정 | [3] 신속한 지원체계 | [4] 신속한 지원체계 | [4] 지원자격 요건 강화 | [4] 지원자격 요건 강화 | [3] 정책홍보 강화 | [4] 정책홍보 강화 | [4] 절차, 서류 간소화 | [3] 절차, 서류 간소화"
-        },
-        {
-          "stepIndex": 73,
-          "questionCode": "문63",
-          "questionTitle": "문63",
-          "submittedAnswer": "[2] 들어본적 있음"
-        },
-        {
-          "stepIndex": 74,
-          "questionCode": "문63-1",
-          "questionTitle": "문63-1",
-          "submittedAnswer": "[4] 오히려 불리할 것"
-        },
-        {
-          "stepIndex": 75,
-          "questionCode": "문64",
-          "questionTitle": "문64",
-          "submittedAnswer": "소기업 소상공인 전환보증 (기존 대출 상환기간 연장): [1] 알고 있음 | 소기업 소상공인 전환보증 (기존 대출 상환기간 연장): [1] 이용경험 있음 | 금융기관 특별출연 협약보증 (은행 특별 우대로 한도 상향): [1] 알고 있음 | 금융기관 특별출연 협약보증 (은행 특별 우대로 한도 상향): [2] 이용경험 없음 | 균형발전 기회UP 특례보증 (여성기업, 청년, 장애인 등 우대지원): [2] 모름 | 경기도 소상공인지원자금 (이차보전 저금리 지원): [2] 모름 | [2] 모름"
-        },
-        {
-          "stepIndex": 76,
-          "questionCode": "Q65",
-          "questionTitle": "Part 11. 경기신용보증재단 이 외 소상공인 대상 지원사업",
-          "submittedAnswer": "창업교육: [2] 신청하지 않음 | 컨설팅: [2] 신청하지 않음 | 상권분석: [2] 신청하지 않음 | 디지털 전환: [2] 신청하지 않음 | 점포개선: [2] 신청하지 않음 | 재기지원: [2] 신청하지 않음 | 폐업지원: [2] 신청하지 않음 | 고용지원: [2] 신청하지 않음 | 금융지원: [2] 신청하지 않음 | 세제지원: [2] 신청하지 않음"
-        },
-        {
-          "stepIndex": 77,
-          "questionCode": "문66",
-          "questionTitle": "문66",
-          "submittedAnswer": "[2] 거의 모른다"
-        },
-        {
-          "stepIndex": 78,
-          "questionCode": "문66-1",
-          "questionTitle": "문66-1",
-          "submittedAnswer": "[2] 주변 사람 소개"
-        },
-        {
-          "stepIndex": 79,
-          "questionCode": "문66-2",
-          "questionTitle": "문66-2",
-          "submittedAnswer": "[1] 기관마다 서류를 중복제출 해야 함"
-        },
-        {
-          "stepIndex": 80,
-          "questionCode": "문67",
-          "questionTitle": "문67",
-          "submittedAnswer": "1순위: 창업교육 / 2순위: 컨설팅 3순위 : 1 창업교육 2 컨설팅 상권분석 디지털전환 점포개선 재기지원 폐업지원 고"
-        },
-        {
-          "stepIndex": 81,
-          "questionCode": "문68",
-          "questionTitle": "문68",
-          "submittedAnswer": "1순위: 지정학적 위기 / 2순위: 미국관세 3순위 : 1 지정학적 위기 2 미국관세 환율이슈 기준금리 인상 고유가 최저임금 "
-        },
-        {
-          "stepIndex": 82,
-          "questionCode": "문93",
-          "questionTitle": "문93",
-          "submittedAnswer": "[4] 8~15일"
-        },
-        {
-          "stepIndex": 83,
-          "questionCode": "문94",
-          "questionTitle": "문94",
-          "submittedAnswer": "[4] 생성형 AI를 활용하면 사업 운영 업무를 더 신속하고 효율적으로 처리할 수 있다. | [4] 생성형 AI는 내 사업의 생산성과 경쟁력을 높이는 데 도움이 될 수 있다. | [4] 생성형 AI는 사업 관련 의사결정이나 문제 해결의 질을 높이는 데 도움이 될 수 있다."
-        },
-        {
-          "stepIndex": 84,
-          "questionCode": "문95",
-          "questionTitle": "문95",
-          "submittedAnswer": "[3] 생성형 AI 사용법을 배우는 것은 나에게 쉽다. | [4] 원하는 결과를 얻기 위해 생성형 AI에 질문이나 지시(프롬프트)를 작성하는 방법은 이해하기 쉽다."
-        },
-        {
-          "stepIndex": 85,
-          "questionCode": "문96",
-          "questionTitle": "문96",
-          "submittedAnswer": "[3] 나에게 중요한 사람이나 사업 관계자는 내가 생성형 AI를 활용하는 것이 좋다고 생각한다. | [3] 내가 참고하는 업계 관계자나 관련 기관은 사업에 생성형 AI를 활용하는 것을 권장하는 편이다."
-        },
-        {
-          "stepIndex": 86,
-          "questionCode": "문97",
-          "questionTitle": "문97",
-          "submittedAnswer": "[4] 생성형 AI를 활용하는 데 필요한 기기·인터넷·계정 등의 자원을 갖추고 있다. | [3] 생성형 AI를 사업에 활용하는 데 필요한 기본적인 지식이나 능력을 갖추고 있다. | [3] 생성형 AI 사용 중 어려움이 생기면 필요한 도움이나 정보를 구할 수 있다."
-        },
-        {
-          "stepIndex": 87,
-          "questionCode": "문98",
-          "questionTitle": "문98",
-          "submittedAnswer": "[4] 생성형 AI에 드는 비용은 얻을 수 있는 사업상 혜택을 고려하면 합리적이다. | [3] 필요한 기능을 위해 유료 생성형 AI를 이용하는 것은 비용 대비 가치가 있다고 생각한다."
-        },
-        {
-          "stepIndex": 88,
-          "questionCode": "문99",
-          "questionTitle": "문99",
-          "submittedAnswer": "[4] 사업 운영에서 생성형 AI를 사용하는 것은 이미 나의 습관이 되었다. | [4] 업무 중 필요가 생기면 별다른 고민 없이 생성형 AI를 사용하게 된다."
-        },
-        {
-          "stepIndex": 89,
-          "questionCode": "문100",
-          "questionTitle": "문100",
-          "submittedAnswer": "[2] 향후 1년 동안 사업 운영에 생성형 AI를 사용하거나 계속 사용할 의향이 있다. | [2] 향후 사업 운영에서 생성형 AI를 정기적으로 활용할 계획이다. | [2] 사업 업무에 필요할 때 생성형 AI를 적극 활용할 계획이다."
-        },
-        {
-          "stepIndex": 90,
-          "questionCode": "CONSENT_동의서서명",
-          "questionTitle": "「경기도 소상공인 사업체 패널조사」",
-          "submittedAnswer": "연락처(010-9914-8409) 기입 · 개인정보/패널동의 체크 · 2중 전자서명(2건) 완료"
-        },
-        {
-          "stepIndex": 91,
-          "questionCode": "CHECK1_증빙업로드",
-          "questionTitle": "CHECK1",
-          "submittedAnswer": "간판사진 업로드 완료 (sample_metrix_sign.png)"
-        },
-        {
-          "stepIndex": 92,
-          "questionCode": "STEP119_안전대기",
-          "questionTitle": "참여혜택 안내 (최종 제출 직전 98% 안전 대기)",
-          "submittedAnswer": "98% 검토 대기 정지 완료 (미제출 안전보존)"
-        }
-      ]
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 70
     },
     {
       "index": 13,
@@ -15088,7 +14066,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 180
     },
     {
       "index": 14,
@@ -16143,7 +15122,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 15,
@@ -17229,7 +16209,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 16,
@@ -18279,7 +17260,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 17,
@@ -19310,7 +18292,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 18,
@@ -20317,7 +19300,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 400
     },
     {
       "index": 19,
@@ -21306,7 +20290,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 20,
@@ -22355,7 +21340,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 130
     },
     {
       "index": 21,
@@ -23272,7 +22258,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 100
     },
     {
       "index": 22,
@@ -24261,7 +23248,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 130
     },
     {
       "index": 23,
@@ -25298,7 +24286,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 24,
@@ -26455,7 +25444,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 25,
@@ -27572,7 +26562,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 26,
@@ -28597,7 +27588,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 27,
@@ -29658,7 +28650,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 220
     },
     {
       "index": 28,
@@ -30755,7 +29748,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 29,
@@ -31835,7 +30829,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 30,
@@ -32896,7 +31891,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 31,
@@ -33939,7 +32935,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 32,
@@ -34928,7 +33925,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 33,
@@ -35851,7 +34849,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 34,
@@ -36961,7 +35960,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 35,
@@ -38046,7 +37046,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 36,
@@ -39137,7 +38138,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 37,
@@ -40186,7 +39188,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 38,
@@ -41278,7 +40281,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 39,
@@ -42375,7 +41379,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 40,
@@ -43437,7 +42442,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 41,
@@ -44589,7 +43595,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 42,
@@ -45590,7 +44597,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 43,
@@ -46730,7 +45738,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 44,
@@ -47810,7 +46819,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 400
     },
     {
       "index": 45,
@@ -48871,7 +47881,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 46,
@@ -49963,7 +48974,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 47,
@@ -51049,7 +50061,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 48,
@@ -52117,7 +51130,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 49,
@@ -53197,7 +52211,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 50,
@@ -54205,7 +53220,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 51,
@@ -54391,7 +53407,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 52,
@@ -54577,7 +53594,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 70
     },
     {
       "index": 53,
@@ -54763,7 +53781,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 54,
@@ -54948,7 +53967,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 55,
@@ -56021,7 +55041,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 56,
@@ -57099,7 +56120,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 57,
@@ -58153,7 +57175,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 58,
@@ -59279,7 +58302,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 59,
@@ -60285,7 +59309,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 60,
@@ -61363,7 +60388,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 61,
@@ -62309,7 +61335,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 62,
@@ -63327,7 +62354,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 63,
@@ -64399,7 +63427,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 64,
@@ -65399,7 +64428,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 65,
@@ -66567,7 +65597,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 66,
@@ -67711,7 +66742,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 67,
@@ -68795,7 +67827,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 68,
@@ -69819,7 +68852,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 69,
@@ -70879,7 +69913,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 70,
@@ -72023,7 +71058,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 400
     },
     {
       "index": 71,
@@ -73035,7 +72071,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 72,
@@ -74077,7 +73114,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 73,
@@ -75137,7 +74175,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 74,
@@ -76155,7 +75194,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 75,
@@ -77251,7 +76291,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 76,
@@ -78347,7 +77388,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 77,
@@ -79329,7 +78371,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 78,
@@ -80389,7 +79432,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 79,
@@ -81347,7 +80391,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 80,
@@ -82419,7 +81464,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 81,
@@ -83497,7 +82543,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 82,
@@ -84521,7 +83568,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 83,
@@ -85629,7 +84677,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 84,
@@ -86791,7 +85840,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 85,
@@ -87947,7 +86997,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 86,
@@ -88935,7 +87986,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 70
     },
     {
       "index": 87,
@@ -89845,7 +88897,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 130
     },
     {
       "index": 88,
@@ -90899,7 +89952,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 89,
@@ -91959,7 +91013,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 90,
@@ -93013,7 +92068,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 91,
@@ -93959,7 +93015,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 500
     },
     {
       "index": 92,
@@ -94959,7 +94016,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 90
     },
     {
       "index": 93,
@@ -95941,7 +94999,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 94,
@@ -96893,7 +95952,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 95,
@@ -97917,7 +96977,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 96,
@@ -98953,7 +98014,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 97,
@@ -100007,7 +99069,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 98,
@@ -101073,7 +100136,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 99,
@@ -102115,7 +101179,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 100,
@@ -103217,7 +102282,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 101,
@@ -104271,7 +103337,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 102,
@@ -105301,7 +104368,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 103,
@@ -106379,7 +105447,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 104,
@@ -107325,7 +106394,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 105,
@@ -107510,7 +106580,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 350
     },
     {
       "index": 106,
@@ -107696,7 +106767,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 107,
@@ -107881,7 +106953,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 108,
@@ -108066,7 +107139,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 109,
@@ -108251,7 +107325,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 110,
@@ -109143,7 +108218,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 111,
@@ -110071,7 +109147,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 112,
@@ -111071,7 +110148,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 120
     },
     {
       "index": 113,
@@ -111951,7 +111029,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 114,
@@ -112868,7 +111947,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 500,
+      "excelMonthlyRent": 50
     },
     {
       "index": 115,
@@ -113911,7 +112991,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 116,
@@ -114839,7 +113920,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 350
     },
     {
       "index": 117,
@@ -115779,7 +114861,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 120
     },
     {
       "index": 118,
@@ -116761,7 +115844,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 60
     },
     {
       "index": 119,
@@ -117755,7 +116839,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 120,
@@ -118798,7 +117883,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 121,
@@ -119654,7 +118740,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 500,
+      "excelMonthlyRent": 60
     },
     {
       "index": 122,
@@ -120552,7 +119639,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 123,
@@ -121546,7 +120634,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 124,
@@ -122492,7 +121581,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 125,
@@ -123432,7 +122522,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 126,
@@ -124412,7 +123503,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 127,
@@ -125412,7 +124504,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 90
     },
     {
       "index": 128,
@@ -126316,7 +125409,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 129,
@@ -127286,7 +126380,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 130,
@@ -128310,7 +127405,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 90
     },
     {
       "index": 131,
@@ -129308,7 +128404,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 132,
@@ -130206,7 +129303,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 133,
@@ -131146,7 +130244,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 134,
@@ -132151,7 +131250,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 135,
@@ -133145,7 +132245,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 136,
@@ -134115,7 +133216,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 137,
@@ -135121,7 +134223,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 138,
@@ -136121,7 +135224,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 139,
@@ -137194,7 +136298,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 140,
@@ -138206,7 +137311,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 141,
@@ -139222,7 +138328,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 142,
@@ -140120,7 +139227,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 500,
+      "excelMonthlyRent": 60
     },
     {
       "index": 143,
@@ -141120,7 +140228,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 144,
@@ -142118,7 +141227,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 145,
@@ -143190,7 +142300,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 146,
@@ -144190,7 +143301,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 147,
@@ -145142,7 +144254,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 180
     },
     {
       "index": 148,
@@ -146124,7 +145237,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 149,
@@ -147130,7 +146244,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 60
     },
     {
       "index": 150,
@@ -148112,7 +147227,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 151,
@@ -149094,7 +148210,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 152,
@@ -150082,7 +149199,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 153,
@@ -150986,7 +150104,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 154,
@@ -151921,7 +151040,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 155,
@@ -152832,7 +151952,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 156,
@@ -153725,7 +152846,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 157,
@@ -154702,7 +153824,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 158,
@@ -155547,7 +154670,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 159,
@@ -156434,7 +155558,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 160,
@@ -157321,7 +156446,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 161,
@@ -158118,7 +157244,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 162,
@@ -159029,7 +158156,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 163,
@@ -159946,7 +159074,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 164,
@@ -160917,7 +160046,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 165,
@@ -161811,7 +160941,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 166,
@@ -162801,7 +161932,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 167,
@@ -163748,7 +162880,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 168,
@@ -164629,7 +163762,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 169,
@@ -165480,7 +164614,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 170,
@@ -166427,7 +165562,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "O",
-      "submittedAnswers": []
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 130
     },
     {
       "index": 171,
@@ -166612,7 +165748,8 @@
       },
       "manualClosedOverride": false,
       "guaranteeSupport": "X",
-      "submittedAnswers": []
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     }
   ],
   "rows": [
@@ -167761,7 +166898,9 @@
         }
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 2,
@@ -168921,7 +168060,9 @@
         }
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 3,
@@ -170356,7 +169497,9 @@
         }
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 70
     },
     {
       "index": 4,
@@ -171441,7 +170584,9 @@
         "COMPLETE": "DOING"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 5,
@@ -172483,7 +171628,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 6,
@@ -173423,7 +172570,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 120
     },
     {
       "index": 7,
@@ -174471,7 +173620,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 8,
@@ -175411,7 +174562,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 9,
@@ -176327,7 +175480,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 10,
@@ -177369,7 +176524,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 120
     },
     {
       "index": 11,
@@ -178369,7 +177526,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 350
     },
     {
       "index": 12,
@@ -179447,7 +178606,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 70
     },
     {
       "index": 13,
@@ -180507,7 +179668,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 180
     },
     {
       "index": 14,
@@ -181561,7 +180724,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 15,
@@ -182646,7 +181811,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 16,
@@ -183695,7 +182862,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 17,
@@ -184725,7 +183894,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 18,
@@ -185731,7 +184902,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 400
     },
     {
       "index": 19,
@@ -186719,7 +185892,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 20,
@@ -187767,7 +186942,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 130
     },
     {
       "index": 21,
@@ -188683,7 +187860,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 100
     },
     {
       "index": 22,
@@ -189671,7 +188850,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 130
     },
     {
       "index": 23,
@@ -190707,7 +189888,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 24,
@@ -191863,7 +191046,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 25,
@@ -192979,7 +192164,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 26,
@@ -194003,7 +193190,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 27,
@@ -195063,7 +194252,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 220
     },
     {
       "index": 28,
@@ -196159,7 +195350,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 29,
@@ -197238,7 +196431,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 30,
@@ -198298,7 +197493,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 31,
@@ -199340,7 +198537,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 32,
@@ -200328,7 +199527,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 33,
@@ -201250,7 +200451,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 34,
@@ -202359,7 +201562,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 35,
@@ -203443,7 +202648,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 36,
@@ -204533,7 +203740,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 37,
@@ -205581,7 +204790,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 38,
@@ -206672,7 +205883,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 39,
@@ -207768,7 +206981,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 40,
@@ -208829,7 +208044,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 41,
@@ -209980,7 +209197,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 42,
@@ -210980,7 +210199,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 43,
@@ -212119,7 +211340,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 44,
@@ -213198,7 +212421,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 400
     },
     {
       "index": 45,
@@ -214258,7 +213483,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 46,
@@ -215349,7 +214576,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 47,
@@ -216434,7 +215663,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 48,
@@ -217501,7 +216732,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 49,
@@ -218580,7 +217813,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 50,
@@ -219587,7 +218822,9 @@
         "김말남": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 51,
@@ -219772,7 +219009,9 @@
         "컨택원": "강영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 52,
@@ -219957,7 +219196,9 @@
         "컨택원": "강영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 70
     },
     {
       "index": 53,
@@ -220142,7 +219383,9 @@
         "컨택원": "강영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 54,
@@ -220326,7 +219569,9 @@
         "컨택원": "강영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 55,
@@ -221398,7 +220643,9 @@
         "COMPLETE": "DOING"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 56,
@@ -222475,7 +221722,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 57,
@@ -223528,7 +222777,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 58,
@@ -224653,7 +223904,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 59,
@@ -225658,7 +224911,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 60,
@@ -226735,7 +225990,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 61,
@@ -227680,7 +226937,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 62,
@@ -228697,7 +227956,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 63,
@@ -229768,7 +229029,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 64,
@@ -230767,7 +230030,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 65,
@@ -231934,7 +231199,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 66,
@@ -233077,7 +232344,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 67,
@@ -234160,7 +233429,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 68,
@@ -235183,7 +234454,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 69,
@@ -236242,7 +235515,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 70,
@@ -237385,7 +236660,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 400
     },
     {
       "index": 71,
@@ -238396,7 +237673,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 72,
@@ -239437,7 +238716,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 73,
@@ -240496,7 +239777,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 74,
@@ -241513,7 +240796,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 75,
@@ -242608,7 +241893,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 76,
@@ -243703,7 +242990,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 77,
@@ -244684,7 +243973,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 78,
@@ -245743,7 +245034,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 79,
@@ -246700,7 +245993,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 80,
@@ -247771,7 +247066,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 81,
@@ -248848,7 +248145,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 82,
@@ -249871,7 +249170,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 83,
@@ -250978,7 +250279,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 84,
@@ -252139,7 +251442,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 85,
@@ -253294,7 +252599,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 86,
@@ -254281,7 +253588,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 70
     },
     {
       "index": 87,
@@ -255190,7 +254499,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 130
     },
     {
       "index": 88,
@@ -256243,7 +255554,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 89,
@@ -257302,7 +256615,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 90,
@@ -258355,7 +257670,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 91,
@@ -259300,7 +258617,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 500
     },
     {
       "index": 92,
@@ -260299,7 +259618,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 90
     },
     {
       "index": 93,
@@ -261280,7 +260601,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 94,
@@ -262231,7 +261554,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 95,
@@ -263254,7 +262579,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 96,
@@ -264289,7 +263616,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 97,
@@ -265342,7 +264671,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 98,
@@ -266407,7 +265738,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 99,
@@ -267448,7 +266781,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 100,
@@ -268549,7 +267884,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 101,
@@ -269602,7 +268939,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 102,
@@ -270631,7 +269970,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 103,
@@ -271708,7 +271049,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 104,
@@ -272653,7 +271996,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 105,
@@ -272837,7 +272182,9 @@
         "컨택원": "김정례"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 350
     },
     {
       "index": 106,
@@ -273022,7 +272369,9 @@
         "컨택원": "김정례"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 107,
@@ -273206,7 +272555,9 @@
         "컨택원": "김정례"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 108,
@@ -273390,7 +272741,9 @@
         "컨택원": "김정례"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 109,
@@ -273574,7 +272927,9 @@
         "컨택원": "김정례"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 110,
@@ -274465,7 +273820,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 111,
@@ -275392,7 +274749,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 112,
@@ -276391,7 +275750,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 120
     },
     {
       "index": 113,
@@ -277270,7 +276631,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 114,
@@ -278186,7 +277549,9 @@
         "COMPLETE": "DOING"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 500,
+      "excelMonthlyRent": 50
     },
     {
       "index": 115,
@@ -279228,7 +278593,9 @@
         "COMPLETE": "DOING"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 116,
@@ -280155,7 +279522,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 5000,
+      "excelMonthlyRent": 350
     },
     {
       "index": 117,
@@ -281094,7 +280463,9 @@
         "이메일": "jsk7256@naver.com"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 120
     },
     {
       "index": 118,
@@ -282075,7 +281446,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 60
     },
     {
       "index": 119,
@@ -283068,7 +282441,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 120,
@@ -284110,7 +283485,9 @@
         "COMPLETE": "DOING"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 121,
@@ -284965,7 +284342,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 500,
+      "excelMonthlyRent": 60
     },
     {
       "index": 122,
@@ -285862,7 +285241,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 123,
@@ -286855,7 +286236,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 124,
@@ -287800,7 +287183,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 125,
@@ -288739,7 +288124,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 126,
@@ -289718,7 +289105,9 @@
         "이메일": "jinyeon91@naver.com"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 127,
@@ -290717,7 +290106,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 90
     },
     {
       "index": 128,
@@ -291620,7 +291011,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 129,
@@ -292589,7 +291982,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 130,
@@ -293612,7 +293007,9 @@
         "이메일": "k-pyung@naver.com"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 90
     },
     {
       "index": 131,
@@ -294609,7 +294006,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 132,
@@ -295506,7 +294905,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 133,
@@ -296445,7 +295846,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 134,
@@ -297449,7 +296852,9 @@
         "COMPLETE": "DOING"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 135,
@@ -298442,7 +297847,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 136,
@@ -299411,7 +298818,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 137,
@@ -300416,7 +299825,9 @@
         "이메일": "cs@bosslight.co.kr"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 138,
@@ -301415,7 +300826,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 139,
@@ -302487,7 +301900,9 @@
         }
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 140,
@@ -303498,7 +302913,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 141,
@@ -304513,7 +303930,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 142,
@@ -305410,7 +304829,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 500,
+      "excelMonthlyRent": 60
     },
     {
       "index": 143,
@@ -306409,7 +305830,9 @@
         "이메일": "hahnkiejoo@gmail.com"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 144,
@@ -307406,7 +306829,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 145,
@@ -308477,7 +307902,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 146,
@@ -309476,7 +308903,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 147,
@@ -310427,7 +309856,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 180
     },
     {
       "index": 148,
@@ -311408,7 +310839,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 149,
@@ -312413,7 +311846,9 @@
         "이메일": "labup@labup.co.kr"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 60
     },
     {
       "index": 150,
@@ -313394,7 +312829,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 151,
@@ -314375,7 +313812,9 @@
         "이메일": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 152,
@@ -315362,7 +314801,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 153,
@@ -316265,7 +315706,9 @@
         "휴대폰": ""
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 154,
@@ -317199,7 +316642,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 200
     },
     {
       "index": 155,
@@ -318109,7 +317554,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 156,
@@ -319001,7 +318448,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 250
     },
     {
       "index": 157,
@@ -319977,7 +319426,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 158,
@@ -320821,7 +320272,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 159,
@@ -321707,7 +321160,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 160,
@@ -322593,7 +322048,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 161,
@@ -323389,7 +322846,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 162,
@@ -324299,7 +323758,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 163,
@@ -325215,7 +324676,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 164,
@@ -326185,7 +325648,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 165,
@@ -327078,7 +326543,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 166,
@@ -328067,7 +327534,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 167,
@@ -329013,7 +328482,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 3000,
+      "excelMonthlyRent": 300
     },
     {
       "index": 168,
@@ -329893,7 +329364,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     },
     {
       "index": 169,
@@ -330743,7 +330216,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 150
     },
     {
       "index": 170,
@@ -331689,7 +331164,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "O"
+      "guaranteeSupport": "O",
+      "excelDeposit": 2000,
+      "excelMonthlyRent": 130
     },
     {
       "index": 171,
@@ -331873,7 +331350,9 @@
         "컨택원": "노영미"
       },
       "manualClosedOverride": false,
-      "guaranteeSupport": "X"
+      "guaranteeSupport": "X",
+      "excelDeposit": 1000,
+      "excelMonthlyRent": 80
     }
   ]
 }

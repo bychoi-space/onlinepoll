@@ -514,6 +514,50 @@ export function syncMetrixInputsToState(metrixPolicyState) {
   const selSeoulCarbon = document.getElementById('sel-seoul-o1-carbon');
   if (selSeoulCarbon) metrixPolicyState.seoul_o1_carbon = selSeoulCarbon.value;
 
+  // 10-B. 경기도 3차 본조사 문항별 정밀 가이드 제어판 (문10 ~ 문69 · CHECK1 사진 미업로드)
+  const readStr = (id, key) => {
+    const el = document.getElementById(id);
+    if (el) metrixPolicyState[key] = el.value;
+  };
+  const readNum = (id, key, fallback) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const n = Number(el.value);
+      metrixPolicyState[key] = Number.isFinite(n) ? n : fallback;
+    }
+  };
+  readStr('sel-metrix-q10-mode', 'q10_fundMgmtMode');
+  readStr('sel-metrix-q12-1-mode', 'q12_1_evalReasonMode');
+  readStr('sel-metrix-q16-1-source', 'q16_1_leaseSource');
+  readStr('sel-metrix-q17-range-mode', 'q17_goodwillRangeMode');
+  readNum('num-metrix-goodwill-min', 'goodwill_min', 1000);
+  readNum('num-metrix-goodwill-max', 'goodwill_max', 5000);
+  readNum('num-metrix-goodwill-step', 'goodwill_step', 500);
+  readStr('sel-metrix-q21-mode', 'q21_femaleDiffMode');
+  readStr('sel-metrix-q22-mode', 'q22_hardshipMode');
+  readStr('sel-metrix-q23-climate', 'q23_climateImpact');
+  readStr('sel-metrix-q24-mode', 'q24_competitivenessMode');
+  readStr('sel-metrix-q25-income', 'q25_otherIncome');
+  readStr('sel-metrix-q26-rule', 'q26_onlineRule');
+  readStr('sel-metrix-q26-1-channel', 'q26_1_foodChannel');
+  readStr('sel-metrix-q34-range-mode', 'q34_wageRangeMode');
+  readNum('num-metrix-wage-min', 'labor_wageMin', 240);
+  readNum('num-metrix-wage-max', 'labor_wageMax', 320);
+  readNum('num-metrix-wage-step', 'labor_wageStep', 5);
+  readStr('sel-metrix-q35-emp-change', 'q35_empChange');
+  readStr('sel-metrix-q43-4-mode', 'q43_4_continueReasonMode');
+  readStr('sel-metrix-q44-mode', 'q44_investPlanMode');
+  readStr('sel-metrix-q60-rule', 'q60_awarenessRule');
+  readStr('sel-metrix-q66-1-mode', 'q66_1_otherOrgRouteMode');
+  readStr('sel-metrix-q67-mode', 'q67_desiredSupportMode');
+  readStr('sel-metrix-support-rank3', 'desired_support_rank3');
+  readStr('sel-metrix-q68-mode', 'q68_policyIssueMode');
+  readStr('sel-metrix-issue-rank1', 'policy_issue_rank1');
+  readStr('sel-metrix-issue-rank2', 'policy_issue_rank2');
+  readStr('sel-metrix-issue-rank3', 'policy_issue_rank3');
+  readStr('sel-metrix-q69-mfg-rule', 'q69_mfgAddRule');
+  readStr('sel-metrix-check1-upload-mode', 'check1_photoUploadMode');
+
   // 11. 업종별 가이드 체크 상태 및 현재 선택된 업종 탭 편집값 동기화
   if (!metrixPolicyState.industryPolicies || typeof metrixPolicyState.industryPolicies !== 'object') {
     metrixPolicyState.industryPolicies = JSON.parse(JSON.stringify(DEFAULT_METRIX_INDUSTRY_POLICIES));
@@ -945,6 +989,39 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
     metrixPolicyState.evidence_sign_image = 'data/sample_metrix_sign.png';
   }
 
+  // 9-B. 경기도 3차 본조사 문항별 정밀 가이드 제어판 기본값 (문10 ~ 문69 · CHECK1 사진 미업로드)
+  if (!metrixPolicyState.q10_fundMgmtMode) metrixPolicyState.q10_fundMgmtMode = 'random';
+  if (!metrixPolicyState.q12_1_evalReasonMode) metrixPolicyState.q12_1_evalReasonMode = 'random';
+  if (!metrixPolicyState.q16_1_leaseSource) metrixPolicyState.q16_1_leaseSource = 'excel_first';
+  if (!metrixPolicyState.q17_goodwillRangeMode) metrixPolicyState.q17_goodwillRangeMode = 'range';
+  if (metrixPolicyState.goodwill_min === undefined) metrixPolicyState.goodwill_min = 1000;
+  if (metrixPolicyState.goodwill_max === undefined) metrixPolicyState.goodwill_max = 5000;
+  if (metrixPolicyState.goodwill_step === undefined) metrixPolicyState.goodwill_step = 500;
+  if (!metrixPolicyState.q21_femaleDiffMode) metrixPolicyState.q21_femaleDiffMode = 'random';
+  if (!metrixPolicyState.q22_hardshipMode) metrixPolicyState.q22_hardshipMode = 'random';
+  if (!metrixPolicyState.q23_climateImpact) metrixPolicyState.q23_climateImpact = '2';
+  if (!metrixPolicyState.q24_competitivenessMode) metrixPolicyState.q24_competitivenessMode = 'random';
+  if (!metrixPolicyState.q25_otherIncome) metrixPolicyState.q25_otherIncome = '2';
+  if (!metrixPolicyState.q26_onlineRule) metrixPolicyState.q26_onlineRule = 'food_only_yes';
+  if (!metrixPolicyState.q26_1_foodChannel) metrixPolicyState.q26_1_foodChannel = '3';
+  if (!metrixPolicyState.q34_wageRangeMode) metrixPolicyState.q34_wageRangeMode = 'range';
+  if (metrixPolicyState.labor_wageMin === undefined) metrixPolicyState.labor_wageMin = 240;
+  if (metrixPolicyState.labor_wageMax === undefined) metrixPolicyState.labor_wageMax = 320;
+  if (metrixPolicyState.labor_wageStep === undefined) metrixPolicyState.labor_wageStep = 5;
+  if (!metrixPolicyState.q35_empChange) metrixPolicyState.q35_empChange = '2';
+  if (!metrixPolicyState.q43_4_continueReasonMode) metrixPolicyState.q43_4_continueReasonMode = 'random';
+  if (!metrixPolicyState.q44_investPlanMode) metrixPolicyState.q44_investPlanMode = 'random';
+  if (!metrixPolicyState.q60_awarenessRule) metrixPolicyState.q60_awarenessRule = 'guarantee_sync';
+  if (!metrixPolicyState.q66_1_otherOrgRouteMode) metrixPolicyState.q66_1_otherOrgRouteMode = 'random';
+  if (!metrixPolicyState.q67_desiredSupportMode) metrixPolicyState.q67_desiredSupportMode = 'random';
+  if (!metrixPolicyState.desired_support_rank3) metrixPolicyState.desired_support_rank3 = '9';
+  if (!metrixPolicyState.q68_policyIssueMode) metrixPolicyState.q68_policyIssueMode = 'random';
+  if (!metrixPolicyState.policy_issue_rank1) metrixPolicyState.policy_issue_rank1 = '6';
+  if (!metrixPolicyState.policy_issue_rank2) metrixPolicyState.policy_issue_rank2 = '8';
+  if (!metrixPolicyState.policy_issue_rank3) metrixPolicyState.policy_issue_rank3 = '5';
+  if (!metrixPolicyState.q69_mfgAddRule) metrixPolicyState.q69_mfgAddRule = 'all_no';
+  if (!metrixPolicyState.check1_photoUploadMode) metrixPolicyState.check1_photoUploadMode = 'skip_upload';
+
   const bpSection = document.getElementById('section-master-blueprint');
   if (bpSection) {
     bpSection.classList.remove('hidden');
@@ -995,13 +1072,13 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
   if (subtitleEl) {
     subtitleEl.textContent = isSeoulPanel
       ? '4차년도 서버 기주입값 100% 보존 + C3(2026년 세부 비용 4항목 정합성 자동 산출) + 5차 신규 문항(M 위기대응 · N AI/디지털 · O 탄소중립) + svyA115.asp(99%) 안전 대기 및 구글 스프레드시트(시트2) 실시간 동기화를 설정합니다.'
-      : '1) 사업자번호 기반 폐업 리스트 자동 제외, 2) [컨택] 팝업 휴대폰 번호를 엑셀 데이터로 변경·[저장] 후 [설문참여], 3) 8대 업종별 맞춤 가이드 체크 및 120단계(Step 119 98% 안전 대기) 기준점을 설정합니다.';
+      : '1) 사업자번호 기반 폐업 리스트 자동 제외, 2) [컨택] 팝업 휴대폰 번호를 엑셀 데이터로 변경·[저장] 후 [설문참여], 3) 8대 업종별 맞춤 가이드 및 문항별 정밀 응답 가이드(문10~문69 · CHECK1 미업로드)를 설정합니다.';
   }
 
   if (badgeMasterStatus) {
     badgeMasterStatus.innerHTML = isSeoulPanel
       ? '<i class="fa-solid fa-shield-halved"></i> 서울시 패널 5차 115단계 블루프린트 활성 (svyA115 99% 안전 대기 &amp; 구글시트 자동 기록)'
-      : '<i class="fa-solid fa-circle-check"></i> 경기도 소상공인 패널 3계정(171건) · 8대 업종별 가이드 &amp; 컨택 휴대폰 저장 연동 활성';
+      : '<i class="fa-solid fa-circle-check"></i> 경기도 소상공인 패널 3계정(171건) · 문항별 정밀 가이드 &amp; 엑셀 보증금·월세 연동 활성';
     badgeMasterStatus.className = 'badge-status badge-blueprint ready';
   }
 
@@ -1028,7 +1105,7 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
           <span class="blueprint-step-pill assoc-rule-pill"><i class="fa-solid fa-shield-halved"></i> 핵심 실행 원칙</span>
           <h3 class="blueprint-stage-title">${isSeoulPanel
             ? 'svyA115.asp (99% 동의서) 절대 안전 대기 · 4차년도 서버 기주입값 보존 · 구글 스프레드시트(시트2) 자동 기록'
-            : '사업자번호 폐업 제외 · [컨택] 팝업 휴대폰 변경·[저장] ➔ [설문참여] · 8대 업종별 가이드 · 98% 안전 대기'}</h3>
+            : '사업자번호 폐업 제외 · [컨택] 팝업 휴대폰 변경·[저장] ➔ [설문참여] · 문항별 정밀 가이드 · 98% 안전 대기'}</h3>
         </div>
         <div class="blueprint-card-badge-group">
           <span class="badge-status ready"><i class="fa-solid fa-database"></i> ${isSeoulPanel ? '2010 송준희(74) + 2016 정소영(89) 총 163건 연동' : '강영미(54) + 김정례(55) + 노영미(62) 총 171건 연동'}</span>
@@ -1037,7 +1114,7 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
       <div class="blueprint-stage-desc">
         ${isSeoulPanel
           ? '2026년 서울시 소상공인 사업체 패널조사(5차)는 <strong>절대 완료(Out.asp) 처리하지 않고</strong> <code>svyA115.asp</code>(개인정보 및 패널 참여 동의서 99%) 화면에서 무조건 정지합니다. 서버가 4차년도 응답값으로 미리 채워둔 문항(개업년도·업종·매출/비용·종사자 등)은 100% 보존하며, 각 사업체의 전체 문항 응답 내역을 <strong>구글 스프레드시트(시트2, gid=506086780)</strong>에 실시간으로 기록합니다.'
-          : '1) 쿼터 데이터의 <strong>사업자번호</strong>를 조회하여 <strong>폐업인 리스트는 설문 입력에서 자동 제외</strong>합니다. 2) 메트릭스 설문목록(<code>SNUM=622</code>)에서 <strong>[컨택]</strong> 버튼을 눌러 상세 내용의 <strong>휴대폰</strong> 항목을 구글 스프레드시트 번호로 변경하고 <strong>[저장]</strong>한 뒤 <strong>[설문참여]</strong>를 눌러 시작합니다. 3) 2차년도 패널 실측치(<code>rawMeta</code>)와 <strong>업종별 맞춤 가이드</strong>를 결합하여 Step 119(98%)까지 안전 진행합니다.'}
+          : '1) 쿼터 데이터의 <strong>사업자번호</strong>를 조회하여 <strong>폐업인 리스트는 설문 입력에서 자동 제외</strong>합니다. 2) 메트릭스 설문목록(<code>SNUM=622</code>)에서 <strong>[컨택]</strong> 버튼을 눌러 상세 내용의 <strong>휴대폰</strong> 항목을 구글 스프레드시트 번호로 변경하고 <strong>[저장]</strong>한 뒤 <strong>[설문참여]</strong>를 눌러 시작합니다. 3) <strong>엑셀 보증금·월세 자동 연동</strong> 및 <strong>문10~문69 문항별 가이드 규칙</strong>을 반영하며, 사진 문항(CHECK1)은 업로드 없이 통과 후 Step 119(98%)에서 안전 대기합니다.'}
       </div>
       <div class="p-14" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
         ${!isSeoulPanel ? `
@@ -1083,7 +1160,7 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
               <div class="assoc-rule-desc">
                 ${isSeoulPanel
                   ? 'A~O 전 문항 응답 후 svyA115.asp(99%)에 도달하면 [다음]을 누르지 않고 즉시 정지하여 절대 완료(Out.asp)되지 않도록 원천 보호합니다.'
-                  : '동의서(2중 전자서명) 및 CHECK1 간판사진 업로드까지 완료 후, Step 119 참여혜택 화면(98%)에서 정지하여 검토 가능 상태를 보존합니다.'}
+                  : '동의서(2중 전자서명) 및 CHECK1 통과 후, Step 119 참여혜택 화면(98%)에서 즉시 정지하여 검토 가능 상태를 보존합니다.'}
               </div>
             </div>
           </label>
@@ -1096,7 +1173,7 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
               <div class="assoc-rule-desc">
                 ${isSeoulPanel
                   ? '서버가 주입한 2025년/2026년 영업비용 총액(C3_2_4)에 맞춰 2026년 세부 비용 4항목(원재료비·임차료·공과금·수수료)을 오차 0원으로 자동 산출합니다.'
-                  : '쿼터 DB 내 AA1~AA15(일반현황) 및 M8~M62(전년도 매출·임차료·종사자·급여) 값을 기본 베이스로 삼고 아래 설정 추세를 반영합니다.'}
+                  : '쿼터 DB 내 AA1~AA15(일반현황) 및 M8~M62 값을 기본 베이스로 삼되, 아래 문항별 정밀 가이드 설정이 지정된 문항은 가이드 규칙을 우선 적용합니다.'}
               </div>
             </div>
           </label>
@@ -1105,9 +1182,9 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
           <label class="assoc-rule-item">
             <input type="checkbox" id="cb-metrix-preserve-inputs" class="assoc-rule-cb" ${metrixPolicyState.preserveExistingInputs !== false ? 'checked' : ''} />
             <div>
-              <strong class="assoc-rule-title">기입력된 설문 항목 100% 보존</strong>
+              <strong class="assoc-rule-title">기입력된 설문 항목 보존 (가이드 지정 문항 제외)</strong>
               <div class="assoc-rule-desc">
-                설문 화면에 이미 선택된 라디오·우선순위(objT31)·합계 숫자·텍스트는 절대 덮어쓰지 않고 그대로 보존합니다.
+                일반 문항의 기입력값은 보존하며, 아래 문항별 정밀 가이드(랜덤·범위·엑셀 연동 등)가 설정된 문항은 설정된 가이드 규칙대로 정확히 응답합니다.
               </div>
             </div>
           </label>
@@ -1170,6 +1247,290 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
               <i class="fa-solid fa-wand-magic-sparkles"></i> STEP 1 체크된 사업체에 이 업종 가이드 배정·저장
             </button>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 카드 0-2: [3차 본조사 문항별 응답 규칙 가이드 제어판 — 파일럿 검수 20개 규칙 전수 설정] (전폭) -->
+    <section class="blueprint-card full-width-card" id="metrix-pilot-rules-card" style="grid-column: 1 / -1; width: 100%; border: 1.5px solid rgba(52,211,153,0.45);">
+      <div class="blueprint-card-header">
+        <div class="blueprint-card-title-group">
+          <span class="blueprint-step-pill" style="background:rgba(52,211,153,0.18); color:#34d399;"><i class="fa-solid fa-sliders"></i> 문항별 정밀 가이드</span>
+          <h3 class="blueprint-stage-title">[3차 본조사 문항별 응답 가이드 제어판] 문10 ~ 문69 · 제조업 추가문항 · 사진 미업로드 (전 업종 공통 제어)</h3>
+        </div>
+        <div class="blueprint-card-badge-group">
+          <span class="badge-status ready"><i class="fa-solid fa-check-circle"></i> 파일럿 검수 20개 문항 규칙 직접 설정 가능</span>
+        </div>
+      </div>
+      <div class="blueprint-stage-desc">
+        경기도 3차 본조사 실제 문항번호(<code>Q10</code>~<code>Q69</code>, <code>CHECK1</code>) 기준으로 랜덤·범위(단위)·엑셀 연동·업종/보증지원 조건부 규칙을 직접 변경하고 상단 <strong>[경기도 패널 업종별 가이드 &amp; 기준점 저장]</strong> 버튼으로 저장할 수 있습니다.
+      </div>
+      <div class="p-14" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px;">
+        <!-- 1. 문10 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문10 사업자금·가계자금 분리 관리 여부</label>
+          <select id="sel-metrix-q10-mode" class="figma-select w-full">
+            <option value="random" ${metrixPolicyState.q10_fundMgmtMode === 'random' ? 'selected' : ''}>🎲 랜덤 응답 (1~3번 무작위 · 2·3번 시 문10-1 자동연동) [기본]</option>
+            <option value="1" ${metrixPolicyState.q10_fundMgmtMode === '1' ? 'selected' : ''}>1. 철저히 분리하여 관리</option>
+            <option value="2" ${metrixPolicyState.q10_fundMgmtMode === '2' ? 'selected' : ''}>2. 대체로 분리하지만, 일부 혼용</option>
+            <option value="3" ${metrixPolicyState.q10_fundMgmtMode === '3' ? 'selected' : ''}>3. 구분하지 않음</option>
+            <option value="panel" ${metrixPolicyState.q10_fundMgmtMode === 'panel' ? 'selected' : ''}>2차패널(M10) 값 유지</option>
+          </select>
+        </div>
+
+        <!-- 2. 문12-1 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문12-1 전반적 경영실적 판단 이유 (1·2순위)</label>
+          <select id="sel-metrix-q12-1-mode" class="figma-select w-full">
+            <option value="random" ${metrixPolicyState.q12_1_evalReasonMode === 'random' ? 'selected' : ''}>🎲 랜덤 응답 (1~7번 중 1·2순위 무작위, 기타 제외) [기본]</option>
+            <option value="fixed" ${metrixPolicyState.q12_1_evalReasonMode === 'fixed' ? 'selected' : ''}>파트 C 지정 순위(1순위·2순위) 고정 적용</option>
+          </select>
+        </div>
+
+        <!-- 3. 문16-1 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(56,189,248,0.35);">
+          <label class="figma-label font-bold" style="color:#38bdf8;">문16-1 임차 사업장 보증금 · 월세 입력 기준</label>
+          <select id="sel-metrix-q16-1-source" class="figma-select w-full">
+            <option value="excel_first" ${metrixPolicyState.q16_1_leaseSource === 'excel_first' ? 'selected' : ''}>📊 엑셀(구글 시트) [보증금]·[월세] 값으로 정확히 입력 [기본]</option>
+            <option value="panel_first" ${metrixPolicyState.q16_1_leaseSource === 'panel_first' ? 'selected' : ''}>2차패널(M16-1) 값 우선 · 미존재 시 엑셀 값</option>
+            <option value="fixed" ${metrixPolicyState.q16_1_leaseSource === 'fixed' ? 'selected' : ''}>파트 E 보증금·월세 기본값 고정 입력</option>
+          </select>
+        </div>
+
+        <!-- 4. 문17 / 문17-1 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(56,189,248,0.35);">
+          <label class="figma-label font-bold" style="color:#38bdf8;">문17 권리금 금액 범위 설정 (만원 · 단위)</label>
+          <select id="sel-metrix-q17-range-mode" class="figma-select w-full mb-6">
+            <option value="range" ${metrixPolicyState.q17_goodwillRangeMode === 'range' ? 'selected' : ''}>🎯 범위 랜덤 (기본 1000~5000만원, 500만원 단위) [기본]</option>
+            <option value="fixed" ${metrixPolicyState.q17_goodwillRangeMode === 'fixed' ? 'selected' : ''}>파트 E 고정 금액(문17-1 기본값) 사용</option>
+            <option value="panel" ${metrixPolicyState.q17_goodwillRangeMode === 'panel' ? 'selected' : ''}>2차패널(M17-1) 값 유지</option>
+          </select>
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
+            <div>
+              <span class="font-caption text-dim">최소(만원)</span>
+              <input type="number" id="num-metrix-goodwill-min" class="figma-input w-full" min="0" step="100" value="${metrixPolicyState.goodwill_min}" />
+            </div>
+            <div>
+              <span class="font-caption text-dim">최대(만원)</span>
+              <input type="number" id="num-metrix-goodwill-max" class="figma-input w-full" min="0" step="100" value="${metrixPolicyState.goodwill_max}" />
+            </div>
+            <div>
+              <span class="font-caption text-dim">단위(만원)</span>
+              <input type="number" id="num-metrix-goodwill-step" class="figma-input w-full" min="50" step="50" value="${metrixPolicyState.goodwill_step}" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. 문21 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문21 여성 대표자 사업 운영 애로사항 (복수)</label>
+          <select id="sel-metrix-q21-mode" class="figma-select w-full">
+            <option value="random" ${metrixPolicyState.q21_femaleDiffMode === 'random' ? 'selected' : ''}>🎲 랜덤 응답 (1~5번 중 1~2개 무작위, 기타 제외) [기본]</option>
+            <option value="5" ${metrixPolicyState.q21_femaleDiffMode === '5' ? 'selected' : ''}>5. 가족·돌봄 부담 등으로 시간 확보 어려움 고정</option>
+            <option value="2" ${metrixPolicyState.q21_femaleDiffMode === '2' ? 'selected' : ''}>2. 금융기관 자금조달 과정에서 불리한 대우 고정</option>
+            <option value="panel" ${metrixPolicyState.q21_femaleDiffMode === 'panel' ? 'selected' : ''}>2차패널(M21) 값 유지</option>
+          </select>
+        </div>
+
+        <!-- 6. 문22 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문22 경영상 가장 큰 애로사항 (1·2순위)</label>
+          <select id="sel-metrix-q22-mode" class="figma-select w-full">
+            <option value="random" ${metrixPolicyState.q22_hardshipMode === 'random' ? 'selected' : ''}>🎲 랜덤 응답 (1~8번 중 1·2순위 무작위, 기타 제외) [기본]</option>
+            <option value="fixed" ${metrixPolicyState.q22_hardshipMode === 'fixed' ? 'selected' : ''}>업종별 지정 애로사항 1·2순위 고정 적용</option>
+          </select>
+        </div>
+
+        <!-- 7. 문23 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문23 기후변화(폭염·폭우·한파 등) 경영상 피해</label>
+          <select id="sel-metrix-q23-climate" class="figma-select w-full">
+            <option value="2" ${metrixPolicyState.q23_climateImpact === '2' ? 'selected' : ''}>✅ 2. 없음 100% 고정 (하위 문23-1 스킵) [기본]</option>
+            <option value="1" ${metrixPolicyState.q23_climateImpact === '1' ? 'selected' : ''}>1. 있음</option>
+            <option value="random" ${metrixPolicyState.q23_climateImpact === 'random' ? 'selected' : ''}>랜덤 응답 (1·2번 무작위)</option>
+          </select>
+        </div>
+
+        <!-- 8. 문24 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문24 사업 경쟁력 강화를 위한 노력 (복수)</label>
+          <select id="sel-metrix-q24-mode" class="figma-select w-full">
+            <option value="random" ${metrixPolicyState.q24_competitivenessMode === 'random' ? 'selected' : ''}>🎲 랜덤 응답 (1~7번 중 1~2개 무작위, 기타 제외) [기본]</option>
+            <option value="fixed_3_6" ${metrixPolicyState.q24_competitivenessMode === 'fixed_3_6' ? 'selected' : ''}>3. 품질 개선 + 6. 고객 서비스 개선 고정</option>
+            <option value="panel" ${metrixPolicyState.q24_competitivenessMode === 'panel' ? 'selected' : ''}>2차패널(M24) 값 유지</option>
+          </select>
+        </div>
+
+        <!-- 9. 문25 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문25 사업 외 별도 근로/기타 소득 유무</label>
+          <select id="sel-metrix-q25-income" class="figma-select w-full">
+            <option value="2" ${metrixPolicyState.q25_otherIncome === '2' ? 'selected' : ''}>✅ 2. 없음 100% 고정 (하위 문25-1 스킵) [기본]</option>
+            <option value="1" ${metrixPolicyState.q25_otherIncome === '1' ? 'selected' : ''}>1. 있음</option>
+            <option value="panel" ${metrixPolicyState.q25_otherIncome === 'panel' ? 'selected' : ''}>2차패널(M25) 값 유지</option>
+          </select>
+        </div>
+
+        <!-- 10. 문26 & 문26-1 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(56,189,248,0.35);">
+          <label class="figma-label font-bold" style="color:#38bdf8;">문26 · 문26-1 온라인/배달 플랫폼 판매 규칙</label>
+          <select id="sel-metrix-q26-rule" class="figma-select w-full mb-6">
+            <option value="food_only_yes" ${metrixPolicyState.q26_onlineRule === 'food_only_yes' ? 'selected' : ''}>🍽️ [문26] 5.음식 및 주점업만 1번(예), 그 외 업종은 2번(아니오) [기본]</option>
+            <option value="2" ${metrixPolicyState.q26_onlineRule === '2' ? 'selected' : ''}>전체 업종 2번(아니오) 고정</option>
+            <option value="1" ${metrixPolicyState.q26_onlineRule === '1' ? 'selected' : ''}>전체 업종 1번(예) 고정</option>
+            <option value="panel" ${metrixPolicyState.q26_onlineRule === 'panel' ? 'selected' : ''}>2차패널(M26) 값 유지</option>
+          </select>
+          <div>
+            <span class="font-caption text-dim">문26-1 음식·주점업(예 응답 시) 온라인 판매 채널</span>
+            <select id="sel-metrix-q26-1-channel" class="figma-select w-full">
+              <option value="3" ${metrixPolicyState.q26_1_foodChannel === '3' ? 'selected' : ''}>🛵 3. 배달앱/음식주문 플랫폼 (배민·요기요·쿠팡이츠) [기본]</option>
+              <option value="3_4" ${metrixPolicyState.q26_1_foodChannel === '3_4' ? 'selected' : ''}>3. 배달앱 + 4. 지역형/공공 배달앱(땡겨요 등)</option>
+              <option value="2" ${metrixPolicyState.q26_1_foodChannel === '2' ? 'selected' : ''}>2. 종합 온라인마켓/오픈마켓</option>
+              <option value="random" ${metrixPolicyState.q26_1_foodChannel === 'random' ? 'selected' : ''}>1~5번 중 랜덤</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 11. 문34 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(56,189,248,0.35);">
+          <label class="figma-label font-bold" style="color:#38bdf8;">문34 근로자 월평균 급여 범위 설정 (만원 · 단위)</label>
+          <select id="sel-metrix-q34-range-mode" class="figma-select w-full mb-6">
+            <option value="range" ${metrixPolicyState.q34_wageRangeMode === 'range' ? 'selected' : ''}>🎯 범위 랜덤 (기본 240~320만원, 5만원 단위) [기본]</option>
+            <option value="fixed" ${metrixPolicyState.q34_wageRangeMode === 'fixed' ? 'selected' : ''}>파트 G 고정 급여(문34 기본값) 사용</option>
+            <option value="panel" ${metrixPolicyState.q34_wageRangeMode === 'panel' ? 'selected' : ''}>2차패널(M34) 값 유지</option>
+          </select>
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
+            <div>
+              <span class="font-caption text-dim">최소(만원)</span>
+              <input type="number" id="num-metrix-wage-min" class="figma-input w-full" min="50" step="5" value="${metrixPolicyState.labor_wageMin}" />
+            </div>
+            <div>
+              <span class="font-caption text-dim">최대(만원)</span>
+              <input type="number" id="num-metrix-wage-max" class="figma-input w-full" min="50" step="5" value="${metrixPolicyState.labor_wageMax}" />
+            </div>
+            <div>
+              <span class="font-caption text-dim">단위(만원)</span>
+              <input type="number" id="num-metrix-wage-step" class="figma-input w-full" min="1" step="1" value="${metrixPolicyState.labor_wageStep}" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 12. 문35 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문35 전년 대비 종사자 수 변동 여부</label>
+          <select id="sel-metrix-q35-emp-change" class="figma-select w-full">
+            <option value="2" ${metrixPolicyState.q35_empChange === '2' ? 'selected' : ''}>✅ 2. 변동 없음 100% 고정 (하위 문35-1 스킵) [기본]</option>
+            <option value="1" ${metrixPolicyState.q35_empChange === '1' ? 'selected' : ''}>1. 증가함</option>
+            <option value="3" ${metrixPolicyState.q35_empChange === '3' ? 'selected' : ''}>3. 감소함</option>
+            <option value="random" ${metrixPolicyState.q35_empChange === 'random' ? 'selected' : ''}>랜덤 응답 (1~3번 무작위)</option>
+          </select>
+        </div>
+
+        <!-- 13. 문43-4 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문43-4 사업 계속 운영 이유 (1·2순위)</label>
+          <select id="sel-metrix-q43-4-mode" class="figma-select w-full">
+            <option value="random" ${metrixPolicyState.q43_4_continueReasonMode === 'random' ? 'selected' : ''}>🎲 랜덤 응답 (1~5번 중 1·2순위 무작위, 기타 제외) [기본]</option>
+            <option value="fixed" ${metrixPolicyState.q43_4_continueReasonMode === 'fixed' ? 'selected' : ''}>1순위 매출·영업이익 양호 / 2순위 경기회복 기대 고정</option>
+          </select>
+        </div>
+
+        <!-- 14. 문44 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문44 향후 1년 내 투자·사업 확장 계획</label>
+          <select id="sel-metrix-q44-mode" class="figma-select w-full">
+            <option value="random" ${metrixPolicyState.q44_investPlanMode === 'random' ? 'selected' : ''}>🎲 랜덤 응답 (1번 계획없음 단독 또는 2~8번 중 무작위) [기본]</option>
+            <option value="random_active" ${metrixPolicyState.q44_investPlanMode === 'random_active' ? 'selected' : ''}>2~8번 투자·확장 항목 중 랜덤 (1번 제외)</option>
+            <option value="1_none" ${metrixPolicyState.q44_investPlanMode === '1_none' ? 'selected' : ''}>1. 투자/확장 계획 없음 100% 고정</option>
+          </select>
+        </div>
+
+        <!-- 15. 문60 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(56,189,248,0.35);">
+          <label class="figma-label font-bold" style="color:#38bdf8;">문60 경기신용보증재단 인지도 (보증지원 O/X 연동)</label>
+          <select id="sel-metrix-q60-rule" class="figma-select w-full">
+            <option value="guarantee_sync" ${metrixPolicyState.q60_awarenessRule === 'guarantee_sync' ? 'selected' : ''}>🛡️ 보증지원 O 업체 ➔ 3, 4번 랜덤 / 그 외(X) ➔ 1, 2번 랜덤 [기본]</option>
+            <option value="random_all" ${metrixPolicyState.q60_awarenessRule === 'random_all' ? 'selected' : ''}>보증지원 무관 1~4번 전체 랜덤</option>
+            <option value="3" ${metrixPolicyState.q60_awarenessRule === '3' ? 'selected' : ''}>전체 3. 어느 정도 알고 있다 고정</option>
+            <option value="2" ${metrixPolicyState.q60_awarenessRule === '2' ? 'selected' : ''}>전체 2. 거의 모른다 고정</option>
+          </select>
+        </div>
+
+        <!-- 16. 문66-1 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문66-1 타 기관 소상공인 지원사업 인지 경로</label>
+          <select id="sel-metrix-q66-1-mode" class="figma-select w-full">
+            <option value="random" ${metrixPolicyState.q66_1_otherOrgRouteMode === 'random' ? 'selected' : ''}>🎲 랜덤 응답 (1~7번 중 무작위 선택, 기타 제외) [기본]</option>
+            <option value="1" ${metrixPolicyState.q66_1_otherOrgRouteMode === '1' ? 'selected' : ''}>1. 홈페이지(정부부처, 경기도 등) 고정</option>
+            <option value="2" ${metrixPolicyState.q66_1_otherOrgRouteMode === '2' ? 'selected' : ''}>2. 주변 사람 소개 고정</option>
+            <option value="5" ${metrixPolicyState.q66_1_otherOrgRouteMode === '5' ? 'selected' : ''}>5. 온라인 광고(SNS, 블로그 등) 고정</option>
+          </select>
+        </div>
+
+        <!-- 17. 문67 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문67 가장 필요한 경기도 지원사업 (1·2·3순위)</label>
+          <select id="sel-metrix-q67-mode" class="figma-select w-full mb-6">
+            <option value="random" ${metrixPolicyState.q67_desiredSupportMode === 'random' ? 'selected' : ''}>🎲 랜덤 응답 (1~10번 중 1·2·3순위 무작위, 기타 제외) [기본]</option>
+            <option value="fixed" ${metrixPolicyState.q67_desiredSupportMode === 'fixed' ? 'selected' : ''}>파트 H 지정 1·2순위 + 아래 3순위 고정 적용</option>
+          </select>
+          <div>
+            <span class="font-caption text-dim">고정 모드 시 3순위 지원사업</span>
+            <select id="sel-metrix-support-rank3" class="figma-select w-full">
+              <option value="9" ${metrixPolicyState.desired_support_rank3 === '9' ? 'selected' : ''}>9. 금융지원</option>
+              <option value="10" ${metrixPolicyState.desired_support_rank3 === '10' ? 'selected' : ''}>10. 세제지원</option>
+              <option value="5" ${metrixPolicyState.desired_support_rank3 === '5' ? 'selected' : ''}>5. 점포개선</option>
+              <option value="4" ${metrixPolicyState.desired_support_rank3 === '4' ? 'selected' : ''}>4. 디지털전환</option>
+              <option value="8" ${metrixPolicyState.desired_support_rank3 === '8' ? 'selected' : ''}>8. 고용지원</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 18. 문68 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(148,163,184,0.2);">
+          <label class="figma-label font-bold" style="color:#34d399;">문68 경영 영향 주요 정책·환경 이슈 (1·2·3순위)</label>
+          <select id="sel-metrix-q68-mode" class="figma-select w-full mb-6">
+            <option value="random" ${metrixPolicyState.q68_policyIssueMode === 'random' ? 'selected' : ''}>🎲 랜덤 응답 (1~11번 중 1·2·3순위 무작위, 기타 제외) [기본]</option>
+            <option value="fixed" ${metrixPolicyState.q68_policyIssueMode === 'fixed' ? 'selected' : ''}>아래 지정 1·2·3순위 고정 적용</option>
+          </select>
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
+            <select id="sel-metrix-issue-rank1" class="figma-select w-full" title="문68 고정 시 1순위">
+              <option value="6" ${metrixPolicyState.policy_issue_rank1 === '6' ? 'selected' : ''}>1순위: 6.최저임금</option>
+              <option value="8" ${metrixPolicyState.policy_issue_rank1 === '8' ? 'selected' : ''}>1순위: 8.임대료</option>
+              <option value="4" ${metrixPolicyState.policy_issue_rank1 === '4' ? 'selected' : ''}>1순위: 4.금리인상</option>
+              <option value="5" ${metrixPolicyState.policy_issue_rank1 === '5' ? 'selected' : ''}>1순위: 5.고유가</option>
+            </select>
+            <select id="sel-metrix-issue-rank2" class="figma-select w-full" title="문68 고정 시 2순위">
+              <option value="8" ${metrixPolicyState.policy_issue_rank2 === '8' ? 'selected' : ''}>2순위: 8.임대료</option>
+              <option value="6" ${metrixPolicyState.policy_issue_rank2 === '6' ? 'selected' : ''}>2순위: 6.최저임금</option>
+              <option value="9" ${metrixPolicyState.policy_issue_rank2 === '9' ? 'selected' : ''}>2순위: 9.상권쇠퇴</option>
+              <option value="10" ${metrixPolicyState.policy_issue_rank2 === '10' ? 'selected' : ''}>2순위: 10.유통변화</option>
+            </select>
+            <select id="sel-metrix-issue-rank3" class="figma-select w-full" title="문68 고정 시 3순위">
+              <option value="5" ${metrixPolicyState.policy_issue_rank3 === '5' ? 'selected' : ''}>3순위: 5.고유가</option>
+              <option value="4" ${metrixPolicyState.policy_issue_rank3 === '4' ? 'selected' : ''}>3순위: 4.금리인상</option>
+              <option value="9" ${metrixPolicyState.policy_issue_rank3 === '9' ? 'selected' : ''}>3순위: 9.상권쇠퇴</option>
+              <option value="7" ${metrixPolicyState.policy_issue_rank3 === '7' ? 'selected' : ''}>3순위: 7.인구감소</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 19. 문69 (제조업 추가문항) -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(250,204,21,0.35);">
+          <label class="figma-label font-bold" style="color:#facc15;">문69~ [1.제조업 전용] 추가문항 응답 규칙</label>
+          <select id="sel-metrix-q69-mfg-rule" class="figma-select w-full">
+            <option value="all_no" ${metrixPolicyState.q69_mfgAddRule === 'all_no' ? 'selected' : ''}>🏭 모두 '아니오 / 없음' 응답 (문69·70·71·72·83·90·92 일괄 아니오) [기본]</option>
+            <option value="panel_or_custom" ${metrixPolicyState.q69_mfgAddRule === 'panel_or_custom' ? 'selected' : ''}>일반 기본 응답 로직 적용</option>
+          </select>
+        </div>
+
+        <!-- 20. CHECK1 사진 업로드 문항 -->
+        <div style="padding:10px 12px; border-radius:8px; background:rgba(15,23,42,0.55); border:1px solid rgba(248,113,113,0.4);">
+          <label class="figma-label font-bold" style="color:#f87171;">CHECK1 간판·명함 사진 넣는 문항 처리 방식</label>
+          <select id="sel-metrix-check1-upload-mode" class="figma-select w-full">
+            <option value="skip_upload" ${metrixPolicyState.check1_photoUploadMode === 'skip_upload' ? 'selected' : ''}>🚫 아무것도 업로드하지 말고 바로 [다음] 누르기 [기본]</option>
+            <option value="upload_sample" ${metrixPolicyState.check1_photoUploadMode === 'upload_sample' ? 'selected' : ''}>견본 이미지(sample_metrix_sign.png) 업로드 후 [다음] 누르기</option>
+          </select>
         </div>
       </div>
     </section>
@@ -1826,7 +2187,7 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
         </div>
       </div>
       <div class="blueprint-stage-desc">
-        문50~문62 경기도/정부 소상공인 지원정책 수혜 여부, 문50~문66 5점 척도 만족도 가중치, 문67 향후 경기도 최우선 확대 희망 지원사업 1·2순위를 설정합니다.
+        문50~문62 경기도/정부 소상공인 지원정책 수혜 여부, 문50~문66 5점 척도 만족도 가중치, 문67 향후 경기도 최우선 확대 희망 지원사업(상단 제어판에서 무작위 1~3순위 기본 적용 · 고정 모드 시 아래 순위 참조)을 설정합니다.
       </div>
       <div class="p-14">
         <div class="qb-grid-2col mb-10">
@@ -1849,7 +2210,7 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
         </div>
         <div class="qb-grid-2col">
           <div>
-            <label class="figma-label font-bold">문67 경기도 최우선 희망 지원정책 (1순위)</label>
+            <label class="figma-label font-bold">문67 고정 모드용 1순위 (랜덤 모드 시 자동 무작위)</label>
             <select id="sel-metrix-support-rank1" class="figma-select w-full">
               <option value="1" ${metrixPolicyState.desired_support_rank1 === '1' ? 'selected' : ''}>1. 자금지원 (저금리 대출·특례보증 확대 - 기본값)</option>
               <option value="2" ${metrixPolicyState.desired_support_rank1 === '2' ? 'selected' : ''}>2. 경영환경개선 (점포 시설개보수·간판·위생)</option>
@@ -1859,10 +2220,12 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
               <option value="6" ${metrixPolicyState.desired_support_rank1 === '6' ? 'selected' : ''}>6. 공공요금·임차료·대출이자 차액 보전 지원</option>
               <option value="7" ${metrixPolicyState.desired_support_rank1 === '7' ? 'selected' : ''}>7. 인력 채용 및 인건비·4대보험료 지원</option>
               <option value="8" ${metrixPolicyState.desired_support_rank1 === '8' ? 'selected' : ''}>8. 폐업·업종전환·재창업 안전망 지원</option>
+              <option value="9" ${metrixPolicyState.desired_support_rank1 === '9' ? 'selected' : ''}>9. 협업화·조직화 지원</option>
+              <option value="10" ${metrixPolicyState.desired_support_rank1 === '10' ? 'selected' : ''}>10. 디지털 전환 지원</option>
             </select>
           </div>
           <div>
-            <label class="figma-label font-bold">문67 경기도 최우선 희망 지원정책 (2순위)</label>
+            <label class="figma-label font-bold">문67 고정 모드용 2순위 (랜덤 모드 시 자동 무작위)</label>
             <select id="sel-metrix-support-rank2" class="figma-select w-full">
               <option value="2" ${metrixPolicyState.desired_support_rank2 === '2' ? 'selected' : ''}>2. 경영환경개선 (점포 시설개보수·간판 - 기본값)</option>
               <option value="1" ${metrixPolicyState.desired_support_rank2 === '1' ? 'selected' : ''}>1. 자금지원 (저금리 대출·특례보증 확대)</option>
@@ -1872,6 +2235,8 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
               <option value="6" ${metrixPolicyState.desired_support_rank2 === '6' ? 'selected' : ''}>6. 공공요금·임차료·대출이자 차액 보전 지원</option>
               <option value="7" ${metrixPolicyState.desired_support_rank2 === '7' ? 'selected' : ''}>7. 인력 채용 및 인건비·4대보험료 지원</option>
               <option value="8" ${metrixPolicyState.desired_support_rank2 === '8' ? 'selected' : ''}>8. 폐업·업종전환·재창업 안전망 지원</option>
+              <option value="9" ${metrixPolicyState.desired_support_rank2 === '9' ? 'selected' : ''}>9. 협업화·조직화 지원</option>
+              <option value="10" ${metrixPolicyState.desired_support_rank2 === '10' ? 'selected' : ''}>10. 디지털 전환 지원</option>
             </select>
           </div>
         </div>
@@ -1883,14 +2248,14 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
       <div class="blueprint-card-header">
         <div class="blueprint-card-title-group">
           <span class="blueprint-step-pill"><i class="fa-solid fa-pen-nib"></i> 주관식 &amp; 증빙</span>
-          <h3 class="blueprint-stage-title">[파트 I] 애로사항 주관식 답변 · Step 117 동의서 전자서명 · Step 118 CHECK1 증빙 사진</h3>
+          <h3 class="blueprint-stage-title">[파트 I] 애로사항 주관식 답변 · Step 117 동의서 전자서명 · Step 118 CHECK1 사진 문항</h3>
         </div>
         <div class="blueprint-card-badge-group">
-          <span class="badge-status ready"><i class="fa-solid fa-camera"></i> 2중 서명 &amp; 증빙 자동 바인딩</span>
+          <span class="badge-status ready"><i class="fa-solid fa-signature"></i> 2중 서명 &amp; 사진 미업로드 통과 기본</span>
         </div>
       </div>
       <div class="blueprint-stage-desc">
-        설문 중 주관식 애로사항/건의사항 문항에 입력할 텍스트 가이드라인과 최종 관문 Step 117(동의서 2중 서명·연락처 3분할), Step 118(CHECK1 간판/명함 사진 업로드) 경로를 지정합니다.
+        설문 중 주관식 애로사항/건의사항 문항에 입력할 텍스트 가이드라인과 최종 관문 Step 117(동의서 2중 서명·연락처 3분할), Step 118(CHECK1 사진 문항 — 기본값: 사진 미업로드 후 [다음] 진행) 설정을 관리합니다.
       </div>
       <div class="p-14">
         <div class="mb-12">
@@ -1898,10 +2263,10 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
           <textarea id="txt-metrix-comment" class="figma-input w-full" rows="3" style="resize: vertical; font-size: 13px; line-height: 1.5;">${escapeHtml(metrixPolicyState.open_ended_comment)}</textarea>
         </div>
         <div>
-          <label class="figma-label font-bold">Step 118 CHECK1 증빙 간판사진 파일 경로</label>
+          <label class="figma-label font-bold">Step 118 CHECK1 증빙 사진 예비 경로 (상단 제어판에서 '견본 사진 업로드' 선택 시에만 사용 · 기본값: 업로드 안 함)</label>
           <div class="flex-center-gap-10">
             <input type="text" id="txt-metrix-sign-image" class="figma-input w-full" value="${escapeHtml(metrixPolicyState.evidence_sign_image)}" readonly style="opacity: 0.85;" />
-            <span class="badge-status success text-nowrap"><i class="fa-solid fa-file-image"></i> 견본 탑재 완료</span>
+            <span class="badge-status ${metrixPolicyState.check1_photoUploadMode === 'upload_sample' ? 'success' : 'ready'} text-nowrap"><i class="fa-solid ${metrixPolicyState.check1_photoUploadMode === 'upload_sample' ? 'fa-file-image' : 'fa-forward-step'}"></i> ${metrixPolicyState.check1_photoUploadMode === 'upload_sample' ? '견본 업로드 활성' : '미업로드 바로 통과'}</span>
           </div>
         </div>
       </div>

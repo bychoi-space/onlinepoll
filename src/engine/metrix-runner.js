@@ -29,6 +29,25 @@ function jitter(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function pickSteppedValue(minVal, maxVal, stepVal, fallback) {
+  let min = Number(minVal);
+  let max = Number(maxVal);
+  const step = Math.max(1, Number(stepVal) || 1);
+  if (!Number.isFinite(min)) min = fallback;
+  if (!Number.isFinite(max)) max = fallback;
+  if (min > max) {
+    const tmp = min;
+    min = max;
+    max = tmp;
+  }
+  const candidates = [];
+  for (let v = min; v <= max; v += step) {
+    candidates.push(Math.round(v));
+  }
+  if (candidates.length === 0) return Math.round(min);
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
 const DEFAULT_ACCOUNT_PASSWORDS = {
   '강영미': '5254',
   '김정례': '3995',
@@ -91,6 +110,14 @@ export async function runMetrixSurvey({
   };
   const rawMeta = slotData.rawMeta || {};
   const usePanelMeta = (effectivePolicy.inheritPanelRawMeta !== false);
+
+  // [3차 본조사 범위설정 가이드] 문17-1 권리금(기본 1000~5000, 500단위) & 문34 월평균 급여(기본 240~320, 5단위) 사전 산출
+  const pickedGoodwillManwon = effectivePolicy.q17_goodwillRangeMode === 'fixed'
+    ? Number(effectivePolicy.goodwill_amount ?? 1500)
+    : pickSteppedValue(effectivePolicy.goodwill_min ?? 1000, effectivePolicy.goodwill_max ?? 5000, effectivePolicy.goodwill_step ?? 500, 2000);
+  const pickedWageManwon = effectivePolicy.q34_wageRangeMode === 'fixed'
+    ? Number(effectivePolicy.labor_avgMonthlyWage ?? 280)
+    : pickSteppedValue(effectivePolicy.labor_wageMin ?? 240, effectivePolicy.labor_wageMax ?? 320, effectivePolicy.labor_wageStep ?? 5, 280);
 
   const targetReportDir = reportDir || path.resolve('reports', `metrix_item_${quotaIndex}_${slotData.uid || 'slot'}`);
   if (!fs.existsSync(targetReportDir)) {
@@ -308,7 +335,7 @@ export async function runMetrixSurvey({
     }
 
     let stepCount = 1;
-    const maxSteps = 160;
+    const maxSteps = 180;
     let consecutiveStallCount = 0;
     let loadingRetryCount = 0;
     let lastScreenSignature = '';
@@ -328,28 +355,43 @@ export async function runMetrixSurvey({
 
         const isBenefitGuideScreen = bodyText.includes('참여혜택 안내') ||
                                      bodyText.includes('소개 및 참여혜택') ||
-                                     !!document.querySelector('[id*="END"], [qname="END"], [data-qname="END"]');
+                                     !!document.querySelector('[question-name="END"], [id*="END"], [qname="END"], [data-qname="END"]');
 
         const isConsentScreen = !!document.querySelector('canvas.pad') ||
                                 (bodyText.includes('동의서') && bodyText.includes('서명'));
 
         const isCheck1Screen = !!document.querySelector('input[name="CHECK1_F1"]') ||
                                !!document.querySelector('button.uploader-file[qname="CHECK1"]') ||
+                               !!document.querySelector('[question-name="CHECK1"]') ||
                                bodyText.includes('조사원 검증') ||
                                bodyText.includes('간판사진');
 
-        const gradeEls = Array.from(document.querySelectorAll('.s-gradeclick'));
+        const gradeEls = Array.from(document.querySelectorAll('.s-gradeclick')).filter(el => el.offsetParent !== null);
         const hasGradeClick = gradeEls.length > 0;
+        const gradeWrapper = gradeEls[0]?.closest('[question-type="GRADE_CLICK"]') || document.querySelector('[question-type="GRADE_CLICK"]');
+        const gradeQName = gradeEls[0]?.getAttribute('qname') || gradeWrapper?.getAttribute('question-name') || '';
+        const gradeMax = Number(gradeWrapper?.getAttribute('max-grade') || gradeWrapper?.getAttribute('MAX_GRADE')) ||
+          (['Q67', 'Q68', 'Q88', 'Q89'].includes(gradeQName) ? 3 : 2);
         const gradeAkeys = gradeEls.map(el => el.getAttribute('akey')).filter(Boolean);
-        const gradeAlreadySelected = !(/1순위\s*:\s*2순위\s*:/.test(bodyText)) && gradeEls.some(el =>
+        const gradeValidAkeys = gradeEls
+          .filter(el => {
+            if (el.querySelector('input.input-etc, textarea.input-etc')) return false;
+            const txt = (el.innerText || '').replace(/\s+/g, ' ').trim();
+            if (/^기타(\b|\s|$)/.test(txt)) return false;
+            return Boolean(el.getAttribute('akey'));
+          })
+          .map(el => el.getAttribute('akey'));
+        const selectedGradeCount = gradeEls.filter(el =>
           el.classList.contains('active') ||
           el.classList.contains('selected') ||
           el.classList.contains('on') ||
-          /(1순위|2순위)/.test(el.innerText || '')
-        );
+          /(1순위|2순위|3순위)/.test(el.innerText || '')
+        ).length;
+        const gradeAlreadySelected = !(/1순위\s*:\s*2순위\s*:/.test(bodyText)) && selectedGradeCount >= gradeMax;
+        const gradeHasSelection = selectedGradeCount > 0;
 
         const titleCandidates = Array.from(
-          document.querySelectorAll('.q-title, .question-title, .quest-title, .title, h2, h3, .box-question, [id^="BOX_"], [qname], .question-container, .q-item')
+          document.querySelectorAll('.q-title, .question-title, .quest-title, .title, h2, h3, .box-question, [id^="BOX_"], [question-name], [qname], .question-container, .q-item')
         ).filter(el => el.offsetParent !== null);
 
         const questionTexts = [];
@@ -369,10 +411,13 @@ export async function runMetrixSurvey({
           if (mBody) questionTexts.push(mBody[1].slice(0, 160));
         }
 
-        const qNameEls = Array.from(document.querySelectorAll('[qname], [data-qname]')).filter(el => el.offsetParent !== null);
-        const qNameAttr = qNameEls
-          .map(el => el.getAttribute('qname') || el.getAttribute('data-qname') || '')
-          .filter(Boolean)[0] || '';
+        const qNameEls = Array.from(document.querySelectorAll('[question-name], [qname], [data-qname]')).filter(el => el.offsetParent !== null);
+        const activeQNames = Array.from(new Set(
+          qNameEls
+            .map(el => el.getAttribute('question-name') || el.getAttribute('qname') || el.getAttribute('data-qname') || '')
+            .filter(Boolean)
+        ));
+        const qNameAttr = activeQNames[0] || '';
 
         const inputs = Array.from(document.querySelectorAll('input:not([type="hidden"]), select, textarea')).filter(el => el.offsetParent !== null);
 
@@ -390,8 +435,13 @@ export async function runMetrixSurvey({
           isConsentScreen,
           isCheck1Screen,
           hasGradeClick,
+          gradeQName,
+          gradeMax,
           gradeAkeys,
+          gradeValidAkeys: gradeValidAkeys.length >= 2 ? gradeValidAkeys : gradeAkeys,
           gradeAlreadySelected,
+          gradeHasSelection,
+          activeQNames,
           qNameAttr,
           questionTexts: questionTexts.slice(0, 3),
           inputsCount: inputs.length,
@@ -411,7 +461,7 @@ export async function runMetrixSurvey({
       }
       loadingRetryCount = 0;
 
-      console.log(`\n[MetrixRunner Step ${stepCount}] Q: ${qTitle} | Inputs: ${screenInfo.inputsCount} | GradeClick: ${screenInfo.hasGradeClick} | Next: ${screenInfo.nextBtnText || 'None'}`);
+      console.log(`\n[MetrixRunner Step ${stepCount}] Q(${screenInfo.qNameAttr || '-'}): ${qTitle} | Inputs: ${screenInfo.inputsCount} | GradeClick: ${screenInfo.hasGradeClick} | Next: ${screenInfo.nextBtnText || 'None'}`);
 
       const screenshotFileName = `step_${String(stepCount).padStart(2, '0')}.png`;
       const screenshotFilePath = path.join(targetReportDir, screenshotFileName);
@@ -446,8 +496,8 @@ export async function runMetrixSurvey({
         };
       }
 
-      // 2. Step 119 참여혜택 안내 화면 ➔ 98% 안전 대기 원칙 수행
-      const isSafetyStopPoint = (screenInfo.isBenefitGuideScreen || (reachedCheck1 && check1Uploaded));
+      // 2. Step 119 참여혜택 안내(END) 화면 ➔ 98% 안전 대기 원칙 수행 (CHECK1 사진 미업로드 스킵 모드 포함 100% 정지 보장)
+      const isSafetyStopPoint = (screenInfo.isBenefitGuideScreen || (reachedCheck1 && !screenInfo.isCheck1Screen));
       const stopAtReview = (safetyGuard !== false && (effectivePolicy.safetyStopAtReview !== false));
 
       if (isSafetyStopPoint && stopAtReview) {
@@ -462,11 +512,12 @@ export async function runMetrixSurvey({
           submittedAnswer: '98% 검토 대기 정지 완료 (미제출 안전보존)'
         });
 
+        const photoStatusNote = check1Uploaded ? '증빙사진 업로드 완료' : '사진 미업로드 스킵 적용';
         onProgress({
           step: 'REVIEW_READY_98',
           stepIndex: 119,
           totalSteps: 120,
-          message: `🛡️ [98% 안전 대기] 전 문항 입력, 전자서명 및 증빙사진 업로드 완료! (최종 제출 직전 검토 대기 상태 보존)`
+          message: `🛡️ [98% 안전 대기] 전 문항 입력, 전자서명 및 CHECK1(${photoStatusNote}) 완료! (최종 제출 직전 검토 대기 상태 보존)`
         });
 
         return {
@@ -481,7 +532,7 @@ export async function runMetrixSurvey({
           submittedAnswers,
           dialogLog,
           slotData,
-          message: '설문 응답 및 서명/사진 업로드가 100% 완료되었으며, 최종 제출 직전 98% 상태로 안전하게 보존되었습니다.'
+          message: `설문 응답 및 전자서명(${photoStatusNote})이 완료되었으며, 최종 제출 직전 98% 상태로 안전하게 보존되었습니다.`
         };
       }
 
@@ -574,40 +625,75 @@ export async function runMetrixSurvey({
         lastScreenSignature = screenInfo.signature;
       }
 
-      // 3. [특수 화면 1] Step 118: CHECK1 간판사진 업로드 화면
+      // 3. [특수 화면 1] Step 118: CHECK1 사진 업로드 문항 (기본 가이드: 업로드하지 않고 바로 [다음] 클릭)
       if (screenInfo.isCheck1Screen) {
         reachedCheck1 = true;
-        console.log(`[Step 118 - CHECK1] 간판사진 증빙 업로드 처리 시작... (파일: ${sampleSignPath})`);
+        const shouldUploadPhoto = (effectivePolicy.check1_photoUploadMode === 'upload_sample');
 
-        onProgress({
-          step: 'CHECK1_UPLOAD',
-          stepIndex: 118,
-          totalSteps: 120,
-          message: `[증빙 사진 업로드] 간판사진(CHECK1)을 메트릭스 비동기 업로더에 등록합니다...`
-        });
+        if (!shouldUploadPhoto) {
+          console.log(`[Step 118 - CHECK1] 가이드 설정(skip_upload): 아무 파일도 업로드하지 않고 바로 [다음]을 클릭합니다.`);
+          onProgress({
+            step: 'CHECK1_SKIP_UPLOAD',
+            stepIndex: 118,
+            totalSteps: 120,
+            message: `[사진 문항 통과] CHECK1 사진 업로드 없이 바로 [다음] 단계로 전진합니다...`
+          });
 
-        const fileInput = await page.$('input[name="CHECK1_F1"]');
-        if (fileInput && fs.existsSync(sampleSignPath)) {
-          await fileInput.setInputFiles(sampleSignPath);
-          await sleep(500);
-
-          const uploadBtn = await page.$('button.uploader-file[qname="CHECK1"]');
-          if (uploadBtn) {
-            await uploadBtn.click();
-            console.log(`[CHECK1] Upload button clicked. Waiting 3.5s for POST /Join/Uploader...`);
-            await sleep(3500);
-            check1Uploaded = true;
+          // 재실행 슬롯에 과거 업로드 파일 삭제 버튼이 남아 있을 경우 깔끔히 제거
+          const removedOldFile = await page.evaluate(() => {
+            const rmBtns = Array.from(document.querySelectorAll('button.uploader-remove-file, .fileinfo button.remove, .fileinfos button')).filter(b => {
+              if (b.offsetParent === null) return false;
+              const txt = (b.innerText || b.title || '').trim();
+              return b.classList.contains('uploader-remove-file') || txt.includes('삭제') || txt === 'X' || txt === '×';
+            });
+            rmBtns.forEach(b => b.click());
+            return rmBtns.length;
+          }).catch(err => {
+            console.warn('[CHECK1 기존 파일 제거 확인 경고]:', err.message);
+            return 0;
+          });
+          if (removedOldFile > 0) {
+            await sleep(900);
           }
-        } else {
-          console.warn(`[CHECK1 경고] 파일 인풋 또는 샘플 이미지를 찾을 수 없습니다. 경로: ${sampleSignPath}`);
-        }
 
-        upsertSubmittedAnswer({
-          stepIndex: stepCount,
-          questionCode: 'CHECK1_증빙업로드',
-          questionTitle: qTitle,
-          submittedAnswer: check1Uploaded ? `간판사진 업로드 완료 (${path.basename(sampleSignPath)})` : '파일 미업로드'
-        });
+          upsertSubmittedAnswer({
+            stepIndex: stepCount,
+            questionCode: 'CHECK1_증빙업로드',
+            questionTitle: qTitle,
+            submittedAnswer: '사진 미업로드 후 [다음] 진행 (가이드 기본값)'
+          });
+        } else {
+          console.log(`[Step 118 - CHECK1] 간판사진 증빙 업로드 처리 시작... (파일: ${sampleSignPath})`);
+          onProgress({
+            step: 'CHECK1_UPLOAD',
+            stepIndex: 118,
+            totalSteps: 120,
+            message: `[증빙 사진 업로드] 간판사진(CHECK1)을 메트릭스 비동기 업로더에 등록합니다...`
+          });
+
+          const fileInput = await page.$('input[name="CHECK1_F1"]');
+          if (fileInput && fs.existsSync(sampleSignPath)) {
+            await fileInput.setInputFiles(sampleSignPath);
+            await sleep(500);
+
+            const uploadBtn = await page.$('button.uploader-file[qname="CHECK1"]');
+            if (uploadBtn) {
+              await uploadBtn.click();
+              console.log(`[CHECK1] Upload button clicked. Waiting 3.5s for POST /Join/Uploader...`);
+              await sleep(3500);
+              check1Uploaded = true;
+            }
+          } else {
+            console.warn(`[CHECK1 경고] 파일 인풋 또는 샘플 이미지를 찾을 수 없습니다. 경로: ${sampleSignPath}`);
+          }
+
+          upsertSubmittedAnswer({
+            stepIndex: stepCount,
+            questionCode: 'CHECK1_증빙업로드',
+            questionTitle: qTitle,
+            submittedAnswer: check1Uploaded ? `간판사진 업로드 완료 (${path.basename(sampleSignPath)})` : '파일 미업로드'
+          });
+        }
 
         const nextBtn = await page.$('#next');
         if (nextBtn) {
@@ -688,62 +774,135 @@ export async function runMetrixSurvey({
         continue;
       }
 
-      // 5. [규칙 3] 우선순위 선택 (GRADE_CLICK) Playwright 네이티브 클릭 (문10-1, 문12-1, 문15-2, 문22, 문67 전수 대응)
-      if (screenInfo.hasGradeClick && screenInfo.gradeAkeys.length >= 2) {
-        const preserveGrade = (effectivePolicy.preserveExistingInputs !== false && screenInfo.gradeAlreadySelected);
+      // 5. [규칙 3] 우선순위 선택 (GRADE_CLICK) 2순위 및 3순위(문67·문68·문88·문89) 전수 대응 + 가이드 랜덤/고정 덮어쓰기
+      if (screenInfo.hasGradeClick && screenInfo.gradeValidAkeys.length >= 2) {
+        const gQName = screenInfo.gradeQName || screenInfo.qNameAttr || '';
+        const gMax = Math.min(screenInfo.gradeMax || 2, screenInfo.gradeValidAkeys.length);
+        const validKeys = screenInfo.gradeValidAkeys;
+
+        const shuffleKeys = (arr) => {
+          const copy = [...arr];
+          for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+          }
+          return copy;
+        };
+
+        const buildOrderedKeys = (preferredList) => {
+          const out = [];
+          for (const k of preferredList) {
+            const sk = String(k || '');
+            if (sk && validKeys.includes(sk) && !out.includes(sk)) {
+              out.push(sk);
+            }
+          }
+          for (const fk of shuffleKeys(validKeys)) {
+            if (out.length >= gMax) break;
+            if (!out.includes(fk)) out.push(fk);
+          }
+          return out.slice(0, gMax);
+        };
+
+        // 가이드에서 명시적 제어 대상인 문항은 기존 자동채움([LIST:M*])보다 가이드를 우선 적용
+        let forceOverrideGrade = false;
+        let targetKeys = [];
+
+        if (gQName === 'Q12_1') {
+          forceOverrideGrade = true;
+          if (effectivePolicy.q12_1_evalReasonMode === 'fixed') {
+            targetKeys = buildOrderedKeys([effectivePolicy.sales_changeReasonRank1 || '1', effectivePolicy.sales_changeReasonRank2 || '2']);
+          } else {
+            targetKeys = shuffleKeys(validKeys).slice(0, gMax);
+          }
+        } else if (gQName === 'Q22') {
+          if (effectivePolicy.q22_hardshipMode === 'panel') {
+            forceOverrideGrade = false;
+            targetKeys = buildOrderedKeys([rawMeta.M22, rawMeta.M22_1, effectivePolicy.hardship_rank1 || '3', effectivePolicy.hardship_rank2 || '5']);
+          } else if (effectivePolicy.q22_hardshipMode === 'fixed') {
+            forceOverrideGrade = true;
+            targetKeys = buildOrderedKeys([effectivePolicy.hardship_rank1 || '3', effectivePolicy.hardship_rank2 || '5']);
+          } else {
+            forceOverrideGrade = true;
+            targetKeys = shuffleKeys(validKeys).slice(0, gMax);
+          }
+        } else if (gQName === 'Q43_4') {
+          forceOverrideGrade = true;
+          if (effectivePolicy.q43_4_continueReasonMode === 'fixed') {
+            targetKeys = buildOrderedKeys(['1', '4']);
+          } else {
+            targetKeys = shuffleKeys(validKeys).slice(0, gMax);
+          }
+        } else if (gQName === 'Q67') {
+          forceOverrideGrade = true;
+          if (effectivePolicy.q67_desiredSupportMode === 'fixed') {
+            targetKeys = buildOrderedKeys([
+              effectivePolicy.desired_support_rank1 || '9',
+              effectivePolicy.desired_support_rank2 || '5',
+              effectivePolicy.desired_support_rank3 || '4'
+            ]);
+          } else {
+            targetKeys = shuffleKeys(validKeys).slice(0, gMax);
+          }
+        } else if (gQName === 'Q68') {
+          forceOverrideGrade = true;
+          if (effectivePolicy.q68_policyIssueMode === 'fixed') {
+            targetKeys = buildOrderedKeys([
+              effectivePolicy.policy_issue_rank1 || '6',
+              effectivePolicy.policy_issue_rank2 || '8',
+              effectivePolicy.policy_issue_rank3 || '5'
+            ]);
+          } else {
+            targetKeys = shuffleKeys(validKeys).slice(0, gMax);
+          }
+        } else if (gQName === 'Q15_2' || qTitle.includes('대출') || qTitle.includes('차입') || qTitle.includes('부채')) {
+          const r1 = (usePanelMeta && rawMeta['M15-2']) ? String(rawMeta['M15-2']) : String(effectivePolicy.debt_reasonRank1 || '1');
+          const r2 = (usePanelMeta && rawMeta['M15-2_1']) ? String(rawMeta['M15-2_1']) : String(effectivePolicy.debt_reasonRank2 || '2');
+          targetKeys = buildOrderedKeys([r1, r2]);
+        } else {
+          // Q28_1, Q31_1, Q43_1, Q88(3순위), Q89(3순위), Q90_1(2순위) 등
+          targetKeys = shuffleKeys(validKeys).slice(0, gMax);
+        }
+
+        const preserveGrade = (!forceOverrideGrade && effectivePolicy.preserveExistingInputs !== false && screenInfo.gradeAlreadySelected);
         if (!preserveGrade) {
-          let targetKey1 = screenInfo.gradeAkeys[0];
-          let targetKey2 = screenInfo.gradeAkeys[1];
-
-          // 대출/차입 사유 (문15-2)
-          if (qTitle.includes('대출') || qTitle.includes('차입') || qTitle.includes('부채')) {
-            const r1 = (usePanelMeta && rawMeta['M15-2']) ? String(rawMeta['M15-2']) : String(effectivePolicy.debt_reasonRank1 || '1');
-            const r2 = (usePanelMeta && rawMeta['M15-2_1']) ? String(rawMeta['M15-2_1']) : String(effectivePolicy.debt_reasonRank2 || '2');
-            if (screenInfo.gradeAkeys.includes(r1)) targetKey1 = r1;
-            if (screenInfo.gradeAkeys.includes(r2) && r2 !== targetKey1) targetKey2 = r2;
-          }
-          // 경영상 애로사항 (문22)
-          else if (qTitle.includes('애로') || qTitle.includes('어려움') || qTitle.includes('힘든')) {
-            const r1 = (usePanelMeta && rawMeta.M22) ? String(rawMeta.M22) : String(effectivePolicy.hardship_rank1 || '3');
-            const r2 = (usePanelMeta && rawMeta.M22_1) ? String(rawMeta.M22_1) : String(effectivePolicy.hardship_rank2 || '7');
-            if (screenInfo.gradeAkeys.includes(r1)) targetKey1 = r1;
-            if (screenInfo.gradeAkeys.includes(r2) && r2 !== targetKey1) targetKey2 = r2;
-          }
-          // 매출·수익 변동 요인 (문10-1, 문12-1)
-          else if (qTitle.includes('매출') || qTitle.includes('실적') || qTitle.includes('이익') || qTitle.includes('감소') || qTitle.includes('증가')) {
-            const r1 = (usePanelMeta && rawMeta['M10-1']) ? String(rawMeta['M10-1']) : String(effectivePolicy.sales_changeReasonRank1 || '1');
-            const r2 = (usePanelMeta && rawMeta['M10-1_1']) ? String(rawMeta['M10-1_1']) : String(effectivePolicy.sales_changeReasonRank2 || '2');
-            if (screenInfo.gradeAkeys.includes(r1)) targetKey1 = r1;
-            if (screenInfo.gradeAkeys.includes(r2) && r2 !== targetKey1) targetKey2 = r2;
-          }
-          // 경기도 희망 지원사업 우선순위 (문67)
-          else if (qTitle.includes('지원사업') || qTitle.includes('지원정책') || qTitle.includes('희망') || qTitle.includes('필요한')) {
-            const r1 = String(effectivePolicy.desired_support_rank1 || '1');
-            const r2 = String(effectivePolicy.desired_support_rank2 || '2');
-            if (screenInfo.gradeAkeys.includes(r1)) targetKey1 = r1;
-            if (screenInfo.gradeAkeys.includes(r2) && r2 !== targetKey1) targetKey2 = r2;
+          if (screenInfo.gradeHasSelection) {
+            await page.evaluate(({ qn }) => {
+              const reBtn = (qn && document.querySelector(`button.re-select[qname="${qn}"]`)) || document.querySelector('button.re-select');
+              if (reBtn) {
+                reBtn.click();
+              } else {
+                Array.from(document.querySelectorAll('.s-gradeclick.selected, .s-gradeclick.active, .s-gradeclick.on')).forEach(el => el.click());
+              }
+            }, { qn: gQName }).catch(err => console.warn('[GRADE_CLICK 초기화 경고]:', err.message));
+            await sleep(280);
           }
 
-          if (targetKey2 === targetKey1) {
-            targetKey2 = screenInfo.gradeAkeys.find(k => k !== targetKey1) || targetKey1;
-          }
-
-          console.log(`[규칙 3 GRADE_CLICK] 1순위=${targetKey1}, 2순위=${targetKey2} 클릭 (가용: ${screenInfo.gradeAkeys.join(', ')})`);
-          await page.click(`.s-gradeclick[akey="${targetKey1}"]`).catch(err => console.warn('[GRADE_CLICK 1순위 경고]:', err.message));
-          await sleep(350);
-          if (targetKey2 && targetKey2 !== targetKey1) {
-            await page.click(`.s-gradeclick[akey="${targetKey2}"]`).catch(err => console.warn('[GRADE_CLICK 2순위 경고]:', err.message));
-            await sleep(350);
+          console.log(`[규칙 3 GRADE_CLICK ${gQName || '-'}] 목표 ${gMax}순위=${targetKeys.join(', ')} 클릭 (기타 제외 가용: ${validKeys.join(', ')})`);
+          for (let rIdx = 0; rIdx < targetKeys.length; rIdx++) {
+            const tk = targetKeys[rIdx];
+            const sel = gQName ? `.s-gradeclick[qname="${gQName}"][akey="${tk}"]` : `.s-gradeclick[akey="${tk}"]`;
+            const targetEl = (await page.$(sel)) || (await page.$(`.s-gradeclick[akey="${tk}"]`));
+            if (targetEl) {
+              await targetEl.click().catch(err => console.warn(`[GRADE_CLICK ${rIdx + 1}순위 경고]:`, err.message));
+              await sleep(300);
+            }
           }
         }
       }
 
-      // 6. 전 문항 스마트 폼 응답 주입 (A1~A15, 문8~문67, 패널 rawMeta 계승 및 STEP 2 정책 매핑)
-      await page.evaluate(async ({ slot, pol, quotaIdx }) => {
+      // 6. 전 문항 스마트 폼 응답 주입 (A1~A15, 문8~문100, 패널 rawMeta 계승 및 3차 본조사 20대 문항 가이드 매핑)
+      await page.evaluate(async ({ slot, pol, quotaIdx, indKey, pickedGoodwillManwon, pickedWageManwon }) => {
         const bodyText = document.body.innerText || '';
         const meta = slot.rawMeta || {};
         const useMeta = (pol.inheritPanelRawMeta !== false);
         const preserveInputs = (pol.preserveExistingInputs !== false);
+        const guarValGlobal = String(slot.guaranteeSupport || meta['보증지원여부'] || '').trim().toUpperCase();
+        const isFoodInd = (
+          indKey === 'ind_5' ||
+          String(slot.industry || meta['업종'] || '').includes('음식') ||
+          String(meta.AA3 || meta.A3 || '') === '5'
+        );
 
         const isBoxInput = (el) => {
           if (!el || el.offsetParent === null) return false;
@@ -752,6 +911,92 @@ export async function runMetrixSurvey({
           if (tag !== 'input') return false;
           const t = (el.type || 'text').toLowerCase();
           return !['hidden', 'radio', 'checkbox', 'button', 'submit', 'reset', 'file', 'image'].includes(t);
+        };
+
+        const setInputVal = (inp, val, forceEnable = false) => {
+          if (!inp) return;
+          if (forceEnable && inp.disabled) {
+            inp.disabled = false;
+            inp.removeAttribute('disabled');
+          }
+          const strVal = String(val ?? '');
+          inp.value = strVal;
+          inp.dispatchEvent(new Event('input', { bubbles: true }));
+          inp.dispatchEvent(new Event('keyup', { bubbles: true }));
+          inp.dispatchEvent(new Event('change', { bubbles: true }));
+          if (typeof $ !== 'undefined') {
+            $(inp).val(strVal).trigger('input').trigger('change').trigger('keyup');
+          }
+        };
+
+        const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const shuffleArr = (arr) => {
+          const copy = [...arr];
+          for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+          }
+          return copy;
+        };
+
+        const hasVisibleQ = (qname) => {
+          const els = Array.from(document.querySelectorAll(`[question-name="${qname}"], [qname="${qname}"], [data-qname="${qname}"]`));
+          return els.some(el => el.offsetParent !== null);
+        };
+
+        const getQField = (qname, fieldName) => (
+          document.querySelector(`input[qname="${qname}"][type-name="${fieldName}"]`) ||
+          document.querySelector(`input[parent-name="${qname}"][type-name="${fieldName}"]`) ||
+          document.querySelector(`[question-name="${qname}"] input[type-name="${fieldName}"]`) ||
+          document.querySelector(`input[qname="${qname}"][data-column="${fieldName}"]`) ||
+          document.querySelector(`[question-name="${qname}"] input[data-column="${fieldName}"]`)
+        );
+
+        const selectQRadio = (qname, val) => {
+          const radios = Array.from(
+            document.querySelectorAll(`input[type="radio"][qname="${qname}"], input[type="radio"][name="${qname}"]`)
+          ).filter(r => r.offsetParent !== null && !r.disabled);
+          if (radios.length === 0) return null;
+          const strVal = String(val);
+          const pick = radios.find(r => String(r.value) === strVal || String(r.getAttribute('akey') || '') === strVal) || radios[0];
+          if (pick) {
+            if (!pick.checked) pick.click();
+            pick.checked = true;
+            if (typeof $ !== 'undefined') $(pick).prop('checked', true).trigger('change');
+          }
+          return pick;
+        };
+
+        const setQChecks = (qname, targetVals) => {
+          const targetSet = new Set(targetVals.map(v => String(v)));
+          const cbs = Array.from(
+            document.querySelectorAll(`input[type="checkbox"][qname="${qname}"], input[type="checkbox"][name^="${qname}"]`)
+          ).filter(c => c.offsetParent !== null && !c.disabled);
+          if (cbs.length === 0) return;
+
+          // 1단계: 목표에 없는 기존 체크박스(특히 SINGLE 배타 보기·기타 보기) 먼저 해제
+          cbs.forEach(cb => {
+            const key = String(cb.value || cb.getAttribute('akey') || '');
+            if (!targetSet.has(key) && cb.checked) {
+              cb.click();
+              if (cb.checked) {
+                cb.checked = false;
+                if (typeof $ !== 'undefined') $(cb).prop('checked', false).trigger('change');
+              }
+            }
+          });
+
+          // 2단계: 목표 체크박스 선택
+          cbs.forEach(cb => {
+            const key = String(cb.value || cb.getAttribute('akey') || '');
+            if (targetSet.has(key) && !cb.checked) {
+              cb.click();
+              if (!cb.checked) {
+                cb.checked = true;
+                if (typeof $ !== 'undefined') $(cb).prop('checked', true).trigger('change');
+              }
+            }
+          });
         };
 
         // 추세 계수 계산 (sales_trend2025)
@@ -800,6 +1045,78 @@ export async function runMetrixSurvey({
           return;
         }
 
+        // ------------------------------------------------------------------
+        // [제조업 전용 Part II 특수 행렬·테이블 문항 선행 처리] (문73 CHECKSETS, 문74 3열 비율, 문75 GRADE, 문80 위탁기업수·비중)
+        // ※ 일반 SUM 밸런서가 문74·문80을 오인식하지 않도록 반드시 SUM 밸런서 이전에 처리!
+        // ------------------------------------------------------------------
+        if (hasVisibleQ('Q73') && document.querySelector('[question-name="Q73"][question-type="CHECKSETS"], input[qname="Q73"][hkey]')) {
+          const setCellCb = (vkey, hkey, want) => {
+            const cb = document.querySelector(`input[qname="Q73"][type="checkbox"][vkey="${vkey}"][hkey="${hkey}"], input[qname="Q73"][type="checkbox"][vKey="${vkey}"][hkey="${hkey}"]`);
+            if (!cb || cb.disabled) return;
+            if (Boolean(cb.checked) !== Boolean(want)) cb.click();
+            if (Boolean(cb.checked) !== Boolean(want)) {
+              cb.checked = Boolean(want);
+              if (typeof $ !== 'undefined') $(cb).prop('checked', Boolean(want)).trigger('change');
+            }
+          };
+          // 1행(직접 생산): 국내(1), 2~4행(ODM·OEM·JDM): 없음(3), 5행(기타): 미입력 유지
+          setCellCb('1', '2', false);
+          setCellCb('1', '3', false);
+          setCellCb('1', '1', true);
+          for (const vk of ['2', '3', '4']) {
+            setCellCb(vk, '1', false);
+            setCellCb(vk, '2', false);
+            setCellCb(vk, '3', true);
+          }
+          const etc73 = document.querySelector('[question-name="Q73"] input.input-etc');
+          if (etc73 && etc73.value) setInputVal(etc73, '');
+          return;
+        }
+
+        if (hasVisibleQ('Q74') && getQField('Q74', 'NUMBER_4')) {
+          // B2B(NUMBER_4~6)=100/0/100, B2G(NUMBER_7~9)=0/0/0, B2C(NUMBER_10~12)=0/0/0 ➔ 매출 합계 100%, 수출 합계 0%, 영업이익 합계 100%
+          const q74Map = {
+            NUMBER_4: '100', NUMBER_5: '0', NUMBER_6: '100',
+            NUMBER_7: '0', NUMBER_8: '0', NUMBER_9: '0',
+            NUMBER_10: '0', NUMBER_11: '0', NUMBER_12: '0'
+          };
+          for (const [col, val] of Object.entries(q74Map)) {
+            setInputVal(getQField('Q74', col), val, true);
+          }
+          return;
+        }
+
+        if (hasVisibleQ('Q75') && document.querySelector('[question-name="Q75"][question-type="GRADE"], table[qname="Q75"]')) {
+          // 1순위(hkey=1): B2B(vkey=1), 2순위(hkey=2): B2C(vkey=3), 3순위(hkey=3): B2G(vkey=2) 순차 클릭
+          const desiredPairs = [['1', '1'], ['2', '3'], ['3', '2']];
+          for (const [hk, vk] of desiredPairs) {
+            let r = document.querySelector(`input[qname="Q75"][type="radio"][hkey="${hk}"][vkey="${vk}"]:not(:disabled)`);
+            if (!r || r.offsetParent === null) {
+              r = Array.from(document.querySelectorAll(`input[qname="Q75"][type="radio"][hkey="${hk}"]:not(:disabled)`))
+                .find(el => el.offsetParent !== null && window.getComputedStyle(el).visibility !== 'hidden');
+            }
+            if (r) {
+              r.click();
+              r.checked = true;
+              if (typeof $ !== 'undefined') $(r).prop('checked', true).trigger('change');
+              await new Promise(res => setTimeout(res, 120));
+            }
+          }
+          return;
+        }
+
+        if (hasVisibleQ('Q80') && getQField('Q80', 'NUMBER_6')) {
+          // 대기업(NUMBER_2=0, NUMBER_3=0), 중견기업(NUMBER_4=0, NUMBER_5=0), 중소기업(NUMBER_6=3개 ➔ 잠금 해제 후 NUMBER_7=100%)
+          setInputVal(getQField('Q80', 'NUMBER_2'), '0', true);
+          setInputVal(getQField('Q80', 'NUMBER_4'), '0', true);
+          setInputVal(getQField('Q80', 'NUMBER_6'), '3', true);
+          await new Promise(res => setTimeout(res, 120));
+          setInputVal(getQField('Q80', 'NUMBER_3'), '0', true);
+          setInputVal(getQField('Q80', 'NUMBER_5'), '0', true);
+          setInputVal(getQField('Q80', 'NUMBER_7'), '100', true);
+          return;
+        }
+
         // [규칙 1-2] 문31 종사자 현황 (남+여 === 내국인+외국인 행별 정합성 보장 및 SUM 밸런서 오작동 차단)
         const editableNumberInputs = Array.from(document.querySelectorAll('input[type="number"]:not([readonly]):not([disabled])')).filter(i => i.offsetParent !== null);
         const allEditableBoxes = Array.from(document.querySelectorAll('input:not([readonly]):not([disabled])')).filter(el => isBoxInput(el) && el.tagName.toLowerCase() === 'input');
@@ -837,10 +1154,7 @@ export async function runMetrixSurvey({
               const targetVals = [String(mVal), String(fVal), String(kVal), String(aVal)];
               rowEditables.forEach((inp, cIdx) => {
                 if (inp.value !== targetVals[cIdx]) {
-                  inp.value = targetVals[cIdx];
-                  if (typeof $ !== 'undefined') {
-                    $(inp).val(targetVals[cIdx]).trigger('input').trigger('change').trigger('keyup');
-                  }
+                  setInputVal(inp, targetVals[cIdx]);
                 }
               });
             }
@@ -848,7 +1162,77 @@ export async function runMetrixSurvey({
           return;
         }
 
-        // [규칙 2] SUM 합계 밸런서 (문11-1 6대 영업비용 금액합계, 문14 6대 결제수단 100%, 문15-1 차입처별 비중 100% 등)
+        // [규칙 1-3] 문32 종업원 주당 평균 근무시간 및 휴무 기준 (COMPLEX)
+        // Metrix 자체 data-script가 Q32_A_r에 change 이벤트 없이 .val()만 대입하거나, 비정기적 휴무(2)임에도 Q32_C_r 라디오를 강제 enable시키는 버그 보정
+        if (hasVisibleQ('Q32') && document.querySelector('[question-name="Q32"][question-type="COMPLEX"], input[qname="Q32"][data-column^="Q32_A_"]')) {
+          for (let r = 1; r <= 6; r++) {
+            const inpA = document.querySelector(`input[qname="Q32"][data-column="Q32_A_${r}"]`);
+            if (!inpA || inpA.offsetParent === null) continue;
+            const curHrs = parseInt(inpA.value, 10);
+            const fallbackHrs = r === 1 ? Number(pol.labor_ownerWeeklyHours || 45) : Number(pol.labor_staffWeeklyHours || 40);
+            const hrs = (curHrs > 0 && curHrs <= 168) ? curHrs : fallbackHrs;
+            setInputVal(inpA, hrs, true);
+
+            const radiosB = Array.from(
+              document.querySelectorAll(`input[type="radio"][qname="Q32"][data-column="Q32_B_${r}"]`)
+            ).filter(el => el.offsetParent !== null && !el.disabled);
+            if (radiosB.length === 0) continue;
+
+            let bSel = radiosB.find(el => el.checked);
+            const etcB3 = document.querySelector(`input[qname="Q32"][data-column^="Q32_B_${r}_3"]`);
+            if (!bSel || (String(bSel.value) === '3' && (!etcB3 || !etcB3.value.trim()))) {
+              bSel = radiosB.find(el => String(el.value) === '2') || radiosB[0];
+            }
+            if (bSel) {
+              bSel.click();
+              bSel.checked = true;
+              if (typeof $ !== 'undefined') $(bSel).prop('checked', true).trigger('change');
+              await new Promise(res => setTimeout(res, 60));
+
+              const radiosC = Array.from(document.querySelectorAll(`input[type="radio"][qname="Q32"][data-column="Q32_C_${r}"]`));
+              const inputsC = Array.from(document.querySelectorAll(`input[qname="Q32"][data-column^="Q32_C_${r}_"]`));
+
+              if (String(bSel.value) === '1') {
+                radiosC.forEach(rc => { rc.disabled = false; rc.removeAttribute('disabled'); });
+                const cSel = radiosC.find(rc => rc.checked) || radiosC.find(rc => String(rc.value) === '2') || radiosC[0];
+                if (cSel) {
+                  cSel.click();
+                  cSel.checked = true;
+                  if (typeof $ !== 'undefined') $(cSel).prop('checked', true).trigger('change');
+                  await new Promise(res => setTimeout(res, 60));
+                  const cType = String(cSel.value);
+                  const etc1 = document.querySelector(`input[qname="Q32"][data-column="Q32_C_${r}_${cType}_ETC_1"]`);
+                  const etc2 = document.querySelector(`input[qname="Q32"][data-column="Q32_C_${r}_${cType}_ETC_2"]`);
+                  if (etc1) {
+                    const v1 = parseInt(etc1.value, 10);
+                    setInputVal(etc1, v1 > 0 ? v1 : 1, true);
+                  }
+                  if (etc2) {
+                    const v2 = parseInt(etc2.value, 10);
+                    setInputVal(etc2, v2 > 0 ? v2 : (cType === '1' ? 4 : 1), true);
+                  }
+                }
+              } else {
+                radiosC.forEach(rc => {
+                  if (rc.checked) {
+                    rc.checked = false;
+                    if (typeof $ !== 'undefined') $(rc).prop('checked', false).trigger('change');
+                  }
+                  rc.disabled = true;
+                  rc.setAttribute('disabled', 'disabled');
+                });
+                inputsC.forEach(ic => {
+                  if (ic.value) setInputVal(ic, '');
+                  ic.disabled = true;
+                  ic.setAttribute('disabled', 'disabled');
+                });
+              }
+            }
+          }
+          return;
+        }
+
+        // [규칙 2] SUM 합계 밸런서 (문11-1 6대 영업비용 금액합계, 문14 6대 결제수단 100%, 문15-1 차입처별 비중 100%, 문81 등)
         if (bodyText.includes('남은 금액') || bodyText.includes('남은 값') || (bodyText.includes('합계') && allEditableBoxes.length >= 3 && bodyText.includes('%'))) {
           // 문15-1 등 상단에 '부채 총액: 총 [ ] 억 [ ] 만원' 입력란이 함께 있는 경우에만 비율(%) 칸과 분리
           const isDebtRatioScreen = bodyText.includes('부채 총액') || bodyText.includes('대출유형');
@@ -866,14 +1250,8 @@ export async function runMetrixSurvey({
               const totalDebtManwon = (useMeta && Number(meta['M15-1']) > 0)
                 ? Number(meta['M15-1'])
                 : Number(pol.debt_totalAmount ?? 3000);
-              const eokVal = String(Math.floor(totalDebtManwon / 10000));
-              const manVal = String(totalDebtManwon % 10000);
-              amountHeaderBoxes[0].value = eokVal;
-              amountHeaderBoxes[1].value = manVal;
-              if (typeof $ !== 'undefined') {
-                $(amountHeaderBoxes[0]).val(eokVal).trigger('input').trigger('change').trigger('keyup');
-                $(amountHeaderBoxes[1]).val(manVal).trigger('input').trigger('change').trigger('keyup');
-              }
+              setInputVal(amountHeaderBoxes[0], Math.floor(totalDebtManwon / 10000));
+              setInputVal(amountHeaderBoxes[1], totalDebtManwon % 10000);
             }
           }
 
@@ -913,12 +1291,7 @@ export async function runMetrixSurvey({
 
             const existingSum = sumInputs.reduce((acc, inp) => acc + (parseFloat(inp.value) || 0), 0);
             if (preserveInputs && existingSum === targetTotal) {
-              sumInputs.forEach(inp => {
-                inp.dispatchEvent(new Event('input', { bubbles: true }));
-                inp.dispatchEvent(new Event('keyup', { bubbles: true }));
-                inp.dispatchEvent(new Event('change', { bubbles: true }));
-                if (typeof $ !== 'undefined') $(inp).trigger('input').trigger('change').trigger('keyup');
-              });
+              sumInputs.forEach(inp => setInputVal(inp, inp.value));
               return;
             }
 
@@ -937,12 +1310,7 @@ export async function runMetrixSurvey({
                 } else {
                   val = Math.max(0, targetTotal - allocated);
                 }
-                const strVal = String(val);
-                inp.value = strVal;
-                inp.dispatchEvent(new Event('input', { bubbles: true }));
-                inp.dispatchEvent(new Event('keyup', { bubbles: true }));
-                inp.dispatchEvent(new Event('change', { bubbles: true }));
-                if (typeof $ !== 'undefined') $(inp).val(strVal).trigger('input').trigger('change').trigger('keyup');
+                setInputVal(inp, val);
               });
             };
 
@@ -1032,17 +1400,371 @@ export async function runMetrixSurvey({
               return;
             }
 
-            // (D) 기타 일반 SUM 문항
+            // (D) 문81(제조업 납품유형별 비중: 완제품 0%, 부분품 50%, 임가공 50%) 및 기타 일반 SUM 문항
+            if (hasVisibleQ('Q81') && sumInputs.length === 3) {
+              distributeRatios(sumInputs, [0, 50, 50]);
+              return;
+            }
+
             sumInputs.forEach((inp, idx) => {
               const v = (idx === 0) ? String(targetTotal) : '0';
-              inp.value = v;
-              inp.dispatchEvent(new Event('input', { bubbles: true }));
-              inp.dispatchEvent(new Event('keyup', { bubbles: true }));
-              inp.dispatchEvent(new Event('change', { bubbles: true }));
-              if (typeof $ !== 'undefined') $(inp).val(v).trigger('input').trigger('change').trigger('keyup');
+              setInputVal(inp, v);
             });
             return;
           }
+        }
+
+        // ------------------------------------------------------------------
+        // [3차 본조사 20대 문항별 응답 가이드 정밀 오버라이드 엔진]
+        // Metrix [LIST:M*] 자동채움 스크립트가 선행 기입한 값이라도 가이드 설정값을 최우선 적용
+        // ------------------------------------------------------------------
+        const overriddenQNames = new Set();
+        const overriddenInputs = new Set();
+
+        // (1) 문10 자금 분리 관리 여부 (랜덤 1~3) & 문10-1 혼용 사유 (1~4 중 랜덤)
+        if (hasVisibleQ('Q10')) {
+          const mode10 = pol.q10_fundMgmtMode || 'random';
+          let v10 = '2';
+          if (mode10 === 'random') v10 = pickRandom(['1', '2', '3']);
+          else if (['1', '2', '3'].includes(String(mode10))) v10 = String(mode10);
+          else v10 = (useMeta && meta.M10) ? String(meta.M10) : pickRandom(['1', '2', '3']);
+          selectQRadio('Q10', v10);
+          overriddenQNames.add('Q10');
+        }
+        if (hasVisibleQ('Q10_1')) {
+          const cnt = Math.random() > 0.5 ? 2 : 1;
+          setQChecks('Q10_1', shuffleArr(['1', '2', '3', '4']).slice(0, cnt));
+          overriddenQNames.add('Q10_1');
+        }
+
+        // (3) 문16-1 임대차 보증금·월세 엑셀(구글시트) 실측값 우선 입력
+        if (hasVisibleQ('Q16_1')) {
+          const leaseSrc = pol.q16_1_leaseSource || 'excel_first';
+          const hasExcelDep = slot.excelDeposit !== undefined && slot.excelDeposit !== null && slot.excelDeposit !== '';
+          const hasExcelRent = slot.excelMonthlyRent !== undefined && slot.excelMonthlyRent !== null && slot.excelMonthlyRent !== '';
+
+          let depManwon = 2000;
+          let rentManwon = 120;
+          if (leaseSrc === 'excel_first') {
+            depManwon = hasExcelDep
+              ? Number(slot.excelDeposit)
+              : ((useMeta && meta['M16-1_1'] !== undefined) ? Number(meta['M16-1_1']) : Number(pol.lease_deposit ?? 2000));
+            rentManwon = hasExcelRent
+              ? Number(slot.excelMonthlyRent)
+              : ((useMeta && meta['M16-1_2'] !== undefined) ? Number(meta['M16-1_2']) : Number(pol.lease_monthlyRent ?? 120));
+          } else if (leaseSrc === 'fixed') {
+            depManwon = Number(pol.lease_deposit ?? 2000);
+            rentManwon = Number(pol.lease_monthlyRent ?? 120);
+          } else {
+            depManwon = (useMeta && meta['M16-1_1'] !== undefined) ? Number(meta['M16-1_1']) : Number(slot.excelDeposit ?? pol.lease_deposit ?? 2000);
+            rentManwon = (useMeta && meta['M16-1_2'] !== undefined) ? Number(meta['M16-1_2']) : Number(slot.excelMonthlyRent ?? pol.lease_monthlyRent ?? 120);
+          }
+          depManwon = Math.max(0, Math.round(Number(depManwon) || 0));
+          rentManwon = Math.max(0, Math.round(Number(rentManwon) || 0));
+
+          if (depManwon > 0 && rentManwon > 0) {
+            selectQRadio('Q16_1', '1');
+            await new Promise(res => setTimeout(res, 100));
+            setInputVal(getQField('Q16_1', 'NUMBER_1'), Math.floor(depManwon / 10000), true);
+            setInputVal(getQField('Q16_1', 'NUMBER_2'), depManwon % 10000, true);
+            setInputVal(getQField('Q16_1', 'NUMBER_3'), Math.floor(rentManwon / 10000), true);
+            setInputVal(getQField('Q16_1', 'NUMBER_4'), rentManwon % 10000, true);
+          } else if (depManwon <= 0 && rentManwon > 0) {
+            selectQRadio('Q16_1', '2');
+            await new Promise(res => setTimeout(res, 100));
+            setInputVal(getQField('Q16_1', 'NUMBER_5'), Math.floor(rentManwon / 10000), true);
+            setInputVal(getQField('Q16_1', 'NUMBER_6'), rentManwon % 10000, true);
+          } else if (depManwon > 0 && rentManwon <= 0) {
+            selectQRadio('Q16_1', '3');
+            await new Promise(res => setTimeout(res, 100));
+            setInputVal(getQField('Q16_1', 'NUMBER_7'), Math.floor(depManwon / 10000), true);
+            setInputVal(getQField('Q16_1', 'NUMBER_8'), depManwon % 10000, true);
+          } else {
+            selectQRadio('Q16_1', '5');
+            await new Promise(res => setTimeout(res, 100));
+            setInputVal(getQField('Q16_1', 'TEXT_1'), '가족·지인 소유 무상 사용', true);
+          }
+          overriddenQNames.add('Q16_1');
+          Array.from(document.querySelectorAll('[question-name="Q16_1"] input, input[qname="Q16_1"]')).forEach(el => overriddenInputs.add(el));
+        }
+
+        // (4) 문17 권리금 유무 & 문17-1 권리금 금액 범위설정 (1000~5000만원, 500만원 단위)
+        if (hasVisibleQ('Q17')) {
+          const gVal = (pol.goodwill_hasGoodwill === '1' || pol.goodwill_hasGoodwill === '2')
+            ? String(pol.goodwill_hasGoodwill)
+            : ((useMeta && meta.M17) ? String(meta.M17) : '2');
+          selectQRadio('Q17', gVal);
+          overriddenQNames.add('Q17');
+        }
+        if (hasVisibleQ('Q17_1')) {
+          const gwMode = pol.q17_goodwillRangeMode || 'range';
+          const gwVal = (gwMode === 'panel' && useMeta && Number(meta['M17-1']) > 0)
+            ? Math.round(Number(meta['M17-1']))
+            : Math.max(0, Math.round(Number(pickedGoodwillManwon || 2000)));
+          const q17Boxes = Array.from(document.querySelectorAll('[question-name="Q17_1"] input, input[qname="Q17_1"]')).filter(isBoxInput);
+          const gwN1 = getQField('Q17_1', 'NUMBER_1') || q17Boxes[0] || null;
+          const gwN2 = getQField('Q17_1', 'NUMBER_2') || (q17Boxes.length >= 2 ? q17Boxes[1] : null);
+          if (gwN1 && gwN2) {
+            setInputVal(gwN1, Math.floor(gwVal / 10000), true);
+            setInputVal(gwN2, gwVal % 10000, true);
+          } else if (gwN1) {
+            setInputVal(gwN1, gwVal, true);
+          }
+          Array.from(document.querySelectorAll('[question-name="Q17_1"] input, input[qname="Q17_1"]')).forEach(el => overriddenInputs.add(el));
+        }
+
+        // (5) 문21 여성 기업인 애로사항 랜덤 (1~5 중 1~2개, 6 기타 제외)
+        if (hasVisibleQ('Q21') && (pol.q21_femaleDiffMode || 'random') !== 'panel') {
+          const cnt21 = Math.random() > 0.5 ? 2 : 1;
+          setQChecks('Q21', shuffleArr(['1', '2', '3', '4', '5']).slice(0, cnt21));
+          overriddenQNames.add('Q21');
+        }
+
+        // (6) 문23 이상기후 피해 여부 — 없음(2) 100%
+        if (hasVisibleQ('Q23')) {
+          const v23 = (pol.q23_climateImpact === '1' || pol.q23_climateImpact === '2')
+            ? String(pol.q23_climateImpact)
+            : ((useMeta && meta.M23) ? String(meta.M23) : '2');
+          selectQRadio('Q23', v23);
+          overriddenQNames.add('Q23');
+        }
+
+        // (7) 문24 사업 경쟁력 제고 노력 랜덤 (1~7 중 1~2개, 8 기타 제외)
+        if (hasVisibleQ('Q24') && (pol.q24_competitivenessMode || 'random') !== 'panel') {
+          const cnt24 = Math.random() > 0.45 ? 2 : 1;
+          setQChecks('Q24', shuffleArr(['1', '2', '3', '4', '5', '6', '7']).slice(0, cnt24));
+          overriddenQNames.add('Q24');
+        }
+
+        // (8) 문25 사업 외 기타 소득 유무 — 없음(2) 100%
+        if (hasVisibleQ('Q25')) {
+          const v25 = (pol.q25_otherIncome === '1' || pol.q25_otherIncome === '2')
+            ? String(pol.q25_otherIncome)
+            : ((useMeta && meta.M25) ? String(meta.M25) : '2');
+          selectQRadio('Q25', v25);
+          overriddenQNames.add('Q25');
+        }
+
+        // (9·10) 문26 온라인 매출 유무 (5.음식 및 주점업만 1번 예, 그 외 2번 아니오) & 문26-1~6 하위 체인
+        if (hasVisibleQ('Q26')) {
+          const rule26 = pol.q26_onlineRule || 'food_only_yes';
+          let v26 = '2';
+          if (rule26 === 'food_only_yes') v26 = isFoodInd ? '1' : '2';
+          else if (rule26 === 'all_no') v26 = '2';
+          else if (rule26 === 'all_yes') v26 = '1';
+          else v26 = (useMeta && meta.M26) ? String(meta.M26) : (isFoodInd ? '1' : '2');
+          selectQRadio('Q26', v26);
+          overriddenQNames.add('Q26');
+        }
+        if (hasVisibleQ('Q26_1')) {
+          if (isFoodInd) {
+            const chMode = String(pol.q26_1_foodChannel || '3');
+            const chKeys = chMode === '3_4' ? ['3', '4'] : [chMode];
+            setQChecks('Q26_1', chKeys);
+          } else {
+            setQChecks('Q26_1', ['2']);
+          }
+          overriddenQNames.add('Q26_1');
+        }
+        if (hasVisibleQ('Q26_2')) {
+          const q26_2Boxes = Array.from(document.querySelectorAll('[question-name="Q26_2"] input, input[qname="Q26_2"]')).filter(isBoxInput);
+          const inp26_2 = getQField('Q26_2', 'NUMBER_1') || q26_2Boxes[0] || null;
+          if (inp26_2) {
+            const curV = parseFloat(inp26_2.value);
+            const targetPct = (curV > 0 && curV <= 100) ? Math.round(curV) : 25;
+            setInputVal(inp26_2, targetPct, true);
+            overriddenInputs.add(inp26_2);
+          }
+        }
+        if (hasVisibleQ('Q26_3')) {
+          const r26_3 = (useMeta && ['1', '2'].includes(String(meta['M26-3']))) ? String(meta['M26-3']) : pickRandom(['1', '2']);
+          selectQRadio('Q26_3', r26_3);
+          await new Promise(res => setTimeout(res, 100));
+          const targetCol = r26_3 === '1' ? 'NUMBER_1' : 'NUMBER_2';
+          const otherCol = r26_3 === '1' ? 'NUMBER_2' : 'NUMBER_1';
+          const inpTarget = getQField('Q26_3', targetCol);
+          const inpOther = getQField('Q26_3', otherCol);
+          if (inpOther && !inpOther.disabled && inpOther.value) setInputVal(inpOther, '');
+          if (inpTarget) {
+            const curPct = parseFloat(inpTarget.value);
+            setInputVal(inpTarget, (curPct > 0 && curPct <= 100) ? Math.round(curPct) : 10, true);
+          }
+          overriddenQNames.add('Q26_3');
+          Array.from(document.querySelectorAll('[question-name="Q26_3"] input, input[qname="Q26_3"]')).forEach(el => overriddenInputs.add(el));
+        }
+        if (hasVisibleQ('Q26_4')) {
+          const q26_4Boxes = Array.from(document.querySelectorAll('[question-name="Q26_4"] input, input[qname="Q26_4"]')).filter(isBoxInput);
+          const inp26_4 = getQField('Q26_4', 'NUMBER_1') || q26_4Boxes[0] || null;
+          if (inp26_4) {
+            const curFee = parseFloat(inp26_4.value);
+            setInputVal(inp26_4, curFee > 0 ? Math.round(curFee) : 35, true);
+            overriddenInputs.add(inp26_4);
+          }
+        }
+        if (hasVisibleQ('Q26_5')) {
+          const q26_5Boxes = Array.from(document.querySelectorAll('[question-name="Q26_5"] input, input[qname="Q26_5"]')).filter(isBoxInput);
+          const inp26_5 = getQField('Q26_5', 'NUMBER_1') || q26_5Boxes[0] || null;
+          if (inp26_5) {
+            const curFee = parseFloat(inp26_5.value);
+            setInputVal(inp26_5, curFee > 0 ? Math.round(curFee) : 20, true);
+            overriddenInputs.add(inp26_5);
+          }
+        }
+        if (hasVisibleQ('Q26_6')) {
+          const cnt26_6 = Math.random() > 0.5 ? 2 : 1;
+          setQChecks('Q26_6', shuffleArr(['1', '2', '3', '4', '5', '6', '7']).slice(0, cnt26_6));
+          overriddenQNames.add('Q26_6');
+        }
+
+        // (11) 문34 근로자 1인당 월평균 급여 범위설정 (240~320만원, 5만원 단위)
+        if (hasVisibleQ('Q34')) {
+          const q34Boxes = Array.from(document.querySelectorAll('[question-name="Q34"] input, input[qname="Q34"]')).filter(isBoxInput);
+          const inp34_1 = getQField('Q34', 'NUMBER_1') || q34Boxes[0] || null;
+          const inp34_2 = getQField('Q34', 'NUMBER_2') || (q34Boxes.length >= 2 ? q34Boxes[1] : null);
+          if (inp34_1) {
+            const wMode = pol.q34_wageRangeMode || 'range';
+            const wageVal = (wMode === 'panel' && useMeta && Number(meta.M34) > 0)
+              ? Math.round(Number(meta.M34))
+              : Math.round(Number(pickedWageManwon || 280));
+            if (inp34_1 && inp34_2) {
+              setInputVal(inp34_1, Math.floor(wageVal / 10000), true);
+              setInputVal(inp34_2, wageVal % 10000, true);
+            } else {
+              setInputVal(inp34_1, wageVal, true);
+            }
+            Array.from(document.querySelectorAll('[question-name="Q34"] input, input[qname="Q34"]')).forEach(el => overriddenInputs.add(el));
+          }
+        }
+
+        // (12) 문35 전년대비 종업원 수 변동 — 변동 없음(2) 100%
+        if (hasVisibleQ('Q35')) {
+          const v35 = ['1', '2', '3'].includes(String(pol.q35_empChange))
+            ? String(pol.q35_empChange)
+            : ((useMeta && meta.M35) ? String(meta.M35) : '2');
+          selectQRadio('Q35', v35);
+          overriddenQNames.add('Q35');
+        }
+
+        // (13) 문43 폐업·전환 고려 여부 (기본 2=아니오 ➔ 문43-4 사업지속 이유 진입)
+        if (hasVisibleQ('Q43')) {
+          const v43 = String(pol.future_businessPlan || '1') === '2' ? '1' : '2';
+          selectQRadio('Q43', v43);
+          overriddenQNames.add('Q43');
+        }
+
+        // (14) 문44 향후 투자·확장 계획 랜덤 (1번 SINGLE 배타성 준수, 9 기타 제외)
+        if (hasVisibleQ('Q44')) {
+          const mode44 = pol.q44_investPlanMode || 'random';
+          if (mode44 === '1_only') {
+            setQChecks('Q44', ['1']);
+          } else if (mode44 === 'random_active') {
+            const cnt44 = Math.random() > 0.5 ? 2 : 1;
+            setQChecks('Q44', shuffleArr(['2', '3', '4', '5', '6', '7', '8']).slice(0, cnt44));
+          } else {
+            if (Math.random() < 0.28) {
+              setQChecks('Q44', ['1']);
+            } else {
+              const cnt44 = Math.random() > 0.5 ? 2 : 1;
+              setQChecks('Q44', shuffleArr(['2', '3', '4', '5', '6', '7', '8']).slice(0, cnt44));
+            }
+          }
+          overriddenQNames.add('Q44');
+        }
+
+        // (15) 문60 보증지원사업 인지도 — 보증지원여부(O)는 3,4 중 선택 / 그외(X)는 1,2 중 선택 + 문60-1/61/61-1 연동
+        if (hasVisibleQ('Q60')) {
+          const rule60 = pol.q60_awarenessRule || 'guarantee_sync';
+          let v60 = '2';
+          if (rule60 === 'guarantee_sync') {
+            v60 = guarValGlobal === 'O' ? pickRandom(['3', '4']) : pickRandom(['1', '2']);
+          } else if (rule60 === 'random_all') {
+            v60 = pickRandom(['1', '2', '3', '4']);
+          } else if (rule60 === '3_4') {
+            v60 = pickRandom(['3', '4']);
+          } else {
+            v60 = pickRandom(['1', '2']);
+          }
+          selectQRadio('Q60', v60);
+          overriddenQNames.add('Q60');
+        }
+        if (hasVisibleQ('Q60_1')) {
+          selectQRadio('Q60_1', pickRandom(['1', '2', '3', '4', '5', '6', '7']));
+          overriddenQNames.add('Q60_1');
+        }
+        if (hasVisibleQ('Q61')) {
+          const v61 = guarValGlobal === 'O' ? pickRandom(['3', '4']) : pickRandom(['1', '2']);
+          selectQRadio('Q61', v61);
+          overriddenQNames.add('Q61');
+        }
+        if (hasVisibleQ('Q61_1')) {
+          selectQRadio('Q61_1', pickRandom(['1', '2', '3', '4', '5', '6', '7']));
+          overriddenQNames.add('Q61_1');
+        }
+
+        // (16) 문66·문66-1 타 기관 지원사업 인지 경로 랜덤 (1~7 중 무작위, 8 기타 제외) & 문66-2
+        if (hasVisibleQ('Q66')) {
+          selectQRadio('Q66', pickRandom(['2', '3']));
+          overriddenQNames.add('Q66');
+        }
+        if (hasVisibleQ('Q66_1')) {
+          const mode66_1 = pol.q66_1_otherOrgRouteMode || 'random';
+          const v66_1 = mode66_1 === 'random' ? pickRandom(['1', '2', '3', '4', '5', '6', '7']) : String(mode66_1);
+          selectQRadio('Q66_1', v66_1);
+          overriddenQNames.add('Q66_1');
+        }
+        if (hasVisibleQ('Q66_2')) {
+          const cnt66_2 = Math.random() > 0.5 ? 2 : 1;
+          setQChecks('Q66_2', shuffleArr(['1', '2', '3', '4', '5']).slice(0, cnt66_2));
+          overriddenQNames.add('Q66_2');
+        }
+
+        // (19) 제조업 전용 추가문항 (문69 ~ 문92-2) — 모두 '아니오 / 없음' 응답
+        const mfgMode = pol.q69_mfgAddRule || 'all_no';
+        if (hasVisibleQ('Q69')) {
+          selectQRadio('Q69', '2'); // 아니오
+          overriddenQNames.add('Q69');
+        }
+        if (hasVisibleQ('Q70')) {
+          selectQRadio('Q70', '2'); // 아니오 (Q70_A 자동 비활성/스킵)
+          overriddenQNames.add('Q70');
+          overriddenQNames.add('Q70_A');
+        }
+        if (hasVisibleQ('Q71')) {
+          selectQRadio('Q71', '2'); // 없음
+          overriddenQNames.add('Q71');
+        }
+        if (hasVisibleQ('Q72')) {
+          selectQRadio('Q72', mfgMode === 'mixed' ? '2' : '1'); // 1=없음
+          overriddenQNames.add('Q72');
+        }
+        if (hasVisibleQ('Q76')) {
+          selectQRadio('Q76', pickRandom(['1', '2', '4', '6', '8']));
+          overriddenQNames.add('Q76');
+        }
+        if (hasVisibleQ('Q77')) {
+          selectQRadio('Q77', '4'); // 위탁기업도, 수탁기업도 아님 (Q78~Q79 스킵)
+          overriddenQNames.add('Q77');
+        }
+        if (hasVisibleQ('Q82')) {
+          selectQRadio('Q82', mfgMode === 'mixed' ? '3' : '1'); // 1=3년 이상 거래 기업 없음
+          overriddenQNames.add('Q82');
+        }
+        if (hasVisibleQ('Q83')) {
+          selectQRadio('Q83', '2'); // 전속 거래 없음 (Q84 스킵)
+          overriddenQNames.add('Q83');
+        }
+        if (hasVisibleQ('Q90')) {
+          selectQRadio('Q90', '2'); // 자체 브랜드 활용하지 않음 (Q90_A 스킵)
+          overriddenQNames.add('Q90');
+          overriddenQNames.add('Q90_A');
+        }
+        if (hasVisibleQ('Q92')) {
+          selectQRadio('Q92', '2'); // 스마트공장 도입 여부: 아니오
+          overriddenQNames.add('Q92');
+        }
+        if (hasVisibleQ('Q92_2')) {
+          setQChecks('Q92_2', pickRandom([['1'], ['2'], ['1', '2']]));
+          overriddenQNames.add('Q92_2');
         }
 
         // ------------------------------------------------------------------
@@ -1067,7 +1789,6 @@ export async function runMetrixSurvey({
           }
         };
 
-        const guarValGlobal = String(slot.guaranteeSupport || meta['보증지원여부'] || '').trim().toUpperCase();
         const isM64Screen = bodyText.includes('경기신용보증재단') && (
           bodyText.includes('운영하는 아래 상품') || bodyText.includes('인지여부') || bodyText.includes('문64')
         );
@@ -1086,17 +1807,25 @@ export async function runMetrixSurvey({
           for (const name in radioGroups) {
             const group = radioGroups[name];
             if (group.length === 0) continue;
+            const grpQName = group[0].getAttribute('qname') || name;
+            if (overriddenQNames.has(grpQName) || overriddenQNames.has(name)) continue;
+
+            const ownerTr = group[0].closest('tr');
+            // RADIOSETS 행에 빈 input-etc(예: 문91 9번 기타)가 있을 경우 오체크 방지
+            if (ownerTr && ownerTr.querySelector('input.input-etc, textarea.input-etc')) {
+              const etcInp = ownerTr.querySelector('input.input-etc, textarea.input-etc');
+              if (!etcInp.value || !etcInp.value.trim()) continue;
+            }
+
             const isChecked = group.some(r => r.checked);
             if (isChecked && (preserveInputs || passNo > 1)) continue;
 
             const groupLabelsJoined = group.map(getRadioLabel).join(' ');
-            const ownerTr = group[0].closest('tr');
             const rowIdx = ownerTr ? Math.max(0, allRadioRows.indexOf(ownerTr)) : 0;
 
             // [특수 연쇄 테이블] 문64 경기신용보증재단 상품별 인지여부(1열) ➔ 이용경험(2열)
             if (isM64Screen || (groupLabelsJoined.includes('알고 있') && groupLabelsJoined.includes('모름')) || groupLabelsJoined.includes('이용경험')) {
               if (groupLabelsJoined.includes('이용경험')) {
-                // 보증지원여부=O 인 경우 첫 번째 대표 보증상품 이용경험 있음(1), X 인 경우 이용경험 없음(2)
                 const useExpVal = (guarValGlobal === 'O' && rowIdx === 0) ? '1' : '2';
                 selectRadioByVal(group, useExpVal, useExpVal === '1' ? 0 : 1);
                 continue;
@@ -1163,7 +1892,7 @@ export async function runMetrixSurvey({
               continue;
             }
 
-            // 문10 경영실적 변화 추세 (1=감소, 2=비슷/유지, 3=증가 또는 5점 척도)
+            // 문12 등 경영실적 변화 추세
             if (bodyText.includes('경영실적') && (bodyText.includes('전년') || bodyText.includes('비교') || bodyText.includes('어떠'))) {
               if (group.length === 3) {
                 const tVal = trendMode === 'growth' ? '3' : (trendMode === 'decrease' ? '1' : ((useMeta && meta.M10) ? String(meta.M10) : '2'));
@@ -1185,7 +1914,7 @@ export async function runMetrixSurvey({
               continue;
             }
 
-            // 문16 사업장 점유 형태 (자가 vs 임차, 보증부월세 vs 전세 vs 무상)
+            // 문16 사업장 점유 형태 (자가 vs 임차)
             if (bodyText.includes('점유 형태') || bodyText.includes('임차 형태') || (bodyText.includes('자가') && bodyText.includes('임차'))) {
               if (group.length === 2) {
                 const ownOrRent = pol.lease_type === 'own' ? '1' : ((useMeta && meta.M16) ? String(meta.M16) : '2');
@@ -1197,33 +1926,17 @@ export async function runMetrixSurvey({
               continue;
             }
 
-            // 문17 권리금 유무 (1=있음, 2=없음)
-            if (bodyText.includes('권리금') && (bodyText.includes('있습니') || bodyText.includes('유무') || bodyText.includes('지불'))) {
-              const gVal = (pol.goodwill_hasGoodwill === '1' || pol.goodwill_hasGoodwill === '2')
-                ? pol.goodwill_hasGoodwill
-                : ((useMeta && meta.M17) ? String(meta.M17) : '2');
-              selectRadioByVal(group, gVal, 1);
-              continue;
-            }
-
-            // 문18 권리금 회수 가능성 (1=회수가능, 2=일부/보통, 3=어려움)
+            // 문18 권리금 회수 가능성
             if (bodyText.includes('권리금') && bodyText.includes('회수')) {
               const recVal = (useMeta && meta.M18) ? String(meta.M18) : String(pol.goodwill_recoveryExpect || '2');
               selectRadioByVal(group, recVal, 1);
               continue;
             }
 
-            // 문24 상권 경쟁 체감도 (7점/5점 척도)
+            // 상권 경쟁 체감도 척도
             if (bodyText.includes('경쟁') && (bodyText.includes('상권') || bodyText.includes('동종'))) {
               const compVal = (useMeta && meta.M24) ? String(meta.M24) : String(pol.market_competitionLevel || '5');
               selectRadioByVal(group, compVal, Math.min(group.length - 1, 3));
-              continue;
-            }
-
-            // 문26 향후 사업 지속 의향 (1=계속 운영, 2=전환/이전/폐업 고려)
-            if (bodyText.includes('계속 운영') || bodyText.includes('폐업') || bodyText.includes('향후 사업')) {
-              const planVal = (useMeta && meta.M26) ? String(meta.M26) : String(pol.future_businessPlan || '1');
-              selectRadioByVal(group, planVal, 0);
               continue;
             }
 
@@ -1253,21 +1966,30 @@ export async function runMetrixSurvey({
               continue;
             }
 
-            // 5점 척도 만족도 문항 (문50~문66 등: 1=매우불만, 2=불만, 3=보통, 4=만족, 5=매우만족)
-            if (group.length === 5) {
+            // 5점 척도 만족도·RADIOSETS 문항 (동일응답 직선체크 경고 방지를 위한 행별 분산 포함)
+            if (group.length === 5 && !hasVisibleQ('Q93')) {
               const mode = pol.satisfaction_mode || 'mixed_3_4';
+              const isRadioSetsRow = Boolean(ownerTr && (ownerTr.hasAttribute('vkey') || ownerTr.hasAttribute('vKey')));
               let pickIdx = 3;
               if (mode === 'positive_4_5' || mode === 'mostly_5') {
-                pickIdx = (Math.random() > 0.45) ? 4 : 3;
+                pickIdx = isRadioSetsRow ? (rowIdx % 2 === 0 ? 3 : 4) : ((Math.random() > 0.45) ? 4 : 3);
               } else if (mode === 'neutral_3' || mode === 'mostly_3') {
-                pickIdx = 2;
+                pickIdx = (isRadioSetsRow && rowIdx === 1) ? 3 : 2;
               } else {
-                pickIdx = (Math.random() > 0.5) ? 3 : 2;
+                pickIdx = isRadioSetsRow
+                  ? (rowIdx === 0 ? 2 : (rowIdx === 1 ? 3 : (Math.random() > 0.5 ? 3 : 2)))
+                  : ((Math.random() > 0.5) ? 3 : 2);
               }
               const pick = group[pickIdx] || group[3] || group[0];
               pick.click();
               pick.checked = true;
               if (typeof $ !== 'undefined') $(pick).prop('checked', true).trigger('change');
+              continue;
+            }
+
+            // 문93 생성형 AI 사용 일수: 1=사용하지 않음 기본 선택으로 불필요 하위문항(문99) 방지
+            if (hasVisibleQ('Q93') && grpQName === 'Q93') {
+              selectRadioByVal(group, '1', 0);
               continue;
             }
 
@@ -1297,14 +2019,15 @@ export async function runMetrixSurvey({
         // ------------------------------------------------------------------
         // 체크박스(CHECKBOX) 처리 — [필수 규칙] 문15-3 보증지원여부(O/X) 정책자금 연동 선택가이드
         // ------------------------------------------------------------------
-        const checkBoxes = Array.from(document.querySelectorAll('input[type="checkbox"]')).filter(c => c.offsetParent !== null && !c.disabled);
+        const checkBoxes = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+          .filter(c => c.offsetParent !== null && !c.disabled && !overriddenQNames.has(c.getAttribute('qname') || ''));
         if (checkBoxes.length > 0) {
           const isM15_3 = bodyText.includes('문15-3') ||
             bodyText.includes('사업자금을 조달한 경로') ||
             (bodyText.includes('사업자금') && bodyText.includes('조달한 경로')) ||
             checkBoxes.some(c => {
               const nm = (c.name || c.id || c.getAttribute('qname') || '').toUpperCase();
-              return nm.includes('M15-3') || nm.includes('M15_3');
+              return nm.includes('M15-3') || nm.includes('M15_3') || nm === 'Q15_3';
             });
 
           const setCbState = (cb, wantChecked) => {
@@ -1342,7 +2065,6 @@ export async function runMetrixSurvey({
               ((fundingRule === 'excel_sync' || fundingRule === 'excel_sync_with_bank') && guarVal === 'O');
 
             if (shouldCheckPolicy) {
-              // 보증지원여부 = O ➔ ④ 정책자금(중소벤처기업진흥공단 등) 필수 체크 (배타 보기 6·7 해제)
               setCbState(cbNone, false);
               setCbState(cbOther, false);
               if (fundingRule === 'excel_sync_with_bank') {
@@ -1359,7 +2081,6 @@ export async function runMetrixSurvey({
                 setCbState(cbPolicy, true);
               }
             } else {
-              // 보증지원여부 = X ➔ ④ 정책자금 절대 체크 금지!
               setCbState(cbPolicy, false);
               setCbState(cbOther, false);
 
@@ -1383,11 +2104,18 @@ export async function runMetrixSurvey({
               }
             }
           } else {
+            const nonEtcCbs = checkBoxes.filter(c => {
+              const wrap = c.closest('label, li, tr, td, .item, .answer-item');
+              if (wrap && wrap.querySelector('input.input-etc, textarea.input-etc')) return false;
+              const txt = (wrap?.innerText || '').replace(/\s+/g, ' ').trim();
+              return !/^기타(\b|\s|$)/.test(txt);
+            });
             const checkedCount = checkBoxes.filter(c => c.checked).length;
             if (checkedCount === 0) {
-              checkBoxes[0].click();
-              checkBoxes[0].checked = true;
-              if (typeof $ !== 'undefined') $(checkBoxes[0]).prop('checked', true).trigger('change');
+              const firstCb = nonEtcCbs[0] || checkBoxes[0];
+              firstCb.click();
+              firstCb.checked = true;
+              if (typeof $ !== 'undefined') $(firstCb).prop('checked', true).trigger('change');
             }
           }
         }
@@ -1412,7 +2140,16 @@ export async function runMetrixSurvey({
         ).filter(isBoxInput);
 
         textInputs.forEach((input, inpIdx) => {
-          if (preserveInputs && input.value && input.value.trim() !== '') return;
+          if (overriddenInputs.has(input)) return;
+          if (input.classList.contains('input-etc') || input.classList.contains('cell-etc')) {
+            const nearChoice = input.closest('li, label, tr, td, .item, .answer-item')
+              ?.querySelector('input[type="radio"]:not(:disabled), input[type="checkbox"]:not(:disabled)');
+            if (!nearChoice || !nearChoice.checked) return;
+          }
+          if (preserveInputs && input.value && input.value.trim() !== '') {
+            setInputVal(input, input.value.trim());
+            return;
+          }
 
           const tag = input.tagName.toLowerCase();
           const guide = (input.getAttribute('data-guide') || input.placeholder || '').toUpperCase();
@@ -1421,8 +2158,9 @@ export async function runMetrixSurvey({
           const dataMax = input.getAttribute('data-max');
           const maxLen = input.getAttribute('maxlength');
           const rowText = (input.closest('tr, li, .q-row, .form-group, div')?.innerText || '').replace(/\s+/g, ' ');
-          const nextUnitTxt = (input.nextSibling?.textContent || '').replace(/\s+/g, '').trim();
-          const prevText = getTextBeforeInput(input);
+          const nextEl = input.parentElement?.tagName?.toLowerCase() === 'span' ? input.parentElement : input;
+          const nextUnitTxt = ((input.nextSibling?.textContent || '') + (nextEl.nextSibling?.textContent || '')).replace(/\s+/g, '').trim();
+          const prevText = getTextBeforeInput(input) || getTextBeforeInput(nextEl);
 
           // 1) 우선순위(s-gradeclick) 화면의 부속 기타 입력란 오입력 방지
           if (tag !== 'textarea' && document.querySelectorAll('.s-gradeclick').length > 0) {
@@ -1438,7 +2176,7 @@ export async function runMetrixSurvey({
             }
           }
           if (tag !== 'textarea' && (rowText.includes('기타') || prevText.includes('기타'))) {
-            const nearChoice = input.closest('li, label, tr, div')?.querySelector('input[type="radio"], input[type="checkbox"]');
+            const nearChoice = input.closest('li, label, tr, div')?.querySelector('input[type="radio"]:not(:disabled), input[type="checkbox"]:not(:disabled)');
             if (!nearChoice || !nearChoice.checked) return;
           }
 
@@ -1487,7 +2225,7 @@ export async function runMetrixSurvey({
               !/만원|보증금|월세|임차료|매출액|영업비용|영업이익|부채|권리금|순소득|급여/.test(rowText) &&
               (dataMin === '1900' || dataMin === '1950' || dataMin === '1960' || dataMax === '2026' || dataMax === '2025' ||
                guide.includes('년도') || guide.includes('연도') || name.includes('YEAR') ||
-               (/^년/.test(nextUnitTxt) && (bodyText.includes('출생') || bodyText.includes('개업') || bodyText.includes('창업') || bodyText.includes('수혜'))))
+               (/^년/.test(nextUnitTxt) && (bodyText.includes('출생') || bodyText.includes('개업') || bodyText.includes('창업') || bodyText.includes('수혜') || bodyText.includes('지원받'))))
             ) {
               if (bodyText.includes('출생') || bodyText.includes('태어난') || name.includes('AA13')) {
                 input.value = (useMeta && meta.AA13) ? String(meta.AA13) : '1972';
@@ -1534,47 +2272,19 @@ export async function runMetrixSurvey({
             }
             // (9) 금액 입력 문항 (억/만원 2칸 분할 및 단일 만원 칸 모두 완벽 대응)
             else if (isEokUnit || isManwonUnit || hasPrecedingEok || guide.includes('만원') || guide.includes('금액') || guide.includes('비용') || guide.includes('매출') || bodyText.includes('만원')) {
-              // 문16-1 보증금 / 월세 / 전세금 (한 줄에 '보증금 : [ ]억 [ ]만원, 월세 : [ ]억 [ ]만원' 배치 대응)
-              if (bodyText.includes('보증금') || bodyText.includes('월세') || bodyText.includes('임차료')) {
-                const lastMonthlyIdx = prevText.lastIndexOf('월세');
-                const lastDepositIdx = prevText.lastIndexOf('보증금');
-                const lastJeonseIdx = prevText.lastIndexOf('전세');
-                if (lastMonthlyIdx > lastDepositIdx && lastMonthlyIdx >= 0) {
-                  const rentAmt = (useMeta && meta['M16-1_2']) ? Number(meta['M16-1_2']) : Number(pol.lease_monthlyRent ?? 120);
-                  input.value = formatMoneyByUnit(rentAmt);
-                } else if (lastJeonseIdx > lastDepositIdx && lastJeonseIdx >= 0) {
-                  const jeonseAmt = (useMeta && meta['M16-1_3']) ? Number(meta['M16-1_3']) : 10000;
-                  input.value = formatMoneyByUnit(jeonseAmt);
-                } else if (rowText.includes('월세') && !rowText.includes('보증금')) {
-                  const rentAmt = (useMeta && meta['M16-1_2']) ? Number(meta['M16-1_2']) : Number(pol.lease_monthlyRent ?? 120);
-                  input.value = formatMoneyByUnit(rentAmt);
-                } else {
-                  const depAmt = (useMeta && meta['M16-1_1']) ? Number(meta['M16-1_1']) : Number(pol.lease_deposit ?? 2000);
-                  input.value = formatMoneyByUnit(depAmt);
-                }
-              }
-              // 문17-1 권리금 금액
-              else if (bodyText.includes('권리금')) {
-                const gwAmt = (useMeta && meta['M17-1']) ? Number(meta['M17-1']) : Number(pol.goodwill_amount ?? 1000);
+              if (bodyText.includes('권리금')) {
+                const gwAmt = Number(pickedGoodwillManwon || pol.goodwill_amount || 1500);
                 input.value = formatMoneyByUnit(gwAmt);
-              }
-              // 문15-1 총 부채/대출 금액
-              else if (bodyText.includes('부채') || bodyText.includes('대출')) {
+              } else if (bodyText.includes('부채') || bodyText.includes('대출')) {
                 const debtAmt = (useMeta && meta['M15-1']) ? Number(meta['M15-1']) : Number(pol.debt_totalAmount ?? 3000);
                 input.value = formatMoneyByUnit(debtAmt);
-              }
-              // 문13 대표자 월평균 순소득
-              else if (bodyText.includes('순소득') || (bodyText.includes('대표자') && bodyText.includes('소득'))) {
+              } else if (bodyText.includes('순소득') || (bodyText.includes('대표자') && bodyText.includes('소득'))) {
                 const baseInc = (useMeta && meta.M13) ? Number(meta.M13) : Number(pol.owner_monthlyIncome ?? 320);
                 input.value = formatMoneyByUnit(Math.max(100, Math.round(baseInc * trendMult)));
-              }
-              // 문34 근로자 1인당 월평균 급여/임금
-              else if (bodyText.includes('급여') || bodyText.includes('임금') || bodyText.includes('인건비')) {
-                const wageAmt = (useMeta && meta.M34) ? Number(meta.M34) : Number(pol.labor_avgMonthlyWage ?? 280);
+              } else if (bodyText.includes('급여') || bodyText.includes('임금') || bodyText.includes('인건비')) {
+                const wageAmt = Number(pickedWageManwon || pol.labor_avgMonthlyWage || 280);
                 input.value = formatMoneyByUnit(wageAmt);
-              }
-              // 문11 연간 매출액 / 영업비용 / 영업이익
-              else if (bodyText.includes('매출액') || bodyText.includes('영업비용') || bodyText.includes('영업이익')) {
+              } else if (bodyText.includes('매출액') || bodyText.includes('영업비용') || bodyText.includes('영업이익')) {
                 const baseSales = (useMeta && Number(meta.M11_1) > 0) ? Number(meta.M11_1) : 24000;
                 const baseCost = (useMeta && Number(meta.M11_3) > 0) ? Number(meta.M11_3) : 18000;
                 const baseProfit = (useMeta && Number(meta.M11_5) > 0) ? Number(meta.M11_5) : Math.max(2000, baseSales - baseCost);
@@ -1615,7 +2325,7 @@ export async function runMetrixSurvey({
             }
           }
 
-          if (typeof $ !== 'undefined') $(input).val(input.value).trigger('input').trigger('change').trigger('keyup');
+          setInputVal(input, input.value);
         });
 
         // SELECT 드롭다운 처리
@@ -1626,7 +2336,14 @@ export async function runMetrixSurvey({
             if (typeof $ !== 'undefined') $(sel).trigger('change');
           }
         });
-      }, { slot: slotData, pol: effectivePolicy, quotaIdx: quotaIndex }).catch(err => console.error('[Metrix DOM 주입 오류]:', err.message));
+      }, {
+        slot: slotData,
+        pol: effectivePolicy,
+        quotaIdx: quotaIndex,
+        indKey: industryKey,
+        pickedGoodwillManwon,
+        pickedWageManwon
+      }).catch(err => console.error('[Metrix DOM 주입 오류]:', err.message));
 
       await sleep(jitter(350, 550));
 
@@ -1644,8 +2361,8 @@ export async function runMetrixSurvey({
           if (mMatch) {
             qCode = mMatch[1].replace(/\s+/g, '');
           } else {
-            const qEl = document.querySelector('[qname], [data-qname], [id^="BOX_"]');
-            const rawQn = qEl ? (qEl.getAttribute('qname') || qEl.getAttribute('data-qname') || qEl.id.replace(/^BOX_/, '')) : '';
+            const qEl = document.querySelector('[question-name], [qname], [data-qname], [id^="BOX_"]');
+            const rawQn = qEl ? (qEl.getAttribute('question-name') || qEl.getAttribute('qname') || qEl.getAttribute('data-qname') || qEl.id.replace(/^BOX_/, '')) : '';
             qCode = rawQn || `STEP_${curStep}`;
           }
         }
@@ -1679,13 +2396,16 @@ export async function runMetrixSurvey({
           return (el.getAttribute('data-guide') || el.placeholder || el.name || '').trim();
         };
 
-        // (1) 우선순위(s-gradeclick) 요약
-        const rankMatch = bodyText.match(/1순위\s*:\s*([^2]+?)\s*2순위\s*:\s*([^\n]+?)(?:\s+다음|$)/);
-        if (rankMatch && (rankMatch[1].trim() || rankMatch[2].trim())) {
-          parts.push(`1순위: ${rankMatch[1].trim().slice(0, 50)} / 2순위: ${rankMatch[2].trim().slice(0, 50)}`);
+        // (1) 우선순위(s-gradeclick) 요약 — 2순위 및 3순위(문67·문68·문88·문89) 전수 지원
+        const rank3Match = bodyText.match(/1순위\s*:\s*([^2]+?)\s*2순위\s*:\s*([^3]+?)\s*3순위\s*:\s*([^\n]+?)(?:\s+다음|\s+다시|$)/);
+        const rank2Match = bodyText.match(/1순위\s*:\s*([^2]+?)\s*2순위\s*:\s*([^\n]+?)(?:\s+다음|\s+다시|$)/);
+        if (rank3Match && (rank3Match[1].trim() || rank3Match[2].trim() || rank3Match[3].trim())) {
+          parts.push(`1순위: ${rank3Match[1].trim().slice(0, 45)} / 2순위: ${rank3Match[2].trim().slice(0, 45)} / 3순위: ${rank3Match[3].trim().slice(0, 45)}`);
+        } else if (rank2Match && (rank2Match[1].trim() || rank2Match[2].trim())) {
+          parts.push(`1순위: ${rank2Match[1].trim().slice(0, 50)} / 2순위: ${rank2Match[2].trim().slice(0, 50)}`);
         } else {
           const activeGrades = Array.from(document.querySelectorAll('.s-gradeclick')).filter(el =>
-            el.classList.contains('active') || el.classList.contains('selected') || el.classList.contains('on') || /(1순위|2순위)/.test(el.innerText || '')
+            el.classList.contains('active') || el.classList.contains('selected') || el.classList.contains('on') || /(1순위|2순위|3순위)/.test(el.innerText || '')
           );
           if (activeGrades.length > 0) {
             parts.push(activeGrades.map(el => `[${el.getAttribute('akey') || ''}] ${(el.innerText || '').replace(/\s+/g, ' ').trim()}`).join(' / '));

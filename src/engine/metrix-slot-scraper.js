@@ -144,6 +144,9 @@ export async function fetchMetrix622GoogleSheetData(sheetId = METRIX_622_GOOGLE_
   if (!buffer && fs.existsSync('/tmp/gyeonggi_622_sheet.xlsx')) {
     buffer = fs.readFileSync('/tmp/gyeonggi_622_sheet.xlsx');
   }
+  if (!buffer && fs.existsSync('/tmp/gg_sheet.xlsx')) {
+    buffer = fs.readFileSync('/tmp/gg_sheet.xlsx');
+  }
 
   const sheetMapByAccount = {};
   const sparePhones = [];
@@ -312,6 +315,13 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
         });
       }, { sessionInfo });
 
+      const parseSheetManwon = (val) => {
+        if (val === undefined || val === null || val === '') return null;
+        const cleaned = String(val).replace(/,/g, '').trim();
+        if (!cleaned || isNaN(Number(cleaned))) return null;
+        return Math.max(0, Math.round(Number(cleaned)));
+      };
+
       const accSheet = sheetMapByAccount[acc.loginId] || { byUid: new Map(), byBizNo: new Map() };
       for (const r of rows) {
         const prev = existingByKey.get(`${acc.loginId}_${r.uid}`) || existingByKey.get(r.uid) || {};
@@ -320,6 +330,10 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
         const excelPhone = sheetPhone || prev.excelPhone || '';
         const effectivePhone = excelPhone || r.serverPhone || prev.phone || '';
         const phoneNeedsSync = Boolean(excelPhone && excelPhone !== r.serverPhone);
+        const sheetDeposit = parseSheetManwon(sRow['보증금']);
+        const sheetMonthlyRent = parseSheetManwon(sRow['월세']);
+        const excelDeposit = sheetDeposit !== null ? sheetDeposit : (prev.excelDeposit ?? null);
+        const excelMonthlyRent = sheetMonthlyRent !== null ? sheetMonthlyRent : (prev.excelMonthlyRent ?? null);
         const industryKey = getMetrixIndustryKey(r.industry);
         const rawGuar = String(sRow['보증지원여부'] || r.rawMeta?.['보증지원여부'] || prev.guaranteeSupport || '').trim().toUpperCase();
         const guaranteeSupport = rawGuar === 'O' ? 'O' : (rawGuar === 'X' ? 'X' : rawGuar);
@@ -346,6 +360,8 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
           excelPhone,
           serverPhone: r.serverPhone,
           phoneNeedsSync,
+          excelDeposit,
+          excelMonthlyRent,
           bizNumber: r.bizNumber,
           corpNumber: r.corpNumber,
           bizStatus: prev.bizStatus || '계속사업자',
@@ -415,6 +431,8 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
     { key: 'ceoName', label: '대표자 성명' },
     { key: 'excelPhone', label: '시트 휴대폰(변경값)' },
     { key: 'serverPhone', label: '서버 휴대폰(기존)' },
+    { key: 'excelDeposit', label: '보증금(만원)' },
+    { key: 'excelMonthlyRent', label: '월세(만원)' },
     { key: 'bizNumber', label: '사업자등록번호' },
     { key: 'bizStatus', label: '휴폐업조회' },
     { key: 'guaranteeSupport', label: '보증지원여부' },
@@ -470,6 +488,8 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
       '구글시트 휴대폰': s.excelPhone,
       '서버 기존 휴대폰': s.serverPhone,
       '적용 휴대폰': s.phone,
+      '보증금(만원)': s.excelDeposit ?? '',
+      '월세(만원)': s.excelMonthlyRent ?? '',
       '사업자등록번호': s.bizNumber,
       '과세유형': s.taxType,
       '휴폐업상태': s.bizStatus,

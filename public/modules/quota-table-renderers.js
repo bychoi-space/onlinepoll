@@ -1181,15 +1181,19 @@ export function renderMetrixQuotaTable({
     const indEnabled = (metrixPolicy?.useIndustryGuidelines !== false && polInd.enabled !== false);
     const guarRaw = String(item.guaranteeSupport || item.rawMeta?.['보증지원여부'] || '').trim().toUpperCase();
     const guarBadgeHtml = guarRaw === 'O'
-      ? `<div style="margin-top:3px;"><span class="badge-status success font-mono" style="padding:1px 6px; font-size:10px;" title="엑셀 보증지원여부=O ➔ 문15-3 ④정책자금(중소벤처기업진흥공단 등) 자동 체크">보증 O (정책자금✓)</span></div>`
+      ? `<div style="margin-top:3px;"><span class="badge-status success font-mono" style="padding:1px 6px; font-size:10px;" title="엑셀 보증지원여부=O ➔ 문15-3 ④정책자금 체크 &amp; 문60 ③·④ 연동">보증 O (정책자금·문60③④)</span></div>`
       : (guarRaw === 'X'
-        ? `<div style="margin-top:3px;"><span class="badge-status ready font-mono" style="padding:1px 6px; font-size:10px;" title="엑셀 보증지원여부=X ➔ 문15-3 ④정책자금 체크 제외">보증 X (정책자금 제외)</span></div>`
+        ? `<div style="margin-top:3px;"><span class="badge-status ready font-mono" style="padding:1px 6px; font-size:10px;" title="엑셀 보증지원여부=X ➔ 문15-3 ④제외 &amp; 문60 ①·② 연동">보증 X (문60①②)</span></div>`
         : '');
+    const hasExcelLease = item.excelDeposit !== undefined || item.excelMonthlyRent !== undefined;
+    const leaseBadgeHtml = hasExcelLease
+      ? `<div style="margin-top:2px;"><span class="badge-status ready font-mono" style="padding:1px 6px; font-size:10px; background:#f0fdf4; color:#166534; border:1px solid #bbf7d0;" title="문16-1 임대차 보증금·월세 엑셀 자동 입력값">보증 ${escapeHtml(String(item.excelDeposit ?? 0))}만 / 월세 ${escapeHtml(String(item.excelMonthlyRent ?? 0))}만</span></div>`
+      : '';
     const guideBadgeHtml = (item.guideApplied && item.guideSummary
       ? `<span class="badge-status pilot font-bold" style="padding:3px 8px; font-size:11px;" title="${escapeHtml(item.guideSummary)}"><i class="fa-solid fa-wand-magic-sparkles"></i> ${escapeHtml(item.guideSummary)}</span>`
       : (indEnabled
         ? `<span class="badge-status success" style="padding:3px 8px; font-size:11px;" title="${escapeHtml(indMeta.guide)}"><i class="fa-solid fa-sliders"></i> ${escapeHtml(indMeta.short)} 맞춤가이드</span>`
-        : `<span class="badge-status ready" style="padding:3px 8px; font-size:11px;">공통 기본가이드</span>`)) + guarBadgeHtml;
+        : `<span class="badge-status ready" style="padding:3px 8px; font-size:11px;">공통 기본가이드</span>`)) + guarBadgeHtml + leaseBadgeHtml;
 
     const surveyUrlTag = item.surveyUrl
       ? `<a href="${escapeHtml(item.surveyUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small" title="새 탭에서 설문 열기"><i class="fa-solid fa-arrow-up-right-from-square"></i> 설문</a>`

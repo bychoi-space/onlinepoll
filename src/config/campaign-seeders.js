@@ -496,6 +496,14 @@ export function seedInitialCampaigns({
                   match.guaranteeSupport = ggItem.guaranteeSupport;
                   needGgUpdate = true;
                 }
+                if (ggItem.excelDeposit !== undefined && ggItem.excelDeposit !== null && match.excelDeposit !== ggItem.excelDeposit) {
+                  match.excelDeposit = ggItem.excelDeposit;
+                  needGgUpdate = true;
+                }
+                if (ggItem.excelMonthlyRent !== undefined && ggItem.excelMonthlyRent !== null && match.excelMonthlyRent !== ggItem.excelMonthlyRent) {
+                  match.excelMonthlyRent = ggItem.excelMonthlyRent;
+                  needGgUpdate = true;
+                }
                 if (ggItem.industryKey && !match.industryKey) {
                   match.industryKey = ggItem.industryKey;
                   needGgUpdate = true;
@@ -538,7 +546,7 @@ export function seedInitialCampaigns({
               }
             }
 
-            // 사용자의 업종별 맞춤 가이드(metrixPolicy / industryPolicies)를 절대 덮어쓰지 않고 신규 문15-3 기본 키만 보충
+            // 사용자의 업종별 맞춤 가이드(metrixPolicy / industryPolicies)를 절대 덮어쓰지 않고 신규 문항 가이드 기본 키만 보충
             const curPol = existingGyeonggiCamp.metrixPolicy || existingGyeonggiCamp.masterBaseline?.policy || {};
             if (!curPol.industryPolicies && defaultMetrixPolicy?.industryPolicies) {
               existingGyeonggiCamp.metrixPolicy = {
@@ -555,13 +563,46 @@ export function seedInitialCampaigns({
                 existingGyeonggiCamp.metrixPolicy = { ...curPol };
                 needGgUpdate = true;
               }
-              if (existingGyeonggiCamp.metrixPolicy.funding_guaranteeRule === undefined) {
-                existingGyeonggiCamp.metrixPolicy.funding_guaranteeRule = 'excel_sync';
-                needGgUpdate = true;
-              }
-              if (existingGyeonggiCamp.metrixPolicy.funding_whenGuaranteeX === undefined) {
-                existingGyeonggiCamp.metrixPolicy.funding_whenGuaranteeX = '1';
-                needGgUpdate = true;
+              const newPolicyDefaults = {
+                funding_guaranteeRule: 'excel_sync',
+                funding_whenGuaranteeX: '1',
+                q10_fundMgmtMode: 'random',
+                q12_1_evalReasonMode: 'random',
+                q16_1_leaseSource: 'excel_first',
+                q17_goodwillRangeMode: 'range',
+                goodwill_min: 1000,
+                goodwill_max: 5000,
+                goodwill_step: 500,
+                q21_femaleDiffMode: 'random',
+                q22_hardshipMode: 'random',
+                q23_climateImpact: '2',
+                q24_competitivenessMode: 'random',
+                q25_otherIncome: '2',
+                q26_onlineRule: 'food_only_yes',
+                q26_1_foodChannel: '3',
+                q34_wageRangeMode: 'range',
+                labor_wageMin: 240,
+                labor_wageMax: 320,
+                labor_wageStep: 5,
+                q35_empChange: '2',
+                q43_4_continueReasonMode: 'random',
+                q44_investPlanMode: 'random',
+                q60_awarenessRule: 'guarantee_sync',
+                q66_1_otherOrgRouteMode: 'random',
+                q67_desiredSupportMode: 'random',
+                desired_support_rank3: '9',
+                q68_policyIssueMode: 'random',
+                policy_issue_rank1: '6',
+                policy_issue_rank2: '8',
+                policy_issue_rank3: '5',
+                q69_mfgAddRule: 'all_no',
+                check1_photoUploadMode: 'skip_upload'
+              };
+              for (const [pk, pv] of Object.entries(newPolicyDefaults)) {
+                if (existingGyeonggiCamp.metrixPolicy[pk] === undefined) {
+                  existingGyeonggiCamp.metrixPolicy[pk] = pv;
+                  needGgUpdate = true;
+                }
               }
               if (existingGyeonggiCamp.metrixPolicy.industryPolicies && typeof existingGyeonggiCamp.metrixPolicy.industryPolicies === 'object') {
                 for (const indObj of Object.values(existingGyeonggiCamp.metrixPolicy.industryPolicies)) {
