@@ -185,16 +185,52 @@ assocMod.renderAssocBlueprint(
   { blueprint: { stages: [{ step: 'SQ1', title: '상인회 기본현황', fields: [] }] } },
   { badgeMasterStatus: badgeEl, btnSaveBaseline: saveBtnEl, blueprintStageGrid: container }
 );
-metrixMod.renderMetrixBlueprint(
-  { blueprint: { stages: [{ step: 'SQ', title: '가구원 기본정보', fields: [] }] }, baseline: {} },
+const metrixState = metrixMod.renderMetrixBlueprint(
+  { surveyType: 'metrix_panel', blueprint: { stages: [] }, policy: {} },
   {
-    getCurrentBaselineData: () => ({}),
-    setCurrentBaselineData: () => {},
     badgeMasterStatus: badgeEl,
     btnSaveBaseline: saveBtnEl,
     blueprintStageGrid: container
   }
 );
+if (!container.innerHTML.includes('metrix-guide-shell') || !container.innerHTML.includes('metrix-tab-panel-questions') || !container.innerHTML.includes('metrix-tab-panel-industries')) {
+  throw new Error('Metrix clean 2-tab guide failed to render');
+}
+if (container.innerHTML.includes('rgba(15,23,42') || container.innerHTML.includes('#f8fafc') || container.innerHTML.includes('[파트 A]')) {
+  throw new Error('Metrix blueprint still contains legacy dark inline styles or [파트 A~I] cards');
+}
+metrixMod.syncMetrixInputsToState(metrixState);
+if (!metrixState.excludeClosedBiz || !metrixState.updatePhoneInContactPopup || !metrixState.safetyStopAtReview) {
+  throw new Error('Metrix mandatory safety invariants were not preserved');
+}
+
+metrixMod.renderMetrixBlueprint(
+  { surveyType: 'metrix_seoul_panel', blueprint: { stages: [] }, policy: {} },
+  {
+    badgeMasterStatus: badgeEl,
+    btnSaveBaseline: saveBtnEl,
+    blueprintStageGrid: container
+  }
+);
+if (!container.innerHTML.includes('svyA115.asp')) {
+  throw new Error('Metrix Seoul 5th-wave blueprint render failed');
+}
+
+const metrixTbody = makeEl('quota-table-body');
+quotaRenderers.renderMetrixQuotaTable({
+  db: [{ index: 1, seq: 1, surveyorId: '강영미', uid: '2220', companyName: '주식회사 일화검사소', industry: '6.전문, 과학 및 기술 서비스업', quotaStatus: 'ready' }],
+  quotaTableBody: metrixTbody,
+  campId: 'camp_1793069358602',
+  checkedMetrixSeqs: new Set([1]),
+  metrixPolicy: metrixState,
+  onReRender: () => {},
+  onTriggerBatchRun: () => {},
+  onSyncMetrix622: () => {},
+  onToggleClosedBiz: () => {}
+});
+if (!metrixTbody.innerHTML.includes('일화검사소')) {
+  throw new Error('Metrix quota table render failed');
+}
 kstatStoreMod.renderKstatStoreStages({
   blueprintStageGrid: container,
   getBlueprintData: () => ({ stages: [{ step: 'P1', title: '사업장 일반현황', fields: [] }] }),

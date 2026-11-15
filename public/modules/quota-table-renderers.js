@@ -1046,8 +1046,10 @@ export function renderMetrixQuotaTable({
   if (!metrixBar && tableScrollContainer && tableScrollContainer.parentNode) {
     metrixBar = document.createElement('div');
     metrixBar.id = 'metrix-622-step1-check-bar';
-    metrixBar.className = 'globalri-check-toolbar';
+    metrixBar.className = 'metrix-slim-toolbar';
     tableScrollContainer.parentNode.insertBefore(metrixBar, tableScrollContainer);
+  } else if (metrixBar) {
+    metrixBar.className = 'metrix-slim-toolbar';
   }
 
   const getAcc = (it) => String(it.surveyorId || it.loginId || '강영미').trim();
@@ -1083,57 +1085,63 @@ export function renderMetrixQuotaTable({
 
   if (metrixBar) {
     metrixBar.style.display = 'flex';
-    metrixBar.style.flexDirection = 'column';
-    metrixBar.style.gap = '10px';
     metrixBar.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; width: 100%;">
-        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-          <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 4px;">
-            <i class="fa-solid fa-user-shield text-primary-color"></i> 3대 조사원 계정:
-          </span>
-          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === 'all' ? 'active' : ''}" data-acc-filter="all" style="${currentMetrix622AccountFilter === 'all' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">전체 계정 (${db.length}건)</button>
-          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '강영미' ? 'active' : ''}" data-acc-filter="강영미" style="${currentMetrix622AccountFilter === '강영미' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">강영미 / 5254 (${listKang.length}건 · 광주시)</button>
-          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '김정례' ? 'active' : ''}" data-acc-filter="김정례" style="${currentMetrix622AccountFilter === '김정례' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">김정례 / 3995 (${listKim.length}건)</button>
-          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '노영미' ? 'active' : ''}" data-acc-filter="노영미" style="${currentMetrix622AccountFilter === '노영미' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">노영미 / 7791 (${listNoh.length}건)</button>
-          <span style="margin: 0 6px; color: #cbd5e1;">|</span>
-          <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 2px;">빠른 체크(폐업 자동제외):</span>
-          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="uncompleted_active">미완료 전체 (${uncompletedActive.length}건)</button>
-          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="visible_active">현재 필터 선택 (${visibleDb.filter(it => !isClosed(it) && !isDone(it)).length}건)</button>
-          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="phone_changed">시트 휴대폰 변경대상 (${phoneChangedItems.length}건)</button>
-          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="wait_98">98% 대기건 (${wait98Items.length}건)</button>
-          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
+      <div class="metrix-slim-row">
+        <div class="metrix-slim-group">
+          <span class="metrix-slim-label"><i class="fa-solid fa-user-check text-primary-color"></i> 계정:</span>
+          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === 'all' ? 'active' : ''}" data-acc-filter="all" style="${currentMetrix622AccountFilter === 'all' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">전체 (${db.length})</button>
+          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '강영미' ? 'active' : ''}" data-acc-filter="강영미" style="${currentMetrix622AccountFilter === '강영미' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">강영미 (${listKang.length})</button>
+          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '김정례' ? 'active' : ''}" data-acc-filter="김정례" style="${currentMetrix622AccountFilter === '김정례' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">김정례 (${listKim.length})</button>
+          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '노영미' ? 'active' : ''}" data-acc-filter="노영미" style="${currentMetrix622AccountFilter === '노영미' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">노영미 (${listNoh.length})</button>
+
+          <span class="metrix-slim-divider"></span>
+
+          <select id="sel-metrix-ind-filter" class="metrix-filter-select" title="업종별 쿼터 행 필터">
+            <option value="all" ${currentMetrix622IndustryFilter === 'all' ? 'selected' : ''}>전체 업종 (${db.length}건)</option>
+            ${Object.entries(METRIX_622_IND_META).map(([ik, meta]) => `
+              <option value="${ik}" ${currentMetrix622IndustryFilter === ik ? 'selected' : ''}>${escapeHtml(meta.short)} (${indCounts[ik] || 0}건)</option>
+            `).join('')}
+          </select>
+
+          <span class="metrix-slim-divider"></span>
+
+          <span class="metrix-slim-label">선택:</span>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="uncompleted_active">미완료 (${uncompletedActive.length})</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="visible_active">현재 필터 (${visibleDb.filter(it => !isClosed(it) && !isDone(it)).length})</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="phone_changed">휴대폰 변경 (${phoneChangedItems.length})</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="wait_98">98% 대기 (${wait98Items.length})</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="none" style="color: #64748b;">해제</button>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <span id="badge-metrix-checked-count" class="badge-status ready font-bold" style="padding: 5px 12px; font-size: 12.5px;">
-            체크됨: <strong>${checkedCount}건</strong> · 시트휴대폰 변경대상: <strong>${phoneChangedItems.length}건</strong> · 폐업제외: <strong>${closedItems.length}건</strong> · 98%대기: <strong>${wait98Items.length}건</strong>
-          </span>
-          <a href="${escapeHtml(sheetHref)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="경기도 소상공인 쿼터 구글 스프레드시트(광주시 리스트 / 김정례 / 노영미-7791) 열기">
-            <i class="fa-solid fa-table"></i> 쿼터 구글시트 열기
+
+        <div class="metrix-slim-group">
+          <button type="button" id="btn-metrix-622-sync" class="btn-pill btn-pill-primary btn-pill-small font-bold" title="3계정(강영미·김정례·노영미) + 구글시트 휴대폰 번호 + 국세청 사업자번호 휴폐업 상태를 동기화합니다">
+            <i class="fa-solid fa-rotate"></i> 3계정·시트·폐업 동기화
+          </button>
+          <a href="${escapeHtml(sheetHref)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="경기도 소상공인 쿼터 구글 스프레드시트 열기">
+            <i class="fa-solid fa-table"></i> 쿼터 시트
           </a>
-          <a href="https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit#gid=1267463010" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none; background:#eff6ff; color:#1d4ed8; border-color:#93c5fd;" title="실행된 설문의 전 문항 응답내역이 자동 기록되는 '오토서베이_응답내역' 구글 시트 탭 열기">
-            <i class="fa-solid fa-file-Spreadsheet fa-clipboard-check"></i> 응답내역 시트 열기
+          <a href="https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit#gid=1267463010" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="실행된 설문의 응답내역이 기록되는 구글 시트 열기">
+            <i class="fa-solid fa-clipboard-check text-primary-color"></i> 응답 시트
           </a>
-          ${campId ? `<a href="/api/campaigns/${encodeURIComponent(campId)}/gyeonggi-panel-answers-excel" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="진행된 설문 응답내역 엑셀(.xlsx) 다운로드">
-            <i class="fa-solid fa-file-excel"></i> 응답내역 엑셀
+          ${campId ? `<a href="/api/campaigns/${encodeURIComponent(campId)}/gyeonggi-panel-answers-excel" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="응답내역 엑셀(.xlsx) 다운로드">
+            <i class="fa-solid fa-file-excel text-success-color"></i> 엑셀
           </a>` : ''}
-          <button type="button" id="btn-metrix-622-sync" class="btn-pill btn-pill-primary btn-pill-small font-bold" title="3개 계정(강영미·김정례·노영미) + 구글시트 휴대폰 번호 + 국세청 사업자번호 휴폐업 상태를 실시간 동기화합니다">
-            <i class="fa-solid fa-rotate"></i> 3계정·구글시트·폐업조회 동기화
-          </button>
-          <button type="button" id="btn-metrix-622-top-batch-run" class="btn-pill btn-pill-success btn-pill-small font-bold">
-            <i class="fa-solid fa-rocket"></i> 체크한 사업체 (${checkedCount}건) [컨택·휴대폰저장·설문참여] 98% 일괄 실행
-          </button>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 6px; border-top: 1px dashed #cbd5e1;">
-        <span style="font-size: 12.5px; font-weight: 800; color: #334155; margin-right: 4px;">
-          <i class="fa-solid fa-industry text-primary-color"></i> 업종별 필터 & 가이드 확인:
+
+      <div class="metrix-slim-row" style="padding-top: 8px; border-top: 1px solid #e2e8f0;">
+        <span id="badge-metrix-checked-count" class="metrix-summary-text">
+          <span>체크됨 <strong>${checkedCount}건</strong></span>
+          <span>·</span>
+          <span>시트 휴대폰 변경대상 <strong>${phoneChangedItems.length}건</strong></span>
+          <span>·</span>
+          <span>98% 검토대기 <strong>${wait98Items.length}건</strong></span>
+          <span>·</span>
+          <span>폐업 제외 <strong>${closedItems.length}건</strong></span>
         </span>
-        <button type="button" class="globalri-quick-check-btn metrix-ind-filter-btn ${currentMetrix622IndustryFilter === 'all' ? 'active' : ''}" data-ind-filter="all" style="${currentMetrix622IndustryFilter === 'all' ? 'background:#0f766e;color:#fff;border-color:#0f766e;' : ''}">전체 업종 (${db.length}건)</button>
-        ${Object.entries(METRIX_622_IND_META).map(([ik, meta]) => `
-          <button type="button" class="globalri-quick-check-btn metrix-ind-filter-btn ${currentMetrix622IndustryFilter === ik ? 'active' : ''}" data-ind-filter="${ik}" style="${currentMetrix622IndustryFilter === ik ? 'background:#0f766e;color:#fff;border-color:#0f766e;' : ''}" title="${escapeHtml(meta.guide)}">
-            ${escapeHtml(meta.short)} (${indCounts[ik] || 0}건)
-          </button>
-        `).join('')}
+        <a href="#section-execution" id="link-metrix-jump-exec" class="metrix-jump-exec-link">
+          <i class="fa-solid fa-circle-play"></i> 체크한 사업체 (${checkedCount}건) STEP 3 실행 영역으로 이동 ↓
+        </a>
       </div>
     `;
   }
@@ -1264,11 +1272,19 @@ export function renderMetrixQuotaTable({
     const cnt = checkedMetrixSeqs.size;
     const badgeEl = document.getElementById('badge-metrix-checked-count');
     if (badgeEl) {
-      badgeEl.innerHTML = `체크됨: <strong>${cnt}건</strong> · 시트휴대폰 변경대상: <strong>${phoneChangedItems.length}건</strong> · 폐업제외: <strong>${closedItems.length}건</strong> · 98%대기: <strong>${wait98Items.length}건</strong>`;
+      badgeEl.innerHTML = `
+        <span>체크됨 <strong>${cnt}건</strong></span>
+        <span>·</span>
+        <span>시트 휴대폰 변경대상 <strong>${phoneChangedItems.length}건</strong></span>
+        <span>·</span>
+        <span>98% 검토대기 <strong>${wait98Items.length}건</strong></span>
+        <span>·</span>
+        <span>폐업 제외 <strong>${closedItems.length}건</strong></span>
+      `;
     }
-    const batchBtn = document.getElementById('btn-metrix-622-top-batch-run');
-    if (batchBtn) {
-      batchBtn.innerHTML = `<i class="fa-solid fa-rocket"></i> 체크한 사업체 (${cnt}건) [컨택·휴대폰저장·설문참여] 98% 일괄 실행`;
+    const jumpLink = document.getElementById('link-metrix-jump-exec');
+    if (jumpLink) {
+      jumpLink.innerHTML = `<i class="fa-solid fa-circle-play"></i> 체크한 사업체 (${cnt}건) STEP 3 실행 영역으로 이동 ↓`;
     }
   };
 
@@ -1327,12 +1343,13 @@ export function renderMetrixQuotaTable({
       });
     });
 
-    metrixBar.querySelectorAll('.metrix-ind-filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentMetrix622IndustryFilter = btn.getAttribute('data-ind-filter') || 'all';
+    const selIndFilter = document.getElementById('sel-metrix-ind-filter');
+    if (selIndFilter) {
+      selIndFilter.addEventListener('change', () => {
+        currentMetrix622IndustryFilter = selIndFilter.value || 'all';
         if (typeof onReRender === 'function') onReRender(db);
       });
-    });
+    }
 
     metrixBar.querySelectorAll('.metrix-quick-check-btn').forEach(btn => {
       btn.addEventListener('click', () => {
