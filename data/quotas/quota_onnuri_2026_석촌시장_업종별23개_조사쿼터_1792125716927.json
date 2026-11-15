@@ -3,7 +3,7 @@
   "type": "ONNURI_HYBRID",
   "marketName": "석촌시장",
   "createdAt": "2026-10-16T04:41:56.927Z",
-  "updatedAt": "2026-10-16T07:06:59.596Z",
+  "updatedAt": "2026-11-15T03:28:37.359Z",
   "count": 23,
   "columns": [
     {
@@ -85,7 +85,13 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "industry": "농산물",
-      "mainProducts": "과일"
+      "mainProducts": "과일",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=zggBAxhs7&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=zggBAxhs7&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=zggBAxhs7&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 1,
+      "slotExtra": "(0)추가",
+      "ranId": "zggBAxhs7"
     },
     {
       "seq": 2,
@@ -104,7 +110,13 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "industry": "농산물",
-      "mainProducts": "채소"
+      "mainProducts": "채소",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=ramW1NzWR&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=ramW1NzWR&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=ramW1NzWR&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 2,
+      "slotExtra": "(1)추가",
+      "ranId": "ramW1NzWR"
     },
     {
       "seq": 3,
@@ -123,7 +135,13 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "industry": "축산물",
-      "mainProducts": "정육"
+      "mainProducts": "정육",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=uiX5L2xsy&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=uiX5L2xsy&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=uiX5L2xsy&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 3,
+      "slotExtra": "(2)추가",
+      "ranId": "uiX5L2xsy"
     },
     {
       "seq": 4,
@@ -145,7 +163,13 @@
       "phoneSource": null,
       "isEnriched": false,
       "industry": "축산물",
-      "mainProducts": "한우"
+      "mainProducts": "한우",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=4pNySL6IF&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=4pNySL6IF&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=4pNySL6IF&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 4,
+      "slotExtra": "(3)추가",
+      "ranId": "4pNySL6IF"
     },
     {
       "seq": 5,
@@ -167,7 +191,13 @@
       "phoneSource": null,
       "isEnriched": false,
       "industry": "수산물",
-      "mainProducts": "해산물"
+      "mainProducts": "해산물",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=0verGPcvP&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=0verGPcvP&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=0verGPcvP&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 5,
+      "slotExtra": "(4)추가",
+      "ranId": "0verGPcvP"
     },
     {
       "seq": 6,
@@ -189,7 +219,13 @@
       "phoneSource": null,
       "isEnriched": false,
       "industry": "수산물",
-      "mainProducts": "활어"
+      "mainProducts": "활어",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=w7xZpSFuG&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=w7xZpSFuG&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=w7xZpSFuG&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 6,
+      "slotExtra": "(5)추가",
+      "ranId": "w7xZpSFuG"
     },
     {
       "seq": 7,
@@ -211,7 +247,13 @@
       "phoneSource": null,
       "isEnriched": false,
       "industry": "가공식품",
-      "mainProducts": "커피"
+      "mainProducts": "커피",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=ZuOA7gBki&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=ZuOA7gBki&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=ZuOA7gBki&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 7,
+      "slotExtra": "(6)추가",
+      "ranId": "ZuOA7gBki"
     },
     {
       "seq": 8,
@@ -233,7 +275,13 @@
       "phoneSource": null,
       "isEnriched": true,
       "industry": "가공식품",
-      "mainProducts": "신선식품"
+      "mainProducts": "선식",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=7m1c1ewQ8&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=7m1c1ewQ8&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=7m1c1ewQ8&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 8,
+      "slotExtra": "(7)추가",
+      "ranId": "7m1c1ewQ8"
     },
     {
       "seq": 9,
@@ -255,7 +303,13 @@
       "phoneSource": null,
       "isEnriched": false,
       "industry": "가공식품",
-      "mainProducts": "떡류"
+      "mainProducts": "떡류",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=zgI6dQLMv&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=zgI6dQLMv&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=zgI6dQLMv&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 9,
+      "slotExtra": "(8)추가",
+      "ranId": "zgI6dQLMv"
     },
     {
       "seq": 10,
@@ -274,7 +328,13 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "industry": "의류신발",
-      "mainProducts": "의류"
+      "mainProducts": "의류",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=aV23sgbIY&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=aV23sgbIY&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=aV23sgbIY&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 10,
+      "slotExtra": "(9)추가",
+      "ranId": "aV23sgbIY"
     },
     {
       "seq": 11,
@@ -293,7 +353,13 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "industry": "의류신발",
-      "mainProducts": "속옷"
+      "mainProducts": "속옷",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=TDbnZsw3I&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=TDbnZsw3I&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=TDbnZsw3I&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 11,
+      "slotExtra": "(10)추가",
+      "ranId": "TDbnZsw3I"
     },
     {
       "seq": 12,
@@ -315,7 +381,13 @@
       "phoneSource": "네이버 플레이스/검색",
       "isEnriched": true,
       "industry": "가정용품",
-      "mainProducts": "직물제품"
+      "mainProducts": "화훼",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=PzRkNWrgF&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=PzRkNWrgF&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=PzRkNWrgF&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 12,
+      "slotExtra": "(11)추가",
+      "ranId": "PzRkNWrgF"
     },
     {
       "seq": 13,
@@ -326,7 +398,7 @@
       "ceoName": "송용헌",
       "ceoGender": "남",
       "ceoAge": 58,
-      "phone": "02-413-5656",
+      "phone": "02-2331-4091",
       "openDate": "2018.11.20",
       "handledItems": "가정용품",
       "address": "서울특별시 송파구 가락로12길 4 (석촌동, 파크팰리스)",
@@ -334,7 +406,13 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "industry": "가정용품",
-      "mainProducts": "슈퍼마켓"
+      "mainProducts": "슈퍼마켓",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=lLX59GllS&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=lLX59GllS&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=lLX59GllS&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 13,
+      "slotExtra": "(12)추가",
+      "ranId": "lLX59GllS"
     },
     {
       "seq": 14,
@@ -356,7 +434,13 @@
       "phoneSource": null,
       "isEnriched": false,
       "industry": "음식점업",
-      "mainProducts": "한식"
+      "mainProducts": "분식",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=N1oVhyYiy&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=N1oVhyYiy&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=N1oVhyYiy&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 14,
+      "slotExtra": "(13)추가",
+      "ranId": "N1oVhyYiy"
     },
     {
       "seq": 15,
@@ -378,7 +462,13 @@
       "phoneSource": null,
       "isEnriched": false,
       "industry": "음식점업",
-      "mainProducts": "김밥"
+      "mainProducts": "분식",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=TYAgDqzMx&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=TYAgDqzMx&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=TYAgDqzMx&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 15,
+      "slotExtra": "(14)추가",
+      "ranId": "TYAgDqzMx"
     },
     {
       "seq": 16,
@@ -400,7 +490,13 @@
       "phoneSource": "네이버 플레이스/검색",
       "isEnriched": false,
       "industry": "음식점업",
-      "mainProducts": "서양식"
+      "mainProducts": "서양식",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=Vhb9cy6sw&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=Vhb9cy6sw&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=Vhb9cy6sw&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 16,
+      "slotExtra": "(15)추가",
+      "ranId": "Vhb9cy6sw"
     },
     {
       "seq": 17,
@@ -419,7 +515,13 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "industry": "음식점업",
-      "mainProducts": "치킨"
+      "mainProducts": "치킨",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=oSXiYpn0n&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=oSXiYpn0n&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=oSXiYpn0n&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 17,
+      "slotExtra": "(16)추가",
+      "ranId": "oSXiYpn0n"
     },
     {
       "seq": 18,
@@ -441,7 +543,13 @@
       "phoneSource": "네이버 플레이스/검색",
       "isEnriched": false,
       "industry": "기타소매",
-      "mainProducts": "교습학원"
+      "mainProducts": "교습학원",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=PNZazn1OL&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=PNZazn1OL&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=PNZazn1OL&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 18,
+      "slotExtra": "(17)추가",
+      "ranId": "PNZazn1OL"
     },
     {
       "seq": 19,
@@ -460,7 +568,13 @@
       "paperAccepted": "Y",
       "digitalAccepted": "Y",
       "industry": "기타소매",
-      "mainProducts": "곡물"
+      "mainProducts": "곡물",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=hsoxLhMbp&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=hsoxLhMbp&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=hsoxLhMbp&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 19,
+      "slotExtra": "(18)추가",
+      "ranId": "hsoxLhMbp"
     },
     {
       "seq": 20,
@@ -482,7 +596,13 @@
       "phoneSource": null,
       "isEnriched": false,
       "industry": "기타소매",
-      "mainProducts": "반찬류"
+      "mainProducts": "반찬류",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=rDO9FDAgF&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=rDO9FDAgF&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=rDO9FDAgF&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 20,
+      "slotExtra": "(19)추가",
+      "ranId": "rDO9FDAgF"
     },
     {
       "seq": 21,
@@ -504,7 +624,13 @@
       "phoneSource": null,
       "isEnriched": false,
       "industry": "근린상권",
-      "mainProducts": "교과학원"
+      "mainProducts": "예체능학원",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=hW9Sbt6ZY&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=hW9Sbt6ZY&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=hW9Sbt6ZY&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 21,
+      "slotExtra": "(20)추가",
+      "ranId": "hW9Sbt6ZY"
     },
     {
       "seq": 22,
@@ -526,7 +652,13 @@
       "phoneSource": "네이버 플레이스/검색",
       "isEnriched": false,
       "industry": "근린상권",
-      "mainProducts": "이용업"
+      "mainProducts": "이용업",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=ASY4z2qIB&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=ASY4z2qIB&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=ASY4z2qIB&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 22,
+      "slotExtra": "(21)추가",
+      "ranId": "ASY4z2qIB"
     },
     {
       "seq": 23,
@@ -548,7 +680,13 @@
       "phoneSource": null,
       "isEnriched": false,
       "industry": "근린상권",
-      "mainProducts": "태권도"
+      "mainProducts": "태권도",
+      "slotUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=9blrFl122&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=9blrFl122&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=9blrFl122&type=tapi&prid=2026070802&mnid=900001346&srt=2",
+      "slotIndex": 23,
+      "slotExtra": "(22)추가",
+      "ranId": "9blrFl122"
     }
   ]
 }

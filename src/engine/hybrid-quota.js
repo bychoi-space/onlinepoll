@@ -7,6 +7,7 @@
 import { launchChromium } from '../utils/chromium-launcher.js';
 import { getMarketMerchants, getStratifiedMarketMerchants } from './onnuri.js';
 import { enrichBusinessData, fillMissingCeoPersona, hasCompleteAddress, searchAddressByCompany, ensureRoadAddress, normalizeRoadAddress } from './enricher.js';
+import { ensureUniqueStorePhone, isDummyOrInvalidStorePhone, normalizePhoneDigits } from '../utils/store-phone.js';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
 
@@ -25,9 +26,15 @@ function formatPhoneNumber(raw) {
   let digits = cleaned.replace(/\D/g, '');
   if (!digits || digits.length < 7) return null;
 
-  // 마켓비즈 더미 번호(000-0000, 111-1111, 123-4567 등) 필터링 -> null 반환하여 외부 보강 유도
+  // 마켓비즈 더미 번호(000-0000, 02-000-1111, 02-1577-0000 등) 필터링 -> null 반환하여 외부 보강 유도
   const tail = digits.slice(-7);
-  if (/^(\d)\1{6}$/.test(tail) || digits.endsWith('0000000') || digits.endsWith('1111111') || digits.endsWith('1234567')) {
+  if (
+    /^(\d)\1{6}$/.test(tail) ||
+    digits.endsWith('0000000') ||
+    digits.endsWith('1111111') ||
+    digits.endsWith('1234567') ||
+    ['0212345678', '020001111', '0200001111', '0215770000'].includes(digits)
+  ) {
     return null;
   }
 
@@ -509,14 +516,23 @@ export async function buildHybridOnnuriQuota({
     return null;
   }
 
-  // 기존 데이터 중 이미 정상적으로 마켓비즈 결합까지 완료된 항목 보존 & CEO 풀 중복 방지 등록
+  // 기존 데이터 중 이미 정상적으로 마켓비즈 결합까지 완료된 항목 보존 & CEO 풀 / 연락처 중복 방지 등록
   const ceoPoolUsedState = { usedSeqs: new Set(), usedNames: new Set() };
+  const usedPhoneDigits = new Set();
   const finalQuotaList = [];
   const completedMap = new Map();
 
   for (const prevItem of existingData) {
     if (!prevItem) continue;
     if (prevItem.ceoName) ceoPoolUsedState.usedNames.add(prevItem.ceoName);
+    if (prevItem.phone && !isDummyOrInvalidStorePhone(prevItem.phone)) {
+      const pd = normalizePhoneDigits(prevItem.phone);
+      if (pd && !usedPhoneDigits.has(pd)) {
+        usedPhoneDigits.add(pd);
+      } else {
+        prevItem.phone = ensureUniqueStorePhone(null, prevItem.address, `${prevItem.bizNumber || ''}_${prevItem.companyName || ''}`, usedPhoneDigits);
+      }
+    }
     const key = prevItem.bizNumber || prevItem.companyName;
     // mbzStatus === 'failed' 가 아니고 필수 필드가 채워진 항목은 이미 성공한 것으로 간주하여 스킵 대상에 등록
     const isCompletedItem = prevItem.mbzStatus !== 'failed' && Boolean(prevItem.ceoName && prevItem.openDate && prevItem.handledItems && prevItem.mainProducts);
@@ -832,11 +848,17 @@ export async function buildHybridOnnuriQuota({
         }
       }
 
-      // 4단계: 대표자 이름, 성별, 나이 누락 항목 CEO 페르소나 풀 자동 채움
+      // 4단계: 대표자 이름, 성별, 나이 누락 항목 CEO 페르소나 풀 자동 채움 + 연락처 중복/결측 방지(지역번호 연동 고유번호 배정)
       const filledItem = fillMissingCeoPersona(mergedItem, ceoPoolUsedState);
       mergedItem.ceoName = filledItem.ceoName;
       mergedItem.ceoGender = filledItem.ceoGender;
       mergedItem.ceoAge = filledItem.ceoAge;
+      mergedItem.phone = ensureUniqueStorePhone(
+        mergedItem.phone,
+        mergedItem.address,
+        `${mergedItem.bizNumber || ''}_${mergedItem.companyName || ''}_${finalQuotaList.length + 1}`,
+        usedPhoneDigits
+      );
 
       finalQuotaList.push(mergedItem);
       logger.success(`[Hybrid Quota] [저장 완료 ${finalQuotaList.length}/${totalPlanned}] ${mergedItem.companyName} | 대표자: ${mergedItem.ceoName} (${mergedItem.ceoGender}, ${mergedItem.ceoAge}세) | 연락처: ${mergedItem.phone || '미상'} | 취급품목: ${mergedItem.handledItems} / 주요품목: ${mergedItem.mainProducts}${mergedItem.mbzStatus === 'failed' ? ' [마켓비즈 재시도 필요]' : ''}`);

@@ -9,6 +9,7 @@ import { launchChromium } from '../utils/chromium-launcher.js';
 import fs from 'fs';
 import path from 'path';
 import { generateQuotaPersona } from './persona-builder.js';
+import { ensureUniqueStorePhone } from '../utils/store-phone.js';
 
 /**
  * Kstat Q1_9_1 취급품목 1순위 전용 정규화 헬퍼 (최소 2글자 이상 보장)
@@ -455,21 +456,27 @@ export async function runKstatSurvey({
   const rawBizDigits = String(bizData.bizNumber || '1234567890').replace(/\D/g, '').padEnd(10, '0').slice(0, 10);
   const formattedBizNumber = `${rawBizDigits.slice(0, 3)}-${rawBizDigits.slice(3, 5)}-${rawBizDigits.slice(5, 10)}`;
 
-  // 1. 사업자 팩트 데이터 정규화 (대표자 이름, 성별, 나이, 업종 등 쿼터 데이터 100% 보존)
+  const sanitizedAddress = String(bizData.address || '')
+    .replace(/주소정보\s*갱신/g, '')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // 1. 사업자 팩트 데이터 정규화 (대표자 이름, 성별, 나이, 업종 등 쿼터 데이터 100% 보존 + 연락처 중복/더미 원천 방지)
   const biz = {
     companyName: bizData.companyName || '무명점포',
     bizNumber: formattedBizNumber,
     ceoName: String(bizData.ceoName || bizData.representativeName || bizData.ceo || bizData.ownerName || '점포주').trim(),
-    phone: bizData.phone || '02-1234-5678',
+    phone: ensureUniqueStorePhone(
+      bizData.phone,
+      sanitizedAddress,
+      `${formattedBizNumber}_${bizData.companyName || ''}_${surveyUrl || quotaIndex}`
+    ),
     openDate: bizData.openDate || '2020-05-01',
     openYear: bizData.openDate ? String(Math.min(2025, parseInt(String(bizData.openDate).split(/[-.]/)[0], 10) || 2020)) : '2020',
     openMonth: bizData.openDate ? (String(bizData.openDate).split(/[-.]/)[1] || '05') : '05',
     zipCode: bizData.zipCode || '05527',
-    address: String(bizData.address || '서울특별시 송파구 바람드리길')
-      .replace(/주소정보\s*갱신/g, '')
-      .replace(/[\r\n]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim(),
+    address: sanitizedAddress || '서울특별시 송파구 바람드리길',
     addressDetail: bizData.addressDetail || '1층',
     handledItems: sanitizeKstatHandledItem(bizData.mainProducts || bizData.handledItems || bizData.industry, '소매업'),
     industry: bizData.industry || bizData.handledItems || '소매업'

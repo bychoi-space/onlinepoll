@@ -6,10 +6,6 @@
   "count": 24,
   "columns": [
     {
-      "key": "marketName",
-      "label": "시장명"
-    },
-    {
       "key": "companyName",
       "label": "상호"
     },
@@ -54,6 +50,10 @@
       "label": "주요품목"
     },
     {
+      "key": "marketName",
+      "label": "시장명"
+    },
+    {
       "key": "status",
       "label": "가맹상태"
     },
@@ -91,7 +91,9 @@
       "ceoGender": "여",
       "ceoAge": 70,
       "industry": "농산물",
-      "mainProducts": "더덕"
+      "mainProducts": "더덕",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=EZQPGx4L8&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 2,
@@ -117,7 +119,9 @@
       "ceoGender": "남",
       "ceoAge": 58,
       "industry": "농산물",
-      "mainProducts": "채소"
+      "mainProducts": "채소",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=VCnUfCY6K&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=VCnUfCY6K&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 3,
@@ -143,7 +147,9 @@
       "ceoGender": "여",
       "ceoAge": 37,
       "industry": "축산물",
-      "mainProducts": "육류"
+      "mainProducts": "육류",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=05anItSeU&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=05anItSeU&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 4,
@@ -169,7 +175,9 @@
       "ceoGender": "남",
       "ceoAge": 42,
       "industry": "축산물",
-      "mainProducts": "한우"
+      "mainProducts": "한우",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=0E6G9JX98&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=0E6G9JX98&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 5,
@@ -195,7 +203,9 @@
       "ceoGender": "여",
       "ceoAge": 59,
       "industry": "수산물",
-      "mainProducts": "활어"
+      "mainProducts": "활어",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=OseLErRyW&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=OseLErRyW&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 6,
@@ -204,7 +214,7 @@
       "companyName": "물고기",
       "bizNumber": "183-95-01483",
       "ceoName": "김영주",
-      "phone": "0507-1332-3533",
+      "phone": "02-7219-1553",
       "openDate": "2022-04-22",
       "handledItems": "수산물",
       "address": "서울특별시 송파구 바람드리길 44 (풍납동)",
@@ -221,7 +231,9 @@
       "ceoGender": "여",
       "ceoAge": 36,
       "industry": "수산물",
-      "mainProducts": "생선"
+      "mainProducts": "생선",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=9VS1l8O1Y&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=9VS1l8O1Y&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 7,
@@ -247,7 +259,9 @@
       "ceoGender": "여",
       "ceoAge": 53,
       "industry": "가공식품",
-      "mainProducts": "과자류"
+      "mainProducts": "과자류",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=yJOWyMMVe&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=yJOWyMMVe&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 8,
@@ -273,7 +287,9 @@
       "ceoGender": "남",
       "ceoAge": 43,
       "industry": "가공식품",
-      "mainProducts": "유지류"
+      "mainProducts": "유지류",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=l72YcIVMm&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=l72YcIVMm&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 9,
@@ -299,7 +315,9 @@
       "ceoGender": "남",
       "ceoAge": 35,
       "industry": "가공식품",
-      "mainProducts": "도시락"
+      "mainProducts": "도시락",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=BtQ09ixb5&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=BtQ09ixb5&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 10,
@@ -325,7 +343,9 @@
       "ceoGender": "여",
       "ceoAge": 63,
       "industry": "의류신발",
-      "mainProducts": "의류"
+      "mainProducts": "의류",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=Nn9f36TCG&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=Nn9f36TCG&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 11,
@@ -351,7 +371,9 @@
       "ceoGender": "남",
       "ceoAge": 70,
       "industry": "의류신발",
-      "mainProducts": "신발"
+      "mainProducts": "신발",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=GmWo8WUiG&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=GmWo8WUiG&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 12,
@@ -377,7 +399,9 @@
       "ceoGender": "남",
       "ceoAge": 64,
       "industry": "가정용품",
-      "mainProducts": "생활잡화"
+      "mainProducts": "생활잡화",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=7SyhrpGqg&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=7SyhrpGqg&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 13,
@@ -403,7 +427,9 @@
       "ceoGender": "여",
       "ceoAge": 57,
       "industry": "가정용품",
-      "mainProducts": "침구류"
+      "mainProducts": "침구류",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=ngTrpE4bJ&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=ngTrpE4bJ&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 14,
@@ -429,7 +455,9 @@
       "ceoGender": "남",
       "ceoAge": 53,
       "industry": "가정용품",
-      "mainProducts": "철물"
+      "mainProducts": "철물",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=a6l94Y3gX&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=a6l94Y3gX&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 15,
@@ -455,7 +483,9 @@
       "ceoGender": "남",
       "ceoAge": 68,
       "industry": "음식점업",
-      "mainProducts": "한식"
+      "mainProducts": "한식",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=jfXJSXy5E&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=jfXJSXy5E&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 16,
@@ -482,7 +512,9 @@
       "industry": "음식점업 (중식/일반음식점)",
       "ceoGender": "남",
       "ceoAge": 67,
-      "mainProducts": "중식"
+      "mainProducts": "중식",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=NdlR9tVqG&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=NdlR9tVqG&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 17,
@@ -509,7 +541,9 @@
       "industry": "음식점업 (피자전문점/일반음식점)",
       "ceoGender": "여",
       "ceoAge": 45,
-      "mainProducts": "피자"
+      "mainProducts": "피자",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=JqrhZwErQ&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=JqrhZwErQ&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 18,
@@ -536,7 +570,9 @@
       "industry": "음식점업 (커피/음료/휴게음식점)",
       "ceoGender": "여",
       "ceoAge": 37,
-      "mainProducts": "커피"
+      "mainProducts": "커피",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=NjZZUh3EQ&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=NjZZUh3EQ&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 19,
@@ -562,7 +598,9 @@
       "ceoGender": "여",
       "ceoAge": 48,
       "industry": "기타소매",
-      "mainProducts": "미용업"
+      "mainProducts": "미용업",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=oJJjNC5No&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=oJJjNC5No&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 20,
@@ -588,7 +626,9 @@
       "ceoGender": "여",
       "ceoAge": 51,
       "industry": "기타소매",
-      "mainProducts": "피부미용"
+      "mainProducts": "피부미용",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=4cwi7xkAU&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=4cwi7xkAU&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 21,
@@ -615,7 +655,9 @@
       "industry": "기타소매 (의약품/약국 소매업)",
       "ceoGender": "남",
       "ceoAge": 52,
-      "mainProducts": "의약품"
+      "mainProducts": "의약품",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=bOITDPyUG&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=bOITDPyUG&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 22,
@@ -642,7 +684,9 @@
       "industry": "근린상권 (한의원/의료서비스업)",
       "ceoGender": "남",
       "ceoAge": 66,
-      "mainProducts": "한의원"
+      "mainProducts": "한의원",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=FOOkcSy06&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=FOOkcSy06&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 23,
@@ -668,7 +712,9 @@
       "ceoGender": "여",
       "ceoAge": 41,
       "industry": "근린상권",
-      "mainProducts": "미용업"
+      "mainProducts": "미용업",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=OH7Lypweo&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=OH7Lypweo&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     },
     {
       "seq": 24,
@@ -694,8 +740,11 @@
       "ceoGender": "여",
       "ceoAge": 75,
       "industry": "근린상권",
-      "mainProducts": "미용업"
+      "mainProducts": "미용업",
+      "surveyUrl": "https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=GycZZf28Z&type=tapi&prid=2026070802&mnid=900001346&srt=1",
+      "evalUrl": "https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=GycZZf28Z&type=tapi&prid=2026070802&mnid=900001346&srt=2"
     }
   ],
-  "updatedAt": "2026-10-16T01:54:00.649Z"
+  "updatedAt": "2026-11-15T03:30:10.980Z",
+  "targetTotal": 24
 }

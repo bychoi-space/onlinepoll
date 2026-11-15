@@ -16,6 +16,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
+import { ensureUniqueStorePhone } from '../utils/store-phone.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,23 +55,23 @@ const STOPWORDS = new Set([
 
 // 시/도별 유효 지역 전화번호 접두사
 const REGION_PREFIXES = {
-  '서울': ['02', '010', '0507'],
-  '경기': ['031', '010', '0507'],
-  '인천': ['032', '010', '0507'],
-  '강원': ['033', '010', '0507'],
-  '충북': ['043', '010', '0507'],
-  '충남': ['041', '010', '0507'],
-  '대전': ['042', '010', '0507'],
-  '세종': ['044', '010', '0507'],
-  '전북': ['063', '010', '0507'],
-  '전남': ['061', '010', '0507'],
-  '광주': ['062', '010', '0507'],
-  '경북': ['054', '010', '0507'],
-  '경남': ['055', '010', '0507'],
-  '대구': ['053', '010', '0507'],
-  '울산': ['052', '010', '0507'],
-  '부산': ['051', '010', '0507'],
-  '제주': ['064', '010', '0507']
+  '서울': ['02', '010', '0507', '070'],
+  '경기': ['031', '032', '010', '0507', '070'],
+  '인천': ['032', '010', '0507', '070'],
+  '강원': ['033', '010', '0507', '070'],
+  '충북': ['043', '010', '0507', '070'],
+  '충남': ['041', '010', '0507', '070'],
+  '대전': ['042', '010', '0507', '070'],
+  '세종': ['044', '010', '0507', '070'],
+  '전북': ['063', '010', '0507', '070'],
+  '전남': ['061', '010', '0507', '070'],
+  '광주': ['062', '010', '0507', '070'],
+  '경북': ['054', '010', '0507', '070'],
+  '경남': ['055', '010', '0507', '070'],
+  '대구': ['053', '010', '0507', '070'],
+  '울산': ['052', '010', '0507', '070'],
+  '부산': ['051', '010', '0507', '070'],
+  '제주': ['064', '010', '0507', '070']
 };
 
 /**
@@ -1026,6 +1027,7 @@ export async function batchEnrichQuota(quotaList, onProgress = null) {
     usedSeqs: new Set(),
     usedNames: new Set()
   };
+  const usedPhoneDigits = new Set();
   for (const row of quotaList) {
     if (row && row.ceoName && String(row.ceoName).trim() !== '' && row.ceoName !== 'null' && row.ceoName !== '-') {
       usedState.usedNames.add(String(row.ceoName).trim());
@@ -1054,6 +1056,12 @@ export async function batchEnrichQuota(quotaList, onProgress = null) {
     } else {
       processedItem = fillMissingCeoPersona(processedItem, usedState);
     }
+    processedItem.phone = ensureUniqueStorePhone(
+      processedItem.phone,
+      processedItem.address,
+      `${processedItem.bizNumber || ''}_${processedItem.companyName || ''}_${i + 1}`,
+      usedPhoneDigits
+    );
 
     if (
       processedItem.ceoName !== prevCeo ||
