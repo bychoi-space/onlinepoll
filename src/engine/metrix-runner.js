@@ -111,7 +111,10 @@ export async function runMetrixSurvey({
   const rawMeta = slotData.rawMeta || {};
   const usePanelMeta = (effectivePolicy.inheritPanelRawMeta !== false);
 
-  // [3차 본조사 범위설정 가이드] 문17-1 권리금(기본 1000~5000, 500단위) & 문34 월평균 급여(기본 240~320, 5단위) 사전 산출
+  // [3차 본조사 범위설정 가이드] 문13 대표자 월평균 소득(기본 250~400, 5단위), 문17-1 권리금(기본 1000~5000, 500단위) & 문34 월평균 급여(기본 240~320, 5단위) 사전 산출
+  const pickedOwnerIncomeManwon = effectivePolicy.q13_incomeRangeMode === 'fixed'
+    ? Number(effectivePolicy.owner_monthlyIncome ?? 320)
+    : pickSteppedValue(effectivePolicy.owner_incomeMin ?? 250, effectivePolicy.owner_incomeMax ?? 400, effectivePolicy.owner_incomeStep ?? 5, 325);
   const pickedGoodwillManwon = effectivePolicy.q17_goodwillRangeMode === 'fixed'
     ? Number(effectivePolicy.goodwill_amount ?? 1500)
     : pickSteppedValue(effectivePolicy.goodwill_min ?? 1000, effectivePolicy.goodwill_max ?? 5000, effectivePolicy.goodwill_step ?? 500, 2000);
@@ -421,10 +424,10 @@ export async function runMetrixSurvey({
 
         const inputs = Array.from(document.querySelectorAll('input:not([type="hidden"]), select, textarea')).filter(el => el.offsetParent !== null);
 
-        const buttons = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"]')).filter(b => b.offsetParent !== null);
+        const buttons = Array.from(document.querySelectorAll('#next, button, input[type="button"], input[type="submit"], a.btn')).filter(b => b.offsetParent !== null);
         const nextBtn = buttons.find(b => {
           const t = (b.innerText || b.value || '').trim();
-          return t === '다음' || t.includes('다음') || t === '제출' || t === '완료';
+          return b.id === 'next' || t === '다음' || t.includes('다음') || t === '제출' || t === '완료';
         });
 
         const signature = (qNameAttr || questionTexts[0] || '') + '|' + inputs.length + '|' + bodyText.slice(50, 180);
@@ -446,14 +449,30 @@ export async function runMetrixSurvey({
           questionTexts: questionTexts.slice(0, 3),
           inputsCount: inputs.length,
           hasNextBtn: !!nextBtn,
-          nextBtnText: nextBtn ? (nextBtn.innerText || nextBtn.value || '').trim() : null,
+          nextBtnText: nextBtn ? ((nextBtn.innerText || nextBtn.value || '').trim() || '다음') : null,
           bodySnippet: bodyText.slice(0, 300),
           signature
         };
       });
 
       const qTitle = screenInfo.questionTexts[0] || screenInfo.qNameAttr || '진행 화면';
-      if ((qTitle === 'Loading..' || screenInfo.bodySnippet === 'Loading..') && loadingRetryCount < 25) {
+      const isTransientBlank = !screenInfo.bodySnippet || (
+        !screenInfo.hasNextBtn &&
+        !screenInfo.isFinalComplete &&
+        !screenInfo.isBenefitGuideScreen &&
+        !screenInfo.bodySnippet.includes('인원초과') &&
+        !screenInfo.bodySnippet.includes('대상이 아닙') &&
+        !screenInfo.bodySnippet.includes('중단')
+      );
+      if (
+        (
+          qTitle === 'Loading..' ||
+          screenInfo.bodySnippet === 'Loading..' ||
+          screenInfo.bodySnippet.startsWith('Loading..') ||
+          (isTransientBlank && loadingRetryCount < 8)
+        ) &&
+        loadingRetryCount < 25
+      ) {
         loadingRetryCount++;
         console.log(`[MetrixRunner Step ${stepCount}] 화면 로딩 중(Loading..) 대기 (${loadingRetryCount}/25)...`);
         await sleep(1200);
@@ -891,8 +910,8 @@ export async function runMetrixSurvey({
         }
       }
 
-      // 6. 전 문항 스마트 폼 응답 주입 (A1~A15, 문8~문100, 패널 rawMeta 계승 및 3차 본조사 20대 문항 가이드 매핑)
-      await page.evaluate(async ({ slot, pol, quotaIdx, indKey, pickedGoodwillManwon, pickedWageManwon }) => {
+      // 6. 전 문항 스마트 폼 응답 주입 (A1~A15, 문8~문100, 패널 rawMeta 계승 및 3차 본조사 문항별 가이드 매핑)
+      await page.evaluate(async ({ slot, pol, quotaIdx, indKey, pickedOwnerIncomeManwon, pickedGoodwillManwon, pickedWageManwon }) => {
         const bodyText = document.body.innerText || '';
         const meta = slot.rawMeta || {};
         const useMeta = (pol.inheritPanelRawMeta !== false);
@@ -1435,6 +1454,31 @@ export async function runMetrixSurvey({
           const cnt = Math.random() > 0.5 ? 2 : 1;
           setQChecks('Q10_1', shuffleArr(['1', '2', '3', '4']).slice(0, cnt));
           overriddenQNames.add('Q10_1');
+        }
+
+        // (2) 문13 대표자 월평균 소득 범위설정 (250~400만원, 5만원 단위 범위 내 랜덤 — Metrix [LIST:M13] 자동채움값 최우선 덮어쓰기)
+        if (hasVisibleQ('Q13')) {
+          const q13Boxes = Array.from(document.querySelectorAll('[question-name="Q13"] input, input[qname="Q13"]')).filter(isBoxInput);
+          const inp13_1 = getQField('Q13', 'NUMBER_1') || q13Boxes[0] || null;
+          const inp13_2 = getQField('Q13', 'NUMBER_2') || (q13Boxes.length >= 2 ? q13Boxes[1] : null);
+          if (inp13_1) {
+            const incMode = pol.q13_incomeRangeMode || 'range';
+            const curDomInc = parseFloat(inp13_1.value);
+            const panelInc = (Number.isFinite(curDomInc) && curDomInc > 0)
+              ? Math.round(curDomInc)
+              : ((useMeta && Number(meta.M13) > 0) ? Math.round(Number(meta.M13)) : 0);
+            const incomeVal = (incMode === 'panel' && panelInc > 0)
+              ? panelInc
+              : Math.round(Number(pickedOwnerIncomeManwon || 325));
+            if (inp13_1 && inp13_2) {
+              setInputVal(inp13_1, Math.floor(incomeVal / 10000), true);
+              setInputVal(inp13_2, incomeVal % 10000, true);
+            } else {
+              setInputVal(inp13_1, incomeVal, true);
+            }
+            overriddenQNames.add('Q13');
+            Array.from(document.querySelectorAll('[question-name="Q13"] input, input[qname="Q13"]')).forEach(el => overriddenInputs.add(el));
+          }
         }
 
         // (3) 문16-1 임대차 보증금·월세 엑셀(구글시트) 실측값 우선 입력
@@ -2278,9 +2322,11 @@ export async function runMetrixSurvey({
               } else if (bodyText.includes('부채') || bodyText.includes('대출')) {
                 const debtAmt = (useMeta && meta['M15-1']) ? Number(meta['M15-1']) : Number(pol.debt_totalAmount ?? 3000);
                 input.value = formatMoneyByUnit(debtAmt);
-              } else if (bodyText.includes('순소득') || (bodyText.includes('대표자') && bodyText.includes('소득'))) {
-                const baseInc = (useMeta && meta.M13) ? Number(meta.M13) : Number(pol.owner_monthlyIncome ?? 320);
-                input.value = formatMoneyByUnit(Math.max(100, Math.round(baseInc * trendMult)));
+              } else if (bodyText.includes('순소득') || (bodyText.includes('대표자') && bodyText.includes('소득')) || (bodyText.includes('매월 평균') && bodyText.includes('소득'))) {
+                const incAmt = ((pol.q13_incomeRangeMode || 'range') === 'panel' && useMeta && Number(meta.M13) > 0)
+                  ? Math.max(100, Math.round(Number(meta.M13) * trendMult))
+                  : Number(pickedOwnerIncomeManwon || pol.owner_monthlyIncome || 325);
+                input.value = formatMoneyByUnit(incAmt);
               } else if (bodyText.includes('급여') || bodyText.includes('임금') || bodyText.includes('인건비')) {
                 const wageAmt = Number(pickedWageManwon || pol.labor_avgMonthlyWage || 280);
                 input.value = formatMoneyByUnit(wageAmt);
@@ -2341,6 +2387,7 @@ export async function runMetrixSurvey({
         pol: effectivePolicy,
         quotaIdx: quotaIndex,
         indKey: industryKey,
+        pickedOwnerIncomeManwon,
         pickedGoodwillManwon,
         pickedWageManwon
       }).catch(err => console.error('[Metrix DOM 주입 오류]:', err.message));
@@ -2493,10 +2540,10 @@ export async function runMetrixSurvey({
 
       console.log(`[MetrixRunner Step ${stepCount}] Clicking [다음] button...`);
       const nextClicked = await page.evaluate(() => {
-        const buttons = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"]')).filter(b => b.offsetParent !== null);
+        const buttons = Array.from(document.querySelectorAll('#next, button, input[type="button"], input[type="submit"], a.btn')).filter(b => b.offsetParent !== null);
         const nextBtn = buttons.find(b => {
           const t = (b.innerText || b.value || '').trim();
-          return t === '다음' || t.includes('다음') || t === '제출' || t === '완료';
+          return b.id === 'next' || t === '다음' || t.includes('다음') || t === '제출' || t === '완료';
         });
         if (nextBtn) {
           nextBtn.click();

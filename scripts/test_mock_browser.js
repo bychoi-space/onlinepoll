@@ -16,7 +16,8 @@ const filesToCheck = [
   'public/modules/quota-table-renderers.js',
   'src/server.js',
   'src/config/campaign-seeders.js',
-  'src/routes/quota-routes.js'
+  'src/routes/quota-routes.js',
+  'src/engine/metrix-runner.js'
 ];
 
 for (const file of filesToCheck) {
@@ -198,6 +199,22 @@ if (!container.innerHTML.includes('metrix-guide-shell') || !container.innerHTML.
 }
 if (container.innerHTML.includes('rgba(15,23,42') || container.innerHTML.includes('#f8fafc') || container.innerHTML.includes('[파트 A]')) {
   throw new Error('Metrix blueprint still contains legacy dark inline styles or [파트 A~I] cards');
+}
+if (!container.innerHTML.includes('sel-metrix-q13-range-mode') || !container.innerHTML.includes('num-metrix-income-min')) {
+  throw new Error('Metrix Q13 income range guide failed to render');
+}
+if (
+  metrixState.q13_incomeRangeMode !== 'range' ||
+  metrixState.owner_incomeMin !== 250 ||
+  metrixState.owner_incomeMax !== 400 ||
+  metrixState.owner_incomeStep !== 5
+) {
+  throw new Error(`Metrix Q13 defaults mismatch: ${JSON.stringify({
+    mode: metrixState.q13_incomeRangeMode,
+    min: metrixState.owner_incomeMin,
+    max: metrixState.owner_incomeMax,
+    step: metrixState.owner_incomeStep
+  })}`);
 }
 metrixMod.syncMetrixInputsToState(metrixState);
 if (!metrixState.excludeClosedBiz || !metrixState.updatePhoneInContactPopup || !metrixState.safetyStopAtReview) {

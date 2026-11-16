@@ -351,6 +351,10 @@ export function syncMetrixInputsToState(metrixPolicyState) {
   // 경기도 3차 본조사 문항별 응답 가이드 (문10 ~ 문69 · CHECK1)
   readStr('sel-metrix-q10-mode', 'q10_fundMgmtMode');
   readStr('sel-metrix-q12-1-mode', 'q12_1_evalReasonMode');
+  readStr('sel-metrix-q13-range-mode', 'q13_incomeRangeMode');
+  readNum('num-metrix-income-min', 'owner_incomeMin', 250);
+  readNum('num-metrix-income-max', 'owner_incomeMax', 400);
+  readNum('num-metrix-income-step', 'owner_incomeStep', 5);
   readStr('sel-metrix-q16-1-source', 'q16_1_leaseSource');
   readStr('sel-metrix-q17-range-mode', 'q17_goodwillRangeMode');
   readNum('num-metrix-goodwill-min', 'goodwill_min', 1000);
@@ -491,6 +495,7 @@ export function bindMetrixEvents({ metrixPolicyState, appendLog, onApplyIndustry
   };
 
   bindConditionalToggle('sel-metrix-q12-1-mode', 'wrap-metrix-q12-1-fixed', v => v === 'fixed');
+  bindConditionalToggle('sel-metrix-q13-range-mode', 'wrap-metrix-q13-range', v => v === 'range');
   bindConditionalToggle('sel-metrix-q16-1-source', 'wrap-metrix-q16-1-fallback', v => v !== 'preserve_only');
   bindConditionalToggle('sel-metrix-q17-range-mode', 'wrap-metrix-q17-range', v => v === 'range');
   bindConditionalToggle('sel-metrix-q22-mode', 'wrap-metrix-q22-fixed', v => v === 'fixed');
@@ -505,12 +510,27 @@ export function bindMetrixEvents({ metrixPolicyState, appendLog, onApplyIndustry
     if (!indPol) return;
     const metaEl = document.getElementById(`metrix-ind-meta-${indKey}`);
     if (metaEl) {
+      const incSummary = metrixPolicyState.q13_incomeRangeMode === 'fixed'
+        ? `${indPol.owner_monthlyIncome}만`
+        : (metrixPolicyState.q13_incomeRangeMode === 'panel'
+          ? '패널값'
+          : `${metrixPolicyState.owner_incomeMin ?? 250}~${metrixPolicyState.owner_incomeMax ?? 400}만`);
       metaEl.innerHTML = `
-        <div>영업 <strong>${escapeHtml(indPol.operating_openHour)}~${escapeHtml(indPol.operating_closeHour)}시</strong> · 순소득 <strong>${indPol.owner_monthlyIncome}만</strong></div>
+        <div>영업 <strong>${escapeHtml(indPol.operating_openHour)}~${escapeHtml(indPol.operating_closeHour)}시</strong> · 순소득 <strong>${incSummary}</strong></div>
         <div>원재료 <strong>${indPol.cost_materialRatio}%</strong> · 카드 <strong>${indPol.payment_cardRatio}%</strong> · 이체 <strong>${indPol.payment_transferRatio}%</strong></div>
       `;
     }
   }
+
+  ['sel-metrix-q13-range-mode', 'num-metrix-income-min', 'num-metrix-income-max', 'num-metrix-income-step'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const evtName = el.tagName === 'SELECT' ? 'change' : 'input';
+    el.addEventListener(evtName, () => {
+      syncMetrixInputsToState(metrixPolicyState);
+      Object.keys(metrixPolicyState.industryPolicies || {}).forEach(k => refreshIndustryCardSummary(k));
+    });
+  });
 
   function loadIndustryIntoForm(indKey) {
     if (!metrixPolicyState.industryPolicies) {
@@ -654,9 +674,9 @@ function renderGyeonggiCleanHtml({ metrixPolicyState, indKeys, enabledIndCount, 
       <!-- [탭 1] 3차 본조사 문항별 응답 가이드 (전 업종 공통 제어) -->
       <div id="metrix-tab-panel-questions" class="metrix-guide-panel" style="display:${activeTab === 'questions' ? 'block' : 'none'};">
 
-        <!-- 그룹 1: 자금 · 경영실적 · 보증연동 -->
+        <!-- 그룹 1: 자금 · 경영실적 · 대표자 소득 · 보증연동 -->
         <div class="metrix-section-block">
-          <h4 class="metrix-section-heading"><i class="fa-solid fa-coins"></i> 1. 자금 관리 · 경영실적 · 보증지원 연동 (문10 ~ 문15-3)</h4>
+          <h4 class="metrix-section-heading"><i class="fa-solid fa-coins"></i> 1. 자금 관리 · 경영실적 · 대표자 소득 · 보증지원 연동 (문10 ~ 문15-3)</h4>
           <div class="metrix-q-grid">
             <div class="metrix-q-card">
               <div class="metrix-q-head">
@@ -701,6 +721,32 @@ function renderGyeonggiCleanHtml({ metrixPolicyState, indKeys, enabledIndCount, 
                     <option value="4" ${metrixPolicyState.sales_changeReasonRank2 === '4' ? 'selected' : ''}>4. 유동인구 및 소비패턴 변화</option>
                     <option value="5" ${metrixPolicyState.sales_changeReasonRank2 === '5' ? 'selected' : ''}>5. 마케팅·온라인 판로 변화</option>
                   </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="metrix-q-card">
+              <div class="metrix-q-head">
+                <span class="metrix-q-num">문13</span>
+                <span class="metrix-q-title">대표자 월평균 소득 범위 설정 (만원)</span>
+              </div>
+              <select id="sel-metrix-q13-range-mode" class="figma-select w-full">
+                <option value="range" ${metrixPolicyState.q13_incomeRangeMode === 'range' ? 'selected' : ''}>지정 범위 내 단위 랜덤 생성 (250~400만원 · 기본)</option>
+                <option value="fixed" ${metrixPolicyState.q13_incomeRangeMode === 'fixed' ? 'selected' : ''}>업종별 기본 순소득 고정값 사용</option>
+                <option value="panel" ${metrixPolicyState.q13_incomeRangeMode === 'panel' ? 'selected' : ''}>기존 패널 기입력값(M13) 유지</option>
+              </select>
+              <div id="wrap-metrix-q13-range" class="metrix-q-subgrid-3" style="display:${metrixPolicyState.q13_incomeRangeMode === 'range' ? '' : 'none'};">
+                <div>
+                  <span class="metrix-q-sublabel">최소(만원)</span>
+                  <input type="number" id="num-metrix-income-min" class="figma-input w-full" min="50" step="5" value="${metrixPolicyState.owner_incomeMin}" />
+                </div>
+                <div>
+                  <span class="metrix-q-sublabel">최대(만원)</span>
+                  <input type="number" id="num-metrix-income-max" class="figma-input w-full" min="50" step="5" value="${metrixPolicyState.owner_incomeMax}" />
+                </div>
+                <div>
+                  <span class="metrix-q-sublabel">단위(만원)</span>
+                  <input type="number" id="num-metrix-income-step" class="figma-input w-full" min="1" step="5" value="${metrixPolicyState.owner_incomeStep}" />
                 </div>
               </div>
             </div>
@@ -1114,7 +1160,7 @@ function renderGyeonggiCleanHtml({ metrixPolicyState, indKeys, enabledIndCount, 
                   <span class="metrix-ind-card-count">${cnt}건</span>
                 </div>
                 <div class="metrix-ind-card-meta" id="metrix-ind-meta-${k}">
-                  <div>영업 <strong>${escapeHtml(p.operating_openHour)}~${escapeHtml(p.operating_closeHour)}시</strong> · 순소득 <strong>${p.owner_monthlyIncome}만</strong></div>
+                  <div>영업 <strong>${escapeHtml(p.operating_openHour)}~${escapeHtml(p.operating_closeHour)}시</strong> · 순소득 <strong>${metrixPolicyState.q13_incomeRangeMode === 'fixed' ? `${p.owner_monthlyIncome}만` : (metrixPolicyState.q13_incomeRangeMode === 'panel' ? '패널값' : `${metrixPolicyState.owner_incomeMin ?? 250}~${metrixPolicyState.owner_incomeMax ?? 400}만`)}</strong></div>
                   <div>원재료 <strong>${p.cost_materialRatio}%</strong> · 카드 <strong>${p.payment_cardRatio}%</strong> · 이체 <strong>${p.payment_transferRatio}%</strong></div>
                 </div>
               </div>
@@ -1171,7 +1217,7 @@ function renderGyeonggiCleanHtml({ metrixPolicyState, indKeys, enabledIndCount, 
               </select>
             </div>
             <div>
-              <span class="metrix-q-sublabel">대표자 월평균 순소득 (문13, 만원)</span>
+              <span class="metrix-q-sublabel">대표자 월평균 순소득 (문13 고정모드 시, 만원)</span>
               <input type="number" id="num-metrix-owner-income" class="figma-input w-full" min="50" max="5000" step="10" value="${activeIndObj.owner_monthlyIncome ?? 320}" />
             </div>
           </div>
@@ -1471,6 +1517,10 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
   // 경기도 3차 본조사 문항별 정밀 가이드 기본값
   if (!metrixPolicyState.q10_fundMgmtMode) metrixPolicyState.q10_fundMgmtMode = 'random';
   if (!metrixPolicyState.q12_1_evalReasonMode) metrixPolicyState.q12_1_evalReasonMode = 'random';
+  if (!metrixPolicyState.q13_incomeRangeMode) metrixPolicyState.q13_incomeRangeMode = 'range';
+  if (metrixPolicyState.owner_incomeMin === undefined) metrixPolicyState.owner_incomeMin = 250;
+  if (metrixPolicyState.owner_incomeMax === undefined) metrixPolicyState.owner_incomeMax = 400;
+  if (metrixPolicyState.owner_incomeStep === undefined) metrixPolicyState.owner_incomeStep = 5;
   if (!metrixPolicyState.q16_1_leaseSource) metrixPolicyState.q16_1_leaseSource = 'excel_first';
   if (!metrixPolicyState.q17_goodwillRangeMode) metrixPolicyState.q17_goodwillRangeMode = 'range';
   if (metrixPolicyState.goodwill_min === undefined) metrixPolicyState.goodwill_min = 1000;
