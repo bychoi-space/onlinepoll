@@ -272,6 +272,15 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
       await page.waitForTimeout(2500);
 
       const extractCurrentPageRows = async () => page.evaluate(({ sessionInfo }) => {
+        const thTexts = Array.from(document.querySelectorAll('table.list-data thead th')).map(th => th.innerText.replace(/\s+/g, '').trim());
+        const findColIdx = (matcher, fallbackIdx) => {
+          const found = thTexts.findIndex(t => matcher(t));
+          return found >= 0 ? found : fallbackIdx;
+        };
+        const statusColIdx = findColIdx(t => t === '참여' || t.includes('참여상태') || t.includes('진행상태'), 14);
+        const contactResColIdx = findColIdx(t => t.includes('컨택결과') && !t.includes('메모'), 15);
+        const lastTimeColIdx = findColIdx(t => t.includes('최종컨택') || t.includes('컨택시각') || t.includes('컨택일시'), 17);
+
         const trs = Array.from(document.querySelectorAll('table.list-data tbody tr'));
         return trs.map((tr, idx) => {
           let obj = {};
@@ -295,9 +304,16 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
           const bizCategory = obj['분류명'] || '';
           const bizForm = obj['사업차형태'] || '';
           const corpNumber = obj['법인등록번호'] || '';
-          const status = cells[14] || '';
-          const contactResult = cells[15] || '';
-          const lastContactTime = cells[17] || '';
+          let status = cells[statusColIdx] || '';
+          if (!status) {
+            const compCode = String(obj.COMPLETE || '').toUpperCase();
+            const progNum = Number(obj._PROGRESS || 0);
+            if (compCode === 'COMPLETE' || progNum >= 100) status = '완료';
+            else if (compCode === 'OVER') status = '인원초과';
+            else if (progNum > 0) status = `진행중(${progNum}%)`;
+          }
+          const contactResult = cells[contactResColIdx] || '';
+          const lastContactTime = cells[lastTimeColIdx] || '';
           const surveyUrl = `https://${sessionInfo.domain}/?ACCESS_KEY=${sessionInfo.realAccessKey}&__CU_LOGIN_ID=${encodeURIComponent(sessionInfo.cuLoginId)}&UID=${uid}&__CU_ID=${sessionInfo.cuId}&__CU_LOGIN_ID=${encodeURIComponent(sessionInfo.cuLoginId)}`;
           return {
             accountRowIndex: idx + 1,
@@ -465,11 +481,14 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
   }
 
   for (const s of allSlots) {
-    if (s.isClosedBiz) {
+    const st = String(s.status || '');
+    const isOver = st.includes('인원초과') || String(s.rawMeta?.COMPLETE || '').toUpperCase() === 'OVER';
+    const isSafeWait = st.includes('98%') || st.includes('99%') || (Number(s.rawMeta?._PROGRESS || 0) >= 98 && Number(s.rawMeta?._PROGRESS || 0) < 100);
+    if (s.isClosedBiz || isOver) {
       s.quotaStatus = 'excluded';
-    } else if (String(s.status).includes('완료')) {
+    } else if (st.includes('완료')) {
       s.quotaStatus = 'completed';
-    } else if (String(s.status).includes('98%')) {
+    } else if (isSafeWait) {
       s.quotaStatus = '진행중(98%)';
     } else if (!s.quotaStatus || s.quotaStatus === 'excluded') {
       s.quotaStatus = 'ready';

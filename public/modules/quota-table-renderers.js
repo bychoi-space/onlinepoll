@@ -1037,6 +1037,7 @@ export function renderMetrixQuotaTable({
   metrixPolicy = {},
   checkedMetrixSeqs = new Set(),
   onReRender,
+  onSelectionChange,
   onTriggerBatchRun,
   onSyncMetrix622,
   onToggleClosedBiz
@@ -1054,9 +1055,10 @@ export function renderMetrixQuotaTable({
 
   const getAcc = (it) => String(it.surveyorId || it.loginId || '강영미').trim();
   const getIndKey = (it) => it.industryKey || resolveMetrix622IndustryKey(it.industry);
-  const isClosed = (it) => Boolean(it.isClosedBiz || String(it.bizStatus || '').includes('폐업') || it.quotaStatus === 'excluded');
+  const isOverQuota = (it) => String(it.status || '').includes('인원초과') || String(it.rawMeta?.COMPLETE || '').toUpperCase() === 'OVER';
+  const isClosed = (it) => Boolean(it.isClosedBiz || String(it.bizStatus || '').includes('폐업') || it.quotaStatus === 'excluded' || isOverQuota(it));
   const isDone = (it) => (it.quotaStatus === 'completed' || it.status === '완료' || String(it.status || '').includes('완료(100%)'));
-  const isWait98 = (it) => (it.quotaStatus === '진행중(98%)' || String(it.status || '').includes('98%'));
+  const isWait98 = (it) => (it.quotaStatus === '진행중(98%)' || /98%|99%/.test(String(it.quotaStatus || '')) || /98%|99%/.test(String(it.status || '')));
 
   const baseAccounts = ['강영미', '김정례', '노영미', '송춘희'];
   const accCountMap = new Map(baseAccounts.map(a => [a, 0]));
@@ -1110,12 +1112,12 @@ export function renderMetrixQuotaTable({
 
           <span class="metrix-slim-divider"></span>
 
-          <span class="metrix-slim-label">선택:</span>
-          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="uncompleted_active">미완료 (${uncompletedActive.length})</button>
-          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="visible_active">현재 필터 (${visibleDb.filter(it => !isClosed(it) && !isDone(it)).length})</button>
+          <span class="metrix-slim-label">빠른선택:</span>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="visible_active" title="현재 화면에 표시된 계정·업종 필터 내 미완료 업체만 선택합니다">현재 필터 미완료 (${visibleDb.filter(it => !isClosed(it) && !isDone(it) && !isWait98(it)).length})</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="uncompleted_active" title="4개 계정 전체 미완료 업체를 모두 선택합니다">전체 미완료 (${uncompletedActive.length})</button>
           <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="phone_changed">휴대폰 변경 (${phoneChangedItems.length})</button>
-          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="wait_98">98% 대기 (${wait98Items.length})</button>
-          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="none" style="color: #64748b;">해제</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="wait_98">98~99% 대기 (${wait98Items.length})</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
         </div>
 
         <div class="metrix-slim-group">
@@ -1136,17 +1138,24 @@ export function renderMetrixQuotaTable({
 
       <div class="metrix-slim-row" style="padding-top: 8px; border-top: 1px solid #e2e8f0;">
         <span id="badge-metrix-checked-count" class="metrix-summary-text">
-          <span>체크됨 <strong>${checkedCount}건</strong></span>
+          <span>선택됨 <strong style="color:#16a34a;">${checkedCount}건</strong></span>
           <span>·</span>
-          <span>시트 휴대폰 변경대상 <strong>${phoneChangedItems.length}건</strong></span>
+          <span>미완료 대기 <strong>${uncompletedActive.length}건</strong></span>
           <span>·</span>
-          <span>98% 검토대기 <strong>${wait98Items.length}건</strong></span>
+          <span>98~99% 검토대기 <strong>${wait98Items.length}건</strong></span>
           <span>·</span>
-          <span>폐업 제외 <strong>${closedItems.length}건</strong></span>
+          <span>완료 <strong>${completedItems.length}건</strong></span>
+          <span>·</span>
+          <span>제외(폐업·인원초과) <strong>${closedItems.length}건</strong></span>
         </span>
-        <a href="#section-execution" id="link-metrix-jump-exec" class="metrix-jump-exec-link">
-          <i class="fa-solid fa-circle-play"></i> 체크한 사업체 (${checkedCount}건) STEP 3 실행 영역으로 이동 ↓
-        </a>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <button type="button" id="btn-metrix-622-top-batch-run" class="btn-pill ${checkedCount > 0 ? 'btn-pill-primary' : 'btn-pill-secondary'} btn-pill-small font-bold" style="${checkedCount > 0 ? 'background:#16a34a; border-color:#16a34a; color:#fff;' : ''}" title="체크박스로 선택한 사업체만 즉시 순차 자동설문을 실행합니다 (전체 배치를 돌리지 않음)">
+            <i class="fa-solid fa-play"></i> ${checkedCount > 0 ? `선택 업체만 자동설문 실행 (${checkedCount}건)` : '실행할 업체를 체크하세요 (0건)'}
+          </button>
+          <a href="#section-execution" id="link-metrix-jump-exec" class="metrix-jump-exec-link">
+            <i class="fa-solid fa-sliders"></i> STEP 3 실행 제어로 이동 ↓
+          </a>
+        </div>
       </div>
     `;
   }
@@ -1157,6 +1166,7 @@ export function renderMetrixQuotaTable({
     const seq = Number(item.index || item.seq || (idx + 1));
     const acc = getAcc(item);
     const accPw = item.surveyorPw || defaultPwByAcc[acc] || '5254';
+    const overQuota = isOverQuota(item);
     const closed = isClosed(item);
     const done = isDone(item);
     const wait98 = isWait98(item);
@@ -1164,14 +1174,17 @@ export function renderMetrixQuotaTable({
     const isChecked = !closed && checkedMetrixSeqs.has(seq);
 
     let statusHtml = '<span class="badge-status ready">대기</span>';
-    if (closed) {
+    if (overQuota) {
+      statusHtml = '<span class="badge-status error font-bold"><i class="fa-solid fa-ban"></i> 인원초과 제외</span>';
+    } else if (closed) {
       statusHtml = '<span class="badge-status error font-bold"><i class="fa-solid fa-ban"></i> 입력제외 (폐업)</span>';
     } else if (done) {
       statusHtml = '<span class="badge-status success"><i class="fa-solid fa-check"></i> 완료</span>';
     } else if (isRowRunning) {
       statusHtml = '<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 진행중</span>';
     } else if (wait98) {
-      statusHtml = '<span class="badge-status warning font-bold" style="background: rgba(245, 158, 11, 0.18); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.45);"><i class="fa-solid fa-shield-halved"></i> 98% 검토대기</span>';
+      const waitLabel = String(item.status || '').includes('99%') ? '99% 검토대기' : '98% 검토대기';
+      statusHtml = `<span class="badge-status warning font-bold" style="background: rgba(245, 158, 11, 0.18); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.45);"><i class="fa-solid fa-shield-halved"></i> ${waitLabel}</span>`;
     } else if (item.quotaStatus === 'pilot_done') {
       statusHtml = '<span class="badge-status pilot"><i class="fa-solid fa-flask"></i> 검증대기</span>';
     } else if (item.quotaStatus === 'error') {
@@ -1186,9 +1199,11 @@ export function renderMetrixQuotaTable({
       ? `<span class="badge-status pilot font-mono" style="padding:1px 6px; font-size:10.5px;" title="컨택 팝업 진입 시 기존(${escapeHtml(serverPhone || '없음')}) ➔ 시트 번호(${escapeHtml(excelPhone)})로 자동 변경 후 [저장]합니다">시트변경 ➔ 저장대기</span>`
       : (excelPhone ? `<span class="badge-status success font-mono" style="padding:1px 6px; font-size:10.5px;">시트일치</span>` : `<span class="badge-status ready font-mono" style="padding:1px 6px; font-size:10.5px;">서버번호 유지</span>`);
 
-    const bizStatusHtml = closed
-      ? `<span class="badge-status error font-bold" style="padding:2px 8px;"><i class="fa-solid fa-circle-xmark"></i> 폐업 제외</span>`
-      : `<span class="badge-status success font-bold" style="padding:2px 8px;" title="${escapeHtml(item.taxType || '부가가치세 일반과세자')}"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(item.bizStatus || '계속사업자')}</span>`;
+    const bizStatusHtml = overQuota
+      ? `<span class="badge-status warning font-bold" style="padding:2px 8px;"><i class="fa-solid fa-ban"></i> 인원초과 제외</span>`
+      : (closed
+        ? `<span class="badge-status error font-bold" style="padding:2px 8px;"><i class="fa-solid fa-circle-xmark"></i> 폐업 제외</span>`
+        : `<span class="badge-status success font-bold" style="padding:2px 8px;" title="${escapeHtml(item.taxType || '부가가치세 일반과세자')}"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(item.bizStatus || '계속사업자')}</span>`);
 
     const ik = getIndKey(item);
     const indMeta = METRIX_622_IND_META[ik] || METRIX_622_IND_META.ind_3;
@@ -1215,14 +1230,16 @@ export function renderMetrixQuotaTable({
       : '<span class="text-dim">미생성</span>';
 
     let actionBtnHtml = '';
-    if (closed) {
+    if (overQuota) {
+      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45; cursor:not-allowed;">인원초과 제외</button>`;
+    } else if (closed) {
       actionBtnHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45; cursor:not-allowed;">폐업 제외됨</button>`;
     } else if (done) {
       actionBtnHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45; cursor:not-allowed;">완료됨</button>`;
     } else if (isRowRunning) {
       actionBtnHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small" disabled><i class="fa-solid fa-spinner fa-spin"></i> 실행중</button>`;
     } else {
-      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-metrix" data-seq="${seq}" title="[${escapeHtml(acc)}] #${seq} ${escapeHtml(item.companyName || '')}: [컨택] 클릭 ➔ 휴대폰(${escapeHtml(effectivePhone || '-')}) 변경·[저장] ➔ [설문참여] ➔ 98% 안전 대기 실행">▷ 컨택·저장·98%</button>`;
+      actionBtnHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-metrix" data-seq="${seq}" title="[${escapeHtml(acc)}] #${seq} ${escapeHtml(item.companyName || '')}: [컨택] 클릭 ➔ 휴대폰(${escapeHtml(effectivePhone || '-')}) 변경·[저장] ➔ [설문참여] ➔ 98~99% 안전 대기 실행">▷ 컨택·저장·98%</button>`;
     }
 
     const accBadgeClass = acc === '강영미' ? 'ready' : (acc === '김정례' ? 'pilot' : 'success');
@@ -1275,35 +1292,51 @@ export function renderMetrixQuotaTable({
     `;
   }).join('');
 
+  const selectableVisibleSeqs = visibleDb
+    .filter(it => !isClosed(it) && !isDone(it) && !isWait98(it))
+    .map(it => Number(it.index || it.seq));
+
   const updateCheckedBadges = () => {
     const cnt = checkedMetrixSeqs.size;
     const badgeEl = document.getElementById('badge-metrix-checked-count');
     if (badgeEl) {
       badgeEl.innerHTML = `
-        <span>체크됨 <strong>${cnt}건</strong></span>
+        <span>선택됨 <strong style="color:#16a34a;">${cnt}건</strong></span>
         <span>·</span>
-        <span>시트 휴대폰 변경대상 <strong>${phoneChangedItems.length}건</strong></span>
+        <span>미완료 대기 <strong>${uncompletedActive.length}건</strong></span>
         <span>·</span>
-        <span>98% 검토대기 <strong>${wait98Items.length}건</strong></span>
+        <span>98~99% 검토대기 <strong>${wait98Items.length}건</strong></span>
         <span>·</span>
-        <span>폐업 제외 <strong>${closedItems.length}건</strong></span>
+        <span>완료 <strong>${completedItems.length}건</strong></span>
+        <span>·</span>
+        <span>제외(폐업·인원초과) <strong>${closedItems.length}건</strong></span>
       `;
     }
-    const jumpLink = document.getElementById('link-metrix-jump-exec');
-    if (jumpLink) {
-      jumpLink.innerHTML = `<i class="fa-solid fa-circle-play"></i> 체크한 사업체 (${cnt}건) STEP 3 실행 영역으로 이동 ↓`;
+    const topBtn = document.getElementById('btn-metrix-622-top-batch-run');
+    if (topBtn) {
+      topBtn.classList.toggle('btn-pill-primary', cnt > 0);
+      topBtn.classList.toggle('btn-pill-secondary', cnt === 0);
+      topBtn.style.background = cnt > 0 ? '#16a34a' : '';
+      topBtn.style.borderColor = cnt > 0 ? '#16a34a' : '';
+      topBtn.style.color = cnt > 0 ? '#fff' : '';
+      topBtn.innerHTML = `<i class="fa-solid fa-play"></i> ${cnt > 0 ? `선택 업체만 자동설문 실행 (${cnt}건)` : '실행할 업체를 체크하세요 (0건)'}`;
+    }
+    const cbHeader = document.getElementById('cb-metrix-check-all');
+    if (cbHeader) {
+      cbHeader.checked = selectableVisibleSeqs.length > 0 && selectableVisibleSeqs.every(s => checkedMetrixSeqs.has(s));
+    }
+    if (typeof onSelectionChange === 'function') {
+      onSelectionChange(checkedMetrixSeqs);
     }
   };
 
   const cbAll = document.getElementById('cb-metrix-check-all');
-  const selectableVisibleSeqs = visibleDb
-    .filter(it => !isClosed(it) && !isDone(it))
-    .map(it => Number(it.index || it.seq));
   if (cbAll) {
     cbAll.checked = selectableVisibleSeqs.length > 0 && selectableVisibleSeqs.every(s => checkedMetrixSeqs.has(s));
     cbAll.onchange = () => {
       if (cbAll.checked) selectableVisibleSeqs.forEach(s => checkedMetrixSeqs.add(s));
       else selectableVisibleSeqs.forEach(s => checkedMetrixSeqs.delete(s));
+      if (typeof onSelectionChange === 'function') onSelectionChange(checkedMetrixSeqs);
       if (typeof onReRender === 'function') onReRender(db);
     };
   }
@@ -1365,12 +1398,13 @@ export function renderMetrixQuotaTable({
         if (mode === 'uncompleted_active') {
           uncompletedActive.forEach(it => checkedMetrixSeqs.add(Number(it.index || it.seq)));
         } else if (mode === 'visible_active') {
-          visibleDb.filter(it => !isClosed(it) && !isDone(it)).forEach(it => checkedMetrixSeqs.add(Number(it.index || it.seq)));
+          visibleDb.filter(it => !isClosed(it) && !isDone(it) && !isWait98(it)).forEach(it => checkedMetrixSeqs.add(Number(it.index || it.seq)));
         } else if (mode === 'phone_changed') {
           phoneChangedItems.forEach(it => checkedMetrixSeqs.add(Number(it.index || it.seq)));
         } else if (mode === 'wait_98') {
           wait98Items.forEach(it => checkedMetrixSeqs.add(Number(it.index || it.seq)));
         }
+        if (typeof onSelectionChange === 'function') onSelectionChange(checkedMetrixSeqs);
         if (typeof onReRender === 'function') onReRender(db);
       });
     });
@@ -1382,7 +1416,7 @@ export function renderMetrixQuotaTable({
 
     const topBatchBtn = document.getElementById('btn-metrix-622-top-batch-run');
     if (topBatchBtn && typeof onTriggerBatchRun === 'function') {
-      topBatchBtn.addEventListener('click', () => onTriggerBatchRun(Array.from(checkedMetrixSeqs)));
+      topBatchBtn.addEventListener('click', () => onTriggerBatchRun('selected'));
     }
   }
 }

@@ -759,7 +759,12 @@ export function registerExecutionRoutes({
         return false;
       }
       if (isMetrix) {
-        if (safetyGuard && (b.quotaStatus === '진행중(98%)' || b.status === '진행중(98%)')) {
+        const isOver = String(b.status || '').includes('인원초과') || String(b.rawMeta?.COMPLETE || '').toUpperCase() === 'OVER';
+        if (b.isClosedBiz || String(b.bizStatus || '').includes('폐업') || b.quotaStatus === 'excluded' || isOver) {
+          return false;
+        }
+        const isWait98Or99 = /98%|99%/.test(String(b.quotaStatus || '')) || /98%|99%/.test(String(b.status || ''));
+        if (safetyGuard && isWait98Or99) {
           return false;
         }
       } else {
@@ -793,9 +798,13 @@ export function registerExecutionRoutes({
     });
 
     logger.runWithCampaignContext(campaign.id, () => (async () => {
+      let stoppedByUser = false;
+      let haltedByBlock = false;
+      let haltedReason = '';
       try {
         for (let i = 0; i < targets.length; i++) {
           if (!isCampaignTaskRunning(campaign.id)) {
+            stoppedByUser = true;
             logger.warn(`[배치 일시중지] 사용자에 의해 배치가 안전하게 중지되었습니다.`);
             break;
           }
@@ -1307,6 +1316,9 @@ export function registerExecutionRoutes({
               biz.quotaStatus = 'excluded';
               biz.error = result?.error || '';
               logger.warn(result?.error || `[폐업 제외] "${biz.companyName}" 제외 처리`);
+            } else if (result?.excluded) {
+              biz.quotaStatus = 'excluded';
+              logger.warn(`[배치 ${i + 1}/${targets.length} 제외] ${result.error || `"${biz.companyName}" 제외 처리됨`}`);
             } else {
               biz.quotaStatus = 'error';
               biz.error = result?.error || '설문 실행 오류';
@@ -1316,6 +1328,8 @@ export function registerExecutionRoutes({
               logger.error(`[배치 ${i + 1}/${targets.length} 실패] "${biz.buildingName || biz.marketName || biz.companyName}": ${result?.error || '설문 실행 오류'}`);
               if (isMetrix) {
                 const haltNotice = `🛑 [스킵 금지 · 배치 즉시 중단] "${biz.companyName}" (UID: ${biz.uid}) 진행 중 막힘이 발생하여 다음 대상으로 넘어가지 않고 배치를 즉시 중단했습니다. 사유: ${result?.error || '설문 진행 차단'}`;
+                haltedByBlock = true;
+                haltedReason = haltNotice;
                 logger.error(haltNotice);
                 CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
                 logger.broadcast({
@@ -1349,27 +1363,46 @@ export function registerExecutionRoutes({
         const allQuotasFinished = checkPool.length > 0 && checkPool.every(b =>
           b.isClosedBiz ||
           b.quotaStatus === 'excluded' ||
+          String(b.status || '').includes('인원초과') ||
           b.quotaStatus === 'completed' ||
           b.quotaStatus === 'pilot_done' ||
           b.status === '완료' ||
           b.status === '조사완료' ||
           b.substitutedByUid ||
           String(b.quotaStatus || '').includes('98%') ||
-          String(b.quotaStatus || '').includes('99%')
+          String(b.quotaStatus || '').includes('99%') ||
+          String(b.status || '').includes('98%') ||
+          String(b.status || '').includes('99%')
         );
         const nextCampaignStatus = allQuotasFinished ? 'completed' : 'ready';
 
         finishCampaignTask(campaign.id);
         CampaignStore.updateCampaign(campaign.id, { status: nextCampaignStatus });
-        if (allQuotasFinished) {
-          logger.success(`🎉 [배치 자동화 완료] 캠페인 "${campaign.title}"의 모든 연속 설문이 완료되었습니다!`);
+        if (haltedByBlock) {
+          logger.warn(`🛑 [선택 배치 일시중단] 캠페인 "${campaign.title}" 배치 진행 중 문항 검증 막힘이 감지되어 안전하게 중단되었습니다. (원인 확인 후 재가동 가능)`);
+          logger.broadcast({
+            type: 'BATCH_HALTED',
+            campaignId: campaign.id,
+            error: haltedReason
+          });
+        } else if (stoppedByUser) {
+          logger.warn(`⏹️ [선택 배치 중지됨] 캠페인 "${campaign.title}" 배치가 사용자 요청으로 중지되었습니다.`);
+          logger.broadcast({
+            type: 'BATCH_HALTED',
+            campaignId: campaign.id,
+            stoppedByUser: true
+          });
         } else {
-          logger.success(`🎉 [선택 배치 완료] 캠페인 "${campaign.title}" 선택 대상 ${targets.length}건 실행이 완료되었습니다! (잔여 쿼터 대기 중)`);
+          if (allQuotasFinished) {
+            logger.success(`🎉 [배치 자동화 완료] 캠페인 "${campaign.title}"의 모든 연속 설문이 완료되었습니다!`);
+          } else {
+            logger.success(`🎉 [선택 배치 완료] 캠페인 "${campaign.title}" 선택 대상 ${targets.length}건 실행이 완료되었습니다! (잔여 쿼터 대기 중)`);
+          }
+          logger.broadcast({
+            type: 'BATCH_COMPLETED',
+            campaignId: campaign.id
+          });
         }
-        logger.broadcast({
-          type: 'BATCH_COMPLETED',
-          campaignId: campaign.id
-        });
       } catch (err) {
         finishCampaignTask(campaign.id);
         logger.error('[배치 실행 중 오류]', err);

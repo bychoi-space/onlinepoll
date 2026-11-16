@@ -73,9 +73,11 @@ export async function runMetrixSurvey({
     throw new Error('설문 참여 URL(surveyUrl) 또는 대상 UID가 제공되지 않았습니다.');
   }
 
-  // [요구사항 1] 사업자번호 기반 폐업 리스트 입력 제외 안전가드
-  if (slotData.isClosedBiz || String(slotData.bizStatus || '').includes('폐업') || slotData.quotaStatus === 'excluded') {
-    const closedMsg = `⛔ [폐업 제외] "${slotData.companyName || '사업체'}" (사업자번호: ${slotData.bizNumber || '-'})는 폐업 사업체이므로 설문 입력을 제외합니다.`;
+  // [요구사항 1] 사업자번호 기반 폐업 리스트 및 서버 인원초과(OVER) 대상 입력 제외 안전가드
+  const isOverQuotaSlot = String(slotData.status || '').includes('인원초과') || String(slotData.rawMeta?.COMPLETE || '').toUpperCase() === 'OVER';
+  if (slotData.isClosedBiz || String(slotData.bizStatus || '').includes('폐업') || slotData.quotaStatus === 'excluded' || isOverQuotaSlot) {
+    const excludeReasonLabel = isOverQuotaSlot ? '인원초과 제외' : '폐업 제외';
+    const closedMsg = `⛔ [${excludeReasonLabel}] "${slotData.companyName || '사업체'}" (UID: ${slotData.uid || '-'}, 사업자번호: ${slotData.bizNumber || '-'})는 ${isOverQuotaSlot ? '인원초과 마감 대상' : '폐업 사업체'}이므로 설문 입력을 제외합니다.`;
     console.warn(closedMsg);
     onProgress({
       step: 'EXCLUDED_CLOSED_BIZ',
@@ -1050,41 +1052,189 @@ export async function runMetrixSurvey({
         }
         const trendMult = trendMode === 'growth' ? 1.07 : (trendMode === 'decrease' ? 0.93 : 1.0);
 
-        // [규칙 1] 사업장 및 거주지 주소 Readonly 인풋 강제 바인딩 (A10, A14) 및 사업체 일반현황 보호
+        // [규칙 1] 사업장 및 거주지 주소 Readonly 인풋 강제 바인딩 (A10, A14_1) 및 사업체 일반현황(A1~A15) 결측 자동 채움·보호
         if (pol.general_bindAddressReadonly !== false) {
+          const bindAddrBox = (qBoxSelector, cityFallback, guVal, roadVal, detailVal) => {
+            const box = document.querySelector(qBoxSelector);
+            if (!box || box.offsetParent === null) return;
+            const ci = box.querySelector('input[name="CITY"]');
+            const gi = box.querySelector('input[name="GU"]');
+            const d1 = box.querySelector('input[name="DETAIL1"]');
+            const d2 = box.querySelector('input[name="DETAIL2"]');
+            if (ci && !ci.value.trim()) setInputVal(ci, cityFallback);
+            if (gi && !gi.value.trim()) setInputVal(gi, guVal);
+            if (d1 && !d1.value.trim()) setInputVal(d1, roadVal);
+            if (d2 && detailVal !== null && !d2.value.trim()) setInputVal(d2, detailVal);
+          };
+
+          const resolvedGu = slot.district || meta['구/시'] || meta.AA10 || '광주시';
+          const resolvedRoad = slot.road || meta['대로/로/길'] || meta['AA10 _1'] || '경충대로';
+          const resolvedDetail = slot.detailAddress || meta['상세주소'] || meta['AA10 _2'] || '1층';
+          bindAddrBox('[question-name="A10"]', '경기', resolvedGu, resolvedRoad, resolvedDetail);
+          bindAddrBox('[question-name="A14_1"]', meta['AA14 _1'] || '경기', resolvedGu, resolvedRoad, null);
+
           const cityInputs = Array.from(document.querySelectorAll('input[name="CITY"]')).filter(i => i.offsetParent !== null);
           const guInputs = Array.from(document.querySelectorAll('input[name="GU"]')).filter(i => i.offsetParent !== null);
           const detail1Inputs = Array.from(document.querySelectorAll('input[name="DETAIL1"]')).filter(i => i.offsetParent !== null);
           const detail2Inputs = Array.from(document.querySelectorAll('input[name="DETAIL2"]')).filter(i => i.offsetParent !== null);
-
-          if (cityInputs.length > 0 && typeof $ !== 'undefined') {
-            cityInputs.forEach(ci => { if (!ci.value) $(ci).val(meta['AA14 _1'] || '경기').trigger('change'); });
-            guInputs.forEach(gi => { if (!gi.value) $(gi).val(slot.district || meta.AA10 || '광주시').trigger('change'); });
-            detail1Inputs.forEach(d1 => { if (!d1.value) $(d1).val(slot.road || meta['AA10 _1'] || '경충대로').trigger('change'); });
-            detail2Inputs.forEach(d2 => { if (!d2.value) $(d2).val(slot.detailAddress || meta['AA10 _2'] || '101호').trigger('change'); });
-          }
+          cityInputs.forEach(ci => { if (!ci.value.trim()) setInputVal(ci, meta['AA14 _1'] || '경기'); });
+          guInputs.forEach(gi => { if (!gi.value.trim()) setInputVal(gi, resolvedGu); });
+          detail1Inputs.forEach(d1 => { if (!d1.value.trim()) setInputVal(d1, resolvedRoad); });
+          detail2Inputs.forEach(d2 => { if (!d2.value.trim()) setInputVal(d2, resolvedDetail); });
         }
 
         if (bodyText.includes('사업체 일반현황')) {
-          // 개인사업자인 경우 법인등록번호 및 비고란 등 불필요 오입력 필드 초기화
-          const allTrs = Array.from(document.querySelectorAll('tr'));
-          allTrs.forEach(tr => {
-            const txt = (tr.innerText || '').replace(/\s+/g, ' ');
-            if (txt.includes('법인등록번호') && String(meta.AA2 || '1') !== '2' && slot.bizForm !== '법인') {
-              Array.from(tr.querySelectorAll('input')).filter(isBoxInput).forEach(inp => {
-                inp.value = '';
-                if (typeof $ !== 'undefined') $(inp).val('').trigger('input').trigger('change');
-              });
+          const indMatch = String(slot.industry || meta['업종'] || meta.AA3 || '').match(/^([1-9])/);
+          const indCode = indMatch ? indMatch[1] : (String(indKey || '').replace('ind_', '') || '3');
+
+          // A1: 사업체명(간판명)
+          const inpA1 = getQField('A1', 'TEXT_1') || document.querySelector('input[qname="A1"]');
+          if (inpA1 && !inpA1.value.trim()) {
+            setInputVal(inpA1, slot.companyName || meta['사업체명'] || meta.AA1 || '사업체');
+          }
+
+          // A2_1: 사업자등록번호 (3-2-5, 법인사업자라도 INFO confirm 규칙상 A2_1 필수 입력)
+          const rawBizDigits = String(slot.bizNumber || meta['사업자 등록번호'] || meta['AA2 _1'] || '').replace(/\D/g, '');
+          const biz10 = rawBizDigits.length >= 10 ? rawBizDigits.slice(0, 10) : rawBizDigits.padEnd(10, '0');
+          const a2_1_n1 = getQField('A2_1', 'NUMBER_1');
+          const a2_1_n2 = getQField('A2_1', 'NUMBER_2');
+          const a2_1_n3 = getQField('A2_1', 'NUMBER_3');
+          if (a2_1_n1 && a2_1_n2 && a2_1_n3 && biz10.length === 10) {
+            if (!a2_1_n1.value.trim() || !a2_1_n2.value.trim() || !a2_1_n3.value.trim()) {
+              setInputVal(a2_1_n1, biz10.slice(0, 3));
+              setInputVal(a2_1_n2, biz10.slice(3, 5));
+              setInputVal(a2_1_n3, biz10.slice(5, 10));
             }
-            if (txt.startsWith('비고')) {
-              Array.from(tr.querySelectorAll('input')).filter(isBoxInput).forEach(inp => {
-                if (inp.value === '10') {
-                  inp.value = '';
-                  if (typeof $ !== 'undefined') $(inp).val('').trigger('input').trigger('change');
-                }
-              });
-            }
+          }
+
+          // A2_2: 법인등록번호 (6-7, 법인사업자이면서 13자리 법인번호가 있을 때만 기입, 개인사업자는 빈칸 보장)
+          const rawCorpDigits = String(slot.corpNumber || meta['법인등록번호'] || '').replace(/\D/g, '');
+          const isCorpBiz = (String(slot.bizForm || meta['사업차형태'] || '') === '법인' || String(meta.AA2 || '') === '2') && rawCorpDigits.length === 13;
+          const a2_2_n1 = getQField('A2_2', 'NUMBER_1');
+          const a2_2_n2 = getQField('A2_2', 'NUMBER_2');
+          if (isCorpBiz) {
+            if (a2_2_n1 && !a2_2_n1.value.trim()) setInputVal(a2_2_n1, rawCorpDigits.slice(0, 6));
+            if (a2_2_n2 && !a2_2_n2.value.trim()) setInputVal(a2_2_n2, rawCorpDigits.slice(6, 13));
+          } else {
+            if (a2_2_n1 && a2_2_n1.value.trim()) setInputVal(a2_2_n1, '');
+            if (a2_2_n2 && a2_2_n2.value.trim()) setInputVal(a2_2_n2, '');
+          }
+
+          // A3: 업종 (1~9)
+          if (!document.querySelector('input[type="radio"][qname="A3"]:checked')) {
+            selectQRadio('A3', indCode);
+          }
+
+          // A4: 사업 종류 주사업 3칸 (TEXT_1~3 필수, TEXT_4~6 비고란 오입력 정리)
+          const a4DefaultsByInd = {
+            '1': ['원자재 및 생산설비', '제조 및 가공', slot.bizCategory || '제조품 납품'],
+            '2': ['건설자재 및 장비', '설계 및 시공', slot.bizCategory || '전문 건설 시공'],
+            '3': ['매장 및 취급상품', '도매 및 소매 판매', slot.bizCategory || '상품 판매'],
+            '4': ['숙박 객실 시설', '숙박시설 운영', slot.bizCategory || '숙박 서비스'],
+            '5': ['식재료 및 조리시설', '조리 및 매장 영업', slot.bizCategory || '음식 제공'],
+            '6': ['사무실 및 전문장비', '전문 기술·설계 용역', slot.bizCategory || '전문 기술 서비스'],
+            '7': ['교육장 및 교재', '교육 및 강습 운영', slot.bizCategory || '교육 서비스'],
+            '8': ['여가·체육 시설', '시설 운영 및 강습', slot.bizCategory || '여가·스포츠 서비스'],
+            '9': ['작업장 및 전문도구', '수리 및 대인 서비스', slot.bizCategory || '수리·개인 서비스']
+          };
+          const a4Fallbacks = a4DefaultsByInd[indCode] || a4DefaultsByInd['3'];
+          const a4Vals = [
+            meta.AA4 || meta['사업 종류 - 원재료,영업장소 등'] || a4Fallbacks[0],
+            meta['AA4 _1'] || meta['사업 종류 - 주요 영업, 생산활동'] || a4Fallbacks[1],
+            meta['AA4 _2'] || meta['사업 종류 - 생산/제공'] || a4Fallbacks[2]
+          ];
+          ['TEXT_1', 'TEXT_2', 'TEXT_3'].forEach((col, i) => {
+            const inp = getQField('A4', col);
+            if (inp && !inp.value.trim()) setInputVal(inp, a4Vals[i]);
           });
+          ['TEXT_4', 'TEXT_5', 'TEXT_6'].forEach(col => {
+            const inp = getQField('A4', col);
+            if (inp && inp.value === '10') setInputVal(inp, '');
+          });
+
+          // A5: 사업장 유형 (1=프랜차이즈 가맹점, 2=프랜차이즈 가맹점 아님)
+          if (!document.querySelector('input[type="radio"][qname="A5"]:checked')) {
+            const rawA5 = String(meta.AA5 || meta['A5 사업장 유형'] || '').trim();
+            const a5Val = (rawA5 === '1' || (rawA5.includes('프랜차이즈') && !rawA5.includes('아님') && !rawA5.includes('비프'))) ? '1' : '2';
+            selectQRadio('A5', a5Val);
+          }
+
+          // A6: 사업장 면적 (평)
+          const inpA6 = getQField('A6', 'NUMBER_1') || document.querySelector('input[qname="A6"]');
+          if (inpA6 && !inpA6.value.trim()) {
+            const defaultPyeong = meta.AA6 || pol.general_defaultAreaPyeong || (indCode === '1' ? 45 : 25);
+            setInputVal(inpA6, defaultPyeong);
+          }
+
+          // A7: 사업장 위치 (1=지상 층 + 1_ETC_1, 2=지하 층 + 2_ETC_1)
+          let checkedA7 = document.querySelector('input[type="radio"][qname="A7"]:checked');
+          if (!checkedA7) {
+            const a7Key = (String(meta.AA7 || '') === '2') ? '2' : '1';
+            checkedA7 = selectQRadio('A7', a7Key);
+            await new Promise(res => setTimeout(res, 80));
+          }
+          if (checkedA7) {
+            const isUnder = String(checkedA7.getAttribute('akey') || checkedA7.value) === '2';
+            const floorInp = isUnder
+              ? (getQField('A7', '2_ETC_1') || getQField('A7', 'NUMBER_2'))
+              : (getQField('A7', '1_ETC_1') || getQField('A7', 'NUMBER_1'));
+            if (floorInp && !floorInp.value.trim()) {
+              setInputVal(floorInp, meta['AA7 _2'] || '1', true);
+            }
+          }
+
+          // A8: 사업장 입지 (1상가지역, 2사무실, 3주택가, 4대학가, 5위락지, 6공장지역, 7기타)
+          let checkedA8 = document.querySelector('input[type="radio"][qname="A8"]:checked');
+          if (!checkedA8) {
+            const defaultLoc = meta.AA8 && String(meta.AA8) !== '7'
+              ? String(meta.AA8)
+              : (indCode === '1' ? '6' : (['2', '6'].includes(indCode) ? '2' : '1'));
+            selectQRadio('A8', defaultLoc);
+          } else if (String(checkedA8.getAttribute('akey') || checkedA8.value) === '7') {
+            const etcA8 = getQField('A8', '7_ETC_1') || getQField('A8', 'TEXT_1');
+            if (etcA8 && !etcA8.value.trim()) selectQRadio('A8', '1');
+          }
+
+          // A9: 영업 시작일 (년/월/일)
+          const a9_y = getQField('A9', 'NUMBER_1');
+          const a9_m = getQField('A9', 'NUMBER_2');
+          const a9_d = getQField('A9', 'NUMBER_3');
+          if (a9_y && !a9_y.value.trim()) setInputVal(a9_y, meta.AA9 || '2019');
+          if (a9_m && !a9_m.value.trim()) setInputVal(a9_m, meta['AA9 _1'] || '3');
+          if (a9_d && !a9_d.value.trim()) setInputVal(a9_d, meta['AA9 _2'] || '15');
+
+          // A11: 대표자 성명
+          const inpA11 = getQField('A11', 'TEXT_1') || document.querySelector('input[qname="A11"]');
+          if (inpA11 && !inpA11.value.trim()) {
+            setInputVal(inpA11, slot.ceoName || meta['대표자 성명'] || meta.AA11 || '대표자');
+          }
+
+          // A12: 대표자 성별 (1=남성, 2=여성)
+          if (!document.querySelector('input[type="radio"][qname="A12"]:checked')) {
+            const isFem = String(slot.ceoGender || meta['대표자 성별'] || '').includes('여') || String(meta.AA12 || '') === '2';
+            selectQRadio('A12', isFem ? '2' : '1');
+          }
+
+          // A13: 대표자 출생연도
+          const inpA13 = getQField('A13', 'NUMBER_1') || document.querySelector('input[qname="A13"]');
+          if (inpA13 && !inpA13.value.trim()) {
+            setInputVal(inpA13, meta.AA13 || '1972');
+          }
+
+          // A14: 대표자 실거주지 (1=경기도 내, 2=경기도 외)
+          if (!document.querySelector('input[type="radio"][qname="A14"]:checked')) {
+            selectQRadio('A14', ['1', '2'].includes(String(meta.AA14 || '')) ? String(meta.AA14) : '1');
+          }
+
+          // A15: 최근 1년 이내 자격증 취득 (1=자격증 없음, 2=취득)
+          const checkedA15 = document.querySelector('input[type="radio"][qname="A15"]:checked');
+          if (!checkedA15) {
+            selectQRadio('A15', '1');
+          } else if (String(checkedA15.getAttribute('akey') || checkedA15.value) === '2') {
+            const etcA15 = getQField('A15', '2_ETC_1') || getQField('A15', 'TEXT_1');
+            if (etcA15 && !etcA15.value.trim()) selectQRadio('A15', '1');
+          }
+
           return;
         }
 
@@ -1768,6 +1918,44 @@ export async function runMetrixSurvey({
           selectQRadio('Q61_1', pickRandom(['1', '2', '3', '4', '5', '6', '7']));
           overriddenQNames.add('Q61_1');
         }
+        if (hasVisibleQ('Q62') || (bodyText.includes('문62') && bodyText.includes('경기신용보증재단에서 받은'))) {
+          const q62Radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => r.offsetParent !== null && !r.disabled);
+          const q62Groups = [];
+          const seenNames = new Set();
+          q62Radios.forEach(r => {
+            const gKey = r.name || r.getAttribute('qname') || '';
+            if (!seenNames.has(gKey)) {
+              seenNames.add(gKey);
+              q62Groups.push(q62Radios.filter(x => (x.name || x.getAttribute('qname') || '') === gKey));
+            }
+          });
+          const openYr62 = Math.min(2025, Math.max(1990, parseInt(meta.AA9 || '2019', 10) || 2019));
+          const supYr62 = String(Math.min(2025, Math.max(openYr62, 2024)));
+          for (let gIdx = 0; gIdx < q62Groups.length; gIdx++) {
+            const grp = q62Groups[gIdx];
+            const wantKey = (gIdx === 0 && guarValGlobal === 'O') ? '1' : '2';
+            const targetR = grp.find(r => String(r.getAttribute('akey') || r.value) === wantKey) || grp[1] || grp[0];
+            if (targetR) {
+              targetR.click();
+              targetR.checked = true;
+              if (typeof $ !== 'undefined') $(targetR).prop('checked', true).trigger('change');
+              await new Promise(res => setTimeout(res, 60));
+              if (wantKey === '1') {
+                const td = targetR.closest('td, li, div');
+                const yrInp = td ? Array.from(td.querySelectorAll('input[type="text"], input[type="tel"], input[type="number"]')).find(i => !i.disabled && i.offsetParent !== null) : null;
+                if (yrInp) {
+                  setInputVal(yrInp, supYr62, true);
+                  overriddenInputs.add(yrInp);
+                }
+              }
+            }
+            grp.forEach(r => {
+              if (r.name) overriddenQNames.add(r.name);
+              if (r.getAttribute('qname')) overriddenQNames.add(r.getAttribute('qname'));
+            });
+          }
+          overriddenQNames.add('Q62');
+        }
 
         // (16) 문66·문66-1 타 기관 지원사업 인지 경로 랜덤 (1~7 중 무작위, 8 기타 제외) & 문66-2
         if (hasVisibleQ('Q66')) {
@@ -1879,10 +2067,10 @@ export async function runMetrixSurvey({
             if (overriddenQNames.has(grpQName) || overriddenQNames.has(name)) continue;
 
             const ownerTr = group[0].closest('tr');
-            // RADIOSETS 행에 빈 input-etc(예: 문91 9번 기타)가 있을 경우 오체크 방지
-            if (ownerTr && ownerTr.querySelector('input.input-etc, textarea.input-etc')) {
-              const etcInp = ownerTr.querySelector('input.input-etc, textarea.input-etc');
-              if (!etcInp.value || !etcInp.value.trim()) continue;
+            // RADIOSETS 행 자체(vkey 보유 행 제목 칸)에 빈 input-etc(예: 문91 9번 기타)가 있을 경우에만 오체크 방지
+            if (ownerTr && (ownerTr.hasAttribute('vkey') || ownerTr.hasAttribute('vKey'))) {
+              const rowHeadEtc = ownerTr.querySelector('th input.input-etc, th textarea.input-etc, td:first-child input.input-etc, td:first-child textarea.input-etc');
+              if (rowHeadEtc && (!rowHeadEtc.value || !rowHeadEtc.value.trim())) continue;
             }
 
             const isChecked = group.some(r => r.checked);
@@ -2214,10 +2402,23 @@ export async function runMetrixSurvey({
               ?.querySelector('input[type="radio"]:not(:disabled), input[type="checkbox"]:not(:disabled)');
             if (!nearChoice || !nearChoice.checked) return;
           }
+          const nextElEarly = input.parentElement?.tagName?.toLowerCase() === 'span' ? input.parentElement : input;
+          const earlyNextUnit = ((input.nextSibling?.textContent || '') + (nextElEarly.nextSibling?.textContent || '')).replace(/\s+/g, '').trim();
+          const isCalendarYearBox = !/^억|^만원/.test(earlyNextUnit) &&
+            /^년/.test(earlyNextUnit) &&
+            (input.getAttribute('maxlength') === '4' || /가입|시기|출생|개업|창업|설립|연도|년도/.test(bodyText));
           if (preserveInputs && input.value && input.value.trim() !== '') {
-            setInputVal(input, input.value.trim());
-            return;
+            const curNum = Number(input.value.trim());
+            if (!(isCalendarYearBox && Number.isFinite(curNum) && curNum < 1960)) {
+              setInputVal(input, input.value.trim());
+              return;
+            }
           }
+
+          const baseOpenYear = Math.min(2025, Math.max(1980, parseInt(meta.AA9 || '2019', 10) || 2019));
+          const baseOpenMonth = Math.min(12, Math.max(1, parseInt(meta['AA9 _1'] || '3', 10) || 3));
+          const safeJoinYearNum = Math.min(2025, Math.max(baseOpenYear, 2020));
+          const safeJoinMonthNum = (safeJoinYearNum <= baseOpenYear) ? Math.min(12, baseOpenMonth + 1) : 5;
 
           const tag = input.tagName.toLowerCase();
           const guide = (input.getAttribute('data-guide') || input.placeholder || '').toUpperCase();
@@ -2226,8 +2427,8 @@ export async function runMetrixSurvey({
           const dataMax = input.getAttribute('data-max');
           const maxLen = input.getAttribute('maxlength');
           const rowText = (input.closest('tr, li, .q-row, .form-group, div')?.innerText || '').replace(/\s+/g, ' ');
-          const nextEl = input.parentElement?.tagName?.toLowerCase() === 'span' ? input.parentElement : input;
-          const nextUnitTxt = ((input.nextSibling?.textContent || '') + (nextEl.nextSibling?.textContent || '')).replace(/\s+/g, '').trim();
+          const nextEl = nextElEarly;
+          const nextUnitTxt = earlyNextUnit;
           const prevText = getTextBeforeInput(input) || getTextBeforeInput(nextEl);
 
           // 1) 우선순위(s-gradeclick) 화면의 부속 기타 입력란 오입력 방지
@@ -2287,29 +2488,41 @@ export async function runMetrixSurvey({
             else if (guide.includes('평') || /^평|^㎡/.test(nextUnitTxt) || bodyText.includes('전용면적') || name.includes('AA6')) {
               input.value = (useMeta && meta.AA6) ? String(meta.AA6) : String(pol.general_defaultAreaPyeong || 30);
             }
-            // (4) 연도 감지 (억/만원 금액 행과 절대 혼동하지 않도록 maxLen==='4' 단독 조건 제거)
+            // (4) 문16-3 임차 계약/거주 기간 (년 단위 기간 — 달력 연도와 선행 분리)
+            else if (
+              !isEokUnit && !isManwonUnit &&
+              bodyText.includes('임차') &&
+              !/가입시기|개업|창업|출생|설립/.test(bodyText) &&
+              (guide.includes('년') || /^년/.test(nextUnitTxt)) &&
+              maxLen !== '4'
+            ) {
+              input.value = (useMeta && meta['M16-3']) ? String(meta['M16-3']) : String(pol.lease_contractYears || 5);
+            }
+            // (5) 달력 연도 감지 (출생연도, 개업·창업연도, 문19/20 보험 가입연도, 정책 수혜연도 등)
             else if (
               !isEokUnit && !isManwonUnit && !hasPrecedingEok &&
               !/만원|보증금|월세|임차료|매출액|영업비용|영업이익|부채|권리금|순소득|급여/.test(rowText) &&
               (dataMin === '1900' || dataMin === '1950' || dataMin === '1960' || dataMax === '2026' || dataMax === '2025' ||
                guide.includes('년도') || guide.includes('연도') || name.includes('YEAR') ||
-               (/^년/.test(nextUnitTxt) && (bodyText.includes('출생') || bodyText.includes('개업') || bodyText.includes('창업') || bodyText.includes('수혜') || bodyText.includes('지원받'))))
+               (/^년/.test(nextUnitTxt) && (maxLen === '4' || /출생|개업|창업|가입|시기|설립|수혜|지원받|취득|시작/.test(bodyText + ' ' + rowText))))
             ) {
               if (bodyText.includes('출생') || bodyText.includes('태어난') || name.includes('AA13')) {
                 input.value = (useMeta && meta.AA13) ? String(meta.AA13) : '1972';
-              } else if (bodyText.includes('개업') || bodyText.includes('창업') || name.includes('AA9') || name.includes('M19')) {
-                input.value = (useMeta && (meta.AA9 || meta.M19_1)) ? String(meta.AA9 || meta.M19_1) : '2018';
+              } else if (bodyText.includes('가입') || name.includes('Q19') || name.includes('Q20') || name.includes('M19')) {
+                input.value = (useMeta && Number(meta.M19_1) >= 1960) ? String(meta.M19_1) : String(safeJoinYearNum);
+              } else if (bodyText.includes('개업') || bodyText.includes('창업') || name.includes('AA9')) {
+                input.value = String(baseOpenYear);
               } else {
-                input.value = (useMeta && meta.M62_1) ? String(meta.M62_1) : '2024';
+                input.value = (useMeta && Number(meta.M62_1) >= 1960) ? String(meta.M62_1) : String(Math.min(2025, Math.max(baseOpenYear, 2024)));
               }
             }
-            // (5) 월 감지 (A9_1 개업월, 문19_2 창업월)
-            else if (!isEokUnit && !isManwonUnit && ((dataMin === '1' && dataMax === '12') || (maxLen === '2' && (guide.includes('월') || /^월/.test(nextUnitTxt) || name.includes('MONTH'))))) {
-              input.value = (useMeta && (meta['AA9 _1'] || meta.M19_2)) ? String(parseInt(meta['AA9 _1'] || meta.M19_2, 10) || 5) : '5';
-            }
-            // (6) 문16-3 임차 계약/거주 기간 (년)
-            else if (!isEokUnit && !isManwonUnit && bodyText.includes('임차') && (guide.includes('년') || /^년/.test(nextUnitTxt))) {
-              input.value = (useMeta && meta['M16-3']) ? String(meta['M16-3']) : String(pol.lease_contractYears || 5);
+            // (6) 월 감지 (A9_1 개업월, 문19/20 가입월 등)
+            else if (!isEokUnit && !isManwonUnit && ((dataMin === '1' && dataMax === '12') || /^월$/.test(nextUnitTxt) || (maxLen === '2' && (guide.includes('월') || /^월/.test(nextUnitTxt) || name.includes('MONTH'))))) {
+              if (bodyText.includes('가입') || name.includes('Q19') || name.includes('Q20') || name.includes('M19')) {
+                input.value = (useMeta && Number(meta.M19_2) >= 1 && Number(meta.M19_2) <= 12) ? String(parseInt(meta.M19_2, 10)) : String(safeJoinMonthNum);
+              } else {
+                input.value = String(baseOpenMonth);
+              }
             }
             // (7) 문32 주당 근무시간
             else if (guide.includes('시간') || /^시간/.test(nextUnitTxt) || bodyText.includes('근무시간') || dataMax === '168') {

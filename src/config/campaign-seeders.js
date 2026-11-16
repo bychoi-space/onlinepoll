@@ -487,11 +487,15 @@ export function seedInitialCampaigns({
                 const resolvedStatus = isEitherDone
                   ? (String(ggItem.status || '').includes('완료') ? ggItem.status : prev.status)
                   : (ggItem.status || prev.status || '');
-                const resolvedQuotaStatus = resolvedClosed
+                const isOverQuota = String(resolvedStatus).includes('인원초과') || String(ggItem.rawMeta?.COMPLETE || '').toUpperCase() === 'OVER';
+                const isSafeWait98 = /98%|99%/.test(String(resolvedStatus)) || /98%|99%/.test(String(prev.quotaStatus || '')) || /98%|99%/.test(String(ggItem.quotaStatus || ''));
+                const resolvedQuotaStatus = (resolvedClosed || isOverQuota)
                   ? 'excluded'
                   : ((prev.quotaStatus === 'completed' || ggItem.quotaStatus === 'completed' || isEitherDone)
                     ? 'completed'
-                    : (prev.quotaStatus && prev.quotaStatus !== 'ready' ? prev.quotaStatus : (ggItem.quotaStatus || 'ready')));
+                    : (isSafeWait98
+                      ? '진행중(98%)'
+                      : (prev.quotaStatus && prev.quotaStatus !== 'ready' ? prev.quotaStatus : (ggItem.quotaStatus || 'ready'))));
 
                 return {
                   ...prev,
