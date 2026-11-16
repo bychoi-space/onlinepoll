@@ -1058,9 +1058,14 @@ export function renderMetrixQuotaTable({
   const isDone = (it) => (it.quotaStatus === 'completed' || it.status === '완료' || String(it.status || '').includes('완료(100%)'));
   const isWait98 = (it) => (it.quotaStatus === '진행중(98%)' || String(it.status || '').includes('98%'));
 
-  const listKang = db.filter(it => getAcc(it) === '강영미');
-  const listKim = db.filter(it => getAcc(it) === '김정례');
-  const listNoh = db.filter(it => getAcc(it) === '노영미');
+  const baseAccounts = ['강영미', '김정례', '노영미', '송춘희'];
+  const accCountMap = new Map(baseAccounts.map(a => [a, 0]));
+  db.forEach(it => {
+    const a = getAcc(it);
+    accCountMap.set(a, (accCountMap.get(a) || 0) + 1);
+  });
+  const orderedAccounts = Array.from(accCountMap.keys()).filter(a => (accCountMap.get(a) || 0) > 0 || baseAccounts.includes(a));
+
   const closedItems = db.filter(it => isClosed(it));
   const wait98Items = db.filter(it => !isClosed(it) && isWait98(it));
   const completedItems = db.filter(it => !isClosed(it) && isDone(it));
@@ -1090,9 +1095,9 @@ export function renderMetrixQuotaTable({
         <div class="metrix-slim-group">
           <span class="metrix-slim-label"><i class="fa-solid fa-user-check text-primary-color"></i> 계정:</span>
           <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === 'all' ? 'active' : ''}" data-acc-filter="all" style="${currentMetrix622AccountFilter === 'all' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">전체 (${db.length})</button>
-          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '강영미' ? 'active' : ''}" data-acc-filter="강영미" style="${currentMetrix622AccountFilter === '강영미' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">강영미 (${listKang.length})</button>
-          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '김정례' ? 'active' : ''}" data-acc-filter="김정례" style="${currentMetrix622AccountFilter === '김정례' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">김정례 (${listKim.length})</button>
-          <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === '노영미' ? 'active' : ''}" data-acc-filter="노영미" style="${currentMetrix622AccountFilter === '노영미' ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">노영미 (${listNoh.length})</button>
+          ${orderedAccounts.map(accName => `
+            <button type="button" class="globalri-quick-check-btn metrix-acc-filter-btn ${currentMetrix622AccountFilter === accName ? 'active' : ''}" data-acc-filter="${escapeHtml(accName)}" style="${currentMetrix622AccountFilter === accName ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">${escapeHtml(accName)} (${accCountMap.get(accName) || 0})</button>
+          `).join('')}
 
           <span class="metrix-slim-divider"></span>
 
@@ -1114,8 +1119,8 @@ export function renderMetrixQuotaTable({
         </div>
 
         <div class="metrix-slim-group">
-          <button type="button" id="btn-metrix-622-sync" class="btn-pill btn-pill-primary btn-pill-small font-bold" title="3계정(강영미·김정례·노영미) + 구글시트 휴대폰 번호 + 국세청 사업자번호 휴폐업 상태를 동기화합니다">
-            <i class="fa-solid fa-rotate"></i> 3계정·시트·폐업 동기화
+          <button type="button" id="btn-metrix-622-sync" class="btn-pill btn-pill-primary btn-pill-small font-bold" title="${orderedAccounts.length}계정(${orderedAccounts.join('·')}) + 구글시트 휴대폰 번호 + 국세청 사업자번호 휴폐업 상태를 동기화합니다">
+            <i class="fa-solid fa-rotate"></i> ${orderedAccounts.length}계정·시트·폐업 동기화
           </button>
           <a href="${escapeHtml(sheetHref)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration:none;" title="경기도 소상공인 쿼터 구글 스프레드시트 열기">
             <i class="fa-solid fa-table"></i> 쿼터 시트
@@ -1146,10 +1151,12 @@ export function renderMetrixQuotaTable({
     `;
   }
 
+  const defaultPwByAcc = { '강영미': '5254', '김정례': '3995', '노영미': '7791', '송춘희': '0307' };
+
   quotaTableBody.innerHTML = visibleDb.map((item, idx) => {
     const seq = Number(item.index || item.seq || (idx + 1));
     const acc = getAcc(item);
-    const accPw = item.surveyorPw || (acc === '김정례' ? '3995' : (acc === '노영미' ? '7791' : '5254'));
+    const accPw = item.surveyorPw || defaultPwByAcc[acc] || '5254';
     const closed = isClosed(item);
     const done = isDone(item);
     const wait98 = isWait98(item);

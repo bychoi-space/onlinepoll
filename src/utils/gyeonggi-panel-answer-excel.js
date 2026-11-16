@@ -19,7 +19,8 @@ export const GYEONGGI_PANEL_ANSWER_TAB_NAME = '오토서베이_응답내역';
 const PROTECTED_SOURCE_TABS = new Set([
   '광주시 리스트',
   '김정례',
-  '노영미-7791'
+  '노영미-7791',
+  '송춘희0307'
 ]);
 
 function extractQuotaArray(quotaDatabase) {
@@ -267,7 +268,7 @@ export function buildGyeonggiPanelAnswersExcel({ quotaDatabase = [], filePath = 
   if (overviewRows.length > 0) {
     const wsAll = XLSX.utils.json_to_sheet(overviewRows);
     wsAll['!cols'] = autoFitColumns(overviewRows, 10, 36);
-    XLSX.utils.book_append_sheet(wb, wsAll, '전체쿼터현황_171건');
+    XLSX.utils.book_append_sheet(wb, wsAll, `전체쿼터현황_${overviewRows.length}건`);
   }
 
   if (filePath) {

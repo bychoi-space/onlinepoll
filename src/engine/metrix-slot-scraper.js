@@ -10,7 +10,8 @@ export const METRIX_622_GOOGLE_SHEET_URL = `https://docs.google.com/spreadsheets
 export const METRIX_622_ACCOUNTS = [
   { loginId: '강영미', loginPw: '5254', sheetName: '광주시 리스트' },
   { loginId: '김정례', loginPw: '3995', sheetName: '김정례' },
-  { loginId: '노영미', loginPw: '7791', sheetName: '노영미-7791' }
+  { loginId: '노영미', loginPw: '7791', sheetName: '노영미-7791' },
+  { loginId: '송춘희', loginPw: '0307', sheetName: '송춘희0307' }
 ];
 
 export const METRIX_622_INDUSTRIES = [
@@ -180,7 +181,7 @@ export async function fetchMetrix622GoogleSheetData(sheetId = METRIX_622_GOOGLE_
 }
 
 /**
- * 경기도 소상공인 사업체패널 3차조사 (SNUM=622) 3개 계정(강영미/김정례/노영미) + 구글시트 휴대폰 + 사업자번호 폐업조회 통합 동기화
+ * 경기도 소상공인 사업체패널 3차조사 (SNUM=622) 다중 조사원 계정(강영미/김정례/노영미/송춘희) + 구글시트 휴대폰 + 사업자번호 폐업조회 통합 동기화
  */
 export async function scrapeMetrix622AllAccounts(options = {}) {
   const {
@@ -191,7 +192,7 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
     skipSaveFiles = false
   } = options;
 
-  logger.info(`[Metrix 622 3계정 통합 동기화] 시작: 계정=${accounts.map(a => a.loginId).join(', ')}`);
+  logger.info(`[Metrix 622 ${accounts.length}계정 통합 동기화] 시작: 계정=${accounts.map(a => a.loginId).join(', ')}`);
 
   const { sheetMapByAccount, sparePhones } = await fetchMetrix622GoogleSheetData();
 
@@ -218,16 +219,25 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
       });
       const page = await context.newPage();
       const loginUrl = `https://survey.metrix.co.kr/Contact/?SNUM=${snum}`;
-      await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
-      await page.waitForSelector('#id', { timeout: 15000 });
-      await page.fill('#id', acc.loginId);
-      await page.fill('#password', acc.loginPw);
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          await page.waitForSelector('#id', { timeout: 15000 });
+          await page.fill('#id', acc.loginId);
+          await page.fill('#password', acc.loginPw);
 
-      await Promise.all([
-        page.waitForURL(u => u.toString().includes('Listdata'), { waitUntil: 'domcontentloaded', timeout: 25000 }),
-        page.click('button.login')
-      ]);
-      await page.waitForSelector('table.list-data', { timeout: 15000 });
+          await Promise.all([
+            page.waitForURL(u => u.toString().includes('Listdata'), { waitUntil: 'domcontentloaded', timeout: 30000 }),
+            page.click('button.login')
+          ]);
+          await page.waitForSelector('table.list-data', { timeout: 20000 });
+          break;
+        } catch (loginErr) {
+          if (attempt >= 2) throw loginErr;
+          logger.warn(`[Metrix 622 동기화] 계정 "${acc.loginId}" 로그인 재시도 (${attempt}/2): ${loginErr.message}`);
+          await page.waitForTimeout(2000);
+        }
+      }
       await page.waitForSelector('select.ROW_PER_PAGE', { timeout: 10000 }).catch(e => {
         logger.warn(`[Metrix 622 동기화] ROW_PER_PAGE 대기 경고 (${acc.loginId}): ${e.message}`);
       });
@@ -261,7 +271,7 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
       });
       await page.waitForTimeout(2500);
 
-      const rows = await page.evaluate(({ sessionInfo }) => {
+      const extractCurrentPageRows = async () => page.evaluate(({ sessionInfo }) => {
         const trs = Array.from(document.querySelectorAll('table.list-data tbody tr'));
         return trs.map((tr, idx) => {
           let obj = {};
@@ -315,6 +325,33 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
         });
       }, { sessionInfo });
 
+      const rawRowsMap = new Map();
+      const page1Rows = await extractCurrentPageRows();
+      page1Rows.forEach(r => { if (r.uid) rawRowsMap.set(r.uid, r); });
+
+      const extraPageNums = await page.evaluate(() => {
+        return Array.from(new Set(
+          Array.from(document.querySelectorAll('.pagination .page-link[data-page], .paging a[data-page]'))
+            .map(a => Number(a.getAttribute('data-page')))
+            .filter(n => Number.isFinite(n) && n > 1 && n <= 10)
+        )).sort((a, b) => a - b);
+      });
+
+      for (const pgNum of extraPageNums) {
+        const moved = await page.evaluate(({ pgNum }) => {
+          const link = document.querySelector(`.pagination .page-link[data-page="${pgNum}"], .paging a[data-page="${pgNum}"]`);
+          if (!link) return false;
+          link.click();
+          return true;
+        }, { pgNum });
+        if (!moved) continue;
+        await page.waitForTimeout(1800);
+        const pgRows = await extractCurrentPageRows();
+        pgRows.forEach(r => {
+          if (r.uid && !rawRowsMap.has(r.uid)) rawRowsMap.set(r.uid, r);
+        });
+      }
+
       const parseSheetManwon = (val) => {
         if (val === undefined || val === null || val === '') return null;
         const cleaned = String(val).replace(/,/g, '').trim();
@@ -323,6 +360,19 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
       };
 
       const accSheet = sheetMapByAccount[acc.loginId] || { byUid: new Map(), byBizNo: new Map() };
+      const allAccountRows = Array.from(rawRowsMap.values());
+      const existingAccUids = new Set(
+        Array.isArray(existingQuotaList)
+          ? existingQuotaList.filter(it => it && it.surveyorId === acc.loginId && it.uid).map(it => String(it.uid))
+          : []
+      );
+      const rows = (accSheet.byUid.size > 0
+        ? allAccountRows.filter(r => accSheet.byUid.has(r.uid))
+        : (existingAccUids.size > 0
+          ? allAccountRows.filter(r => existingAccUids.has(r.uid))
+          : allAccountRows)
+      ).map((r, idx) => ({ ...r, accountRowIndex: idx + 1 }));
+
       for (const r of rows) {
         const prev = existingByKey.get(`${acc.loginId}_${r.uid}`) || existingByKey.get(r.uid) || {};
         const sRow = accSheet.byUid.get(r.uid) || accSheet.byBizNo.get(r.bizNumber) || {};
@@ -410,16 +460,19 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
           }
           s.bizVerifiedAt = new Date().toISOString();
         }
-        if (s.isClosedBiz) {
-          s.quotaStatus = 'excluded';
-        } else if (String(s.status).includes('완료')) {
-          s.quotaStatus = 'completed';
-        } else if (String(s.status).includes('98%')) {
-          s.quotaStatus = '진행중(98%)';
-        } else if (!s.quotaStatus || s.quotaStatus === 'excluded') {
-          s.quotaStatus = 'ready';
-        }
       }
+    }
+  }
+
+  for (const s of allSlots) {
+    if (s.isClosedBiz) {
+      s.quotaStatus = 'excluded';
+    } else if (String(s.status).includes('완료')) {
+      s.quotaStatus = 'completed';
+    } else if (String(s.status).includes('98%')) {
+      s.quotaStatus = '진행중(98%)';
+    } else if (!s.quotaStatus || s.quotaStatus === 'excluded') {
+      s.quotaStatus = 'ready';
     }
   }
 
@@ -446,7 +499,7 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
   ];
 
   const quotaDbData = {
-    title: '2026_경기도_소상공인패널_3차조사_3계정통합_171개',
+    title: `2026_경기도_소상공인패널_3차조사_${accounts.length}계정통합_${allSlots.length}개`,
     type: 'METRIX_PANEL',
     surveyType: 'metrix_panel',
     snum: String(snum),
@@ -507,7 +560,7 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
     }));
     const wsOut = XLSX.utils.json_to_sheet(xlsxRows);
     const wbOut = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wbOut, wsOut, '경기도소상공인_171개');
+    XLSX.utils.book_append_sheet(wbOut, wsOut, `경기도소상공인_${allSlots.length}개`);
     fs.writeFileSync(xlsxPath, XLSX.write(wbOut, { type: 'buffer', bookType: 'xlsx' }));
   }
 

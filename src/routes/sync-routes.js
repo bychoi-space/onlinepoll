@@ -720,7 +720,7 @@ export function registerSyncRoutes({
     }
   });
 
-  // [경기도 소상공인 사업체패널 3차조사 SNUM=622] 3계정(강영미/김정례/노영미) + 구글시트 휴대폰 + 홈택스 폐업조회 통합 동기화 API
+  // [경기도 소상공인 사업체패널 3차조사 SNUM=622] 다중 조사원 계정(강영미/김정례/노영미/송춘희) + 구글시트 휴대폰 + 홈택스 폐업조회 통합 동기화 API
   app.post('/api/campaigns/:id/sync-metrix-622', async (req, res) => {
     try {
       const campaign = CampaignStore.getCampaignById(req.params.id);
@@ -728,7 +728,7 @@ export function registerSyncRoutes({
         return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
       }
 
-      logger.info(`[경기도 소상공인 SNUM=622 통합 동기화] 캠페인 "${campaign.title}" 3계정(강영미·김정례·노영미) + 구글시트 휴대폰 + 사업자번호 폐업조회 시작...`);
+      logger.info(`[경기도 소상공인 SNUM=622 통합 동기화] 캠페인 "${campaign.title}" 전체 조사원 계정 + 구글시트 휴대폰 + 사업자번호 폐업조회 시작...`);
 
       const syncRes = await scrapeMetrix622AllAccounts({
         snum: campaign.snum || '622',
@@ -740,8 +740,16 @@ export function registerSyncRoutes({
       const closedCount = slots.filter(s => s.isClosedBiz).length;
       const phoneChangedCount = slots.filter(s => s.phoneNeedsSync).length;
       const wait98Count = slots.filter(s => String(s.status || '').includes('98%') || s.quotaStatus === '진행중(98%)').length;
+      const accBreakdownMap = new Map();
+      slots.forEach(s => {
+        const k = s.surveyorId || '기타';
+        accBreakdownMap.set(k, (accBreakdownMap.get(k) || 0) + 1);
+      });
+      const accSummaryStr = Array.from(accBreakdownMap.entries()).map(([k, v]) => `${k} ${v}건`).join('·');
+      const accCount = accBreakdownMap.size || 4;
 
       CampaignStore.updateCampaign(campaign.id, {
+        accounts: syncRes.quotaDbData?.accounts || campaign.accounts,
         quotaDatabase: slots,
         sparePhones: syncRes.sparePhones || [],
         googleSheetUrl: campaign.googleSheetUrl || METRIX_622_GOOGLE_SHEET_URL,
@@ -754,11 +762,11 @@ export function registerSyncRoutes({
         quotaDatabase: slots
       });
 
-      logger.success(`[경기도 소상공인 SNUM=622 동기화 완료] 총 ${slots.length}건 (강영미 54건·김정례 55건·노영미 62건 / 시트 휴대폰 변경대상 ${phoneChangedCount}건 / 폐업 제외 ${closedCount}건 / 98% 대기 ${wait98Count}건)`);
+      logger.success(`[경기도 소상공인 SNUM=622 동기화 완료] 총 ${slots.length}건 (${accSummaryStr} / 시트 휴대폰 변경대상 ${phoneChangedCount}건 / 폐업 제외 ${closedCount}건 / 98% 대기 ${wait98Count}건)`);
 
       res.json({
         success: true,
-        message: `메트릭스(SNUM 622) 3개 계정(${slots.length}건) + 구글시트 휴대폰(${phoneChangedCount}건 변경대상) + 국세청 사업자번호 조회(폐업 제외 ${closedCount}건) 동기화가 완료되었습니다!`,
+        message: `메트릭스(SNUM 622) ${accCount}개 계정(${slots.length}건: ${accSummaryStr}) + 구글시트 휴대폰(${phoneChangedCount}건 변경대상) + 국세청 사업자번호 조회(폐업 제외 ${closedCount}건) 동기화가 완료되었습니다!`,
         totalCount: slots.length,
         closedCount,
         phoneChangedCount,

@@ -51,7 +51,8 @@ function pickSteppedValue(minVal, maxVal, stepVal, fallback) {
 const DEFAULT_ACCOUNT_PASSWORDS = {
   '강영미': '5254',
   '김정례': '3995',
-  '노영미': '7791'
+  '노영미': '7791',
+  '송춘희': '0307'
 };
 
 /**
@@ -215,7 +216,7 @@ export async function runMetrixSurvey({
       await sleep(2500);
 
       // [요구사항 2] 설문목록에서 [컨택] 버튼을 누르고 '휴대폰' 항목을 엑셀 데이터로 바꾼 뒤 하단 [저장] 버튼 클릭
-      const contactOpened = await page.evaluate(({ targetUid }) => {
+      const tryOpenContactRow = async () => page.evaluate(({ targetUid }) => {
         const tr = document.querySelector(`table.list-data tbody tr[data-uid="${targetUid}"], table.list-data tbody tr[data-id="${targetUid}"]`);
         if (!tr) return { ok: false, reason: 'ROW_NOT_FOUND' };
         const btn = tr.querySelector('button.contact-popup');
@@ -223,6 +224,29 @@ export async function runMetrixSurvey({
         btn.click();
         return { ok: true };
       }, { targetUid: String(slotData.uid) });
+
+      let contactOpened = await tryOpenContactRow();
+      if (!contactOpened.ok && contactOpened.reason === 'ROW_NOT_FOUND') {
+        const extraPages = await page.evaluate(() => {
+          return Array.from(new Set(
+            Array.from(document.querySelectorAll('.pagination .page-link[data-page], .paging a[data-page]'))
+              .map(a => Number(a.getAttribute('data-page')))
+              .filter(n => Number.isFinite(n) && n > 1 && n <= 10)
+          )).sort((a, b) => a - b);
+        });
+        for (const pgNum of extraPages) {
+          const moved = await page.evaluate(({ pgNum }) => {
+            const link = document.querySelector(`.pagination .page-link[data-page="${pgNum}"], .paging a[data-page="${pgNum}"]`);
+            if (!link) return false;
+            link.click();
+            return true;
+          }, { pgNum });
+          if (!moved) continue;
+          await sleep(1800);
+          contactOpened = await tryOpenContactRow();
+          if (contactOpened.ok) break;
+        }
+      }
 
       if (contactOpened.ok) {
         await page.waitForSelector('#contactPopup [data-column="전화번호(무선)"]', { state: 'visible', timeout: 10000 }).catch(() => {});

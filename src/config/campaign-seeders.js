@@ -392,7 +392,7 @@ export function seedInitialCampaigns({
       } catch (_) {}
     }
 
-    // [메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 3계정 통합 171건 (강영미 54건 + 김정례 55건 + 노영미 62건) 자동 시드
+    // [메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 4계정 통합 244건 (강영미 54건 + 김정례 55건 + 노영미 62건 + 송춘희 73건) 자동 시드
     const gyeonggi622CampId = 'camp_metrix_gyeonggi_622_2026';
     const gyeonggiQuotaPath = path.join(quotasDir, 'quota_metrix_gyeonggi_622_all.json');
     if (fs.existsSync(gyeonggiQuotaPath)) {
@@ -420,23 +420,30 @@ export function seedInitialCampaigns({
           } catch (_) {}
         }
 
+        const defaultAccounts = ggContent.accounts || [
+          { loginId: '강영미', loginPw: '5254', sheetName: '광주시 리스트' },
+          { loginId: '김정례', loginPw: '3995', sheetName: '김정례' },
+          { loginId: '노영미', loginPw: '7791', sheetName: '노영미-7791' },
+          { loginId: '송춘희', loginPw: '0307', sheetName: '송춘희0307' }
+        ];
+
         const existingGyeonggiCamps = CampaignStore.getAllCampaigns().filter(
-          c => c.id === gyeonggi622CampId || c.id === 'camp_1793069358602' || c.surveyType === 'metrix_panel'
+          c =>
+            c.id === gyeonggi622CampId ||
+            c.id === 'camp_1793069358602' ||
+            c.id === 'camp_1794792483912' ||
+            c.surveyType === 'metrix_panel'
         );
 
         if (existingGyeonggiCamps.length === 0) {
           CampaignStore.createCampaign({
             id: gyeonggi622CampId,
-            title: '[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 3계정 통합 171건 (강영미·김정례·노영미)',
-            description: '메트릭스 GetData(SNUM=622) · 3개 조사원 계정(강영미 54건 + 김정례 55건 + 노영미 62건) 통합 · 사업자번호 기반 폐업 리스트 자동 제외 · 컨택 팝업 휴대폰 번호 엑셀(구글시트) 변경 저장 후 [설문참여] · 8대 업종별 맞춤 가이드 체크 및 98%(Step 119) 안전 대기',
+            title: `[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - ${defaultAccounts.length}계정 통합 ${ggList.length}건 (강영미·김정례·노영미·송춘희)`,
+            description: `메트릭스 GetData(SNUM=622) · ${defaultAccounts.length}개 조사원 계정(강영미 54건 + 김정례 55건 + 노영미 62건 + 송춘희 73건) 통합 · 사업자번호 기반 폐업 리스트 자동 제외 · 컨택 팝업 휴대폰 번호 엑셀(구글시트) 변경 저장 후 [설문참여] · 8대 업종별 맞춤 가이드 체크 및 98%(Step 119) 안전 대기`,
             quotaType: 'b2b',
             surveyType: 'metrix_panel',
             snum: '622',
-            accounts: ggContent.accounts || [
-              { loginId: '강영미', loginPw: '5254', sheetName: '광주시 리스트' },
-              { loginId: '김정례', loginPw: '3995', sheetName: '김정례' },
-              { loginId: '노영미', loginPw: '7791', sheetName: '노영미-7791' }
-            ],
+            accounts: defaultAccounts,
             sparePhones: ggContent.sparePhones || [],
             googleSheetUrl: ggContent.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911',
             quotaSourceFile: ggFile,
@@ -453,30 +460,71 @@ export function seedInitialCampaigns({
         } else {
           for (const existingGyeonggiCamp of existingGyeonggiCamps) {
             let needGgUpdate = false;
-            if (!Array.isArray(existingGyeonggiCamp.quotaDatabase) || existingGyeonggiCamp.quotaDatabase.length < ggList.length) {
+            const existingDb = Array.isArray(existingGyeonggiCamp.quotaDatabase) ? existingGyeonggiCamp.quotaDatabase : [];
+            const existingKeys = new Set(existingDb.map(q => `${q?.surveyorId || ''}::${q?.uid || ''}`));
+            const hasMissingSeedItems = ggList.some(g => !existingKeys.has(`${g.surveyorId || ''}::${g.uid || ''}`));
+
+            if (!Array.isArray(existingGyeonggiCamp.quotaDatabase) || existingDb.length < ggList.length || hasMissingSeedItems) {
               const prevByKey = new Map();
-              (existingGyeonggiCamp.quotaDatabase || []).forEach(q => {
-                if (q && q.uid) prevByKey.set(`${q.surveyorId || ''}::${q.uid}`, q);
+              existingDb.forEach(q => {
+                if (q && q.uid) {
+                  prevByKey.set(`${q.surveyorId || ''}::${q.uid}`, q);
+                  if (!q.surveyorId && !prevByKey.has(`::${q.uid}`)) prevByKey.set(`::${q.uid}`, q);
+                }
               });
-              existingGyeonggiCamp.quotaDatabase = ggList.map(ggItem => {
-                const prev = prevByKey.get(`${ggItem.surveyorId || ''}::${ggItem.uid}`) || prevByKey.get(`::${ggItem.uid}`);
+
+              const ggKeySet = new Set();
+              const mergedList = ggList.map(ggItem => {
+                const k = `${ggItem.surveyorId || ''}::${ggItem.uid}`;
+                ggKeySet.add(k);
+                const prev = prevByKey.get(k) || prevByKey.get(`::${ggItem.uid}`);
                 if (!prev) return ggItem;
                 const prevAnsLen = Array.isArray(prev.submittedAnswers) ? prev.submittedAnswers.length : 0;
                 const ggAnsLen = Array.isArray(ggItem.submittedAnswers) ? ggItem.submittedAnswers.length : 0;
+                const resolvedClosed = prev.manualClosedOverride ? prev.isClosedBiz : ggItem.isClosedBiz;
+                const resolvedBizStatus = prev.manualClosedOverride ? prev.bizStatus : ggItem.bizStatus;
+                const isEitherDone = String(prev.status || '').includes('완료') || String(ggItem.status || '').includes('완료');
+                const resolvedStatus = isEitherDone
+                  ? (String(ggItem.status || '').includes('완료') ? ggItem.status : prev.status)
+                  : (ggItem.status || prev.status || '');
+                const resolvedQuotaStatus = resolvedClosed
+                  ? 'excluded'
+                  : ((prev.quotaStatus === 'completed' || ggItem.quotaStatus === 'completed' || isEitherDone)
+                    ? 'completed'
+                    : (prev.quotaStatus && prev.quotaStatus !== 'ready' ? prev.quotaStatus : (ggItem.quotaStatus || 'ready')));
+
                 return {
+                  ...prev,
                   ...ggItem,
+                  phone: (prev.phoneNeedsSync === false && prev.phone) ? prev.phone : ggItem.phone,
+                  serverPhone: (prev.phoneNeedsSync === false && prev.serverPhone) ? prev.serverPhone : ggItem.serverPhone,
+                  phoneNeedsSync: prev.phoneNeedsSync === false ? false : ggItem.phoneNeedsSync,
                   customGuide: prev.customGuide || ggItem.customGuide,
                   manualClosedOverride: prev.manualClosedOverride || false,
-                  isClosedBiz: prev.manualClosedOverride ? prev.isClosedBiz : ggItem.isClosedBiz,
-                  bizStatus: prev.manualClosedOverride ? prev.bizStatus : ggItem.bizStatus,
-                  quotaStatus: prev.manualClosedOverride && prev.isClosedBiz
-                    ? 'excluded'
-                    : (ggItem.quotaStatus !== 'ready' ? ggItem.quotaStatus : (prev.quotaStatus || ggItem.quotaStatus)),
-                  status: ggItem.status || prev.status || '',
-                  submittedAnswers: ggAnsLen >= prevAnsLen ? (ggItem.submittedAnswers || []) : prev.submittedAnswers,
-                  pilotAt: ggItem.pilotAt || prev.pilotAt || ''
+                  isClosedBiz: resolvedClosed,
+                  bizStatus: resolvedBizStatus,
+                  quotaStatus: resolvedQuotaStatus,
+                  status: resolvedStatus,
+                  completedAt: prev.completedAt || ggItem.completedAt || '',
+                  pilotAt: ggItem.pilotAt || prev.pilotAt || '',
+                  capturedSteps: (Array.isArray(ggItem.capturedSteps) && ggItem.capturedSteps.length > 0)
+                    ? ggItem.capturedSteps
+                    : (prev.capturedSteps || []),
+                  submittedAnswers: ggAnsLen > prevAnsLen ? (ggItem.submittedAnswers || []) : (prev.submittedAnswers || [])
                 };
               });
+
+              // 기존 DB에만 존재하는 사용자 커스텀 항목이 있을 경우 유실 없이 뒤에 보존
+              existingDb.forEach(q => {
+                if (!q || !q.uid) return;
+                const k = `${q.surveyorId || ''}::${q.uid}`;
+                if (!ggKeySet.has(k)) {
+                  const nextIdx = mergedList.length + 1;
+                  mergedList.push({ ...q, index: nextIdx, seq: nextIdx, slotIndex: nextIdx });
+                }
+              });
+
+              existingGyeonggiCamp.quotaDatabase = mergedList;
               existingGyeonggiCamp.quotaSourceFile = ggFile;
               needGgUpdate = true;
             } else {
@@ -624,12 +672,24 @@ export function seedInitialCampaigns({
               }
             }
 
+            if (!Array.isArray(existingGyeonggiCamp.accounts) || existingGyeonggiCamp.accounts.length < defaultAccounts.length) {
+              needGgUpdate = true;
+            }
+
             if (needGgUpdate) {
+              const totalCnt = Array.isArray(existingGyeonggiCamp.quotaDatabase) ? existingGyeonggiCamp.quotaDatabase.length : ggList.length;
+              const prevTitle = String(existingGyeonggiCamp.title || '');
+              const updatedTitle = existingGyeonggiCamp.id === gyeonggi622CampId
+                ? `[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - ${defaultAccounts.length}계정 통합 ${totalCnt}건 (강영미·김정례·노영미·송춘희)`
+                : (prevTitle.includes('3계정 통합 171건')
+                  ? prevTitle
+                      .replace('3계정 통합 171건', `${defaultAccounts.length}계정 통합 ${totalCnt}건`)
+                      .replace('강영미·김정례·노영미)', '강영미·김정례·노영미·송춘희)')
+                  : prevTitle);
+
               CampaignStore.updateCampaign(existingGyeonggiCamp.id, {
-                title: existingGyeonggiCamp.id === gyeonggi622CampId
-                  ? '[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 3계정 통합 171건 (강영미·김정례·노영미)'
-                  : existingGyeonggiCamp.title,
-                accounts: ggContent.accounts || existingGyeonggiCamp.accounts,
+                title: updatedTitle,
+                accounts: defaultAccounts,
                 sparePhones: ggContent.sparePhones || existingGyeonggiCamp.sparePhones || [],
                 googleSheetUrl: existingGyeonggiCamp.googleSheetUrl || ggContent.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911',
                 quotaDatabase: existingGyeonggiCamp.quotaDatabase,

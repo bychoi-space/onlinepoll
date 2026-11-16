@@ -2,8 +2,8 @@
  * 설문조사 상세 작업실 제어 스크립트 (survey-detail.js)
  * 2-Tier 와이드 쿼터 뷰, 쿼터 항목별 진행 트래커, 2-Phase 파일럿 & 배치 파이프라인 제어
  */
-import { escapeHtml } from './modules/blueprint-utils.js?v=20261115_metrix_clean_ui';
-import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261115_metrix_q13_range';
+import { escapeHtml } from './modules/blueprint-utils.js?v=20261115_metrix_4acc_244';
+import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261115_metrix_4acc_244';
 import { renderAssocBlueprint } from './modules/blueprint-assoc.js?v=20261108_modular_v4';
 import {
   resolveGlobalriAgeGroupKey,
@@ -31,7 +31,7 @@ import {
   renderMetrixQuotaTable,
   renderMetrixSeoulQuotaTable,
   renderAssocQuotaTable
-} from './modules/quota-table-renderers.js?v=20261115_metrix_clean_ui';
+} from './modules/quota-table-renderers.js?v=20261115_metrix_4acc_244';
 
 
 async function initSurveyDetailPage() {
@@ -740,11 +740,12 @@ async function initSurveyDetailPage() {
       }
       const labelSurveyor = document.getElementById('exec-surveyor-label');
       if (labelSurveyor) {
-        labelSurveyor.textContent = '강영미(5254) · 김정례(3995) · 노영미(7791)';
+        labelSurveyor.textContent = '강영미(5254) · 김정례(3995) · 노영미(7791) · 송춘희(0307)';
       }
       const slotCountLabel = document.getElementById('exec-slot-count-label');
       if (slotCountLabel) {
-        slotCountLabel.textContent = `3계정 ${qList.length}건 (유효 ${qList.length - closedCnt}건)`;
+        const uniqAccCnt = new Set(qList.map(i => i.surveyorId || i.loginId).filter(Boolean)).size || 4;
+        slotCountLabel.textContent = `${uniqAccCnt}계정 ${qList.length}건 (유효 ${qList.length - closedCnt}건)`;
       }
       const badgeBp = document.getElementById('badge-blueprint-status');
       if (badgeBp) {
@@ -1196,7 +1197,7 @@ async function initSurveyDetailPage() {
     const currentSurveyor = isMetrixSeoul
       ? `${currentCampaign?.loginId || '2010 / 2016'} (${currentCampaign?.surveyorName || '송준희 · 정소영'})`
       : (isMetrix
-        ? '강영미(5254) · 김정례(3995) · 노영미(7791)'
+        ? '강영미(5254) · 김정례(3995) · 노영미(7791) · 송춘희(0307)'
         : (isGallupReturnFarm
           ? `${currentCampaign?.loginId || '076_000009'} (${currentCampaign?.surveyorName || '백영자'})`
           : (isGlobalriLiteracy
@@ -1213,7 +1214,8 @@ async function initSurveyDetailPage() {
         execSlotCountLabel.textContent = `2개 계정(2010·2016) ${total}개 사업체 장착`;
       } else if (isMetrix) {
         const closedCnt = db.filter(i => i.isClosedBiz || String(i.bizStatus || '').includes('폐업') || i.quotaStatus === 'excluded').length;
-        execSlotCountLabel.textContent = `3계정 ${total}건 (유효 ${total - closedCnt}건)`;
+        const uniqAccCnt = new Set(db.map(i => i.surveyorId || i.loginId).filter(Boolean)).size || 4;
+        execSlotCountLabel.textContent = `${uniqAccCnt}계정 ${total}건 (유효 ${total - closedCnt}건)`;
       } else if (isGallupReturnFarm) {
         execSlotCountLabel.textContent = `선정명단 ${total}명 장착`;
       } else if (isGlobalriLiteracy) {
@@ -1498,8 +1500,8 @@ async function initSurveyDetailPage() {
             body: JSON.stringify({ checkClosedBiz: true })
           });
           const data = await res.json();
-          if (!res.ok || !data.success) throw new Error(data.error || '3계정·구글시트·폐업조회 동기화 실패');
-          appendLog('success', `✅ [경기도 소상공인 3계정 동기화] ${data.message}`);
+          if (!res.ok || !data.success) throw new Error(data.error || '전계정·구글시트·폐업조회 동기화 실패');
+          appendLog('success', `✅ [경기도 소상공인 통합 동기화] ${data.message}`);
           await loadCampaign();
           await loadBlueprint();
           alert(data.message);
@@ -4135,7 +4137,7 @@ async function initSurveyDetailPage() {
       const originalText = btnSyncKstatStatus.innerHTML;
       btnSyncKstatStatus.disabled = true;
       btnSyncKstatStatus.innerHTML = isMetrix
-        ? '<i class="fa-solid fa-spinner fa-spin"></i> 3계정·구글시트·폐업조회 동기화 중...'
+        ? '<i class="fa-solid fa-spinner fa-spin"></i> 4계정·구글시트·폐업조회 동기화 중...'
         : (isMetrixSeoul
           ? '<i class="fa-solid fa-spinner fa-spin"></i> 구글 스프레드시트(시트2) 동기화 중...'
           : (isGallupReturnFarm
@@ -4167,7 +4169,7 @@ async function initSurveyDetailPage() {
         const data = await res.json();
         if (data.success) {
           alert(`✓ ${data.message}`);
-          appendLog('success', `[${isMetrix ? '경기도 622 3계정·구글시트·폐업 동기화' : (isMetrixSeoul ? '서울시 패널 구글시트 동기화' : (isGallupReturnFarm ? '한국갤럽 상태 동기화' : (isGlobalriLiteracy ? '글로벌리서치 GIFT 동기화' : (isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화'))))}] ${data.message}`);
+          appendLog('success', `[${isMetrix ? '경기도 622 4계정·구글시트·폐업 동기화' : (isMetrixSeoul ? '서울시 패널 구글시트 동기화' : (isGallupReturnFarm ? '한국갤럽 상태 동기화' : (isGlobalriLiteracy ? '글로벌리서치 GIFT 동기화' : (isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화'))))}] ${data.message}`);
           if (isMetrix || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) {
             await loadCampaign();
             await loadBlueprint();

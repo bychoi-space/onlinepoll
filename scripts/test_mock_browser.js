@@ -17,7 +17,10 @@ const filesToCheck = [
   'src/server.js',
   'src/config/campaign-seeders.js',
   'src/routes/quota-routes.js',
-  'src/engine/metrix-runner.js'
+  'src/routes/sync-routes.js',
+  'src/engine/metrix-runner.js',
+  'src/engine/metrix-slot-scraper.js',
+  'src/utils/gyeonggi-panel-answer-excel.js'
 ];
 
 for (const file of filesToCheck) {
@@ -235,18 +238,29 @@ if (!container.innerHTML.includes('svyA115.asp')) {
 
 const metrixTbody = makeEl('quota-table-body');
 quotaRenderers.renderMetrixQuotaTable({
-  db: [{ index: 1, seq: 1, surveyorId: '강영미', uid: '2220', companyName: '주식회사 일화검사소', industry: '6.전문, 과학 및 기술 서비스업', quotaStatus: 'ready' }],
+  db: [
+    { index: 1, seq: 1, surveyorId: '강영미', uid: '2220', companyName: '주식회사 일화검사소', industry: '6.전문, 과학 및 기술 서비스업', quotaStatus: 'ready' },
+    { index: 55, seq: 55, surveyorId: '김정례', uid: '1044', companyName: '가나안꽃화원', industry: '2.도매 및 소매업', quotaStatus: 'ready' },
+    { index: 110, seq: 110, surveyorId: '노영미', uid: '3100', companyName: '테스트상사', industry: '2.도매 및 소매업', quotaStatus: 'ready' },
+    { index: 172, seq: 172, surveyorId: '송춘희', uid: '4498', companyName: '양평상회', industry: '2.도매 및 소매업', quotaStatus: 'ready' }
+  ],
   quotaTableBody: metrixTbody,
-  campId: 'camp_1793069358602',
-  checkedMetrixSeqs: new Set([1]),
+  campId: 'camp_1794792483912',
+  checkedMetrixSeqs: new Set([1, 172]),
   metrixPolicy: metrixState,
   onReRender: () => {},
   onTriggerBatchRun: () => {},
   onSyncMetrix622: () => {},
   onToggleClosedBiz: () => {}
 });
-if (!metrixTbody.innerHTML.includes('일화검사소')) {
-  throw new Error('Metrix quota table render failed');
+const metrixBarHtml = elements['metrix-622-step1-check-bar']?.innerHTML || '';
+if (
+  !metrixTbody.innerHTML.includes('일화검사소') ||
+  !metrixTbody.innerHTML.includes('양평상회') ||
+  !metrixBarHtml.includes('data-acc-filter="송춘희"') ||
+  !metrixBarHtml.includes('4계정·시트·폐업 동기화')
+) {
+  throw new Error('Metrix 4-account quota table render failed');
 }
 kstatStoreMod.renderKstatStoreStages({
   blueprintStageGrid: container,
