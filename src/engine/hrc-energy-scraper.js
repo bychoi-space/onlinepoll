@@ -15,7 +15,9 @@ export const HRC_ACCOUNTS = {
   '700275': { loginId: '700275', loginPw: '700275', surveyorName: '강영미', filePrefix: 'quota_hrc_energy_2025_700275_강영미' },
   '700277': { loginId: '700277', loginPw: '700277', surveyorName: '강경옥', filePrefix: 'quota_hrc_energy_2025_700277_강경옥' },
   '701493': { loginId: '701493', loginPw: '701493', surveyorName: '김정례', filePrefix: 'quota_hrc_energy_2025_701493_김정례' },
-  '701494': { loginId: '701494', loginPw: '701494', surveyorName: '유희정', filePrefix: 'quota_hrc_energy_2025_701494_유희정' }
+  '701494': { loginId: '701494', loginPw: '701494', surveyorName: '유희정', filePrefix: 'quota_hrc_energy_2025_701494_유희정' },
+  '700193': { loginId: '700193', loginPw: '700193', surveyorName: '강영미', filePrefix: 'quota_hrc_energy_2025_700193_강영미' },
+  '700189': { loginId: '700189', loginPw: '700189', surveyorName: '김정례', filePrefix: 'quota_hrc_energy_2025_700189_김정례' }
 };
 
 /**
@@ -23,7 +25,7 @@ export const HRC_ACCOUNTS = {
  */
 export function findHrcQuotaJsonPath(loginId) {
   if (!fs.existsSync(quotasDir)) return null;
-  const files = fs.readdirSync(quotasDir).filter(f => f.startsWith(`quota_hrc_energy_2025_${loginId}`) && f.endsWith('.json'));
+  const files = fs.readdirSync(quotasDir).filter(f => f.startsWith(`quota_hrc_energy_2025_${loginId}_`) && f.endsWith('.json'));
   if (files.length === 0) return null;
   return path.join(quotasDir, files[0]);
 }
@@ -32,7 +34,7 @@ export function findHrcQuotaJsonPath(loginId) {
  * 한국리서치 TAPI (https://tapi.hrcglobal.com) 에너지총조사 [건물] 탭(List4) 전 페이지 슬롯 상태 스크래핑 및 동기화
  *
  * @param {object} options
- * @param {string} options.loginId - 조사원 ID ('700275' | '700277' | '701493')
+ * @param {string} options.loginId - 조사원 ID ('700275' | '700277' | '701493' | '701494' | '700193' | '700189')
  * @param {string} options.loginPw - 비밀번호 (기본값: loginId와 동일)
  * @returns {Promise<object>}
  */
@@ -53,11 +55,19 @@ export async function scrapeHrcEnergySlots(options = {}) {
     });
     const page = await context.newPage();
 
-    await page.goto('https://tapi.hrcglobal.com/Home/Login', { waitUntil: 'domcontentloaded', timeout: 25000 });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await page.goto('https://tapi.hrcglobal.com/Home/Login', { waitUntil: 'domcontentloaded', timeout: 40000 });
+        break;
+      } catch (navErr) {
+        if (attempt === 2) throw navErr;
+        await page.waitForTimeout(1000);
+      }
+    }
     await page.fill('input[type="text"]', loginId);
     await page.fill('input[type="password"]', loginPw);
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }),
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 35000 }),
       page.click('button[type="submit"], input[type="submit"]')
     ]);
 
@@ -140,8 +150,8 @@ export async function scrapeHrcEnergySlots(options = {}) {
           item.progress = live.progress;
           item.lastContactStatus = live.lastContactStatus;
           item.contactCount = live.contactCount;
-          if (!item.buildingName && live.buildingName) {
-            item.buildingName = live.buildingName;
+          if (live.buildingName) {
+            item.siteBuildingName = live.buildingName;
           }
           const pctNum = parseInt(String(live.progress).replace(/[^0-9]/g, ''), 10) || 0;
           if (live.siteStatus === '완료' || pctNum >= 100) {
@@ -157,23 +167,41 @@ export async function scrapeHrcEnergySlots(options = {}) {
         }
       });
 
+      content.items = dataList;
       content.updatedAt = new Date().toISOString();
       writeJsonAtomicSync(jsonPath, content);
 
       // Excel 동기화
       const xlsxPath = jsonPath.replace(/\.json$/i, '.xlsx');
-      const cols = content.columns || [];
-      if (cols.length > 0) {
-        const sheetRows = dataList.map(r => {
-          const obj = {};
-          cols.forEach(c => { obj[c.label] = r[c.key] ?? ''; });
-          return obj;
-        });
-        const newWb = XLSX.utils.book_new();
-        const newWs = XLSX.utils.json_to_sheet(sheetRows);
-        XLSX.utils.book_append_sheet(newWb, newWs, '건물쿼터');
-        XLSX.writeFile(newWb, xlsxPath);
-      }
+      const excelRows = dataList.map(it => ({
+        '번호': it.seq,
+        '선정구분': it.selectionType,
+        '셀내우선순위': it.cellPriority,
+        'UID': it.uid,
+        '건물명(SQ12)': it.sq12BuildingName || it.buildingName || '없음',
+        '이름': it.contactName,
+        '전화번호': it.phone,
+        '표본구분': it.sampleType,
+        '주용도': it.mainUse,
+        '면적규모': it.areaScale,
+        '시도': it.sido,
+        '시군구': it.sigungu,
+        'A5-1(공조방식)': it.a51Raw || '',
+        'T41(입점시설)': it.t41Raw || '',
+        'B1-1(설비현황)': it.b11Raw || '',
+        'C5-2(효율개선)': it.c52Raw || '',
+        '신재생에너지': it.renewableRaw || '',
+        '계약전력(kW)': it.contractPowerKw || '',
+        'D2-1(도시가스)': it.d21Raw || '',
+        '예상유형': it.expectedTypeCode || '',
+        '조사원ID': it.surveyorAccount,
+        '진행률': it.progress || '0%',
+        '설문상태': it.quotaStatus
+      }));
+      const newWb = XLSX.utils.book_new();
+      const newWs = XLSX.utils.json_to_sheet(excelRows);
+      XLSX.utils.book_append_sheet(newWb, newWs, '건물쿼터');
+      fs.writeFileSync(xlsxPath, XLSX.write(newWb, { type: 'buffer', bookType: 'xlsx' }));
       updatedQuota = content;
     }
 

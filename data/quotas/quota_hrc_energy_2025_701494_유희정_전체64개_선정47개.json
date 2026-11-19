@@ -14,7 +14,7 @@
   "selectedCount": 47,
   "subCount": 17,
   "backupCount": 17,
-  "createdAt": "2026-11-10T02:37:36.536Z",
+  "updatedAt": "2026-11-19T02:55:26.854Z",
   "cellQuotas": [
     {
       "cellKey": "서울_1001_1001",
@@ -24,9 +24,9 @@
       "quotaCode2": "1001",
       "areaScale": "3,000-5,000㎡",
       "targetQuota": 6,
-      "selectedCount": 6,
-      "sampleCount": 16,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 10,
+      "diff": -6
     },
     {
       "cellKey": "서울_1001_1002",
@@ -36,9 +36,9 @@
       "quotaCode2": "1002",
       "areaScale": "5,000-10,000㎡",
       "targetQuota": 6,
-      "selectedCount": 1,
-      "sampleCount": 1,
-      "diff": -5
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -6
     },
     {
       "cellKey": "서울_1001_1003",
@@ -84,9 +84,9 @@
       "quotaCode2": "1001",
       "areaScale": "3,000-5,000㎡",
       "targetQuota": 2,
-      "selectedCount": 2,
-      "sampleCount": 2,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -2
     },
     {
       "cellKey": "서울_1002_1002",
@@ -96,9 +96,9 @@
       "quotaCode2": "1002",
       "areaScale": "5,000-10,000㎡",
       "targetQuota": 2,
-      "selectedCount": 2,
-      "sampleCount": 2,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -2
     },
     {
       "cellKey": "서울_1002_1003",
@@ -204,9 +204,9 @@
       "quotaCode2": "1001",
       "areaScale": "3,000-5,000㎡",
       "targetQuota": 5,
-      "selectedCount": 5,
-      "sampleCount": 6,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 1,
+      "diff": -5
     },
     {
       "cellKey": "서울_1004_1002",
@@ -216,9 +216,9 @@
       "quotaCode2": "1002",
       "areaScale": "5,000-10,000㎡",
       "targetQuota": 2,
-      "selectedCount": 2,
-      "sampleCount": 2,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -2
     },
     {
       "cellKey": "서울_1004_1003",
@@ -228,9 +228,9 @@
       "quotaCode2": "1003",
       "areaScale": "10,000-30,000㎡",
       "targetQuota": 2,
-      "selectedCount": 2,
-      "sampleCount": 2,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -2
     },
     {
       "cellKey": "서울_1004_1004",
@@ -252,9 +252,9 @@
       "quotaCode2": "1005",
       "areaScale": "50,000㎡ 초과",
       "targetQuota": 2,
-      "selectedCount": 2,
-      "sampleCount": 2,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -2
     },
     {
       "cellKey": "서울_1005_1001",
@@ -276,9 +276,9 @@
       "quotaCode2": "1002",
       "areaScale": "5,000-10,000㎡",
       "targetQuota": 3,
-      "selectedCount": 2,
-      "sampleCount": 2,
-      "diff": -1
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -3
     },
     {
       "cellKey": "서울_1005_1003",
@@ -288,9 +288,9 @@
       "quotaCode2": "1003",
       "areaScale": "10,000-30,000㎡",
       "targetQuota": 1,
-      "selectedCount": 1,
-      "sampleCount": 1,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -1
     },
     {
       "cellKey": "서울_1005_1004",
@@ -324,9 +324,9 @@
       "quotaCode2": "1001",
       "areaScale": "3,000-5,000㎡",
       "targetQuota": 3,
-      "selectedCount": 3,
-      "sampleCount": 3,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -3
     },
     {
       "cellKey": "서울_1006_1002",
@@ -336,9 +336,9 @@
       "quotaCode2": "1002",
       "areaScale": "5,000-10,000㎡",
       "targetQuota": 1,
-      "selectedCount": 1,
-      "sampleCount": 1,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -1
     },
     {
       "cellKey": "서울_1006_1003",
@@ -348,9 +348,9 @@
       "quotaCode2": "1003",
       "areaScale": "10,000-30,000㎡",
       "targetQuota": 4,
-      "selectedCount": 2,
-      "sampleCount": 2,
-      "diff": -2
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -4
     },
     {
       "cellKey": "서울_1006_1004",
@@ -384,9 +384,9 @@
       "quotaCode2": "1001",
       "areaScale": "3,000-5,000㎡",
       "targetQuota": 4,
-      "selectedCount": 4,
-      "sampleCount": 7,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 3,
+      "diff": -4
     },
     {
       "cellKey": "서울_1007_1002",
@@ -396,9 +396,9 @@
       "quotaCode2": "1002",
       "areaScale": "5,000-10,000㎡",
       "targetQuota": 6,
-      "selectedCount": 6,
-      "sampleCount": 6,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -6
     },
     {
       "cellKey": "서울_1007_1003",
@@ -408,9 +408,9 @@
       "quotaCode2": "1003",
       "areaScale": "10,000-30,000㎡",
       "targetQuota": 2,
-      "selectedCount": 2,
-      "sampleCount": 3,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 1,
+      "diff": -2
     },
     {
       "cellKey": "서울_1007_1004",
@@ -420,9 +420,9 @@
       "quotaCode2": "1004",
       "areaScale": "30,000-50,000㎡",
       "targetQuota": 1,
-      "selectedCount": 1,
-      "sampleCount": 1,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 0,
+      "diff": -1
     },
     {
       "cellKey": "서울_1007_1005",
@@ -432,9 +432,9 @@
       "quotaCode2": "1005",
       "areaScale": "50,000㎡ 초과",
       "targetQuota": 3,
-      "selectedCount": 3,
-      "sampleCount": 5,
-      "diff": 0
+      "selectedCount": 0,
+      "sampleCount": 2,
+      "diff": -3
     },
     {
       "cellKey": "서울_1008_1001",
@@ -579,8 +579,8 @@
       "address": "서울 구로구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "5. 적격응답자 부재",
-      "contactCount": "1",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "3",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -589,10 +589,44 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800311&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800311&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": ""
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "제일빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "제일빌딩",
+      "surveyCompleted": "완료"
     },
     {
       "index": 2,
@@ -615,8 +649,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": "0",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -625,10 +659,44 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800547&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800547&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": ""
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "태우빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "태우빌딩",
+      "surveyCompleted": "완료"
     },
     {
       "index": 3,
@@ -651,8 +719,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": "0",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -661,10 +729,44 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800554&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800554&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": ""
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "잠실레이크타워",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "잠실레이크타워",
+      "surveyCompleted": "완료"
     },
     {
       "index": 4,
@@ -687,8 +789,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": "0",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -697,10 +799,43 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800564&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800564&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": ""
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "surveyCompleted": "완료"
     },
     {
       "index": 5,
@@ -723,8 +858,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": "0",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -733,10 +868,44 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800549&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800549&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": ""
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "빌라드그리움 석촌",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "빌라드그리움 석촌",
+      "surveyCompleted": "완료"
     },
     {
       "index": 6,
@@ -759,8 +928,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": "0",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -769,10 +938,44 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800553&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800553&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": ""
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "IU아이유빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "IU아이유빌딩",
+      "surveyCompleted": "완료"
     },
     {
       "index": 7,
@@ -808,7 +1011,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "삼전동 썬프라자",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "삼전동 썬프라자"
     },
     {
       "index": 8,
@@ -844,7 +1080,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "레미안빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "레미안빌딩"
     },
     {
       "index": 9,
@@ -880,7 +1149,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "에이스빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "에이스빌딩"
     },
     {
       "index": 10,
@@ -916,7 +1218,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "BNK올림픽센터",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "BNK올림픽센터"
     },
     {
       "index": 11,
@@ -952,7 +1287,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "쿠피아타워(CUPIA TOWER)",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "쿠피아타워(CUPIA TOWER)"
     },
     {
       "index": 12,
@@ -988,7 +1356,39 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 13,
@@ -1024,7 +1424,39 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 14,
@@ -1060,7 +1492,39 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 15,
@@ -1096,7 +1560,39 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 16,
@@ -1132,7 +1628,39 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 17,
@@ -1168,7 +1696,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "이안과 빌딩",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "MD",
+      "expectedTypeDesc": "메디컬빌딩(근생)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 900,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "이안과 빌딩"
     },
     {
       "index": 18,
@@ -1204,7 +1765,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "부영빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "부영빌딩"
     },
     {
       "index": 19,
@@ -1240,7 +1834,39 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true
     },
     {
       "index": 20,
@@ -1276,7 +1902,41 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "34동",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "34동"
     },
     {
       "index": 21,
@@ -1312,7 +1972,41 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "해원리버파크",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "해원리버파크"
     },
     {
       "index": 22,
@@ -1348,7 +2042,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "씨블럭동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "씨블럭동"
     },
     {
       "index": 23,
@@ -1384,7 +2111,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "중앙구로하이츠 상가동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "중앙구로하이츠 상가동"
     },
     {
       "index": 24,
@@ -1420,7 +2180,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "비블럭동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "비블럭동"
     },
     {
       "index": 25,
@@ -1456,7 +2249,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "디블럭동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "디블럭동"
     },
     {
       "index": 26,
@@ -1492,7 +2318,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "에이블럭동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "에이블럭동"
     },
     {
       "index": 27,
@@ -1528,7 +2387,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "구로유통상가 B동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "구로유통상가 B동"
     },
     {
       "index": 28,
@@ -1564,7 +2456,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true
     },
     {
       "index": 29,
@@ -1600,7 +2525,41 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "극동상가",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "극동상가"
     },
     {
       "index": 30,
@@ -1636,7 +2595,41 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "라이프공구종합상가",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "라이프공구종합상가"
     },
     {
       "index": 31,
@@ -1672,7 +2665,41 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "구로유통상가 A동",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로유통상가 A동"
     },
     {
       "index": 32,
@@ -1685,7 +2712,7 @@
       "buildingName": "신도림테크노마트",
       "ceoName": "이대구",
       "contactName": "이대구",
-      "phone": "",
+      "phone": "010-4501-3548",
       "sampleType": "전수층",
       "industry": "판매시설",
       "mainUse": "판매시설",
@@ -1708,7 +2735,45 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "신도림테크노마트",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "RT",
+      "expectedTypeDesc": "백화점·대형마트·아울렛",
+      "isPublicOrSchool": false,
+      "a51Raw": "① 중앙+개별 모두 이용",
+      "a51Code": "1",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+      "b11Codes": [
+        "1",
+        "6"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+      "c52Codes": [
+        "3",
+        "5",
+        "7"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 12000,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "신도림테크노마트"
     },
     {
       "index": 33,
@@ -1721,7 +2786,7 @@
       "buildingName": "NC백화점",
       "ceoName": "이상호",
       "contactName": "이상호",
-      "phone": "",
+      "phone": "010-5361-3974",
       "sampleType": "전수층",
       "industry": "판매시설",
       "mainUse": "판매시설",
@@ -1744,7 +2809,45 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "NC백화점",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "RT",
+      "expectedTypeDesc": "백화점·대형마트·아울렛",
+      "isPublicOrSchool": false,
+      "a51Raw": "① 중앙+개별 모두 이용",
+      "a51Code": "1",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+      "b11Codes": [
+        "1",
+        "6"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+      "c52Codes": [
+        "3",
+        "5",
+        "7"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 12000,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "NC백화점"
     },
     {
       "index": 34,
@@ -1757,7 +2860,7 @@
       "buildingName": "고려 수 타워",
       "ceoName": "송기섭",
       "contactName": "송기섭",
-      "phone": "",
+      "phone": "010-6619-2904",
       "sampleType": "예비표본",
       "industry": "의료시설",
       "mainUse": "의료시설",
@@ -1780,7 +2883,42 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "고려 수 타워",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "H2",
+      "expectedTypeDesc": "병원 중형",
+      "isPublicOrSchool": false,
+      "a51Raw": "① 중앙+개별 모두 이용",
+      "a51Code": "1",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+      "b11Codes": [
+        "5",
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1150,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "고려 수 타워"
     },
     {
       "index": 35,
@@ -1793,7 +2931,7 @@
       "buildingName": "삼전 솔하임",
       "ceoName": "서영수",
       "contactName": "서영수",
-      "phone": "",
+      "phone": "010-2419-7281",
       "sampleType": "예비표본",
       "industry": "의료시설",
       "mainUse": "의료시설",
@@ -1816,7 +2954,42 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "삼전 솔하임",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "H2",
+      "expectedTypeDesc": "병원 중형",
+      "isPublicOrSchool": false,
+      "a51Raw": "① 중앙+개별 모두 이용",
+      "a51Code": "1",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+      "b11Codes": [
+        "5",
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1150,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "삼전 솔하임"
     },
     {
       "index": 36,
@@ -1829,7 +3002,7 @@
       "buildingName": "제중요양병원",
       "ceoName": "권혁만",
       "contactName": "권혁만",
-      "phone": "",
+      "phone": "010-8140-1937",
       "sampleType": "예비표본",
       "industry": "의료시설",
       "mainUse": "의료시설",
@@ -1852,7 +3025,42 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "제중요양병원",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "H2",
+      "expectedTypeDesc": "병원 중형",
+      "isPublicOrSchool": false,
+      "a51Raw": "① 중앙+개별 모두 이용",
+      "a51Code": "1",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+      "b11Codes": [
+        "5",
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 2250,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "제중요양병원"
     },
     {
       "index": 37,
@@ -1865,7 +3073,7 @@
       "buildingName": "학교법인초당학원",
       "ceoName": "황병수",
       "contactName": "황병수",
-      "phone": "",
+      "phone": "010-5729-4926",
       "sampleType": "본표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -1888,7 +3096,41 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "학교법인초당학원",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "SC",
+      "expectedTypeDesc": "초중고 학교",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설",
+      "t41Codes": [
+        "1"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "4.신재생에너지 지원사업, 6.그린리모델링(그린스마트미래학교)",
+      "c52Codes": [
+        "4",
+        "6"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 250,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "학교법인초당학원"
     },
     {
       "index": 38,
@@ -1901,7 +3143,7 @@
       "buildingName": "화원종합사회복지관",
       "ceoName": "이청길",
       "contactName": "이청길",
-      "phone": "",
+      "phone": "010-8319-8635",
       "sampleType": "예비표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -1924,7 +3166,43 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "화원종합사회복지관",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "PB",
+      "expectedTypeDesc": "공공 문화·집회·복지시설",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 방재실",
+      "t41Codes": [
+        "1",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO, 4.신재생에너지 지원사업, 6.그린리모델링",
+      "c52Codes": [
+        "3",
+        "4",
+        "6"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "화원종합사회복지관"
     },
     {
       "index": 39,
@@ -1937,7 +3215,7 @@
       "buildingName": "서울현대교육재단",
       "ceoName": "구본영",
       "contactName": "구본영",
-      "phone": "",
+      "phone": "010-1548-4983",
       "sampleType": "예비표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -1960,7 +3238,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "서울현대교육재단",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "UN",
+      "expectedTypeDesc": "대학·교회·교육재단 등",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설",
+      "t41Codes": [
+        "1"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO",
+      "c52Codes": [
+        "3"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "서울현대교육재단"
     },
     {
       "index": 40,
@@ -1973,7 +3284,7 @@
       "buildingName": "구로초등학교",
       "ceoName": "이창율",
       "contactName": "이창율",
-      "phone": "",
+      "phone": "010-2386-2137",
       "sampleType": "예비표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -1996,7 +3307,41 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "구로초등학교",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "SC",
+      "expectedTypeDesc": "초중고 학교",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설",
+      "t41Codes": [
+        "1"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "4.신재생에너지 지원사업, 6.그린리모델링(그린스마트미래학교)",
+      "c52Codes": [
+        "4",
+        "6"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로초등학교"
     },
     {
       "index": 41,
@@ -2009,7 +3354,7 @@
       "buildingName": "구로초등학교",
       "ceoName": "최승관",
       "contactName": "최승관",
-      "phone": "",
+      "phone": "010-7564-8266",
       "sampleType": "예비표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -2032,7 +3377,41 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "구로초등학교",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "SC",
+      "expectedTypeDesc": "초중고 학교",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설",
+      "t41Codes": [
+        "1"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "4.신재생에너지 지원사업, 6.그린리모델링(그린스마트미래학교)",
+      "c52Codes": [
+        "4",
+        "6"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 1000,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로초등학교"
     },
     {
       "index": 42,
@@ -2045,7 +3424,7 @@
       "buildingName": "",
       "ceoName": "김종빈",
       "contactName": "김종빈",
-      "phone": "",
+      "phone": "010-2380-3638",
       "sampleType": "예비표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -2068,7 +3447,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "SC",
+      "expectedTypeDesc": "초중고 학교",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설",
+      "t41Codes": [
+        "1"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "4.신재생에너지 지원사업, 6.그린리모델링(그린스마트미래학교)",
+      "c52Codes": [
+        "4",
+        "6"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 1000,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true
     },
     {
       "index": 43,
@@ -2081,7 +3493,7 @@
       "buildingName": "",
       "ceoName": "선우갑",
       "contactName": "선우갑",
-      "phone": "",
+      "phone": "010-8143-4353",
       "sampleType": "본표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2104,7 +3516,39 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true
     },
     {
       "index": 44,
@@ -2117,7 +3561,7 @@
       "buildingName": "조일뉴타워",
       "ceoName": "이상열",
       "contactName": "이상열",
-      "phone": "",
+      "phone": "010-8172-9804",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2140,7 +3584,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "조일뉴타워",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "조일뉴타워"
     },
     {
       "index": 45,
@@ -2153,7 +3630,7 @@
       "buildingName": "스위트팰리스오피스텔",
       "ceoName": "박윤상",
       "contactName": "박윤상",
-      "phone": "",
+      "phone": "010-7923-4638",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2176,7 +3653,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "스위트팰리스오피스텔",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 300,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "스위트팰리스오피스텔"
     },
     {
       "index": 46,
@@ -2189,7 +3699,7 @@
       "buildingName": "하이빌골드타워 A동",
       "ceoName": "신재권",
       "contactName": "신재권",
-      "phone": "",
+      "phone": "010-3910-3289",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2212,7 +3722,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "하이빌골드타워 A동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 300,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "하이빌골드타워 A동"
     },
     {
       "index": 47,
@@ -2248,7 +3791,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "구로유통상가 C동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "구로유통상가 C동"
     },
     {
       "index": 48,
@@ -2284,7 +3860,39 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 49,
@@ -2320,7 +3928,39 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 50,
@@ -2333,7 +3973,7 @@
       "buildingName": "하나세인스톤3차",
       "ceoName": "이상병",
       "contactName": "이상병",
-      "phone": "",
+      "phone": "010-2387-9276",
       "sampleType": "본표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2356,7 +3996,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "하나세인스톤3차",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 950,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "하나세인스톤3차"
     },
     {
       "index": 51,
@@ -2369,7 +4042,7 @@
       "buildingName": "신도림 로제리움",
       "ceoName": "박재인",
       "contactName": "박재인",
-      "phone": "",
+      "phone": "010-5721-5293",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2392,7 +4065,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "신도림 로제리움",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 550,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "신도림 로제리움"
     },
     {
       "index": 52,
@@ -2405,7 +4111,7 @@
       "buildingName": "은산빌딩",
       "ceoName": "한규훈",
       "contactName": "한규훈",
-      "phone": "",
+      "phone": "010-2423-4539",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2428,7 +4134,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "은산빌딩",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 950,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "은산빌딩"
     },
     {
       "index": 53,
@@ -2441,7 +4180,7 @@
       "buildingName": "구로한성상가 B동",
       "ceoName": "김형필",
       "contactName": "김형필",
-      "phone": "",
+      "phone": "010-5810-5604",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2464,7 +4203,41 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "구로한성상가 B동",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로한성상가 B동"
     },
     {
       "index": 54,
@@ -2477,7 +4250,7 @@
       "buildingName": "한성상가A동 A동",
       "ceoName": "김영운",
       "contactName": "김영운",
-      "phone": "",
+      "phone": "010-5731-4539",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2500,7 +4273,41 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "한성상가A동 A동",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "한성상가A동 A동"
     },
     {
       "index": 55,
@@ -2513,7 +4320,7 @@
       "buildingName": "",
       "ceoName": "최조연",
       "contactName": "최조연",
-      "phone": "",
+      "phone": "010-4931-5943",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2536,7 +4343,39 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 950,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true
     },
     {
       "index": 56,
@@ -2549,7 +4388,7 @@
       "buildingName": "구로에스케이뷰 비동",
       "ceoName": "조경현",
       "contactName": "조경현",
-      "phone": "",
+      "phone": "010-9469-6389",
       "sampleType": "본표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2572,7 +4411,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "구로에스케이뷰 비동",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1150,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로에스케이뷰 비동"
     },
     {
       "index": 57,
@@ -2585,7 +4457,7 @@
       "buildingName": "스타팰리스",
       "ceoName": "전효상",
       "contactName": "전효상",
-      "phone": "",
+      "phone": "010-5964-6907",
       "sampleType": "본표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2608,7 +4480,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "스타팰리스",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1150,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "스타팰리스"
     },
     {
       "index": 58,
@@ -2644,7 +4549,42 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "비즈트위트 오렌지",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF2",
+      "expectedTypeDesc": "업무빌딩 중대형(1만~3만㎡)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "7.DR",
+      "c52Codes": [
+        "7"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 2000,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": false,
+      "siteBuildingName": "비즈트위트 오렌지"
     },
     {
       "index": 59,
@@ -2657,7 +4597,7 @@
       "buildingName": "SK허브수 B동",
       "ceoName": "백인수",
       "contactName": "백인수",
-      "phone": "",
+      "phone": "010-8413-5808",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2680,7 +4620,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "SK허브수 B동",
+      "estimatedGrossAreaM2": 38000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 3000,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "SK허브수 B동"
     },
     {
       "index": 60,
@@ -2693,7 +4666,7 @@
       "buildingName": "구로동복합건물OPUS1",
       "ceoName": "이정우",
       "contactName": "이정우",
-      "phone": "",
+      "phone": "010-3976-5761",
       "sampleType": "전수층",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2716,7 +4689,44 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "구로동복합건물OPUS1",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OL",
+      "expectedTypeDesc": "대형 오피스(서울 도심 등)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO, 7.DR (2020년 이후 준공이면 2.ZEB 인증 확인)",
+      "c52Codes": [
+        "3",
+        "7"
+      ],
+      "zebCheckAfter2020": true,
+      "renewableRaw": "태양광, 지열",
+      "t71Codes": [
+        "1",
+        "3",
+        "10"
+      ],
+      "contractPowerKw": 7500,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로동복합건물OPUS1"
     },
     {
       "index": 61,
@@ -2729,7 +4739,7 @@
       "buildingName": "한강로벽산메가트리움",
       "ceoName": "박태구",
       "contactName": "박태구",
-      "phone": "",
+      "phone": "010-6537-6829",
       "sampleType": "전수층",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2752,7 +4762,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "한강로벽산메가트리움",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 4500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "한강로벽산메가트리움"
     },
     {
       "index": 62,
@@ -2765,7 +4808,7 @@
       "buildingName": "아스테리움 용산",
       "ceoName": "진종철",
       "contactName": "진종철",
-      "phone": "",
+      "phone": "010-5649-9316",
       "sampleType": "전수층",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -2788,7 +4831,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "아스테리움 용산",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 4500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "아스테리움 용산"
     },
     {
       "index": 63,
@@ -2824,7 +4900,40 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "용산푸르지오써밋",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 4500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "용산푸르지오써밋"
     },
     {
       "index": 64,
@@ -2860,7 +4969,44 @@
       "status": "대기",
       "quotaStatus": "ready",
       "progress": "0%",
-      "siteStatus": ""
+      "siteStatus": "",
+      "sq12BuildingName": "아모레퍼시픽",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OL",
+      "expectedTypeDesc": "대형 오피스(서울 도심 등)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO, 7.DR (2020년 이후 준공이면 2.ZEB 인증 확인)",
+      "c52Codes": [
+        "3",
+        "7"
+      ],
+      "zebCheckAfter2020": true,
+      "renewableRaw": "태양광, 지열",
+      "t71Codes": [
+        "1",
+        "3",
+        "10"
+      ],
+      "contractPowerKw": 7500,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": false,
+      "siteBuildingName": "아모레퍼시픽"
     }
   ],
   "items": [
@@ -2885,8 +5031,8 @@
       "address": "서울 구로구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": 0,
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "3",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -2895,9 +5041,44 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800311&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800311&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "제일빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "제일빌딩",
+      "surveyCompleted": "완료"
     },
     {
       "index": 2,
@@ -2920,8 +5101,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": 0,
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -2930,9 +5111,44 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800547&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800547&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "태우빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "태우빌딩",
+      "surveyCompleted": "완료"
     },
     {
       "index": 3,
@@ -2955,8 +5171,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": 0,
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -2965,9 +5181,44 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800554&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800554&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "잠실레이크타워",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "잠실레이크타워",
+      "surveyCompleted": "완료"
     },
     {
       "index": 4,
@@ -2990,8 +5241,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": 0,
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3000,9 +5251,43 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800564&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800564&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "surveyCompleted": "완료"
     },
     {
       "index": 5,
@@ -3025,8 +5310,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": 0,
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3035,9 +5320,44 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800549&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800549&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "빌라드그리움 석촌",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "빌라드그리움 석촌",
+      "surveyCompleted": "완료"
     },
     {
       "index": 6,
@@ -3060,8 +5380,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": 0,
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3070,9 +5390,44 @@
       "surveyorName": "유희정",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800553&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800553&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "sq12BuildingName": "IU아이유빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "IU아이유빌딩",
+      "surveyCompleted": "완료"
     },
     {
       "index": 7,
@@ -3096,7 +5451,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3107,7 +5462,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800555&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "삼전동 썬프라자",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "삼전동 썬프라자"
     },
     {
       "index": 8,
@@ -3131,7 +5520,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3142,7 +5531,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800557&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "레미안빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "레미안빌딩"
     },
     {
       "index": 9,
@@ -3166,7 +5589,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3177,7 +5600,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800558&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "에이스빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "에이스빌딩"
     },
     {
       "index": 10,
@@ -3201,7 +5658,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3212,7 +5669,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800562&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "BNK올림픽센터",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "BNK올림픽센터"
     },
     {
       "index": 11,
@@ -3236,7 +5727,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3247,7 +5738,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800563&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "쿠피아타워(CUPIA TOWER)",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "쿠피아타워(CUPIA TOWER)"
     },
     {
       "index": 12,
@@ -3270,8 +5795,8 @@
       "address": "서울 송파구",
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": 0,
+      "lastContactStatus": "5. 적격응답자 부재",
+      "contactCount": "1",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3282,7 +5807,40 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800548&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 13,
@@ -3306,7 +5864,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3317,7 +5875,40 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800550&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 14,
@@ -3341,7 +5932,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3352,7 +5943,40 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800551&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 15,
@@ -3376,7 +6000,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3387,7 +6011,40 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800552&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 16,
@@ -3411,7 +6068,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -3422,7 +6079,40 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800565&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 17,
@@ -3446,7 +6136,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -3457,7 +6147,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800798&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "이안과 빌딩",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "MD",
+      "expectedTypeDesc": "메디컬빌딩(근생)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 900,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "이안과 빌딩"
     },
     {
       "index": 18,
@@ -3480,8 +6204,8 @@
       "address": "서울 구로구",
       "handledItems": "제2종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": 0,
+      "lastContactStatus": "5. 적격응답자 부재",
+      "contactCount": "1",
       "quotaCode1": "1002",
       "quotaCode2": "1001",
       "memo": "",
@@ -3492,7 +6216,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=801374&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "부영빌딩",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "부영빌딩"
     },
     {
       "index": 19,
@@ -3516,7 +6274,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1002",
       "quotaCode2": "1001",
       "memo": "",
@@ -3527,7 +6285,40 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=801375&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true
     },
     {
       "index": 20,
@@ -3551,7 +6342,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -3562,7 +6353,42 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=801773&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "34동",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "34동"
     },
     {
       "index": 21,
@@ -3586,7 +6412,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -3597,7 +6423,42 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=801774&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "해원리버파크",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "해원리버파크"
     },
     {
       "index": 22,
@@ -3621,7 +6482,7 @@
       "handledItems": "판매시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -3632,7 +6493,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802353&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "씨블럭동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "씨블럭동"
     },
     {
       "index": 23,
@@ -3656,7 +6551,7 @@
       "handledItems": "판매시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -3667,7 +6562,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802358&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "중앙구로하이츠 상가동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "중앙구로하이츠 상가동"
     },
     {
       "index": 24,
@@ -3691,7 +6620,7 @@
       "handledItems": "판매시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -3702,7 +6631,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802354&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "비블럭동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "비블럭동"
     },
     {
       "index": 25,
@@ -3726,7 +6689,7 @@
       "handledItems": "판매시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -3737,7 +6700,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802355&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "디블럭동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "디블럭동"
     },
     {
       "index": 26,
@@ -3761,7 +6758,7 @@
       "handledItems": "판매시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -3772,7 +6769,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802356&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "에이블럭동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "에이블럭동"
     },
     {
       "index": 27,
@@ -3795,8 +6826,8 @@
       "address": "서울 구로구",
       "handledItems": "판매시설",
       "mainProducts": "3,000-5,000㎡",
-      "lastContactStatus": "",
-      "contactCount": 0,
+      "lastContactStatus": "5. 적격응답자 부재",
+      "contactCount": "1",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -3807,7 +6838,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802357&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "구로유통상가 B동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G1",
+      "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "구로유통상가 B동"
     },
     {
       "index": 28,
@@ -3831,7 +6896,7 @@
       "handledItems": "판매시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1002",
       "memo": "",
@@ -3842,7 +6907,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802514&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true
     },
     {
       "index": 29,
@@ -3866,7 +6965,7 @@
       "handledItems": "판매시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1002",
       "memo": "",
@@ -3877,7 +6976,42 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802513&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "극동상가",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "극동상가"
     },
     {
       "index": 30,
@@ -3901,7 +7035,7 @@
       "handledItems": "판매시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1003",
       "memo": "",
@@ -3912,7 +7046,42 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802645&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "라이프공구종합상가",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "라이프공구종합상가"
     },
     {
       "index": 31,
@@ -3936,7 +7105,7 @@
       "handledItems": "판매시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1003",
       "memo": "",
@@ -3947,7 +7116,42 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802646&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "구로유통상가 A동",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로유통상가 A동"
     },
     {
       "index": 32,
@@ -3960,7 +7164,7 @@
       "buildingName": "신도림테크노마트",
       "ceoName": "이대구",
       "contactName": "이대구",
-      "phone": "",
+      "phone": "010-4501-3548",
       "sampleType": "전수층",
       "industry": "판매시설",
       "mainUse": "판매시설",
@@ -3971,7 +7175,7 @@
       "handledItems": "판매시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -3982,7 +7186,46 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802778&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "신도림테크노마트",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "RT",
+      "expectedTypeDesc": "백화점·대형마트·아울렛",
+      "isPublicOrSchool": false,
+      "a51Raw": "① 중앙+개별 모두 이용",
+      "a51Code": "1",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+      "b11Codes": [
+        "1",
+        "6"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+      "c52Codes": [
+        "3",
+        "5",
+        "7"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 12000,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "신도림테크노마트"
     },
     {
       "index": 33,
@@ -3995,7 +7238,7 @@
       "buildingName": "NC백화점",
       "ceoName": "이상호",
       "contactName": "이상호",
-      "phone": "",
+      "phone": "010-5361-3974",
       "sampleType": "전수층",
       "industry": "판매시설",
       "mainUse": "판매시설",
@@ -4006,7 +7249,7 @@
       "handledItems": "판매시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -4017,7 +7260,46 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=802779&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "NC백화점",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "RT",
+      "expectedTypeDesc": "백화점·대형마트·아울렛",
+      "isPublicOrSchool": false,
+      "a51Raw": "① 중앙+개별 모두 이용",
+      "a51Code": "1",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+      "b11Codes": [
+        "1",
+        "6"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+      "c52Codes": [
+        "3",
+        "5",
+        "7"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 12000,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "NC백화점"
     },
     {
       "index": 34,
@@ -4030,7 +7312,7 @@
       "buildingName": "고려 수 타워",
       "ceoName": "송기섭",
       "contactName": "송기섭",
-      "phone": "",
+      "phone": "010-6619-2904",
       "sampleType": "예비표본",
       "industry": "의료시설",
       "mainUse": "의료시설",
@@ -4041,7 +7323,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -4052,7 +7334,43 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=803061&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "고려 수 타워",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "H2",
+      "expectedTypeDesc": "병원 중형",
+      "isPublicOrSchool": false,
+      "a51Raw": "① 중앙+개별 모두 이용",
+      "a51Code": "1",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+      "b11Codes": [
+        "5",
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1150,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "고려 수 타워"
     },
     {
       "index": 35,
@@ -4065,7 +7383,7 @@
       "buildingName": "삼전 솔하임",
       "ceoName": "서영수",
       "contactName": "서영수",
-      "phone": "",
+      "phone": "010-2419-7281",
       "sampleType": "예비표본",
       "industry": "의료시설",
       "mainUse": "의료시설",
@@ -4076,7 +7394,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -4087,7 +7405,43 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=803062&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "삼전 솔하임",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "H2",
+      "expectedTypeDesc": "병원 중형",
+      "isPublicOrSchool": false,
+      "a51Raw": "① 중앙+개별 모두 이용",
+      "a51Code": "1",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+      "b11Codes": [
+        "5",
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1150,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "삼전 솔하임"
     },
     {
       "index": 36,
@@ -4100,7 +7454,7 @@
       "buildingName": "제중요양병원",
       "ceoName": "권혁만",
       "contactName": "권혁만",
-      "phone": "",
+      "phone": "010-8140-1937",
       "sampleType": "예비표본",
       "industry": "의료시설",
       "mainUse": "의료시설",
@@ -4111,7 +7465,7 @@
       "handledItems": "의료시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1005",
       "quotaCode2": "1003",
       "memo": "",
@@ -4122,7 +7476,43 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=803166&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "제중요양병원",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "H2",
+      "expectedTypeDesc": "병원 중형",
+      "isPublicOrSchool": false,
+      "a51Raw": "① 중앙+개별 모두 이용",
+      "a51Code": "1",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+      "b11Codes": [
+        "5",
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 2250,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "제중요양병원"
     },
     {
       "index": 37,
@@ -4135,7 +7525,7 @@
       "buildingName": "학교법인초당학원",
       "ceoName": "황병수",
       "contactName": "황병수",
-      "phone": "",
+      "phone": "010-5729-4926",
       "sampleType": "본표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -4146,7 +7536,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -4157,7 +7547,42 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=803913&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "학교법인초당학원",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "SC",
+      "expectedTypeDesc": "초중고 학교",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설",
+      "t41Codes": [
+        "1"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "4.신재생에너지 지원사업, 6.그린리모델링(그린스마트미래학교)",
+      "c52Codes": [
+        "4",
+        "6"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 250,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "학교법인초당학원"
     },
     {
       "index": 38,
@@ -4170,7 +7595,7 @@
       "buildingName": "화원종합사회복지관",
       "ceoName": "이청길",
       "contactName": "이청길",
-      "phone": "",
+      "phone": "010-8319-8635",
       "sampleType": "예비표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -4181,7 +7606,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -4192,7 +7617,44 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=803912&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "화원종합사회복지관",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "PB",
+      "expectedTypeDesc": "공공 문화·집회·복지시설",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 방재실",
+      "t41Codes": [
+        "1",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO, 4.신재생에너지 지원사업, 6.그린리모델링",
+      "c52Codes": [
+        "3",
+        "4",
+        "6"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "화원종합사회복지관"
     },
     {
       "index": 39,
@@ -4205,7 +7667,7 @@
       "buildingName": "서울현대교육재단",
       "ceoName": "구본영",
       "contactName": "구본영",
-      "phone": "",
+      "phone": "010-1548-4983",
       "sampleType": "예비표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -4216,7 +7678,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -4227,7 +7689,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=803914&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "서울현대교육재단",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "UN",
+      "expectedTypeDesc": "대학·교회·교육재단 등",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설",
+      "t41Codes": [
+        "1"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO",
+      "c52Codes": [
+        "3"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 400,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "서울현대교육재단"
     },
     {
       "index": 40,
@@ -4240,7 +7736,7 @@
       "buildingName": "구로초등학교",
       "ceoName": "이창율",
       "contactName": "이창율",
-      "phone": "",
+      "phone": "010-2386-2137",
       "sampleType": "예비표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -4251,7 +7747,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -4262,7 +7758,42 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=805105&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "구로초등학교",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "SC",
+      "expectedTypeDesc": "초중고 학교",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설",
+      "t41Codes": [
+        "1"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "4.신재생에너지 지원사업, 6.그린리모델링(그린스마트미래학교)",
+      "c52Codes": [
+        "4",
+        "6"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로초등학교"
     },
     {
       "index": 41,
@@ -4275,7 +7806,7 @@
       "buildingName": "구로초등학교",
       "ceoName": "최승관",
       "contactName": "최승관",
-      "phone": "",
+      "phone": "010-7564-8266",
       "sampleType": "예비표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -4286,7 +7817,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -4297,7 +7828,42 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=806102&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "구로초등학교",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "SC",
+      "expectedTypeDesc": "초중고 학교",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설",
+      "t41Codes": [
+        "1"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "4.신재생에너지 지원사업, 6.그린리모델링(그린스마트미래학교)",
+      "c52Codes": [
+        "4",
+        "6"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 1000,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로초등학교"
     },
     {
       "index": 42,
@@ -4310,7 +7876,7 @@
       "buildingName": "",
       "ceoName": "김종빈",
       "contactName": "김종빈",
-      "phone": "",
+      "phone": "010-2380-3638",
       "sampleType": "예비표본",
       "industry": "교육연구시설",
       "mainUse": "교육연구시설",
@@ -4321,7 +7887,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -4332,7 +7898,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=806103&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "SC",
+      "expectedTypeDesc": "초중고 학교",
+      "isPublicOrSchool": true,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설",
+      "t41Codes": [
+        "1"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "4.신재생에너지 지원사업, 6.그린리모델링(그린스마트미래학교)",
+      "c52Codes": [
+        "4",
+        "6"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 1000,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true
     },
     {
       "index": 43,
@@ -4345,7 +7945,7 @@
       "buildingName": "",
       "ceoName": "선우갑",
       "contactName": "선우갑",
-      "phone": "",
+      "phone": "010-8143-4353",
       "sampleType": "본표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4356,7 +7956,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4367,7 +7967,40 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=807075&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true
     },
     {
       "index": 44,
@@ -4380,7 +8013,7 @@
       "buildingName": "조일뉴타워",
       "ceoName": "이상열",
       "contactName": "이상열",
-      "phone": "",
+      "phone": "010-8172-9804",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4391,7 +8024,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4402,7 +8035,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=807069&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "조일뉴타워",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "조일뉴타워"
     },
     {
       "index": 45,
@@ -4415,7 +8082,7 @@
       "buildingName": "스위트팰리스오피스텔",
       "ceoName": "박윤상",
       "contactName": "박윤상",
-      "phone": "",
+      "phone": "010-7923-4638",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4426,7 +8093,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4437,7 +8104,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=807070&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "스위트팰리스오피스텔",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 300,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "스위트팰리스오피스텔"
     },
     {
       "index": 46,
@@ -4450,7 +8151,7 @@
       "buildingName": "하이빌골드타워 A동",
       "ceoName": "신재권",
       "contactName": "신재권",
-      "phone": "",
+      "phone": "010-3910-3289",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4461,7 +8162,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4472,7 +8173,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=807071&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "하이빌골드타워 A동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 300,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "하이빌골드타워 A동"
     },
     {
       "index": 47,
@@ -4496,7 +8231,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4507,7 +8242,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=807077&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "구로유통상가 C동",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "구로유통상가 C동"
     },
     {
       "index": 48,
@@ -4531,7 +8300,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4542,7 +8311,40 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=807073&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 49,
@@ -4566,7 +8368,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -4577,7 +8379,40 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=807074&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 4000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false
     },
     {
       "index": 50,
@@ -4590,7 +8425,7 @@
       "buildingName": "하나세인스톤3차",
       "ceoName": "이상병",
       "contactName": "이상병",
-      "phone": "",
+      "phone": "010-2387-9276",
       "sampleType": "본표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4601,7 +8436,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -4612,7 +8447,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=808483&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "하나세인스톤3차",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 950,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "하나세인스톤3차"
     },
     {
       "index": 51,
@@ -4625,7 +8494,7 @@
       "buildingName": "신도림 로제리움",
       "ceoName": "박재인",
       "contactName": "박재인",
-      "phone": "",
+      "phone": "010-5721-5293",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4636,7 +8505,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -4647,7 +8516,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=808480&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "신도림 로제리움",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 550,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "신도림 로제리움"
     },
     {
       "index": 52,
@@ -4660,7 +8563,7 @@
       "buildingName": "은산빌딩",
       "ceoName": "한규훈",
       "contactName": "한규훈",
-      "phone": "",
+      "phone": "010-2423-4539",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4671,7 +8574,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -4682,7 +8585,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=808504&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "은산빌딩",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 950,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "은산빌딩"
     },
     {
       "index": 53,
@@ -4695,7 +8632,7 @@
       "buildingName": "구로한성상가 B동",
       "ceoName": "김형필",
       "contactName": "김형필",
-      "phone": "",
+      "phone": "010-5810-5604",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4706,7 +8643,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -4717,7 +8654,42 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=808506&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "구로한성상가 B동",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로한성상가 B동"
     },
     {
       "index": 54,
@@ -4730,7 +8702,7 @@
       "buildingName": "한성상가A동 A동",
       "ceoName": "김영운",
       "contactName": "김영운",
-      "phone": "",
+      "phone": "010-5731-4539",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4741,7 +8713,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -4752,7 +8724,42 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=808507&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "한성상가A동 A동",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "G2",
+      "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 750,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "한성상가A동 A동"
     },
     {
       "index": 55,
@@ -4765,7 +8772,7 @@
       "buildingName": "",
       "ceoName": "최조연",
       "contactName": "최조연",
-      "phone": "",
+      "phone": "010-4931-5943",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4776,7 +8783,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -4787,7 +8794,40 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=808482&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "없음",
+      "estimatedGrossAreaM2": 7500,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF1",
+      "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 950,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true
     },
     {
       "index": 56,
@@ -4800,7 +8840,7 @@
       "buildingName": "구로에스케이뷰 비동",
       "ceoName": "조경현",
       "contactName": "조경현",
-      "phone": "",
+      "phone": "010-9469-6389",
       "sampleType": "본표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4811,7 +8851,7 @@
       "handledItems": "업무시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -4822,7 +8862,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=809769&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "구로에스케이뷰 비동",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1150,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로에스케이뷰 비동"
     },
     {
       "index": 57,
@@ -4835,7 +8909,7 @@
       "buildingName": "스타팰리스",
       "ceoName": "전효상",
       "contactName": "전효상",
-      "phone": "",
+      "phone": "010-5964-6907",
       "sampleType": "본표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4846,7 +8920,7 @@
       "handledItems": "업무시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -4857,7 +8931,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=809771&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "스타팰리스",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 1150,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "스타팰리스"
     },
     {
       "index": 58,
@@ -4881,7 +8989,7 @@
       "handledItems": "업무시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -4892,7 +9000,43 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=809758&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "비즈트위트 오렌지",
+      "estimatedGrossAreaM2": 16000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OF2",
+      "expectedTypeDesc": "업무빌딩 중대형(1만~3만㎡)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "7.DR",
+      "c52Codes": [
+        "7"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "태양광",
+      "t71Codes": [
+        "1",
+        "10"
+      ],
+      "contractPowerKw": 2000,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": false,
+      "siteBuildingName": "비즈트위트 오렌지"
     },
     {
       "index": 59,
@@ -4905,7 +9049,7 @@
       "buildingName": "SK허브수 B동",
       "ceoName": "백인수",
       "contactName": "백인수",
-      "phone": "",
+      "phone": "010-8413-5808",
       "sampleType": "예비표본",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4916,7 +9060,7 @@
       "handledItems": "업무시설",
       "mainProducts": "30,000-50,000㎡",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1004",
       "memo": "",
@@ -4927,7 +9071,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=810548&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "SK허브수 B동",
+      "estimatedGrossAreaM2": 38000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 3000,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "SK허브수 B동"
     },
     {
       "index": 60,
@@ -4940,7 +9118,7 @@
       "buildingName": "구로동복합건물OPUS1",
       "ceoName": "이정우",
       "contactName": "이정우",
-      "phone": "",
+      "phone": "010-3976-5761",
       "sampleType": "전수층",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4951,7 +9129,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -4962,7 +9140,45 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=810817&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "구로동복합건물OPUS1",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OL",
+      "expectedTypeDesc": "대형 오피스(서울 도심 등)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO, 7.DR (2020년 이후 준공이면 2.ZEB 인증 확인)",
+      "c52Codes": [
+        "3",
+        "7"
+      ],
+      "zebCheckAfter2020": true,
+      "renewableRaw": "태양광, 지열",
+      "t71Codes": [
+        "1",
+        "3",
+        "10"
+      ],
+      "contractPowerKw": 7500,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": true,
+      "siteBuildingName": "구로동복합건물OPUS1"
     },
     {
       "index": 61,
@@ -4975,7 +9191,7 @@
       "buildingName": "한강로벽산메가트리움",
       "ceoName": "박태구",
       "contactName": "박태구",
-      "phone": "",
+      "phone": "010-6537-6829",
       "sampleType": "전수층",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -4986,7 +9202,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -4997,7 +9213,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=810759&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "한강로벽산메가트리움",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 4500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "한강로벽산메가트리움"
     },
     {
       "index": 62,
@@ -5010,7 +9260,7 @@
       "buildingName": "아스테리움 용산",
       "ceoName": "진종철",
       "contactName": "진종철",
-      "phone": "",
+      "phone": "010-5649-9316",
       "sampleType": "전수층",
       "industry": "업무시설",
       "mainUse": "업무시설",
@@ -5021,7 +9271,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -5032,7 +9282,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=810760&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "아스테리움 용산",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 4500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": true,
+      "siteBuildingName": "아스테리움 용산"
     },
     {
       "index": 63,
@@ -5056,7 +9340,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -5067,7 +9351,41 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=810761&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "용산푸르지오써밋",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OT",
+      "expectedTypeDesc": "오피스텔·주상복합",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설",
+      "t41Codes": [
+        "1",
+        "2"
+      ],
+      "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "없음 (참여 안함)",
+      "c52Codes": [
+        "9"
+      ],
+      "zebCheckAfter2020": false,
+      "renewableRaw": "없음",
+      "t71Codes": [
+        "10"
+      ],
+      "contractPowerKw": 4500,
+      "d21Raw": "사용하지 않는다",
+      "d21UseGas": "2",
+      "guideFromSheet": false,
+      "siteBuildingName": "용산푸르지오써밋"
     },
     {
       "index": 64,
@@ -5091,7 +9409,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "",
-      "contactCount": 0,
+      "contactCount": "0",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -5102,8 +9420,45 @@
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=810762&page=1",
       "status": "대기",
       "quotaStatus": "ready",
-      "progress": "0%"
+      "progress": "0%",
+      "siteStatus": "",
+      "sq12BuildingName": "아모레퍼시픽",
+      "estimatedGrossAreaM2": 60000,
+      "roadAddress": "",
+      "jibunAddress": "",
+      "expectedTypeCode": "OL",
+      "expectedTypeDesc": "대형 오피스(서울 도심 등)",
+      "isPublicOrSchool": false,
+      "a51Raw": "③ 개별방식",
+      "a51Code": "3",
+      "t41Raw": "식음료시설, 판매시설, 방재실",
+      "t41Codes": [
+        "1",
+        "2",
+        "10"
+      ],
+      "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+      "b11Codes": [
+        "4"
+      ],
+      "hotWaterOnlyBoiler": false,
+      "c52Raw": "3.ESCO, 7.DR (2020년 이후 준공이면 2.ZEB 인증 확인)",
+      "c52Codes": [
+        "3",
+        "7"
+      ],
+      "zebCheckAfter2020": true,
+      "renewableRaw": "태양광, 지열",
+      "t71Codes": [
+        "1",
+        "3",
+        "10"
+      ],
+      "contractPowerKw": 7500,
+      "d21Raw": "사용한다",
+      "d21UseGas": "1",
+      "guideFromSheet": false,
+      "siteBuildingName": "아모레퍼시픽"
     }
-  ],
-  "updatedAt": "2026-11-10T02:37:55.198Z"
+  ]
 }

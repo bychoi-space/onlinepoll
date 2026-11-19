@@ -3,6 +3,10 @@
  */
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { writeJsonAtomicSync } from '../utils/atomic-file.js';
+
+const __seederDir = path.dirname(fileURLToPath(import.meta.url));
 
 export function seedInitialCampaigns({
   CampaignStore,
@@ -68,8 +72,40 @@ export function seedInitialCampaigns({
         surveyorName: '유희정',
         title: '2025년 기준 에너지총조사 [건물] - 701494 (유희정 / 선정 47건)',
         description: '한국리서치 TAPI(2026-89-0342C) 건물 부문 조사 · 서울 구로구·송파구·용산구 (선정 47건 / 대체 17건 · 기입력 보존)'
+      },
+      {
+        id: 'camp_hrc_energy_700193',
+        loginId: '700193',
+        surveyorName: '강영미',
+        title: '2025년 기준 에너지총조사 [건물] - 700193 (강영미 / 선정 5건 · 전체 15건)',
+        description: '한국리서치 TAPI(2026-89-0342C) 건물 부문 조사 · 서울 노원구 (선정 5건 / 대체 10건 · 구글시트 가이드 연동)'
+      },
+      {
+        id: 'camp_hrc_energy_700189',
+        loginId: '700189',
+        surveyorName: '김정례',
+        title: '2025년 기준 에너지총조사 [건물] - 700189 (김정례 / 선정 15건 · 전체 25건)',
+        description: '한국리서치 TAPI(2026-89-0342C) 건물 부문 조사 · 경기 남양주시 (선정 15건 / 대체 10건 · 구글시트 가이드 연동)'
       }
     ];
+
+    const GUIDE_SYNC_KEYS = [
+      'sq12BuildingName', 'expectedTypeCode', 'expectedTypeDesc', 'isPublicOrSchool',
+      'a51Raw', 'a51Code', 't41Raw', 't41Codes', 'b11Raw', 'b11Codes', 'hotWaterOnlyBoiler',
+      'c52Raw', 'c52Codes', 'zebCheckAfter2020', 'renewableRaw', 't71Codes',
+      'contractPowerKw', 'd21Raw', 'd21UseGas', 'estimatedGrossAreaM2', 'guideFromSheet',
+      'selectionType', 'cellPriority', 'cellKey', 'quotaCode1', 'quotaCode2'
+    ];
+
+    let sheetGuideOverlay = {};
+    try {
+      const overlayPath = path.join(__seederDir, 'hrc-energy-sheet-guides.json');
+      if (fs.existsSync(overlayPath)) {
+        sheetGuideOverlay = JSON.parse(fs.readFileSync(overlayPath, 'utf-8'));
+      }
+    } catch (overlayErr) {
+      console.warn('[CampaignSeeder] HRC 가이드 오버레이 로드 경고:', overlayErr.message);
+    }
 
     const currentCamps = CampaignStore.getAllCampaigns();
     for (const spec of hrcSeedSpecs) {
@@ -82,8 +118,30 @@ export function seedInitialCampaigns({
           const qContent = JSON.parse(fs.readFileSync(qPath, 'utf-8'));
           quotaSourceFile = path.basename(qPath);
           const rawList = qContent.data || qContent.items || [];
+          let diskQuotaModified = false;
           quotaDb = rawList.map((item, idx) => {
             const uidStr = String(item.uid || '').trim();
+            const guideEntry = sheetGuideOverlay[uidStr];
+            if (guideEntry) {
+              for (const gk of GUIDE_SYNC_KEYS) {
+                if (guideEntry[gk] !== undefined && JSON.stringify(item[gk]) !== JSON.stringify(guideEntry[gk])) {
+                  item[gk] = guideEntry[gk];
+                  diskQuotaModified = true;
+                }
+              }
+              if (guideEntry.buildingName && item.buildingName !== guideEntry.buildingName) {
+                item.buildingName = guideEntry.buildingName;
+                diskQuotaModified = true;
+              }
+              if (guideEntry.roadAddress && !item.roadAddress) {
+                item.roadAddress = guideEntry.roadAddress;
+                diskQuotaModified = true;
+              }
+              if (guideEntry.jibunAddress && !item.jibunAddress) {
+                item.jibunAddress = guideEntry.jibunAddress;
+                diskQuotaModified = true;
+              }
+            }
             const isDone = (['800715', '800164', '800173'].includes(uidStr) || item.status === '완료' || item.quotaStatus === 'completed');
             return {
               ...item,
@@ -98,6 +156,12 @@ export function seedInitialCampaigns({
               progress: isDone ? '100%' : (item.progress || '0%')
             };
           });
+          if (diskQuotaModified) {
+            qContent.data = rawList;
+            qContent.items = rawList;
+            qContent.updatedAt = new Date().toISOString();
+            writeJsonAtomicSync(qPath, qContent);
+          }
         } catch (err) {
           console.warn(`[CampaignSeeder] HRC 에너지총조사(${spec.loginId}) 쿼터 시드 로드 경고:`, err.message);
         }
@@ -122,31 +186,50 @@ export function seedInitialCampaigns({
           existingCamp.quotaDatabase = quotaDb;
           existingCamp.quotaSourceFile = quotaSourceFile;
           needUpdate = true;
-        } else {
+        } else if (quotaDb.length > 0) {
+          const existingByUid = new Map(
+            existingCamp.quotaDatabase.map(q => [String(q.uid || '').trim(), q])
+          );
           for (const qItem of quotaDb) {
-            if (qItem.quotaStatus === 'completed') {
-              const target = existingCamp.quotaDatabase.find(q => String(q.uid || '').trim() === String(qItem.uid || '').trim());
-              if (target && (target.quotaStatus !== 'completed' || (qItem.buildingName && !target.buildingName))) {
-                if (qItem.buildingName) {
-                  target.buildingName = qItem.buildingName;
-                  target.companyName = qItem.buildingName;
-                }
-                if (qItem.roadAddress) {
-                  target.roadAddress = qItem.roadAddress;
-                }
-                target.status = '완료';
-                target.quotaStatus = 'completed';
-                target.progress = '100%';
-                target.surveyCompleted = '완료';
+            const uidStr = String(qItem.uid || '').trim();
+            const target = existingByUid.get(uidStr);
+            if (!target) {
+              existingCamp.quotaDatabase.push(qItem);
+              needUpdate = true;
+              continue;
+            }
+            for (const gk of GUIDE_SYNC_KEYS) {
+              if (qItem[gk] !== undefined && JSON.stringify(target[gk]) !== JSON.stringify(qItem[gk])) {
+                target[gk] = qItem[gk];
                 needUpdate = true;
               }
             }
+            if (qItem.buildingName && target.buildingName !== qItem.buildingName) {
+              target.buildingName = qItem.buildingName;
+              target.companyName = qItem.buildingName;
+              needUpdate = true;
+            }
+            if (qItem.roadAddress && !target.roadAddress) {
+              target.roadAddress = qItem.roadAddress;
+              needUpdate = true;
+            }
+            if (qItem.jibunAddress && !target.jibunAddress) {
+              target.jibunAddress = qItem.jibunAddress;
+              needUpdate = true;
+            }
+            if (qItem.quotaStatus === 'completed' && target.quotaStatus !== 'completed') {
+              target.status = '완료';
+              target.quotaStatus = 'completed';
+              target.progress = '100%';
+              target.surveyCompleted = '완료';
+              needUpdate = true;
+            }
           }
         }
-        if (needUpdate) {
+        if (needUpdate || existingCamp.quotaSourceFile !== quotaSourceFile) {
           CampaignStore.updateCampaign(existingCamp.id, {
             quotaDatabase: existingCamp.quotaDatabase,
-            quotaSourceFile: existingCamp.quotaSourceFile || quotaSourceFile
+            quotaSourceFile: quotaSourceFile || existingCamp.quotaSourceFile
           });
         }
       }

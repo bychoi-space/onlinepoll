@@ -13,7 +13,7 @@ import {
   renderKonaBlueprint,
   renderHrcEnergyBlueprint,
   renderGallupReturnFarmBlueprint
-} from './modules/blueprint-gallup-hrc-kona.js';
+} from './modules/blueprint-gallup-hrc-kona.js?v=20261119_hrc_guide_v2';
 import {
   PRESET_STANDARD,
   PRESET_GROWTH,
@@ -31,7 +31,7 @@ import {
   renderMetrixQuotaTable,
   renderMetrixSeoulQuotaTable,
   renderAssocQuotaTable
-} from './modules/quota-table-renderers.js';
+} from './modules/quota-table-renderers.js?v=20261119_hrc_guide_v2';
 import {
   showToast,
   showConfirmModal,
