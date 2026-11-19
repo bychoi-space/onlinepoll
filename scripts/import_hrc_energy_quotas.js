@@ -541,6 +541,72 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
     });
   }
 
+  // src/config/hrc-energy-sheet-guides.json 통합 오버레이 자동 갱신 (contactName·phone·수령증 서명 상태 보존)
+  const overlayPath = path.join(rootDir, 'src', 'config', 'hrc-energy-sheet-guides.json');
+  let prevOverlay = {};
+  if (fs.existsSync(overlayPath)) {
+    try {
+      prevOverlay = JSON.parse(fs.readFileSync(overlayPath, 'utf-8'));
+    } catch (_) {}
+  }
+  const nextOverlay = { ...prevOverlay };
+  for (const s of summary) {
+    const qData = JSON.parse(fs.readFileSync(path.join(quotasDir, s.jsonFile), 'utf-8'));
+    const arr = qData.items || qData.data || [];
+    for (const it of arr) {
+      const uid = String(it.uid || '').trim();
+      if (!uid) continue;
+      const prevEntry = prevOverlay[uid] || {};
+      const entry = {
+        buildingName: it.buildingName || '',
+        contactName: it.contactName || prevEntry.contactName || '',
+        phone: it.phone || prevEntry.phone || '',
+        sampleType: it.sampleType || prevEntry.sampleType || '',
+        mainUse: it.mainUse || prevEntry.mainUse || '',
+        areaScale: it.areaScale || prevEntry.areaScale || '',
+        sido: it.sido || prevEntry.sido || '',
+        sigungu: it.sigungu || prevEntry.sigungu || '',
+        memo: it.memo || prevEntry.memo || '',
+        roadAddress: it.roadAddress || prevEntry.roadAddress || '',
+        jibunAddress: it.jibunAddress || prevEntry.jibunAddress || '',
+        sq12BuildingName: it.sq12BuildingName || '없음',
+        expectedTypeCode: it.expectedTypeCode,
+        expectedTypeDesc: it.expectedTypeDesc,
+        isPublicOrSchool: Boolean(it.isPublicOrSchool),
+        a51Raw: it.a51Raw,
+        a51Code: it.a51Code,
+        t41Raw: it.t41Raw,
+        t41Codes: it.t41Codes,
+        b11Raw: it.b11Raw,
+        b11Codes: it.b11Codes,
+        hotWaterOnlyBoiler: Boolean(it.hotWaterOnlyBoiler),
+        c52Raw: it.c52Raw,
+        c52Codes: it.c52Codes,
+        zebCheckAfter2020: Boolean(it.zebCheckAfter2020),
+        renewableRaw: it.renewableRaw,
+        t71Codes: it.t71Codes,
+        contractPowerKw: it.contractPowerKw,
+        d21Raw: it.d21Raw,
+        d21UseGas: it.d21UseGas,
+        estimatedGrossAreaM2: it.estimatedGrossAreaM2,
+        guideFromSheet: Boolean(it.guideFromSheet),
+        selectionType: it.selectionType,
+        cellPriority: it.cellPriority,
+        cellKey: it.cellKey,
+        quotaCode1: it.quotaCode1,
+        quotaCode2: it.quotaCode2
+      };
+      const isDone = it.quotaStatus === 'completed' || it.status === '완료' || prevEntry.quotaStatus === 'completed';
+      if (isDone) entry.quotaStatus = 'completed';
+      for (const gk of ['giftSigned', 'giftBrand', 'giftValue', 'giftSignerName', 'giftSignerPhone', 'giftStyleLabel']) {
+        const gv = it[gk] !== undefined ? it[gk] : prevEntry[gk];
+        if (gv !== undefined) entry[gk] = gv;
+      }
+      nextOverlay[uid] = entry;
+    }
+  }
+  fs.writeFileSync(overlayPath, JSON.stringify(nextOverlay, null, 2), 'utf-8');
+
   return summary;
 }
 

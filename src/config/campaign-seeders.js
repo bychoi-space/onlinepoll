@@ -4,6 +4,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import * as XLSX from 'xlsx';
 import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 
 const __seederDir = path.dirname(fileURLToPath(import.meta.url));
@@ -130,6 +131,14 @@ export function seedInitialCampaigns({
                   diskQuotaModified = true;
                 }
               }
+              for (const nonEmptyKey of ['contactName', 'phone', 'mainUse', 'areaScale', 'sido', 'sigungu', 'sampleType', 'memo']) {
+                if (guideEntry[nonEmptyKey] && item[nonEmptyKey] !== guideEntry[nonEmptyKey]) {
+                  item[nonEmptyKey] = guideEntry[nonEmptyKey];
+                  if (nonEmptyKey === 'mainUse') item.industry = guideEntry.mainUse;
+                  if (nonEmptyKey === 'contactName' && !item.giftSigned) item.ceoName = guideEntry.contactName;
+                  diskQuotaModified = true;
+                }
+              }
               if (guideEntry.buildingName && item.buildingName !== guideEntry.buildingName) {
                 item.buildingName = guideEntry.buildingName;
                 diskQuotaModified = true;
@@ -170,6 +179,40 @@ export function seedInitialCampaigns({
             qContent.items = rawList;
             qContent.updatedAt = new Date().toISOString();
             writeJsonAtomicSync(qPath, qContent);
+            try {
+              const xlsxPath = qPath.replace(/\.json$/i, '.xlsx');
+              const excelRows = rawList.map(it => ({
+                '번호': it.seq,
+                '선정구분': it.selectionType,
+                '셀내우선순위': it.cellPriority,
+                'UID': it.uid,
+                '건물명(SQ12)': it.sq12BuildingName || it.buildingName || '없음',
+                '이름': it.contactName || '',
+                '전화번호': it.phone || '',
+                '표본구분': it.sampleType || '',
+                '주용도': it.mainUse || '',
+                '면적규모': it.areaScale || '',
+                '시도': it.sido || '',
+                '시군구': it.sigungu || '',
+                'A5-1(공조방식)': it.a51Raw || '',
+                'T41(입점시설)': it.t41Raw || '',
+                'B1-1(설비현황)': it.b11Raw || '',
+                'C5-2(효율개선)': it.c52Raw || '',
+                '신재생에너지': it.renewableRaw || '',
+                '계약전력(kW)': it.contractPowerKw || '',
+                'D2-1(도시가스)': it.d21Raw || '',
+                '예상유형': it.expectedTypeCode || '',
+                '조사원ID': it.surveyorAccount || spec.loginId,
+                '진행률': it.progress || '0%',
+                '설문상태': it.quotaStatus || 'ready'
+              }));
+              const newWb = XLSX.utils.book_new();
+              const newWs = XLSX.utils.json_to_sheet(excelRows);
+              XLSX.utils.book_append_sheet(newWb, newWs, '건물쿼터');
+              fs.writeFileSync(xlsxPath, XLSX.write(newWb, { type: 'buffer', bookType: 'xlsx' }));
+            } catch (xlsxErr) {
+              console.warn(`[CampaignSeeder] HRC 엑셀 동기화 경고(${spec.loginId}):`, xlsxErr.message);
+            }
           }
         } catch (err) {
           console.warn(`[CampaignSeeder] HRC 에너지총조사(${spec.loginId}) 쿼터 시드 로드 경고:`, err.message);
@@ -210,6 +253,14 @@ export function seedInitialCampaigns({
             for (const gk of GUIDE_SYNC_KEYS) {
               if (qItem[gk] !== undefined && JSON.stringify(target[gk]) !== JSON.stringify(qItem[gk])) {
                 target[gk] = qItem[gk];
+                needUpdate = true;
+              }
+            }
+            for (const nonEmptyKey of ['contactName', 'phone', 'mainUse', 'areaScale', 'sido', 'sigungu', 'sampleType', 'memo']) {
+              if (qItem[nonEmptyKey] && target[nonEmptyKey] !== qItem[nonEmptyKey]) {
+                target[nonEmptyKey] = qItem[nonEmptyKey];
+                if (nonEmptyKey === 'mainUse') target.industry = qItem.mainUse;
+                if (nonEmptyKey === 'contactName' && !target.giftSigned) target.ceoName = qItem.contactName;
                 needUpdate = true;
               }
             }
