@@ -27,11 +27,14 @@ import {
   renderGallupQuotaTable,
   renderGlobalriQuotaTable,
   renderHrcEnergyQuotaTable,
+  renderHrcStep3MainUsePanel,
+  getHrcItemMainUse,
+  isHrcItemDone,
   renderKonaQuotaTable,
   renderMetrixQuotaTable,
   renderMetrixSeoulQuotaTable,
   renderAssocQuotaTable
-} from './modules/quota-table-renderers.js?v=20261119_hrc_guide_v2';
+} from './modules/quota-table-renderers.js?v=20261119_hrc_mainuse_v4';
 import {
   showToast,
   showConfirmModal,
@@ -562,11 +565,11 @@ async function initSurveyDetailPage() {
       const titleBatch = document.getElementById('title-batch-automation');
       if (titleBatch) {
         const selCount = (camp.quotaDatabase || []).filter(q => q.selectionType === '선정').length;
-        titleBatch.textContent = `에너지총조사 [건물] 선정 쿼터(${selCount}건) 순차 배치 자동화 (100% 완료 · 답례품 자동 서명)`;
+        titleBatch.textContent = `에너지총조사 [주 용도]별 선택 배치 자동화 (선정 ${selCount}건 · 100% 완료 + 답례품 서명)`;
       }
       const descBatch = document.getElementById('desc-batch-automation');
       if (descBatch) {
-        descBatch.textContent = '기존에 이미 입력되어 있는 항목은 보존하며, [선정] 쿼터를 우선 진행하여 100% 조사완료 후 답례품 수령증(신세계 5,000원 · 8종 한글 자필서명)까지 자동 저장합니다. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터로 자동 승계합니다.';
+        descBatch.textContent = '쿼터 목록에서 일일이 체크할 필요 없이 상단 [주 용도] 카드(또는 STEP 1 주 용도 필터)를 선택해 원하는 용도만 순차 자동화합니다. 기입력 항목은 100% 보존하며, 100% 완료 후 답례품 수령증(신세계 5,000원 · 한글 필체)까지 자동 저장합니다.';
       }
       const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
       if (safetyGuardToggle) {
@@ -580,7 +583,7 @@ async function initSurveyDetailPage() {
         btnPilot.classList.remove('d-none');
         btnPilot.className = 'btn-action-secondary font-bold';
         btnPilot.style.display = 'inline-flex';
-        btnPilot.innerHTML = '<i class="fa-solid fa-bolt"></i> 1번 미완료 선정 쿼터 단건 실행 (100% 완료 + 자동 서명)';
+        btnPilot.innerHTML = '<i class="fa-solid fa-bolt"></i> 미완료 선정 쿼터 1건 단건 실행 (100% 완료 + 자동 서명)';
       }
     } else if (isKona) {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
@@ -820,6 +823,7 @@ async function initSurveyDetailPage() {
   let checkedGlobalriSeqs = new Set();
   let globalriSelectionInitialized = false;
   let checkedHrcSeqs = new Set();
+  let selectedHrcMainUses = new Set();
   let hrcSelectionInitialized = false;
   let checkedSeoulSeqs = new Set();
   let seoulSelectionInitialized = false;
@@ -955,8 +959,12 @@ async function initSurveyDetailPage() {
           btnPilot.disabled = false;
           btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 대상자 Part C까지 실행 (D1 수기대기)';
         } else if (isHrcEnergy) {
+          const isSafeWait = checkSafetyGuard ? Boolean(checkSafetyGuard.checked) : false;
+          const useTag = selectedHrcMainUses.size > 0 ? `[${Array.from(selectedHrcMainUses)[0]}${selectedHrcMainUses.size > 1 ? ` 외 ${selectedHrcMainUses.size - 1}` : ''}] ` : '';
           btnPilot.disabled = false;
-          btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 미완료 선정 쿼터 1건 검증 실행 (91% 안전 대기)';
+          btnPilot.innerHTML = isSafeWait
+            ? `<i class="fa-solid fa-flask"></i> ${useTag}미완료 쿼터 1건 검증 실행 (91% 안전 대기)`
+            : `<i class="fa-solid fa-bolt"></i> ${useTag}미완료 쿼터 1건 단건 실행 (100% 완료 + 자동 서명)`;
         } else if (isKona) {
           btnPilot.disabled = false;
           btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 항목 파일럿 검증 (제출 보류)';
@@ -973,6 +981,11 @@ async function initSurveyDetailPage() {
       }
 
       // 3) 단일 통합 배치 자동화 버튼 상태
+      const hrcStep3PanelEl = document.getElementById('hrc-step3-mainuse-panel');
+      if (hrcStep3PanelEl && (!isHrcEnergy || quotaDb.length === 0)) {
+        hrcStep3PanelEl.classList.add('d-none');
+      }
+
       if (isMetrixSeoul) {
         const doneOr99Count = quotaDb.filter(b => b.quotaStatus === 'completed' || b.quotaStatus === 'pilot_done' || String(b.status || '').includes('99%') || String(b.status || '').includes('완료')).length;
         const allCompleted = quotaDb.length > 0 && quotaDb.every(b => b.quotaStatus === 'completed' || String(b.status || '').includes('완료(100%)'));
@@ -1009,15 +1022,33 @@ async function initSurveyDetailPage() {
       } else if (isHrcEnergy) {
         const selQuotas = quotaDb.filter(b => b.selectionType === '선정');
         const targetList = selQuotas.length > 0 ? selQuotas : quotaDb;
-        const doneCount = targetList.filter(b => b.quotaStatus === 'completed' || b.status === '완료').length;
+        const doneCount = targetList.filter(b => isHrcItemDone(b)).length;
         const allCompleted = targetList.length > 0 && doneCount >= targetList.length;
-        if (allCompleted) {
+        const actionableChecked = quotaDb.filter((b, idx) =>
+          !isHrcItemDone(b) && checkedHrcSeqs.has(Number(b.index || b.seq || (idx + 1)))
+        );
+        const isSafeWait = checkSafetyGuard ? Boolean(checkSafetyGuard.checked) : false;
+        const modeLabel = isSafeWait ? '91% 안전 대기' : '100% 완료+서명';
+        const useLabel = selectedHrcMainUses.size > 0
+          ? Array.from(selectedHrcMainUses).join(', ')
+          : '전체 용도';
+
+        const labelSummary = document.getElementById('label-batch-slot-summary');
+        if (labelSummary) {
+          labelSummary.textContent = `주용도 [${useLabel}] · 실행선택 ${actionableChecked.length}건 (선정완료 ${doneCount}/${targetList.length})`;
+        }
+
+        if (allCompleted && actionableChecked.length === 0) {
           btnBatch.disabled = true;
           btnBatch.innerHTML = `<i class="fa-solid fa-circle-check"></i> 선정 쿼터 ${targetList.length}건 전체 배치 자동화 마감 완료 (100%)`;
-        } else {
+        } else if (actionableChecked.length > 0) {
           btnBatch.disabled = false;
           btnBatch.className = 'btn-action-success flex-1 font-bold';
-          btnBatch.innerHTML = `<i class="fa-solid fa-play"></i> 선정 쿼터 순차 배치 자동화 가동 (${doneCount}/${targetList.length} 완료 · 기입력 보존)`;
+          btnBatch.innerHTML = `<i class="fa-solid fa-play"></i> ${selectedHrcMainUses.size > 0 ? `선택 주용도 [${escapeHtml(useLabel)}]` : '체크한 선정 쿼터'} 순차 배치 자동화 가동 (${actionableChecked.length}건 · ${modeLabel})`;
+        } else {
+          btnBatch.disabled = false;
+          btnBatch.className = 'btn-action-secondary flex-1 font-bold';
+          btnBatch.innerHTML = `<i class="fa-solid fa-layer-group"></i> 상단 [주 용도] 카드 또는 실행할 건물 쿼터를 선택하세요 (현재 0건)`;
         }
       } else if (isKona) {
         const allCompleted = quotaDb.length > 0 && quotaDb.every(b => b.quotaStatus === 'completed' || b.status === '완료');
@@ -1132,6 +1163,12 @@ async function initSurveyDetailPage() {
     const sectionMasterBlueprint = document.getElementById('section-master-blueprint');
     const sectionExecution = document.getElementById('section-execution');
     const jumpPills = document.querySelectorAll('.quick-jump-pill');
+    const hrcStep3PanelTop = document.getElementById('hrc-step3-mainuse-panel');
+    const hrcStep1BarTop = document.getElementById('hrc-step1-guide-bar');
+    if (!isHrcEnergy || total === 0) {
+      if (hrcStep3PanelTop) hrcStep3PanelTop.classList.add('d-none');
+      if (hrcStep1BarTop) hrcStep1BarTop.style.display = 'none';
+    }
 
     if (total === 0) {
       if (sectionMasterBlueprint) {
@@ -1400,14 +1437,13 @@ async function initSurveyDetailPage() {
       existingHrcBar.style.display = 'none';
     }
 
-    // [한국리서치 TAPI 2025년 기준 에너지총조사 건물 부문 테이블 렌더링 + T41/B1-1 쿼터별 가이드]
+    // [한국리서치 TAPI 2025년 기준 에너지총조사 건물 부문 테이블 렌더링 + [주 용도] 구분 선택]
     if (isHrcEnergy) {
       if (!hrcSelectionInitialized && db.length > 0) {
         hrcSelectionInitialized = true;
         db.forEach((item, idx) => {
           const seq = Number(item.index || item.seq || (idx + 1));
-          const isDone = (item.quotaStatus === 'completed' || item.status === '완료');
-          if (!isDone && item.selectionType === '선정') {
+          if (!isHrcItemDone(item) && item.selectionType === '선정') {
             checkedHrcSeqs.add(seq);
           }
         });
@@ -1418,7 +1454,12 @@ async function initSurveyDetailPage() {
         quotaTableBody,
         campId,
         checkedHrcSeqs,
+        selectedHrcMainUses,
         onReRender: renderQuotaTable,
+        onSelectionChange: () => {
+          updateButtonStates();
+        },
+        onTriggerBatchRun: (mode) => triggerBatchRun(mode),
         onSaveGuide: async ({ targetSeqs, t41Codes, b11Codes, ehpUnitKw }) => {
           try {
             const res = await fetch(`/api/campaigns/${campId}/hrc-quota-guide`, {
@@ -1440,6 +1481,21 @@ async function initSurveyDetailPage() {
           }
         }
       });
+
+      renderHrcStep3MainUsePanel({
+        db,
+        panelEl: document.getElementById('hrc-step3-mainuse-panel'),
+        selectedHrcMainUses,
+        checkedHrcSeqs,
+        onSyncAll: () => {
+          renderQuotaTable(currentCampaign?.quotaDatabase || db);
+          updateButtonStates();
+        },
+        onTriggerBatchRun: (mode) => triggerBatchRun(mode)
+      });
+
+      const isCurrentlyRunning = currentCampaign?.status === 'running' || statusIndicator?.classList.contains('running');
+      syncQuickActionBatchButtons(Boolean(isCurrentlyRunning));
       return;
     }
 
@@ -2880,9 +2936,9 @@ async function initSurveyDetailPage() {
             || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '조사완료')
             || quotaDb[0])
           : (isHrcEnergy
-            ? (quotaDb.find((b, idx) => checkedHrcSeqs.has(Number(b.index || b.seq || (idx + 1))) && b.quotaStatus !== 'completed' && b.status !== '완료')
-              || quotaDb.find(b => b.selectionType === '선정' && b.quotaStatus !== 'completed' && b.status !== '완료')
-              || quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료')
+            ? (quotaDb.find((b, idx) => checkedHrcSeqs.has(Number(b.index || b.seq || (idx + 1))) && !isHrcItemDone(b))
+              || quotaDb.find(b => b.selectionType === '선정' && !isHrcItemDone(b))
+              || quotaDb.find(b => !isHrcItemDone(b))
               || quotaDb[0])
             : ((isKona || isGlobalriLiteracy)
               ? (quotaDb.find(b => b.quotaStatus !== 'completed' && b.status !== '완료') || quotaDb[0])
@@ -3056,18 +3112,22 @@ async function initSurveyDetailPage() {
         return;
       }
     } else if (isHrcEnergy) {
-      const uncompletedAll = quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료' && !b.substitutedByUid);
-      const checkedUncompleted = uncompletedAll.filter((b, idx) => checkedHrcSeqs.has(Number(b.index || b.seq || (idx + 1))));
-      if (checkedUncompleted.length > 0) {
-        targets = checkedUncompleted;
-        selectedTargetIndices = checkedUncompleted.map((b, idx) => Number(b.index || b.seq || (idx + 1)));
-      } else {
-        targets = uncompletedAll.filter(b => b.selectionType === '선정');
-      }
-      if (targets.length === 0) {
-        alert('실행할 미완료 건물 쿼터가 없습니다.');
+      const indexedActive = quotaDb
+        .map((b, idx) => ({ item: b, seq: Number(b.index || b.seq || (idx + 1)) }))
+        .filter(r => !isHrcItemDone(r.item));
+      if (indexedActive.length === 0) {
+        alert('실행할 미완료 건물 쿼터가 없습니다. (모든 대상 설문이 이미 완료되었습니다)');
         return;
       }
+      const checkedRows = indexedActive.filter(r => checkedHrcSeqs.has(r.seq));
+      if (checkedRows.length === 0) {
+        alert('실행할 미완료 건물 쿼터가 선택되지 않았습니다.\n\n상단 [주 용도] 구분 버튼 또는 STEP 3의 [주 용도] 카드를 클릭해 실행할 용도를 먼저 선택해 주세요.');
+        const usePanel = document.getElementById('hrc-step3-mainuse-panel') || document.getElementById('hrc-step1-guide-bar');
+        if (usePanel) usePanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      targets = checkedRows.map(r => r.item);
+      selectedTargetIndices = checkedRows.map(r => r.seq);
     } else {
       targets = isKona
         ? quotaDb.filter(b => b.quotaStatus !== 'completed' && b.status !== '완료')
@@ -3088,6 +3148,7 @@ async function initSurveyDetailPage() {
     const safetyGuard = isMetrixSeoul ? true : (checkSafetyGuard ? checkSafetyGuard.checked : true);
     
     let confirmMsg;
+    let hrcUseBreakdownText = '';
     if (isMetrixSeoul) {
       const targetNameList = targets.slice(0, 8).map(b => `#${b.index || b.seq} ${b.companyName}(${b.accountKey || '2010'})`).join(', ') + (targets.length > 8 ? ` 외 ${targets.length - 8}건` : '');
       confirmMsg = `[2026년 서울시 소상공인 사업체 패널조사(5차) - svyA115.asp(99%) 안전 대기 배치]\n선택된 사업체 ${targets.length}건(${targetNameList})에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 안전 규칙:\n1. 2개 계정(2010 송준희 / 2016 정소영) 사업체별 전용 URL로 독립 진입\n2. 2025년 기입력 수치(C3 매출·영업비용 등) 자동 역산 및 전 문항 정합성 보장\n3. svyA115.asp(99%, 개인정보 동의서 화면) 도달 시 100% 즉시 정지 (절대 완료 처리 안 함)\n4. 매 사업체 응답 완료 즉시 구글 스프레드시트(gid=506086780, 시트2) 및 엑셀(.xlsx) 자동 기록\n\n계속하시겠습니까?`;
@@ -3098,7 +3159,13 @@ async function initSurveyDetailPage() {
       const targetNameList = targets.map(b => `#${b.index || b.seq} ${b.memberName || b.ceoName}(${b.ageGroupLabel || ''})`).join(', ');
       confirmMsg = `[제5차 성인문해능력조사 - 선택 쿼터 일괄 자동 배치]\n선택된 대상자 ${targets.length}명(${targetNameList})에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 각 대상자에게 부여된 맞춤 응답 가이드(또는 연령 프리셋) 적용\n2. CONSENT~GP1 및 기존 입력 문항 100% 보존\n3. 설정된 진행 범위(Part C 채점 저장 후 D1 수기 대기 또는 F05_2까지 진행) 준수 (Part D D5 4~5 / 3~4 교차체크 보장)\n4. 제출 문항·답변 내역 엑셀(.xlsx) 자동 저장\n\n계속하시겠습니까?`;
     } else if (isHrcEnergy) {
-      confirmMsg = `[2025년 기준 에너지총조사 - 건물 부문]\n미완료 쿼터 ${targets.length}건에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 구글 시트 건물별 가이드(SQ12·A5·B1·T71·C5·계약전력·도시가스) 및 신규 설비 산출 규칙 적용\n2. SMS/이메일 발송 버튼 절대 클릭 금지\n3. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터 자동 승계\n4. ${safetyGuard ? '91% 마지막 문항(E1-5)에서 완료 보류' : '100% 조사완료 처리 후 답례품 수령증(신세계 5,000원 · 한글 필체) 자동 서명'}\n\n계속하시겠습니까?`;
+      const useCountMap = new Map();
+      targets.forEach(b => {
+        const u = getHrcItemMainUse(b);
+        useCountMap.set(u, (useCountMap.get(u) || 0) + 1);
+      });
+      hrcUseBreakdownText = Array.from(useCountMap.entries()).map(([u, cnt]) => `${u} ${cnt}건`).join(', ');
+      confirmMsg = `[2025년 기준 에너지총조사 - 건물 부문 (주 용도 선택 배치)]\n📌 실행 대상 주용도: ${hrcUseBreakdownText} (총 ${targets.length}건)\n\n🛡️ 핵심 적용 규칙:\n1. 선택하지 않은 다른 주 용도 쿼터는 실행하지 않음 (기입력 항목 100% 보존)\n2. 구글 시트 건물별 가이드(SQ12·A5·B1·T71·C5·계약전력·도시가스) 및 설비 용량 산출 규칙 적용\n3. SMS/이메일 발송 버튼 절대 클릭 금지 · 진행 불가 시 동일 표본층(Cell) [대체] 자동 승계\n4. ${safetyGuard ? '91% 마지막 문항(E1-5)에서 완료 보류' : '100% 조사완료 처리 후 답례품 수령증(신세계 5,000원 · 한글 필체) 자동 서명'}\n\n계속하시겠습니까?`;
     } else if (isKona) {
       confirmMsg = safetyGuard
         ? `[화성특례시 청소년 설문조사]\n미완료 ${targets.length}명(IDX ${targets[0]?.idx}~${targets[targets.length - 1]?.idx})에 대해 제출 직전 안전 대기(캡처만 수행) 모드로 배치를 시작하시겠습니까?`
@@ -3130,7 +3197,7 @@ async function initSurveyDetailPage() {
         }
         appendLog('info', `🚀 [성인문해능력조사 선택 배치 가동 시작] 선택 대상자 ${targets.length}명 순차 자동화 실행을 시작합니다...`);
       } else if (isHrcEnergy) {
-        appendLog('info', `🚀 [에너지총조사 배치 가동 시작] 미완료 선정 쿼터 ${targets.length}건 순차 자동화 실행을 시작합니다... (기입력 항목 100% 보존)`);
+        appendLog('info', `🚀 [에너지총조사 주용도 선택 배치 시작] [${hrcUseBreakdownText}] 총 ${targets.length}건 순차 자동화 실행을 시작합니다... (${safetyGuard ? '91% 안전 대기' : '100% 완료 + 답례품 자동 서명'})`);
       } else if (isKona) {
         appendLog('info', `🚀 [코나 청소년 배치 가동 시작] 미완료 ${targets.length}건 순차 자동화 실행을 시작합니다... (제출 직전 캡처 + ${safetyGuard ? '제출 보류' : '실제 최종 제출'})`);
       } else if (isMetrix) {
@@ -4007,6 +4074,13 @@ async function initSurveyDetailPage() {
     QUICK_BATCH_BUTTON_IDS.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.disabled = running;
+    });
+    const hrcTopBtn = document.getElementById('btn-hrc-top-batch-run');
+    if (hrcTopBtn) {
+      hrcTopBtn.disabled = running ? true : (hrcTopBtn.dataset.hasTargets !== '1');
+    }
+    document.querySelectorAll('.btn-hrc-card-run').forEach(btn => {
+      btn.disabled = running ? true : (btn.dataset.hasTargets !== '1');
     });
   }
 

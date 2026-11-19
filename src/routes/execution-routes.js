@@ -753,7 +753,7 @@ export function registerExecutionRoutes({
       }
       if (selectedIndexSet) {
         if (!selectedIndexSet.has(idx)) return false;
-        if (b.quotaStatus === 'completed' || String(b.status || '').includes('완료') || b.memberStatus === '완료') return false;
+        if (b.quotaStatus === 'completed' || String(b.status || '').includes('완료') || b.memberStatus === '완료' || b.substitutedByUid) return false;
         return true;
       }
       if (idx < startIndex) return false;

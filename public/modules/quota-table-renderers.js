@@ -699,21 +699,93 @@ export function renderGlobalriQuotaTable({
   }
 }
 
+export const HRC_MAIN_USE_ORDER = [
+  '제1종근린생활시설',
+  '제2종근린생활시설',
+  '업무시설',
+  '교육연구시설',
+  '판매시설',
+  '의료시설',
+  '숙박시설',
+  '문화및집회시설',
+  '방송통신시설'
+];
+
+export function getHrcItemMainUse(item) {
+  return String(item?.mainUse || item?.industry || '기타시설').trim() || '기타시설';
+}
+
+export function isHrcItemDone(item) {
+  return item?.quotaStatus === 'completed' || item?.status === '완료' || Boolean(item?.substitutedByUid);
+}
+
+export function computeHrcMainUseStats(db = []) {
+  const statsMap = new Map();
+  db.forEach((item, idx) => {
+    const seq = Number(item.index || item.seq || (idx + 1));
+    const useName = getHrcItemMainUse(item);
+    if (!statsMap.has(useName)) {
+      statsMap.set(useName, {
+        useName,
+        total: 0,
+        selTotal: 0,
+        selDone: 0,
+        selPending: 0,
+        allPending: 0,
+        selPendingSeqs: [],
+        allPendingSeqs: [],
+        allSeqs: []
+      });
+    }
+    const st = statsMap.get(useName);
+    const done = isHrcItemDone(item);
+    const isSel = (item.selectionType === '선정');
+    st.total++;
+    st.allSeqs.push(seq);
+    if (!done) {
+      st.allPending++;
+      st.allPendingSeqs.push(seq);
+    }
+    if (isSel) {
+      st.selTotal++;
+      if (done) st.selDone++;
+      else {
+        st.selPending++;
+        st.selPendingSeqs.push(seq);
+      }
+    }
+  });
+
+  return Array.from(statsMap.values()).sort((a, b) => {
+    const ia = HRC_MAIN_USE_ORDER.indexOf(a.useName);
+    const ib = HRC_MAIN_USE_ORDER.indexOf(b.useName);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return b.total - a.total;
+  });
+}
+
 export function renderHrcEnergyQuotaTable({
   db,
   quotaTableBody,
   campId = '',
   checkedHrcSeqs = new Set(),
+  selectedHrcMainUses = new Set(),
   onSaveGuide = null,
-  onReRender = null
+  onReRender = null,
+  onSelectionChange = null,
+  onTriggerBatchRun = null
 }) {
   const tableScrollContainer = quotaTableBody.closest('.table-scroll-container');
   let hrcBar = document.getElementById('hrc-step1-guide-bar');
   if (!hrcBar && tableScrollContainer && tableScrollContainer.parentNode) {
     hrcBar = document.createElement('div');
     hrcBar.id = 'hrc-step1-guide-bar';
-    hrcBar.className = 'globalri-check-toolbar';
+    hrcBar.className = 'metrix-slim-toolbar';
     tableScrollContainer.parentNode.insertBefore(hrcBar, tableScrollContainer);
+  } else if (hrcBar) {
+    hrcBar.className = 'metrix-slim-toolbar';
   }
 
   const t41Map = Object.fromEntries(HRC_T41_OPTIONS.map(o => [o.code, o.label]));
@@ -739,44 +811,122 @@ export function renderHrcEnergyQuotaTable({
     '3': '③개별방식'
   };
 
-  const selectedItems = db.filter(i => i.selectionType === '선정');
-  const selectedUncompleted = selectedItems.filter(i => i.quotaStatus !== 'completed' && i.status !== '완료');
+  const useStats = computeHrcMainUseStats(db);
+  const indexedDb = db.map((item, idx) => ({
+    item,
+    seq: Number(item.index || item.seq || (idx + 1)),
+    useName: getHrcItemMainUse(item),
+    done: isHrcItemDone(item)
+  }));
+
+  // 캠페인 변경 등으로 존재하지 않는 주용도가 남아있으면 정리
+  const validUseSet = new Set(useStats.map(u => u.useName));
+  Array.from(selectedHrcMainUses).forEach(u => {
+    if (!validUseSet.has(u)) selectedHrcMainUses.delete(u);
+  });
+
+  const isAllUsesMode = (selectedHrcMainUses.size === 0);
+  const visibleIndexed = isAllUsesMode
+    ? indexedDb
+    : indexedDb.filter(r => selectedHrcMainUses.has(r.useName));
+
+  const selectedItems = indexedDb.filter(r => r.item.selectionType === '선정');
+  const selectedUncompleted = selectedItems.filter(r => !r.done);
   const selectedDone = selectedItems.length - selectedUncompleted.length;
-  const uncompletedAll = db.filter(i => i.quotaStatus !== 'completed' && i.status !== '완료');
+
+  const visibleSelUncompleted = visibleIndexed.filter(r => r.item.selectionType === '선정' && !r.done);
+  const visibleSelAll = visibleIndexed.filter(r => r.item.selectionType === '선정');
+  const visibleUncompletedAll = visibleIndexed.filter(r => !r.done);
+
+  const actionableCheckedCount = indexedDb.filter(r => !r.done && checkedHrcSeqs.has(r.seq)).length;
+  const activeUseSummaryLabel = isAllUsesMode
+    ? '전체 용도'
+    : Array.from(selectedHrcMainUses).join(', ');
   const gsheetUrl = 'https://docs.google.com/spreadsheets/d/1YW66qD-j8OHC7NyNWItVhmFDWBmt5jsOwSTOEr7wtm0/edit?gid=1994985141#gid=1994985141';
 
   if (hrcBar) {
     hrcBar.style.display = 'flex';
-    hrcBar.style.flexDirection = 'row';
-    hrcBar.style.alignItems = 'center';
-    hrcBar.style.justifyContent = 'space-between';
-    hrcBar.style.flexWrap = 'wrap';
-    hrcBar.style.gap = '8px';
-    const checkedCount = checkedHrcSeqs.size;
     hrcBar.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-        <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 4px;">
-          <i class="fa-solid fa-square-check text-primary-color"></i> 실행 대상 건물 선택:
-        </span>
-        <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="selected_uncompleted">★ 선정 미완료 (${selectedUncompleted.length}건)</button>
-        <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="selected_only">★ 선정 전체 (${selectedItems.length}건)</button>
-        <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="uncompleted">미완료 전체 (${uncompletedAll.length}건)</button>
-        <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="all">전체 (${db.length}건)</button>
-        <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
+      <div class="metrix-slim-row">
+        <div class="metrix-slim-group">
+          <span class="metrix-slim-label">
+            <i class="fa-solid fa-building text-primary-color"></i> [주 용도] 구분 선택:
+          </span>
+          <button
+            type="button"
+            class="hrc-use-chip ${isAllUsesMode ? 'is-active' : ''}"
+            data-hrc-use="__ALL__"
+            title="전체 주용도를 표시하고 미완료 선정 쿼터를 자동 선택합니다"
+          >
+            <span>전체 용도</span>
+            <span class="hrc-use-chip-count">선정잔여 ${selectedUncompleted.length}/${selectedItems.length}</span>
+          </button>
+          ${useStats.map(st => {
+            const isAct = selectedHrcMainUses.has(st.useName);
+            const allDone = (st.selTotal > 0 ? st.selPending === 0 : st.allPending === 0);
+            const badgeText = allDone
+              ? `완료 ${st.selDone}/${st.selTotal}`
+              : `선정잔여 ${st.selPending}/${st.selTotal}`;
+            return `
+              <button
+                type="button"
+                class="hrc-use-chip ${isAct ? 'is-active' : ''} ${allDone ? 'is-all-done' : ''}"
+                data-hrc-use="${escapeHtml(st.useName)}"
+                title="${escapeHtml(st.useName)} (전체 ${st.total}건 · 선정 ${st.selTotal}건 중 미완료 ${st.selPending}건) — 클릭 시 해당 용도 선택/복수선택 및 자동 체크"
+              >
+                ${isAct ? '<i class="fa-solid fa-check"></i>' : (allDone ? '<i class="fa-solid fa-circle-check"></i>' : '')}
+                <span>${escapeHtml(st.useName)}</span>
+                <span class="hrc-use-chip-count">${badgeText}</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-        <span id="badge-hrc-checked-count" class="badge-status ready font-bold" style="padding: 4px 12px; font-size: 12.5px;">
-          체크됨: <strong>${checkedCount}개 건물</strong> · 선정 완료: <strong>${selectedDone}/${selectedItems.length}건</strong>
-        </span>
-        <a href="${escapeHtml(gsheetUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration: none;" title="구글 스프레드시트 6개 계정 쿼터 및 M~U열 엔지니어링 가이드 열기">
-          <i class="fa-solid fa-table text-success"></i> 구글시트 가이드 열기
-        </a>
+
+      <div class="metrix-slim-row" style="padding-top: 8px; border-top: 1px solid #e2e8f0;">
+        <div class="metrix-slim-group">
+          <span class="metrix-slim-label">현재 용도 빠른선택:</span>
+          <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="visible_sel_uncompleted">★ 선정 미완료 (${visibleSelUncompleted.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="visible_sel_all">★ 선정 전체 (${visibleSelAll.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="visible_uncompleted">미완료 전체·대체포함 (${visibleUncompletedAll.length}건)</button>
+          <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
+          <span class="metrix-slim-divider"></span>
+          <span id="badge-hrc-checked-count" class="metrix-summary-text">
+            <span>선택 용도: <strong style="color:#1d4ed8;">${escapeHtml(activeUseSummaryLabel)}</strong></span>
+            <span>·</span>
+            <span>실행 대상 체크: <strong style="color:#16a34a;">${actionableCheckedCount}건</strong></span>
+            <span>·</span>
+            <span>선정 완료: <strong>${selectedDone}/${selectedItems.length}건</strong></span>
+          </span>
+        </div>
+
+        <div class="metrix-slim-group">
+          <button
+            type="button"
+            id="btn-hrc-top-batch-run"
+            data-has-targets="${actionableCheckedCount > 0 ? '1' : '0'}"
+            class="btn-pill ${actionableCheckedCount > 0 ? 'btn-pill-primary' : 'btn-pill-secondary'} btn-pill-small font-bold"
+            style="${actionableCheckedCount > 0 ? 'background:#16a34a; border-color:#16a34a; color:#fff;' : ''}"
+            ${actionableCheckedCount === 0 ? 'disabled' : ''}
+            title="현재 선택한 [주 용도] 및 체크된 미완료 건물 쿼터만 즉시 순차 배치 자동화를 실행합니다"
+          >
+            <i class="fa-solid fa-play"></i>
+            ${actionableCheckedCount > 0
+              ? `${isAllUsesMode ? '체크 쿼터' : `[${escapeHtml(activeUseSummaryLabel)}]`} 배치 바로 실행 (${actionableCheckedCount}건)`
+              : '실행할 용도/쿼터를 선택하세요 (0건)'}
+          </button>
+          <a href="${escapeHtml(gsheetUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration: none;" title="구글 스프레드시트 6개 계정 쿼터 및 M~U열 엔지니어링 가이드 열기">
+            <i class="fa-solid fa-table text-success"></i> 구글시트
+          </a>
+          <a href="#section-execution" class="metrix-jump-exec-link">
+            <i class="fa-solid fa-sliders"></i> STEP 3 용도별 실행 ↓
+          </a>
+        </div>
       </div>
     `;
   }
 
-  quotaTableBody.innerHTML = db.map((item, idx) => {
-    const seq = Number(item.index || item.seq || (idx + 1));
+  quotaTableBody.innerHTML = visibleIndexed.map(({ item, seq }) => {
     const isChecked = checkedHrcSeqs.has(seq);
     const st = item.quotaStatus || item.status || 'ready';
     const prog = item.progress || (st === 'completed' || st === '완료' ? '100%' : '0%');
@@ -835,7 +985,7 @@ export function renderHrcEnergyQuotaTable({
           <div class="font-caption text-dim">SQ12: <strong>${escapeHtml(sq12Label)}</strong>${item.expectedTypeCode ? ` · <span class="font-mono">${escapeHtml(item.expectedTypeCode)}</span>` : ''}</div>
           ${item.substitutedFromUid ? `<div class="font-caption text-warning">↳ UID ${escapeHtml(item.substitutedFromUid)} 대체 승계</div>` : ''}
         </td>
-        <td><span class="quota-ind-badge">${escapeHtml(item.mainUse || item.industry || '-')}</span></td>
+        <td><span class="quota-ind-badge">${escapeHtml(getHrcItemMainUse(item))}</span></td>
         <td class="text-center"><span class="badge-main-product">${escapeHtml(item.areaScale || '-')}</span></td>
         <td class="text-center">
           <div style="display: flex; flex-direction: column; gap: 3px; align-items: center;">
@@ -870,22 +1020,27 @@ export function renderHrcEnergyQuotaTable({
     `;
   }).join('');
 
-  const updateCheckedBadges = () => {
-    const cnt = checkedHrcSeqs.size;
-    const badgeEl = document.getElementById('badge-hrc-checked-count');
-    if (badgeEl) {
-      badgeEl.innerHTML = `체크됨: <strong>${cnt}개 건물</strong> · 선정 완료: <strong>${selectedDone}/${selectedItems.length}건</strong>`;
-    }
+  const applyAutoCheckForSelectedUses = () => {
+    checkedHrcSeqs.clear();
+    const targetRows = (selectedHrcMainUses.size === 0)
+      ? indexedDb
+      : indexedDb.filter(r => selectedHrcMainUses.has(r.useName));
+    targetRows.forEach(r => {
+      if (r.item.selectionType === '선정' && !r.done) {
+        checkedHrcSeqs.add(r.seq);
+      }
+    });
   };
 
   const cbAll = document.getElementById('cb-hrc-check-all');
-  const allSeqs = db.map((item, idx) => Number(item.index || item.seq || (idx + 1)));
+  const visibleSeqs = visibleIndexed.map(r => r.seq);
   if (cbAll) {
-    cbAll.checked = allSeqs.length > 0 && allSeqs.every(s => checkedHrcSeqs.has(s));
+    cbAll.checked = visibleSeqs.length > 0 && visibleSeqs.every(s => checkedHrcSeqs.has(s));
     cbAll.onchange = () => {
-      if (cbAll.checked) allSeqs.forEach(s => checkedHrcSeqs.add(s));
-      else checkedHrcSeqs.clear();
+      if (cbAll.checked) visibleSeqs.forEach(s => checkedHrcSeqs.add(s));
+      else visibleSeqs.forEach(s => checkedHrcSeqs.delete(s));
       if (typeof onReRender === 'function') onReRender(db);
+      if (typeof onSelectionChange === 'function') onSelectionChange();
     };
   }
 
@@ -894,27 +1049,206 @@ export function renderHrcEnergyQuotaTable({
       const seq = Number(cb.getAttribute('data-seq'));
       if (cb.checked) checkedHrcSeqs.add(seq);
       else checkedHrcSeqs.delete(seq);
-      const tr = cb.closest('tr');
-      if (tr) tr.classList.toggle('globalri-row-checked', cb.checked);
-      updateCheckedBadges();
+      if (typeof onReRender === 'function') onReRender(db);
+      if (typeof onSelectionChange === 'function') onSelectionChange();
     });
   });
 
   if (hrcBar) {
+    hrcBar.querySelectorAll('.hrc-use-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const useVal = chip.getAttribute('data-hrc-use');
+        if (useVal === '__ALL__') {
+          selectedHrcMainUses.clear();
+        } else if (useVal) {
+          if (selectedHrcMainUses.has(useVal)) {
+            selectedHrcMainUses.delete(useVal);
+          } else {
+            selectedHrcMainUses.add(useVal);
+          }
+        }
+        applyAutoCheckForSelectedUses();
+        if (typeof onReRender === 'function') onReRender(db);
+        if (typeof onSelectionChange === 'function') onSelectionChange();
+      });
+    });
+
     hrcBar.querySelectorAll('.hrc-quick-check-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const mode = btn.getAttribute('data-quick-check');
         checkedHrcSeqs.clear();
-        db.forEach((item, idx) => {
-          const seq = Number(item.index || item.seq || (idx + 1));
-          const isDone = (item.quotaStatus === 'completed' || item.status === '완료');
-          if (mode === 'selected_uncompleted' && item.selectionType === '선정' && !isDone) checkedHrcSeqs.add(seq);
-          else if (mode === 'selected_only' && item.selectionType === '선정') checkedHrcSeqs.add(seq);
-          else if (mode === 'uncompleted' && !isDone) checkedHrcSeqs.add(seq);
-          else if (mode === 'all') checkedHrcSeqs.add(seq);
+        visibleIndexed.forEach(r => {
+          if (mode === 'visible_sel_uncompleted' && r.item.selectionType === '선정' && !r.done) checkedHrcSeqs.add(r.seq);
+          else if (mode === 'visible_sel_all' && r.item.selectionType === '선정') checkedHrcSeqs.add(r.seq);
+          else if (mode === 'visible_uncompleted' && !r.done) checkedHrcSeqs.add(r.seq);
         });
         if (typeof onReRender === 'function') onReRender(db);
+        if (typeof onSelectionChange === 'function') onSelectionChange();
       });
+    });
+
+    const btnTopRun = document.getElementById('btn-hrc-top-batch-run');
+    if (btnTopRun && typeof onTriggerBatchRun === 'function') {
+      btnTopRun.addEventListener('click', () => onTriggerBatchRun('selected'));
+    }
+  }
+}
+
+export function renderHrcStep3MainUsePanel({
+  db = [],
+  panelEl = null,
+  selectedHrcMainUses = new Set(),
+  checkedHrcSeqs = new Set(),
+  onSyncAll = null,
+  onTriggerBatchRun = null
+}) {
+  if (!panelEl) return;
+  if (!Array.isArray(db) || db.length === 0) {
+    panelEl.classList.add('d-none');
+    panelEl.innerHTML = '';
+    return;
+  }
+
+  panelEl.classList.remove('d-none');
+  const useStats = computeHrcMainUseStats(db);
+  const indexedDb = db.map((item, idx) => ({
+    item,
+    seq: Number(item.index || item.seq || (idx + 1)),
+    useName: getHrcItemMainUse(item),
+    done: isHrcItemDone(item)
+  }));
+
+  const isAllUsesMode = (selectedHrcMainUses.size === 0);
+  const actionableCheckedCount = indexedDb.filter(r => !r.done && checkedHrcSeqs.has(r.seq)).length;
+
+  panelEl.innerHTML = `
+    <div class="hrc-step3-use-panel">
+      <div class="hrc-step3-use-header">
+        <div>
+          <div class="hrc-step3-use-title">
+            <i class="fa-solid fa-layer-group text-primary-color"></i>
+            <span>[주 용도]별 구분 선택 및 원클릭 배치 실행</span>
+          </div>
+          <div class="hrc-step3-use-sub">
+            원하는 건물 <strong>[주 용도]</strong> 카드를 선택(복수 선택 가능)해 아래 배치 버튼으로 실행하거나, 각 용도 카드의 <strong>[이 용도만 바로 배치]</strong> 버튼으로 일일이 체크하지 않고 즉시 가동할 수 있습니다.
+          </div>
+        </div>
+        <div class="metrix-slim-group">
+          <button type="button" class="globalri-quick-check-btn" id="btn-hrc-step3-all-uses" style="${isAllUsesMode ? 'background:#2563eb;color:#fff;border-color:#2563eb;' : ''}">
+            전체 용도 미완료 선택
+          </button>
+          <button type="button" class="globalri-quick-check-btn" id="btn-hrc-step3-clear-uses" style="color:#64748b;">
+            선택 초기화
+          </button>
+          <span class="badge-status ready font-bold" style="padding:4px 10px; font-size:12px;">
+            현재 실행 대상: <strong>${actionableCheckedCount}건</strong>
+          </span>
+        </div>
+      </div>
+
+      <div class="hrc-step3-use-grid">
+        ${useStats.map(st => {
+          const isSelected = selectedHrcMainUses.has(st.useName);
+          const runCount = st.selPending > 0 ? st.selPending : 0;
+          const isDoneUse = (st.selTotal > 0 && st.selPending === 0);
+          return `
+            <div class="hrc-step3-use-card ${isSelected ? 'is-selected' : ''} ${isDoneUse ? 'is-done' : ''}" data-step3-use="${escapeHtml(st.useName)}">
+              <div class="hrc-step3-use-card-top">
+                <span class="hrc-step3-use-name">
+                  <input
+                    type="checkbox"
+                    class="cb-hrc-step3-use"
+                    data-step3-use="${escapeHtml(st.useName)}"
+                    ${isSelected ? 'checked' : ''}
+                    style="width:16px; height:16px; accent-color:#2563eb; cursor:pointer;"
+                  />
+                  <span>${escapeHtml(st.useName)}</span>
+                </span>
+                ${isDoneUse
+                  ? `<span class="badge-status success font-bold" style="padding:2px 7px; font-size:11px;"><i class="fa-solid fa-check"></i> 완료</span>`
+                  : `<span class="badge-status ready font-bold" style="padding:2px 7px; font-size:11px; color:#1d4ed8;">선정잔여 ${st.selPending}건</span>`}
+              </div>
+              <div class="hrc-step3-use-meta">
+                <span>선정 완료 <strong>${st.selDone}/${st.selTotal}건</strong></span>
+                <span>전체 표본 ${st.total}건</span>
+              </div>
+              <button
+                type="button"
+                class="btn-hrc-card-run"
+                data-run-single-use="${escapeHtml(st.useName)}"
+                data-has-targets="${runCount > 0 ? '1' : '0'}"
+                ${runCount === 0 ? 'disabled' : ''}
+                title="${runCount > 0 ? `${st.useName}의 미완료 선정 쿼터 ${runCount}건만 단독으로 배치 자동화를 시작합니다` : `${st.useName}의 선정 쿼터가 모두 완료되었습니다`}"
+              >
+                <i class="fa-solid ${runCount > 0 ? 'fa-bolt' : 'fa-check-double'}"></i>
+                ${runCount > 0 ? `이 용도만 바로 배치 (${runCount}건)` : `선정 쿼터 완료 (${st.selDone}/${st.selTotal})`}
+              </button>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  const syncCheckedFromSelectedUses = () => {
+    checkedHrcSeqs.clear();
+    const targetRows = (selectedHrcMainUses.size === 0)
+      ? indexedDb
+      : indexedDb.filter(r => selectedHrcMainUses.has(r.useName));
+    targetRows.forEach(r => {
+      if (r.item.selectionType === '선정' && !r.done) {
+        checkedHrcSeqs.add(r.seq);
+      }
+    });
+    if (typeof onSyncAll === 'function') onSyncAll();
+  };
+
+  panelEl.querySelectorAll('.hrc-step3-use-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-hrc-card-run')) return;
+      const useName = card.getAttribute('data-step3-use');
+      if (!useName) return;
+      if (selectedHrcMainUses.has(useName)) {
+        selectedHrcMainUses.delete(useName);
+      } else {
+        selectedHrcMainUses.add(useName);
+      }
+      syncCheckedFromSelectedUses();
+    });
+  });
+
+  panelEl.querySelectorAll('.btn-hrc-card-run').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const useName = btn.getAttribute('data-run-single-use');
+      if (!useName) return;
+      selectedHrcMainUses.clear();
+      selectedHrcMainUses.add(useName);
+      checkedHrcSeqs.clear();
+      indexedDb.forEach(r => {
+        if (r.useName === useName && r.item.selectionType === '선정' && !r.done) {
+          checkedHrcSeqs.add(r.seq);
+        }
+      });
+      if (typeof onSyncAll === 'function') onSyncAll();
+      if (typeof onTriggerBatchRun === 'function') onTriggerBatchRun('selected');
+    });
+  });
+
+  const btnAllUses = panelEl.querySelector('#btn-hrc-step3-all-uses');
+  if (btnAllUses) {
+    btnAllUses.addEventListener('click', () => {
+      selectedHrcMainUses.clear();
+      syncCheckedFromSelectedUses();
+    });
+  }
+
+  const btnClearUses = panelEl.querySelector('#btn-hrc-step3-clear-uses');
+  if (btnClearUses) {
+    btnClearUses.addEventListener('click', () => {
+      selectedHrcMainUses.clear();
+      checkedHrcSeqs.clear();
+      if (typeof onSyncAll === 'function') onSyncAll();
     });
   }
 }
