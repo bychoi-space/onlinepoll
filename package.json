@@ -1,12 +1,13 @@
 {
   "name": "auto-survey-ai",
-  "version": "1.0.0",
-  "description": "Intelligent automated survey response system with persona and AI guidance",
+  "version": "1.1.0",
+  "description": "Intelligent automated multi-engine survey response & quota management platform",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "node scripts/test_mock_browser.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
@@ -20,7 +21,7 @@
     "automation",
     "playwright",
     "ai",
-    "crawler"
+    "quota"
   ],
   "author": "",
   "license": "ISC"

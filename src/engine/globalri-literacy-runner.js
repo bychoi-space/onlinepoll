@@ -239,21 +239,8 @@ export async function runGlobalriLiteracySurvey(options = {}) {
 
   logger.info(`[성인문해능력조사 러너] #${quotaIndex} "${respondentName}" (LID: ${lid}, UID: ${memberUid}, ${ageMeta.age}세/${ageMeta.ageGroupLabel}) 설문 시작 — 목표 Part C 정답수: ${partCPlan.targetCorrect}/20개${slotData.customGuide ? ' [개별 지정 가이드 적용]' : ''}`);
 
-  const browser = await launchChromium({ headless: true });
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 920 },
-    permissions: ['geolocation'],
-    geolocation: { latitude: 37.4602, longitude: 126.7052 }
-  });
-  const page = await context.newPage();
-
-  // 네이티브 브라우저 alert/confirm 자동 수락
-  page.on('dialog', async (dialog) => {
-    const msg = dialog.message();
-    logger.info(`[성인문해능력조사 알림 수락] (${memberUid}) ${msg}`);
-    await dialog.accept().catch(err => logger.warn(`다이얼로그 수락 오류: ${err.message}`));
-  });
-
+  let browser = null;
+  let page = null;
   const capturedSteps = [];
   const stepTrace = [];
   const submittedAnswers = Array.isArray(slotData.submittedAnswers) ? [...slotData.submittedAnswers] : [];
@@ -289,7 +276,7 @@ export async function runGlobalriLiteracySurvey(options = {}) {
     : (options.stopAfterPartC !== false && policy.stopAfterPartC !== false && agePol.stopAfterPartC !== false);
 
   async function captureStepScreenshot(stepCode, title) {
-    if (!reportDir) return;
+    if (!reportDir || !page) return;
     const safeCode = String(stepCode || 'STEP').replace(/[^a-zA-Z0-9_-]/g, '_');
     const fileName = `step_${String(capturedSteps.length + 1).padStart(2, '0')}_${safeCode}_${Date.now()}.png`;
     const fullPath = path.join(reportDir, fileName);
@@ -307,6 +294,20 @@ export async function runGlobalriLiteracySurvey(options = {}) {
   }
 
   try {
+    browser = await launchChromium({ headless: true });
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 920 },
+      permissions: ['geolocation'],
+      geolocation: { latitude: 37.4602, longitude: 126.7052 }
+    });
+    page = await context.newPage();
+
+    // 네이티브 브라우저 alert/confirm 자동 수락
+    page.on('dialog', async (dialog) => {
+      const msg = dialog.message();
+      logger.info(`[성인문해능력조사 알림 수락] (${memberUid}) ${msg}`);
+      await dialog.accept().catch(err => logger.warn(`다이얼로그 수락 오류: ${err.message}`));
+    });
     // 1단계: w3.onsurvey.kr 가구원 조사 현황(Survey.asp) 진입
     onProgress({
       step: 'HOUSEHOLD_ENTRY',
@@ -825,7 +826,9 @@ export async function runGlobalriLiteracySurvey(options = {}) {
 
     throw new Error(`[${respondentName} / ${memberUid}] 최대 문항 반복 횟수(110회)를 초과하여 중단되었습니다.`);
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }
 

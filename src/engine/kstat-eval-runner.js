@@ -155,7 +155,7 @@ export async function runKstatEvaluation({
     // 팝업 Alert 자동 수락 리스너
     page.on('dialog', async d => {
       logger.info(`[조사원 평가 ALERT] ${d.message()}`);
-      await d.accept().catch(() => {});
+      await d.accept().catch(err => console.warn('[Dialog accept 경고]', err.message));
     });
 
     // 1. 평가 설문 최초 URL 진입 (index.asp ➔ Survey.asp ➔ P1.asp 자동 제출 대기)
@@ -166,7 +166,7 @@ export async function runKstatEvaluation({
     // P1.asp 도달 검증
     if (!page.url().includes('P1.asp')) {
       logger.info(`[조사원 평가] 현재 URL: ${page.url()}, P1.asp 대기 중...`);
-      await page.waitForURL(url => url.pathname.includes('P1.asp') || url.pathname.includes('Survey_End.asp'), { timeout: 15000 }).catch(() => {});
+      await page.waitForURL(url => url.pathname.includes('P1.asp') || url.pathname.includes('Survey_End.asp'), { timeout: 15000 }).catch(err => console.warn('[조사원 평가 P1 URL 대기 경고]', err.message));
     }
 
     // 이미 완료된 설문인 경우 즉시 성공 반환
@@ -275,7 +275,7 @@ export async function runKstatEvaluation({
     onProgress({ step: 'EVAL_SUBMIT', message: 'H1~H3 평가 채점 완료, 최종 저장 제출 중...' });
 
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(err => console.warn('[조사원 평가 제출 navigation 대기 경고]', err.message)),
       page.evaluate(() => {
         const btn = document.querySelector('#next') || document.querySelector('button[val*="저장"]');
         if (btn) btn.click();
@@ -305,7 +305,7 @@ export async function runKstatEvaluation({
     if (!isCompleted) {
       // 1회 재시도 클릭
       logger.warn('[조사원 평가] Survey_End 미도달, #next 2차 재시도...');
-      await page.evaluate(() => document.querySelector('#next')?.click()).catch(() => {});
+      await page.evaluate(() => document.querySelector('#next')?.click()).catch(err => console.warn('[DOM evaluate 경고]', err.message));
       await page.waitForTimeout(2000);
     }
 
@@ -331,7 +331,7 @@ export async function runKstatEvaluation({
     };
   } finally {
     if (needCloseBrowser && browser) {
-      await browser.close().catch(() => {});
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
     }
   }
 }

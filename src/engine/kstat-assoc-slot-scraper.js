@@ -21,20 +21,21 @@ export async function scrapeKstatAssocSlots(listUrl, options = {}) {
   const targetPrid = '2026070801';
   const targetListUrl = listUrl || `https://survey.kstat.co.kr/kstat_survey/survey/${targetPrid}/list.php?pridSel=${targetPrid}&josa=tapi`;
 
-  const browser = await launchChromium({ headless: true });
-  const context = await browser.newContext({
-    ignoreHTTPSErrors: true,
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-  });
-  const page = await context.newPage();
-
+  let browser = null;
   try {
+    browser = await launchChromium({ headless: true });
+    const context = await browser.newContext({
+      ignoreHTTPSErrors: true,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    });
+    const page = await context.newPage();
+
     // 1. Kstat 관리자 로그인 (가온박정순)
     let loginAlertMsg = '';
     const loginDialogHandler = async (dialog) => {
       loginAlertMsg = dialog.message();
       logger.warn(`[Kstat 상인회 슬롯 스크래퍼] 대화상자: "${loginAlertMsg}"`);
-      await dialog.accept().catch(() => {});
+      await dialog.accept().catch(err => console.warn('[Dialog accept 경고]', err.message));
     };
     page.on('dialog', loginDialogHandler);
 
@@ -43,7 +44,7 @@ export async function scrapeKstatAssocSlots(listUrl, options = {}) {
     await page.fill('#floatingID', loginId);
     await page.fill('#floatingPassword', loginPw);
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 20000 }).catch(() => {}),
+      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 20000 }).catch(err => logger.debug?.(`[로그인 Navigation 대기] ${err.message}`)),
       page.click('#btnLogin')
     ]);
 
@@ -68,7 +69,7 @@ export async function scrapeKstatAssocSlots(listUrl, options = {}) {
           tapi_move('tapi', prid, prid, 'survey/' + prid + '/list');
         }
       }, targetPrid);
-      await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+      await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(err => logger.debug?.(`[프로젝트 Navigation 대기] ${err.message}`));
     }
 
     // 3. 폼 메타(pridSel, mnid) 추출
@@ -167,6 +168,8 @@ export async function scrapeKstatAssocSlots(listUrl, options = {}) {
     logger.error(`[Kstat 상인회 슬롯 스크래퍼] 오류 발생:`, err);
     throw err;
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }

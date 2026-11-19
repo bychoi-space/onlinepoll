@@ -243,8 +243,8 @@ export async function saveKstatSlotProgressStatus({
 
     // 1. 만약 idSel 또는 kid가 있다면 먼저 status_refresh.php로 본설문(1) 및 평가(2) 캐시 갱신 보장
     if (idSel || kid) {
-      await syncKstatSlotStatus({ pridSel, idSel, kid, gid, srt: 1 }).catch(() => {});
-      await syncKstatSlotStatus({ pridSel, idSel, kid, gid, srt: 2 }).catch(() => {});
+      await syncKstatSlotStatus({ pridSel, idSel, kid, gid, srt: 1 }).catch(err => logger.warn(`[Kstat 캐시 갱신 경고 srt=1] ${err.message}`));
+      await syncKstatSlotStatus({ pridSel, idSel, kid, gid, srt: 2 }).catch(err => logger.warn(`[Kstat 캐시 갱신 경고 srt=2] ${err.message}`));
     }
 
     // 2. Kstat HTTP 로그인 및 페이지 탐색
@@ -291,8 +291,8 @@ export async function saveKstatSlotProgressStatus({
 
     // 만약 리스트 캐시에 아직 '완료'가 반영되지 않았다면, 찾은 행의 idSel/kid로 캐시 갱신 후 해당 페이지만 재조회
     if (!foundRow.bothCompleted && foundRow.idSel && foundRow.kid) {
-      await syncKstatSlotStatus({ pridSel, idSel: foundRow.idSel, kid: foundRow.kid, gid: foundRow.gid, srt: 1 }).catch(() => {});
-      await syncKstatSlotStatus({ pridSel, idSel: foundRow.idSel, kid: foundRow.kid, gid: foundRow.gid, srt: 2 }).catch(() => {});
+      await syncKstatSlotStatus({ pridSel, idSel: foundRow.idSel, kid: foundRow.kid, gid: foundRow.gid, srt: 1 }).catch(err => logger.warn(`[Kstat 재조회 캐시 갱신 경고 srt=1] ${err.message}`));
+      await syncKstatSlotStatus({ pridSel, idSel: foundRow.idSel, kid: foundRow.kid, gid: foundRow.gid, srt: 2 }).catch(err => logger.warn(`[Kstat 재조회 캐시 갱신 경고 srt=2] ${err.message}`));
 
       const reRes = await fetch(`https://survey.kstat.co.kr/kstat_survey/survey/${pridSel}/list.php?curPage=${foundPage}&pridSel=${pridSel}&josa=tapi`, {
         headers: { Cookie: cookieHeader }

@@ -98,7 +98,9 @@ export function seedInitialCampaigns({
               progress: isDone ? '100%' : (item.progress || '0%')
             };
           });
-        } catch (_) {}
+        } catch (err) {
+          console.warn(`[CampaignSeeder] HRC 에너지총조사(${spec.loginId}) 쿼터 시드 로드 경고:`, err.message);
+        }
       }
 
       if (!existingCamp) {
@@ -248,7 +250,9 @@ export function seedInitialCampaigns({
             });
           }
         }
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CampaignSeeder] 성인문해능력조사 쿼터 시드 로드 경고:', err.message);
+      }
     }
 
     // [20263603] 2026년 귀농귀촌 실태조사(귀농) - 홍천군 백영자 (선정 70명) 자동 시드
@@ -311,7 +315,9 @@ export function seedInitialCampaigns({
             });
           }
         }
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CampaignSeeder] 귀농귀촌 실태조사 쿼터 시드 로드 경고:', err.message);
+      }
     }
 
     // [메트릭스] (신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차) (계정 2010 송준희 74건 + 2016 정소영 89건 = 총 163건) 자동 시드
@@ -389,7 +395,9 @@ export function seedInitialCampaigns({
             });
           }
         }
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CampaignSeeder] 서울시 소상공인 패널 쿼터 시드 로드 경고:', err.message);
+      }
     }
 
     // [메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 4계정 통합 244건 (강영미 54건 + 김정례 55건 + 노영미 62건 + 송춘희 73건) 자동 시드
@@ -417,7 +425,9 @@ export function seedInitialCampaigns({
         if (fs.existsSync(metrixBpPath)) {
           try {
             defaultMetrixPolicy = JSON.parse(fs.readFileSync(metrixBpPath, 'utf-8'))?.defaultPolicy || null;
-          } catch (_) {}
+          } catch (err) {
+            console.warn('[CampaignSeeder] 메트릭스 블루프린트 시드 로드 경고:', err.message);
+          }
         }
 
         const defaultAccounts = ggContent.accounts || [
@@ -704,9 +714,13 @@ export function seedInitialCampaigns({
             }
           }
         }
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CampaignSeeder] 경기도 소상공인 패널 쿼터 시드 로드 경고:', err.message);
+      }
     }
-  } catch (_) {}
+  } catch (err) {
+    console.warn('[CampaignSeeder] 초기 캠페인 시드 처리 경고:', err.message);
+  }
 }
 
 

@@ -424,59 +424,61 @@ export async function runGallupReturnFarmSurvey({
     message: `[GPS 위치 설정] 강원특별자치도 홍천군 ${gps.eupMyeon} (${gps.latitude}, ${gps.longitude}) 브라우저 위치권한 주입 완료`
   });
 
-  const browser = await launchChromium({
-    headless: true,
-    args: ['--disable-blink-features=AutomationControlled']
-  });
-
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 920 },
-    locale: 'ko-KR',
-    permissions: ['geolocation'],
-    geolocation: {
-      latitude: gps.latitude,
-      longitude: gps.longitude,
-      accuracy: 11.5
-    }
-  });
-
-  await context.grantPermissions(['geolocation'], { origin: 'https://rs.gallup.co.kr' });
-  await context.addInitScript(({ lat, lng }) => {
-    window.multiChk = false;
-    const mockPos = {
-      coords: {
-        latitude: lat,
-        longitude: lng,
-        accuracy: 11.5,
-        altitude: null,
-        altitudeAccuracy: null,
-        heading: null,
-        speed: null
-      },
-      timestamp: Date.now()
-    };
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition = function (success) {
-        if (typeof success === 'function') setTimeout(() => success(mockPos), 10);
-      };
-      navigator.geolocation.watchPosition = function (success) {
-        if (typeof success === 'function') setTimeout(() => success(mockPos), 10);
-        return 1;
-      };
-    }
-  }, { lat: gps.latitude, lng: gps.longitude });
-
-  const page = await context.newPage();
-
-  // 네이티브 alert/confirm 팝업 자동 수락 및 로깅
+  let browser = null;
   const alertLogs = [];
-  page.on('dialog', async (dialog) => {
-    const msg = dialog.message();
-    alertLogs.push(msg);
-    await dialog.accept().catch(err => console.error('Dialog accept error:', err));
-  });
 
   try {
+    browser = await launchChromium({
+      headless: true,
+      args: ['--disable-blink-features=AutomationControlled']
+    });
+
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 920 },
+      locale: 'ko-KR',
+      permissions: ['geolocation'],
+      geolocation: {
+        latitude: gps.latitude,
+        longitude: gps.longitude,
+        accuracy: 11.5
+      }
+    });
+
+    await context.grantPermissions(['geolocation'], { origin: 'https://rs.gallup.co.kr' });
+    await context.addInitScript(({ lat, lng }) => {
+      window.multiChk = false;
+      const mockPos = {
+        coords: {
+          latitude: lat,
+          longitude: lng,
+          accuracy: 11.5,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null
+        },
+        timestamp: Date.now()
+      };
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition = function (success) {
+          if (typeof success === 'function') setTimeout(() => success(mockPos), 10);
+        };
+        navigator.geolocation.watchPosition = function (success) {
+          if (typeof success === 'function') setTimeout(() => success(mockPos), 10);
+          return 1;
+        };
+      }
+    }, { lat: gps.latitude, lng: gps.longitude });
+
+    const page = await context.newPage();
+
+    // 네이티브 alert/confirm 팝업 자동 수락 및 로깅
+    page.on('dialog', async (dialog) => {
+      const msg = dialog.message();
+      alertLogs.push(msg);
+      await dialog.accept().catch(err => console.error('Dialog accept error:', err));
+    });
+
     // 1. 인트로(ResponseIdStart_20263603.asp) 접속 및 ID 검색
     onProgress({
       step: 'VISIT_GATE',
@@ -641,7 +643,7 @@ export async function runGallupReturnFarmSurvey({
 
     // [조사시작] 버튼 클릭 후 설문 본문(Response_20263603.asp) 진입
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => {}),
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }).catch(err => console.warn('[Gallup navigation 대기 경고]', err.message)),
       page.click('#btn_rsch_start')
     ]);
 
@@ -730,7 +732,7 @@ export async function runGallupReturnFarmSurvey({
 
     if (needJumpToPage1 && curPage !== 1) {
       await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {}),
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(err => console.warn('[Gallup Page 1 점프 대기 경고]', err.message)),
         page.evaluate(() => {
           const frm = document.ps_Form;
           frm.p_rsch_page_id.value = '1';
@@ -746,7 +748,7 @@ export async function runGallupReturnFarmSurvey({
         message: `[전자서명 패드 검증] Page 7(답례품 인수증 서명)로 이동하여 응답자(${name}) 고유 필체 서명을 생성합니다...`
       });
       await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {}),
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(err => console.warn('[Gallup Page 7 점프 대기 경고]', err.message)),
         page.evaluate(() => {
           const frm = document.ps_Form;
           frm.p_rsch_page_id.value = '7';
@@ -904,7 +906,6 @@ export async function runGallupReturnFarmSurvey({
           message: `✅ [Page 118 완료 직전 대기] "${meta.name}" (ID: ${idStr}) 전 문항 응답 및 전자서명·연락처 저장 완료! ([조사완료] 클릭 직전 안전 정지)`
         });
 
-        await browser.close();
         return {
           success: true,
           status: 'stopped_before_submit',
@@ -1201,7 +1202,7 @@ export async function runGallupReturnFarmSurvey({
       // 주요 단계 스크린샷 저장 (Page 1, 8, 14, 20, 56, 91, 114)
       if (reportDir && [1, 8, 14, 20, 56, 91, 114].includes(curPage)) {
         const snapPath = path.join(reportDir, `step_${String(curPage).padStart(3, '0')}.png`);
-        await page.screenshot({ path: snapPath, fullPage: true }).catch(() => {});
+        await page.screenshot({ path: snapPath, fullPage: true }).catch(err => console.warn('[Gallup 스크린샷 경고]', err.message));
         capturedSteps.push({
           step: `PAGE_${curPage}`,
           title: `Page ${curPage} (${pageTitle.slice(0, 38)})`,
@@ -1269,12 +1270,15 @@ export async function runGallupReturnFarmSurvey({
 
     throw new Error(`최대 안전 단계(${maxSafetySteps})를 초과하여 중지되었습니다.`);
   } catch (err) {
-    await browser.close().catch(() => {});
     return {
       success: false,
       error: err.message,
       capturedSteps,
       submittedAnswers
     };
+  } finally {
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }

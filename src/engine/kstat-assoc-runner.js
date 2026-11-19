@@ -51,32 +51,34 @@ export async function runKstatAssocSurvey(options = {}) {
   ).trim();
   logger.info(`[상인회 러너] 시작 ➔ 대상 시장: "${marketName}" (슬롯: #${quotaIndex}, 조사원: "${effectiveSurveyor}"), 파일럿=${pilotMode}, 기입력보존=${preserveExisting}, URL=${surveyUrl}`);
 
-  const browser = await launchChromium({ headless: true });
-  const context = await browser.newContext({
-    ignoreHTTPSErrors: true,
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    viewport: { width: 1400, height: 1000 }
-  });
-  const page = await context.newPage();
-
-  // Alert/Confirm 자동 승인 가로채기
-  page.on('dialog', async (dialog) => {
-    logger.info(`[상인회 Alert 감지] "${dialog.message()}" ➔ 자동 수락`);
-    await dialog.accept().catch(() => {});
-  });
-
+  let browser = null;
+  let page = null;
   const capturedSteps = [];
 
   const captureStep = async (stepCode, stepDesc) => {
-    if (reportDir) {
+    if (reportDir && page) {
       const filename = `step_${stepCode}_${stepDesc.replace(/[^a-zA-Z0-9가-힣_]/g, '')}.png`;
       const filepath = path.join(reportDir, filename);
-      await page.screenshot({ path: filepath, fullPage: true }).catch(() => {});
+      await page.screenshot({ path: filepath, fullPage: true }).catch(err => console.warn('[Screenshot 경고]', err.message));
       capturedSteps.push({ step: stepCode, title: stepDesc, path: filepath });
     }
   };
 
   try {
+    browser = await launchChromium({ headless: true });
+    const context = await browser.newContext({
+      ignoreHTTPSErrors: true,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      viewport: { width: 1400, height: 1000 }
+    });
+    page = await context.newPage();
+
+    // Alert/Confirm 자동 승인 가로채기
+    page.on('dialog', async (dialog) => {
+      logger.info(`[상인회 Alert 감지] "${dialog.message()}" ➔ 자동 수락`);
+      await dialog.accept().catch(err => console.warn('[Dialog accept 경고]', err.message));
+    });
+
     // ==========================================
     // 1. index.asp 접속 (재시도 및 domcontentloaded 안전 탐색)
     // ==========================================
@@ -103,8 +105,8 @@ export async function runKstatAssocSurvey(options = {}) {
       const nextBtn = await page.$('#next, input[name="next"], button#next, .btn_next');
       if (nextBtn) {
         await Promise.all([
-          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {}),
-          nextBtn.click().catch(() => {})
+          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(err => logger.debug?.(`[INDEX Navigation 대기] ${err.message}`)),
+          nextBtn.click().catch(err => console.warn('[시작 버튼 클릭 경고]', err.message))
         ]);
         await delay(1200);
       }
@@ -196,7 +198,7 @@ export async function runKstatAssocSurvey(options = {}) {
       // Q1 다음 이동 (정식 저장 보장)
       await Promise.all([
         page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 6000 }).catch(() => null),
-        page.click('#next').catch(() => {})
+        page.click('#next').catch(err => console.warn('[Q1 #next 클릭 경고]', err.message))
       ]);
       await delay(300);
 
@@ -206,8 +208,8 @@ export async function runKstatAssocSurvey(options = {}) {
         logger.warn(`[상인회 러너] Q1 이동 미감지 ➔ next() 정식 호출 재시도...`);
         await page.evaluate(() => {
           if (typeof next === 'function') next();
-        }).catch(() => {});
-        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 }).catch(() => {});
+        }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
+        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 }).catch(err => logger.debug?.(`[Q1 Navigation 대기] ${err.message}`));
         await delay(300);
       }
     }
@@ -297,8 +299,8 @@ export async function runKstatAssocSurvey(options = {}) {
             surveyor.readOnly = true;
           }
           if (typeof next === 'function') next();
-        }, { data: assocData }).catch(() => {});
-        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 }).catch(() => {});
+        }, { data: assocData }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
+        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 5000 }).catch(err => logger.debug?.(`[Q1 재시도 Navigation 대기] ${err.message}`));
         await delay(300);
         continue;
       }
@@ -642,7 +644,7 @@ export async function runKstatAssocSurvey(options = {}) {
 
         await delay(800);
         await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 25000 }).catch(() => {}),
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 25000 }).catch(err => logger.debug?.(`[Agree Navigation 대기] ${err.message}`)),
           page.click('#next')
         ]);
         await delay(2000);
@@ -3173,7 +3175,7 @@ export async function runKstatAssocSurvey(options = {}) {
           if (typeof updateStepView === 'function') {
             try { updateStepView(); } catch (_) {}
           }
-        }).catch(() => {});
+        }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
 
         await captureStep('P18', 'P18_화재공제E2');
         await delay(200);
@@ -3423,7 +3425,7 @@ export async function runKstatAssocSurvey(options = {}) {
             if (!preserveExisting || !hasChecked) {
               const sel = `input[name="F5"][value="${f5Val}"]`;
               await f5Frame.click(sel).catch(async () => {
-                await f5Frame.click('input[name="F5"][value="1"]').catch(() => {});
+                await f5Frame.click('input[name="F5"][value="1"]').catch(err => console.warn('[F5 폴백 클릭 경고]', err.message));
               });
             }
           } catch (_) {}
@@ -3437,7 +3439,7 @@ export async function runKstatAssocSurvey(options = {}) {
             if (!preserveExisting || !hasChecked) {
               const sel = `input[name="F6"][value="${f6Val}"]`;
               await f6Frame.click(sel).catch(async () => {
-                await f6Frame.click('input[name="F6"][value="1"]').catch(() => {});
+                await f6Frame.click('input[name="F6"][value="1"]').catch(err => console.warn('[F6 폴백 클릭 경고]', err.message));
               });
             }
           } catch (_) {}
@@ -3725,7 +3727,9 @@ export async function runKstatAssocSurvey(options = {}) {
     await captureStep('ERROR', '오류발생화면');
     throw err;
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }
 
@@ -3743,7 +3747,7 @@ async function detectAssocCurrentStep(page) {
           return pVal.toUpperCase();
         }
       } catch (_) {}
-      await page.waitForTimeout(200).catch(() => {});
+      await page.waitForTimeout(200).catch(err => console.warn('[Timeout 대기 경고]', err.message));
     }
   }
 
@@ -3785,7 +3789,7 @@ async function safeSubmitAndAdvance(page, stepName) {
   // 1차: #next 클릭 및 빠른 네비게이션 대기
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 3500 }).catch(() => null),
-    page.click('#next', { timeout: 3000 }).catch(() => {})
+    page.click('#next', { timeout: 3000 }).catch(err => console.warn('[#next 클릭 경고]', err.message))
   ]);
   await delay(250);
 
@@ -3817,7 +3821,7 @@ async function safeSubmitAndAdvance(page, stepName) {
           const btn = document.querySelector('#next, input[name="next"], button#next');
           if (btn) btn.click();
         }
-      }).catch(() => {})
+      }).catch(err => console.warn('[DOM evaluate 경고]', err.message))
     ]);
     await delay(250);
 
@@ -3913,14 +3917,14 @@ async function syncAllChildFrames(page) {
       if (typeof updateNextButtonEnabledState === 'function') {
         try { updateNextButtonEnabledState(); } catch (_) {}
       }
-    }).catch(() => {});
+    }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
   } catch (_) {}
 
   // 프레임 로딩 대기 (timeout 800ms로 단축)
   const frames = page.frames();
   for (const f of frames) {
     if (f !== page.mainFrame()) {
-      await f.waitForLoadState('domcontentloaded', { timeout: 800 }).catch(() => {});
+      await f.waitForLoadState('domcontentloaded', { timeout: 800 }).catch(err => logger.debug?.(`[Frame 로드 대기] ${err.message}`));
     }
   }
 }

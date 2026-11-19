@@ -10,9 +10,8 @@
   <link rel="alternate icon" type="image/png" href="favicon.png?v=20261022">
   <link rel="apple-touch-icon" href="favicon.png?v=20261022">
   
-  <!-- Pretendard Font (Variable & Standard) -->
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Pretendard Variable Font -->
+  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <!-- Google Fonts: JetBrains Mono (Terminal/Code only) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,10 +20,10 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="tokens.css">
-  <link rel="stylesheet" href="figma-base.css">
-  <link rel="stylesheet" href="campaign.css?v=20261110_dual_batch_filter">
-  <link rel="stylesheet" href="custom-styles.css">
+  <link rel="stylesheet" href="tokens.css?v=20261119_clean_v1">
+  <link rel="stylesheet" href="figma-base.css?v=20261119_clean_v1">
+  <link rel="stylesheet" href="campaign.css?v=20261119_clean_v1">
+  <link rel="stylesheet" href="custom-styles.css?v=20261119_clean_v1">
 </head>
 <body>
 
@@ -108,27 +107,27 @@
           
           <!-- 좌측: 카테고리 4대 탭 (전체 / 전통시장 / 상인회 / 소상공인 / 특수·국가조사) -->
           <div class="filter-tabs-group" role="tablist">
-            <button type="button" class="filter-tab-pill active" data-category="all" id="filter-cat-all">
+            <button type="button" role="tab" class="filter-tab-pill active" data-category="all" id="filter-cat-all">
               <i class="fa-solid fa-layer-group"></i>
               <span>전체</span>
               <span class="filter-count-badge" id="badge-filter-all">0</span>
             </button>
-            <button type="button" class="filter-tab-pill" data-category="traditional" id="filter-cat-traditional">
+            <button type="button" role="tab" class="filter-tab-pill" data-category="traditional" id="filter-cat-traditional">
               <i class="fa-solid fa-store text-amber"></i>
               <span>전통시장</span>
               <span class="filter-count-badge" id="badge-filter-traditional">0</span>
             </button>
-            <button type="button" class="filter-tab-pill" data-category="assoc" id="filter-cat-assoc">
+            <button type="button" role="tab" class="filter-tab-pill" data-category="assoc" id="filter-cat-assoc">
               <i class="fa-solid fa-sitemap text-sky"></i>
               <span>상인회</span>
               <span class="filter-count-badge" id="badge-filter-assoc">0</span>
             </button>
-            <button type="button" class="filter-tab-pill" data-category="smallbiz" id="filter-cat-smallbiz">
+            <button type="button" role="tab" class="filter-tab-pill" data-category="smallbiz" id="filter-cat-smallbiz">
               <i class="fa-solid fa-building-user text-purple"></i>
               <span>소상공인</span>
               <span class="filter-count-badge" id="badge-filter-smallbiz">0</span>
             </button>
-            <button type="button" class="filter-tab-pill" data-category="special" id="filter-cat-special">
+            <button type="button" role="tab" class="filter-tab-pill" data-category="special" id="filter-cat-special">
               <i class="fa-solid fa-landmark-flag text-teal"></i>
               <span>특수·국가조사</span>
               <span class="filter-count-badge" id="badge-filter-special">0</span>
@@ -258,27 +257,27 @@
           
           <!-- 좌측: 카테고리 4대 탭 (전체 / 전통시장 / 상인회 / 소상공인 / 특수·국가조사) -->
           <div class="filter-tabs-group" role="tablist" id="quota-filter-tabs-group">
-            <button type="button" class="filter-tab-pill quota-filter-tab-pill active" data-quota-category="all" id="quota-filter-cat-all">
+            <button type="button" role="tab" class="filter-tab-pill quota-filter-tab-pill active" data-quota-category="all" id="quota-filter-cat-all">
               <i class="fa-solid fa-layer-group"></i>
               <span>전체</span>
               <span class="filter-count-badge" id="badge-quota-filter-all">0</span>
             </button>
-            <button type="button" class="filter-tab-pill quota-filter-tab-pill" data-quota-category="traditional" id="quota-filter-cat-traditional">
+            <button type="button" role="tab" class="filter-tab-pill quota-filter-tab-pill" data-quota-category="traditional" id="quota-filter-cat-traditional">
               <i class="fa-solid fa-store text-amber"></i>
               <span>전통시장</span>
               <span class="filter-count-badge" id="badge-quota-filter-traditional">0</span>
             </button>
-            <button type="button" class="filter-tab-pill quota-filter-tab-pill" data-quota-category="assoc" id="quota-filter-cat-assoc">
+            <button type="button" role="tab" class="filter-tab-pill quota-filter-tab-pill" data-quota-category="assoc" id="quota-filter-cat-assoc">
               <i class="fa-solid fa-sitemap text-sky"></i>
               <span>상인회</span>
               <span class="filter-count-badge" id="badge-quota-filter-assoc">0</span>
             </button>
-            <button type="button" class="filter-tab-pill quota-filter-tab-pill" data-quota-category="smallbiz" id="quota-filter-cat-smallbiz">
+            <button type="button" role="tab" class="filter-tab-pill quota-filter-tab-pill" data-quota-category="smallbiz" id="quota-filter-cat-smallbiz">
               <i class="fa-solid fa-building-user text-purple"></i>
               <span>소상공인</span>
               <span class="filter-count-badge" id="badge-quota-filter-smallbiz">0</span>
             </button>
-            <button type="button" class="filter-tab-pill quota-filter-tab-pill" data-quota-category="special" id="quota-filter-cat-special">
+            <button type="button" role="tab" class="filter-tab-pill quota-filter-tab-pill" data-quota-category="special" id="quota-filter-cat-special">
               <i class="fa-solid fa-landmark-flag text-teal"></i>
               <span>특수·국가조사</span>
               <span class="filter-count-badge" id="badge-quota-filter-special">0</span>
@@ -418,7 +417,7 @@
     </div>
   </div>
 
-  <script type="module" src="campaign-list.js?v=20261110_dual_batch_filter"></script>
-  <script type="module" src="nav-auth.js"></script>
+  <script type="module" src="campaign-list.js?v=20261119_clean_v1"></script>
+  <script type="module" src="nav-auth.js?v=20261119_clean_v1"></script>
 </body>
 </html>

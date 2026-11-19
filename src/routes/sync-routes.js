@@ -31,6 +31,7 @@ import {
   METRIX_622_GOOGLE_SHEET_URL
 } from '../engine/metrix-slot-scraper.js';
 import { logger } from '../utils/logger.js';
+import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 
 export function registerSyncRoutes({
   app,
@@ -582,13 +583,15 @@ export function registerSyncRoutes({
           const qJson = JSON.parse(fs.readFileSync(gallupJsonPath, 'utf-8'));
           qJson.data = syncRes.updatedList;
           qJson.updatedAt = new Date().toISOString();
-          fs.writeFileSync(gallupJsonPath, JSON.stringify(qJson, null, 2), 'utf-8');
+          writeJsonAtomicSync(gallupJsonPath, qJson);
           exportBusinessesToExcel({
             data: syncRes.updatedList,
             columns: qJson.columns,
             filePath: gallupJsonPath.replace(/\.json$/, '.xlsx')
           });
-        } catch (_) {}
+        } catch (err) {
+          logger.warn(`[귀농귀촌 쿼터 JSON/Excel 저장 경고] ${err.message}`);
+        }
       }
 
       logger.broadcast({
@@ -825,7 +828,7 @@ export function registerSyncRoutes({
           ggJson.data = quotaDb;
           ggJson.rows = quotaDb;
           ggJson.updatedAt = new Date().toISOString();
-          fs.writeFileSync(ggPath, JSON.stringify(ggJson, null, 2), 'utf-8');
+          writeJsonAtomicSync(ggPath, ggJson);
         } catch (err) {
           logger.warn(`[Metrix 622 쿼터 JSON 저장 경고] ${err.message}`);
         }

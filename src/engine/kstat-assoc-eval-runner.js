@@ -155,7 +155,7 @@ export async function runKstatAssocEvaluation({
     // Alert 팝업 대화상자 자동 수락 및 로깅
     page.on('dialog', async d => {
       logger.info(`[상인회 평가 Alert 감지] "${d.message()}" ➔ 자동 수락`);
-      await d.accept().catch(() => {});
+      await d.accept().catch(err => console.warn('[Dialog accept 경고]', err.message));
     });
 
     // 1. 평가 설문 진입
@@ -169,7 +169,7 @@ export async function runKstatAssocEvaluation({
       const startBtn = await page.$('input[type="image"], a[href*="Survey.asp"], button, #btn_start');
       if (startBtn) {
         await Promise.all([
-          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+          page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(err => console.warn('[상인회 평가 navigation 대기 경고]', err.message)),
           startBtn.click()
         ]);
         await page.waitForTimeout(1500);
@@ -179,7 +179,7 @@ export async function runKstatAssocEvaluation({
     // P1.asp 도달 대기
     if (!page.url().includes('P1.asp') && !page.url().includes('Survey_End.asp')) {
       logger.info(`[상인회 조사원 평가] 현재 URL: ${page.url()}, P1.asp 대기 중...`);
-      await page.waitForURL(url => url.pathname.includes('P1.asp') || url.pathname.includes('Survey_End.asp'), { timeout: 15000 }).catch(() => {});
+      await page.waitForURL(url => url.pathname.includes('P1.asp') || url.pathname.includes('Survey_End.asp'), { timeout: 15000 }).catch(err => console.warn('[상인회 평가 P1 URL 대기 경고]', err.message));
     }
 
     // 이미 완료된 평가 설문인 경우 즉시 정상 반환
@@ -313,7 +313,7 @@ export async function runKstatAssocEvaluation({
             el.value = '';
             el.disabled = true;
           }
-        }, { noteId: cfg.noteCode }).catch(() => {});
+        }, { noteId: cfg.noteCode }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
       }
       await page.waitForTimeout(100);
     }
@@ -340,7 +340,7 @@ export async function runKstatAssocEvaluation({
 
     if (!isCompleted) {
       logger.warn(`[상인회 평가] Survey_End 미도달(현재: ${page.url()}), #next 2차 재시도...`);
-      await page.evaluate(() => document.querySelector('#next')?.click()).catch(() => {});
+      await page.evaluate(() => document.querySelector('#next')?.click()).catch(err => console.warn('[DOM evaluate 경고]', err.message));
       await page.waitForTimeout(2000);
       isCompleted = page.url().includes('Survey_End.asp') || page.url().includes('Survey_end.asp');
     }
@@ -383,7 +383,7 @@ export async function runKstatAssocEvaluation({
     };
   } finally {
     if (needCloseBrowser && browser) {
-      await browser.close().catch(() => {});
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
     }
   }
 }

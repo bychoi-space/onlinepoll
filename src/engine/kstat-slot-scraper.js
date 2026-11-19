@@ -21,20 +21,22 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
   const pridMatch = listUrl.match(/survey\/([0-9]+)/);
   const targetPrid = pridMatch ? pridMatch[1] : '2026070802';
 
-  const browser = await launchChromium({ headless: true });
-  const context = await browser.newContext({
-    ignoreHTTPSErrors: true,
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-  });
-  const page = await context.newPage();
+  let browser = null;
 
   try {
+    browser = await launchChromium({ headless: true });
+    const context = await browser.newContext({
+      ignoreHTTPSErrors: true,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+    });
+    const page = await context.newPage();
+
     // 1. Kstat 관리자 로그인
     let loginAlertMsg = '';
     const loginDialogHandler = async (dialog) => {
       loginAlertMsg = dialog.message();
       logger.warn(`[Kstat 슬롯 스크래퍼] 로그인 대화상자 감지: "${loginAlertMsg}"`);
-      await dialog.accept().catch(() => {});
+      await dialog.accept().catch(err => console.warn('[Dialog accept 경고]', err.message));
     };
     page.on('dialog', loginDialogHandler);
 
@@ -43,7 +45,7 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
     await page.fill('#floatingID', loginId);
     await page.fill('#floatingPassword', loginPw);
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+      page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(err => console.warn('[Kstat 로그인 navigation 대기 경고]', err.message)),
       page.click('#btnLogin')
     ]);
 
@@ -77,8 +79,8 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
           const targetCard = cards.find(c => c.innerText.includes(prid) && c.innerText.includes('점포주조사')) || cards.find(c => c.innerText.includes(prid));
           if (targetCard) targetCard.click();
         }
-      }, targetPrid).catch(() => {});
-      await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+      }, targetPrid).catch(err => console.warn('[DOM evaluate 경고]', err.message));
+      await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(err => console.warn('[Kstat 프로젝트 이동 대기 경고]', err.message));
     }
 
     // 리스트 URL 파라미터 보완 (?pridSel=...&josa=tapi)
@@ -109,11 +111,11 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
           if (targetCard) targetCard.click();
         }
       }, targetPrid);
-      await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+      await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(err => console.warn('[Kstat 프로젝트 재선택 대기 경고]', err.message));
     }
 
     // 폼 로드 대기 및 검증
-    await page.waitForSelector('form[name="frm"]', { timeout: 10000 }).catch(() => {});
+    await page.waitForSelector('form[name="frm"]', { timeout: 10000 }).catch(err => console.warn('[Kstat 폼 로드 대기 경고]', err.message));
     const hasForm = await page.evaluate(() => !!document.querySelector('form[name="frm"]'));
     if (!hasForm) {
       throw new Error(`Kstat 리스트 페이지(list.php)에 폼(form[name="frm"])이 로드되지 않았습니다. 현재 URL: ${page.url()}`);
@@ -129,7 +131,7 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
       });
 
       await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+        page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(err => console.warn('[Kstat 시장 검색 대기 경고]', err.message)),
         page.evaluate(() => {
           window.frm = document.forms['frm'] || document.querySelector('form[name="frm"]');
           if (typeof goPage === 'function' && window.frm) {
@@ -165,7 +167,7 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
 
         if (pageLink) {
           await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {}),
+            page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(err => console.warn('[Kstat 페이지 이동 대기 경고]', err.message)),
             pageLink.click()
           ]);
           await page.waitForTimeout(600);
@@ -186,7 +188,7 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
           }, pageNum);
 
           if (moved) {
-            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 15000 }).catch(err => console.warn('[Kstat 폼 페이지 이동 대기 경고]', err.message));
             await page.waitForTimeout(600);
           } else {
             break;
@@ -295,6 +297,8 @@ export async function scrapeKstatSlots(listUrl, options = {}) {
       slots: []
     };
   } finally {
-    await browser.close().catch(() => {});
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }

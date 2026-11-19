@@ -48,12 +48,35 @@ function inferChannel(message) {
   return 'system';
 }
 
+// 히스토리 버퍼 보관에서 제외할 대용량 이벤트 타입
+const NON_HISTORY_EVENT_TYPES = new Set([
+  'QUOTA_CHECKPOINT',
+  'QUOTA_UPDATED'
+]);
+
 class EventBroadcaster {
   constructor() {
+    /** @type {Set<{ res: import('express').Response, campaignId: string | null }>} */
     this.clients = new Set();
     this.history = [];
     this.maxHistory = 200;
     this.activeCampaignId = null;
+
+    // 프록시/로드밸런서 유휴 연결 끊김 방지를 위한 25초 주기 하트비트
+    this.heartbeatTimer = setInterval(() => {
+      if (this.clients.size === 0) return;
+      for (const client of this.clients) {
+        try {
+          client.res.write(': keep-alive\n\n');
+        } catch (_) {
+          this.clients.delete(client);
+        }
+      }
+    }, 25000);
+
+    if (typeof this.heartbeatTimer.unref === 'function') {
+      this.heartbeatTimer.unref();
+    }
   }
 
   /**
@@ -75,37 +98,44 @@ class EventBroadcaster {
   }
 
   /**
-   * 현재 실행 중인 활성 캠페인 ID 설정 (하위 호환용)
+   * 현재 실행 중인 활성 캠페인 ID 설정 (AsyncLocalStorage 우선 반영, 다중 슬롯 덮어쓰기 방지)
    */
   setActiveCampaign(campaignId = null) {
     const store = campaignContextStorage.getStore();
-    if (store && campaignId) {
-      store.campaignId = campaignId;
+    if (store) {
+      store.campaignId = campaignId || null;
+      return;
     }
     this.activeCampaignId = campaignId || null;
   }
 
   /**
-   * SSE 클라이언트 등록
+   * SSE 클라이언트 등록 (특정 campaignId 구독 시 해당 캠페인 + 공통 시스템 이벤트만 전달)
    */
   addClient(res, campaignId = null) {
-    this.clients.add(res);
+    const normalizedCampId = campaignId ? String(campaignId).trim() : null;
+    const clientEntry = { res, campaignId: normalizedCampId };
+    this.clients.add(clientEntry);
 
-    // 연결 시 최근 일반 텍스트 로그 히스토리만 전송 (타 캠페인 실행 로그는 제외하여 신규 접속 시 화면 오염 원천 방지)
+    // 연결 시 최근 일반 텍스트 로그 히스토리만 전송 (타 캠페인 실행 로그는 제외)
     this.history.forEach((data) => {
       if (data.type === 'log') {
-        if (campaignId && data.campaignId && data.campaignId !== campaignId) return;
-        res.write(`data: ${JSON.stringify(data)}\n\n`);
+        if (normalizedCampId && data.campaignId && data.campaignId !== normalizedCampId) return;
+        try {
+          res.write(`data: ${JSON.stringify(data)}\n\n`);
+        } catch (_) {
+          this.clients.delete(clientEntry);
+        }
       }
     });
 
     res.on('close', () => {
-      this.clients.delete(res);
+      this.clients.delete(clientEntry);
     });
   }
 
   /**
-   * 전체 연결된 클라이언트에 이벤트 브로드캐스트
+   * 연결된 클라이언트에 이벤트 브로드캐스트
    */
   broadcast(typeOrData, payload = {}) {
     const currentCampId = this.getCurrentCampaignId();
@@ -143,8 +173,8 @@ class EventBroadcaster {
       };
     }
 
-    // 일반 로그 및 중요 알림만 히스토리에 보관 (QUOTA_CHECKPOINT 같은 대형 쿼터 데이터는 클라이언트 화면 오염 및 메모리 누수 방지를 위해 히스토리 보관 제외)
-    if (eventData.type !== 'QUOTA_CHECKPOINT') {
+    // 대용량 쿼터 배열(QUOTA_UPDATED, QUOTA_CHECKPOINT)은 힙 메모리 누수 방지를 위해 히스토리 보관 제외
+    if (!NON_HISTORY_EVENT_TYPES.has(eventData.type)) {
       this.history.push(eventData);
       if (this.history.length > this.maxHistory) {
         this.history.shift();
@@ -153,41 +183,33 @@ class EventBroadcaster {
 
     const message = `data: ${JSON.stringify(eventData)}\n\n`;
     for (const client of this.clients) {
+      // 특정 캠페인 상세 탭(?campaignId=...)에는 타 캠페인의 이벤트/대용량 쿼터 패킷을 전송하지 않음
+      if (client.campaignId && eventData.campaignId && client.campaignId !== eventData.campaignId) {
+        continue;
+      }
       try {
-        client.write(message);
-      } catch (err) {
+        client.res.write(message);
+      } catch (_) {
         this.clients.delete(client);
       }
     }
   }
 
-  /**
-   * 일반 정보 로그
-   */
   info(message, details = null, channel = null) {
     console.log(`[INFO] ${message}`);
     this.broadcast('log', { level: 'info', message, details, channel: channel || inferChannel(message) });
   }
 
-  /**
-   * 성공 로그
-   */
   success(message, details = null, channel = null) {
     console.log(`[SUCCESS] ${message}`);
     this.broadcast('log', { level: 'success', message, details, channel: channel || inferChannel(message) });
   }
 
-  /**
-   * 경고 로그
-   */
   warn(message, details = null, channel = null) {
     console.warn(`[WARN] ${message}`);
     this.broadcast('log', { level: 'warn', message, details, channel: channel || inferChannel(message) });
   }
 
-  /**
-   * 오류 로그
-   */
   error(message, error = null, channel = null) {
     console.error(`[ERROR] ${message}`, error || '');
     this.broadcast('log', {
@@ -198,9 +220,6 @@ class EventBroadcaster {
     });
   }
 
-  /**
-   * 진행률 상태 업데이트
-   */
   updateProgress(current, total, statusText = '') {
     const percent = total > 0 ? Math.round((current / total) * 100) : 0;
     this.broadcast('progress', {
@@ -211,9 +230,6 @@ class EventBroadcaster {
     });
   }
 
-  /**
-   * 설문 응답 액션 로그 (질문명, 선택 항목 등)
-   */
   recordAnswer(questionTitle, answerType, chosenAnswer) {
     this.broadcast('answer', {
       questionTitle,

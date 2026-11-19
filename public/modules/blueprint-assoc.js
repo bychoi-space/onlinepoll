@@ -1,6 +1,6 @@
 import { escapeHtml } from './blueprint-utils.js';
 
-export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline, blueprintStageGrid, markUnsaved, appendLog }) {
+export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline, blueprintStageGrid, markUnsaved, appendLog, hasCampaignContext = false, quotaCount = 0 } = {}) {
   const assocPolicyState = { ...(data.policy || data.blueprint?.defaultPolicy || {}) };
   if (!assocPolicyState.A8_operatingHoursMode) assocPolicyState.A8_operatingHoursMode = 'standard';
   if (!assocPolicyState.A8_openHour) assocPolicyState.A8_openHour = '09';
@@ -26,7 +26,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
   if (assocPolicyState.eval_H2_4_customText === undefined) assocPolicyState.eval_H2_4_customText = '';
 
   const bpSection = document.getElementById('section-master-blueprint');
-  if (bpSection) {
+  if (bpSection && (!hasCampaignContext || quotaCount > 0)) {
     bpSection.classList.remove('hidden');
     bpSection.style.display = 'block';
   }
@@ -55,19 +55,19 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
   if (legendWrap) legendWrap.style.display = 'none';
 
   const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
-  if (titleEl) titleEl.textContent = '상인회 실태조사 기준점 및 정책 가이드라인 (25단계)';
+  if (titleEl) titleEl.textContent = '상인회 실태조사 기준점 및 정책 가이드라인 (24단계)';
 
   const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
   if (subtitleEl) subtitleEl.textContent = 'P1~P20 단계는 전년도(2024년) 실태조사 데이터와 100% 동일하게 자동 미러링되며, B5-4 총회, C3 전기차/주차장, D1-2 배송, 2026 신규 정책 문항(F5~G4) 가이드라인을 직접 설정합니다.';
 
   if (badgeMasterStatus) {
-    badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> 상인회 25단계 블루프린트 활성 (전년도 미러링 + 정책 가이드)';
+    badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> 상인회 24단계 블루프린트 활성 (전년도 미러링 + 정책 가이드)';
     badgeMasterStatus.className = 'badge-status badge-blueprint ready';
   }
 
   if (btnSaveBaseline) {
     btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 상인회 정책 가이드 저장';
-    btnSaveBaseline.title = '상인회 25단계 정책 가이드라인 설정 저장';
+    btnSaveBaseline.title = '상인회 24단계 정책 가이드라인 설정 저장';
   }
 
   if (!blueprintStageGrid) return assocPolicyState;
@@ -197,7 +197,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
           <div class="form-group mb-0" style="padding-bottom: 6px;">
             <label class="custom-cb-label" style="margin-bottom: 0;">
               <input type="checkbox" id="cb-assoc-A8-no-time" ${assocPolicyState.A8_noTime ? 'checked' : ''} />
-              <span class="font-bold text-white">개점/폐점 시간 없음 (A8_3)</span>
+              <span class="font-bold">개점/폐점 시간 없음 (A8_3)</span>
             </label>
           </div>
         </div>
@@ -220,19 +220,19 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
       </div>
       <div class="blueprint-field-list">
         <div class="field-item flex-between py-8">
-          <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> B1 운영 여부 및 체크 연도</span>
+          <span class="font-bold"><i class="fa-solid fa-check text-success"></i> B1 운영 여부 및 체크 연도</span>
           <span class="badge-status ready">2024년 운영 연도와 100% 동일 주입</span>
         </div>
         <div class="field-item flex-between py-8">
-          <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> B2-1 시장·상점가 상인회명</span>
+          <span class="font-bold"><i class="fa-solid fa-check text-success"></i> B2-1 시장·상점가 상인회명</span>
           <span class="badge-status ready">2024년 상인회명과 100% 동일 계승</span>
         </div>
         <div class="field-item flex-between py-8">
-          <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> B3 상인회장 성명 및 대표 연락처</span>
+          <span class="font-bold"><i class="fa-solid fa-check text-success"></i> B3 상인회장 성명 및 대표 연락처</span>
           <span class="badge-status ready">쿼터 등록 대표자 정보 1:1 바인딩</span>
         </div>
         <div class="field-item flex-between py-8">
-          <span class="font-bold text-white"><i class="fa-solid fa-check text-success"></i> B4-1 법인 등기/등록연도</span>
+          <span class="font-bold"><i class="fa-solid fa-check text-success"></i> B4-1 법인 등기/등록연도</span>
           <span class="badge-status ready">공란 시 '없음' 체크 / 기입력 시 동일 계승</span>
         </div>
       </div>
@@ -284,7 +284,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
         <div class="form-group mb-12">
           <label class="figma-label">보유개수 계승 규칙</label>
           <div class="assoc-rule-box p-8">
-            <span class="font-caption text-white font-bold"><i class="fa-solid fa-circle-check text-success"></i> 2024년 보유개수 1:1 동일 입력 (보유개수 없으면 모두 '없음' 자동 선택)</span>
+            <span class="font-caption font-bold"><i class="fa-solid fa-circle-check text-success"></i> 2024년 보유개수 1:1 동일 입력 (보유개수 없으면 모두 '없음' 자동 선택)</span>
           </div>
         </div>
         <div class="form-group mb-0">
@@ -672,7 +672,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
       <div class="p-14">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;" class="mb-14">
           <div class="assoc-rule-box mb-0">
-            <label class="figma-label font-bold text-white mb-6">H1-1. 시장 전반의 청결 및 위생 상태</label>
+            <label class="figma-label font-bold mb-6">H1-1. 시장 전반의 청결 및 위생 상태</label>
             <select id="select-assoc-eval-H1-1" class="figma-select w-full">
               <option value="5" ${String(assocPolicyState.eval_H1_1_cleanliness) === '5' ? 'selected' : ''}>5점 - 매우 청결하고 쾌적함</option>
               <option value="4" ${(String(assocPolicyState.eval_H1_1_cleanliness) === '4' || assocPolicyState.eval_H1_1_cleanliness === undefined) ? 'selected' : ''}>4점 - 전반적으로 양호함 (기본 권장)</option>
@@ -683,7 +683,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
           </div>
 
           <div class="assoc-rule-box mb-0">
-            <label class="figma-label font-bold text-white mb-6">H1-2. 주 출입구 및 통행로 편의성</label>
+            <label class="figma-label font-bold mb-6">H1-2. 주 출입구 및 통행로 편의성</label>
             <select id="select-assoc-eval-H1-2" class="figma-select w-full">
               <option value="5" ${String(assocPolicyState.eval_H1_2_entrance) === '5' ? 'selected' : ''}>5점 - 매우 넓고 보행 편리</option>
               <option value="4" ${(String(assocPolicyState.eval_H1_2_entrance) === '4' || assocPolicyState.eval_H1_2_entrance === undefined) ? 'selected' : ''}>4점 - 전반적으로 양호함 (기본 권장)</option>
@@ -694,7 +694,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
           </div>
 
           <div class="assoc-rule-box mb-0">
-            <label class="figma-label font-bold text-white mb-6">H1-3. 고객 주차 및 이동 편리성</label>
+            <label class="figma-label font-bold mb-6">H1-3. 고객 주차 및 이동 편리성</label>
             <select id="select-assoc-eval-H1-3" class="figma-select w-full">
               <option value="5" ${String(assocPolicyState.eval_H1_3_parking) === '5' ? 'selected' : ''}>5점 - 주차장 매우 편리</option>
               <option value="4" ${String(assocPolicyState.eval_H1_3_parking) === '4' ? 'selected' : ''}>4점 - 양호한 편</option>
@@ -705,7 +705,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
           </div>
 
           <div class="assoc-rule-box mb-0">
-            <label class="figma-label font-bold text-white mb-6">H1-4. 시장 바닥 상태의 균일성</label>
+            <label class="figma-label font-bold mb-6">H1-4. 시장 바닥 상태의 균일성</label>
             <select id="select-assoc-eval-H1-4" class="figma-select w-full">
               <option value="5" ${String(assocPolicyState.eval_H1_4_floor) === '5' ? 'selected' : ''}>5점 - 바닥 매우 평탄·균일</option>
               <option value="4" ${(String(assocPolicyState.eval_H1_4_floor) === '4' || assocPolicyState.eval_H1_4_floor === undefined) ? 'selected' : ''}>4점 - 전반적으로 양호함 (기본 권장)</option>
@@ -745,7 +745,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
       <div class="p-14">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
           <div class="assoc-rule-box mb-0">
-            <label class="figma-label font-bold text-white mb-6">H2-1. 특화거리(골목) 조성 여부</label>
+            <label class="figma-label font-bold mb-6">H2-1. 특화거리(골목) 조성 여부</label>
             <select id="select-assoc-eval-H2-1" class="figma-select w-full mb-8">
               <option value="1" ${(String(assocPolicyState.eval_H2_1_specialStreet) === '1' || assocPolicyState.eval_H2_1_specialStreet === undefined) ? 'selected' : ''}>1. 있다 (보충설명 필수)</option>
               <option value="2" ${String(assocPolicyState.eval_H2_1_specialStreet) === '2' ? 'selected' : ''}>2. 없다</option>
@@ -759,7 +759,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
           </div>
 
           <div class="assoc-rule-box mb-0">
-            <label class="figma-label font-bold text-white mb-6">H2-2. 대표 특산품 또는 자체 PB상품</label>
+            <label class="figma-label font-bold mb-6">H2-2. 대표 특산품 또는 자체 PB상품</label>
             <select id="select-assoc-eval-H2-2" class="figma-select w-full mb-8">
               <option value="1" ${(String(assocPolicyState.eval_H2_2_specialProduct) === '1' || assocPolicyState.eval_H2_2_specialProduct === undefined) ? 'selected' : ''}>1. 있다 (보충설명 필수)</option>
               <option value="2" ${String(assocPolicyState.eval_H2_2_specialProduct) === '2' ? 'selected' : ''}>2. 없다</option>
@@ -773,7 +773,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
           </div>
 
           <div class="assoc-rule-box mb-0">
-            <label class="figma-label font-bold text-white mb-6">H2-3. 시장 고유 브랜드마크(BI/캐릭터)</label>
+            <label class="figma-label font-bold mb-6">H2-3. 시장 고유 브랜드마크(BI/캐릭터)</label>
             <select id="select-assoc-eval-H2-3" class="figma-select w-full mb-8">
               <option value="2" ${(String(assocPolicyState.eval_H2_3_brandMark) === '2' || assocPolicyState.eval_H2_3_brandMark === undefined) ? 'selected' : ''}>2. 없다 (기본 권장)</option>
               <option value="1" ${String(assocPolicyState.eval_H2_3_brandMark) === '1' ? 'selected' : ''}>1. 있다 (보충설명 필수)</option>
@@ -787,7 +787,7 @@ export function renderAssocBlueprint(data, { badgeMasterStatus, btnSaveBaseline,
           </div>
 
           <div class="assoc-rule-box mb-0">
-            <label class="figma-label font-bold text-white mb-6">H2-4. 브랜드 활용 안내판·홍보물 비치</label>
+            <label class="figma-label font-bold mb-6">H2-4. 브랜드 활용 안내판·홍보물 비치</label>
             <select id="select-assoc-eval-H2-4" class="figma-select w-full mb-8">
               <option value="2" ${(String(assocPolicyState.eval_H2_4_brandUsage) === '2' || assocPolicyState.eval_H2_4_brandUsage === undefined) ? 'selected' : ''}>2. 없다 (기본 권장)</option>
               <option value="1" ${String(assocPolicyState.eval_H2_4_brandUsage) === '1' ? 'selected' : ''}>1. 있다 (보충설명 필수)</option>

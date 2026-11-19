@@ -2,25 +2,25 @@
  * 설문조사 상세 작업실 제어 스크립트 (survey-detail.js)
  * 2-Tier 와이드 쿼터 뷰, 쿼터 항목별 진행 트래커, 2-Phase 파일럿 & 배치 파이프라인 제어
  */
-import { escapeHtml } from './modules/blueprint-utils.js?v=20261116_metrix_sel_fix';
-import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js?v=20261116_metrix_sel_fix';
-import { renderAssocBlueprint } from './modules/blueprint-assoc.js?v=20261108_modular_v4';
+import { escapeHtml } from './modules/blueprint-utils.js';
+import { syncMetrixInputsToState, renderMetrixBlueprint } from './modules/blueprint-metrix.js';
+import { renderAssocBlueprint } from './modules/blueprint-assoc.js';
 import {
   resolveGlobalriAgeGroupKey,
   createGlobalriBlueprintController
-} from './modules/blueprint-globalri.js?v=20261108_modular_v4';
+} from './modules/blueprint-globalri.js';
 import {
   renderKonaBlueprint,
   renderHrcEnergyBlueprint,
   renderGallupReturnFarmBlueprint
-} from './modules/blueprint-gallup-hrc-kona.js?v=20261108_modular_v4';
+} from './modules/blueprint-gallup-hrc-kona.js';
 import {
   PRESET_STANDARD,
   PRESET_GROWTH,
   PRESET_TRADITIONAL,
   PRESET_ROTATION,
   renderKstatStoreStages
-} from './modules/blueprint-kstat-store.js?v=20261108_modular_v4';
+} from './modules/blueprint-kstat-store.js';
 import {
   renderQuotaTableHead,
   renderEmptyQuotaTableRow,
@@ -31,7 +31,13 @@ import {
   renderMetrixQuotaTable,
   renderMetrixSeoulQuotaTable,
   renderAssocQuotaTable
-} from './modules/quota-table-renderers.js?v=20261116_metrix_sel_fix';
+} from './modules/quota-table-renderers.js';
+import {
+  showToast,
+  showConfirmModal,
+  showPromptModal,
+  showSelectModal
+} from './ui-feedback.js';
 
 
 async function initSurveyDetailPage() {
@@ -77,7 +83,6 @@ async function initSurveyDetailPage() {
 
   // STEP 2: 실행 제어 & 설문 URL/엔진
   const inputSurveyUrl = document.getElementById('input-survey-url');
-  const btnFillSample = document.getElementById('btn-fill-sample-url');
   const selectSurveyEngine = document.getElementById('select-survey-engine');
   const inputSurveyTopic = document.getElementById('input-survey-topic');
   const checkSafetyGuard = document.getElementById('check-safety-guard');
@@ -91,7 +96,6 @@ async function initSurveyDetailPage() {
 
   // 3대 핵심 영역 퀵 점프 네비게이션
   const quickJumpPills = document.querySelectorAll('.quick-jump-pill');
-  const linkGoToBlueprint = document.getElementById('link-go-to-blueprint');
 
   // STEP 3: 최하단 마스터 설문 블루프린트 (15단계 전수 복제)
   const sectionMasterBlueprint = document.getElementById('section-master-blueprint');
@@ -99,8 +103,6 @@ async function initSurveyDetailPage() {
   const badgeMasterStatus = document.getElementById('badge-master-status');
   const blueprintStageGrid = document.getElementById('blueprint-stage-grid');
   const btnSaveBaseline = document.getElementById('btn-save-baseline');
-  const btnRunAllBatchBottom = document.getElementById('btn-run-all-batch-bottom'); // 레거시 호환
-  const btnStopAllBatchBottom = document.getElementById('btn-stop-all-batch-bottom'); // 레거시 호환
   const btnPresetStandard = document.getElementById('btn-preset-standard');
   const btnPresetGrowth = document.getElementById('btn-preset-growth');
   const btnPresetTraditional = document.getElementById('btn-preset-traditional');
@@ -186,7 +188,7 @@ async function initSurveyDetailPage() {
         quotaBadge.textContent = '메트릭스 패널 (120단계)';
       } else if (isAssoc) {
         quotaBadge.className = 'badge-quota-type assoc';
-        quotaBadge.textContent = '상인회 대상 (25단계)';
+        quotaBadge.textContent = '상인회 대상 (24단계)';
       } else {
         quotaBadge.className = `badge-quota-type ${camp.quotaType === 'b2b' ? 'b2b' : 'b2c'}`;
         quotaBadge.textContent = camp.quotaType === 'b2b' ? '사업주 대상 (B2B)' : '개인 대상 (B2C)';
@@ -241,22 +243,22 @@ async function initSurveyDetailPage() {
       if (step2DescEl) step2DescEl.textContent = '코나체인 리서치 청소년 설문 1~40번 문항(조건부 하위 문항 포함 총 53단계) 확률 분포 및 제출 직전 스크린샷 규칙을 확인합니다.';
       if (quickJumpStep2Label) quickJumpStep2Label.innerHTML = '<i class="fa-solid fa-sliders"></i> 청소년 설문 기준점 검토';
     } else if (isAssoc) {
-      if (step2TitleEl) step2TitleEl.textContent = '상인회 실태조사 기준점 및 가이드라인 검토 (25단계 전수)';
-      if (step2DescEl) step2DescEl.textContent = '케이스탯 상인회 실태조사 1~25단계 구조 및 기본 응답 규칙을 확인하고 조정합니다.';
-      if (quickJumpStep2Label) quickJumpStep2Label.innerHTML = '<i class="fa-solid fa-sliders"></i> 상인회 기준점 검토 (25단계)';
+      if (step2TitleEl) step2TitleEl.textContent = '상인회 실태조사 기준점 및 가이드라인 검토 (24단계 전수)';
+      if (step2DescEl) step2DescEl.textContent = '케이스탯 상인회 실태조사 1~24단계 구조 및 기본 응답 규칙을 확인하고 조정합니다.';
+      if (quickJumpStep2Label) quickJumpStep2Label.innerHTML = '<i class="fa-solid fa-sliders"></i> 상인회 기준점 검토 (24단계)';
     } else {
-      if (step2TitleEl) step2TitleEl.textContent = '마스터 설문조사 & 조사원 평가 기준점 검토 (17단계 전수)';
-      if (step2DescEl) step2DescEl.textContent = '케이스탯 본 설문 1~16단계 및 조사원 평가 17단계 구조가 전수 복제되었습니다.';
-      if (quickJumpStep2Label) quickJumpStep2Label.innerHTML = '<i class="fa-solid fa-sliders"></i> 마스터 설문 &amp; 조사원 평가 기준점 검토 (17단계)';
+      if (step2TitleEl) step2TitleEl.textContent = '마스터 설문조사 & 조사원 평가 기준점 검토 (15단계 + 평가 17단계)';
+      if (step2DescEl) step2DescEl.textContent = '케이스탯 본 설문 1~15단계 및 조사원 평가 17단계 구조가 전수 복제되었습니다.';
+      if (quickJumpStep2Label) quickJumpStep2Label.innerHTML = '<i class="fa-solid fa-sliders"></i> 마스터 설문 &amp; 조사원 평가 기준점 검토 (15단계)';
     }
 
     // 실시간 모니터링 레이어 타임라인 칩 & 제목 동적 렌더링
-    renderTimelineChips(isAssoc, isGallupReturnFarm);
+    renderTimelineChips(camp.surveyType);
 
     // STEP 3 캡처 버튼 문구 동적화
     const btnViewPilotCaptures = document.getElementById('btn-view-pilot-captures');
     if (btnViewPilotCaptures) {
-      btnViewPilotCaptures.textContent = (isGallupReturnFarm || isMetrixSeoul) ? '단계별 설문 캡처 보기' : (isGlobalriLiteracy ? '단계별 설문 캡처 보기' : (isHrcEnergy ? '설문 완료 캡처 보기' : (isKona ? '제출 직전 캡처 보기' : (isAssoc ? '25단계 캡처 전체보기' : '15단계 캡처 전체보기'))));
+      btnViewPilotCaptures.textContent = (isGallupReturnFarm || isMetrixSeoul) ? '단계별 설문 캡처 보기' : (isGlobalriLiteracy ? '단계별 설문 캡처 보기' : (isHrcEnergy ? '설문 완료 캡처 보기' : (isKona ? '제출 직전 캡처 보기' : (isAssoc ? '24단계 캡처 전체보기' : '15단계 캡처 전체보기'))));
     }
 
     // 대상 설문 요약 스트립 동적화
@@ -290,7 +292,7 @@ async function initSurveyDetailPage() {
                 ? '<i class="fa-solid fa-check-double"></i> 40문항/53단계 기준점 연동 완료'
                 : (isMetrix
                   ? '<i class="fa-solid fa-check-double"></i> 120단계 기준점 연동 완료'
-                  : (isAssoc ? '<i class="fa-solid fa-check-double"></i> 25단계 기준점 연동 완료' : '<i class="fa-solid fa-check-double"></i> 17단계 기준점 연동 완료'))))));
+                  : (isAssoc ? '<i class="fa-solid fa-check-double"></i> 24단계 기준점 연동 완료' : '<i class="fa-solid fa-check-double"></i> 15단계 기준점 연동 완료'))))));
     }
     const badgeExecEngine = document.getElementById('badge-exec-engine');
     if (badgeExecEngine) {
@@ -328,6 +330,12 @@ async function initSurveyDetailPage() {
         btnOpenBindSlots.title = 'Kstat 관리자 list.php에서 슬롯을 1초 만에 자동 수집 및 바인딩';
       }
     }
+
+    // 엔진 전환 시 동적 삽입된 시트 바로가기 버튼 초기화 (노출 누수 방지)
+    const prevExportBtn = document.getElementById('btn-export-globalri-answers-top');
+    if (prevExportBtn) prevExportBtn.style.display = 'none';
+    const prevViewBtn = document.getElementById('btn-view-globalri-answers-top');
+    if (prevViewBtn) prevViewBtn.style.display = 'none';
 
     // 귀농실태조사 / 성인문해능력조사 / 에너지총조사 / 코나체인 청소년 / 메트릭스 모드 시 Kstat 전용 버튼 제어 및 STEP 3 스트립 갱신
     const btnOpenSlotModalToolbar = document.getElementById('btn-open-slot-modal');
@@ -558,21 +566,21 @@ async function initSurveyDetailPage() {
       }
       const descBatch = document.getElementById('desc-batch-automation');
       if (descBatch) {
-        descBatch.textContent = '기존에 이미 입력되어 있는 항목은 절대 건드리지 않고 보존하며, [선정] 쿼터를 우선 완료(100% 조사완료)합니다. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터로 자동 승계합니다.';
+        descBatch.textContent = '기존에 이미 입력되어 있는 항목은 절대 건드리지 않고 보존하며, [선정] 쿼터를 우선 진행(기본 91% 마지막 문항 안전 대기)합니다. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터로 자동 승계합니다.';
       }
       const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
       if (safetyGuardToggle) {
-        safetyGuardToggle.textContent = '91% 마지막 문항(E1-5)에서 완료 보류 (체크 해제 시 100% 조사완료까지 즉시 완료 권장)';
+        safetyGuardToggle.textContent = '91% 마지막 문항(E1-5)에서 완료 직전 안전 대기 (권장 · 해제 시 100% 조사완료 제출)';
       }
       if (checkSafetyGuard) {
-        checkSafetyGuard.checked = false;
+        checkSafetyGuard.checked = true;
       }
 
       if (btnPilot) {
         btnPilot.classList.remove('d-none');
         btnPilot.className = 'btn-action-secondary font-bold';
         btnPilot.style.display = 'inline-flex';
-        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 선정 쿼터 단건 실행 (100% 완료)';
+        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 선정 쿼터 단건 실행 (91% 안전 대기)';
       }
     } else if (isKona) {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
@@ -613,14 +621,14 @@ async function initSurveyDetailPage() {
       if (titleBatch) titleBatch.textContent = '화성특례시 청소년 설문 102명(6002~6103) 순차 배치 자동화';
       const descBatch = document.getElementById('desc-batch-automation');
       if (descBatch) {
-        descBatch.textContent = '매 회차 깨끗한 브라우저 세션으로 코나체인 설문에 진입하여 1~40번(하위 포함 53단계) 응답을 주입하고, 제출하기 직전 스크린샷을 저장한 뒤 제출합니다.';
+        descBatch.textContent = '매 회차 깨끗한 브라우저 세션으로 코나체인 설문에 진입하여 1~40번(하위 포함 53단계) 응답을 주입하고, 기본으로 제출 직전 안전 대기(스크린샷 촬영) 상태를 유지합니다.';
       }
       const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
       if (safetyGuardToggle) {
-        safetyGuardToggle.textContent = '제출 직전 안전 대기 (체크 해제 시 제출 직전 스크린샷 촬영 후 실제 최종 제출 완료)';
+        safetyGuardToggle.textContent = '제출 직전 안전 대기 (권장 · 해제 시 제출 직전 스크린샷 촬영 후 최종 제출)';
       }
       if (checkSafetyGuard) {
-        checkSafetyGuard.checked = false;
+        checkSafetyGuard.checked = true;
       }
 
       if (btnPilot) {
@@ -875,14 +883,13 @@ async function initSurveyDetailPage() {
       updateBatchProgressBar(completedOrPilotCount, quotaDb.length);
     }
 
+    syncQuickActionBatchButtons(isRunning);
     if (isRunning) {
       if (btnPilot) btnPilot.disabled = true;
       btnBatch.disabled = true;
       btnBatch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 배치 진행 중...';
-      if (btnRunAllBatchBottom) btnRunAllBatchBottom.disabled = true;
       btnStop.disabled = false;
       btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> 배치 중지';
-      if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = false;
       if (step2ConfigCard) step2ConfigCard.classList.add('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = true;
       if (currentStorePulse) currentStorePulse.classList.remove('d-none');
@@ -898,7 +905,6 @@ async function initSurveyDetailPage() {
     } else {
       btnStop.disabled = true;
       btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> 배치 중지';
-      if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = true;
       if (step2ConfigCard) step2ConfigCard.classList.remove('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = false;
       if (currentStorePulse) currentStorePulse.classList.add('d-none');
@@ -950,7 +956,7 @@ async function initSurveyDetailPage() {
           btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 대상자 Part C까지 실행 (D1 수기대기)';
         } else if (isHrcEnergy) {
           btnPilot.disabled = false;
-          btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 미완료 선정 쿼터 1건 검증 실행 (100% 완료)';
+          btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 미완료 선정 쿼터 1건 검증 실행 (91% 안전 대기)';
         } else if (isKona) {
           btnPilot.disabled = false;
           btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 항목 파일럿 검증 (제출 보류)';
@@ -977,10 +983,6 @@ async function initSurveyDetailPage() {
           btnBatch.disabled = false;
           btnBatch.className = 'btn-action-success flex-1 font-bold';
           btnBatch.innerHTML = `<i class="fa-solid fa-play"></i> 체크한 사업체 순차 배치 자동화 가동 (svyA115 99% 안전 대기 · ${doneOr99Count}/${quotaDb.length} 진행)`;
-          if (btnRunAllBatchBottom) {
-            btnRunAllBatchBottom.disabled = false;
-            btnRunAllBatchBottom.innerHTML = '<i class="fa-solid fa-rocket"></i> 체크한 사업체 일괄 배치 가동 (svyA115 99% 안전 대기)';
-          }
         }
       } else if (isGallupReturnFarm) {
         const doneCount = quotaDb.filter(b => b.quotaStatus === 'completed' || b.status === '조사완료' || b.quotaStatus === 'pilot_done').length;
@@ -992,10 +994,6 @@ async function initSurveyDetailPage() {
           btnBatch.disabled = false;
           btnBatch.className = 'btn-action-success flex-1 font-bold';
           btnBatch.innerHTML = `<i class="fa-solid fa-play"></i> 체크한 대상자 일괄 배치 자동화 가동 (완료 직전 Page 118까지 · ${doneCount}/${quotaDb.length} 진행)`;
-          if (btnRunAllBatchBottom) {
-            btnRunAllBatchBottom.disabled = false;
-            btnRunAllBatchBottom.innerHTML = '<i class="fa-solid fa-rocket"></i> 체크한 대상자 일괄 배치 가동 (Page 118 완료직전까지)';
-          }
         }
       } else if (isGlobalriLiteracy) {
         const doneCount = quotaDb.filter(b => b.quotaStatus === 'completed' || b.status === '완료' || b.quotaStatus === 'pilot_done').length;
@@ -1007,10 +1005,6 @@ async function initSurveyDetailPage() {
           btnBatch.disabled = false;
           btnBatch.className = 'btn-action-success flex-1 font-bold';
           btnBatch.innerHTML = `<i class="fa-solid fa-play"></i> 성인문해능력조사 나이대별 배치 자동화 가동 (${doneCount}/${quotaDb.length} 진행)`;
-          if (btnRunAllBatchBottom) {
-            btnRunAllBatchBottom.disabled = false;
-            btnRunAllBatchBottom.innerHTML = '<i class="fa-solid fa-rocket"></i> 나이대별 가이드로 전체 배치 가동';
-          }
         }
       } else if (isHrcEnergy) {
         const selQuotas = quotaDb.filter(b => b.selectionType === '선정');
@@ -1066,20 +1060,12 @@ async function initSurveyDetailPage() {
         if (allCompleted) {
           btnBatch.disabled = true;
           btnBatch.innerHTML = '<i class="fa-solid fa-circle-check"></i> 전체 배치 자동화 최종 마감 완료 (100%)';
-          if (btnRunAllBatchBottom) {
-            btnRunAllBatchBottom.disabled = true;
-            btnRunAllBatchBottom.textContent = '전체 배치 마감 완료 (100%)';
-          }
         } else {
           btnBatch.disabled = false;
           if (firstDone) {
             btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 미완료 슬롯 순차 배치 자동화 계속 가동';
           } else {
             btnBatch.innerHTML = '<i class="fa-solid fa-play"></i> 전체 배치 자동화 시작';
-          }
-          if (btnRunAllBatchBottom) {
-            btnRunAllBatchBottom.disabled = false;
-            btnRunAllBatchBottom.innerHTML = '<i class="fa-solid fa-rocket"></i> 이 기준점으로 전체 배치 가동';
           }
         }
       }
@@ -1142,33 +1128,22 @@ async function initSurveyDetailPage() {
 
     const isAssoc = (currentCampaign?.surveyType === 'kstat_assoc');
 
-    // [점진적 워크플로우 공개 (Progressive Disclosure)]
+    // [점진적 워크플로우 공개 (Progressive Disclosure — AGENTS.md Rule 6)]
     const sectionMasterBlueprint = document.getElementById('section-master-blueprint');
     const sectionExecution = document.getElementById('section-execution');
     const jumpPills = document.querySelectorAll('.quick-jump-pill');
 
     if (total === 0) {
-      if (isAssoc || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) {
-        if (sectionMasterBlueprint) {
-          sectionMasterBlueprint.classList.remove('hidden');
-          sectionMasterBlueprint.style.display = 'block';
-        }
-        if (sectionExecution) sectionExecution.classList.add('hidden');
-        if (jumpPills && jumpPills.length >= 3) {
-          jumpPills[1].style.opacity = '1';
-          jumpPills[1].style.pointerEvents = 'auto';
-          jumpPills[2].style.opacity = '0.35';
-          jumpPills[2].style.pointerEvents = 'none';
-        }
-      } else {
-        if (sectionMasterBlueprint) sectionMasterBlueprint.classList.add('hidden');
-        if (sectionExecution) sectionExecution.classList.add('hidden');
-        if (jumpPills && jumpPills.length >= 3) {
-          jumpPills[1].style.opacity = '0.35';
-          jumpPills[1].style.pointerEvents = 'none';
-          jumpPills[2].style.opacity = '0.35';
-          jumpPills[2].style.pointerEvents = 'none';
-        }
+      if (sectionMasterBlueprint) {
+        sectionMasterBlueprint.classList.add('hidden');
+        sectionMasterBlueprint.style.display = '';
+      }
+      if (sectionExecution) sectionExecution.classList.add('hidden');
+      if (jumpPills && jumpPills.length >= 3) {
+        jumpPills[1].style.opacity = '0.35';
+        jumpPills[1].style.pointerEvents = 'none';
+        jumpPills[2].style.opacity = '0.35';
+        jumpPills[2].style.pointerEvents = 'none';
       }
     } else {
       if (sectionMasterBlueprint) {
@@ -1306,6 +1281,9 @@ async function initSurveyDetailPage() {
         isGallupReturnFarm,
         isGlobalriLiteracy,
         isHrcEnergy,
+        isKona,
+        isMetrix,
+        isMetrixSeoul,
         isAssoc
       });
       return;
@@ -1343,7 +1321,7 @@ async function initSurveyDetailPage() {
           const data = await res.json();
           if (!res.ok || !data.success) throw new Error(data.error || '구글 스프레드시트 동기화 실패');
           appendLog('success', `✅ [구글 스프레드시트 동기화] ${data.message}`);
-          alert(data.message);
+          showToast(data.message, 'success');
         }
       });
       return;
@@ -1455,10 +1433,10 @@ async function initSurveyDetailPage() {
               renderQuotaTable(currentCampaign.quotaDatabase);
             }
             appendLog('success', `✅ [쿼터별 가이드 저장 완료] ${data.message}`);
-            alert(data.message);
+            showToast(data.message, 'success');
           } catch (err) {
             appendLog('error', `❌ [쿼터별 가이드 저장 오류] ${err.message}`);
-            alert('가이드 저장 오류: ' + err.message);
+            showToast('가이드 저장 오류: ' + err.message, 'error');
           }
         }
       });
@@ -1471,7 +1449,7 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    const existingMetrixBar = document.getElementById('metrix-step1-check-bar');
+    const existingMetrixBar = document.getElementById('metrix-622-step1-check-bar');
     if (!isMetrix && existingMetrixBar) {
       existingMetrixBar.style.display = 'none';
     }
@@ -2154,27 +2132,6 @@ async function initSurveyDetailPage() {
     });
   }
 
-  // 전통시장 실태조사 URL 채우기 샘플
-  btnFillSample.addEventListener('click', () => {
-    inputSurveyUrl.value = 'https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=UlpNCKP9c&type=tapi&prid=2026070802&mnid=900001346&srt=1';
-    inputSurveyTopic.value = '2026년 전통시장·상점가 및 점포경영 실태조사 (점포주 대상)';
-    inputTextGuidelines.value = '전통시장 온누리상품권 가맹 혜택 및 디지털 온누리 환급 지원 강화 의견';
-    selectSurveyEngine.value = 'kstat_tapi';
-    appendLog('info', '전통시장 실태조사 URL 및 케이스탯 전용 엔진 설정이 적용되었습니다.');
-  });
-
-  // ------------------------------------------------------------------------
-  // 5. STEP 3: 2-Phase 듀얼 실행 제어기 (파일럿 검증 ➔ 배치 연속 가동)
-  // ------------------------------------------------------------------------
-  function getPolicyPayload() {
-    return {
-      emptyNotes: policyEmptyNotes.value,
-      profitChange: policyProfitChange.value,
-      debtStatus: policyDebtStatus.value,
-      deliveryStatus: policyDeliveryStatus.value
-    };
-  }
-
   // ------------------------------------------------------------------------
   // 5. STEP 3: 15단계 마스터 설문 블루프린트 & 기준점 에디터 (3개 업종 그룹별 분리 지원)
   // ------------------------------------------------------------------------
@@ -2306,10 +2263,6 @@ async function initSurveyDetailPage() {
     evalH1_5: 4,
     evalH1_5_Min: 3,
     evalH1_5_Max: 5,
-    evalH1_2: 4,
-    evalH1_3: 4,
-    evalH1_4: 4,
-    evalH1_5: 4,
     evalH2_1: 'yes',
     evalH2_2: 'no',
     evalH2_3: 'auto',
@@ -2322,36 +2275,29 @@ async function initSurveyDetailPage() {
 
   function updateGroupStatsUI() {
     if (groupStats) {
-      const c1 = document.getElementById('count-group1');
-      const c2 = document.getElementById('count-group2');
-      const c3 = document.getElementById('count-group3');
-      if (c1 && groupStats.group1) c1.textContent = `${groupStats.group1.count}개소`;
-      if (c2 && groupStats.group2) c2.textContent = `${groupStats.group2.count}개소`;
-      if (c3 && groupStats.group3) c3.textContent = `${groupStats.group3.count}개소`;
+      const c1 = document.getElementById('badge-count-group1');
+      const c2 = document.getElementById('badge-count-group2');
+      const c3 = document.getElementById('badge-count-group3');
+      if (c1 && groupStats.group1) c1.textContent = `${groupStats.group1.count}개 점포`;
+      if (c2 && groupStats.group2) c2.textContent = `${groupStats.group2.count}개 점포`;
+      if (c3 && groupStats.group3) c3.textContent = `${groupStats.group3.count}개 점포`;
     }
 
-    const tagEl = document.getElementById('active-group-tag');
-    const descEl = document.getElementById('active-group-desc');
-    const countEl = document.getElementById('active-group-count');
-    const storesEl = document.getElementById('active-group-stores');
+    const labelEl = document.getElementById('label-active-group-name');
+    const storesEl = document.getElementById('list-active-group-stores');
 
     const meta = GROUP_METAS[activeGroup] || GROUP_METAS.group1;
-    if (tagEl) {
-      tagEl.textContent = meta.name;
-      tagEl.className = `active-group-tag ${meta.badgeClass}`;
+    if (labelEl) {
+      labelEl.textContent = meta.name;
     }
-    if (descEl) descEl.textContent = meta.desc;
 
     if (groupStats && groupStats[activeGroup]) {
       const st = groupStats[activeGroup];
-      if (countEl) countEl.textContent = st.count;
       if (storesEl) {
-        if (st.stores && st.stores.length > 0) {
-          const preview = st.stores.slice(0, 6).join(', ') + (st.stores.length > 6 ? ` 외 ${st.stores.length - 6}개소` : '');
-          storesEl.textContent = preview;
-        } else {
-          storesEl.textContent = '해당 업종 점포 없음';
-        }
+        const storesText = (st.stores && st.stores.length > 0)
+          ? (st.stores.slice(0, 6).join(', ') + (st.stores.length > 6 ? ` 외 ${st.stores.length - 6}개소` : ''))
+          : '해당 업종 점포 없음';
+        storesEl.textContent = storesText;
       }
     }
   }
@@ -2394,11 +2340,24 @@ async function initSurveyDetailPage() {
     groupBaselines.group3 = JSON.parse(JSON.stringify(currentBaseline));
 
     markUnsaved();
-    alert(`[${sourceMeta.name}]의 기준점 설정이 1번, 2번, 3번 그룹 전체에 일괄 복사되었습니다.\n우측의 [마스터 기준점 저장]을 눌러 서버에 최종 반영해 주세요.`);
+    showToast(`[${sourceMeta.name}] 설정이 1·2·3그룹 전체에 복사되었습니다. [기준점 저장]을 눌러 반영하세요.`, 'success');
   }
 
   let assocPolicyState = null;
   let metrixPolicyState = {};
+
+  function enforceZeroQuotaProgressiveDisclosure() {
+    const quotaCount = currentCampaign?.quotaDatabase?.length || 0;
+    if (currentCampaign && quotaCount === 0) {
+      const bpSec = document.getElementById('section-master-blueprint');
+      const execSec = document.getElementById('section-execution');
+      if (bpSec) {
+        bpSec.classList.add('hidden');
+        bpSec.style.display = '';
+      }
+      if (execSec) execSec.classList.add('hidden');
+    }
+  }
 
   async function loadBlueprint() {
     try {
@@ -2406,6 +2365,8 @@ async function initSurveyDetailPage() {
       if (!res.ok) throw new Error('블루프린트를 불러올 수 없습니다.');
       const data = await res.json();
       blueprintData = data.blueprint;
+      const hasCampaignContext = Boolean(currentCampaign);
+      const quotaCount = currentCampaign?.quotaDatabase?.length || 0;
 
       // 한국갤럽 2026년 귀농귀촌 실태조사(귀농) 전용 블루프린트 분기
       const isGallupReturnFarmCampaign = (data.surveyType === 'gallup_return_farm' || currentCampaign?.surveyType === 'gallup_return_farm');
@@ -2416,7 +2377,9 @@ async function initSurveyDetailPage() {
           badgeMasterStatus,
           btnSaveBaseline,
           blueprintStageGrid,
-          triggerBatchRun: () => triggerBatchRun()
+          triggerBatchRun: () => triggerBatchRun(),
+          hasCampaignContext,
+          quotaCount
         });
         return;
       }
@@ -2434,7 +2397,9 @@ async function initSurveyDetailPage() {
         renderHrcEnergyBlueprint(data, {
           blueprintStageGrid,
           badgeMasterStatus,
-          btnSaveBaseline
+          btnSaveBaseline,
+          hasCampaignContext,
+          quotaCount
         });
         return;
       }
@@ -2445,7 +2410,9 @@ async function initSurveyDetailPage() {
         renderKonaBlueprint(data, {
           blueprintStageGrid,
           badgeMasterStatus,
-          btnSaveBaseline
+          btnSaveBaseline,
+          hasCampaignContext,
+          quotaCount
         });
         return;
       }
@@ -2453,17 +2420,14 @@ async function initSurveyDetailPage() {
       // 상인회 전용 블루프린트 분기 (완전 격리)
       const isAssocCampaign = (data.surveyType === 'kstat_assoc' || currentCampaign?.surveyType === 'kstat_assoc');
       if (isAssocCampaign) {
-        const bpSection = document.getElementById('section-master-blueprint');
-        if (bpSection) {
-          bpSection.classList.remove('hidden');
-          bpSection.style.display = 'block';
-        }
         assocPolicyState = renderAssocBlueprint(data, {
           blueprintStageGrid,
           badgeMasterStatus,
           btnSaveBaseline,
           markUnsaved,
-          appendLog
+          appendLog,
+          hasCampaignContext,
+          quotaCount
         });
         return;
       }
@@ -2476,16 +2440,13 @@ async function initSurveyDetailPage() {
         currentCampaign?.surveyType === 'metrix_seoul_panel'
       );
       if (isMetrixCampaign) {
-        const bpSection = document.getElementById('section-master-blueprint');
-        if (bpSection) {
-          bpSection.classList.remove('hidden');
-          bpSection.style.display = 'block';
-        }
         metrixPolicyState = renderMetrixBlueprint(data, {
           blueprintStageGrid,
           badgeMasterStatus,
           btnSaveBaseline,
           appendLog,
+          hasCampaignContext,
+          quotaCount,
           onSelectIndustryQuotas: (indKey) => {
             if (!currentCampaign || !Array.isArray(currentCampaign.quotaDatabase)) return;
             checkedMetrixSeqs.clear();
@@ -2501,14 +2462,14 @@ async function initSurveyDetailPage() {
             renderQuotaTable(currentCampaign.quotaDatabase);
             const indName = metrixPolicyState?.industryPolicies?.[indKey]?.name || indKey;
             appendLog('info', `✓ STEP 1 쿼터 목록에서 [${indName}] 미완료·정상 사업체 ${checkedMetrixSeqs.size}건만 선택(체크)되었습니다.`);
-            alert(`STEP 1 쿼터 목록에서 [${indName}] 미완료·정상 사업체 ${checkedMetrixSeqs.size}건이 체크되었습니다.`);
+            showToast(`STEP 1 쿼터 목록에서 [${indName}] 미완료·정상 사업체 ${checkedMetrixSeqs.size}건이 체크되었습니다.`, 'info');
           },
           onApplyIndustryGuideToChecked: async (indKey, indPolicy) => {
             try {
               await saveBaseline(false);
               const targetSeqs = Array.from(checkedMetrixSeqs);
               if (targetSeqs.length === 0) {
-                alert('STEP 1에서 가이드를 적용할 사업체를 먼저 체크해 주세요.');
+                showToast('STEP 1에서 가이드를 적용할 사업체를 먼저 체크해 주세요.', 'warn');
                 return;
               }
               const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/apply-selected-guide`, {
@@ -2527,10 +2488,10 @@ async function initSurveyDetailPage() {
                 renderQuotaTable(currentCampaign.quotaDatabase);
               }
               appendLog('success', `✅ [업종별 가이드 배정 완료] ${result.message}`);
-              alert(result.message);
+              showToast(result.message, 'success');
             } catch (err) {
               appendLog('error', `업종별 가이드 적용 실패: ${err.message}`);
-              alert('업종별 가이드 적용 실패: ' + err.message);
+              showToast('업종별 가이드 적용 실패: ' + err.message, 'error');
             }
           }
         });
@@ -2592,10 +2553,12 @@ async function initSurveyDetailPage() {
       if (blueprintStageGrid) {
         blueprintStageGrid.innerHTML = `
           <div class="empty-table-msg">
-            <i class="fa-solid fa-triangle-exclamation text-error"></i> 블루프린트를 불러오지 못했습니다: ${err.message}
+            <i class="fa-solid fa-triangle-exclamation text-error"></i> 블루프린트를 불러오지 못했습니다: ${escapeHtml(err.message)}
           </div>
         `;
       }
+    } finally {
+      enforceZeroQuotaProgressiveDisclosure();
     }
   }
 
@@ -2766,7 +2729,7 @@ async function initSurveyDetailPage() {
             : (isKona
               ? '<i class="fa-solid fa-camera"></i> 40문항 규칙 &amp; 제출 직전 캡처 활성'
               : (isAssoc 
-                ? '<i class="fa-solid fa-check-double"></i> 상인회 25단계 블루프린트 설정 완료'
+                ? '<i class="fa-solid fa-check-double"></i> 상인회 24단계 블루프린트 설정 완료'
                 : (isMetrixSeoul
                   ? '<i class="fa-solid fa-shield-halved"></i> 서울시 소상공인 패널(5차) svyA115(99%) 안전 대기 &amp; 구글 시트 기록 활성'
                   : (isMetrix
@@ -2776,7 +2739,7 @@ async function initSurveyDetailPage() {
       }
 
       if (showNotification) {
-        appendLog('success', isGlobalriLiteracy
+        const saveMsg = isGlobalriLiteracy
           ? '✓ 제5차 성인문해능력조사 나이대별(20대·30대·40대·50대·60대·70대+) 응답 가이드라인이 저장되었습니다.'
           : (isHrcEnergy
             ? '✓ 2025년 기준 에너지총조사 [건물] 정책 가이드라인(기존 입력값 보존 규칙)이 저장되었습니다.'
@@ -2785,8 +2748,10 @@ async function initSurveyDetailPage() {
               : ((isMetrix || isMetrixSeoul)
                 ? '✓ 소상공인 사업체 패널조사 설문 응답 가이드가 저장되었습니다.'
                 : (isAssoc 
-                  ? '✓ 상인회 25단계 정책 가이드라인(F5~G4)이 성공적으로 저장되었습니다.'
-                  : '✓ 3개 업종 그룹별 마스터 기준점 및 조사원 평가 가이드(H1~H3)가 성공적으로 저장되었습니다. 24개 쿼터에 적용됩니다.')))));
+                  ? '✓ 상인회 24단계 정책 가이드라인(F5~G4)이 성공적으로 저장되었습니다.'
+                  : '✓ 3개 업종 그룹별 마스터 기준점 및 조사원 평가 가이드(H1~H3)가 성공적으로 저장되었습니다.'))));
+        appendLog('success', saveMsg);
+        showToast(saveMsg.replace(/^✓\s*/, ''), 'success');
       }
 
       setTimeout(() => {
@@ -2799,7 +2764,7 @@ async function initSurveyDetailPage() {
       return true;
     } catch (err) {
       if (btnSaveBaseline) btnSaveBaseline.disabled = false;
-      if (showNotification) alert('기준점 저장 실패: ' + err.message);
+      if (showNotification) showToast('기준점 저장 실패: ' + err.message, 'error');
       appendLog('error', `기준점 저장 실패: ${err.message}`);
       return false;
     }
@@ -2829,27 +2794,31 @@ async function initSurveyDetailPage() {
         const camps = await res.json();
         const otherCamps = (camps || []).filter(c => c.id !== campId && (c.masterBaseline || c.hasMasterBlueprint));
         if (otherCamps.length === 0) {
-          alert('가져올 수 있는 기준점이 설정된 다른 캠페인이 없습니다.');
+          showToast('가져올 수 있는 기준점이 설정된 다른 캠페인이 없습니다.', 'warn');
           return;
         }
 
-        let msg = '1/2/3그룹 마스터 기준점을 가져올 원본 캠페인 번호를 입력하세요:\n\n';
-        otherCamps.forEach((c, idx) => {
-          msg += `[${idx + 1}] ${c.title} (점포 ${c.quotaDatabase?.length || 0}개)\n`;
+        const selectedId = await showSelectModal({
+          title: '다른 캠페인 기준점 불러오기',
+          message: '1/2/3그룹 마스터 기준점을 복제해 올 원본 캠페인을 선택하세요.',
+          options: otherCamps.map(c => ({
+            value: c.id,
+            label: c.title,
+            sublabel: `점포 ${c.quotaDatabase?.length || 0}개`
+          })),
+          confirmText: '선택한 기준점 복제'
         });
-        const choice = prompt(msg, '1');
-        if (!choice) return;
+        if (!selectedId) return;
 
-        const selIdx = parseInt(choice, 10) - 1;
-        if (isNaN(selIdx) || selIdx < 0 || selIdx >= otherCamps.length) {
-          alert('올바른 번호를 선택해 주세요.');
-          return;
-        }
+        const sourceCamp = otherCamps.find(c => c.id === selectedId);
+        if (!sourceCamp) return;
 
-        const sourceCamp = otherCamps[selIdx];
-        if (!confirm(`"${sourceCamp.title}"의 1/2/3그룹 마스터 기준점을 이 캠페인에 복제 적용하시겠습니까?`)) {
-          return;
-        }
+        const confirmed = await showConfirmModal({
+          title: '마스터 기준점 복제 확인',
+          message: `"${sourceCamp.title}"의 1/2/3그룹 마스터 기준점을 이 캠페인에 복제 적용하시겠습니까?`,
+          confirmText: '복제 적용'
+        });
+        if (!confirmed) return;
 
         btnImportCampBaseline.disabled = true;
         btnImportCampBaseline.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 복제 중...';
@@ -2862,13 +2831,13 @@ async function initSurveyDetailPage() {
         const importData = await importRes.json();
         if (!importRes.ok) throw new Error(importData.error || '복제 실패');
 
-        alert(`✓ "${sourceCamp.title}"의 1/2/3그룹 마스터 기준점이 성공적으로 적용되었습니다.`);
+        showToast(`"${sourceCamp.title}"의 1/2/3그룹 마스터 기준점이 적용되었습니다.`, 'success');
         await loadBlueprint();
 
         btnImportCampBaseline.disabled = false;
         btnImportCampBaseline.innerHTML = '<i class="fa-solid fa-file-import text-primary-color"></i> 다른 캠페인 기준점 불러오기';
       } catch (err) {
-        alert('기준점 불러오기 실패: ' + err.message);
+        showToast('기준점 불러오기 실패: ' + err.message, 'error');
         if (btnImportCampBaseline) {
           btnImportCampBaseline.disabled = false;
           btnImportCampBaseline.innerHTML = '<i class="fa-solid fa-file-import text-primary-color"></i> 다른 캠페인 기준점 불러오기';
@@ -3110,8 +3079,8 @@ async function initSurveyDetailPage() {
       return;
     }
 
-    let surveyUrl = targets[0]?.slotUrl || targets[0]?.surveyUrl || targets[0]?.householdUrl || inputSurveyUrl.value.trim() || (isMetrixSeoul ? 'https://metrix.svybx.kr/sp7/S21401by41s3/mlist.asp' : (isGallupReturnFarm ? 'https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W' : (isGlobalriLiteracy ? 'https://gift.globalri.it/login' : (isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL'))));
-    const safetyGuard = isMetrixSeoul ? true : (checkSafetyGuard ? checkSafetyGuard.checked : (isHrcEnergy ? false : true));
+    let surveyUrl = targets[0]?.slotUrl || targets[0]?.surveyUrl || targets[0]?.householdUrl || (inputSurveyUrl?.value || '').trim() || (isMetrixSeoul ? 'https://metrix.svybx.kr/sp7/S21401by41s3/mlist.asp' : (isGallupReturnFarm ? 'https://rs.gallup.co.kr/webApp/response/ResponseIdStart_20263603.asp?p_vr_no=317729C6AC&p_intrvw_id=076_000009&p_intrvw_nm=%EB%B0%B1%EC%98%81%EC%9E%90&p_rspns_mthd=P&p_mode=W' : (isGlobalriLiteracy ? 'https://gift.globalri.it/login' : (isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL'))));
+    const safetyGuard = isMetrixSeoul ? true : (checkSafetyGuard ? checkSafetyGuard.checked : true);
     
     let confirmMsg;
     if (isMetrixSeoul) {
@@ -3192,11 +3161,8 @@ async function initSurveyDetailPage() {
   };
 
   btnBatch.addEventListener('click', triggerBatchRun);
-  if (btnRunAllBatchBottom) {
-    btnRunAllBatchBottom.addEventListener('click', triggerBatchRun);
-  }
 
-  // 중지 버튼 (상단 & 하단 동기화 — 현재 캠페인만 개별 중지하여 동시 실행 중인 다른 캠페인에 영향을 주지 않음)
+  // 중지 버튼 (현재 캠페인만 개별 중지하여 동시 실행 중인 다른 캠페인에 영향을 주지 않음)
   const handleStopSurvey = async () => {
     try {
       await fetch('/api/survey/stop', {
@@ -3211,9 +3177,6 @@ async function initSurveyDetailPage() {
     }
   };
   btnStop.addEventListener('click', handleStopSurvey);
-  if (btnStopAllBatchBottom) {
-    btnStopAllBatchBottom.addEventListener('click', handleStopSurvey);
-  }
 
   // ------------------------------------------------------------------------
   // 6-1. 케이스탯 슬롯 1:1 매칭 모달 (행별 직접 입력 & 대량 파싱) 및 점포 수동 추가 제어
@@ -3748,44 +3711,93 @@ async function initSurveyDetailPage() {
   // ------------------------------------------------------------------------
   // 6. 실시간 타임라인 칩 제어
   // ------------------------------------------------------------------------
-  function renderTimelineChips(isAssoc, isGallupReturnFarm = false) {
+  function getTimelineConfig(surveyTypeOrAssoc, isGallupFlag = false) {
+    const st = typeof surveyTypeOrAssoc === 'string'
+      ? surveyTypeOrAssoc
+      : (isGallupFlag ? 'gallup_return_farm' : (surveyTypeOrAssoc ? 'kstat_assoc' : (currentCampaign?.surveyType || 'kstat_store')));
+
+    if (st === 'gallup_return_farm') {
+      return {
+        title: '한국갤럽 귀농실태조사 타임라인 (Page 1 ~ 118 완료직전)',
+        steps: [
+          '검색/방문기록', 'SQ1~SQ7', 'T3서명(P7)', '귀농동향(P10)', '준비/정착(P20)',
+          '주거/농지(P50)', '영농활동(P65)', '지역융화(P83)', '경제/소득(P92)', '삶의질(P112)', 'P118(완료직전)'
+        ],
+        finalStep: 'P118(완료직전)'
+      };
+    }
+    if (st === 'metrix_seoul_panel') {
+      return {
+        title: '서울시 소상공인 패널 5차 타임라인 (svyA001 ~ svyA115 99% 대기)',
+        steps: ['목록진입', 'A.기본현황', 'B.창업/고용', 'C.매출/비용', 'D~L.경영전반', 'M~O.5차신규', 'svyA115(99%대기)'],
+        finalStep: 'svyA115(99%대기)'
+      };
+    }
+    if (st === 'metrix_panel') {
+      return {
+        title: '경기도 소상공인 패널 3차 타임라인 (문1 ~ 98% 안전 대기)',
+        steps: ['컨택/진입', '문1~문9', '문10~문25', '문26~문45', '문46~문69', '전자서명', '98%안전대기'],
+        finalStep: '98%안전대기'
+      };
+    }
+    if (st === 'globalri_literacy') {
+      return {
+        title: '제5차 성인문해능력조사 타임라인 (Part A ~ Part C / D1 대기)',
+        steps: ['가구목록', 'CONSENT/GP1', 'Part A(선별)', 'Part B(기초)', 'Part C(심화)', 'END_C(채점)', 'D1(수기대기)'],
+        finalStep: 'D1(수기대기)'
+      };
+    }
+    if (st === 'hrc_energy') {
+      return {
+        title: '에너지총조사 [건물 부문] 타임라인 (기본정보 ~ E1-5 91% 안전 대기)',
+        steps: ['표본진입', '기본정보(T)', 'A.건물개요', 'B.설비현황', 'C.에너지사용', 'D.행태', 'E1-5(안전대기)'],
+        finalStep: 'E1-5(안전대기)'
+      };
+    }
+    if (st === 'kona_youth') {
+      return {
+        title: '화성특례시 청소년 설문 타임라인 (1~40번 · 53단계)',
+        steps: ['설문진입', '문1~문10', '문11~문20', '문21~문30', '문31~문40', '제출직전캡처'],
+        finalStep: '제출직전캡처'
+      };
+    }
+    if (st === 'kstat_assoc') {
+      return {
+        title: '상인회 실태조사 타임라인 (24단계)',
+        steps: [
+          'Q1',
+          'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10',
+          'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20',
+          'P21', 'P22',
+          'Agree'
+        ],
+        finalStep: 'Agree'
+      };
+    }
+    return {
+      title: '점포경영 실태조사 타임라인 (15단계)',
+      steps: [
+        'Q1',
+        'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10',
+        'P11', 'P12', 'P13',
+        'Agree'
+      ],
+      finalStep: 'Agree'
+    };
+  }
+
+  function renderTimelineChips(surveyTypeOrAssoc, isGallupReturnFarm = false) {
     const strip = document.getElementById('timeline-chips-strip');
     if (!strip) return;
 
+    const cfg = getTimelineConfig(surveyTypeOrAssoc, isGallupReturnFarm);
     if (timelineStepperTitle) {
-      timelineStepperTitle.textContent = isGallupReturnFarm
-        ? '한국갤럽 귀농실태조사 타임라인 (Page 1 ~ 118 완료직전)'
-        : (isAssoc ? '상인회 실태조사 타임라인 (25단계)' : '점포경영 실태조사 타임라인 (15단계)');
+      timelineStepperTitle.textContent = cfg.title;
     }
 
-    const steps = isGallupReturnFarm ? [
-      '검색/방문기록',
-      'SQ1~SQ7',
-      'T3서명(P7)',
-      '귀농동향(P10)',
-      '준비/정착(P20)',
-      '주거/농지(P50)',
-      '영농활동(P65)',
-      '지역융화(P83)',
-      '경제/소득(P92)',
-      '삶의질(P112)',
-      'P118(완료직전)'
-    ] : (isAssoc ? [
-      'Q1',
-      'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10',
-      'P11', 'P12', 'P13', 'P14', 'P15', 'P16', 'P17', 'P18', 'P19', 'P20',
-      'P21', 'P22', 'P23',
-      'Agree'
-    ] : [
-      'Q1',
-      'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10',
-      'P11', 'P12', 'P13', 'P14',
-      'Agree'
-    ]);
-
-    strip.innerHTML = steps.map(step => {
-      const isFinal = (step.toLowerCase() === 'agree' || step.includes('P118'));
-      return `<span class="step-chip${isFinal ? ' step-chip-final' : ''}" data-step="${step}">${step}</span>`;
+    strip.innerHTML = cfg.steps.map(step => {
+      const isFinal = (step === cfg.finalStep);
+      return `<span class="step-chip${isFinal ? ' step-chip-final' : ''}" data-step="${escapeHtml(step)}">${escapeHtml(step)}</span>`;
     }).join('');
 
     timelineChips = strip.querySelectorAll('.step-chip');
@@ -3878,7 +3890,7 @@ async function initSurveyDetailPage() {
         // 파일럿 완료 (현재 캠페인 이벤트만 화면 자동 동기화)
         else if (data.type === 'PILOT_COMPLETED') {
           if (data.campaignId && data.campaignId !== campId) return;
-          setTimelineStep(currentCampaign?.surveyType === 'gallup_return_farm' ? 'P118(완료직전)' : 'Agree');
+          setTimelineStep(getTimelineConfig(currentCampaign?.surveyType).finalStep);
           setRunningState(false);
           await loadCampaign();
           if (currentCampaign?.surveyType === 'metrix_seoul_panel') {
@@ -3938,7 +3950,7 @@ async function initSurveyDetailPage() {
         // 배치 완료 (현재 캠페인 이벤트만 화면 자동 동기화)
         else if (data.type === 'BATCH_COMPLETED') {
           if (data.campaignId && data.campaignId !== campId) return;
-          setTimelineStep('Agree');
+          setTimelineStep(getTimelineConfig(currentCampaign?.surveyType).finalStep);
           setRunningState(false);
           await loadCampaign();
           appendLog('success', '🎉 선택한 쿼터의 배치 자동화가 성공적으로 완료되었습니다!');
@@ -3976,17 +3988,33 @@ async function initSurveyDetailPage() {
     terminalLogs.scrollTop = terminalLogs.scrollHeight;
   }
 
+  const QUICK_BATCH_BUTTON_IDS = [
+    'btn-gallup-top-batch-run',
+    'btn-gallup-step2-batch',
+    'btn-globalri-top-batch-run',
+    'btn-globalri-batch-top',
+    'btn-globalri-run-selected-batch',
+    'btn-metrix-622-top-batch-run',
+    'btn-seoul-top-batch-run'
+  ];
+
+  function syncQuickActionBatchButtons(running) {
+    QUICK_BATCH_BUTTON_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = running;
+    });
+  }
+
   function setRunningState(running) {
+    syncQuickActionBatchButtons(running);
     if (running) {
       statusIndicator.classList.add('running');
       statusText.textContent = '자동화 실행 중 (로봇 작동)';
       if (btnPilot) btnPilot.disabled = true;
       btnBatch.disabled = true;
       btnBatch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 배치 진행 중...';
-      if (btnRunAllBatchBottom) btnRunAllBatchBottom.disabled = true;
       btnStop.disabled = false;
       btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> 배치 중지';
-      if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = false;
       if (step2ConfigCard) step2ConfigCard.classList.add('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = true;
       if (currentStorePulse) currentStorePulse.classList.remove('d-none');
@@ -4004,7 +4032,6 @@ async function initSurveyDetailPage() {
       statusText.textContent = '준비 완료 (대기 중)';
       btnStop.disabled = true;
       btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> 배치 중지';
-      if (btnStopAllBatchBottom) btnStopAllBatchBottom.disabled = true;
       if (step2ConfigCard) step2ConfigCard.classList.remove('section-locked');
       if (checkSafetyGuard) checkSafetyGuard.disabled = false;
       if (currentStorePulse) currentStorePulse.classList.add('d-none');
@@ -4035,14 +4062,6 @@ async function initSurveyDetailPage() {
       }
     });
   });
-
-  if (linkGoToBlueprint) {
-    linkGoToBlueprint.addEventListener('click', (e) => {
-      e.preventDefault();
-      const bpEl = document.getElementById('section-master-blueprint');
-      if (bpEl) bpEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  }
 
   // ------------------------------------------------------------------------
   // 서버 실행 상태 동기화 (새로고침/재진입 시 자동 복원 및 비실행 캠페인 잔류 running 상태 정리)
@@ -4103,7 +4122,7 @@ async function initSurveyDetailPage() {
       const loginId = (inputKstatAccountId?.value || '').trim();
       const loginPw = (inputKstatAccountPw?.value || '').trim();
       if (!loginId) {
-        alert('Kstat 조사원 성명(ID)을 입력해주세요.');
+        showToast('Kstat 조사원 성명(ID)을 입력해주세요.', 'warn');
         return;
       }
       btnSaveKstatAccount.disabled = true;
@@ -4127,10 +4146,10 @@ async function initSurveyDetailPage() {
           badgeCurrentKstatAccount.innerHTML = `<i class="fa-solid fa-user-check"></i> 연동 계정: <strong>${escapeHtml(loginId)}</strong>`;
         }
         appendLog('success', `✓ Kstat 조사원 계정(${loginId})이 저장되었습니다.`);
-        alert(`✓ Kstat 조사원 계정(${loginId})이 성공적으로 저장되었습니다.`);
+        showToast(`Kstat 조사원 계정(${loginId})이 저장되었습니다.`, 'success');
         await loadCampaign();
       } catch (err) {
-        alert('계정 저장 오류: ' + err.message);
+        showToast('계정 저장 오류: ' + err.message, 'error');
       } finally {
         btnSaveKstatAccount.disabled = false;
       }
@@ -4149,12 +4168,13 @@ async function initSurveyDetailPage() {
       const isMetrixSeoul = (currentCampaign.surveyType === 'metrix_seoul_panel');
       let lidFilterInput = '';
       if (isGlobalriLiteracy) {
-        const promptVal = prompt(
-          '[제5차 성인문해능력조사 - 글로벌리서치 GIFT 실시간 동기화]\n\n' +
-          '• 비워두고 [확인] 클릭 시: 목록에서 [결과값1=완료 & 결과값2=완료] 가구 전체의 "진행 중" 가구원을 자동으로 불러옵니다.\n' +
-          '• 특정 가구(LID)만 지정하려면 쉼표로 구분하여 입력해 주세요 (예: 029426, 006425):',
-          ''
-        );
+        const promptVal = await showPromptModal({
+          title: '글로벌리서치 GIFT 실시간 동기화',
+          message: '• 비워두고 [동기화 시작] 클릭 시: [결과값1=완료 & 결과값2=완료] 가구 전체의 "진행 중" 가구원을 자동으로 불러옵니다.\n• 특정 가구(LID)만 지정하려면 쉼표로 구분해 입력해 주세요:',
+          placeholder: '예: 029426, 006425 (전체 조회 시 비워둠)',
+          defaultValue: '',
+          confirmText: '동기화 시작'
+        });
         if (promptVal === null) return;
         lidFilterInput = promptVal.trim();
       }
@@ -4192,7 +4212,7 @@ async function initSurveyDetailPage() {
         });
         const data = await res.json();
         if (data.success) {
-          alert(`✓ ${data.message}`);
+          showToast(data.message, 'success');
           appendLog('success', `[${isMetrix ? '경기도 622 4계정·구글시트·폐업 동기화' : (isMetrixSeoul ? '서울시 패널 구글시트 동기화' : (isGallupReturnFarm ? '한국갤럽 상태 동기화' : (isGlobalriLiteracy ? '글로벌리서치 GIFT 동기화' : (isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화'))))}] ${data.message}`);
           if (isMetrix || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) {
             await loadCampaign();

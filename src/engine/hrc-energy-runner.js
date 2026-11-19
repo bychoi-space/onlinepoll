@@ -200,7 +200,7 @@ export async function signHrcEnergyGiftReceipt(page, {
           window.$.post('./SaveInfo4', window.buildSaveData(), () => resolve()).fail(() => resolve());
         });
       }
-    }, { sName: signerName, p1: hp1, p2: hp2, p3: hp3 }).catch(() => {});
+    }, { sName: signerName, p1: hp1, p2: hp2, p3: hp3 }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
   }
 
   if (answerInfoStatus.alreadySigned) {
@@ -349,7 +349,7 @@ export async function signHrcEnergyGiftReceipt(page, {
 
   if (reportDir) {
     const fileName = `step_GIFT_SIGN_${uidStr}_${Date.now()}.png`;
-    await page.screenshot({ path: path.join(reportDir, fileName), fullPage: true }).catch(() => {});
+    await page.screenshot({ path: path.join(reportDir, fileName), fullPage: true }).catch(err => console.warn('[Screenshot 경고]', err.message));
     if (Array.isArray(capturedSteps)) {
       capturedSteps.push({
         step: 'GIFT_SIGNATURE',
@@ -416,7 +416,7 @@ async function waitForRpsReady(page) {
       err !== '' ||
       alertMsg !== ''
     );
-  }, { timeout: 20000 }).catch(() => {});
+  }, { timeout: 20000 }).catch(err => console.warn('[waitForRpsReady 대기 경고]', err.message));
   await page.waitForTimeout(250);
 }
 
@@ -547,7 +547,7 @@ export async function runHrcEnergySurvey(options = {}) {
     loginId: rawLoginId,
     loginPw: rawLoginPw,
     quotaIndex = 1,
-    safetyGuard = false,
+    safetyGuard = true,
     reportDir = null,
     onProgress = () => {}
   } = options;
@@ -566,19 +566,20 @@ export async function runHrcEnergySurvey(options = {}) {
   }
 
   const capturedSteps = [];
-  const browser = await launchChromium({ headless: true });
-  const context = await browser.newContext({
-    ignoreHTTPSErrors: true,
-    viewport: { width: 1280, height: 920 }
-  });
-  const page = await context.newPage();
-
-  // 브라우저 alert/confirm 자동 수락
-  page.on('dialog', async dialog => {
-    try { await dialog.accept(); } catch (_) {}
-  });
+  let browser = null;
 
   try {
+    browser = await launchChromium({ headless: true });
+    const context = await browser.newContext({
+      ignoreHTTPSErrors: true,
+      viewport: { width: 1280, height: 920 }
+    });
+    const page = await context.newPage();
+
+    // 브라우저 alert/confirm 자동 수락
+    page.on('dialog', async dialog => {
+      try { await dialog.accept(); } catch (e) { console.warn('[Dialog accept 경고]', e.message); }
+    });
     const fallbackName = String(slotData.contactName || slotData.ceoName || '관리소장').trim() || '관리소장';
     const [p1, p2, p3] = parsePhoneParts(slotData.phone || '010-7935-2414');
     let basicInfoState = {
@@ -786,7 +787,7 @@ export async function runHrcEnergySurvey(options = {}) {
       if (step.isCompleted) {
         if (reportDir) {
           const fileName = `step_COMPLETE_${Date.now()}.png`;
-          await page.screenshot({ path: path.join(reportDir, fileName), fullPage: true }).catch(() => {});
+          await page.screenshot({ path: path.join(reportDir, fileName), fullPage: true }).catch(err => console.warn('[Screenshot 경고]', err.message));
           capturedSteps.push({
             step: 'COMPLETE',
             stepIndex: capturedSteps.length + 1,
@@ -1735,7 +1736,7 @@ export async function runHrcEnergySurvey(options = {}) {
       if (safetyGuard && step.cv === 'q90020_r1') {
         if (reportDir) {
           const fileName = `step_91PCT_GUARD_${Date.now()}.png`;
-          await page.screenshot({ path: path.join(reportDir, fileName), fullPage: true }).catch(() => {});
+          await page.screenshot({ path: path.join(reportDir, fileName), fullPage: true }).catch(err => console.warn('[Screenshot 경고]', err.message));
           capturedSteps.push({
             step: 'q90020_r1',
             stepIndex: capturedSteps.length + 1,
@@ -1779,7 +1780,7 @@ export async function runHrcEnergySurvey(options = {}) {
           const errEl = document.querySelector('#ErrorMessage');
           if (errEl) errEl.value = '';
           window.isRun = false;
-        }).catch(() => {});
+        }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
         if (after.err.includes('인터넷 연결 오류')) {
           logger.warn(`[HRC 에너지총조사] UID=${uid} 문항 ${after.cv} 일시적 통신 지연 감지 — 재시도합니다.`);
           await page.waitForTimeout(800);
@@ -1791,7 +1792,9 @@ export async function runHrcEnergySurvey(options = {}) {
 
     throw new Error(`[UID ${uid}] 최대 단계 수(160단계)를 초과하여 중단되었습니다.`);
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }
 
@@ -1808,8 +1811,9 @@ export async function signAllCompletedHrcEnergySlots(options = {}) {
     onProgress = () => {}
   } = options;
 
-  const browser = await launchChromium({ headless: true });
+  let browser = null;
   try {
+    browser = await launchChromium({ headless: true });
     const context = await browser.newContext({
       ignoreHTTPSErrors: true,
       viewport: { width: 1400, height: 920 },
@@ -1817,7 +1821,7 @@ export async function signAllCompletedHrcEnergySlots(options = {}) {
     });
     const page = await context.newPage();
     page.on('dialog', async (d) => {
-      try { await d.accept(); } catch (_) {}
+      try { await d.accept(); } catch (e) { console.warn('[Dialog accept 경고]', e.message); }
     });
 
     await page.goto(`${HRC_BASE_URL}/Home/Login`, {
@@ -1855,7 +1859,7 @@ export async function signAllCompletedHrcEnergySlots(options = {}) {
         page.waitForURL(u => u.toString().includes('/q260342/List4'), { timeout: 20000 }),
         page.click('#goBuilding')
       ]);
-      await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 }).catch(() => {});
+      await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 }).catch(err => console.warn('[List4 행 대기 경고]', err.message));
 
       const seenUids = new Set();
       const visitedPages = new Set();
@@ -1904,7 +1908,7 @@ export async function signAllCompletedHrcEnergySlots(options = {}) {
           ? nextLink.href
           : `${HRC_BASE_URL}${nextLink.href}`;
         await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-        await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 }).catch(() => {});
+        await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 }).catch(err => console.warn('[List4 페이지 행 대기 경고]', err.message));
       }
     }
 
@@ -1974,7 +1978,9 @@ export async function signAllCompletedHrcEnergySlots(options = {}) {
 
     return results;
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }
 

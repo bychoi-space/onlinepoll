@@ -49,6 +49,11 @@ async function initQuotaDetailPage() {
   let searchTerm = '';
   const selectedSeqSet = new Set();
 
+  const notifyToast = (msg, type = 'info') => {
+    if (window.AutoSurveyUI?.showToast) window.AutoSurveyUI.showToast(msg, type);
+    else alert(msg);
+  };
+
   function isAssocQuota() {
     if (!originalQuota) return String(fileName || '').startsWith('quota_assoc_');
     return (
@@ -57,6 +62,34 @@ async function initQuotaDetailPage() {
       String(fileName || '').startsWith('quota_assoc_') ||
       String(originalQuota.title || '').includes('상인회')
     );
+  }
+
+  function detectQuotaSchema() {
+    if (isAssocQuota()) return 'kstat_assoc';
+    const metaStr = `${originalQuota?.surveyType || ''} ${originalQuota?.type || ''} ${fileName || ''} ${originalQuota?.title || ''}`.toLowerCase();
+    const sample = currentData[0] || {};
+    if (metaStr.includes('hrc') || metaStr.includes('에너지') || sample.buildingName !== undefined || sample.selectionType !== undefined) return 'hrc_energy';
+    if (metaStr.includes('globalri') || metaStr.includes('문해') || sample.lid !== undefined || sample.memberUid !== undefined) return 'globalri_literacy';
+    if (metaStr.includes('gallup') || metaStr.includes('귀농') || sample.eupMyeon !== undefined) return 'gallup_return_farm';
+    if (metaStr.includes('seoul') || metaStr.includes('서울시 소상공인') || sample.resid !== undefined || sample.accountKey !== undefined) return 'metrix_seoul_panel';
+    if (metaStr.includes('metrix') || metaStr.includes('경기도 소상공인') || sample.surveyorId !== undefined || sample.isClosedBiz !== undefined) return 'metrix_panel';
+    if (metaStr.includes('kona') || metaStr.includes('청소년') || (sample.idx !== undefined && !sample.bizNumber && !sample.slotUrl)) return 'kona_youth';
+    return 'kstat_store';
+  }
+
+  function isNonKstatQuota() {
+    const schema = detectQuotaSchema();
+    return schema !== 'kstat_store' && schema !== 'kstat_assoc';
+  }
+
+  function matchesSearchTerm(item, term) {
+    if (!term) return true;
+    return [
+      item.companyName, item.buildingName, item.memberName, item.name,
+      item.industry, item.marketType, item.selectionType, item.ageGroupLabel,
+      item.ceoName, item.phone, item.bizNumber, item.uid, item.lid, item.resid, item.id, item.idx,
+      item.handledItems, item.mainProducts, item.address, item.eupMyeon, item.surveyorId, item.surveyorName
+    ].some(v => String(v || '').toLowerCase().includes(term));
   }
 
   // ------------------------------------------------------------------------
@@ -93,19 +126,7 @@ async function initQuotaDetailPage() {
       if (chkAll) {
         chkAll.addEventListener('change', () => {
           const term = searchTerm.trim().toLowerCase();
-          const visibleItems = currentData.filter(item => {
-            if (!term) return true;
-            return (
-              String(item.companyName || '').toLowerCase().includes(term) ||
-              String(item.industry || '').toLowerCase().includes(term) ||
-              String(item.ceoName || '').toLowerCase().includes(term) ||
-              String(item.phone || '').toLowerCase().includes(term) ||
-              String(item.bizNumber || '').toLowerCase().includes(term) ||
-              String(item.handledItems || '').toLowerCase().includes(term) ||
-              String(item.mainProducts || '').toLowerCase().includes(term) ||
-              String(item.address || '').toLowerCase().includes(term)
-            );
-          });
+          const visibleItems = currentData.filter(item => matchesSearchTerm(item, term));
           visibleItems.forEach((item, idx) => {
             const s = Number(item.seq || item.index || (idx + 1));
             if (chkAll.checked) selectedSeqSet.add(s);
@@ -124,10 +145,18 @@ async function initQuotaDetailPage() {
       btnDelSelected.innerHTML = `<i class="fa-solid fa-trash-can text-error"></i> 선택 항목 삭제 (<span id="selected-quota-del-count">0</span>건)`;
       btnDelSelected.addEventListener('click', async () => {
         if (selectedSeqSet.size === 0) {
-          alert('삭제할 항목을 표 좌측 체크박스로 먼저 선택해 주세요.');
+          notifyToast('삭제할 항목을 표 좌측 체크박스로 먼저 선택해 주세요.', 'warn');
           return;
         }
-        if (!confirm(`선택한 ${selectedSeqSet.size}개 항목을 쿼터 및 연동된 설문 캠페인에서 삭제하시겠습니까?`)) return;
+        const confirmed = window.AutoSurveyUI?.showConfirmModal
+          ? await window.AutoSurveyUI.showConfirmModal({
+              title: '선택 항목 삭제',
+              message: `선택한 ${selectedSeqSet.size}개 항목을 쿼터 및 연동된 설문 캠페인에서 삭제하시겠습니까?`,
+              confirmText: '삭제',
+              danger: true
+            })
+          : confirm(`선택한 ${selectedSeqSet.size}개 항목을 쿼터 및 연동된 설문 캠페인에서 삭제하시겠습니까?`);
+        if (!confirmed) return;
         currentData = currentData.filter((d, idx) => !selectedSeqSet.has(Number(d.seq || d.index || (idx + 1))));
         currentData.forEach((d, idx) => {
           d.seq = idx + 1;
@@ -150,13 +179,21 @@ async function initQuotaDetailPage() {
       btnDelCompleted.className = 'btn-pill btn-pill-secondary btn-pill-small';
       btnDelCompleted.innerHTML = `<i class="fa-solid fa-broom"></i> 완료 항목 일괄 제외`;
       btnDelCompleted.addEventListener('click', async () => {
-        const doneItems = currentData.filter(d => d.status === '완료' || d.quotaStatus === 'completed' || d.quotaStatus === 'used' || d.surveyCompleted);
+        const doneItems = currentData.filter(d => d.status === '완료' || d.status === '조사완료' || d.quotaStatus === 'completed' || d.quotaStatus === 'used' || d.surveyCompleted);
         if (doneItems.length === 0) {
-          alert('현재 완료 처리된 항목이 없습니다. 제외할 항목을 좌측 체크박스로 선택하거나 우측 휴지통 버튼으로 삭제해 주세요.');
+          notifyToast('현재 완료 처리된 항목이 없습니다.', 'info');
           return;
         }
-        if (!confirm(`이미 진행 완료된 ${doneItems.length}개 항목을 쿼터에서 일괄 제외하시겠습니까?`)) return;
-        currentData = currentData.filter(d => !(d.status === '완료' || d.quotaStatus === 'completed' || d.quotaStatus === 'used' || d.surveyCompleted));
+        const confirmed = window.AutoSurveyUI?.showConfirmModal
+          ? await window.AutoSurveyUI.showConfirmModal({
+              title: '완료 항목 일괄 제외',
+              message: `이미 진행 완료된 ${doneItems.length}개 항목을 쿼터에서 일괄 제외하시겠습니까?`,
+              confirmText: '일괄 제외',
+              danger: true
+            })
+          : confirm(`이미 진행 완료된 ${doneItems.length}개 항목을 쿼터에서 일괄 제외하시겠습니까?`);
+        if (!confirmed) return;
+        currentData = currentData.filter(d => !(d.status === '완료' || d.status === '조사완료' || d.quotaStatus === 'completed' || d.quotaStatus === 'used' || d.surveyCompleted));
         currentData.forEach((d, idx) => {
           d.seq = idx + 1;
           d.index = idx + 1;
@@ -186,16 +223,66 @@ async function initQuotaDetailPage() {
     titleEl.textContent = rawTitle;
     titleEl.title = rawTitle;
     displayName.textContent = rawTitle;
-    const marketName = originalQuota.marketName || '일반 사업자';
+    const marketName = originalQuota.marketName || '일반 표본';
     badgeMarket.textContent = marketName;
     badgeCount.textContent = `${currentData.length}건`;
 
     const isAssoc = isAssocQuota();
+    const nonKstat = isNonKstatQuota();
+    const schema = detectQuotaSchema();
+    const btnSlotToolbar = document.getElementById('btn-open-quota-slot-modal');
     const isStratified = originalQuota.industryDistribution && Object.keys(originalQuota.industryDistribution).length >= 5;
-    if (isAssoc) {
+
+    if (nonKstat) {
+      const schemaLabels = {
+        hrc_energy: '한국리서치 에너지총조사 표본',
+        globalri_literacy: '글로벌리서치 성인문해 표본',
+        gallup_return_farm: '한국갤럽 귀농실태조사 표본',
+        metrix_seoul_panel: '메트릭스 서울시 패널 5차 표본',
+        metrix_panel: '메트릭스 경기도 패널 3차 표본',
+        kona_youth: '코나체인 청소년 설문 표본'
+      };
+      badgeStratified.className = 'badge-status success';
+      badgeStratified.textContent = schemaLabels[schema] || '전용 리서치 표본';
+      if (btnEnrich) btnEnrich.classList.add('hidden');
+      if (btnOpenAdd) btnOpenAdd.classList.add('hidden');
+      if (btnSlotToolbar) btnSlotToolbar.classList.add('hidden');
+
+      const theadRow = document.querySelector('#quota-editor-table thead tr');
+      if (theadRow) {
+        theadRow.innerHTML = `
+          <th class="th-no"><label class="inline-flex-center gap-4 cursor-pointer" title="전체 선택/해제"><input type="checkbox" id="chk-quota-detail-all" /> 번호</label></th>
+          <th>대상자 / 사업체명</th>
+          <th>구분 / 유형</th>
+          <th>식별코드 (UID/LID/ID)</th>
+          <th>대표자 / 성명</th>
+          <th class="text-center">성별</th>
+          <th class="text-center">연령 / 출생</th>
+          <th>연락처</th>
+          <th>지역 / 주소</th>
+          <th>조사원 / 계정</th>
+          <th class="text-center">진행 상태</th>
+          <th class="th-action text-center">관리</th>
+        `;
+        const chkAll = document.getElementById('chk-quota-detail-all');
+        if (chkAll) {
+          chkAll.addEventListener('change', () => {
+            const term = searchTerm.trim().toLowerCase();
+            const visibleItems = currentData.filter(item => matchesSearchTerm(item, term));
+            visibleItems.forEach((item, idx) => {
+              const s = Number(item.seq || item.index || (idx + 1));
+              if (chkAll.checked) selectedSeqSet.add(s);
+              else selectedSeqSet.delete(s);
+            });
+            renderTable();
+          });
+        }
+      }
+    } else if (isAssoc) {
       badgeStratified.className = 'badge-status success';
       badgeStratified.textContent = 'Kstat 상인회 슬롯 표본';
       if (btnEnrich) btnEnrich.classList.add('hidden');
+      if (btnSlotToolbar) btnSlotToolbar.classList.remove('hidden');
       // 상인회용 컬럼 헤더 라벨 보정
       const ths = document.querySelectorAll('#quota-editor-table thead th');
       if (ths.length >= 12) {
@@ -207,12 +294,17 @@ async function initQuotaDetailPage() {
         ths[10].textContent = '시장분류';
         ths[11].textContent = '조사원계정';
       }
-    } else if (isStratified) {
-      badgeStratified.className = 'badge-status success';
-      badgeStratified.textContent = '9대 업종 층화 표본';
     } else {
-      badgeStratified.className = 'badge-status ready';
-      badgeStratified.textContent = '단순 순차 수집';
+      if (btnEnrich) btnEnrich.classList.remove('hidden');
+      if (btnOpenAdd) btnOpenAdd.classList.remove('hidden');
+      if (btnSlotToolbar) btnSlotToolbar.classList.remove('hidden');
+      if (isStratified) {
+        badgeStratified.className = 'badge-status success';
+        badgeStratified.textContent = '9대 업종 층화 표본';
+      } else {
+        badgeStratified.className = 'badge-status ready';
+        badgeStratified.textContent = '단순 순차 수집';
+      }
     }
 
     if (originalQuota.linkedCampaignId) {
@@ -230,6 +322,25 @@ async function initQuotaDetailPage() {
   }
 
   function renderDistributionKpi() {
+    if (isNonKstatQuota()) {
+      const doneCnt = currentData.filter(d => d.status === '완료' || d.status === '조사완료' || d.quotaStatus === 'completed' || d.quotaStatus === 'used' || d.surveyCompleted || String(d.status || '').includes('완료(100%)')).length;
+      const waitCnt = currentData.filter(d => d.quotaStatus === 'pilot_done' || /98%|99%|완료직전|F05_2/.test(String(d.status || '') + ' ' + String(d.quotaStatus || ''))).length;
+      const readyCnt = Math.max(0, currentData.length - doneCnt - waitCnt);
+      const chips = [
+        { label: '전체 표본', icon: '📋', cnt: currentData.length, active: true },
+        { label: '진행 대기', icon: '⏳', cnt: readyCnt, active: readyCnt > 0 },
+        { label: '안전대기·검토', icon: '🛡️', cnt: waitCnt, active: waitCnt > 0 },
+        { label: '조사완료', icon: '✅', cnt: doneCnt, active: doneCnt > 0 }
+      ];
+      distKpiBar.innerHTML = chips.map(c => `
+        <div class="kpi-chip ${c.active ? 'kpi-ready' : ''}">
+          <span class="kpi-label">${c.icon} ${escapeHtml(c.label)}</span>
+          <span class="kpi-val">${c.cnt}</span>
+        </div>
+      `).join('');
+      return;
+    }
+
     if (isAssocQuota()) {
       const doneCnt = currentData.filter(d => d.status === '완료' || d.quotaStatus === 'completed' || d.quotaStatus === 'used' || d.surveyCompleted).length;
       const readyCnt = currentData.length - doneCnt;
@@ -286,24 +397,13 @@ async function initQuotaDetailPage() {
   }
 
   // ------------------------------------------------------------------------
-  // 2. 스프레드시트형 점포 테이블 렌더링 (설문조사 상세 화면과 동일 구조 통일)
-  // [번호] [상호] [업종] [사업자번호] [대표자이름] [성별] [나이] [연락처] [개업연월] [주소] [취급품목] [주요품목] [관리]
+  // 2. 스프레드시트형 점포/표본 테이블 렌더링 (다중 스키마 지원)
   // ------------------------------------------------------------------------
   function renderTable() {
     const term = searchTerm.trim().toLowerCase();
-    const filtered = currentData.filter(item => {
-      if (!term) return true;
-      return (
-        String(item.companyName || '').toLowerCase().includes(term) ||
-        String(item.industry || '').toLowerCase().includes(term) ||
-        String(item.ceoName || '').toLowerCase().includes(term) ||
-        String(item.phone || '').toLowerCase().includes(term) ||
-        String(item.bizNumber || '').toLowerCase().includes(term) ||
-        String(item.handledItems || '').toLowerCase().includes(term) ||
-        String(item.mainProducts || '').toLowerCase().includes(term) ||
-        String(item.address || '').toLowerCase().includes(term)
-      );
-    });
+    const filtered = currentData.filter(item => matchesSearchTerm(item, term));
+    const nonKstat = isNonKstatQuota();
+    const colSpanCount = nonKstat ? 12 : 13;
 
     filteredCountLabel.textContent = `전체 ${currentData.length}개 중 ${filtered.length}개 표시`;
     updateSelectedDeleteBtnUI();
@@ -311,11 +411,61 @@ async function initQuotaDetailPage() {
     if (filtered.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="13" class="empty-table-msg">
+          <td colspan="${colSpanCount}" class="empty-table-msg">
             ${term ? `"${escapeHtml(term)}" 검색 결과와 일치하는 항목이 없습니다.` : '등록된 쿼터 데이터가 없습니다.'}
           </td>
         </tr>
       `;
+      return;
+    }
+
+    if (nonKstat) {
+      tbody.innerHTML = filtered.map((item, idx) => {
+        const seq = Number(item.seq || item.index || (idx + 1));
+        const isChecked = selectedSeqSet.has(seq);
+        const primaryName = item.companyName || item.buildingName || item.memberName || item.name || '-';
+        const typeLabel = item.selectionType || item.ageGroupLabel || item.industry || item.eupMyeon || '-';
+        const uniqueCode = item.uid || item.memberUid || item.lid || item.resid || item.id || item.idx || item.bizNumber || '-';
+        const personName = item.ceoName || item.memberName || item.name || '-';
+        const genderVal = item.ceoGender || item.gender || '-';
+        const ageVal = item.ceoAge || item.age || item.birthYear || '-';
+        const phoneVal = item.phone || item.mobile || item.tel || '-';
+        const addrRaw = item.address || item.roadAddress || item.eupMyeon || '-';
+        const addrShort = addrRaw.length > 32 ? addrRaw.slice(0, 32) + '...' : addrRaw;
+        const surveyorVal = item.surveyorName || item.surveyorId || item.accountKey || item.loginId || '-';
+        const stRaw = item.status || item.quotaStatus || '대기';
+        const isDone = stRaw === '완료' || stRaw === '조사완료' || item.quotaStatus === 'completed' || String(stRaw).includes('완료(100%)');
+        const isWait = item.quotaStatus === 'pilot_done' || /98%|99%|완료직전|F05_2/.test(String(stRaw));
+        const stBadgeClass = isDone ? 'success' : (isWait ? 'running' : 'ready');
+        const stText = isDone ? '완료' : (isWait ? String(stRaw) : '대기');
+
+        return `
+          <tr data-seq="${seq}" class="${isChecked ? 'row-focused' : ''}">
+            <td class="text-center font-mono font-bold">
+              <label class="inline-flex-center gap-6 cursor-pointer">
+                <input type="checkbox" class="chk-quota-detail-row" data-seq="${seq}" ${isChecked ? 'checked' : ''} />
+                <span>${seq}</span>
+              </label>
+            </td>
+            <td><strong>${escapeHtml(primaryName)}</strong></td>
+            <td><span class="quota-ind-badge">${escapeHtml(typeLabel)}</span></td>
+            <td class="font-mono"><code>${escapeHtml(uniqueCode)}</code></td>
+            <td>${escapeHtml(personName)}</td>
+            <td class="text-center">${escapeHtml(genderVal)}</td>
+            <td class="text-center font-mono">${escapeHtml(ageVal)}</td>
+            <td class="font-mono">${escapeHtml(phoneVal)}</td>
+            <td title="${escapeHtml(addrRaw)}">${escapeHtml(addrShort)}</td>
+            <td>${escapeHtml(surveyorVal)}</td>
+            <td class="text-center"><span class="badge-status ${stBadgeClass}">${escapeHtml(stText)}</span></td>
+            <td class="text-center">
+              <button type="button" class="btn-icon-circle btn-delete-row" data-seq="${seq}" title="이 항목을 쿼터에서 삭제">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      bindRowDeleteButtons();
       return;
     }
 
@@ -724,9 +874,9 @@ async function initQuotaDetailPage() {
     renderDistributionKpi();
     await autoSaveQuotaSilent();
     const slotSuffix = (slotMeta && slotMeta.slotUrl)
-      ? `\n(케이스탯 슬롯 #${newSeq}${slotMeta.ranId ? ` [KID: ${slotMeta.ranId}]` : ''} 1:1 매핑 완료)`
+      ? ` (케이스탯 슬롯 #${newSeq}${slotMeta.ranId ? ` [KID: ${slotMeta.ranId}]` : ''} 매핑 완료)`
       : '';
-    alert(`새 점포 "${companyName}"가 쿼터에 추가 및 Excel/캠페인과 동기화되었습니다.${slotSuffix}`);
+    notifyToast(`새 점포 "${companyName}"가 추가 및 동기화되었습니다.${slotSuffix}`, 'success');
   });
 
   // ------------------------------------------------------------------------
@@ -752,11 +902,14 @@ async function initQuotaDetailPage() {
     if (!trimmed) {
       return { slotUrl: '', ranId: null, slotIndex: idx + 1, slotExtra: '' };
     }
+    const isAssoc = isAssocQuota();
     const urlMatch = trimmed.match(/(https?:\/\/[^\s"'<>]+index\.asp\?[^\s"'<>]+)/i);
     let finalUrl = urlMatch ? urlMatch[1] : trimmed;
 
     if (!/^https?:\/\//i.test(finalUrl) && /^[A-Za-z0-9_-]{6,20}$/.test(finalUrl)) {
-      finalUrl = `https://kstat.surveys.kr/2026/P26042401B/index.asp?KID=${finalUrl}&type=tapi&prid=2026070802&mnid=900001346&srt=1`;
+      const pathCode = isAssoc ? 'P26042401A' : 'P26042401B';
+      const prid = isAssoc ? '2026070801' : '2026070802';
+      finalUrl = `https://kstat.surveys.kr/2026/${pathCode}/index.asp?KID=${finalUrl}&type=tapi&prid=${prid}&mnid=900001346&srt=1`;
     }
 
     const kidMatch = finalUrl.match(/[?&]KID=([A-Za-z0-9_-]+)/i);
@@ -941,7 +1094,7 @@ async function initQuotaDetailPage() {
 
   function openQuotaSlotModal(focusSeq = null) {
     if (currentData.length === 0) {
-      alert('등록된 점포 데이터가 없습니다.');
+      notifyToast('등록된 점포 데이터가 없습니다.', 'warn');
       return;
     }
     const targetSeq = (typeof focusSeq === 'number' || typeof focusSeq === 'string') ? parseInt(focusSeq, 10) : null;
@@ -978,13 +1131,13 @@ async function initQuotaDetailPage() {
     btnQuotaParseSlots.addEventListener('click', () => {
       const text = textareaQuotaBulkSlots ? textareaQuotaBulkSlots.value.trim() : '';
       if (!text) {
-        alert('슬롯 URL(또는 KID 코드)을 입력해주세요.');
+        notifyToast('슬롯 URL(또는 KID 코드)을 입력해주세요.', 'warn');
         if (textareaQuotaBulkSlots) textareaQuotaBulkSlots.focus();
         return;
       }
       const extracted = parseQuotaBulkSlotInput(text);
       if (extracted.length === 0) {
-        alert('입력된 텍스트에서 케이스탯 설문 URL을 찾을 수 없습니다.');
+        notifyToast('입력된 텍스트에서 케이스탯 설문 URL을 찾을 수 없습니다.', 'warn');
         return;
       }
       quotaParsedSlotsState = currentData.map((item, idx) => {
@@ -1008,20 +1161,20 @@ async function initQuotaDetailPage() {
     btnQuotaParseSlotsUnmapped.addEventListener('click', () => {
       const text = textareaQuotaBulkSlots ? textareaQuotaBulkSlots.value.trim() : '';
       if (!text) {
-        alert('미매핑 점포에 채워 넣을 케이스탯 슬롯 URL을 상단 입력창에 붙여넣어 주세요.');
+        notifyToast('미매핑 점포에 채워 넣을 케이스탯 슬롯 URL을 상단 입력창에 붙여넣어 주세요.', 'warn');
         if (textareaQuotaBulkSlots) textareaQuotaBulkSlots.focus();
         return;
       }
       const extracted = parseQuotaBulkSlotInput(text);
       if (extracted.length === 0) {
-        alert('입력된 텍스트에서 케이스탯 설문 URL을 찾을 수 없습니다.');
+        notifyToast('입력된 텍스트에서 케이스탯 설문 URL을 찾을 수 없습니다.', 'warn');
         return;
       }
       const existingUrls = new Set(quotaParsedSlotsState.filter(s => s.slotUrl && s.slotUrl.trim()).map(s => s.slotUrl.trim()));
       const existingRanIds = new Set(quotaParsedSlotsState.filter(s => s.ranId).map(s => s.ranId));
       const availableNewSlots = extracted.filter(s => !existingUrls.has(s.slotUrl) && (!s.ranId || !existingRanIds.has(s.ranId)));
       if (availableNewSlots.length === 0) {
-        alert('입력된 URL 중 아직 매핑되지 않은 신규 슬롯이 없습니다.');
+        notifyToast('입력된 URL 중 아직 매핑되지 않은 신규 슬롯이 없습니다.', 'info');
         return;
       }
       let cursor = 0;
@@ -1037,7 +1190,7 @@ async function initQuotaDetailPage() {
         }
       });
       renderQuotaSlotPreviewTable();
-      alert(`미매핑 점포 ${filled}곳에 신규 슬롯 URL을 채웠습니다. 하단 [슬롯 매핑 적용 및 저장]을 눌러 확정해 주세요.`);
+      notifyToast(`미매핑 점포 ${filled}곳에 신규 슬롯 URL을 채웠습니다. [적용 및 저장]을 눌러 확정하세요.`, 'success');
     });
   }
 
@@ -1068,13 +1221,16 @@ async function initQuotaDetailPage() {
         const u = String(s.slotUrl || '').trim();
         if (!u) continue;
         if (seenUrls.has(u) || (s.ranId && seenKids.has(s.ranId))) {
-          alert(`[#${i + 1} ${s.companyName || '점포'}] 다른 점포와 중복된 슬롯 URL(KID: ${s.ranId || u})이 감지되었습니다. 각 점포마다 고유한 슬롯을 입력해 주세요.`);
+          notifyToast(`[#${i + 1} ${s.companyName || '점포'}] 중복된 슬롯 URL(KID: ${s.ranId || u})이 감지되었습니다.`, 'error');
           return;
         }
         seenUrls.add(u);
         if (s.ranId) seenKids.add(s.ranId);
       }
 
+      const isAssoc = isAssocQuota();
+      const evalPathCode = isAssoc ? 'P26042401AA' : 'P26042401BA';
+      const evalPrid = isAssoc ? '2026070801' : '2026070802';
       let mappedCount = 0;
       currentData.forEach((item, idx) => {
         const slot = quotaParsedSlotsState[idx];
@@ -1083,7 +1239,7 @@ async function initQuotaDetailPage() {
           item.slotUrl = cleanUrl;
           item.surveyUrl = cleanUrl;
           item.ranId = slot.ranId || (cleanUrl.match(/[?&]KID=([A-Za-z0-9_-]+)/i)?.[1] || null);
-          item.evalUrl = item.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${item.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null;
+          item.evalUrl = item.ranId ? `https://kstat.surveys.kr/2026/${evalPathCode}/index.asp?KID=${item.ranId}&type=tapi&prid=${evalPrid}&mnid=900001346&srt=2` : null;
           item.slotIndex = slot.slotIndex || (idx + 1);
           item.slotExtra = slot.slotExtra || `(${idx})추가`;
           mappedCount++;
@@ -1102,7 +1258,7 @@ async function initQuotaDetailPage() {
         btnSubmitQuotaSlotMapping.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 저장 및 동기화 중...';
         await autoSaveQuotaSilent();
         closeQuotaSlotModal();
-        alert(`총 ${currentData.length}개 점포 중 ${mappedCount}개 점포의 슬롯 매핑이 저장 및 Excel/캠페인과 동기화되었습니다!`);
+        notifyToast(`총 ${currentData.length}개 중 ${mappedCount}개 슬롯 매핑이 저장 및 동기화되었습니다.`, 'success');
       } finally {
         btnSubmitQuotaSlotMapping.disabled = false;
         btnSubmitQuotaSlotMapping.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 슬롯 매핑 적용 및 저장';
@@ -1144,9 +1300,9 @@ async function initQuotaDetailPage() {
       renderTable();
       renderDistributionKpi();
 
-      alert(data.message || '조사 쿼터가 성공적으로 저장 및 Excel과 동기화되었습니다!');
+      notifyToast(data.message || '조사 쿼터가 저장 및 Excel과 동기화되었습니다.', 'success');
     } catch (err) {
-      alert('저장 오류: ' + err.message);
+      notifyToast('저장 오류: ' + err.message, 'error');
     } finally {
       btnSave.disabled = false;
       btnSave.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 수정사항 저장 (Excel 동기화)';
@@ -1167,7 +1323,14 @@ async function initQuotaDetailPage() {
     }
 
     const defaultTitle = originalQuota.title || '새로운 설문조사 캠페인';
-    const campTitle = prompt('생성할 새 설문 캠페인의 제목을 입력해 주세요:', defaultTitle);
+    const campTitle = window.AutoSurveyUI?.showPromptModal
+      ? await window.AutoSurveyUI.showPromptModal({
+          title: '쿼터 기반 새 캠페인 생성',
+          message: '생성할 새 설문 캠페인의 제목을 입력해 주세요.',
+          defaultValue: defaultTitle,
+          confirmText: '캠페인 생성 및 이동'
+        })
+      : prompt('생성할 새 설문 캠페인의 제목을 입력해 주세요:', defaultTitle);
     if (!campTitle || !campTitle.trim()) return;
 
     try {
@@ -1188,7 +1351,7 @@ async function initQuotaDetailPage() {
 
       window.location.href = `survey-detail.html?id=${data.campaign.id}`;
     } catch (err) {
-      alert('캠페인 생성 실패: ' + err.message);
+      notifyToast('캠페인 생성 실패: ' + err.message, 'error');
       btnLaunch.disabled = false;
       btnLaunch.innerHTML = '<i class="fa-solid fa-play"></i> 이 쿼터로 캠페인 생성';
     }
@@ -1198,9 +1361,14 @@ async function initQuotaDetailPage() {
   // 8. 결측치 외부 공인 재보강
   // ------------------------------------------------------------------------
   btnEnrich.addEventListener('click', async () => {
-    if (!confirm('네이버 플레이스 및 국세청 공인 데이터베이스를 통해 대표자명 및 연락처 결측치를 추가 탐색하시겠습니까?')) {
-      return;
-    }
+    const confirmed = window.AutoSurveyUI?.showConfirmModal
+      ? await window.AutoSurveyUI.showConfirmModal({
+          title: '결측치 외부 공인 재보강',
+          message: '네이버 플레이스 및 국세청 공인 데이터베이스를 통해 대표자명 및 연락처 결측치를 추가 탐색하시겠습니까?',
+          confirmText: '외부 보강 실행'
+        })
+      : confirm('네이버 플레이스 및 국세청 공인 데이터베이스를 통해 대표자명 및 연락처 결측치를 추가 탐색하시겠습니까?');
+    if (!confirmed) return;
 
     try {
       btnEnrich.disabled = true;
@@ -1215,10 +1383,10 @@ async function initQuotaDetailPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '결측치 보강 실패');
 
-      alert(`결측치 외부 보강 완료!\n총 ${data.enrichedCount}건의 사업자 정보가 성공적으로 추가 보강되었습니다.`);
+      notifyToast(`결측치 외부 보강 완료! 총 ${data.enrichedCount}건 추가 보강됨`, 'success');
       await loadQuotaDetail();
     } catch (err) {
-      alert('결측치 보강 오류: ' + err.message);
+      notifyToast('결측치 보강 오류: ' + err.message, 'error');
     } finally {
       btnEnrich.disabled = false;
       btnEnrich.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> 결측치 외부 보강';
@@ -1229,7 +1397,9 @@ async function initQuotaDetailPage() {
     return String(str || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   // 초기 실행

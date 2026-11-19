@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import * as XLSX from 'xlsx';
 import { logger } from '../utils/logger.js';
+import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,14 +43,16 @@ export async function scrapeHrcEnergySlots(options = {}) {
 
   logger.info(`[HRC 에너지총조사 스크래퍼] 시작: 계정=${loginId} (${accountMeta.surveyorName})`);
 
-  const browser = await launchChromium({ headless: true });
-  const context = await browser.newContext({
-    ignoreHTTPSErrors: true,
-    viewport: { width: 1400, height: 900 }
-  });
-  const page = await context.newPage();
+  let browser = null;
 
   try {
+    browser = await launchChromium({ headless: true });
+    const context = await browser.newContext({
+      ignoreHTTPSErrors: true,
+      viewport: { width: 1400, height: 900 }
+    });
+    const page = await context.newPage();
+
     await page.goto('https://tapi.hrcglobal.com/Home/Login', { waitUntil: 'domcontentloaded', timeout: 25000 });
     await page.fill('input[type="text"]', loginId);
     await page.fill('input[type="password"]', loginPw);
@@ -118,7 +121,7 @@ export async function scrapeHrcEnergySlots(options = {}) {
         ? nextLink.href
         : `https://tapi.hrcglobal.com${nextLink.href}`;
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-      await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 }).catch(() => {});
+      await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 }).catch(err => logger.warn(`[HRC List4 행 대기 경고] ${err.message}`));
     }
 
     logger.info(`[HRC 에너지총조사 스크래퍼] 계정=${loginId} 총 ${scrapedMap.size}개 건물 슬롯 실시간 상태 수집 완료`);
@@ -155,7 +158,7 @@ export async function scrapeHrcEnergySlots(options = {}) {
       });
 
       content.updatedAt = new Date().toISOString();
-      fs.writeFileSync(jsonPath, JSON.stringify(content, null, 2), 'utf-8');
+      writeJsonAtomicSync(jsonPath, content);
 
       // Excel 동기화
       const xlsxPath = jsonPath.replace(/\.json$/i, '.xlsx');
@@ -185,6 +188,8 @@ export async function scrapeHrcEnergySlots(options = {}) {
       jsonPath
     };
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }

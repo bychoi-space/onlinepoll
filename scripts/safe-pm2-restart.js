@@ -1,8 +1,10 @@
+import '../src/config/env.js';
 import { execSync, spawn } from 'child_process';
 import crypto from 'crypto';
 
 const MASTER_PASSWORD = String(process.env.SYSTEM_ACCESS_PASSWORD || '2265').trim();
-const AUTH_COOKIE = 'autosurvey_auth=' + crypto.createHmac('sha256', 'autosurvey_secure_salt_2026').update(MASTER_PASSWORD).digest('hex');
+const TOKEN_SALT = process.env.AUTH_TOKEN_SALT || 'autosurvey_secure_salt_2026';
+const AUTH_COOKIE = 'autosurvey_auth=' + crypto.createHmac('sha256', TOKEN_SALT).update(MASTER_PASSWORD).digest('hex');
 
 async function checkIsRunning() {
   try {

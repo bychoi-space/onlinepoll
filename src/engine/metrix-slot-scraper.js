@@ -3,6 +3,7 @@ import path from 'path';
 import * as XLSX from 'xlsx';
 import { logger } from '../utils/logger.js';
 import { launchChromium } from '../utils/chromium-launcher.js';
+import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 
 export const METRIX_622_GOOGLE_SHEET_ID = '1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM';
 export const METRIX_622_GOOGLE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${METRIX_622_GOOGLE_SHEET_ID}/edit?gid=1453131911#gid=1453131911`;
@@ -547,7 +548,7 @@ export async function scrapeMetrix622AllAccounts(options = {}) {
   const xlsxPath = path.join(quotasDir, `quota_metrix_gyeonggi_622_${fileSuffix}.xlsx`);
 
   if (!skipSaveFiles) {
-    fs.writeFileSync(jsonPath, JSON.stringify(quotaDbData, null, 2), 'utf8');
+    writeJsonAtomicSync(jsonPath, quotaDbData);
 
     const xlsxRows = allSlots.map(s => ({
       '순번': s.index,

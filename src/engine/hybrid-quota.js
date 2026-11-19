@@ -883,7 +883,9 @@ export async function buildHybridOnnuriQuota({
   } catch (error) {
     logger.error(`[Hybrid Quota] 수집 도중 예외 발생 (현재까지 확보된 ${finalQuotaList.length}건 안전 보존):`, error.message);
   } finally {
-    await browser.close().catch(() => {});
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 
   const mbzFailedCount = finalQuotaList.filter(item => item.mbzStatus === 'failed').length;
@@ -899,7 +901,9 @@ export async function buildHybridOnnuriQuota({
         lastItem: null,
         isComplete
       });
-    } catch (_) {}
+    } catch (cbErr) {
+      logger.warn(`[Hybrid Quota] 최종 체크포인트 저장 경고: ${cbErr.message}`);
+    }
   }
 
   logger.success(`[Hybrid Quota] 작업 종료: 총 ${finalQuotaList.length}/${targetTotal}건 저장 완료 (마켓비즈 미연결 재시도 대상: ${mbzFailedCount}건).`);

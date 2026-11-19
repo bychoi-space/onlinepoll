@@ -1,20 +1,10 @@
-// 대한민국 표준시 (KST) 강제 설정
-process.env.TZ = 'Asia/Seoul';
+import './config/env.js';
 
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-// 로컬 .env 환경변수 로드
-if (fs.existsSync('.env') && typeof process.loadEnvFile === 'function') {
-  try {
-    process.loadEnvFile('.env');
-  } catch (e) {
-    // env 로드 실패 시 무시
-  }
-}
+import { ROOT_DIR as rootDir } from './config/env.js';
 
 import { logger } from './utils/logger.js';
 import * as CampaignStore from './models/campaign.js';
@@ -35,17 +25,13 @@ import { registerSyncRoutes } from './routes/sync-routes.js';
 import { registerExecutionRoutes } from './routes/execution-routes.js';
 import { registerQuotaRoutes } from './routes/quota-routes.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '..');
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 미들웨어 등록
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '20mb' }));
-app.use(authGate); // 모든 정적 파일 및 API 보호
+app.use(authGate); // 모든 정적 파일, /reports 스크린샷 및 API 보호
 app.use(express.static(path.join(rootDir, 'public')));
 
 // 리포트 및 쿼터 디렉터리 준비

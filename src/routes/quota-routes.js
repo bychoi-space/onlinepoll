@@ -3,6 +3,7 @@
  */
 import fs from 'fs';
 import path from 'path';
+import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 
 const BASE_FIELD_LABELS = {
   companyName: '상호',
@@ -70,7 +71,9 @@ export function registerQuotaRoutes({
         excelFilePath = path.join(quotasDir, excelFileName);
         try {
           existingMeta = JSON.parse(fs.readFileSync(candidatePath, 'utf-8'));
-        } catch (_) {}
+        } catch (err) {
+          logger.warn(`[쿼터 이어하기 메타 로드 경고] ${err.message}`);
+        }
       }
     }
 
@@ -103,7 +106,7 @@ export function registerQuotaRoutes({
         columns,
         data: currentData || []
       };
-      fs.writeFileSync(jsonFilePath, JSON.stringify(quotaMeta, null, 2), 'utf-8');
+      writeJsonAtomicSync(jsonFilePath, quotaMeta);
       if (currentData && currentData.length > 0) {
         exportBusinessesToExcel({
           data: currentData,
@@ -312,7 +315,7 @@ export function registerQuotaRoutes({
         data: parsedData
       };
 
-      fs.writeFileSync(jsonFilePath, JSON.stringify(quotaMeta, null, 2), 'utf-8');
+      writeJsonAtomicSync(jsonFilePath, quotaMeta);
       exportBusinessesToExcel({
         data: parsedData,
         columns,
@@ -498,7 +501,7 @@ export function registerQuotaRoutes({
 
     (async () => {
       try {
-        const { buildMasterDB } = await import('../../scripts/build-onnuri-master-db.js');
+        const { buildMasterDB } = await import('../services/onnuri-db-builder.js');
         await buildMasterDB();
         logger.success('[Onnuri Master DB] 전국 마스터 DB 동기화 완료!');
       } catch (err) {
@@ -578,7 +581,9 @@ export function registerQuotaRoutes({
         excelFilePath = path.join(quotasDir, excelFileName);
         try {
           existingMeta = JSON.parse(fs.readFileSync(candidatePath, 'utf-8'));
-        } catch (_) {}
+        } catch (err) {
+          logger.warn(`[온누리 쿼터 이어하기 메타 로드 경고] ${err.message}`);
+        }
       }
     }
 
@@ -625,7 +630,7 @@ export function registerQuotaRoutes({
         columns,
         data: currentData || []
       };
-      fs.writeFileSync(jsonFilePath, JSON.stringify(quotaMeta, null, 2), 'utf-8');
+      writeJsonAtomicSync(jsonFilePath, quotaMeta);
       if (currentData && currentData.length > 0) {
         exportBusinessesToExcel({
           data: currentData,
@@ -826,15 +831,17 @@ export function registerQuotaRoutes({
         let meta = quotaSummaryCache.get(f);
         if (!meta || meta.mtimeMs !== stat.mtimeMs || meta.size !== stat.size) {
           const content = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
-          const data = content.data || content.rows || [];
+          const data = content.data || content.rows || content.results || [];
+          const lowerFile = f.toLowerCase();
 
           const industryDist = {};
-          const isHrcEnergy = content.type === 'HRC_ENERGY_BUILDING' || content.surveyType === 'hrc_energy' || f.includes('hrc_energy');
-          const isGlobalriLiteracy = content.type === 'GLOBALRI_ADULT_LITERACY' || content.surveyType === 'globalri_literacy' || f.includes('globalri_adult_literacy');
-          const isGallupReturnFarm = content.type === 'GALLUP_RETURN_FARM' || content.surveyType === 'gallup_return_farm' || f.includes('gallup_20263603');
-          const isAssoc = content.type === 'KSTAT_ASSOC' || content.surveyType === 'kstat_assoc' || f.startsWith('quota_assoc_');
-          const isMetrix = content.type === 'METRIX_PANEL' || content.surveyType === 'metrix_panel' || f.toLowerCase().includes('metrix');
-          const isKona = content.type === 'KONA_YOUTH' || content.surveyType === 'kona_youth' || f.toLowerCase().includes('kona');
+          const isHrcEnergy = content.type === 'HRC_ENERGY_BUILDING' || content.surveyType === 'hrc_energy' || lowerFile.includes('hrc_energy');
+          const isGlobalriLiteracy = content.type === 'GLOBALRI_ADULT_LITERACY' || content.surveyType === 'globalri_literacy' || lowerFile.includes('globalri_adult_literacy');
+          const isGallupReturnFarm = content.type === 'GALLUP_RETURN_FARM' || content.surveyType === 'gallup_return_farm' || lowerFile.includes('gallup_20263603') || lowerFile.includes('gallup');
+          const isAssoc = content.type === 'KSTAT_ASSOC' || content.surveyType === 'kstat_assoc' || lowerFile.startsWith('quota_assoc_');
+          const isMetrixSeoul = content.type === 'METRIX_SEOUL_PANEL' || content.surveyType === 'metrix_seoul_panel' || content.pnum === 'S21401' || lowerFile.includes('seoul_panel') || lowerFile.includes('metrix_seoul') || lowerFile.includes('s21401');
+          const isMetrix = !isMetrixSeoul && (content.type === 'METRIX_PANEL' || content.surveyType === 'metrix_panel' || lowerFile.includes('metrix'));
+          const isKona = content.type === 'KONA_YOUTH' || content.surveyType === 'kona_youth' || lowerFile.includes('kona');
 
           if (isGallupReturnFarm) {
             const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed' || item.serverStatus === '99').length;
@@ -851,6 +858,13 @@ export function registerQuotaRoutes({
             Object.entries(eupCounts).slice(0, 5).forEach(([eup, c]) => {
               industryDist[eup] = c;
             });
+          } else if (isMetrixSeoul) {
+            const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed').length;
+            const pilotCnt = data.filter(item => item.quotaStatus === 'pilot_done' || String(item.status || '').includes('99%')).length;
+            const readyCnt = data.length - doneCnt - pilotCnt;
+            if (readyCnt > 0) industryDist['대기(미진행)'] = readyCnt;
+            if (pilotCnt > 0) industryDist['동의서대기(99%)'] = pilotCnt;
+            if (doneCnt > 0) industryDist['조사완료'] = doneCnt;
           } else if (isGlobalriLiteracy) {
             data.forEach(item => {
               const ag = String(item.ageGroupLabel || '기타').trim();
@@ -913,16 +927,16 @@ export function registerQuotaRoutes({
           meta = {
             mtimeMs: stat.mtimeMs,
             size: stat.size,
-            title: content.title || f,
-            rawType: content.type || (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : (isGlobalriLiteracy ? 'GLOBALRI_ADULT_LITERACY' : (isGallupReturnFarm ? 'GALLUP_RETURN_FARM' : (isMetrix ? 'METRIX_PANEL' : 'MARKETBZ_DIRECT'))))),
+            title: content.title || content.name || f,
+            rawType: content.type || (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : (isGlobalriLiteracy ? 'GLOBALRI_ADULT_LITERACY' : (isGallupReturnFarm ? 'GALLUP_RETURN_FARM' : (isMetrixSeoul ? 'METRIX_SEOUL_PANEL' : (isMetrix ? 'METRIX_PANEL' : 'MARKETBZ_DIRECT')))))),
             rawSurveyType: content.surveyType || null,
-            fallbackSurveyType: isGallupReturnFarm ? 'gallup_return_farm' : (isGlobalriLiteracy ? 'globalri_literacy' : (isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))))),
+            fallbackSurveyType: isGallupReturnFarm ? 'gallup_return_farm' : (isGlobalriLiteracy ? 'globalri_literacy' : (isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrixSeoul ? 'metrix_seoul_panel' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store')))))),
             rawLinkedCampaignId: content.linkedCampaignId || null,
             selectedCount: content.selectedCount || null,
             substituteCount: content.substituteCount || null,
             surveyorId: content.surveyorId || null,
             surveyorName: content.surveyorName || null,
-            marketName: content.marketName || (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : (isGlobalriLiteracy ? `성인문해능력조사 · ${content.surveyorName || ''}` : (isGallupReturnFarm ? `귀농귀촌 실태조사 · ${content.surveyorName || ''}` : null)))),
+            marketName: content.marketName || (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : (isGlobalriLiteracy ? `성인문해능력조사 · ${content.surveyorName || ''}` : (isGallupReturnFarm ? `귀농귀촌 실태조사 · ${content.surveyorName || ''}` : (isMetrixSeoul ? '서울시 소상공인 사업체패널 5차' : null))))),
             keyword: content.keyword,
             count: content.count || data.length,
             targetTotal,
@@ -1102,7 +1116,7 @@ export function registerQuotaRoutes({
       ];
       content.columns = columns;
 
-      fs.writeFileSync(jsonPath, JSON.stringify(content, null, 2), 'utf-8');
+      writeJsonAtomicSync(jsonPath, content);
 
       const excelName = safeFilename.replace('.json', '.xlsx');
       const excelPath = path.join(quotasDir, excelName);
@@ -1178,7 +1192,9 @@ export function registerQuotaRoutes({
             }
           }
         });
-      } catch (_) {}
+      } catch (syncErr) {
+        logger.warn(`[쿼터 캠페인 동기화 경고] (${safeFilename}): ${syncErr.message}`);
+      }
 
       logger.success(`[쿼터 수정 완료] "${content.title}" (${safeFilename}) ${content.count}건 갱신 및 캠페인/Excel 동기화 성공!`);
 
@@ -1250,7 +1266,7 @@ export function registerQuotaRoutes({
       quotaMeta.enrichedAt = new Date().toISOString();
       quotaMeta.lastEnrichedCount = enrichedCount;
 
-      fs.writeFileSync(jsonPath, JSON.stringify(quotaMeta, null, 2), 'utf-8');
+      writeJsonAtomicSync(jsonPath, quotaMeta);
 
       const excelName = safeFilename.replace('.json', '.xlsx');
       const excelPath = path.join(quotasDir, excelName);

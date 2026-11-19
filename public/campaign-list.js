@@ -49,7 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function highlightQuery(text, query) {
@@ -379,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ).length;
 
     const isMetrixSeoul = (sType === 'metrix_seoul_panel');
-    let quotaLabel = '점포 경영실태 (17단계)';
+    let quotaLabel = '점포 경영실태 (15단계)';
     if (isGlobalriLiteracy) {
       quotaLabel = `대상자 ${dbCount}명 (완료 ${doneItemCount}명) · 연령대 가이드`;
     } else if (isHrcEnergy) {
@@ -1415,12 +1416,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const quotaTypeRadios = document.querySelectorAll('input[name="new-quota-type"]');
+  const surveyTypeGroup = document.getElementById('new-survey-type-group');
+  const syncSurveyTypeGroupVisibility = () => {
+    const selectedQuotaType = document.querySelector('input[name="new-quota-type"]:checked')?.value || 'b2b';
+    if (surveyTypeGroup) {
+      surveyTypeGroup.style.display = selectedQuotaType === 'b2c' ? 'none' : '';
+    }
+  };
+  quotaTypeRadios.forEach(r => r.addEventListener('change', syncSurveyTypeGroupVisibility));
+  syncSurveyTypeGroupVisibility();
+
   formNew?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const title = document.getElementById('new-title').value.trim();
     const description = document.getElementById('new-desc').value.trim();
-    const quotaType = document.querySelector('input[name="new-quota-type"]:checked').value;
-    const surveyType = document.querySelector('input[name="new-survey-type"]:checked')?.value || 'kstat_store';
+    const quotaType = document.querySelector('input[name="new-quota-type"]:checked')?.value || 'b2b';
+    const surveyType = quotaType === 'b2c'
+      ? 'generic_b2c'
+      : (document.querySelector('input[name="new-survey-type"]:checked')?.value || 'kstat_store');
 
     try {
       const res = await fetch('/api/campaigns', {
@@ -1429,9 +1443,14 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ title, description, quotaType, surveyType })
       });
       const newCamp = await res.json();
+      if (!res.ok) throw new Error(newCamp.error || '캠페인 생성 실패');
       window.location.href = `survey-detail.html?id=${newCamp.id}`;
     } catch (err) {
-      alert('캠페인 생성에 실패했습니다: ' + err.message);
+      if (window.AutoSurveyUI?.showToast) {
+        window.AutoSurveyUI.showToast('캠페인 생성에 실패했습니다: ' + err.message, 'error');
+      } else {
+        alert('캠페인 생성에 실패했습니다: ' + err.message);
+      }
     }
   });
 
@@ -1855,7 +1874,14 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
         const quotaFileName = btn.getAttribute('data-filename');
         const defaultTitle = btn.getAttribute('data-title') || '새로운 설문조사 캠페인';
-        const campTitle = prompt('새 캠페인의 제목을 입력해 주세요:', defaultTitle);
+        const campTitle = window.AutoSurveyUI?.showPromptModal
+          ? await window.AutoSurveyUI.showPromptModal({
+              title: '쿼터 기반 새 캠페인 생성',
+              message: '생성할 새 설문조사 캠페인의 제목을 입력해 주세요.',
+              defaultValue: defaultTitle,
+              confirmText: '캠페인 생성 및 이동'
+            })
+          : prompt('새 캠페인의 제목을 입력해 주세요:', defaultTitle);
         if (!campTitle || !campTitle.trim()) return;
 
         try {
@@ -1873,7 +1899,11 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!res.ok) throw new Error(data.error || '캠페인 생성 실패');
           window.location.href = `survey-detail.html?id=${data.campaign.id}`;
         } catch (err) {
-          alert('캠페인 생성 오류: ' + err.message);
+          if (window.AutoSurveyUI?.showToast) {
+            window.AutoSurveyUI.showToast('캠페인 생성 오류: ' + err.message, 'error');
+          } else {
+            alert('캠페인 생성 오류: ' + err.message);
+          }
           btn.disabled = false;
           btn.innerHTML = '<i class="fa-solid fa-play"></i> 캠페인 시작';
         }
@@ -1884,15 +1914,31 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const fileName = btn.getAttribute('data-filename');
-        if (confirm(`정말로 이 쿼터("${fileName}")를 삭제하시겠습니까?\n보관된 JSON 및 Excel 파일이 영구 삭제됩니다.`)) {
+        const confirmed = window.AutoSurveyUI?.showConfirmModal
+          ? await window.AutoSurveyUI.showConfirmModal({
+              title: '조사 쿼터 영구 삭제',
+              message: `정말로 이 쿼터("${fileName}")를 삭제하시겠습니까?\n보관된 JSON 및 Excel 파일이 영구 삭제됩니다.`,
+              confirmText: '영구 삭제',
+              danger: true
+            })
+          : confirm(`정말로 이 쿼터("${fileName}")를 삭제하시겠습니까?\n보관된 JSON 및 Excel 파일이 영구 삭제됩니다.`);
+        if (confirmed) {
           try {
             const res = await fetch(`/api/quota/${encodeURIComponent(fileName)}`, { method: 'DELETE' });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || '삭제 실패');
-            alert(data.message || '쿼터가 성공적으로 삭제되었습니다.');
+            if (window.AutoSurveyUI?.showToast) {
+              window.AutoSurveyUI.showToast(data.message || '쿼터가 삭제되었습니다.', 'success');
+            } else {
+              alert(data.message || '쿼터가 성공적으로 삭제되었습니다.');
+            }
             loadQuotas();
           } catch (err) {
-            alert('삭제 오류: ' + err.message);
+            if (window.AutoSurveyUI?.showToast) {
+              window.AutoSurveyUI.showToast('삭제 오류: ' + err.message, 'error');
+            } else {
+              alert('삭제 오류: ' + err.message);
+            }
           }
         }
       });

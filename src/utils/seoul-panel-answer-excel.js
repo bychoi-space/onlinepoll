@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 import { launchChromium } from './chromium-launcher.js';
+import { writeJsonAtomicSync } from './atomic-file.js';
 
 export const SEOUL_PANEL_DEFAULT_GSHEET_URL =
   'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=506086780#gid=506086780';
@@ -233,7 +234,7 @@ export function persistSeoulPanelQuotaDatabase({
     fileObj.results = mergedRows;
     delete fileObj.data;
     fileObj.updatedAt = new Date().toISOString();
-    fs.writeFileSync(targetPath, JSON.stringify(fileObj, null, 2), 'utf-8');
+    writeJsonAtomicSync(targetPath, fileObj);
     return true;
   } catch (err) {
     console.warn(`[서울시 패널 쿼터 JSON 저장 경고] ${err.message}`);
@@ -347,8 +348,9 @@ async function _syncSeoulPanelAnswersToGoogleSheetImpl({
     r => r['A1_사업체명'] || r['C1_영업시간'] || r['K1_경기동향(26년실적/27년전망)']
   ).length;
 
-  const browser = await launchChromium({ headless: true, args: ['--ignore-certificate-errors'] });
+  let browser;
   try {
+    browser = await launchChromium({ headless: true, args: ['--ignore-certificate-errors'] });
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       permissions: ['clipboard-read', 'clipboard-write'],
@@ -417,16 +419,16 @@ async function _syncSeoulPanelAnswersToGoogleSheetImpl({
     );
 
     await page.waitForTimeout(5500);
-    await browser.close();
     return {
       success: true,
       lineCount: allLines.length,
       populatedRowCount
     };
   } catch (err) {
-    await browser
-      .close()
-      .catch(closeErr => console.warn(`브라우저 종료 경고: ${closeErr.message}`));
     return { success: false, error: err.message };
+  } finally {
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }

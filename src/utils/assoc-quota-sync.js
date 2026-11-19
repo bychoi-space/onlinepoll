@@ -3,6 +3,7 @@ import path from 'path';
 import * as CampaignStore from '../models/campaign.js';
 import { exportBusinessesToExcel } from './excel.js';
 import { logger } from './logger.js';
+import { writeJsonAtomicSync } from './atomic-file.js';
 
 export function buildAssocQuotaColumns() {
   return [
@@ -140,7 +141,7 @@ export function createAssocQuotaSyncHelpers({ quotasDir }) {
         data: normalizedData
       };
 
-      fs.writeFileSync(jsonPath, JSON.stringify(quotaPayload, null, 2), 'utf-8');
+      writeJsonAtomicSync(jsonPath, quotaPayload);
 
       const excelName = safeFileName.replace('.json', '.xlsx');
       const excelPath = path.join(quotasDir, excelName);
@@ -150,7 +151,9 @@ export function createAssocQuotaSyncHelpers({ quotasDir }) {
           columns,
           filePath: excelPath
         });
-      } catch (_) {}
+      } catch (err) {
+        logger.warn(`[상인회 쿼터 엑셀 저장 경고] (${safeFileName}): ${err.message}`);
+      }
 
       if (!camp.quotaConfig || camp.quotaConfig.quotaFileName !== safeFileName || camp.quotaConfig.targetCount !== normalizedData.length) {
         CampaignStore.updateCampaign(camp.id, {

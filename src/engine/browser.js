@@ -50,20 +50,7 @@ export async function runSurveySession(options = {}) {
 
   // 2. 브라우저 런치
   logger.info(`브라우저(Chromium)를 시작합니다... (모드: ${headless ? 'Headless' : '직접 창 표시(Headed)'})`);
-  const browser = await launchChromium({
-    headless: !!headless,
-    args: [
-      '--disable-blink-features=AutomationControlled' // 안티-디텍션 기본 인자
-    ]
-  });
-
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 800 },
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    locale: 'ko-KR'
-  });
-
-  const page = await context.newPage();
+  let browser = null;
   const sessionLog = {
     timestamp: new Date().toISOString(),
     iteration: iterationIndex,
@@ -75,6 +62,21 @@ export async function runSurveySession(options = {}) {
   };
 
   try {
+    browser = await launchChromium({
+      headless: !!headless,
+      args: [
+        '--disable-blink-features=AutomationControlled' // 안티-디텍션 기본 인자
+      ]
+    });
+
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      locale: 'ko-KR'
+    });
+
+    const page = await context.newPage();
+
     logger.info(`설문 페이지로 이동합니다: ${url}`);
     await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
     await sleep(2000, 3000);
@@ -203,7 +205,7 @@ export async function runSurveySession(options = {}) {
         break;
       } else if (navResult.hasNextPage) {
         logger.info('다음(Next) 페이지로 이동합니다...');
-        await page.waitForLoadState('networkidle').catch(() => {});
+        await page.waitForLoadState('networkidle').catch(err => console.warn('[networkidle 대기 경고]', err.message));
         await sleep(2000, 3000);
         pageNum++;
       } else {
@@ -224,6 +226,8 @@ export async function runSurveySession(options = {}) {
     logger.error('설문 세션 진행 중 오류 발생:', error);
     throw error;
   } finally {
-    await browser.close().catch(() => {});
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }

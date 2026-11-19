@@ -170,7 +170,7 @@ async function syncDynamicFrames(page) {
       if (typeof processFrameLoadQueue === 'function' && !window.IS_FRAME_QUEUE_RUNNING) {
         try { processFrameLoadQueue(); } catch (_) {}
       }
-    }).catch(() => {});
+    }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
 
     for (let w = 0; w < 20; w++) {
       const allReady = await page.evaluate(() => {
@@ -235,7 +235,7 @@ async function autoFillUnansweredVisibleFrames(page, persona, biz) {
         await f.evaluate(() => {
           const numInput = document.getElementById('B1AA') || document.querySelector('input[name="B1AA"]');
           if (numInput) { numInput.value = ''; numInput.dispatchEvent(new Event('change', { bubbles: true })); }
-        }).catch(() => {});
+        }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
         await selectKstatRadio(f, 'B1AA_1', persona.sales?.dailyRadioVal || '7');
       }
       else if (code === 'B1BB') await selectKstatRadio(f, 'B1BB', (persona.sales?.salesChangeSelector || '#B1BB_3').replace('#B1BB_', ''));
@@ -389,8 +389,8 @@ async function autoFillUnansweredVisibleFrames(page, persona, biz) {
           }
           const r3 = document.querySelector('#G2_3_2');
           if (r3) { r3.checked = true; r3.click(); }
-        }, receiptVal).catch(() => {});
-        await safeFill(f, '#G2_2_NOTE, input[name="G2_2_NOTE"]', receiptVal).catch(() => {});
+        }, receiptVal).catch(err => console.warn('[DOM evaluate 경고]', err.message));
+        await safeFill(f, '#G2_2_NOTE, input[name="G2_2_NOTE"]', receiptVal).catch(err => console.warn('[safeFill 경고]', err.message));
       }
       else {
         // 범용 폴백: 라디오가 있으면 첫 번째(또는 2번째) 선택, 숫자/텍스트 인풋이 비어 있으면 '10' 입력
@@ -412,7 +412,7 @@ async function autoFillUnansweredVisibleFrames(page, persona, biz) {
               inp.dispatchEvent(new Event('change', { bubbles: true }));
             }
           });
-        }, code).catch(() => {});
+        }, code).catch(err => console.warn('[DOM evaluate 경고]', err.message));
       }
     }
   }
@@ -485,36 +485,39 @@ export async function runKstatSurvey({
   // 2. 쿼터별 동적 페르소나 생성 (업종분류, 연령, 매출, 결제비중 등 가변 데이터)
   const persona = generateQuotaPersona(bizData, quotaIndex, guidelineConfig);
 
-  const browser = await launchChromium({ headless: true });
-  const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    viewport: { width: 1280, height: 960 }
-  });
-
-  const page = await context.newPage();
+  let browser = null;
+  let page = null;
   const capturedSteps = [];
 
-  // 사람다운 자연스러운 가변 딜레이 헬퍼들 (건당 약 1분 50초 ~ 2분 10초 안정 궤적)
-  const readingDelay = () => page.waitForTimeout(Math.floor(Math.random() * 600) + 1200); // 1.2초 ~ 1.8초 질문 독해 텀
-  const itemDelay = () => page.waitForTimeout(Math.floor(Math.random() * 200) + 300); // 300ms ~ 500ms 문항 간 텀
-  const preNextDelay = () => page.waitForTimeout(Math.floor(Math.random() * 300) + 600); // 600ms ~ 900ms 다음 클릭 전 텀
-
-  page.on('dialog', async (dialog) => {
-    const msg = dialog.message();
-    console.log(`🔔 [Kstat Alert] "${msg}"`);
-    try {
-      onProgress({
-        step: 'ALERT',
-        stepIndex: 0,
-        totalSteps: 15,
-        screenshotUrl: null,
-        message: `🔔 [설문 알림] "${msg.replace(/[\r\n]+/g, ' ')}"`
-      });
-    } catch (_) {}
-    await dialog.accept();
-  });
-
   try {
+    browser = await launchChromium({ headless: true });
+    const context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      viewport: { width: 1280, height: 960 }
+    });
+
+    page = await context.newPage();
+
+    // 사람다운 자연스러운 가변 딜레이 헬퍼들 (건당 약 1분 50초 ~ 2분 10초 안정 궤적)
+    const readingDelay = () => page.waitForTimeout(Math.floor(Math.random() * 600) + 1200); // 1.2초 ~ 1.8초 질문 독해 텀
+    const itemDelay = () => page.waitForTimeout(Math.floor(Math.random() * 200) + 300); // 300ms ~ 500ms 문항 간 텀
+    const preNextDelay = () => page.waitForTimeout(Math.floor(Math.random() * 300) + 600); // 600ms ~ 900ms 다음 클릭 전 텀
+
+    page.on('dialog', async (dialog) => {
+      const msg = dialog.message();
+      console.log(`🔔 [Kstat Alert] "${msg}"`);
+      try {
+        onProgress({
+          step: 'ALERT',
+          stepIndex: 0,
+          totalSteps: 15,
+          screenshotUrl: null,
+          message: `🔔 [설문 알림] "${msg.replace(/[\r\n]+/g, ' ')}"`
+        });
+      } catch (_) {}
+      await dialog.accept().catch(e => console.warn('[Dialog accept 경고]', e.message));
+    });
+
     onProgress({
       step: 'START',
       stepIndex: 0,
@@ -548,7 +551,7 @@ export async function runKstatSurvey({
     // 3) Q1.asp (점포 기본정보)인 경우
     if (page.url().includes('Q1.asp')) {
       await readingDelay();
-      await page.waitForSelector('#Q1_4_1', { timeout: 10000 }).catch(() => {});
+      await page.waitForSelector('#Q1_4_1', { timeout: 10000 }).catch(err => console.warn('[Q1_4_1 대기 경고]', err.message));
 
       await page.evaluate(({ zip, addr }) => {
         const z = document.getElementById('Q1_4_1');
@@ -628,7 +631,7 @@ export async function runKstatSurvey({
 
       if (!stepName) {
         if (currentUrl.includes('index.asp') || currentUrl.includes('Survey.asp')) {
-          await page.evaluate(() => document.querySelector('#next')?.click()).catch(() => {});
+          await page.evaluate(() => document.querySelector('#next')?.click()).catch(err => console.warn('[DOM evaluate 경고]', err.message));
           continue;
         }
         break;
@@ -710,7 +713,7 @@ export async function runKstatSurvey({
               numInput.dispatchEvent(new Event('input', { bubbles: true }));
               numInput.dispatchEvent(new Event('change', { bubbles: true }));
             }
-          }).catch(() => {});
+          }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
           await selectKstatRadio(fB1AA, 'B1AA_1', persona.sales?.dailyRadioVal || '7');
         }
         await itemDelay();
@@ -916,7 +919,7 @@ export async function runKstatSurvey({
             setVal('B2A_3', local);
             setVal('B2A_4', zeropay);
             setVal('B2A_5', card);
-          }, { cash: cashVal, onnuri: onnuriVal, local: localVal, zeropay: zeropayVal, card: cardVal }).catch(() => {});
+          }, { cash: cashVal, onnuri: onnuriVal, local: localVal, zeropay: zeropayVal, card: cardVal }).catch(err => console.warn('[DOM evaluate 경고]', err.message));
 
           if (parseInt(cashVal, 10) > 0) await safeFill(fB2A, '#B2A_1, input[name="B2A_1"]', cashVal);
           if (parseInt(onnuriVal, 10) > 0) await safeFill(fB2A, '#B2A_2, input[name="B2A_2"]', onnuriVal);
@@ -1272,8 +1275,8 @@ export async function runKstatSurvey({
             }
             const r3 = document.querySelector('#G2_3_2');
             if (r3) { r3.checked = true; r3.click(); }
-          }, receiptVal).catch(() => {});
-          await safeFill(fG2, '#G2_2_NOTE, input[name="G2_2_NOTE"]', receiptVal).catch(() => {});
+          }, receiptVal).catch(err => console.warn('[DOM evaluate 경고]', err.message));
+          await safeFill(fG2, '#G2_2_NOTE, input[name="G2_2_NOTE"]', receiptVal).catch(err => console.warn('[safeFill 경고]', err.message));
         }
 
         // G1=1 선택 시 G1A(승계계획 유무: 1=예, 2=아니오), G1B(향후 지속년수) 동적 로드 동기화
@@ -1307,7 +1310,7 @@ export async function runKstatSurvey({
       // 사람다운 다음 단계 검토 지연 후 클릭
       await preNextDelay();
       const prevUrl = page.url();
-      await page.evaluate(() => document.querySelector('#next')?.click()).catch(() => {});
+      await page.evaluate(() => document.querySelector('#next')?.click()).catch(err => console.warn('[DOM evaluate 경고]', err.message));
 
       // 페이지가 실제로 다음 단계로 넘어갈 때까지 대기
       let pageAdvanced = false;
@@ -1404,6 +1407,8 @@ export async function runKstatSurvey({
       }
     };
   } finally {
-    await browser.close().catch(() => {});
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }

@@ -1350,7 +1350,7 @@ function renderSeoulPanelHtml(metrixPolicyState) {
     <section class="blueprint-card full-width-card" style="grid-column: 1 / -1; width: 100%;">
       <div class="blueprint-card-header">
         <div class="blueprint-card-title-group">
-          <span class="blueprint-step-pill"><i class="fa-solid fa-sparkles"></i> 5차 신규 (M·N·O)</span>
+          <span class="blueprint-step-pill"><i class="fa-solid fa-wand-magic-sparkles"></i> 5차 신규 (M·N·O)</span>
           <h3 class="blueprint-stage-title">[5차 신규 파트] M. 경영위기 및 대응 (svyA099~101) · N. AI 및 디지털 전환 (svyA102~109) · O. 탄소중립 녹색경영 (svyA110~113)</h3>
         </div>
         <div class="blueprint-card-badge-group">
@@ -1400,7 +1400,7 @@ function renderSeoulPanelHtml(metrixPolicyState) {
   `;
 }
 
-export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline, blueprintStageGrid, appendLog, onApplyIndustryGuideToChecked, onSelectIndustryQuotas }) {
+export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline, blueprintStageGrid, appendLog, onApplyIndustryGuideToChecked, onSelectIndustryQuotas, hasCampaignContext = false, quotaCount = 0 } = {}) {
   const isSeoulPanel = (data.surveyType === 'metrix_seoul_panel');
   const metrixPolicyState = { ...(data.policy || data.blueprint?.defaultPolicy || {}) };
   metrixPolicyState._isSeoulPanel = isSeoulPanel;
@@ -1558,7 +1558,7 @@ export function renderMetrixBlueprint(data, { badgeMasterStatus, btnSaveBaseline
   if (!metrixPolicyState.seoul_o1_carbon) metrixPolicyState.seoul_o1_carbon = '2_3_mixed';
 
   const bpSection = document.getElementById('section-master-blueprint');
-  if (bpSection) {
+  if (bpSection && (!hasCampaignContext || quotaCount > 0)) {
     bpSection.classList.remove('hidden');
     bpSection.style.display = 'block';
   }

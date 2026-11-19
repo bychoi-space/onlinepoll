@@ -66,15 +66,6 @@ export async function runMetrixSeoulSurvey({
 
   let ownBrowser = null;
   let page = externalPage;
-  if (!page) {
-    ownBrowser = await launchChromium({ headless: true, args: ['--ignore-certificate-errors'] });
-    const context = await ownBrowser.newContext({
-      viewport: { width: 1280, height: 900 },
-      ignoreHTTPSErrors: true
-    });
-    page = await context.newPage();
-  }
-
   let alertMessages = [];
   let alreadyCompletedOnServer = false;
 
@@ -92,9 +83,18 @@ export async function runMetrixSeoulSurvey({
     }
   };
 
-  page.on('dialog', dialogHandler);
-
   try {
+    if (!page) {
+      ownBrowser = await launchChromium({ headless: true, args: ['--ignore-certificate-errors'] });
+      const context = await ownBrowser.newContext({
+        viewport: { width: 1280, height: 900 },
+        ignoreHTTPSErrors: true
+      });
+      page = await context.newPage();
+    }
+
+    page.on('dialog', dialogHandler);
+
     emitLog(`🚀 [서울시 소상공인 패널조사] 슬롯 진입 시작: [${akey}] ${companyName} (resid=${resid})`, 'info', '진입');
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(800);

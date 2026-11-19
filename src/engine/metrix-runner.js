@@ -141,15 +141,8 @@ export async function runMetrixSurvey({
     }
   }
 
-  const browser = await launchChromium({ headless: true });
-
-  const context = await browser.newContext({
-    viewport: { width: 1400, height: 900 },
-    ignoreHTTPSErrors: true,
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-  });
-
-  let page = await context.newPage();
+  let browser = null;
+  let page = null;
   const capturedSteps = [];
   const submittedAnswers = [];
   const dialogLog = [];
@@ -174,9 +167,19 @@ export async function runMetrixSurvey({
       await dialog.accept().catch(err => console.warn('[Metrix Dialog Accept 경고]:', err.message));
     });
   };
-  attachDialogListener(page);
 
   try {
+    browser = await launchChromium({ headless: true });
+
+    const context = await browser.newContext({
+      viewport: { width: 1400, height: 900 },
+      ignoreHTTPSErrors: true,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    });
+
+    page = await context.newPage();
+    attachDialogListener(page);
+
     const loginId = String(slotData.surveyorId || slotData.loginId || '강영미').trim();
     const loginPw = String(slotData.surveyorPw || slotData.loginPw || DEFAULT_ACCOUNT_PASSWORDS[loginId] || '5254').trim();
     const targetExcelPhone = String(slotData.excelPhone || slotData.phone || '').trim();
@@ -251,7 +254,7 @@ export async function runMetrixSurvey({
       }
 
       if (contactOpened.ok) {
-        await page.waitForSelector('#contactPopup [data-column="전화번호(무선)"]', { state: 'visible', timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('#contactPopup [data-column="전화번호(무선)"]', { state: 'visible', timeout: 10000 }).catch(err => console.warn('[컨택 팝업 전화번호 입력란 대기 경고]', err.message));
         await sleep(600);
 
         if (targetExcelPhone) {
@@ -290,7 +293,7 @@ export async function runMetrixSurvey({
           slotData.phoneNeedsSync = false;
 
           const contactShotName = 'step_00_contact_popup_saved.png';
-          await page.screenshot({ path: path.join(targetReportDir, contactShotName), fullPage: true }).catch(() => {});
+          await page.screenshot({ path: path.join(targetReportDir, contactShotName), fullPage: true }).catch(err => console.warn('[컨택 팝업 캡처 경고]', err.message));
           capturedSteps.push({
             stepIndex: 0,
             title: `[컨택 팝업] 휴대폰 번호(${targetExcelPhone}) 변경 및 [저장] 완료`,
@@ -321,7 +324,7 @@ export async function runMetrixSurvey({
               return txt.length > 0 && txt !== 'Loading..' && !txt.startsWith('Loading..');
             },
             { timeout: timeoutMs }
-          ).catch(() => {});
+          ).catch(err => console.warn('[Metrix 설문 로딩 대기 경고]', err.message));
           const curTxt = await targetPage.evaluate(() => (document.body?.innerText || '').trim()).catch(() => '');
           return Boolean(curTxt && curTxt !== 'Loading..' && !curTxt.startsWith('Loading..'));
         };
@@ -330,8 +333,8 @@ export async function runMetrixSurvey({
         if (popupPage) {
           attachDialogListener(popupPage);
           page = popupPage;
-          await contactPage.close().catch(() => {});
-          await popupPage.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
+          await contactPage.close().catch(err => console.warn('[컨택 탭 종료 경고]', err.message));
+          await popupPage.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(err => console.warn('[팝업 로드 대기 경고]', err.message));
           const readyFromPopup = await waitSurveyReady(popupPage, 15000);
           if (!readyFromPopup && surveyUrl) {
             console.log(`[MetrixRunner] 팝업 초기 Loading 지연 감지(URL=${popupPage.url()}) ➔ 정식 설문 URL로 재진입합니다: ${surveyUrl}`);
@@ -2855,8 +2858,10 @@ export async function runMetrixSurvey({
     };
   } catch (err) {
     console.error(`🚨 [MetrixRunner 치명적 오류] ${err.message}`, err.stack);
-    const errScreenshot = path.join(targetReportDir, 'error_state.png');
-    await page.screenshot({ path: errScreenshot, fullPage: true }).catch(e => console.warn('[오류 캡처 경고]:', e.message));
+    if (page) {
+      const errScreenshot = path.join(targetReportDir, 'error_state.png');
+      await page.screenshot({ path: errScreenshot, fullPage: true }).catch(e => console.warn('[오류 캡처 경고]:', e.message));
+    }
 
     return {
       success: false,
@@ -2868,6 +2873,8 @@ export async function runMetrixSurvey({
       slotData
     };
   } finally {
-    await browser.close().catch(e => console.warn('[브라우저 종료 경고]:', e.message));
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }

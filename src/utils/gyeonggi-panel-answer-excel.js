@@ -10,6 +10,7 @@ import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 import { launchChromium } from './chromium-launcher.js';
+import { writeJsonAtomicSync } from './atomic-file.js';
 
 export const GYEONGGI_PANEL_DEFAULT_GSHEET_URL =
   'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911';
@@ -93,7 +94,7 @@ export function persistGyeonggiPanelQuotaDatabase({
     fileObj.data = mergedRows;
     fileObj.count = mergedRows.length;
     fileObj.updatedAt = new Date().toISOString();
-    fs.writeFileSync(targetPath, JSON.stringify(fileObj, null, 2), 'utf-8');
+    writeJsonAtomicSync(targetPath, fileObj);
     return true;
   } catch (err) {
     console.warn(`[경기도 패널 쿼터 JSON 저장 경고] ${err.message}`);
@@ -334,8 +335,9 @@ async function _syncGyeonggiPanelAnswersToGoogleSheetImpl({
   const fullTsv = allLines.join('\n');
   const editUrl = getSpreadsheetEditUrl(sheetUrl);
 
-  const browser = await launchChromium({ headless: true, args: ['--ignore-certificate-errors'] });
+  let browser;
   try {
+    browser = await launchChromium({ headless: true, args: ['--ignore-certificate-errors'] });
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       permissions: ['clipboard-read', 'clipboard-write'],
@@ -481,7 +483,6 @@ async function _syncGyeonggiPanelAnswersToGoogleSheetImpl({
     const gidMatch = finalUrl.match(/gid=(\d+)/);
     const tabGid = gidMatch ? gidMatch[1] : null;
 
-    await browser.close();
     return {
       success: true,
       tabName: verifiedState.activeName,
@@ -491,9 +492,10 @@ async function _syncGyeonggiPanelAnswersToGoogleSheetImpl({
       populatedRowCount
     };
   } catch (err) {
-    await browser
-      .close()
-      .catch(closeErr => console.warn(`브라우저 종료 경고: ${closeErr.message}`));
     return { success: false, error: err.message };
+  } finally {
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }

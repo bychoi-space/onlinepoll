@@ -1,9 +1,9 @@
 # Dependencies
 node_modules/
-package-lock.json
 
-# Environment Variables
-# .env (included as requested)
+# Environment Variables (민감정보 Git 추적 차단)
+.env
+.env.local
 
 # Storage & Databases
 data/*
@@ -20,14 +20,19 @@ data/campaigns.json
 *.tmp
 !data/quotas/
 !data/quotas/*
+
+# Reports & Runtime Screenshots (모든 하위 폴더 포함 차단)
 reports/*.json
+reports/**/*.json
 !reports/kstat_survey_spec.json
 reports/*.png
+reports/**/*.png
 reports/*.log
+reports/**/*.log
+reports/test_*
 
 # Logs & Temporary files
 scratch/
-reports/test_*
 scripts/*_dump.*
 scripts/*.html
 scripts/*.json

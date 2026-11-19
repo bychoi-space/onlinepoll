@@ -1,8 +1,8 @@
 import { escapeHtml, getBadgeClass, getBadgeLabel } from './blueprint-utils.js';
 
-export function renderKonaBlueprint(data, { badgeMasterStatus, btnSaveBaseline, blueprintStageGrid }) {
+export function renderKonaBlueprint(data, { badgeMasterStatus, btnSaveBaseline, blueprintStageGrid, hasCampaignContext = false, quotaCount = 0 } = {}) {
   const bpSection = document.getElementById('section-master-blueprint');
-  if (bpSection) {
+  if (bpSection && (!hasCampaignContext || quotaCount > 0)) {
     bpSection.classList.remove('hidden');
     bpSection.style.display = 'block';
   }
@@ -64,9 +64,9 @@ export function renderKonaBlueprint(data, { badgeMasterStatus, btnSaveBaseline, 
   `).join('');
 }
 
-export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBaseline, blueprintStageGrid }) {
+export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBaseline, blueprintStageGrid, hasCampaignContext = false, quotaCount = 0 } = {}) {
   const bpSection = document.getElementById('section-master-blueprint');
-  if (bpSection) {
+  if (bpSection && (!hasCampaignContext || quotaCount > 0)) {
     bpSection.classList.remove('hidden');
     bpSection.style.display = 'block';
   }
@@ -119,7 +119,7 @@ export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBasel
           <div class="font-caption text-dim mt-4">[기본정보] 페이지의 문자 발송(#sendMsgBtn1/2) 및 이메일 발송(#sendEmailBtn1/2) 버튼은 어떤 경우에도 클릭하지 않습니다.</div>
         </div>
         <div class="assoc-rule-box mb-0">
-          <strong class="text-primary-color"><i class="fa-solid fa-arrows-Turn-to-dots"></i> 3. [선정] 쿼터 우선 실행 &amp; [대체] 자동 승계</strong>
+          <strong class="text-primary-color"><i class="fa-solid fa-arrows-turn-to-dots"></i> 3. [선정] 쿼터 우선 실행 &amp; [대체] 자동 승계</strong>
           <div class="font-caption text-dim mt-4">구글 시트 쿼터의 [선정] 표본을 우선 실행하며, 오류 발생 시 동일 표본층(Cell: 시도_주용도_연면적) 내 차순위 [대체] 표본을 자동으로 승계합니다.</div>
         </div>
         <div class="assoc-rule-box mb-0">
@@ -164,11 +164,15 @@ export function renderGallupReturnFarmBlueprint(data, {
   badgeMasterStatus,
   btnSaveBaseline,
   blueprintStageGrid,
-  triggerBatchRun
+  triggerBatchRun,
+  hasCampaignContext: explicitHasContext,
+  quotaCount: explicitQuotaCount
 }) {
-  const currentCampaign = getCurrentCampaign();
+  const currentCampaign = typeof getCurrentCampaign === 'function' ? getCurrentCampaign() : null;
+  const hasCampaignContext = explicitHasContext !== undefined ? explicitHasContext : Boolean(currentCampaign);
+  const quotaCount = explicitQuotaCount !== undefined ? explicitQuotaCount : (currentCampaign?.quotaDatabase?.length || 0);
   const bpSection = document.getElementById('section-master-blueprint');
-  if (bpSection) {
+  if (bpSection && (!hasCampaignContext || quotaCount > 0)) {
     bpSection.classList.remove('hidden');
     bpSection.style.display = 'block';
   }

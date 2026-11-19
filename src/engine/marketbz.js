@@ -253,14 +253,18 @@ export async function fetchMarketBzBusinesses({
             candidates: basicList,
             isComplete: false
           });
-        } catch (_) {}
+        } catch (cbErr) {
+          logger.warn(`[MarketBz] 체크포인트 콜백 경고: ${cbErr.message}`);
+        }
       }
     }
 
   } catch (error) {
     logger.error(`[MarketBz] 수집 중 오류 발생 (현재까지 확보된 ${collectedBusinesses.length}건 보존):`, error.message);
   } finally {
-    await browser.close().catch(() => {});
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 
   const finalWithPersonas = applyCeoPersonaPoolToQuota(collectedBusinesses);
@@ -273,7 +277,9 @@ export async function fetchMarketBzBusinesses({
         candidates: basicList,
         isComplete: finalWithPersonas.length >= count && finalWithPersonas.every(b => b.mbzStatus !== 'failed')
       });
-    } catch (_) {}
+    } catch (cbErr) {
+      logger.warn(`[MarketBz] 최종 체크포인트 콜백 경고: ${cbErr.message}`);
+    }
   }
 
   logger.success(`[MarketBz] 총 ${finalWithPersonas.length}/${count}건 사업자 데이터 저장 완료.`);

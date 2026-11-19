@@ -6,6 +6,12 @@ import { execSync } from 'child_process';
 
 // 1. 정적 구문 검사 (node --check)
 const filesToCheck = [
+  'public/ui-feedback.js',
+  'public/nav-auth.js',
+  'public/login.js',
+  'public/campaign-list.js',
+  'public/quota-builder.js',
+  'public/quota-detail.js',
   'public/survey-detail.js',
   'public/modules/blueprint-utils.js',
   'public/modules/blueprint-metrix.js',
@@ -15,10 +21,19 @@ const filesToCheck = [
   'public/modules/blueprint-kstat-store.js',
   'public/modules/quota-table-renderers.js',
   'src/server.js',
+  'src/config/env.js',
   'src/config/campaign-seeders.js',
+  'src/models/campaign.js',
+  'src/services/task-manager.js',
+  'src/services/onnuri-db-builder.js',
+  'src/routes/auth-routes.js',
+  'src/routes/campaign-routes.js',
   'src/routes/quota-routes.js',
   'src/routes/sync-routes.js',
   'src/routes/execution-routes.js',
+  'src/utils/atomic-file.js',
+  'src/utils/logger.js',
+  'src/utils/chromium-launcher.js',
   'src/engine/metrix-runner.js',
   'src/engine/metrix-slot-scraper.js',
   'src/utils/gyeonggi-panel-answer-excel.js'

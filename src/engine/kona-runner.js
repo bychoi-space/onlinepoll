@@ -891,7 +891,6 @@ export async function runKonaSurvey(options = {}) {
         capturedSteps,
         message: `🛑 [안전 가드 작동] IDX ${idx} 모든 문항 입력 및 제출 직전 스크린샷 보존 완료 (실제 제출 안 함)`
       });
-      await browser.close();
       return {
         success: true,
         status: 'stopped_before_submit',
@@ -968,7 +967,6 @@ export async function runKonaSurvey(options = {}) {
       message: `🎉 [IDX ${idx}] 설문 제출 및 스크린샷 보존 100% 완료!`
     });
 
-    await browser.close();
     return {
       success: true,
       status: 'completed',
@@ -977,14 +975,15 @@ export async function runKonaSurvey(options = {}) {
       capturedSteps
     };
   } catch (err) {
-    if (browser) {
-      await browser.close().catch(e => console.error('Browser close error:', e));
-    }
     return {
       success: false,
       idx,
       error: err.message,
       capturedSteps
     };
+  } finally {
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 }

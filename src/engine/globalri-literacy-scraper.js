@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from '../utils/logger.js';
 import { exportBusinessesToExcel } from '../utils/excel.js';
+import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -164,11 +165,6 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
   }
   const existingMap = new Map(existingMembers.map(m => [String(m.memberUid || m.uid), m]));
 
-  // 4. Headless Playwright로 각 가구의 Survey.asp 가구원 조사 현황 수집
-  const browser = await launchChromium({ headless: true });
-  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  const page = await context.newPage();
-
   // 기존 멤버 순번(1~N)을 먼저 보존하고 신규 발견된 '진행 중' 가구원을 뒤에 추가
   const quotaMembers = existingMembers.map((m, idx) => ({
     ...m,
@@ -178,7 +174,12 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
   const seenMemberUids = new Set(quotaMembers.map(m => String(m.memberUid || m.uid)));
   const householdSummaries = [];
 
+  // 4. Headless Playwright로 각 가구의 Survey.asp 가구원 조사 현황 수집
+  let browser = null;
   try {
+    browser = await launchChromium({ headless: true });
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const page = await context.newPage();
     for (const hh of targetHouseholds) {
       const f = hh.groupData?._BASE || hh.fields || {};
       const lid = String(hh.lid || hh.listID || '').trim();
@@ -301,7 +302,9 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
       }
     }
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close().catch(e => console.warn('[Browser close 경고]', e.message));
+    }
   }
 
   // 쿼터 파일 저장
@@ -334,7 +337,7 @@ export async function scrapeGlobalriLiteracyQuotas(options = {}) {
     data: quotaMembers
   };
 
-  fs.writeFileSync(jsonFilePath, JSON.stringify(quotaPayload, null, 2), 'utf-8');
+  writeJsonAtomicSync(jsonFilePath, quotaPayload);
   if (quotaMembers.length > 0) {
     exportBusinessesToExcel({
       data: quotaMembers,

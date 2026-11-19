@@ -1,8 +1,8 @@
 /**
  * 설문 유형별 STEP 1 쿼터(대상자) 테이블 헤더 및 행 렌더러 모듈
  */
-import { escapeHtml } from './blueprint-utils.js?v=20261108_modular_v2';
-import { DEFAULT_GLOBALRI_AGE_POLICIES, resolveGlobalriAgeGroupKey } from './blueprint-globalri.js?v=20261108_modular_v2';
+import { escapeHtml } from './blueprint-utils.js';
+import { DEFAULT_GLOBALRI_AGE_POLICIES, resolveGlobalriAgeGroupKey } from './blueprint-globalri.js';
 
 export const GALLUP_SIG_STYLES_LABELS = [
   '정자체 (바른획)',
@@ -226,19 +226,37 @@ export function renderEmptyQuotaTableRow({
   isGallupReturnFarm,
   isGlobalriLiteracy,
   isHrcEnergy,
+  isKona,
+  isMetrix,
+  isMetrixSeoul,
   isAssoc
 }) {
   if (!quotaTableBody) return;
+  const colSpan = (isMetrix || isMetrixSeoul || isGallupReturnFarm || isGlobalriLiteracy || isHrcEnergy)
+    ? 15
+    : (isAssoc ? 11 : (isKona ? 9 : 13));
+
+  let emptyMsg = '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.';
+  if (isGallupReturnFarm) {
+    emptyMsg = '아직 장착된 귀농실태조사 대상자가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong> 또는 <strong>[Kstat 진행 현황 실시간 동기화]</strong> 버튼으로 선정명단을 불러와 주세요.';
+  } else if (isGlobalriLiteracy) {
+    emptyMsg = '아직 장착된 성인문해능력조사 대상자가 없습니다.<br>상단의 <strong>[글로벌리서치 GIFT 동기화 / LID 지정 필터]</strong> 버튼을 클릭하여 쿼터를 불러와 주세요.';
+  } else if (isHrcEnergy) {
+    emptyMsg = '아직 장착된 에너지총조사 건물 표본이 없습니다.<br>상단의 <strong>[한국리서치 TAPI 실시간 동기화]</strong> 또는 <strong>[기존 쿼터 불러오기]</strong> 버튼을 클릭해 주세요.';
+  } else if (isMetrixSeoul) {
+    emptyMsg = '아직 장착된 서울시 소상공인 사업체패널 표본이 없습니다.<br>상단의 <strong>[2개 계정(2010·2016) + 구글시트 동기화]</strong> 또는 <strong>[기존 쿼터 불러오기]</strong> 버튼을 클릭해 주세요.';
+  } else if (isMetrix) {
+    emptyMsg = '아직 장착된 경기도 소상공인 패널 사업체가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong> 또는 <strong>[4계정·시트·폐업 동기화]</strong> 버튼을 클릭해 주세요.';
+  } else if (isKona) {
+    emptyMsg = '아직 장착된 청소년 설문 응답자 쿼터가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.';
+  } else if (isAssoc) {
+    emptyMsg = '아직 등록된 상인회 슬롯 DB가 없습니다.<br>상단의 <strong>[Kstat 상인회 슬롯 자동 바인딩]</strong> 버튼을 클릭하여 슬롯을 장착해 주세요.';
+  }
+
   quotaTableBody.innerHTML = `
     <tr>
-      <td colspan="${isAssoc ? 10 : (isHrcEnergy ? 12 : 13)}" class="empty-table-msg">
-        ${isGallupReturnFarm
-          ? '아직 장착된 귀농실태조사 대상자가 없습니다.'
-          : (isGlobalriLiteracy
-            ? '아직 장착된 성인문해능력조사 대상자가 없습니다.<br>상단의 <strong>[글로벌리서치 GIFT 동기화 / LID 지정 필터]</strong> 버튼을 클릭하여 쿼터를 불러와 주세요.'
-            : (isAssoc
-              ? '아직 등록된 상인회 슬롯 DB가 없습니다.<br>상단의 <strong>[Kstat 상인회 슬롯 자동 바인딩]</strong> 버튼을 클릭하여 슬롯을 장착해 주세요.'
-              : '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.'))}
+      <td colspan="${colSpan}" class="empty-table-msg">
+        ${emptyMsg}
       </td>
     </tr>
   `;
@@ -711,7 +729,7 @@ export function renderHrcEnergyQuotaTable({
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <span style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-right: 4px;">
-            <i class="fa-solid fa-Sliders text-primary-color"></i> 쿼터별 T41(입점시설) · B1-1(냉난방설비) 가이드 설정:
+            <i class="fa-solid fa-sliders text-primary-color"></i> 쿼터별 T41(입점시설) · B1-1(냉난방설비) 가이드 설정:
           </span>
           <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="selected_only">★ 선정 표본만 선택</button>
           <button type="button" class="globalri-quick-check-btn hrc-quick-check-btn" data-quick-check="uncompleted">미완료 전체 선택</button>
@@ -744,7 +762,7 @@ export function renderHrcEnergyQuotaTable({
         <div>
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
             <span style="font-size: 12px; font-weight: 800; color: #0f172a;">
-              <i class="fa-solid fa-temperature-Half text-primary-color"></i> [B1-1 문항 (q4000)] 냉난방 설비 선택
+              <i class="fa-solid fa-temperature-half text-primary-color"></i> [B1-1 문항 (q4000)] 냉난방 설비 선택
             </span>
             <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: #1e40af;">
               <span>에어컨 1대 용량(kW):</span>

@@ -10,9 +10,8 @@
   <link rel="alternate icon" type="image/png" href="favicon.png?v=20261022">
   <link rel="apple-touch-icon" href="favicon.png?v=20261022">
   
-  <!-- Pretendard Font -->
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Pretendard Variable Font -->
+  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
   <!-- Google Fonts: JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,10 +20,10 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="tokens.css">
-  <link rel="stylesheet" href="figma-base.css">
-  <link rel="stylesheet" href="campaign.css">
-  <link rel="stylesheet" href="custom-styles.css?v=20261105_manual_slot_ux">
+  <link rel="stylesheet" href="tokens.css?v=20261119_clean_v1">
+  <link rel="stylesheet" href="figma-base.css?v=20261119_clean_v1">
+  <link rel="stylesheet" href="campaign.css?v=20261119_clean_v1">
+  <link rel="stylesheet" href="custom-styles.css?v=20261119_clean_v1">
 </head>
 <body>
 
@@ -170,7 +169,7 @@
 
   <!-- 점포 수동 추가 모달 -->
   <div class="modal-overlay figma-modal-backdrop" id="modal-add-merchant">
-    <div class="modal-card figma-modal-dialog">
+    <div class="modal-card figma-modal-dialog" role="dialog" aria-modal="true">
       <div class="modal-header flex-between mb-16">
         <h3 class="font-card-title m-0"><i class="fa-solid fa-shop"></i> 새 점포(사업자) 수동 추가</h3>
         <button type="button" class="btn-close" id="btn-close-add-modal">&times;</button>
@@ -267,7 +266,7 @@
 
   <!-- 케이스탯(Kstat) 설문 슬롯 1:1 수동 매핑 모달 (쿼터 상세 편집기용) -->
   <div class="modal-overlay figma-modal-backdrop" id="modal-quota-slot-mapping">
-    <div class="modal-card figma-modal-dialog slot-mapping-modal-dialog">
+    <div class="modal-card figma-modal-dialog slot-mapping-modal-dialog" role="dialog" aria-modal="true">
       <div class="modal-header slot-mapping-modal-header flex-between mb-16">
         <div class="flex-center-gap-8">
           <i class="fa-solid fa-link text-primary-color font-size-18"></i>
@@ -342,7 +341,7 @@
     </div>
   </div>
 
-  <script type="module" src="quota-detail.js?v=20261108_assoc_quotas_sync"></script>
-  <script type="module" src="nav-auth.js"></script>
+  <script type="module" src="quota-detail.js?v=20261119_clean_v1"></script>
+  <script type="module" src="nav-auth.js?v=20261119_clean_v1"></script>
 </body>
 </html>

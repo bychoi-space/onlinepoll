@@ -1,4 +1,5 @@
 import { escapeHtml } from './blueprint-utils.js';
+import { showToast } from '../ui-feedback.js';
 
 export const GLOBALRI_AGE_GROUP_METAS = {
   age20: { key: 'age20', name: '20대 그룹', range: '만 18~29세 (1997~2008년생)', desc: '대학생·사회초년생·청년층 (고득점 문해력 · 디지털/AI 강세 · 대졸/재학 중심)', color: '#38bdf8' },
@@ -417,7 +418,7 @@ export function createGlobalriBlueprintController(opts = {}) {
 
       if (showNotification) {
         if (appendLog) appendLog('success', `✅ ${data.message}`);
-        alert(`✅ 체크한 쿼터 ${data.appliedCount}명(${(data.appliedNames || []).join(', ')})에게 [${presetLabel}] 응답 가이드가 적용·저장되었습니다!\n\n이제 우측의 [🚀 선택/가이드 지정 쿼터 일괄 배치 실행] 버튼을 누르면 해당 항목들이 순차 자동 진행됩니다.`);
+        showToast(`체크한 쿼터 ${data.appliedCount}명에게 [${presetLabel}] 응답 가이드가 적용·저장되었습니다.`, 'success', 4500);
       }
       return true;
     } catch (err) {
@@ -1105,8 +1106,10 @@ export function createGlobalriBlueprintController(opts = {}) {
   }
 
   function renderGlobalriLiteracyBlueprint(data) {
+    const currentCampaign = getCurrentCampaign();
+    const qDb = currentCampaign?.quotaDatabase || [];
     const bpSection = document.getElementById('section-master-blueprint');
-    if (bpSection) {
+    if (bpSection && (!currentCampaign || qDb.length > 0)) {
       bpSection.classList.remove('hidden');
       bpSection.style.display = 'block';
     }
@@ -1147,8 +1150,6 @@ export function createGlobalriBlueprintController(opts = {}) {
       };
     });
 
-    const currentCampaign = getCurrentCampaign();
-    const qDb = currentCampaign?.quotaDatabase || [];
     rebuildGlobalriAgeGroupStats(qDb, data.ageGroupStats || null);
 
     renderGlobalriAgeGroupCards();

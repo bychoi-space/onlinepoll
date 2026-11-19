@@ -1,12 +1,51 @@
 /**
- * 시스템 접근 제어 미들웨어, 패스코드 인증 API 및 실시간 SSE(/api/events, /api/logs) 라우트
+ * 시스템 접근 제어 미들웨어, 패스코드 인증 API(브루트포스 방어 포함) 및 실시간 SSE(/api/events, /api/logs) 라우트
  */
 import crypto from 'crypto';
 import { logger } from '../utils/logger.js';
 
 const MASTER_PASSWORD = process.env.SYSTEM_ACCESS_PASSWORD || '2265';
 const AUTH_COOKIE_NAME = 'autosurvey_auth';
-const TOKEN_SALT = 'autosurvey_secure_salt_2026';
+const TOKEN_SALT = process.env.AUTH_TOKEN_SALT || 'autosurvey_secure_salt_2026';
+
+// 패스코드 브루트포스 방어 (IP당 5분 내 최대 10회 실패 허용)
+const LOGIN_WINDOW_MS = 5 * 60 * 1000;
+const MAX_LOGIN_FAILURES = 10;
+const loginAttempts = new Map(); // ip -> { count, resetAt }
+
+function getClientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (typeof xff === 'string' && xff.trim()) {
+    return xff.split(',')[0].trim();
+  }
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+}
+
+function checkLoginRateLimit(ip) {
+  const now = Date.now();
+  for (const [k, v] of loginAttempts.entries()) {
+    if (now > v.resetAt) loginAttempts.delete(k);
+  }
+  const entry = loginAttempts.get(ip);
+  if (!entry) return { blocked: false, retrySec: 0 };
+  if (entry.count >= MAX_LOGIN_FAILURES && now < entry.resetAt) {
+    return {
+      blocked: true,
+      retrySec: Math.max(1, Math.ceil((entry.resetAt - now) / 1000))
+    };
+  }
+  return { blocked: false, retrySec: 0 };
+}
+
+function recordLoginFailure(ip) {
+  const now = Date.now();
+  const prev = loginAttempts.get(ip);
+  if (!prev || now > prev.resetAt) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+  } else {
+    prev.count += 1;
+  }
+}
 
 function generateAuthToken(password) {
   return crypto.createHmac('sha256', TOKEN_SALT).update(String(password).trim()).digest('hex');
@@ -38,15 +77,18 @@ export function parseCookies(req) {
 export function authGate(req, res, next) {
   const p = req.path;
 
-  // 1. 화이트리스트 (로그인 화면, 로그인 스크립트, 인증 API, 정적 스타일/폰트 리소스)
+  // 1. 화이트리스트 (로그인 화면, 로그인 스크립트, 인증 API, 공개 정적 스타일/폰트/파비콘만 허용 — /reports/ 스크린샷은 제외!)
+  const isProtectedReport = p === '/reports' || p.startsWith('/reports/');
   const isWhitelist =
-    p === '/login.html' ||
-    p === '/login.js' ||
-    p === '/api/auth/login' ||
-    p === '/api/auth/logout' ||
-    p === '/api/auth/check' ||
-    p === '/favicon.ico' ||
-    /\.(css|png|jpg|jpeg|svg|woff|woff2|ttf|ico)$/i.test(p);
+    !isProtectedReport && (
+      p === '/login.html' ||
+      p === '/login.js' ||
+      p === '/api/auth/login' ||
+      p === '/api/auth/logout' ||
+      p === '/api/auth/check' ||
+      p === '/favicon.ico' ||
+      /\.(css|png|jpg|jpeg|svg|woff|woff2|ttf|ico)$/i.test(p)
+    );
 
   if (isWhitelist) {
     return next();
@@ -61,7 +103,7 @@ export function authGate(req, res, next) {
   }
 
   // 3. 미인증 처리
-  if (p.startsWith('/api/')) {
+  if (p.startsWith('/api/') || isProtectedReport) {
     return res.status(401).json({ error: '인증이 필요합니다.', requireAuth: true });
   }
 
@@ -74,7 +116,7 @@ export function registerAuthAndSseRoutes(app) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
 
     logger.addClient(res, req.query.campaignId || null);
@@ -84,18 +126,31 @@ export function registerAuthAndSseRoutes(app) {
   app.get('/api/logs', handleSse);
 
   app.post('/api/auth/login', (req, res) => {
+    const ip = getClientIp(req);
+    const limit = checkLoginRateLimit(ip);
+    if (limit.blocked) {
+      return res.status(429).json({
+        success: false,
+        error: `인증 실패 횟수가 초과되었습니다. ${limit.retrySec}초 후 다시 시도해 주세요.`
+      });
+    }
+
     const password = req.body?.password || req.body?.passcode;
     if (!password) {
       return res.status(400).json({ success: false, error: '비밀번호를 입력해 주세요.' });
     }
 
     if (isValidAuthToken(generateAuthToken(password))) {
+      loginAttempts.delete(ip);
       const maxAgeSec = 7 * 24 * 60 * 60; // 7일
-      res.setHeader('Set-Cookie', `${AUTH_COOKIE_NAME}=${VALID_AUTH_TOKEN}; Path=/; Max-Age=${maxAgeSec}; HttpOnly; SameSite=Lax`);
+      const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+      const secureAttr = isHttps ? '; Secure' : '';
+      res.setHeader('Set-Cookie', `${AUTH_COOKIE_NAME}=${VALID_AUTH_TOKEN}; Path=/; Max-Age=${maxAgeSec}; HttpOnly; SameSite=Lax${secureAttr}`);
       logger.info('🔑 시스템 관리자 패스코드 인증 성공');
       return res.json({ success: true, message: '인증 성공' });
     }
 
+    recordLoginFailure(ip);
     logger.warn('⚠️ 시스템 접근 패스코드 불일치 시도 감지');
     return res.status(401).json({ success: false, error: '패스코드가 일치하지 않습니다.' });
   });

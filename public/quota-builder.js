@@ -1153,9 +1153,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (col.key === 'companyName' && row.mbzStatus === 'failed') {
             cellContent += ` <span class="badge-mbz-retry" title="마켓비즈 연결 지연 항목 (이어하기 실행 시 재조회)"><i class="fa-solid fa-rotate-right"></i>재시도대상</span>`;
           } else if (col.key === 'ceoName' && (row.isCeoEnriched || row.ceoSource)) {
-            cellContent += ` <span class="badge-enriched" title="${escapeHtml(row.ceoSource || '외부 공인 정보 보강')}"><i class="fa-solid fa-sparkles"></i>보강</span>`;
+            cellContent += ` <span class="badge-enriched" title="${escapeHtml(row.ceoSource || '외부 공인 정보 보강')}"><i class="fa-solid fa-wand-magic-sparkles"></i>보강</span>`;
           } else if (col.key === 'phone' && (row.isPhoneEnriched || row.phoneSource)) {
-            cellContent += ` <span class="badge-enriched" title="${escapeHtml(row.phoneSource || '외부 검색 보강')}"><i class="fa-solid fa-sparkles"></i>보강</span>`;
+            cellContent += ` <span class="badge-enriched" title="${escapeHtml(row.phoneSource || '외부 검색 보강')}"><i class="fa-solid fa-wand-magic-sparkles"></i>보강</span>`;
           } else if (col.key === 'ceoGender') {
             const gClass = String(rawVal).includes('여') ? 'female' : 'male';
             cellContent = `<span class="badge-gender ${gClass}">${escapeHtml(String(rawVal))}</span>`;
@@ -1205,7 +1205,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnReEnrich) {
     btnReEnrich.addEventListener('click', async () => {
       if (!lastCreatedQuota || !lastCreatedQuota.jsonFileName) {
-        alert('먼저 조사 쿼터를 생성해 주세요.');
+        if (window.AutoSurveyUI?.showToast) {
+          window.AutoSurveyUI.showToast('먼저 조사 쿼터를 생성해 주세요.', 'warn');
+        } else {
+          alert('먼저 조사 쿼터를 생성해 주세요.');
+        }
         return;
       }
 
@@ -1225,10 +1229,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appendLog('success', result.message);
         renderExcelGrid(result);
-        alert(`결측치 외부 보강 완료!\n총 ${result.enrichedCount}건의 실존 데이터가 추가 보강되었습니다.`);
+        if (window.AutoSurveyUI?.showToast) {
+          window.AutoSurveyUI.showToast(`결측치 외부 보강 완료! 총 ${result.enrichedCount}건 추가 보강됨`, 'success');
+        } else {
+          alert(`결측치 외부 보강 완료!\n총 ${result.enrichedCount}건의 실존 데이터가 추가 보강되었습니다.`);
+        }
       } catch (err) {
         appendLog('error', `보강 오류: ${err.message}`);
-        alert('결측치 보강 실패: ' + err.message);
+        if (window.AutoSurveyUI?.showToast) {
+          window.AutoSurveyUI.showToast('결측치 보강 실패: ' + err.message, 'error');
+        } else {
+          alert('결측치 보강 실패: ' + err.message);
+        }
       } finally {
         btnReEnrich.disabled = false;
         btnReEnrich.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-primary-color"></i> 결측치 외부 재보강';
@@ -1241,14 +1253,25 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCreateCamp) {
     btnCreateCamp.addEventListener('click', async () => {
       if (!lastCreatedQuota || !lastCreatedQuota.jsonFileName) {
-        alert('먼저 조사 쿼터를 생성해 주세요.');
+        if (window.AutoSurveyUI?.showToast) {
+          window.AutoSurveyUI.showToast('먼저 조사 쿼터를 생성해 주세요.', 'warn');
+        } else {
+          alert('먼저 조사 쿼터를 생성해 주세요.');
+        }
         return;
       }
 
       const qTitle = lastCreatedQuota.title || '조사쿼터';
       const defaultCampTitle = `${qTitle}_설문조사`;
-      const campTitle = prompt('생성할 설문조사 캠페인 명칭을 입력하세요:', defaultCampTitle);
-      if (!campTitle) return;
+      const campTitle = window.AutoSurveyUI?.showPromptModal
+        ? await window.AutoSurveyUI.showPromptModal({
+            title: '쿼터 기반 새 캠페인 생성',
+            message: '생성할 설문조사 캠페인 명칭을 입력하세요.',
+            defaultValue: defaultCampTitle,
+            confirmText: '캠페인 생성 및 이동'
+          })
+        : prompt('생성할 설문조사 캠페인 명칭을 입력하세요:', defaultCampTitle);
+      if (!campTitle || !campTitle.trim()) return;
 
       try {
         btnCreateCamp.disabled = true;
@@ -1259,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             quotaFileName: lastCreatedQuota.jsonFileName,
-            title: campTitle
+            title: campTitle.trim()
           })
         });
 
@@ -1267,10 +1290,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok) throw new Error(data.error || '캠페인 생성 실패');
 
         appendLog('success', `새 설문 캠페인이 생성되었습니다! (ID: ${data.campaign.id})`);
-        alert(`"${data.campaign.title}" 설문 캠페인이 생성되었습니다!\n설문 상세 작업실로 이동합니다.`);
         window.location.href = `survey-detail.html?id=${data.campaign.id}`;
       } catch (err) {
-        alert('캠페인 생성 실패: ' + err.message);
+        if (window.AutoSurveyUI?.showToast) {
+          window.AutoSurveyUI.showToast('캠페인 생성 실패: ' + err.message, 'error');
+        } else {
+          alert('캠페인 생성 실패: ' + err.message);
+        }
         btnCreateCamp.disabled = false;
         btnCreateCamp.innerHTML = '<i class="fa-solid fa-rocket"></i> 이 쿼터로 설문 시작';
       }
@@ -1281,6 +1307,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return String(str || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 });

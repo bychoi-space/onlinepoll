@@ -1,27 +1,30 @@
-// 공통 블루프린트 유틸리티 모듈
+// 블루프린트/쿼터 공통 유틸리티 모듈
 
 export function escapeHtml(str) {
-  return String(str || '')
+  return String(str ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-export function getBadgeClass(badge) {
-  switch (badge) {
-    case 'QUOTA_BINDING': return 'badge-tag-bind';
-    case 'RULE_FIXED': return 'badge-tag-fixed';
-    case 'TUNABLE_JITTER': return 'badge-tag-tunable';
-    default: return 'badge-tag-jitter';
+export function getBadgeClass(type) {
+  switch (type) {
+    case 'bind': return 'badge-tag-bind';
+    case 'tunable': return 'badge-tag-tunable';
+    case 'fixed': return 'badge-tag-fixed';
+    case 'jitter': return 'badge-tag-jitter';
+    default: return 'badge-tag-tunable';
   }
 }
 
-export function getBadgeLabel(badge) {
-  switch (badge) {
-    case 'QUOTA_BINDING': return '쿼터 1:1 바인딩';
-    case 'RULE_FIXED': return '규칙 필수 고정';
-    case 'TUNABLE_JITTER': return '기준점 조절';
-    default: return '가변 분산';
+export function getBadgeLabel(type) {
+  switch (type) {
+    case 'bind': return '<i class="fa-solid fa-link"></i> 쿼터 자동바인딩';
+    case 'tunable': return '<i class="fa-solid fa-sliders"></i> 설정 변경가능';
+    case 'fixed': return '<i class="fa-solid fa-lock"></i> 필수 고정값';
+    case 'jitter': return '<i class="fa-solid fa-shuffle"></i> 점포별 자동분산';
+    default: return '설정 가능';
   }
 }
-

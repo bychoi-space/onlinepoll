@@ -10,6 +10,7 @@ import {
   getActiveTasksList,
   isCampaignTaskRunning
 } from '../services/task-manager.js';
+import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 import { logger } from '../utils/logger.js';
 
 export function registerCampaignRoutes({
@@ -20,6 +21,12 @@ export function registerCampaignRoutes({
   syncAssocCampaignToQuotaFile,
   ensureAssocCampaignQuotaFiles
 }) {
+  // 구버전/외부 북마크 호환을 위한 설문 블루프린트 안전 리다이렉트
+  app.get('/survey-blueprint.html', (req, res) => {
+    const id = req.query.id;
+    return res.redirect(id ? `/survey-detail.html?id=${encodeURIComponent(String(id))}#section-master-blueprint` : '/index.html');
+  });
+
   // 전체 캠페인 목록 조회 (실시간 배치 가동 슬롯 및 진행률 정보 결합 + 잔류 running 상태 자동 정합성 보정)
   app.get('/api/campaigns', (req, res) => {
     res.set({
@@ -288,9 +295,7 @@ export function registerCampaignRoutes({
             if (matched) {
               qContent.count = qContent.data.length;
               qContent.updatedAt = new Date().toISOString();
-              const tmpQPath = `${qPath}.${process.pid}.${Date.now()}.tmp`;
-              fs.writeFileSync(tmpQPath, JSON.stringify(qContent, null, 2), 'utf-8');
-              fs.renameSync(tmpQPath, qPath);
+              writeJsonAtomicSync(qPath, qContent);
               const xlsxPath = path.join(quotasDir, qf.replace('.json', '.xlsx'));
               exportBusinessesToExcel({
                 data: qContent.data,
@@ -610,6 +615,42 @@ export function registerCampaignRoutes({
       });
     }
 
+    // 한국갤럽 20263603 귀농귀촌 실태조사(귀농) 전용 블루프린트 분기
+    if (campaign.surveyType === 'gallup_return_farm') {
+      const gallupTemplatesPath = path.join(dataDir, 'gallup_20263603_templates.json');
+      let templateCount = 0;
+      if (fs.existsSync(gallupTemplatesPath)) {
+        try {
+          const templates = JSON.parse(fs.readFileSync(gallupTemplatesPath, 'utf-8'));
+          templateCount = (templates && typeof templates === 'object') ? Object.keys(templates).length : 0;
+        } catch (err) {
+          console.error('귀농귀촌 템플릿 파일 파싱 실패:', err);
+        }
+      }
+      const defaultGallupPolicy = {
+        stopBeforeFinalSubmit: true,
+        preserveExistingInputs: true
+      };
+      const effectivePolicy = {
+        ...defaultGallupPolicy,
+        ...(campaign.gallupReturnFarmPolicy || campaign.masterBaseline?.policy || {})
+      };
+      return res.json({
+        surveyType: 'gallup_return_farm',
+        policy: effectivePolicy,
+        blueprint: {
+          title: '[한국갤럽 20263603] 2026년 귀농귀촌 실태조사(귀농)',
+          templateCount,
+          defaultPolicy: defaultGallupPolicy,
+          stages: []
+        },
+        googleSheetUrl: campaign.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1Hoai6ggQWxNVTW5SyxEsvpNtMOlBO1z_ThmM6cZ6gRg/edit?gid=1470110969#gid=1470110969',
+        campaignTitle: campaign.title,
+        slotCount: (campaign.quotaDatabase || []).length,
+        hasCustomBaseline: !!(campaign.gallupReturnFarmPolicy || campaign.masterBaseline)
+      });
+    }
+
     const blueprintPath = path.join(dataDir, 'kstat_survey_blueprint.json');
     if (!fs.existsSync(blueprintPath)) {
       return res.status(404).json({ error: '마스터 설문 블루프린트 파일이 존재하지 않습니다.' });
@@ -742,6 +783,7 @@ export function registerCampaignRoutes({
     const isKona = (campaign.surveyType === 'kona_youth');
     const isHrcEnergy = (campaign.surveyType === 'hrc_energy');
     const isGlobalriLiteracy = (campaign.surveyType === 'globalri_literacy');
+    const isGallupReturnFarm = (campaign.surveyType === 'gallup_return_farm');
 
     CampaignStore.updateCampaign(campaign.id, {
       masterBaseline: baseline,
@@ -754,25 +796,30 @@ export function registerCampaignRoutes({
       } : {}),
       ...(isKona ? { konaPolicy: baseline.policy || baseline } : {}),
       ...(isHrcEnergy ? { hrcEnergyPolicy: baseline.policy || baseline } : {}),
-      ...(isGlobalriLiteracy ? { globalriLiteracyPolicy: baseline.policy || baseline } : {})
+      ...(isGlobalriLiteracy ? { globalriLiteracyPolicy: baseline.policy || baseline } : {}),
+      ...(isGallupReturnFarm ? {
+        gallupReturnFarmPolicy: req.body.policy || req.body.gallupReturnFarmPolicy || req.body
+      } : {})
     });
 
-    logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isMetrixSeoul ? '서울시 소상공인 패널조사(5차) 응답 가이드' : (isGlobalriLiteracy ? '제5차 성인문해능력조사 나이대별 그룹 가이드' : (isHrcEnergy ? '에너지총조사 건물 부문 응답 규칙' : (isKona ? '코나체인 청소년 설문 기준 가이드' : (isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점')))))}이 저장되었습니다! 🎯`);
+    logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isGallupReturnFarm ? '귀농귀촌 실태조사(귀농) 응답 가이드' : (isMetrixSeoul ? '서울시 소상공인 패널조사(5차) 응답 가이드' : (isGlobalriLiteracy ? '제5차 성인문해능력조사 나이대별 그룹 가이드' : (isHrcEnergy ? '에너지총조사 건물 부문 응답 규칙' : (isKona ? '코나체인 청소년 설문 기준 가이드' : (isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점'))))))}이 저장되었습니다! 🎯`);
     res.json({
       success: true,
-      message: isMetrixSeoul
-        ? '서울시 소상공인 사업체 패널조사(5차) 응답 가이드라인 및 구글 시트 설정이 성공적으로 저장되었습니다.'
-        : (isGlobalriLiteracy
-          ? '제5차 성인문해능력조사 나이대별(20대/30대/40대/50대/60대/70대+) 그룹 가이드라인이 성공적으로 저장되었습니다.'
-          : (isHrcEnergy
-            ? '2025년 기준 에너지총조사 [건물 부문] 응답 기준 가이드라인(기입력 보존 정책 포함)이 성공적으로 저장되었습니다.'
-            : (isKona
-              ? '화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-              : (isMetrix
-                ? '메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-                : (isAssoc
-                  ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
-                  : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.'))))),
+      message: isGallupReturnFarm
+        ? '2026년 귀농귀촌 실태조사(귀농) 응답 가이드라인이 성공적으로 저장되었습니다.'
+        : (isMetrixSeoul
+          ? '서울시 소상공인 사업체 패널조사(5차) 응답 가이드라인 및 구글 시트 설정이 성공적으로 저장되었습니다.'
+          : (isGlobalriLiteracy
+            ? '제5차 성인문해능력조사 나이대별(20대/30대/40대/50대/60대/70대+) 그룹 가이드라인이 성공적으로 저장되었습니다.'
+            : (isHrcEnergy
+              ? '2025년 기준 에너지총조사 [건물 부문] 응답 기준 가이드라인(기입력 보존 정책 포함)이 성공적으로 저장되었습니다.'
+              : (isKona
+                ? '화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+                : (isMetrix
+                  ? '메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+                  : (isAssoc
+                    ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
+                    : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.')))))),
       baseline
     });
   });
@@ -1041,12 +1088,26 @@ export function registerCampaignRoutes({
 
     try {
       const quotaMeta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
-      const businesses = quotaMeta.data || [];
+      const businesses = quotaMeta.data || quotaMeta.rows || quotaMeta.results || [];
+      const lowerName = safeFilename.toLowerCase();
+      const isMetrixSeoul = (
+        quotaMeta.type === 'METRIX_SEOUL_PANEL' ||
+        quotaMeta.surveyType === 'metrix_seoul_panel' ||
+        lowerName.includes('seoul_panel') ||
+        lowerName.includes('metrix_seoul') ||
+        safeFilename.includes('S21401') ||
+        String(quotaMeta.surveyUrl || '').includes('S21401')
+      );
+      const isMetrix = !isMetrixSeoul && (
+        quotaMeta.type === 'METRIX_PANEL' ||
+        quotaMeta.surveyType === 'metrix_panel' ||
+        lowerName.includes('metrix')
+      );
       const isAssoc = (quotaMeta.type === 'KSTAT_ASSOC' || quotaMeta.surveyType === 'kstat_assoc' || safeFilename.startsWith('quota_assoc_'));
-      const isGlobalriLiteracy = (quotaMeta.type === 'GLOBALRI_ADULT_LITERACY' || quotaMeta.surveyType === 'globalri_literacy' || safeFilename.includes('globalri_adult_literacy'));
-      const isGallupReturnFarm = (quotaMeta.type === 'GALLUP_RETURN_FARM' || quotaMeta.surveyType === 'gallup_return_farm' || safeFilename.includes('gallup_20263603'));
-      const isHrcEnergy = (quotaMeta.type === 'HRC_ENERGY_BUILDING' || quotaMeta.surveyType === 'hrc_energy' || safeFilename.includes('hrc_energy'));
-      const isKona = (quotaMeta.type === 'KONA_YOUTH' || quotaMeta.surveyType === 'kona_youth');
+      const isGlobalriLiteracy = (quotaMeta.type === 'GLOBALRI_ADULT_LITERACY' || quotaMeta.surveyType === 'globalri_literacy' || lowerName.includes('globalri_adult_literacy'));
+      const isGallupReturnFarm = (quotaMeta.type === 'GALLUP_RETURN_FARM' || quotaMeta.surveyType === 'gallup_return_farm' || lowerName.includes('gallup'));
+      const isHrcEnergy = (quotaMeta.type === 'HRC_ENERGY_BUILDING' || quotaMeta.surveyType === 'hrc_energy' || lowerName.includes('hrc_energy'));
+      const isKona = (quotaMeta.type === 'KONA_YOUTH' || quotaMeta.surveyType === 'kona_youth' || lowerName.includes('kona'));
 
       if (businesses.length === 0) {
         return res.status(400).json({ error: '쿼터 파일 내에 사업자 데이터가 없습니다.' });
@@ -1058,13 +1119,27 @@ export function registerCampaignRoutes({
         index: idx + 1,
         slotIndex: idx + 1,
         ...b,
-        quotaStatus: b.quotaStatus || (b.status === '완료' ? 'completed' : 'ready'),
+        quotaStatus: b.quotaStatus || (String(b.status || '').includes('완료') ? 'completed' : 'ready'),
         usedAt: b.usedAt || null
       }));
 
+      const resolvedQuotaTitle = quotaMeta.title || quotaMeta.name || safeFilename;
       const updated = CampaignStore.updateCampaign(campaign.id, {
         status: 'ready',
         quotaType: (isGlobalriLiteracy || isGallupReturnFarm || isKona) ? 'b2c' : 'b2b',
+        quotaSourceFile: safeFilename,
+        ...(isMetrixSeoul ? {
+          surveyType: 'metrix_seoul_panel',
+          accountKeys: Array.isArray(quotaMeta.accounts)
+            ? quotaMeta.accounts.map(a => a.akey || a.accountKey).filter(Boolean)
+            : (campaign.accountKeys || ['2010', '2016']),
+          googleSheetUrl: quotaMeta.googleSheetUrl || campaign.googleSheetUrl || SEOUL_PANEL_DEFAULT_GSHEET_URL
+        } : {}),
+        ...(isMetrix ? {
+          surveyType: 'metrix_panel',
+          ...(quotaMeta.accounts ? { accounts: quotaMeta.accounts } : {}),
+          ...(quotaMeta.googleSheetUrl ? { googleSheetUrl: quotaMeta.googleSheetUrl } : {})
+        } : {}),
         ...(isAssoc ? {
           surveyType: 'kstat_assoc',
           kstatLoginId: quotaMeta.surveyorId || businesses[0]?.surveyorAccount || campaign.kstatLoginId || '가온박정순',
@@ -1075,13 +1150,13 @@ export function registerCampaignRoutes({
           surveyType: 'globalri_literacy',
           loginId: quotaMeta.loginId || campaign.loginId || '01071447791',
           loginPw: quotaMeta.loginPw || campaign.loginPw || '2038020',
-          surveyorName: quotaMeta.surveyorName || campaign.surveyorName || '노영미7791',
-          quotaSourceFile: safeFilename
+          surveyorName: quotaMeta.surveyorName || campaign.surveyorName || '노영미7791'
         } : {}),
         ...(isGallupReturnFarm ? {
           surveyType: 'gallup_return_farm',
           loginId: quotaMeta.surveyorId || campaign.loginId || '076_000009',
-          surveyorName: quotaMeta.surveyorName || campaign.surveyorName || '백영자'
+          surveyorName: quotaMeta.surveyorName || campaign.surveyorName || '백영자',
+          googleSheetUrl: quotaMeta.googleSheetUrl || campaign.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1Hoai6ggQWxNVTW5SyxEsvpNtMOlBO1z_ThmM6cZ6gRg/edit?gid=1470110969#gid=1470110969'
         } : {}),
         ...(isHrcEnergy ? {
           surveyType: 'hrc_energy',
@@ -1092,7 +1167,7 @@ export function registerCampaignRoutes({
         quotaConfig: {
           quotaSource: 'FILE_IMPORT',
           quotaFileName: safeFilename,
-          quotaTitle: quotaMeta.title || safeFilename,
+          quotaTitle: resolvedQuotaTitle,
           marketName: quotaMeta.marketName || null,
           targetCount: quotaDb.length,
           selectedFields: (quotaMeta.columns || []).map(c => c.key)
@@ -1100,7 +1175,7 @@ export function registerCampaignRoutes({
         quotaDatabase: quotaDb
       });
 
-      logger.success(`[쿼터 불러오기 완료] 캠페인 "${campaign.title}"에 "${quotaMeta.title || safeFilename}" (${quotaDb.length}건) 제반 DB가 성공적으로 탑재되었습니다! 🎉`);
+      logger.success(`[쿼터 불러오기 완료] 캠페인 "${campaign.title}"에 "${resolvedQuotaTitle}" (${quotaDb.length}건) 제반 DB가 성공적으로 탑재되었습니다! 🎉`);
 
       res.json({
         success: true,
@@ -1133,36 +1208,72 @@ export function registerCampaignRoutes({
 
     try {
       const quotaMeta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
-      const businesses = quotaMeta.data || quotaMeta.rows || [];
+      const businesses = quotaMeta.data || quotaMeta.rows || quotaMeta.results || [];
+      const resolvedQuotaTitle = quotaMeta.title || quotaMeta.name || safeFilename;
+      const campTitle = title || quotaMeta.title || quotaMeta.name || `새 설문조사 (${path.basename(safeFilename, '.json')})`;
 
-      const campTitle = title || quotaMeta.title || `새 설문조사 (${path.basename(safeFilename, '.json')})`;
-
-      const isMetrix = (quotaMeta.type === 'METRIX_PANEL');
+      const lowerName = safeFilename.toLowerCase();
+      const isMetrixSeoul = (
+        quotaMeta.type === 'METRIX_SEOUL_PANEL' ||
+        quotaMeta.surveyType === 'metrix_seoul_panel' ||
+        lowerName.includes('seoul_panel') ||
+        lowerName.includes('metrix_seoul') ||
+        safeFilename.includes('S21401') ||
+        String(quotaMeta.surveyUrl || '').includes('S21401')
+      );
+      const isMetrix = !isMetrixSeoul && (
+        quotaMeta.type === 'METRIX_PANEL' ||
+        quotaMeta.surveyType === 'metrix_panel' ||
+        lowerName.includes('metrix')
+      );
       const isAssoc = (quotaMeta.type === 'KSTAT_ASSOC' || quotaMeta.surveyType === 'kstat_assoc' || safeFilename.startsWith('quota_assoc_'));
-      const isKona = (quotaMeta.type === 'KONA_YOUTH' || quotaMeta.surveyType === 'kona_youth');
-      const isHrcEnergy = (quotaMeta.type === 'HRC_ENERGY_BUILDING' || quotaMeta.surveyType === 'hrc_energy' || safeFilename.includes('hrc_energy'));
-      const isGallupReturnFarm = (quotaMeta.type === 'GALLUP_RETURN_FARM' || quotaMeta.surveyType === 'gallup_return_farm' || safeFilename.includes('gallup_20263603'));
-      const isGlobalriLiteracy = (quotaMeta.type === 'GLOBALRI_ADULT_LITERACY' || quotaMeta.surveyType === 'globalri_literacy' || safeFilename.includes('globalri_adult_literacy'));
+      const isKona = (quotaMeta.type === 'KONA_YOUTH' || quotaMeta.surveyType === 'kona_youth' || lowerName.includes('kona'));
+      const isHrcEnergy = (quotaMeta.type === 'HRC_ENERGY_BUILDING' || quotaMeta.surveyType === 'hrc_energy' || lowerName.includes('hrc_energy'));
+      const isGallupReturnFarm = (quotaMeta.type === 'GALLUP_RETURN_FARM' || quotaMeta.surveyType === 'gallup_return_farm' || lowerName.includes('gallup'));
+      const isGlobalriLiteracy = (quotaMeta.type === 'GLOBALRI_ADULT_LITERACY' || quotaMeta.surveyType === 'globalri_literacy' || lowerName.includes('globalri_adult_literacy'));
 
       const newCamp = CampaignStore.createCampaign({
         title: campTitle,
         description: isGallupReturnFarm
           ? `한국갤럽 G-CAII(20263603) 2026년 귀농귀촌 실태조사(귀농) · 강원 홍천군 GPS 자동 주입 · 방문기록 검증 · 8종 필체 전자서명 · 완료 직전(Page 118) 안전 정지`
-          : (isGlobalriLiteracy
-            ? `글로벌리서치 통합조사시스템(GIFT) 제5차 성인문해능력조사 (${quotaMeta.surveyorName || ''})`
-            : (isHrcEnergy
-              ? `한국리서치 TAPI(2026-89-0342C) 건물 부문 에너지총조사 (조사원: ${quotaMeta.surveyorId || ''} ${quotaMeta.surveyorName || ''} · 기입력 항목 보존)`
-              : (isKona
-                ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치플랫폼)'
-                : (isMetrix
-                  ? '메트릭스 경기도 소상공인 사업체패널 3차조사'
-                  : (isAssoc
-                    ? `2026년 전통시장 및 상점가 조사 (상인회 전용 · 조사원: ${quotaMeta.surveyorId || businesses[0]?.surveyorAccount || ''})`
-                    : (quotaMeta.marketName
-                      ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
-                      : `${quotaMeta.keyword || '사업주'} 대상 설문조사`)))))),
+          : (isMetrixSeoul
+            ? `메트릭스 Surveybox(S21401by41s3) 2026년 서울시 소상공인 사업체 패널조사(5차) · 동의서(svyA115.asp, 99%) 안전 대기`
+            : (isGlobalriLiteracy
+              ? `글로벌리서치 통합조사시스템(GIFT) 제5차 성인문해능력조사 (${quotaMeta.surveyorName || ''})`
+              : (isHrcEnergy
+                ? `한국리서치 TAPI(2026-89-0342C) 건물 부문 에너지총조사 (조사원: ${quotaMeta.surveyorId || ''} ${quotaMeta.surveyorName || ''} · 기입력 항목 보존)`
+                : (isKona
+                  ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치플랫폼)'
+                  : (isMetrix
+                    ? '메트릭스 경기도 소상공인 사업체패널 3차조사'
+                    : (isAssoc
+                      ? `2026년 전통시장 및 상점가 조사 (상인회 전용 · 조사원: ${quotaMeta.surveyorId || businesses[0]?.surveyorAccount || ''})`
+                      : (quotaMeta.marketName
+                        ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
+                        : `${quotaMeta.keyword || '사업주'} 대상 설문조사`))))))),
         quotaType: (isKona || isGallupReturnFarm || isGlobalriLiteracy) ? 'b2c' : 'b2b',
-        surveyType: isGallupReturnFarm ? 'gallup_return_farm' : (isGlobalriLiteracy ? 'globalri_literacy' : (isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))))),
+        surveyType: isGallupReturnFarm
+          ? 'gallup_return_farm'
+          : (isMetrixSeoul
+            ? 'metrix_seoul_panel'
+            : (isGlobalriLiteracy
+              ? 'globalri_literacy'
+              : (isHrcEnergy
+                ? 'hrc_energy'
+                : (isKona
+                  ? 'kona_youth'
+                  : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store')))))),
+        quotaSourceFile: safeFilename,
+        ...(isMetrixSeoul ? {
+          accountKeys: Array.isArray(quotaMeta.accounts)
+            ? quotaMeta.accounts.map(a => a.akey || a.accountKey).filter(Boolean)
+            : ['2010', '2016'],
+          googleSheetUrl: quotaMeta.googleSheetUrl || SEOUL_PANEL_DEFAULT_GSHEET_URL
+        } : {}),
+        ...(isMetrix ? {
+          ...(quotaMeta.accounts ? { accounts: quotaMeta.accounts } : {}),
+          ...(quotaMeta.googleSheetUrl ? { googleSheetUrl: quotaMeta.googleSheetUrl } : {})
+        } : {}),
         ...(isAssoc ? {
           kstatLoginId: quotaMeta.surveyorId || businesses[0]?.surveyorAccount || '가온박정순',
           kstatLoginPw: quotaMeta.kstatLoginPw || '1234',
@@ -1191,20 +1302,22 @@ export function registerCampaignRoutes({
         index: idx + 1,
         slotIndex: idx + 1,
         ...b,
-        quotaStatus: b.quotaStatus || (b.status === '완료' ? 'completed' : 'ready'),
+        quotaStatus: b.quotaStatus || (String(b.status || '').includes('완료') ? 'completed' : 'ready'),
         usedAt: b.usedAt || null
       }));
 
       // 기존 캠페인 중 사용자가 커스텀 설정한 masterBaseline이 있으면 신규 캠페인에 자동 복제 장착
       let inheritedBaseline = null;
       const allCamps = CampaignStore.getAllCampaigns();
-      const bestSource = isGlobalriLiteracy
-        ? allCamps.find(c => c.surveyType === 'globalri_literacy' && c.masterBaseline)
-        : (isAssoc
-          ? (allCamps.find(c => (c.surveyType === 'kstat_assoc' || String(c.title || '').includes('상인회')) && c.masterBaseline && c.masterBaseline.assocMode) ||
-             allCamps.find(c => (c.surveyType === 'kstat_assoc' || String(c.title || '').includes('상인회')) && c.masterBaseline))
-          : (allCamps.find(c => c.surveyType !== 'kstat_assoc' && c.surveyType !== 'globalri_literacy' && c.masterBaseline && c.masterBaseline.groups) ||
-             allCamps.find(c => c.surveyType !== 'kstat_assoc' && c.surveyType !== 'globalri_literacy' && c.masterBaseline)));
+      const bestSource = (isMetrixSeoul || isGallupReturnFarm || isMetrix || isHrcEnergy || isKona)
+        ? allCamps.find(c => c.id !== newCamp.id && c.surveyType === newCamp.surveyType && c.masterBaseline)
+        : (isGlobalriLiteracy
+          ? allCamps.find(c => c.id !== newCamp.id && c.surveyType === 'globalri_literacy' && c.masterBaseline)
+          : (isAssoc
+            ? (allCamps.find(c => c.id !== newCamp.id && (c.surveyType === 'kstat_assoc' || String(c.title || '').includes('상인회')) && c.masterBaseline && c.masterBaseline.assocMode) ||
+               allCamps.find(c => c.id !== newCamp.id && (c.surveyType === 'kstat_assoc' || String(c.title || '').includes('상인회')) && c.masterBaseline))
+            : (allCamps.find(c => c.id !== newCamp.id && (!c.surveyType || c.surveyType === 'kstat_store') && c.masterBaseline && c.masterBaseline.groups) ||
+               allCamps.find(c => c.id !== newCamp.id && (!c.surveyType || c.surveyType === 'kstat_store') && c.masterBaseline))));
       if (bestSource && bestSource.masterBaseline) {
         inheritedBaseline = JSON.parse(JSON.stringify(bestSource.masterBaseline));
         if (inheritedBaseline.groups) {
@@ -1223,20 +1336,21 @@ export function registerCampaignRoutes({
 
       const updated = CampaignStore.updateCampaign(newCamp.id, {
         status: 'ready',
+        quotaSourceFile: safeFilename,
         quotaConfig: {
           quotaSource: 'FILE_IMPORT',
           quotaFileName: safeFilename,
-          quotaTitle: quotaMeta.title || safeFilename,
+          quotaTitle: resolvedQuotaTitle,
           marketName: quotaMeta.marketName || null,
           targetCount: quotaDb.length,
           selectedFields: (quotaMeta.columns || []).map(c => c.key)
         },
         quotaDatabase: quotaDb,
-        masterBaseline: inheritedBaseline,
-        hasMasterBlueprint: !!inheritedBaseline
+        ...(inheritedBaseline ? { masterBaseline: inheritedBaseline } : {}),
+        hasMasterBlueprint: Boolean(newCamp.hasMasterBlueprint || inheritedBaseline)
       });
 
-      logger.success(`[새 설문 캠페인 생성] 쿼터 "${quotaMeta.title || safeFilename}" 기반으로 캠페인 "${campTitle}" (ID: ${newCamp.id})이 생성되었습니다!`);
+      logger.success(`[새 설문 캠페인 생성] 쿼터 "${resolvedQuotaTitle}" 기반으로 캠페인 "${campTitle}" (ID: ${newCamp.id})이 생성되었습니다!`);
 
       res.status(201).json({
         success: true,
@@ -1373,7 +1487,7 @@ export function registerCampaignRoutes({
               qm.ranId = matchedBiz.ranId || null;
             }
           });
-          fs.writeFileSync(fullJsonPath, JSON.stringify(quotaJson, null, 2), 'utf8');
+          writeJsonAtomicSync(fullJsonPath, quotaJson);
 
           const xlsxPath = fullJsonPath.replace(/\.json$/, '.xlsx');
           if (qList.length > 0) {
@@ -1464,7 +1578,7 @@ export function registerCampaignRoutes({
               if (matched.ehpUnitKw) qm.ehpUnitKw = matched.ehpUnitKw;
             }
           });
-          fs.writeFileSync(hrcQuotaPath, JSON.stringify(qJson, null, 2), 'utf8');
+          writeJsonAtomicSync(hrcQuotaPath, qJson);
         }
       } catch (syncErr) {
         logger.warn('[HRC 에너지총조사 쿼터 가이드 파일 동기화 주의]', syncErr.message);

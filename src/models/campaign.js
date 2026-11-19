@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,42 +13,13 @@ const rootDir = path.resolve(__dirname, '../..');
 const dataDir = path.join(rootDir, 'data');
 const campaignsFile = path.join(dataDir, 'campaigns.json');
 
-// data 디렉터리 및 파일 초기화
+// data 디렉터리 및 파일 초기화 (AGENTS.md 제2원칙: 거짓/더미 캠페인 생성 금지)
 function initStore() {
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
   if (!fs.existsSync(campaignsFile)) {
-    // 기본 샘플 캠페인 1개 포함하여 초기화
-    const initialData = [
-      {
-        id: 'camp_' + Date.now(),
-        title: '2026 대한민국 IT·소프트웨어 중소기업 디지털 전환 실태조사',
-        description: '국내 소프트웨어 개발 기업 대상 경영 현황 및 규제 개선 건의 설문',
-        quotaType: 'b2b', // 'b2c' | 'b2b'
-        status: 'ready', // 'ready' | 'building' | 'running' | 'completed'
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        quotaConfig: {
-          b2bKeyword: '소프트웨어',
-          targetCount: 2,
-          selectedFields: ['companyName', 'bizNumber', 'ceoName', 'address', 'industry']
-        },
-        quotaDatabase: [], // MarketBz에서 수집된 실제 사업자 객체 배열
-        guidelineConfig: {
-          surveyUrl: 'http://localhost:3000/mock-survey-b2b.html',
-          topic: '2026 대한민국 IT·소프트웨어 중소기업 디지털 전환 지원 설문',
-          positiveRatio: 70,
-          neutralRatio: 20,
-          negativeRatio: 10,
-          textGuidelines: '클라우드 인프라 지원과 R&D 세액 공제 확대가 절실하다는 의견',
-          iterations: 1,
-          headless: true
-        },
-        results: []
-      }
-    ];
-    fs.writeFileSync(campaignsFile, JSON.stringify(initialData, null, 2), 'utf-8');
+    writeJsonAtomicSync(campaignsFile, []);
   }
 }
 
@@ -55,23 +27,14 @@ initStore();
 
 let cachedCampaigns = null;
 let lastLoadedMtimeMs = 0;
-let writeSeq = 0;
 
 function flushCacheToDisk(campaigns) {
   cachedCampaigns = campaigns;
-  const serialized = JSON.stringify(campaigns, null, 2);
-  const tmpFile = `${campaignsFile}.${process.pid}.${Date.now()}_${++writeSeq}.tmp`;
+  writeJsonAtomicSync(campaignsFile, campaigns);
   try {
-    fs.writeFileSync(tmpFile, serialized, 'utf-8');
-    fs.renameSync(tmpFile, campaignsFile);
-    try {
-      lastLoadedMtimeMs = fs.statSync(campaignsFile).mtimeMs;
-    } catch (_) {}
+    lastLoadedMtimeMs = fs.statSync(campaignsFile).mtimeMs;
   } catch (err) {
-    try {
-      if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
-    } catch (_) {}
-    throw err;
+    console.warn('[CampaignStore] mtime 갱신 경고:', err.message);
   }
 }
 
@@ -114,6 +77,8 @@ export function createCampaign(data = {}) {
   const isKona = (data.surveyType === 'kona_youth');
   const isHrcEnergy = (data.surveyType === 'hrc_energy');
   const isGlobalriLiteracy = (data.surveyType === 'globalri_literacy');
+  const isGallupReturnFarm = (data.surveyType === 'gallup_return_farm');
+  const isGenericB2c = (data.surveyType === 'generic_b2c' || data.quotaType === 'b2c');
 
   let defaultAssocPolicy = null;
   if (isAssoc) {
@@ -122,7 +87,9 @@ export function createCampaign(data = {}) {
       try {
         const bp = JSON.parse(fs.readFileSync(assocBpPath, 'utf-8'));
         defaultAssocPolicy = bp.defaultPolicy;
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CampaignStore] 상인회 블루프린트 로드 경고:', err.message);
+      }
     }
     if (!defaultAssocPolicy) {
       defaultAssocPolicy = {
@@ -152,7 +119,9 @@ export function createCampaign(data = {}) {
       try {
         const bp = JSON.parse(fs.readFileSync(metrixBpPath, 'utf-8'));
         defaultMetrixPolicy = bp.defaultPolicy;
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CampaignStore] 메트릭스 블루프린트 로드 경고:', err.message);
+      }
     }
   }
 
@@ -163,7 +132,9 @@ export function createCampaign(data = {}) {
       try {
         const bp = JSON.parse(fs.readFileSync(konaBpPath, 'utf-8'));
         defaultKonaPolicy = bp.defaultPolicy;
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CampaignStore] 코나체인 블루프린트 로드 경고:', err.message);
+      }
     }
   }
 
@@ -174,7 +145,9 @@ export function createCampaign(data = {}) {
       try {
         const bp = JSON.parse(fs.readFileSync(hrcBpPath, 'utf-8'));
         defaultHrcEnergyPolicy = bp.defaultPolicy;
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CampaignStore] 에너지총조사 블루프린트 로드 경고:', err.message);
+      }
     }
   }
 
@@ -187,16 +160,49 @@ export function createCampaign(data = {}) {
         const bp = JSON.parse(fs.readFileSync(globalriBpPath, 'utf-8'));
         defaultGlobalriPolicy = bp.defaultPolicy || {};
         defaultAgeGroupBaselines = bp.defaultAgeGroupBaselines || (bp.defaultPolicy && bp.defaultPolicy.ageGroups) || {};
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CampaignStore] 성인문해능력조사 블루프린트 로드 경고:', err.message);
+      }
     }
   }
 
+  const resolvedSurveyType = data.surveyType || (data.quotaType === 'b2c' ? 'generic_b2c' : 'kstat_store');
+  const resolvedQuotaType = data.quotaType || (
+    isGallupReturnFarm || isGlobalriLiteracy || isKona || isGenericB2c
+      ? 'b2c'
+      : (isAssoc || isMetrix || isMetrixSeoul || isHrcEnergy || resolvedSurveyType === 'kstat_store' ? 'b2b' : 'b2c')
+  );
+
+  const defaultSurveyUrl = isGallupReturnFarm
+    ? 'https://www.gallup.co.kr'
+    : (isMetrixSeoul
+      ? 'https://metrix.svybx.kr/sp7/S21401by41s3/mlist.asp'
+      : (isGlobalriLiteracy
+        ? 'https://gift.globalri.it/login'
+        : (isHrcEnergy
+          ? 'https://tapi.hrcglobal.com/Home/Login'
+          : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''))));
+
   const newCampaign = {
     id: data.id || ('camp_' + Date.now()),
-    title: data.title || (isMetrixSeoul ? '[메트릭스] (신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차)' : (isGlobalriLiteracy ? '[GR20260618-1-001-02] 제5차 성인문해능력조사' : (isHrcEnergy ? '2025년 기준 에너지총조사 (건물 부문)' : (isKona ? '2026 화성특례시 만족도 청소년 설문조사' : (isMetrix ? '2026 메트릭스 경기도 소상공인 패널조사' : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인')))))),
+    title: data.title || (
+      isGallupReturnFarm
+        ? '[한국갤럽 20263603] 2026년 귀농귀촌 실태조사(귀농)'
+        : (isMetrixSeoul
+          ? '[메트릭스] (신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차)'
+          : (isGlobalriLiteracy
+            ? '[GR20260618-1-001-02] 제5차 성인문해능력조사'
+            : (isHrcEnergy
+              ? '2025년 기준 에너지총조사 (건물 부문)'
+              : (isKona
+                ? '2026 화성특례시 만족도 청소년 설문조사'
+                : (isMetrix
+                  ? '2026 메트릭스 경기도 소상공인 패널조사'
+                  : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인'))))))
+    ),
     description: data.description || '',
-    quotaType: data.quotaType || (isAssoc || isMetrix || isMetrixSeoul || isHrcEnergy ? 'b2b' : 'b2c'),
-    surveyType: data.surveyType || 'kstat_store', // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'metrix_seoul_panel' | 'kona_youth' | 'hrc_energy' | 'globalri_literacy'
+    quotaType: resolvedQuotaType,
+    surveyType: resolvedSurveyType, // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'metrix_seoul_panel' | 'kona_youth' | 'hrc_energy' | 'globalri_literacy' | 'gallup_return_farm' | 'generic_b2c'
     status: 'ready',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -206,8 +212,19 @@ export function createCampaign(data = {}) {
       selectedFields: ['companyName', 'bizNumber', 'ceoName', 'address', 'industry']
     },
     quotaDatabase: data.quotaDatabase || [],
-    guidelineConfig: data.guidelineConfig || {
-      surveyUrl: isMetrixSeoul ? 'https://metrix.svybx.kr/sp7/S21401by41s3/mlist.asp' : (isGlobalriLiteracy ? 'https://gift.globalri.it/login' : (isHrcEnergy ? 'https://tapi.hrcglobal.com/Home/Login' : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''))),
+    guidelineConfig: data.guidelineConfig ? {
+      surveyUrl: defaultSurveyUrl,
+      topic: '',
+      positiveRatio: 70,
+      neutralRatio: 20,
+      negativeRatio: 10,
+      textGuidelines: '',
+      iterations: 1,
+      headless: true,
+      ...data.guidelineConfig,
+      ...(data.guidelineConfig.surveyUrl ? { surveyUrl: data.guidelineConfig.surveyUrl } : { surveyUrl: defaultSurveyUrl })
+    } : {
+      surveyUrl: defaultSurveyUrl,
       topic: '',
       positiveRatio: 70,
       neutralRatio: 20,
@@ -217,6 +234,13 @@ export function createCampaign(data = {}) {
       headless: true
     },
     results: [],
+    ...(data.kstatLoginId ? { kstatLoginId: data.kstatLoginId } : {}),
+    ...(data.kstatLoginPw ? { kstatLoginPw: data.kstatLoginPw } : {}),
+    ...(data.kstatListUrl ? { kstatListUrl: data.kstatListUrl } : {}),
+    ...(data.snum ? { snum: data.snum } : {}),
+    ...(data.accounts ? { accounts: data.accounts } : {}),
+    ...(data.sparePhones ? { sparePhones: data.sparePhones } : {}),
+    ...(data.masterBaseline ? { masterBaseline: data.masterBaseline } : {}),
     ...(isMetrixSeoul ? {
       accountKeys: data.accountKeys || ['2010', '2016'],
       googleSheetUrl: data.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1-Zh2ERZGkeetwdg_oNlfPBfuVMOAGBL1-J8nYnjURTs/edit?gid=506086780#gid=506086780',
@@ -260,6 +284,8 @@ export function createCampaign(data = {}) {
       hasMasterBlueprint: true
     } : {}),
     ...(isMetrix ? {
+      ...(data.googleSheetUrl ? { googleSheetUrl: data.googleSheetUrl } : {}),
+      ...(data.quotaSourceFile ? { quotaSourceFile: data.quotaSourceFile } : {}),
       metrixPolicy: {
         ...(defaultMetrixPolicy || {}),
         ...(data.metrixPolicy || {})
@@ -268,6 +294,7 @@ export function createCampaign(data = {}) {
     } : {}),
     ...(isKona ? {
       konaPolicy: {
+        preserveExistingInputs: true,
         ...(defaultKonaPolicy || {}),
         ...(data.konaPolicy || {})
       },
@@ -295,6 +322,18 @@ export function createCampaign(data = {}) {
         ...(data.globalriPolicy || {})
       },
       ageGroupBaselines: data.ageGroupBaselines || defaultAgeGroupBaselines || {},
+      hasMasterBlueprint: true
+    } : {}),
+    ...(isGallupReturnFarm ? {
+      loginId: data.loginId || '076_000009',
+      surveyorName: data.surveyorName || '백영자',
+      googleSheetUrl: data.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1Hoai6ggQWxNVTW5SyxEsvpNtMOlBO1z_ThmM6cZ6gRg/edit?gid=1470110969#gid=1470110969',
+      quotaSourceFile: data.quotaSourceFile || 'quota_gallup_20263603_hongcheon.json',
+      gallupReturnFarmPolicy: {
+        stopBeforeFinalSubmit: true,
+        preserveExistingInputs: true,
+        ...(data.gallupReturnFarmPolicy || {})
+      },
       hasMasterBlueprint: true
     } : {})
   };
