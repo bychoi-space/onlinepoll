@@ -77,9 +77,9 @@ export async function scrapeHrcEnergySlots(options = {}) {
       page.click('a[onclick*="2026-89-0342C"]')
     ]);
 
-    await page.waitForSelector('#goBuilding', { timeout: 15000 });
+    await page.waitForSelector('#goBuilding', { timeout: 20000 });
     await Promise.all([
-      page.waitForURL(u => u.toString().includes('/q260342/List4'), { timeout: 20000 }),
+      page.waitForURL(u => u.toString().includes('/q260342/List4'), { waitUntil: 'domcontentloaded', timeout: 25000 }),
       page.click('#goBuilding')
     ]);
     await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 });

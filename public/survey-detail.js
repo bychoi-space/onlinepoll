@@ -562,25 +562,25 @@ async function initSurveyDetailPage() {
       const titleBatch = document.getElementById('title-batch-automation');
       if (titleBatch) {
         const selCount = (camp.quotaDatabase || []).filter(q => q.selectionType === '선정').length;
-        titleBatch.textContent = `에너지총조사 [건물] 선정 쿼터(${selCount}건) 순차 배치 자동화 (기입력 보존)`;
+        titleBatch.textContent = `에너지총조사 [건물] 선정 쿼터(${selCount}건) 순차 배치 자동화 (100% 완료 · 답례품 자동 서명)`;
       }
       const descBatch = document.getElementById('desc-batch-automation');
       if (descBatch) {
-        descBatch.textContent = '기존에 이미 입력되어 있는 항목은 절대 건드리지 않고 보존하며, [선정] 쿼터를 우선 진행(기본 91% 마지막 문항 안전 대기)합니다. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터로 자동 승계합니다.';
+        descBatch.textContent = '기존에 이미 입력되어 있는 항목은 보존하며, [선정] 쿼터를 우선 진행하여 100% 조사완료 후 답례품 수령증(신세계 5,000원 · 8종 한글 자필서명)까지 자동 저장합니다. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터로 자동 승계합니다.';
       }
       const safetyGuardToggle = document.querySelector('.safety-guard-toggle span');
       if (safetyGuardToggle) {
-        safetyGuardToggle.textContent = '91% 마지막 문항(E1-5)에서 완료 직전 안전 대기 (권장 · 해제 시 100% 조사완료 제출)';
+        safetyGuardToggle.textContent = '91% 마지막 문항(E1-5)에서 완료 직전 안전 대기 (해제 기본: 100% 조사완료 + 답례품 수령증 자동 서명)';
       }
       if (checkSafetyGuard) {
-        checkSafetyGuard.checked = true;
+        checkSafetyGuard.checked = false;
       }
 
       if (btnPilot) {
         btnPilot.classList.remove('d-none');
         btnPilot.className = 'btn-action-secondary font-bold';
         btnPilot.style.display = 'inline-flex';
-        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번 미완료 선정 쿼터 단건 실행 (91% 안전 대기)';
+        btnPilot.innerHTML = '<i class="fa-solid fa-bolt"></i> 1번 미완료 선정 쿼터 단건 실행 (100% 완료 + 자동 서명)';
       }
     } else if (isKona) {
       if (btnOpenBindSlots) btnOpenBindSlots.style.display = 'none';
@@ -2927,13 +2927,18 @@ async function initSurveyDetailPage() {
       // 기준점 자동 저장
       await saveBaseline(false);
 
+      const pilotBody = {
+        surveyUrl,
+        quotaIndex: targetPilotIdx
+      };
+      if (isHrcEnergy) {
+        pilotBody.safetyGuard = checkSafetyGuard ? Boolean(checkSafetyGuard.checked) : false;
+      }
+
       const res = await fetch(`/api/campaigns/${campId}/pilot-run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          surveyUrl,
-          quotaIndex: targetPilotIdx
-        })
+        body: JSON.stringify(pilotBody)
       });
 
       const data = await res.json();
@@ -3093,7 +3098,7 @@ async function initSurveyDetailPage() {
       const targetNameList = targets.map(b => `#${b.index || b.seq} ${b.memberName || b.ceoName}(${b.ageGroupLabel || ''})`).join(', ');
       confirmMsg = `[제5차 성인문해능력조사 - 선택 쿼터 일괄 자동 배치]\n선택된 대상자 ${targets.length}명(${targetNameList})에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 각 대상자에게 부여된 맞춤 응답 가이드(또는 연령 프리셋) 적용\n2. CONSENT~GP1 및 기존 입력 문항 100% 보존\n3. 설정된 진행 범위(Part C 채점 저장 후 D1 수기 대기 또는 F05_2까지 진행) 준수 (Part D D5 4~5 / 3~4 교차체크 보장)\n4. 제출 문항·답변 내역 엑셀(.xlsx) 자동 저장\n\n계속하시겠습니까?`;
     } else if (isHrcEnergy) {
-      confirmMsg = `[2025년 기준 에너지총조사 - 건물 부문]\n미완료 [선정] 쿼터 ${targets.length}건에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 기존에 이미 입력되어 있는 항목은 절대 건드리지 않고 100% 보존\n2. SMS/이메일 발송 버튼 절대 클릭 금지\n3. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터 자동 승계\n4. ${safetyGuard ? '91% 마지막 문항(E1-5)에서 완료 보류' : '100% 조사완료까지 즉시 완료'}\n\n계속하시겠습니까?`;
+      confirmMsg = `[2025년 기준 에너지총조사 - 건물 부문]\n미완료 쿼터 ${targets.length}건에 대해 순차 배치 자동화를 시작합니다.\n\n🛡️ 핵심 적용 규칙:\n1. 구글 시트 건물별 가이드(SQ12·A5·B1·T71·C5·계약전력·도시가스) 및 신규 설비 산출 규칙 적용\n2. SMS/이메일 발송 버튼 절대 클릭 금지\n3. 진행 불가 시 동일 표본층(Cell)의 [대체] 쿼터 자동 승계\n4. ${safetyGuard ? '91% 마지막 문항(E1-5)에서 완료 보류' : '100% 조사완료 처리 후 답례품 수령증(신세계 5,000원 · 한글 필체) 자동 서명'}\n\n계속하시겠습니까?`;
     } else if (isKona) {
       confirmMsg = safetyGuard
         ? `[화성특례시 청소년 설문조사]\n미완료 ${targets.length}명(IDX ${targets[0]?.idx}~${targets[targets.length - 1]?.idx})에 대해 제출 직전 안전 대기(캡처만 수행) 모드로 배치를 시작하시겠습니까?`

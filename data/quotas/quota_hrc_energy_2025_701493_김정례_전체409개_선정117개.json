@@ -14,7 +14,7 @@
   "selectedCount": 117,
   "subCount": 292,
   "backupCount": 292,
-  "updatedAt": "2026-11-19T02:55:26.799Z",
+  "updatedAt": "2026-11-19T04:58:25.313Z",
   "cellQuotas": [
     {
       "cellKey": "서울_1001_1001",
@@ -1171,7 +1171,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "월송빌딩 주건축물제1동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "최정호",
+      "giftSignerPhone": "010-8776-9410",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 2,
@@ -1246,7 +1252,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "주연빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "임훈석",
+      "giftSignerPhone": "010-8298-9608",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 3,
@@ -1321,7 +1333,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "오렌지타워",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "이기원",
+      "giftSignerPhone": "010-8048-7504",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 4,
@@ -1395,7 +1413,13 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "정성윤",
+      "giftSignerPhone": "010-7697-6584",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 5,
@@ -1470,7 +1494,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "나동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "이석원",
+      "giftSignerPhone": "010-7982-7064",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 6,
@@ -1985,7 +2015,13 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "조정혁",
+      "giftSignerPhone": "010-8109-7278",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 13,
@@ -2061,7 +2097,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "Cross 143",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "김세현",
+      "giftSignerPhone": "010-2316-2477",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 14,
@@ -2137,7 +2179,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "대호아이알빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "배상기",
+      "giftSignerPhone": "010-7928-6745",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 15,
@@ -2213,7 +2261,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "일이타워",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "장성중",
+      "giftSignerPhone": "010-8159-1756",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 16,
@@ -2438,7 +2492,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "리치타워",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "이재훈",
+      "giftSignerPhone": "010-9278-7201",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 19,
@@ -2514,7 +2574,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "제이비 미소 빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "권명호",
+      "giftSignerPhone": "010-4965-2869",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 20,
@@ -2590,7 +2656,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "신사美타워",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "윤선일",
+      "giftSignerPhone": "010-5890-4976",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 21,
@@ -31784,7 +31856,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "월송빌딩 주건축물제1동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "최정호",
+      "giftSignerPhone": "010-8776-9410",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 2,
@@ -31859,7 +31937,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "주연빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "임훈석",
+      "giftSignerPhone": "010-8298-9608",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 3,
@@ -31934,7 +32018,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "오렌지타워",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "이기원",
+      "giftSignerPhone": "010-8048-7504",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 4,
@@ -32008,7 +32098,13 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "정성윤",
+      "giftSignerPhone": "010-7697-6584",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 5,
@@ -32083,7 +32179,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "나동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "이석원",
+      "giftSignerPhone": "010-7982-7064",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 6,
@@ -32598,7 +32700,13 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "조정혁",
+      "giftSignerPhone": "010-8109-7278",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 13,
@@ -32674,7 +32782,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "Cross 143",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "김세현",
+      "giftSignerPhone": "010-2316-2477",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 14,
@@ -32750,7 +32864,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "대호아이알빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "배상기",
+      "giftSignerPhone": "010-7928-6745",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 15,
@@ -32826,7 +32946,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "일이타워",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "장성중",
+      "giftSignerPhone": "010-8159-1756",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 16,
@@ -33051,7 +33177,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "리치타워",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "이재훈",
+      "giftSignerPhone": "010-9278-7201",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 19,
@@ -33127,7 +33259,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "제이비 미소 빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "권명호",
+      "giftSignerPhone": "010-4965-2869",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 20,
@@ -33203,7 +33341,13 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "신사美타워",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "giftSigned": true,
+      "giftBrand": "신세계",
+      "giftValue": "5000",
+      "giftSignerName": "윤선일",
+      "giftSignerPhone": "010-5890-4976",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 21,

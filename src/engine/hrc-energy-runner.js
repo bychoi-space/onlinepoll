@@ -547,7 +547,7 @@ export async function runHrcEnergySurvey(options = {}) {
     loginId: rawLoginId,
     loginPw: rawLoginPw,
     quotaIndex = 1,
-    safetyGuard = true,
+    safetyGuard = false,
     reportDir = null,
     onProgress = () => {}
   } = options;
@@ -726,7 +726,7 @@ export async function runHrcEnergySurvey(options = {}) {
 
       // 4. [조사하기](#survey) 클릭하여 RPS 설문 화면으로 이동
       await Promise.all([
-        page.waitForURL(u => u.toString().includes('rpssurvey.hrcglobal.com'), { timeout: 25000 }),
+        page.waitForURL(u => u.toString().includes('rpssurvey.hrcglobal.com'), { waitUntil: 'domcontentloaded', timeout: 30000 }),
         page.click('#survey')
       ]);
       await waitForRpsReady(page);
@@ -2480,18 +2480,26 @@ export async function signAllCompletedHrcEnergySlots(options = {}) {
       try { await d.accept(); } catch (e) { console.warn('[Dialog accept 경고]', e.message); }
     });
 
-    await page.goto(`${HRC_BASE_URL}/Home/Login`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 30000
-    });
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        await page.goto(`${HRC_BASE_URL}/Home/Login`, {
+          waitUntil: 'domcontentloaded',
+          timeout: 35000
+        });
+        break;
+      } catch (navErr) {
+        if (attempt === 3) throw navErr;
+        await page.waitForTimeout(1500);
+      }
+    }
     await page.fill('input[type="text"]', String(loginId).trim());
     await page.fill('input[type="password"]', String(loginPw || loginId).trim());
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }),
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
       page.click('button[type="submit"], input[type="submit"]')
     ]);
 
-    await page.waitForSelector('a[onclick*="2026-89-0342C"]', { timeout: 15000 });
+    await page.waitForSelector('a[onclick*="2026-89-0342C"]', { timeout: 20000 });
     await Promise.all([
       page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }),
       page.click('a[onclick*="2026-89-0342C"]')
@@ -2510,9 +2518,9 @@ export async function signAllCompletedHrcEnergySlots(options = {}) {
         };
       });
     } else {
-      await page.waitForSelector('#goBuilding', { timeout: 15000 });
+      await page.waitForSelector('#goBuilding', { timeout: 20000 });
       await Promise.all([
-        page.waitForURL(u => u.toString().includes('/q260342/List4'), { timeout: 20000 }),
+        page.waitForURL(u => u.toString().includes('/q260342/List4'), { waitUntil: 'domcontentloaded', timeout: 25000 }),
         page.click('#goBuilding')
       ]);
       await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 }).catch(err => console.warn('[List4 행 대기 경고]', err.message));

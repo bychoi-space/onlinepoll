@@ -316,14 +316,15 @@ export function registerExecutionRoutes({
         } else if (isHrcEnergy) {
           logger.info(`[에너지총조사 파일럿 실행] 건물 부문 전용 러너 가동: "${targetBiz.buildingName || targetBiz.companyName}" (UID: ${targetBiz.uid})`);
           const hrcPol = campaign.hrcEnergyPolicy || policy || {};
+          const hrcSafetyGuard = (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false;
           result = await runHrcEnergySurvey({
             slotData: targetBiz,
             policy: hrcPol,
             loginId: targetBiz.surveyorId || campaign.loginId || '700275',
             loginPw: campaign.loginPw || targetBiz.surveyorId || campaign.loginId || '700275',
             quotaIndex: targetBiz.index || quotaIndex,
-            pilotMode: true,
-            safetyGuard: Boolean(safetyGuard),
+            pilotMode: Boolean(hrcSafetyGuard),
+            safetyGuard: hrcSafetyGuard,
             reportDir: path.join(reportsDir, campaign.id, `hrc_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || ''}`),
             onProgress: (info) => {
               logger.info(`[에너지총조사 파일럿 - ${info.step}] ${info.message}`);
@@ -1563,8 +1564,8 @@ export function registerExecutionRoutes({
                     loginId: targetBiz.surveyorId || campaign.loginId || '700275',
                     loginPw: campaign.loginPw || targetBiz.surveyorId || campaign.loginId || '700275',
                     quotaIndex: targetBiz.index || quotaIndex,
-                    pilotMode: Boolean(safetyGuard),
-                    safetyGuard: Boolean(safetyGuard),
+                    pilotMode: (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false,
+                    safetyGuard: (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false,
                     reportDir: path.join(reportsDir, campaign.id, `hrc_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || ''}`),
                     onProgress: (info) => {
                       logger.broadcast({

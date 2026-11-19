@@ -94,7 +94,8 @@ export function seedInitialCampaigns({
       'a51Raw', 'a51Code', 't41Raw', 't41Codes', 'b11Raw', 'b11Codes', 'hotWaterOnlyBoiler',
       'c52Raw', 'c52Codes', 'zebCheckAfter2020', 'renewableRaw', 't71Codes',
       'contractPowerKw', 'd21Raw', 'd21UseGas', 'estimatedGrossAreaM2', 'guideFromSheet',
-      'selectionType', 'cellPriority', 'cellKey', 'quotaCode1', 'quotaCode2'
+      'selectionType', 'cellPriority', 'cellKey', 'quotaCode1', 'quotaCode2',
+      'giftSigned', 'giftBrand', 'giftValue', 'giftSignerName', 'giftSignerPhone', 'giftStyleLabel'
     ];
 
     let sheetGuideOverlay = {};
@@ -141,6 +142,14 @@ export function seedInitialCampaigns({
                 item.jibunAddress = guideEntry.jibunAddress;
                 diskQuotaModified = true;
               }
+              if (guideEntry.quotaStatus === 'completed' && item.quotaStatus !== 'completed') {
+                item.status = '완료';
+                item.siteStatus = '완료';
+                item.quotaStatus = 'completed';
+                item.progress = '100%';
+                item.surveyCompleted = '완료';
+                diskQuotaModified = true;
+              }
             }
             const isDone = (['800715', '800164', '800173'].includes(uidStr) || item.status === '완료' || item.quotaStatus === 'completed');
             return {
@@ -148,7 +157,7 @@ export function seedInitialCampaigns({
               index: item.index || idx + 1,
               seq: item.seq || idx + 1,
               companyName: item.buildingName || item.companyName || `건물_${uidStr}`,
-              ceoName: item.contactName || item.ceoName || '관리소장',
+              ceoName: item.giftSignerName || item.contactName || item.ceoName || '관리소장',
               slotUrl: `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${uidStr}&page=1`,
               surveyUrl: `https://tapi.hrcglobal.com/q260342/Survey4?pid=${uidStr}&page=1`,
               status: isDone ? '완료' : (item.status || '대기'),

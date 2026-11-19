@@ -14,7 +14,7 @@
   "selectedCount": 70,
   "subCount": 149,
   "backupCount": 149,
-  "updatedAt": "2026-11-19T02:55:26.712Z",
+  "updatedAt": "2026-11-19T05:00:44.572Z",
   "cellQuotas": [
     {
       "cellKey": "서울_1001_1001",
@@ -634,7 +634,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "이에스"
+      "siteBuildingName": "이에스",
+      "giftSignerName": "박호균",
+      "giftSignerPhone": "010-7523-1539",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 2,
@@ -712,7 +715,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "임광아파트 상가"
+      "siteBuildingName": "임광아파트 상가",
+      "giftSignerName": "엄윤성",
+      "giftSignerPhone": "010-3962-2474",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 3,
@@ -790,7 +796,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "노원 보룡약국"
+      "siteBuildingName": "노원 보룡약국",
+      "giftSignerName": "김제찬",
+      "giftSignerPhone": "010-8297-8755",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 4,
@@ -868,7 +877,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "상계주공아파트 3단지상가"
+      "siteBuildingName": "상계주공아파트 3단지상가",
+      "giftSignerName": "이상윤",
+      "giftSignerPhone": "010-6753-6594",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 5,
@@ -945,7 +957,10 @@
       "contractPowerKw": 400,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": false
+      "guideFromSheet": false,
+      "giftSignerName": "임경수",
+      "giftSignerPhone": "010-9311-4247",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 6,
@@ -1465,7 +1480,10 @@
       "contractPowerKw": 400,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "임경수",
+      "giftSignerPhone": "010-9311-4247",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 13,
@@ -2229,8 +2247,8 @@
       "surveyorId": "700275",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800184&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800184&page=1",
-      "status": "진행중(70%)",
-      "progress": "70%",
+      "status": "진행중(91%)",
+      "progress": "91%",
       "bizNumber": "800184",
       "openDate": "대체",
       "slotIndex": 23,
@@ -2346,7 +2364,10 @@
       "contractPowerKw": 750,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "김용식",
+      "giftSignerPhone": "010-7935-2414",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 25,
@@ -2424,7 +2445,10 @@
       "contractPowerKw": 750,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "이영호",
+      "giftSignerPhone": "010-7610-8143",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 26,
@@ -2502,7 +2526,10 @@
       "contractPowerKw": 750,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "이기원",
+      "giftSignerPhone": "010-8421-6508",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 27,
@@ -2580,7 +2607,10 @@
       "contractPowerKw": 750,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "김재명",
+      "giftSignerPhone": "010-5671-2165",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 28,
@@ -2659,7 +2689,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "극장빌딩"
+      "siteBuildingName": "극장빌딩",
+      "giftSignerName": "김동열",
+      "giftSignerPhone": "010-8235-4512",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 29,
@@ -3632,7 +3665,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "그랑빌아파트 주상가동"
+      "siteBuildingName": "그랑빌아파트 주상가동",
+      "giftSignerName": "이영철",
+      "giftSignerPhone": "010-4271-2247",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 42,
@@ -3711,7 +3747,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "희성프라자"
+      "siteBuildingName": "희성프라자",
+      "giftSignerName": "김영민",
+      "giftSignerPhone": "010-9081-5469",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 43,
@@ -3937,7 +3976,10 @@
       "contractPowerKw": 400,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "박영준",
+      "giftSignerPhone": "010-9914-8409",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 46,
@@ -4015,7 +4057,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "미네르바빌딩"
+      "siteBuildingName": "미네르바빌딩",
+      "giftSignerName": "배영남",
+      "giftSignerPhone": "010-7138-0704",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 47,
@@ -4605,7 +4650,10 @@
       "contractPowerKw": 750,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "박현철",
+      "giftSignerPhone": "010-8178-2768",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 55,
@@ -4684,7 +4732,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "우도빌딩"
+      "siteBuildingName": "우도빌딩",
+      "giftSignerName": "박종길",
+      "giftSignerPhone": "010-7589-6254",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 56,
@@ -4985,7 +5036,10 @@
       "contractPowerKw": 900,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "김재균",
+      "giftSignerPhone": "010-8190-8962",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 60,
@@ -5140,7 +5194,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "국립민속박물관"
+      "siteBuildingName": "국립민속박물관",
+      "giftSignerName": "한종석",
+      "giftSignerPhone": "010-2289-4125",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 62,
@@ -5526,7 +5583,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "상계주공아파트 2단지상가아파트"
+      "siteBuildingName": "상계주공아파트 2단지상가아파트",
+      "giftSignerName": "박경인",
+      "giftSignerPhone": "010-3946-2372",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 67,
@@ -5603,7 +5663,10 @@
       "contractPowerKw": 400,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "이종덕",
+      "giftSignerPhone": "010-5088-3650",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 68,
@@ -6051,7 +6114,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "상계주공아파트 15단지상가"
+      "siteBuildingName": "상계주공아파트 15단지상가",
+      "giftSignerName": "박준섭",
+      "giftSignerPhone": "010-9170-5772",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 74,
@@ -6280,7 +6346,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "와우쇼핑몰"
+      "siteBuildingName": "와우쇼핑몰",
+      "giftSignerName": "김순규",
+      "giftSignerPhone": "010-5923-5174",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 77,
@@ -6363,7 +6432,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "월계동 이마트 트레이더스"
+      "siteBuildingName": "월계동 이마트 트레이더스",
+      "giftSignerName": "이정남",
+      "giftSignerPhone": "010-2077-7629",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 78,
@@ -6446,7 +6518,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "월계동 이마트 이마트"
+      "siteBuildingName": "월계동 이마트 이마트",
+      "giftSignerName": "최성재",
+      "giftSignerPhone": "010-8678-2954",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 79,
@@ -6528,7 +6603,10 @@
       "contractPowerKw": 12000,
       "d21Raw": "사용한다",
       "d21UseGas": "1",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "박종길",
+      "giftSignerPhone": "010-5846-2935",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 80,
@@ -6606,7 +6684,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "마디세상병원빌딩"
+      "siteBuildingName": "마디세상병원빌딩",
+      "giftSignerName": "이원복",
+      "giftSignerPhone": "010-4967-4027",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 81,
@@ -6683,7 +6764,10 @@
       "contractPowerKw": 600,
       "d21Raw": "사용한다",
       "d21UseGas": "1",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "이상철",
+      "giftSignerPhone": "010-6417-2194",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 82,
@@ -6763,7 +6847,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "대감프라자"
+      "siteBuildingName": "대감프라자",
+      "giftSignerName": "정용종",
+      "giftSignerPhone": "010-3985-7948",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 83,
@@ -6846,7 +6933,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "원진재단부설 녹색병원"
+      "siteBuildingName": "원진재단부설 녹색병원",
+      "giftSignerName": "홍진구",
+      "giftSignerPhone": "010-5639-8479",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 84,
@@ -7004,7 +7094,10 @@
       "contractPowerKw": 7400,
       "d21Raw": "사용한다",
       "d21UseGas": "1",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "김강렬",
+      "giftSignerPhone": "010-7543-3247",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 86,
@@ -7083,7 +7176,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "용화여자고등학교"
+      "siteBuildingName": "용화여자고등학교",
+      "giftSignerName": "권형두",
+      "giftSignerPhone": "010-3957-4732",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 87,
@@ -7161,7 +7257,10 @@
       "contractPowerKw": 250,
       "d21Raw": "사용한다",
       "d21UseGas": "1",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "이성호",
+      "giftSignerPhone": "010-2660-5006",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 88,
@@ -7759,7 +7858,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "한국성서대학교 E동(일립관)"
+      "siteBuildingName": "한국성서대학교 E동(일립관)",
+      "giftSignerName": "고우석",
+      "giftSignerPhone": "010-7291-6637",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 96,
@@ -7837,7 +7939,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "순복음노원교회 비전센터"
+      "siteBuildingName": "순복음노원교회 비전센터",
+      "giftSignerName": "김준혁",
+      "giftSignerPhone": "010-2483-6497",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 97,
@@ -7916,7 +8021,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "상원초등학교"
+      "siteBuildingName": "상원초등학교",
+      "giftSignerName": "김찬호",
+      "giftSignerPhone": "010-8415-3058",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 98,
@@ -7995,7 +8103,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "온곡중학교"
+      "siteBuildingName": "온곡중학교",
+      "giftSignerName": "이권준",
+      "giftSignerPhone": "010-4181-5119",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 99,
@@ -8074,7 +8185,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "서울녹천초등학교 가동"
+      "siteBuildingName": "서울녹천초등학교 가동",
+      "giftSignerName": "김형석",
+      "giftSignerPhone": "010-8678-2996",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 100,
@@ -8826,7 +8940,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "서울면동초등학교"
+      "siteBuildingName": "서울면동초등학교",
+      "giftSignerName": "문인식",
+      "giftSignerPhone": "010-7738-5993",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 110,
@@ -8905,7 +9022,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "메가빌딩"
+      "siteBuildingName": "메가빌딩",
+      "giftSignerName": "박강현",
+      "giftSignerPhone": "010-5603-8409",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 111,
@@ -8983,7 +9103,10 @@
       "contractPowerKw": 1500,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "서승호",
+      "giftSignerPhone": "010-4086-5717",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 112,
@@ -9062,7 +9185,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "용마중학교"
+      "siteBuildingName": "용마중학교",
+      "giftSignerName": "송민규",
+      "giftSignerPhone": "010-4894-2452",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 113,
@@ -9141,7 +9267,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "신현중학교"
+      "siteBuildingName": "신현중학교",
+      "giftSignerName": "박정민",
+      "giftSignerPhone": "010-3294-3948",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 114,
@@ -9294,7 +9423,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "삼성생명상계빌딩"
+      "siteBuildingName": "삼성생명상계빌딩",
+      "giftSignerName": "이정혁",
+      "giftSignerPhone": "010-4531-2347",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 116,
@@ -9371,7 +9503,10 @@
       "contractPowerKw": 950,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "한현재",
+      "giftSignerPhone": "010-8054-7107",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 117,
@@ -9449,7 +9584,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "이투스교육 주건축물제1동"
+      "siteBuildingName": "이투스교육 주건축물제1동",
+      "giftSignerName": "한웅희",
+      "giftSignerPhone": "010-2418-2350",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 118,
@@ -13432,7 +13570,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "파트너스1"
+      "siteBuildingName": "파트너스1",
+      "giftSignerName": "징은우",
+      "giftSignerPhone": "010-6524-4170",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 172,
@@ -13510,7 +13651,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "잠실헤리츠"
+      "siteBuildingName": "잠실헤리츠",
+      "giftSignerName": "서동현",
+      "giftSignerPhone": "010-7603-5175",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 173,
@@ -14804,7 +14948,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "Crescendo(크레센도)"
+      "siteBuildingName": "Crescendo(크레센도)",
+      "giftSignerName": "이상훈",
+      "giftSignerPhone": "010-7642-8376",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 190,
@@ -14886,7 +15033,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "콘코디언(concordian)"
+      "siteBuildingName": "콘코디언(concordian)",
+      "giftSignerName": "김석훈",
+      "giftSignerPhone": "010-2098-1694",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 191,
@@ -14968,7 +15118,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "광화문오피시아빌딩"
+      "siteBuildingName": "광화문오피시아빌딩",
+      "giftSignerName": "유석구",
+      "giftSignerPhone": "010-2069-7153",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 192,
@@ -15050,7 +15203,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "흥국생명빌딩"
+      "siteBuildingName": "흥국생명빌딩",
+      "giftSignerName": "이진영",
+      "giftSignerPhone": "010-7744-0740",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 193,
@@ -15132,7 +15288,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "LX광화문빌딩"
+      "siteBuildingName": "LX광화문빌딩",
+      "giftSignerName": "김창남",
+      "giftSignerPhone": "010-6246-2748",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 194,
@@ -15210,7 +15369,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "디팰리스"
+      "siteBuildingName": "디팰리스",
+      "giftSignerName": "김전명",
+      "giftSignerPhone": "010-2587-7691",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 195,
@@ -15292,7 +15454,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "영풍빌딩"
+      "siteBuildingName": "영풍빌딩",
+      "giftSignerName": "전승호",
+      "giftSignerPhone": "010-9574-8572",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 196,
@@ -15374,7 +15539,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "SK 서린동빌딩"
+      "siteBuildingName": "SK 서린동빌딩",
+      "giftSignerName": "이영섭",
+      "giftSignerPhone": "010-2968-9875",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 197,
@@ -15452,7 +15620,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "두산위브파빌리온"
+      "siteBuildingName": "두산위브파빌리온",
+      "giftSignerName": "김성홍",
+      "giftSignerPhone": "010-8260-8846",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 198,
@@ -15534,7 +15705,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "세미콜론수송"
+      "siteBuildingName": "세미콜론수송",
+      "giftSignerName": "김종혁",
+      "giftSignerPhone": "010-7268-2108",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 199,
@@ -15616,7 +15790,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "더존을지타워"
+      "siteBuildingName": "더존을지타워",
+      "giftSignerName": "박호영",
+      "giftSignerPhone": "010-7211-7659",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 200,
@@ -15698,7 +15875,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "(주)KEB하나은행 본점 주건축물제1동"
+      "siteBuildingName": "(주)KEB하나은행 본점 주건축물제1동",
+      "giftSignerName": "박흥남",
+      "giftSignerPhone": "010-6784-9764",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 201,
@@ -15780,7 +15960,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "SK T-타워"
+      "siteBuildingName": "SK T-타워",
+      "giftSignerName": "송명진",
+      "giftSignerPhone": "010-5505-2743",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 202,
@@ -15862,7 +16045,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "부영그룹 명동빌딩"
+      "siteBuildingName": "부영그룹 명동빌딩",
+      "giftSignerName": "김화석",
+      "giftSignerPhone": "010-8469-4333",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 203,
@@ -15944,7 +16130,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "파인에비뉴"
+      "siteBuildingName": "파인에비뉴",
+      "giftSignerName": "유도현",
+      "giftSignerPhone": "010-5322-6574",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 204,
@@ -16026,7 +16215,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "FERRUM TOWER"
+      "siteBuildingName": "FERRUM TOWER",
+      "giftSignerName": "김재영",
+      "giftSignerPhone": "010-5904-8325",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 205,
@@ -16108,7 +16300,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "미래에셋 센터원(Mirae Asset CENTER1)"
+      "siteBuildingName": "미래에셋 센터원(Mirae Asset CENTER1)",
+      "giftSignerName": "이민국",
+      "giftSignerPhone": "010-8973-4275",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 206,
@@ -16190,7 +16385,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "시그니쳐타워"
+      "siteBuildingName": "시그니쳐타워",
+      "giftSignerName": "정지혁",
+      "giftSignerPhone": "010-4968-2765",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 207,
@@ -16811,7 +17009,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "릿츠호텔"
+      "siteBuildingName": "릿츠호텔",
+      "giftSignerName": "오태균",
+      "giftSignerPhone": "010-4965-9772",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 215,
@@ -16889,7 +17090,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "에쿠스"
+      "siteBuildingName": "에쿠스",
+      "giftSignerName": "한재우",
+      "giftSignerPhone": "010-7418-8038",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 216,
@@ -16967,7 +17171,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "라코지 스테이 서울"
+      "siteBuildingName": "라코지 스테이 서울",
+      "giftSignerName": "박진명",
+      "giftSignerPhone": "010-4922-9824",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 217,
@@ -17120,7 +17327,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "노블레스관광호텔"
+      "siteBuildingName": "노블레스관광호텔",
+      "giftSignerName": "조재형",
+      "giftSignerPhone": "010-2170-4972",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 219,
@@ -17197,7 +17407,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "KT노원지사 본관동"
+      "siteBuildingName": "KT노원지사 본관동",
+      "giftSignerName": "강현수",
+      "giftSignerPhone": "010-2877-5408",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     }
   ],
   "items": [
@@ -17277,7 +17490,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "이에스"
+      "siteBuildingName": "이에스",
+      "giftSignerName": "박호균",
+      "giftSignerPhone": "010-7523-1539",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 2,
@@ -17355,7 +17571,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "임광아파트 상가"
+      "siteBuildingName": "임광아파트 상가",
+      "giftSignerName": "엄윤성",
+      "giftSignerPhone": "010-3962-2474",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 3,
@@ -17433,7 +17652,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "노원 보룡약국"
+      "siteBuildingName": "노원 보룡약국",
+      "giftSignerName": "김제찬",
+      "giftSignerPhone": "010-8297-8755",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 4,
@@ -17511,7 +17733,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "상계주공아파트 3단지상가"
+      "siteBuildingName": "상계주공아파트 3단지상가",
+      "giftSignerName": "이상윤",
+      "giftSignerPhone": "010-6753-6594",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 5,
@@ -17588,7 +17813,10 @@
       "contractPowerKw": 400,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": false
+      "guideFromSheet": false,
+      "giftSignerName": "임경수",
+      "giftSignerPhone": "010-9311-4247",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 6,
@@ -18108,7 +18336,10 @@
       "contractPowerKw": 400,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "임경수",
+      "giftSignerPhone": "010-9311-4247",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 13,
@@ -18872,8 +19103,8 @@
       "surveyorId": "700275",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=800184&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=800184&page=1",
-      "status": "진행중(70%)",
-      "progress": "70%",
+      "status": "진행중(91%)",
+      "progress": "91%",
       "bizNumber": "800184",
       "openDate": "대체",
       "slotIndex": 23,
@@ -18989,7 +19220,10 @@
       "contractPowerKw": 750,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "김용식",
+      "giftSignerPhone": "010-7935-2414",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 25,
@@ -19067,7 +19301,10 @@
       "contractPowerKw": 750,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "이영호",
+      "giftSignerPhone": "010-7610-8143",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 26,
@@ -19145,7 +19382,10 @@
       "contractPowerKw": 750,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "이기원",
+      "giftSignerPhone": "010-8421-6508",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 27,
@@ -19223,7 +19463,10 @@
       "contractPowerKw": 750,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "김재명",
+      "giftSignerPhone": "010-5671-2165",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 28,
@@ -19302,7 +19545,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "극장빌딩"
+      "siteBuildingName": "극장빌딩",
+      "giftSignerName": "김동열",
+      "giftSignerPhone": "010-8235-4512",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 29,
@@ -20275,7 +20521,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "그랑빌아파트 주상가동"
+      "siteBuildingName": "그랑빌아파트 주상가동",
+      "giftSignerName": "이영철",
+      "giftSignerPhone": "010-4271-2247",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 42,
@@ -20354,7 +20603,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "희성프라자"
+      "siteBuildingName": "희성프라자",
+      "giftSignerName": "김영민",
+      "giftSignerPhone": "010-9081-5469",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 43,
@@ -20580,7 +20832,10 @@
       "contractPowerKw": 400,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "박영준",
+      "giftSignerPhone": "010-9914-8409",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 46,
@@ -20658,7 +20913,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "미네르바빌딩"
+      "siteBuildingName": "미네르바빌딩",
+      "giftSignerName": "배영남",
+      "giftSignerPhone": "010-7138-0704",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 47,
@@ -21248,7 +21506,10 @@
       "contractPowerKw": 750,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "박현철",
+      "giftSignerPhone": "010-8178-2768",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 55,
@@ -21327,7 +21588,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "우도빌딩"
+      "siteBuildingName": "우도빌딩",
+      "giftSignerName": "박종길",
+      "giftSignerPhone": "010-7589-6254",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 56,
@@ -21628,7 +21892,10 @@
       "contractPowerKw": 900,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "김재균",
+      "giftSignerPhone": "010-8190-8962",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 60,
@@ -21783,7 +22050,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "국립민속박물관"
+      "siteBuildingName": "국립민속박물관",
+      "giftSignerName": "한종석",
+      "giftSignerPhone": "010-2289-4125",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 62,
@@ -22169,7 +22439,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "상계주공아파트 2단지상가아파트"
+      "siteBuildingName": "상계주공아파트 2단지상가아파트",
+      "giftSignerName": "박경인",
+      "giftSignerPhone": "010-3946-2372",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 67,
@@ -22246,7 +22519,10 @@
       "contractPowerKw": 400,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "이종덕",
+      "giftSignerPhone": "010-5088-3650",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 68,
@@ -22694,7 +22970,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "상계주공아파트 15단지상가"
+      "siteBuildingName": "상계주공아파트 15단지상가",
+      "giftSignerName": "박준섭",
+      "giftSignerPhone": "010-9170-5772",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 74,
@@ -22923,7 +23202,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "와우쇼핑몰"
+      "siteBuildingName": "와우쇼핑몰",
+      "giftSignerName": "김순규",
+      "giftSignerPhone": "010-5923-5174",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 77,
@@ -23006,7 +23288,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "월계동 이마트 트레이더스"
+      "siteBuildingName": "월계동 이마트 트레이더스",
+      "giftSignerName": "이정남",
+      "giftSignerPhone": "010-2077-7629",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 78,
@@ -23089,7 +23374,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "월계동 이마트 이마트"
+      "siteBuildingName": "월계동 이마트 이마트",
+      "giftSignerName": "최성재",
+      "giftSignerPhone": "010-8678-2954",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 79,
@@ -23171,7 +23459,10 @@
       "contractPowerKw": 12000,
       "d21Raw": "사용한다",
       "d21UseGas": "1",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "박종길",
+      "giftSignerPhone": "010-5846-2935",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 80,
@@ -23249,7 +23540,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "마디세상병원빌딩"
+      "siteBuildingName": "마디세상병원빌딩",
+      "giftSignerName": "이원복",
+      "giftSignerPhone": "010-4967-4027",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 81,
@@ -23326,7 +23620,10 @@
       "contractPowerKw": 600,
       "d21Raw": "사용한다",
       "d21UseGas": "1",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "이상철",
+      "giftSignerPhone": "010-6417-2194",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 82,
@@ -23406,7 +23703,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "대감프라자"
+      "siteBuildingName": "대감프라자",
+      "giftSignerName": "정용종",
+      "giftSignerPhone": "010-3985-7948",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 83,
@@ -23489,7 +23789,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "원진재단부설 녹색병원"
+      "siteBuildingName": "원진재단부설 녹색병원",
+      "giftSignerName": "홍진구",
+      "giftSignerPhone": "010-5639-8479",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 84,
@@ -23647,7 +23950,10 @@
       "contractPowerKw": 7400,
       "d21Raw": "사용한다",
       "d21UseGas": "1",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "김강렬",
+      "giftSignerPhone": "010-7543-3247",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 86,
@@ -23726,7 +24032,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "용화여자고등학교"
+      "siteBuildingName": "용화여자고등학교",
+      "giftSignerName": "권형두",
+      "giftSignerPhone": "010-3957-4732",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 87,
@@ -23804,7 +24113,10 @@
       "contractPowerKw": 250,
       "d21Raw": "사용한다",
       "d21UseGas": "1",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "이성호",
+      "giftSignerPhone": "010-2660-5006",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 88,
@@ -24402,7 +24714,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "한국성서대학교 E동(일립관)"
+      "siteBuildingName": "한국성서대학교 E동(일립관)",
+      "giftSignerName": "고우석",
+      "giftSignerPhone": "010-7291-6637",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 96,
@@ -24480,7 +24795,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "순복음노원교회 비전센터"
+      "siteBuildingName": "순복음노원교회 비전센터",
+      "giftSignerName": "김준혁",
+      "giftSignerPhone": "010-2483-6497",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 97,
@@ -24559,7 +24877,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "상원초등학교"
+      "siteBuildingName": "상원초등학교",
+      "giftSignerName": "김찬호",
+      "giftSignerPhone": "010-8415-3058",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 98,
@@ -24638,7 +24959,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "온곡중학교"
+      "siteBuildingName": "온곡중학교",
+      "giftSignerName": "이권준",
+      "giftSignerPhone": "010-4181-5119",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 99,
@@ -24717,7 +25041,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "서울녹천초등학교 가동"
+      "siteBuildingName": "서울녹천초등학교 가동",
+      "giftSignerName": "김형석",
+      "giftSignerPhone": "010-8678-2996",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 100,
@@ -25469,7 +25796,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "서울면동초등학교"
+      "siteBuildingName": "서울면동초등학교",
+      "giftSignerName": "문인식",
+      "giftSignerPhone": "010-7738-5993",
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
     },
     {
       "seq": 110,
@@ -25548,7 +25878,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "메가빌딩"
+      "siteBuildingName": "메가빌딩",
+      "giftSignerName": "박강현",
+      "giftSignerPhone": "010-5603-8409",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 111,
@@ -25626,7 +25959,10 @@
       "contractPowerKw": 1500,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "서승호",
+      "giftSignerPhone": "010-4086-5717",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 112,
@@ -25705,7 +26041,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "용마중학교"
+      "siteBuildingName": "용마중학교",
+      "giftSignerName": "송민규",
+      "giftSignerPhone": "010-4894-2452",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 113,
@@ -25784,7 +26123,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "신현중학교"
+      "siteBuildingName": "신현중학교",
+      "giftSignerName": "박정민",
+      "giftSignerPhone": "010-3294-3948",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 114,
@@ -25937,7 +26279,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "삼성생명상계빌딩"
+      "siteBuildingName": "삼성생명상계빌딩",
+      "giftSignerName": "이정혁",
+      "giftSignerPhone": "010-4531-2347",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 116,
@@ -26014,7 +26359,10 @@
       "contractPowerKw": 950,
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
-      "guideFromSheet": true
+      "guideFromSheet": true,
+      "giftSignerName": "한현재",
+      "giftSignerPhone": "010-8054-7107",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 117,
@@ -26092,7 +26440,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "이투스교육 주건축물제1동"
+      "siteBuildingName": "이투스교육 주건축물제1동",
+      "giftSignerName": "한웅희",
+      "giftSignerPhone": "010-2418-2350",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 118,
@@ -30075,7 +30426,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "파트너스1"
+      "siteBuildingName": "파트너스1",
+      "giftSignerName": "징은우",
+      "giftSignerPhone": "010-6524-4170",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 172,
@@ -30153,7 +30507,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "잠실헤리츠"
+      "siteBuildingName": "잠실헤리츠",
+      "giftSignerName": "서동현",
+      "giftSignerPhone": "010-7603-5175",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 173,
@@ -31447,7 +31804,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "Crescendo(크레센도)"
+      "siteBuildingName": "Crescendo(크레센도)",
+      "giftSignerName": "이상훈",
+      "giftSignerPhone": "010-7642-8376",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 190,
@@ -31529,7 +31889,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "콘코디언(concordian)"
+      "siteBuildingName": "콘코디언(concordian)",
+      "giftSignerName": "김석훈",
+      "giftSignerPhone": "010-2098-1694",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 191,
@@ -31611,7 +31974,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "광화문오피시아빌딩"
+      "siteBuildingName": "광화문오피시아빌딩",
+      "giftSignerName": "유석구",
+      "giftSignerPhone": "010-2069-7153",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 192,
@@ -31693,7 +32059,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "흥국생명빌딩"
+      "siteBuildingName": "흥국생명빌딩",
+      "giftSignerName": "이진영",
+      "giftSignerPhone": "010-7744-0740",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 193,
@@ -31775,7 +32144,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "LX광화문빌딩"
+      "siteBuildingName": "LX광화문빌딩",
+      "giftSignerName": "김창남",
+      "giftSignerPhone": "010-6246-2748",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 194,
@@ -31853,7 +32225,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "디팰리스"
+      "siteBuildingName": "디팰리스",
+      "giftSignerName": "김전명",
+      "giftSignerPhone": "010-2587-7691",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 195,
@@ -31935,7 +32310,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "영풍빌딩"
+      "siteBuildingName": "영풍빌딩",
+      "giftSignerName": "전승호",
+      "giftSignerPhone": "010-9574-8572",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 196,
@@ -32017,7 +32395,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "SK 서린동빌딩"
+      "siteBuildingName": "SK 서린동빌딩",
+      "giftSignerName": "이영섭",
+      "giftSignerPhone": "010-2968-9875",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 197,
@@ -32095,7 +32476,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "두산위브파빌리온"
+      "siteBuildingName": "두산위브파빌리온",
+      "giftSignerName": "김성홍",
+      "giftSignerPhone": "010-8260-8846",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 198,
@@ -32177,7 +32561,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "세미콜론수송"
+      "siteBuildingName": "세미콜론수송",
+      "giftSignerName": "김종혁",
+      "giftSignerPhone": "010-7268-2108",
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
     },
     {
       "seq": 199,
@@ -32259,7 +32646,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "더존을지타워"
+      "siteBuildingName": "더존을지타워",
+      "giftSignerName": "박호영",
+      "giftSignerPhone": "010-7211-7659",
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
     },
     {
       "seq": 200,
@@ -32341,7 +32731,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "(주)KEB하나은행 본점 주건축물제1동"
+      "siteBuildingName": "(주)KEB하나은행 본점 주건축물제1동",
+      "giftSignerName": "박흥남",
+      "giftSignerPhone": "010-6784-9764",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 201,
@@ -32423,7 +32816,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "SK T-타워"
+      "siteBuildingName": "SK T-타워",
+      "giftSignerName": "송명진",
+      "giftSignerPhone": "010-5505-2743",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 202,
@@ -32505,7 +32901,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "부영그룹 명동빌딩"
+      "siteBuildingName": "부영그룹 명동빌딩",
+      "giftSignerName": "김화석",
+      "giftSignerPhone": "010-8469-4333",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 203,
@@ -32587,7 +32986,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "파인에비뉴"
+      "siteBuildingName": "파인에비뉴",
+      "giftSignerName": "유도현",
+      "giftSignerPhone": "010-5322-6574",
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
     },
     {
       "seq": 204,
@@ -32669,7 +33071,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "FERRUM TOWER"
+      "siteBuildingName": "FERRUM TOWER",
+      "giftSignerName": "김재영",
+      "giftSignerPhone": "010-5904-8325",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 205,
@@ -32751,7 +33156,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "미래에셋 센터원(Mirae Asset CENTER1)"
+      "siteBuildingName": "미래에셋 센터원(Mirae Asset CENTER1)",
+      "giftSignerName": "이민국",
+      "giftSignerPhone": "010-8973-4275",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 206,
@@ -32833,7 +33241,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "시그니쳐타워"
+      "siteBuildingName": "시그니쳐타워",
+      "giftSignerName": "정지혁",
+      "giftSignerPhone": "010-4968-2765",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     },
     {
       "seq": 207,
@@ -33454,7 +33865,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "릿츠호텔"
+      "siteBuildingName": "릿츠호텔",
+      "giftSignerName": "오태균",
+      "giftSignerPhone": "010-4965-9772",
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
     },
     {
       "seq": 215,
@@ -33532,7 +33946,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "에쿠스"
+      "siteBuildingName": "에쿠스",
+      "giftSignerName": "한재우",
+      "giftSignerPhone": "010-7418-8038",
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
     },
     {
       "seq": 216,
@@ -33610,7 +34027,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "라코지 스테이 서울"
+      "siteBuildingName": "라코지 스테이 서울",
+      "giftSignerName": "박진명",
+      "giftSignerPhone": "010-4922-9824",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 217,
@@ -33763,7 +34183,10 @@
       "d21Raw": "사용한다",
       "d21UseGas": "1",
       "guideFromSheet": true,
-      "siteBuildingName": "노블레스관광호텔"
+      "siteBuildingName": "노블레스관광호텔",
+      "giftSignerName": "조재형",
+      "giftSignerPhone": "010-2170-4972",
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
     },
     {
       "seq": 219,
@@ -33840,7 +34263,10 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "siteBuildingName": "KT노원지사 본관동"
+      "siteBuildingName": "KT노원지사 본관동",
+      "giftSignerName": "강현수",
+      "giftSignerPhone": "010-2877-5408",
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
     }
   ]
 }
