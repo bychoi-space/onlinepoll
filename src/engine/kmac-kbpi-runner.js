@@ -320,12 +320,27 @@ async function findAndStartRespondentSlot({
 
   emitLog(`[슬롯 탐색] #${slotData.seq || slotData.index} ${slotData.name} (${region}/${gender}/${ageGroup}, 최종id=${finalId}, 고유번호=${uid}) 탐색... (URL: ${listPage.url()})`);
 
+  // GetData(/Cati/Capi/) 페이지당 표시 개수(ROW_PER_PAGE)가 있으면 100개 보기로 확장
+  const expandedRows = await listPage.evaluate(() => {
+    const sel = document.querySelector('select.ROW_PER_PAGE');
+    if (sel && sel.value !== '100') {
+      sel.value = '100';
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      if (typeof $ !== 'undefined') $(sel).val('100').trigger('change');
+      return true;
+    }
+    return false;
+  }).catch(() => false);
+  if (expandedRows) {
+    await listPage.waitForTimeout(1800);
+  }
+
   const scanCurrentDomForSlot = async () => {
     return listPage.evaluate(({ targetUid, targetFinalId, targetReg, targetGen, targetAg }) => {
       document.querySelectorAll('[data-kbpi-target-start]').forEach(el => el.removeAttribute('data-kbpi-target-start'));
 
       const rawRows = Array.from(
-        document.querySelectorAll('table tbody tr, [role="row"], .ag-row, .tui-grid-row, .ant-table-row, .el-table__row')
+        document.querySelectorAll('table.list-data tbody tr, table tbody tr, [role="row"], .ag-row, .tui-grid-row')
       ).filter(r => {
         if (r.closest('thead')) return false;
         const t = (r.innerText || '').trim();
@@ -334,19 +349,26 @@ async function findAndStartRespondentSlot({
         return true;
       });
 
-      const actionRegex = /^(시작|조사\s*시작|진행|진행중|이어하기|계속|참여)$/;
-      const allActionCandidates = Array.from(
-        document.querySelectorAll('button, a, input[type="button"], input[type="submit"], span, div')
-      ).filter(el => {
-        if (el.offsetParent === null) return false;
-        const txt = (el.innerText || el.value || '').trim();
-        if (!actionRegex.test(txt)) return false;
-        // 컨테이너가 아닌 실제 버튼/뱃지 요소만 선택
-        const hasSameTextChild = Array.from(el.children).some(ch => actionRegex.test((ch.innerText || ch.value || '').trim()));
-        return !hasSameTextChild;
-      });
+      // 주의: '진행중'(상태 열 텍스트)이나 '참여'(헤더/필터 텍스트)가 매칭되지 않도록 실제 버튼 태그 + 명확한 시작 동사만 허용!
+      const btnTextRegex = /^(시작|조사\s*시작|이어하기|재시작|계속|계속하기|설문\s*참여|참여하기)$/;
+      const excludeBtnRegex = /삭제|취소|중단|제외|초기화/;
 
       for (const rowEl of rawRows) {
+        let rowObj = {};
+        const rawObjAttr = rowEl.getAttribute('data-object');
+        if (rawObjAttr) {
+          try { rowObj = JSON.parse(rawObjAttr); } catch (e) { rowObj = {}; }
+        }
+        const rowAttrUid = String(
+          rowEl.getAttribute('data-uid') ||
+          rowEl.getAttribute('data-id') ||
+          rowObj._id ||
+          rowObj.UID ||
+          rowObj['고유번호'] ||
+          ''
+        ).trim();
+        const rowAttrFinalId = String(rowObj['최종id'] ?? rowObj['최종ID'] ?? '').trim();
+
         const cellEls = Array.from(
           rowEl.querySelectorAll('td, [role="gridcell"], [role="cell"], .ag-cell, .tui-grid-cell')
         );
@@ -355,38 +377,68 @@ async function findAndStartRespondentSlot({
           : (rowEl.innerText || '').split(/[\t\n]+/).map(s => s.trim()).filter(Boolean);
         const fullText = cells.join(' | ');
 
-        const hasUid = Boolean(targetUid && fullText.includes(targetUid));
-        const hasExactFinalId = Boolean(targetFinalId && cells.some(c => c === targetFinalId));
+        const hasUid = Boolean(
+          targetUid && (rowAttrUid === targetUid || fullText.includes(targetUid))
+        );
+        const hasExactFinalId = Boolean(
+          targetFinalId && (rowAttrFinalId === targetFinalId || cells.some(c => c === targetFinalId))
+        );
         const demoMatches =
-          (!targetReg || fullText.includes(targetReg)) &&
-          (!targetGen || cells.includes(targetGen) || fullText.includes(targetGen)) &&
-          (!targetAg || fullText.includes(targetAg));
+          (!targetReg || fullText.includes(targetReg) || String(rowObj['조사지역'] || '').includes(targetReg)) &&
+          (!targetGen || cells.includes(targetGen) || String(rowObj['성별'] || '') === targetGen) &&
+          (!targetAg || fullText.includes(targetAg) || String(rowObj['연령'] || '').includes(targetAg));
 
         if (!hasUid && !(hasExactFinalId && demoMatches)) continue;
 
-        // 1순위: 동일 행(rowEl) 내부에서 [시작] 버튼 탐색
-        const innerBtns = Array.from(
-          rowEl.querySelectorAll('button, a, input[type="button"], input[type="submit"], span, div')
-        ).filter(el => {
-          if (el.offsetParent === null) return false;
-          const txt = (el.innerText || el.value || '').trim();
-          if (!actionRegex.test(txt)) return false;
-          return !Array.from(el.children).some(ch => actionRegex.test((ch.innerText || ch.value || '').trim()));
-        });
+        // GetData(r.survey.co.kr) 세션 기반 직접 설문 URL 백업 산출
+        let directSurveyUrl = '';
+        try {
+          const resolvedUid = rowAttrUid || targetUid;
+          const akList = Array.isArray(window.ACCESS_KEYS) ? window.ACCESS_KEYS : [];
+          const realAk = (akList.find(k => k.NAME === 'REAL') || akList[0])?._id || '';
+          const cuLoginId = sessionStorage.CU_LOGIN_ID || '';
+          const cuId = sessionStorage.CU_ID || '';
+          const domain = window.DOMAIN || location.host;
+          if (realAk && resolvedUid && /survey\.co\.kr|kmaresearch\.co\.kr/i.test(domain)) {
+            directSurveyUrl = `https://${domain}/?ACCESS_KEY=${encodeURIComponent(realAk)}&UID=${encodeURIComponent(resolvedUid)}` +
+              (cuId ? `&__CU_ID=${encodeURIComponent(cuId)}` : '') +
+              (cuLoginId ? `&__CU_LOGIN_ID=${encodeURIComponent(cuLoginId)}` : '');
+          }
+        } catch (urlErr) {
+          directSurveyUrl = '';
+        }
 
-        let matchedBtn = innerBtns[0] || null;
+        // 완료 상태 먼저 확인 (상태 코드 COMPLETE 또는 완료 텍스트 + 시작 버튼 없음)
+        const compCode = String(rowObj.COMPLETE || '').toUpperCase();
 
-        // 2순위: 우측 고정 열(Sticky / Pinned Right 분리 테이블) Y좌표 정렬 매칭
+        // 1순위: 동일 행(rowEl) 내부의 실제 <button> / <a> / <input> 요소만 탐색 (span/div 상태셀 배제!)
+        const realRowControls = Array.from(
+          rowEl.querySelectorAll('button, a, input[type="button"], input[type="submit"]')
+        ).filter(el => !el.disabled && !excludeBtnRegex.test((el.innerText || el.value || '').trim()));
+
+        let matchedBtn =
+          realRowControls.find(el => el.matches('button.join, button[class*="join"], button[class*="start"], a[class*="join"]')) ||
+          realRowControls.find(el => btnTextRegex.test((el.innerText || el.value || '').trim())) ||
+          realRowControls[0] ||
+          null;
+
+        // 2순위: 우측 고정 열 분리 테이블 구조인 경우 tbody 내 실제 <button>/<a>만 Y좌표 정렬 매칭
         if (!matchedBtn) {
           rowEl.scrollIntoView({ block: 'center', inline: 'nearest' });
           const rowRect = rowEl.getBoundingClientRect();
           const rowMidY = rowRect.top + rowRect.height / 2;
-          const tolerance = Math.max(22, rowRect.height * 0.7);
-          const aligned = allActionCandidates
+          const tolerance = Math.max(20, rowRect.height * 0.65);
+          const tbodyBtns = Array.from(
+            document.querySelectorAll('table tbody button, table tbody a, .fixed-right button, [role="gridcell"] button')
+          ).filter(el => {
+            if (el.disabled || el.offsetParent === null) return false;
+            const txt = (el.innerText || el.value || '').trim();
+            return !excludeBtnRegex.test(txt) && (btnTextRegex.test(txt) || el.matches('.join, [class*="start"]'));
+          });
+          const aligned = tbodyBtns
             .map(btn => {
               const br = btn.getBoundingClientRect();
-              const bMidY = br.top + br.height / 2;
-              return { btn, diffY: Math.abs(bMidY - rowMidY) };
+              return { btn, diffY: Math.abs((br.top + br.height / 2) - rowMidY) };
             })
             .filter(x => x.diffY <= tolerance)
             .sort((a, b) => a.diffY - b.diffY);
@@ -394,18 +446,29 @@ async function findAndStartRespondentSlot({
         }
 
         if (matchedBtn) {
-          const clickEl = matchedBtn.closest('button, a') || matchedBtn;
-          clickEl.setAttribute('data-kbpi-target-start', '1');
+          matchedBtn.scrollIntoView({ block: 'center', inline: 'center' });
+          matchedBtn.setAttribute('data-kbpi-target-start', '1');
           return {
             found: true,
             hasBtn: true,
-            rowText: fullText,
-            btnText: (matchedBtn.innerText || matchedBtn.value || '시작').trim()
+            rowText: fullText.slice(0, 160),
+            btnText: (matchedBtn.innerText || matchedBtn.value || '시작').trim(),
+            btnTag: `${matchedBtn.tagName}.${matchedBtn.className || ''}`,
+            directSurveyUrl
           };
         }
 
-        if (/완료|종료/.test(fullText)) {
-          return { found: true, hasBtn: false, alreadyDone: true, rowText: fullText };
+        if (compCode === 'COMPLETE' || (/\b완료\b/.test(fullText) && !directSurveyUrl)) {
+          return { found: true, hasBtn: false, alreadyDone: true, rowText: fullText.slice(0, 160) };
+        }
+
+        if (directSurveyUrl) {
+          return {
+            found: true,
+            hasBtn: false,
+            rowText: fullText.slice(0, 160),
+            directSurveyUrl
+          };
         }
       }
 
@@ -419,148 +482,122 @@ async function findAndStartRespondentSlot({
     });
   };
 
+  const waitGetDataSurveyReady = async (targetPage, timeoutMs = 15000) => {
+    await targetPage.waitForFunction(
+      () => {
+        const txt = (document.body?.innerText || '').trim();
+        return txt.length > 0 && txt !== 'Loading..' && !/^Loading\.+$/i.test(txt);
+      },
+      { timeout: timeoutMs }
+    ).catch(err => emitLog(`설문 초기 로딩 대기 경고: ${err.message}`, 'warn'));
+  };
+
   const clickMatchedStartButton = async (matchInfo) => {
     if (matchInfo.alreadyDone && !matchInfo.hasBtn) {
       return { alreadyCompleted: true, page: listPage };
     }
-    const targetBtn = listPage.locator('[data-kbpi-target-start="1"]').first();
-    if ((await targetBtn.count()) > 0) {
-      const beforePagesCount = context.pages().length;
-      const beforeUrl = listPage.url();
-      emitLog(`[슬롯 매칭 완료] "${matchInfo.rowText}" ➔ [${matchInfo.btnText}] 클릭!`);
-      await targetBtn.click();
 
-      // [시작] 클릭 후: 1) 새 탭 팝업, 2) 모달 확인창("확인/조사시작/예"), 3) 현재 탭 URL/iframe 전환까지 최대 10초 추적
-      for (let waitStep = 0; waitStep < 20; waitStep++) {
-        await listPage.waitForTimeout(500);
-        const currentPages = context.pages();
-        if (currentPages.length > beforePagesCount) {
-          const popupPage = currentPages[currentPages.length - 1];
-          await popupPage.waitForLoadState('domcontentloaded').catch(err => emitLog(`설문창 로드 경고: ${err.message}`, 'warn'));
-          emitLog(`[설문 새 탭 감지] URL: ${popupPage.url()}`);
-          return { alreadyCompleted: false, page: popupPage };
+    const beforePagesCount = context.pages().length;
+    const beforeUrl = listPage.url();
+
+    if (matchInfo.hasBtn) {
+      emitLog(`[슬롯 매칭 완료] "${matchInfo.rowText}" ➔ [${matchInfo.btnText}] (${matchInfo.btnTag}) 클릭!`);
+      const popupPromise = context.waitForEvent('page', { timeout: 8500 }).catch(() => null);
+
+      // 가로 스크롤 고정 헤더 간섭 방지를 위해 DOM 네이티브 클릭 우선 수행 (GetData button.join 표준 방식)
+      await listPage.evaluate(() => {
+        const btn = document.querySelector('[data-kbpi-target-start="1"]');
+        if (btn) {
+          btn.scrollIntoView({ block: 'center', inline: 'center' });
+          btn.click();
         }
+      });
 
-        if (listPage.url() !== beforeUrl) {
-          emitLog(`[설문 동일 탭 이동 감지] URL: ${listPage.url()}`);
-          return { alreadyCompleted: false, page: listPage };
-        }
+      const popupPage = await popupPromise;
+      if (popupPage) {
+        await popupPage.waitForLoadState('domcontentloaded').catch(err => emitLog(`설문 팝업 로드 경고: ${err.message}`, 'warn'));
+        await waitGetDataSurveyReady(popupPage, 15000);
+        emitLog(`[설문 새 창 진입 완료] URL: ${popupPage.url()}`);
+        return { alreadyCompleted: false, page: popupPage };
+      }
 
-        // 만약 CAPI 리스트 위에 시작 확인 모달("조사를 시작하시겠습니까? [확인/시작]")이 뜬 경우 자동 승인 클릭
-        const modalClicked = await listPage.evaluate(() => {
-          const modals = Array.from(
-            document.querySelectorAll('[role="dialog"], .modal, .swal2-container, .ant-modal, .el-message-box, .layer-popup, .popup')
-          ).filter(m => m.offsetParent !== null);
-          for (const modal of modals) {
-            const confirmBtn = Array.from(modal.querySelectorAll('button, a, input[type="button"], span'))
-              .find(b => {
-                const t = (b.innerText || b.value || '').trim();
-                return b.offsetParent !== null && /^(확인|예|시작|조사\s*시작|시작하기|진행)$/.test(t);
-              });
-            if (confirmBtn) {
-              confirmBtn.click();
-              return (confirmBtn.innerText || confirmBtn.value || '').trim();
-            }
+      // 만약 모달 확인창이 뜬 경우 승인 클릭 후 팝업 재확인
+      const modalConfirmed = await listPage.evaluate(() => {
+        const modals = Array.from(
+          document.querySelectorAll('[role="dialog"], .modal, .swal2-container, .ant-modal, .layer-popup, .popup')
+        ).filter(m => m.offsetParent !== null);
+        for (const modal of modals) {
+          const confirmBtn = Array.from(modal.querySelectorAll('button, a, input[type="button"]'))
+            .find(b => b.offsetParent !== null && /^(확인|예|시작|조사\s*시작|계속|진행)$/.test((b.innerText || b.value || '').trim()));
+          if (confirmBtn) {
+            confirmBtn.click();
+            return (confirmBtn.innerText || confirmBtn.value || '').trim();
           }
-          return '';
-        }).catch(() => '');
-
-        if (modalClicked) {
-          emitLog(`[시작 확인 모달 승인] "${modalClicked}" 클릭`);
-          continue;
         }
+        return '';
+      }).catch(() => '');
 
-        // 동일 URL 내에서 설문 화면(GP1 / 응답자 확인 / SQ1 / iframe)으로 DOM이 교체되었는지 확인
-        const inPageSurveyLoaded = await listPage.evaluate(() => {
-          const txt = (document.body?.innerText || '');
-          if (/GP1|응답자\s*확인|연령\s*\(\s*만\s*\)|\bSQ\s*1\b/i.test(txt)) return true;
-          if (!/실사코드/.test(txt) && !/최종\s*id/i.test(txt)) return true;
-          return document.querySelectorAll('iframe').length > 0;
-        }).catch(() => false);
-
-        if (inPageSurveyLoaded) {
-          return { alreadyCompleted: false, page: listPage };
+      if (modalConfirmed) {
+        emitLog(`[시작 확인 모달 승인] "${modalConfirmed}" 클릭`);
+        const popupPage2 = await context.waitForEvent('page', { timeout: 7000 }).catch(() => null);
+        if (popupPage2) {
+          await popupPage2.waitForLoadState('domcontentloaded').catch(err => emitLog(`설문 팝업 로드 경고: ${err.message}`, 'warn'));
+          await waitGetDataSurveyReady(popupPage2, 15000);
+          emitLog(`[설문 새 창 진입 완료] URL: ${popupPage2.url()}`);
+          return { alreadyCompleted: false, page: popupPage2 };
         }
       }
 
-      return { alreadyCompleted: false, page: listPage };
+      const currentPages = context.pages();
+      if (currentPages.length > beforePagesCount) {
+        const latestPg = currentPages[currentPages.length - 1];
+        await waitGetDataSurveyReady(latestPg, 15000);
+        return { alreadyCompleted: false, page: latestPg };
+      }
+      if (listPage.url() !== beforeUrl) {
+        await waitGetDataSurveyReady(listPage, 15000);
+        return { alreadyCompleted: false, page: listPage };
+      }
     }
+
+    // 백업: GetData 세션 직접 설문 URL(ACCESS_KEY + UID)로 새 탭 진입
+    if (matchInfo.directSurveyUrl) {
+      emitLog(`[GetData 직접 설문 URL 진입] ${matchInfo.directSurveyUrl}`);
+      const directPage = await context.newPage();
+      await directPage.goto(matchInfo.directSurveyUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await waitGetDataSurveyReady(directPage, 20000);
+      return { alreadyCompleted: false, page: directPage };
+    }
+
     return null;
   };
 
-  // Pass 1: 기본 로드 상태(필터 미조작)에서 즉시 스캔 + 스크롤 컨테이너 순회 스캔
-  for (let scrollStep = 0; scrollStep < 14; scrollStep++) {
-    const matchInfo = await scanCurrentDomForSlot();
-    if (matchInfo.found) {
-      const started = await clickMatchedStartButton(matchInfo);
-      if (started) return started;
-    }
-    const scrolled = await listPage.evaluate(() => {
-      const scrollables = Array.from(
-        document.querySelectorAll('.ag-body-viewport, .tui-grid-body-area, .ant-table-body, .el-table__body-wrapper, .table-responsive, div')
-      ).filter(el => el.scrollHeight > el.clientHeight + 40 && el.clientHeight >= 180);
-      const container = scrollables.sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
-      if (container) {
-        const prev = container.scrollTop;
-        container.scrollTop += Math.max(300, Math.floor(container.clientHeight * 0.75));
-        if (container.scrollTop > prev) return true;
-      }
-      const prevWin = window.scrollY;
-      window.scrollBy(0, 450);
-      return window.scrollY > prevWin;
-    }).catch(() => false);
-    if (!scrolled) break;
-    await listPage.waitForTimeout(450);
-  }
-
-  // 스크롤 최상단 복귀 후 Pass 2: 상단 필터(조사지역/성별/연령) 정밀 선택 및 페이지네이션 탐색
-  await listPage.evaluate(() => {
-    window.scrollTo(0, 0);
-    document.querySelectorAll('div').forEach(el => {
-      if (el.scrollTop > 0) el.scrollTop = 0;
-    });
-  }).catch(err => emitLog(`스크롤 초기화 경고: ${err.message}`, 'warn'));
-
-  await listPage.evaluate(({ reg, gen, ag }) => {
-    const ensureOptionChecked = (rowKeyword, optText) => {
-      if (!optText) return;
-      const containers = Array.from(document.querySelectorAll('tr, .filter-row, div'))
-        .filter(el => {
-          const t = (el.innerText || '').trim();
-          return t.startsWith(rowKeyword) && t.length < 180;
-        })
-        .sort((a, b) => a.innerText.length - b.innerText.length);
-      const row = containers[0];
-      if (!row) return;
-      const labels = Array.from(row.querySelectorAll('label'));
-      for (const lb of labels) {
-        if ((lb.innerText || '').trim() === optText) {
-          const inp = lb.querySelector('input') || document.getElementById(lb.getAttribute('for') || '');
-          if (inp) {
-            if (!inp.checked) inp.click();
-          } else {
-            lb.click();
-          }
-          return;
-        }
-      }
-    };
-    ensureOptionChecked('조사지역', reg);
-    ensureOptionChecked('성별', gen);
-    ensureOptionChecked('연령', ag);
-  }, { reg: region, gen: gender, ag: ageGroup }).catch(err => emitLog(`필터 적용 경고: ${err.message}`, 'warn'));
-
-  await listPage.waitForTimeout(1200);
-
-  for (let pageAttempt = 0; pageAttempt < 15; pageAttempt++) {
+  // Pass 1: 현재 페이지 스캔 + GetData 숫자형 페이지네이션(data-page="2"..) 순회
+  const visitedPages = new Set([1]);
+  for (let pageAttempt = 0; pageAttempt < 16; pageAttempt++) {
     const matchInfo = await scanCurrentDomForSlot();
     if (matchInfo.found) {
       const started = await clickMatchedStartButton(matchInfo);
       if (started) return started;
     }
 
-    const hasNext = await listPage.evaluate(() => {
+    const nextPageAction = await listPage.evaluate(({ seenPages }) => {
       document.querySelectorAll('[data-kbpi-next-page]').forEach(el => el.removeAttribute('data-kbpi-next-page'));
+
+      // 1) GetData 표준 숫자 페이지 링크 (.pagination .page-link[data-page], .paging a[data-page])
+      const dataPageLinks = Array.from(
+        document.querySelectorAll('.pagination .page-link[data-page], .paging a[data-page], a[data-page], button[data-page]')
+      )
+        .map(el => ({ el, pg: Number(el.getAttribute('data-page')) }))
+        .filter(x => Number.isFinite(x.pg) && x.pg > 1 && !seenPages.includes(x.pg))
+        .sort((a, b) => a.pg - b.pg);
+
+      if (dataPageLinks[0]) {
+        dataPageLinks[0].el.setAttribute('data-kbpi-next-page', '1');
+        return { hasNext: true, nextPgNum: dataPageLinks[0].pg };
+      }
+
+      // 2) 일반 다음(>, ›, 다음) 페이지 버튼
       const nextPg = Array.from(document.querySelectorAll('.pagination a, .paging a, nav a, nav button, a, button'))
         .find(el => {
           const t = (el.innerText || '').trim();
@@ -568,14 +605,18 @@ async function findAndStartRespondentSlot({
         });
       if (nextPg) {
         nextPg.setAttribute('data-kbpi-next-page', '1');
-        return true;
+        return { hasNext: true, nextPgNum: seenPages.length + 1 };
       }
-      return false;
-    });
+      return { hasNext: false };
+    }, { seenPages: Array.from(visitedPages) });
 
-    if (hasNext) {
-      await listPage.locator('[data-kbpi-next-page="1"]').first().click();
-      await listPage.waitForTimeout(1100);
+    if (nextPageAction.hasNext) {
+      visitedPages.add(nextPageAction.nextPgNum);
+      await listPage.evaluate(() => {
+        const el = document.querySelector('[data-kbpi-next-page="1"]');
+        if (el) el.click();
+      });
+      await listPage.waitForTimeout(1400);
     } else {
       break;
     }
@@ -586,7 +627,7 @@ async function findAndStartRespondentSlot({
     const headers = Array.from(document.querySelectorAll('th, [role="columnheader"]'))
       .map(el => (el.innerText || '').trim())
       .filter(Boolean)
-      .slice(0, 16);
+      .slice(0, 18);
     const sampleRows = Array.from(document.querySelectorAll('table tbody tr, [role="row"]'))
       .slice(0, 4)
       .map(r => (r.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 140));
@@ -631,14 +672,20 @@ async function resolveActiveSurveyFrame(page) {
 async function classifyCurrentScreen(target) {
   return target.evaluate(() => {
     const bodyText = (document.body?.innerText || '').trim();
-    const buttonTexts = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"], a'))
+
+    // GetData 비동기 전환 초기 Loading.. 상태 감지
+    if (!bodyText || /^Loading\.{0,5}$/i.test(bodyText)) {
+      return { screenType: 'LOADING', categoryName: '', progressPct: null, buttonTexts: [] };
+    }
+
+    const buttonTexts = Array.from(document.querySelectorAll('#next, button, input[type="button"], input[type="submit"], a'))
       .filter(el => el.offsetParent !== null)
       .map(el => (el.innerText || el.value || '').replace(/\s+/g, ' ').trim())
       .filter(t => t && t.length <= 24)
       .slice(0, 10);
 
     // 아직 CAPI 슬롯 리스트 화면에 머물러 있는 경우 명시적 분류
-    if (/실사코드/.test(bodyText) && /최종\s*id/i.test(bodyText) && /조사지역/.test(bodyText)) {
+    if ((/실사코드/.test(bodyText) && /최종\s*id/i.test(bodyText)) || /진행\s*대상\s*리스트/.test(bodyText)) {
       return {
         screenType: 'CAPI_LIST_PENDING',
         categoryName: '',
@@ -663,8 +710,8 @@ async function classifyCurrentScreen(target) {
     const progressPct = pctMatch ? Number(pctMatch[1]) : null;
 
     // 설문 완료 화면 감지
-    if (/설문이\s*종료|조사가\s*완료|응답해\s*주셔서\s*감사|수고하셨습니다/.test(bodyText) &&
-        document.querySelectorAll('input, select, textarea').length === 0) {
+    if (/설문이\s*종료|조사가\s*완료|응답해\s*주셔서\s*감사|참여해\s*주셔서\s*대단히\s*감사|수고하셨습니다/.test(bodyText) &&
+        document.querySelectorAll('input:not([type="hidden"]), select, textarea').length === 0) {
       return { screenType: 'COMPLETED', categoryName, progressPct, buttonTexts, bodySnippet: bodyText.slice(0, 200) };
     }
 
@@ -709,7 +756,6 @@ async function classifyCurrentScreen(target) {
     }
 
     // 9) 산업군(categoryName)이 명시된 본 설문 문항(5, 6, 7, 8)만 배지 번호로 판별!
-    //    (categoryName이 없는 인트로/리스트/SQ 화면의 숫자 '5' 등이 Q5로 오분류되는 현상 원천 차단)
     let firstBadge = '';
     if (categoryName) {
       const badgeTexts = Array.from(document.querySelectorAll('div, span, th, td, strong'))
@@ -724,7 +770,7 @@ async function classifyCurrentScreen(target) {
       if (firstBadge === '6' || (document.querySelectorAll('input[type="radio"]').length === 2 && /예/.test(bodyText) && /아니오/.test(bodyText))) {
         return { screenType: 'Q6_YES_NO', categoryName, progressPct, buttonTexts };
       }
-      if (firstBadge === '7' || (/1\s*순위/.test(bodyText) && /2\s*순위/.test(bodyText))) {
+      if (firstBadge === '7' || document.querySelectorAll('.s-gradeclick').length >= 2 || (/1\s*순위/.test(bodyText) && /2\s*순위/.test(bodyText))) {
         return { screenType: 'Q7_RANK_1_2', categoryName, progressPct, buttonTexts };
       }
       if (firstBadge === '8') {
@@ -733,7 +779,7 @@ async function classifyCurrentScreen(target) {
     }
 
     // 최종 제출 버튼 여부 판별
-    const hasFinalBtn = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"], a'))
+    const hasFinalBtn = Array.from(document.querySelectorAll('#next, button, input[type="button"], input[type="submit"], a'))
       .some(el => /조사\s*완료|설문\s*완료|최종\s*제출|완료하기/.test((el.innerText || el.value || '').trim()));
     if (hasFinalBtn) {
       return { screenType: 'FINAL_SUBMIT_GATE', categoryName, progressPct, buttonTexts, bodySnippet: bodyText.slice(0, 200) };
@@ -752,6 +798,13 @@ async function classifyCurrentScreen(target) {
 
 async function clickNextButton(target) {
   const clicked = await target.evaluate(() => {
+    // GetData 표준 #next 버튼 최우선 확인
+    const gdNext = document.querySelector('#next');
+    if (gdNext && gdNext.offsetParent !== null && !gdNext.disabled) {
+      gdNext.click();
+      return (gdNext.innerText || gdNext.value || '다음').trim();
+    }
+
     const nextRegex = /^(다음|다음으로|다음\s*단계|응답자\s*확인|확인|저장\s*후\s*다음|설문\s*시작|조사\s*시작|시작하기|동의|동의합니다|동의\s*후\s*시작)$/;
     const primaryCandidates = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"], a'));
     const primaryBtn = primaryCandidates.find(el => {
@@ -982,6 +1035,10 @@ export async function runKmacKbpiSurvey({
 
       const activeTarget = await resolveActiveSurveyFrame(surveyPage);
       const info = await classifyCurrentScreen(activeTarget);
+      if (info.screenType === 'LOADING') {
+        await surveyPage.waitForTimeout(600);
+        continue;
+      }
       const sig = `${info.screenType}|${info.categoryName}|${info.progressPct}`;
       if (sig === lastSignature) {
         sameScreenStuckCount++;
@@ -1564,6 +1621,30 @@ export async function runKmacKbpiSurvey({
         const catState = await getOrInitCategoryState(info.categoryName);
         const rankInfo = await activeTarget.evaluate(({ seedNum }) => {
           const isForbiddenLabel = (txt) => /기타|없음|모름/.test(txt);
+
+          // 케이스 0: GetData 표준 .s-gradeclick 우선순위 클릭형 컴포넌트
+          const gradeEls = Array.from(document.querySelectorAll('.s-gradeclick')).filter(el => el.offsetParent !== null);
+          if (gradeEls.length >= 2) {
+            const reBtn = document.querySelector('button.re-select');
+            if (reBtn && reBtn.offsetParent !== null) reBtn.click();
+            const validGrades = gradeEls.filter(el => {
+              if (el.querySelector('input.input-etc, textarea.input-etc')) return false;
+              const txt = (el.innerText || '').replace(/\s+/g, ' ').trim();
+              return !isForbiddenLabel(txt);
+            });
+            if (validGrades.length >= 2) {
+              const g1 = validGrades[seedNum % validGrades.length];
+              let idx2 = (seedNum + 1 + ((seedNum >> 2) % (validGrades.length - 1))) % validGrades.length;
+              if (idx2 === (seedNum % validGrades.length)) idx2 = (idx2 + 1) % validGrades.length;
+              const g2 = validGrades[idx2];
+              g1.click();
+              g2.click();
+              return {
+                r1: (g1.innerText || '').replace(/\s+/g, ' ').trim(),
+                r2: (g2.innerText || '').replace(/\s+/g, ' ').trim()
+              };
+            }
+          }
 
           // 케이스 A: 1순위/2순위 드롭다운(<select>) 형태
           const selects = Array.from(document.querySelectorAll('select')).filter(s => !s.disabled && s.offsetParent !== null);
