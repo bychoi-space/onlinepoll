@@ -842,8 +842,16 @@ export function registerQuotaRoutes({
           const isMetrixSeoul = content.type === 'METRIX_SEOUL_PANEL' || content.surveyType === 'metrix_seoul_panel' || content.pnum === 'S21401' || lowerFile.includes('seoul_panel') || lowerFile.includes('metrix_seoul') || lowerFile.includes('s21401');
           const isMetrix = !isMetrixSeoul && (content.type === 'METRIX_PANEL' || content.surveyType === 'metrix_panel' || lowerFile.includes('metrix'));
           const isKona = content.type === 'KONA_YOUTH' || content.surveyType === 'kona_youth' || lowerFile.includes('kona');
+          const isKmacKbpi = content.type === 'KMAC_KBPI' || content.surveyType === 'kmac_kbpi' || lowerFile.includes('kbpi') || lowerFile.includes('kmac');
 
-          if (isGallupReturnFarm) {
+          if (isKmacKbpi) {
+            data.forEach(item => {
+              const reg = String(item.region || '기타').trim();
+              const ag = String(item.ageGroup || '').trim();
+              const k = ag ? `${reg}·${ag}` : reg;
+              industryDist[k] = (industryDist[k] || 0) + 1;
+            });
+          } else if (isGallupReturnFarm) {
             const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed' || item.serverStatus === '99').length;
             const pilotCnt = data.filter(item => item.quotaStatus === 'pilot_done' || String(item.status || '').includes('완료직전') || item.serverStatus === '01').length;
             const readyCnt = data.length - doneCnt - pilotCnt;
@@ -928,15 +936,15 @@ export function registerQuotaRoutes({
             mtimeMs: stat.mtimeMs,
             size: stat.size,
             title: content.title || content.name || f,
-            rawType: content.type || (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : (isGlobalriLiteracy ? 'GLOBALRI_ADULT_LITERACY' : (isGallupReturnFarm ? 'GALLUP_RETURN_FARM' : (isMetrixSeoul ? 'METRIX_SEOUL_PANEL' : (isMetrix ? 'METRIX_PANEL' : 'MARKETBZ_DIRECT')))))),
+            rawType: content.type || (isKmacKbpi ? 'KMAC_KBPI' : (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : (isGlobalriLiteracy ? 'GLOBALRI_ADULT_LITERACY' : (isGallupReturnFarm ? 'GALLUP_RETURN_FARM' : (isMetrixSeoul ? 'METRIX_SEOUL_PANEL' : (isMetrix ? 'METRIX_PANEL' : 'MARKETBZ_DIRECT'))))))),
             rawSurveyType: content.surveyType || null,
-            fallbackSurveyType: isGallupReturnFarm ? 'gallup_return_farm' : (isGlobalriLiteracy ? 'globalri_literacy' : (isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrixSeoul ? 'metrix_seoul_panel' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store')))))),
+            fallbackSurveyType: isKmacKbpi ? 'kmac_kbpi' : (isGallupReturnFarm ? 'gallup_return_farm' : (isGlobalriLiteracy ? 'globalri_literacy' : (isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrixSeoul ? 'metrix_seoul_panel' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))))))),
             rawLinkedCampaignId: content.linkedCampaignId || null,
             selectedCount: content.selectedCount || null,
             substituteCount: content.substituteCount || null,
             surveyorId: content.surveyorId || null,
             surveyorName: content.surveyorName || null,
-            marketName: content.marketName || (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : (isGlobalriLiteracy ? `성인문해능력조사 · ${content.surveyorName || ''}` : (isGallupReturnFarm ? `귀농귀촌 실태조사 · ${content.surveyorName || ''}` : (isMetrixSeoul ? '서울시 소상공인 사업체패널 5차' : null))))),
+            marketName: content.marketName || (isKmacKbpi ? '2027 K-BPI 조사 (서울 100 · 인천 50)' : (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : (isGlobalriLiteracy ? `성인문해능력조사 · ${content.surveyorName || ''}` : (isGallupReturnFarm ? `귀농귀촌 실태조사 · ${content.surveyorName || ''}` : (isMetrixSeoul ? '서울시 소상공인 사업체패널 5차' : null)))))),
             keyword: content.keyword,
             count: content.count || data.length,
             targetTotal,

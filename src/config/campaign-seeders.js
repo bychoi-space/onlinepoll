@@ -31,7 +31,7 @@ export function seedInitialCampaigns({
             needSave = true;
           }
         });
-        if (camp.status === 'completed' && (camp.surveyType === 'globalri_literacy' || camp.surveyType === 'gallup_return_farm')) {
+        if (camp.status === 'completed' && (camp.surveyType === 'globalri_literacy' || camp.surveyType === 'gallup_return_farm' || camp.surveyType === 'kmac_kbpi')) {
           const hasUnrunReady = camp.quotaDatabase.some(q => !q.quotaStatus || q.quotaStatus === 'ready');
           if (hasUnrunReady) {
             camp.status = 'ready';
@@ -861,9 +861,69 @@ export function seedInitialCampaigns({
         console.warn('[CampaignSeeder] 경기도 소상공인 패널 쿼터 시드 로드 경고:', err.message);
       }
     }
+
+    // [KMAC] 2027년 한국산업의브랜드파워(K-BPI) 조사 (5911000005645 · 서울 100명 / 인천 50명 총 150명) 자동 시드
+    try {
+      const kbpiCampId = 'camp_kmac_kbpi_5911000005645';
+      const kbpiFile = 'quota_kmac_kbpi_5911000005645.json';
+      const kbpiPath = path.join(quotasDir, kbpiFile);
+      if (fs.existsSync(kbpiPath)) {
+        const kbpiJson = JSON.parse(fs.readFileSync(kbpiPath, 'utf-8'));
+        const kbpiList = kbpiJson.data || kbpiJson.items || [];
+        if (kbpiList.length > 0) {
+          const allNow = CampaignStore.getAllCampaigns();
+          const existingKbpi = allNow.find(c => c.id === kbpiCampId);
+          const defaultKbpiPolicy = {
+            pilotStopAtStep: 'Q4',
+            stopBeforeFinalSubmit: true,
+            purchaseYesRate: 90,
+            unaided4thBrandRate: 35,
+            aidedExtraMin: 2,
+            aidedExtraMax: 4,
+            q6NoRate: 80,
+            teenAutoNoneUnfitCategories: true,
+            autoSyncGoogleSheet: true,
+            customFoodLivingChannels: '편의점, 동네슈퍼, 이마트, 쿠팡, 홈플러스, 롯데마트, GS25, CU, 컬리, 네이버쇼핑',
+            proxyServer: ''
+          };
+          if (!existingKbpi) {
+            CampaignStore.createCampaign({
+              id: kbpiCampId,
+              title: '[KMAC] 2027년 한국산업의브랜드파워(K-BPI) 조사 - 5911000005645 (서울 100 · 인천 50 / 총 150명)',
+              description: 'KMA Research CAPI(ID:230) · 서울 노원구청 / 인천시청 미세분산 GPS · 품목별 구입경험 연동 · 성별·연령대 구분자 분할 배치',
+              quotaType: 'b2c',
+              surveyType: 'kmac_kbpi',
+              loginId: '5911000005645',
+              loginPw: '5911000005645',
+              surveyorName: '5911000005645',
+              googleSheetUrl: 'https://docs.google.com/spreadsheets/d/16XEpH7ru9A3eBpEHQqYm3cd3sMUWNBxqD-1tXoCR8Hg/edit',
+              quotaSourceFile: kbpiFile,
+              kbpiPolicy: defaultKbpiPolicy,
+              hasMasterBlueprint: true,
+              guidelineConfig: {
+                surveyUrl: 'https://isurvey.kmaresearch.co.kr/sy/login',
+                engine: 'kmac_kbpi',
+                headless: true
+              },
+              quotaDatabase: kbpiList
+            });
+          } else if (!Array.isArray(existingKbpi.quotaDatabase) || existingKbpi.quotaDatabase.length === 0) {
+            CampaignStore.updateCampaign(kbpiCampId, {
+              quotaDatabase: kbpiList,
+              quotaSourceFile: kbpiFile,
+              kbpiPolicy: existingKbpi.kbpiPolicy || defaultKbpiPolicy,
+              hasMasterBlueprint: true
+            });
+          }
+        }
+      }
+    } catch (kbpiErr) {
+      console.warn('[CampaignSeeder] K-BPI 캠페인 시드 경고:', kbpiErr.message);
+    }
   } catch (err) {
     console.warn('[CampaignSeeder] 초기 캠페인 시드 처리 경고:', err.message);
   }
 }
+
 
 

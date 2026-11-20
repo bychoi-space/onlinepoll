@@ -6,7 +6,7 @@
 
 ## ⚠️ [절대 준수] 시스템 개발 대전제 (Immutable Core Principles)
 
-시스템을 개발하고 운영하는 모든 과정에서 에이전트는 다음 10대 대전제를 **예외 없이 무조건 엄수**해야 합니다.
+시스템을 개발하고 운영하는 모든 과정에서 에이전트는 다음 11대 대전제를 **예외 없이 무조건 엄수**해야 합니다.
 
 1. **어떤 상황에서도 브라우저 검증은 진행하지 마라.**
    - 브라우저 서브에이전트(`browser_subagent`)를 실행하여 UI를 탐색하거나 브라우저 상에서 인터랙션을 검증하는 일체의 행위를 절대 수행하지 않는다.
@@ -44,6 +44,9 @@
     - 모든 설문 자동화는 기본적으로 **'최종 제출(완료) 직전 단계 안전 대기'** 상태를 유지하여 사용자가 실제 설문 응답 내역을 직접 확인·검수할 수 있도록 보장해야 한다.
     - 만약 사용자의 후속 지시나 특정 기능 요청(예: 설문 100% 완료 후에만 활성화되는 답례품 수령증 전자서명, 완료 후 부가 작업 등)이 대상 시스템 구조상 **'설문 최종 완료(제출) 처리'를 전제로 해야만 수행 가능한 경우**, 에이전트가 임의로 안전가드를 해제하거나 완료 처리까지 직행하는 것을 **절대 금지**한다.
     - 이러한 충돌이 발생하면 코드를 수정하거나 실행하기 전에 반드시 사용자에게 **"해당 기능(예: 답례품 수령증 서명)을 수행하려면 설문을 100% 완료 처리해야 하며, 완료 시 설문 응답 확인·수정이 불가능해집니다. 그래도 완료 처리까지 진행할지, 아니면 해당 기능을 보류하고 완료 직전 상태로 대기할지"** 명확히 보고하고 사용자의 명시적 선택과 승인을 받은 후에만 진행해야 한다.
+11. **신규/기존 모든 설문조사 쿼터 분석 시 '구분자(Segment) 자동 선정 및 구분자별 분할 배치' 필수 설계 원칙.**
+    - 향후 어떤 설문지를 분석·구현하더라도 전체 쿼터를 한 번에 대량으로 일괄 구동하는 방식을 지양하고, 에이전트가 직접 쿼터 데이터 구조를 분석해 가장 적절한 **구분자(예: 성별·연령대, 주 용도, 업종, 지역·읍면, 조사원 계정 등)**를 자동 선정해야 한다.
+    - [`public/modules/quota-segment-filter.js`](file:///c:/onlinepoll/public/modules/quota-segment-filter.js) 공통 모듈(`resolveSurveySegmentAxes`, `renderUniversalStep3SegmentPanel`)에 해당 설문의 최적 구분자 축을 등록하여, 사용자가 대시보드(STEP 1 필터 및 STEP 3 구분자 카드)에서 구분자 단위로 나누어 안전하게 선택·배치(`targetIndices`)를 수행할 수 있도록 기본 제공해야 한다.
 
 ---
 
@@ -1478,3 +1481,19 @@ c:/onlinepoll/
   - [`src/routes/execution-routes.js`](file:///c:/onlinepoll/src/routes/execution-routes.js): 범용 설문 실행, 파일럿 검증(`pilot-run`), 고속 배치(`batch-run`), 단건 실행(`run-single`), 개별 캠페인 중지(`stop`) API
   - [`src/routes/sync-routes.js`](file:///c:/onlinepoll/src/routes/sync-routes.js): Kstat 슬롯 바인딩, 한국리서치 TAPI, 글로벌리서치 GIFT, 한국갤럽(`20263603`), 서울시 소상공인 구글시트 동기화 API
   - [`src/utils/korean-signature.js`](file:///c:/onlinepoll/src/utils/korean-signature.js): 한국갤럽 귀농실태조사와 한국리서치 에너지총조사에서 공통 사용하는 한글 초·중·종성 획 분해 및 8종 필체 다변화 엔진 통합 모듈
+
+### 5) [KMAC] 2027년 한국산업의브랜드파워(K-BPI) 조사 (`kmac_kbpi`) 및 전 설문 공통 구분자별 분할 배치 아키텍처
+- **캠페인 및 포털 연동 ([`src/engine/kmac-kbpi-runner.js`](file:///c:/onlinepoll/src/engine/kmac-kbpi-runner.js), [`src/engine/kmac-kbpi-scraper.js`](file:///c:/onlinepoll/src/engine/kmac-kbpi-scraper.js), [`src/utils/kmac-kbpi-sheet-sync.js`](file:///c:/onlinepoll/src/utils/kmac-kbpi-sheet-sync.js))**:
+  - **시드 캠페인**: `camp_kmac_kbpi_5911000005645` (`surveyType: 'kmac_kbpi'`, 총 150명 — 서울 100명, 인천 50명).
+  - **대상 포털**: `https://isurvey.kmaresearch.co.kr/sy/login` (`5911000005645`) ➔ `capi.kmaresearch.co.kr` ➔ 프로젝트 `ID: 230` (`2027년 한국산업의브랜드파워(K-BPI) 조사`). 해외 IP 차단(Geo-IP)이 적용되어 있으므로 **Google Cloud 서울 리전(`asia-northeast3`) VM**([`scripts/setup-seoul-vm.sh`](file:///c:/onlinepoll/scripts/setup-seoul-vm.sh))에서 구동한다.
+  - **지역별 GP1 미세 분산 및 연락처 분기**:
+    - `지역 === '서울'`(100명): 노원구청(`37.654192, 127.056794`) 기준 대상자별 반경 50~80m 결정론적 미세 분산.
+    - `지역 === '인천'`(50명): 인천광역시청(`37.456256, 126.705206`) 기준 대상자별 반경 50~80m 결정론적 미세 분산.
+    - `010-`(124명)은 휴대폰 3칸, `02-`(26명)는 일반전화 3칸에 자동 분리 입력하며, `SQ1`은 전 항목 `"모두 없다"`를 선택한다.
+  - **산업군 반복 루프(`문항 1 ~ 문항 8`) 및 구글 시트 `구입경험='없음'` 절대 연동**:
+    - 파일럿 실행(`pilotMode: true`)은 1번째 출제 품목의 **`[문항 4]` 도달 시 안전 정지(`pilotStopAtStep: 'Q4'`)**한다.
+    - `문항 3`: `1)~9)`는 `44444` 일렬 응답을 금지하고 `3·4·5`를 혼합 분산하며, `10)`은 1~9번 평균 반올림을 입력하고, `12)` 브랜드 이미지는 형용사·구어체·명사를 다양화한다.
+    - 시트(`K4:Z4`, `브랜드1|구입경험1 ~ 브랜드8|구입경험8`)에 `구입경험 = '없음'`이 지정된 품목은 **`문항 3-11`에서 `4·5번` 선택을 절대 금지하고 `1·2·3번` 중 선택**하며, **`3-13` 전원 `'아니오'` + `문항 4·5` `'없음'`(`4-1` 자동 스킵)**으로 일괄 처리한다.
+    - `문항 4-1` 식음료·생활소비재 구입 채널 풀에 **`편의점`, `동네슈퍼`**를 포함하며, 실행 직후 구글 시트(`H열 진행상태` 및 `K~Z열 브랜드N/구입경험N`)에 자동 기입한다.
+- **전 설문 공통 구분자별 분할 배치 모듈 ([`public/modules/quota-segment-filter.js`](file:///c:/onlinepoll/public/modules/quota-segment-filter.js))**:
+  - K-BPI(`성별·연령대별` 10그룹 기본, `지역·연령대별`, `연령대별`, `지역별` 전환 지원)를 비롯해 기존·신규 모든 설문에서 쿼터 데이터를 분석해 최적 구분자 축을 자동 도출하고, STEP 3 `#universal-step3-segment-panel`에서 구분자 단위로 분할 배치할 수 있도록 표준화하였다.

@@ -3,6 +3,7 @@
  */
 import { escapeHtml } from './blueprint-utils.js';
 import { DEFAULT_GLOBALRI_AGE_POLICIES, resolveGlobalriAgeGroupKey } from './blueprint-globalri.js';
+import { resolveSurveySegmentAxes, computeSegmentStats, isQuotaItemDone } from './quota-segment-filter.js';
 
 export const GALLUP_SIG_STYLES_LABELS = [
   '정자체 (바른획)',
@@ -51,6 +52,7 @@ export const HRC_B11_OPTIONS = [
 
 export function renderQuotaTableHead({
   quotaTableHead,
+  isKmacKbpi,
   isGallupReturnFarm,
   isGlobalriLiteracy,
   isHrcEnergy,
@@ -60,7 +62,24 @@ export function renderQuotaTableHead({
   isAssoc
 }) {
   if (!quotaTableHead) return;
-  if (isMetrixSeoul) {
+  if (isKmacKbpi) {
+    quotaTableHead.innerHTML = `
+      <tr>
+        <th class="th-no text-center kbpi-th-check">
+          <input type="checkbox" id="cb-kbpi-check-all" class="seg-card-checkbox" title="현재 필터 목록 전체 선택/해제" />
+        </th>
+        <th class="th-no">순번</th>
+        <th>최종ID / 고유번호</th>
+        <th>조사지역 · 주입 GPS</th>
+        <th>성별 · 연령대 (만 나이)</th>
+        <th>응답자 성명</th>
+        <th>연락처 (분기유형)</th>
+        <th>품목별 구입경험 가이드 (브랜드1~8 · 시트연동)</th>
+        <th class="th-status">진행 상태</th>
+        <th class="text-center kbpi-th-action">단건 실행</th>
+      </tr>
+    `;
+  } else if (isMetrixSeoul) {
     quotaTableHead.innerHTML = `
       <tr>
         <th class="th-no text-center" style="width: 44px;">
@@ -223,6 +242,7 @@ export function renderQuotaTableHead({
 
 export function renderEmptyQuotaTableRow({
   quotaTableBody,
+  isKmacKbpi,
   isGallupReturnFarm,
   isGlobalriLiteracy,
   isHrcEnergy,
@@ -232,12 +252,16 @@ export function renderEmptyQuotaTableRow({
   isAssoc
 }) {
   if (!quotaTableBody) return;
-  const colSpan = (isMetrix || isMetrixSeoul || isGallupReturnFarm || isGlobalriLiteracy || isHrcEnergy)
-    ? 15
-    : (isAssoc ? 11 : (isKona ? 9 : 13));
+  const colSpan = isKmacKbpi
+    ? 10
+    : ((isMetrix || isMetrixSeoul || isGallupReturnFarm || isGlobalriLiteracy || isHrcEnergy)
+      ? 15
+      : (isAssoc ? 11 : (isKona ? 9 : 13)));
 
   let emptyMsg = '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.';
-  if (isGallupReturnFarm) {
+  if (isKmacKbpi) {
+    emptyMsg = '아직 장착된 K-BPI 조사 응답자 쿼터가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 K-BPI 쿼터를 선택해 장착해 주세요.';
+  } else if (isGallupReturnFarm) {
     emptyMsg = '아직 장착된 귀농실태조사 대상자가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong> 또는 <strong>[Kstat 진행 현황 실시간 동기화]</strong> 버튼으로 선정명단을 불러와 주세요.';
   } else if (isGlobalriLiteracy) {
     emptyMsg = '아직 장착된 성인문해능력조사 대상자가 없습니다.<br>상단의 <strong>[글로벌리서치 GIFT 동기화 / LID 지정 필터]</strong> 버튼을 클릭하여 쿼터를 불러와 주세요.';
@@ -2019,4 +2043,245 @@ export function renderAssocQuotaTable({
     });
   });
 }
+
+export function renderKmacKbpiQuotaTable({
+  db = [],
+  quotaTableBody,
+  activeAxisId = 'gender_age',
+  selectedSegments = new Set(),
+  checkedKbpiSeqs = new Set(),
+  onAxisChange = null,
+  onReRender = null,
+  onSelectionChange = null,
+  onTriggerBatchRun = null,
+  onSyncFromSheet = null,
+  onRunSingle = null,
+  onToggleCategoryExp = null
+}) {
+  const tableScrollContainer = quotaTableBody.closest('.table-scroll-container');
+  let kbpiBar = document.getElementById('kbpi-step1-segment-bar');
+  if (!kbpiBar && tableScrollContainer && tableScrollContainer.parentNode) {
+    kbpiBar = document.createElement('div');
+    kbpiBar.id = 'kbpi-step1-segment-bar';
+    kbpiBar.className = 'metrix-slim-toolbar kbpi-segment-toolbar';
+    tableScrollContainer.parentNode.insertBefore(kbpiBar, tableScrollContainer);
+  } else if (kbpiBar) {
+    kbpiBar.classList.remove('d-none');
+  }
+
+  const axes = resolveSurveySegmentAxes('kmac_kbpi', db);
+  const currentAxis = axes.find(a => a.id === activeAxisId) || axes[0];
+  const segStats = computeSegmentStats({ db, surveyType: 'kmac_kbpi', axis: currentAxis });
+  const validSegSet = new Set(segStats.map(s => s.segName));
+  Array.from(selectedSegments).forEach(s => {
+    if (!validSegSet.has(s)) selectedSegments.delete(s);
+  });
+
+  const indexedDb = db.map((item, idx) => ({
+    item,
+    seq: Number(item.index || item.seq || (idx + 1)),
+    segName: currentAxis ? String(currentAxis.extractor(item, idx) || '기타').trim() : '전체',
+    done: isQuotaItemDone(item, 'kmac_kbpi')
+  }));
+
+  const isAllMode = (selectedSegments.size === 0);
+  const visibleIndexed = isAllMode
+    ? indexedDb
+    : indexedDb.filter(r => selectedSegments.has(r.segName));
+
+  const actionableCheckedCount = indexedDb.filter(r => !r.done && checkedKbpiSeqs.has(r.seq)).length;
+
+  if (kbpiBar) {
+    kbpiBar.innerHTML = `
+      <div class="kbpi-bar-top-row">
+        <div class="kbpi-bar-left">
+          <span class="kbpi-bar-label"><i class="fa-solid fa-filter text-primary-color"></i> 구분자 필터:</span>
+          <select id="sel-kbpi-step1-axis" class="figma-select seg-axis-select">
+            ${axes.map(ax => `<option value="${escapeHtml(ax.id)}" ${ax.id === currentAxis.id ? 'selected' : ''}>${escapeHtml(ax.shortLabel)} 기준</option>`).join('')}
+          </select>
+          <button type="button" class="hrc-use-chip ${isAllMode ? 'is-active' : ''}" data-kbpi-seg="__ALL__">
+            <span>전체</span>
+            <span class="hrc-use-chip-count">${db.length}명</span>
+          </button>
+          ${segStats.map(st => {
+            const active = selectedSegments.has(st.segName);
+            const doneCls = st.pending === 0 ? 'is-all-done' : '';
+            return `
+              <button type="button" class="hrc-use-chip ${active ? 'is-active' : ''} ${doneCls}" data-kbpi-seg="${escapeHtml(st.segName)}">
+                <span>${escapeHtml(st.segName)}</span>
+                <span class="hrc-use-chip-count">${st.pending}/${st.total}</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+        <div class="kbpi-bar-right">
+          <button type="button" class="btn-pill btn-pill-secondary btn-pill-small" id="btn-kbpi-step1-sync-sheet" title="구글 시트의 최신 구입경험(있음/없음) 설정을 즉시 불러옵니다">
+            <i class="fa-solid fa-arrows-rotate text-success-color"></i> 구글 시트 동기화
+          </button>
+          <button
+            type="button"
+            class="btn-pill btn-pill-primary btn-pill-small font-bold"
+            id="btn-kbpi-top-batch-run"
+            data-has-targets="${actionableCheckedCount > 0 ? '1' : '0'}"
+            ${actionableCheckedCount === 0 ? 'disabled' : ''}
+          >
+            <i class="fa-solid fa-play"></i> 선택 구분 배치 실행 (${actionableCheckedCount}명)
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  quotaTableBody.innerHTML = visibleIndexed.map(({ item, seq, done }) => {
+    const isChecked = checkedKbpiSeqs.has(seq);
+    const qs = item.quotaStatus || 'ready';
+    let statusBadge = '<span class="badge-status ready">대기</span>';
+    if (qs === 'running') {
+      statusBadge = '<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 진행중</span>';
+    } else if (qs === 'completed' || item.status === '완료') {
+      statusBadge = '<span class="badge-status completed">완료 (100%)</span>';
+    } else if (qs === 'pilot_done') {
+      statusBadge = `<span class="badge-status pilot">${escapeHtml(item.status || '문항4 대기')}</span>`;
+    } else if (qs === 'error') {
+      statusBadge = '<span class="badge-status error">오류</span>';
+    }
+
+    const phoneStr = String(item.phone || '-');
+    const isMobile = phoneStr.startsWith('010');
+    const phoneBadge = isMobile
+      ? '<span class="kbpi-phone-tag is-mobile">휴대폰</span>'
+      : '<span class="kbpi-phone-tag is-landline">일반전화</span>';
+
+    const cfgs = Array.isArray(item.categoryConfigs) ? item.categoryConfigs : [];
+    const filledCfgs = cfgs.filter(c => c && (c.categoryName || c.purchaseExp));
+    const catChipsHtml = filledCfgs.length > 0
+      ? filledCfgs.map(c => {
+          const exp = c.purchaseExp || '자동(90:10)';
+          const cls = exp === '없음' ? 'is-none' : (exp === '있음' ? 'is-yes' : 'is-auto');
+          const label = c.categoryName ? `${c.categoryName}: ${exp}` : `품목${c.slot}: ${exp}`;
+          return `<button type="button" class="kbpi-cat-exp-chip ${cls}" data-seq="${seq}" data-slot="${c.slot}" title="클릭하여 구입경험 전환 (있음 ➔ 없음 ➔ 자동)">${escapeHtml(label)}</button>`;
+        }).join(' ')
+      : '<span class="font-caption text-dim">출제 시 자동기입 (시트/클릭으로 없음 지정 가능)</span>';
+
+    return `
+      <tr class="${isChecked ? 'globalri-row-checked' : ''}" data-row-idx="${seq}">
+        <td class="text-center">
+          <input type="checkbox" class="cb-kbpi-row seg-card-checkbox" data-seq="${seq}" ${isChecked ? 'checked' : ''} ${done ? 'disabled' : ''} />
+        </td>
+        <td class="text-center font-mono font-bold">${seq}</td>
+        <td class="font-mono">
+          <div><strong>#${escapeHtml(item.finalId || '-')}</strong></div>
+          <div class="font-caption text-dim">${escapeHtml(item.uid || '-')}</div>
+        </td>
+        <td>
+          <div><strong>${escapeHtml(item.region || '-')}</strong> · <span class="font-caption">${escapeHtml(item.gpsLabel || '')}</span></div>
+          <div class="font-caption font-mono text-dim">${escapeHtml(String(item.latitude || ''))}, ${escapeHtml(String(item.longitude || ''))}</div>
+        </td>
+        <td>
+          <span class="quota-ind-badge">${escapeHtml(item.gender || '-')} · ${escapeHtml(item.ageGroup || '-')}</span>
+          <span class="font-caption font-bold ml-4">(만 ${escapeHtml(String(item.age || '-'))}세)</span>
+        </td>
+        <td><strong>${escapeHtml(item.name || item.ceoName || '-')}</strong></td>
+        <td class="font-mono">
+          <div>${escapeHtml(phoneStr)}</div>
+          <div>${phoneBadge}</div>
+        </td>
+        <td><div class="kbpi-cat-chip-wrap">${catChipsHtml}</div></td>
+        <td class="text-center">${statusBadge}</td>
+        <td class="text-center">
+          <button type="button" class="btn-pill btn-pill-secondary btn-pill-small btn-kbpi-run-single" data-seq="${seq}" ${qs === 'running' ? 'disabled' : ''}>
+            <i class="fa-solid fa-flask"></i> 단건검증
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const syncCheckedBySegments = () => {
+    checkedKbpiSeqs.clear();
+    if (selectedSegments.size === 0) return;
+    indexedDb.forEach(r => {
+      if (!r.done && selectedSegments.has(r.segName)) {
+        checkedKbpiSeqs.add(r.seq);
+      }
+    });
+  };
+
+  const cbAll = document.getElementById('cb-kbpi-check-all');
+  const visiblePendingSeqs = visibleIndexed.filter(r => !r.done).map(r => r.seq);
+  if (cbAll) {
+    cbAll.checked = visiblePendingSeqs.length > 0 && visiblePendingSeqs.every(s => checkedKbpiSeqs.has(s));
+    cbAll.onchange = () => {
+      if (cbAll.checked) visiblePendingSeqs.forEach(s => checkedKbpiSeqs.add(s));
+      else visiblePendingSeqs.forEach(s => checkedKbpiSeqs.delete(s));
+      if (typeof onReRender === 'function') onReRender(db);
+      if (typeof onSelectionChange === 'function') onSelectionChange();
+    };
+  }
+
+  quotaTableBody.querySelectorAll('.cb-kbpi-row').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const seq = Number(cb.getAttribute('data-seq'));
+      if (cb.checked) checkedKbpiSeqs.add(seq);
+      else checkedKbpiSeqs.delete(seq);
+      if (typeof onReRender === 'function') onReRender(db);
+      if (typeof onSelectionChange === 'function') onSelectionChange();
+    });
+  });
+
+  quotaTableBody.querySelectorAll('.btn-kbpi-run-single').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const seq = Number(btn.getAttribute('data-seq'));
+      if (seq && typeof onRunSingle === 'function') onRunSingle(seq);
+    });
+  });
+
+  quotaTableBody.querySelectorAll('.kbpi-cat-exp-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const seq = Number(chip.getAttribute('data-seq'));
+      const slot = Number(chip.getAttribute('data-slot'));
+      if (seq && slot && typeof onToggleCategoryExp === 'function') {
+        onToggleCategoryExp(seq, slot);
+      }
+    });
+  });
+
+  if (kbpiBar) {
+    const axisSel = kbpiBar.querySelector('#sel-kbpi-step1-axis');
+    if (axisSel) {
+      axisSel.addEventListener('change', () => {
+        selectedSegments.clear();
+        checkedKbpiSeqs.clear();
+        if (typeof onAxisChange === 'function') onAxisChange(axisSel.value);
+      });
+    }
+
+    kbpiBar.querySelectorAll('[data-kbpi-seg]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const seg = chip.getAttribute('data-kbpi-seg');
+        if (seg === '__ALL__') {
+          selectedSegments.clear();
+          checkedKbpiSeqs.clear();
+        } else if (seg) {
+          if (selectedSegments.has(seg)) selectedSegments.delete(seg);
+          else selectedSegments.add(seg);
+          syncCheckedBySegments();
+        }
+        if (typeof onReRender === 'function') onReRender(db);
+        if (typeof onSelectionChange === 'function') onSelectionChange();
+      });
+    });
+
+    const btnSync = kbpiBar.querySelector('#btn-kbpi-step1-sync-sheet');
+    if (btnSync && typeof onSyncFromSheet === 'function') {
+      btnSync.addEventListener('click', () => onSyncFromSheet());
+    }
+
+    const btnTopRun = kbpiBar.querySelector('#btn-kbpi-top-batch-run');
+    if (btnTopRun && typeof onTriggerBatchRun === 'function') {
+      btnTopRun.addEventListener('click', () => onTriggerBatchRun('selected'));
+    }
+  }
+}
+
 

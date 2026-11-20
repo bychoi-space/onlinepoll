@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const desc = String(c.description || '').toLowerCase();
 
     // 1순위: surveyType 명시적 판별
-    if (['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'kona_youth'].includes(type)) {
+    if (['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'kona_youth', 'kmac_kbpi'].includes(type)) {
       return 'special';
     }
     if (type === 'metrix_panel' || type === 'metrix_seoul_panel') return 'smallbiz';
@@ -209,7 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
       title.includes('문해능력') ||
       title.includes('문해력') ||
       title.includes('귀농') ||
-      title.includes('청소년')
+      title.includes('청소년') ||
+      title.includes('브랜드파워') ||
+      title.includes('k-bpi')
     ) {
       return 'special';
     }
@@ -224,6 +226,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getCategoryMeta(catKey, surveyType = '') {
     const sType = String(surveyType || '').toLowerCase();
+    if (sType === 'kmac_kbpi') {
+      return { label: '2027 K-BPI 브랜드파워', icon: 'fa-award', class: 'special' };
+    }
     if (sType === 'metrix_seoul_panel') {
       return { label: '서울시 소상공인 패널 (5차)', icon: 'fa-building-user', class: 'smallbiz' };
     }
@@ -362,6 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isHrcEnergy = (sType === 'hrc_energy');
     const isGlobalriLiteracy = (sType === 'globalri_literacy');
     const isGallupReturnFarm = (sType === 'gallup_return_farm');
+    const isKmacKbpi = (sType === 'kmac_kbpi');
     const isAssoc = (cat === 'assoc');
     const isSmallBiz = (cat === 'smallbiz');
     const isCompleted = (c.status === 'completed');
@@ -381,7 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const isMetrixSeoul = (sType === 'metrix_seoul_panel');
     let quotaLabel = '점포 경영실태 (15단계)';
-    if (isGlobalriLiteracy) {
+    if (isKmacKbpi) {
+      quotaLabel = `서울 100 · 인천 50 (총 ${dbCount}명 · 구분자별 분할 배치)`;
+    } else if (isGlobalriLiteracy) {
       quotaLabel = `대상자 ${dbCount}명 (완료 ${doneItemCount}명) · 연령대 가이드`;
     } else if (isHrcEnergy) {
       quotaLabel = `선정 ${selCount}건 (완료 ${doneSelCount}건) · 기입력 보존`;
@@ -400,20 +408,22 @@ document.addEventListener('DOMContentLoaded', () => {
       quotaLabel = '개인 대상 (B2C)';
     }
 
-    const quotaBadgeClass = (isKona || isGlobalriLiteracy || isGallupReturnFarm)
+    const quotaBadgeClass = (isKmacKbpi || isKona || isGlobalriLiteracy || isGallupReturnFarm)
       ? 'b2c'
       : (isAssoc ? 'assoc' : 'b2b');
-    const quotaIcon = isGlobalriLiteracy
-      ? 'fa-book-open-reader'
-      : (isHrcEnergy
-        ? 'fa-building-circle-check'
-        : (isGallupReturnFarm
-          ? 'fa-tractor'
-          : (isKona
-            ? 'fa-user-graduate'
-            : (isAssoc
-              ? 'fa-sitemap'
-              : (isSmallBiz ? 'fa-building-user' : 'fa-store')))));
+    const quotaIcon = isKmacKbpi
+      ? 'fa-award'
+      : (isGlobalriLiteracy
+        ? 'fa-book-open-reader'
+        : (isHrcEnergy
+          ? 'fa-building-circle-check'
+          : (isGallupReturnFarm
+            ? 'fa-tractor'
+            : (isKona
+              ? 'fa-user-graduate'
+              : (isAssoc
+                ? 'fa-sitemap'
+                : (isSmallBiz ? 'fa-building-user' : 'fa-store'))))));
 
     const liveTask = getLiveTaskForCampaign(c.id) || c.liveTask || null;
     const isRunning = isCampaignLiveRunning(c);
@@ -434,10 +444,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const targetCount = isHrcEnergy
       ? (selCount || c.quotaConfig?.targetCount || dbCount)
-      : (c.quotaConfig?.targetCount || (isKona ? 103 : (isAssoc ? 8 : (isMetrixSeoul ? 163 : (isSmallBiz ? 54 : Math.max(dbCount, 1))))));
+      : (c.quotaConfig?.targetCount || (isKmacKbpi ? 150 : (isKona ? 103 : (isAssoc ? 8 : (isMetrixSeoul ? 163 : (isSmallBiz ? 54 : Math.max(dbCount, 1)))))));
 
     let quotaSummaryText = `${dbCount}개 점포 보유 / 목표 ${targetCount}개`;
-    if (isHrcEnergy) {
+    if (isKmacKbpi) {
+      quotaSummaryText = `완료 ${doneItemCount}명 / 전체 ${dbCount}명 (시트 실시간 연동)`;
+    } else if (isHrcEnergy) {
       quotaSummaryText = `선정 ${selCount}건 (완료 ${doneSelCount}건) / 전체 ${dbCount}건`;
     } else if (isGlobalriLiteracy) {
       quotaSummaryText = `완료 ${doneItemCount}명 / 전체 ${dbCount}명`;
@@ -1503,12 +1515,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const market = String(q.marketName || '').toLowerCase();
 
     if (
-      ['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'kona_youth'].includes(sType) ||
-      ['HRC_ENERGY_BUILDING', 'GLOBALRI_ADULT_LITERACY', 'GALLUP_RETURN_FARM', 'KONA_YOUTH'].includes(qType) ||
+      ['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'kona_youth', 'kmac_kbpi'].includes(sType) ||
+      ['HRC_ENERGY_BUILDING', 'GLOBALRI_ADULT_LITERACY', 'GALLUP_RETURN_FARM', 'KONA_YOUTH', 'KMAC_KBPI_2027'].includes(qType) ||
       fileName.includes('hrc_energy') ||
       fileName.includes('globalri') ||
       fileName.includes('gallup') ||
-      fileName.includes('kona')
+      fileName.includes('kona') ||
+      fileName.includes('kmac_kbpi')
     ) {
       return 'special';
     }
@@ -1654,23 +1667,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const isHrcEnergy = (q.type === 'HRC_ENERGY_BUILDING' || sType === 'hrc_energy' || String(q.fileName || '').includes('hrc_energy'));
     const isGlobalri = (q.type === 'GLOBALRI_ADULT_LITERACY' || sType === 'globalri_literacy' || String(q.fileName || '').includes('globalri'));
     const isGallup = (q.type === 'GALLUP_RETURN_FARM' || sType === 'gallup_return_farm' || String(q.fileName || '').includes('gallup'));
+    const isKmacKbpi = (q.type === 'KMAC_KBPI_2027' || sType === 'kmac_kbpi' || String(q.fileName || '').includes('kmac_kbpi'));
 
     const catMeta = getCategoryMeta(cat, sType);
     const compInfo = getQuotaCompletionInfo(q);
     const dateStr = formatShortDate(compInfo.isCompleted ? (compInfo.completedAt || q.createdAt) : q.createdAt);
-    const marketName = q.marketName || (isHrcEnergy ? '한국리서치 TAPI 건물표본' : (isGlobalri ? '글로벌리서치 성인문해 표본' : (isGallup ? '한국갤럽 귀농귀촌 표본' : (cat === 'smallbiz' ? '경기도 소상공인 패널' : (cat === 'assoc' ? '전통시장 상인회' : '일반 사업자')))));
+    const marketName = q.marketName || (isKmacKbpi ? 'KMA Research CAPI 표본' : (isHrcEnergy ? '한국리서치 TAPI 건물표본' : (isGlobalri ? '글로벌리서치 성인문해 표본' : (isGallup ? '한국갤럽 귀농귀촌 표본' : (cat === 'smallbiz' ? '경기도 소상공인 패널' : (cat === 'assoc' ? '전통시장 상인회' : '일반 사업자'))))));
     const isStratified = isQuotaStratified(q);
     const isExcelUpload = (q.requestParams?.samplingMode === 'excel_upload' || String(q.title || '').includes('엑셀업로드'));
 
     const modeBadgeText = isAssoc
       ? 'Kstat 상인회 슬롯'
-      : (isHrcEnergy
-        ? 'TAPI 건물 표본'
-        : (isGlobalri
-          ? 'GIFT 가구원 표본'
-          : (isGallup
-            ? 'G-CAII 귀농 표본'
-            : (isStratified ? '9대 업종 층화' : (isExcelUpload ? '엑셀 업로드' : '단순 수집')))));
+      : (isKmacKbpi
+        ? 'K-BPI 150명 표본'
+        : (isHrcEnergy
+          ? 'TAPI 건물 표본'
+          : (isGlobalri
+            ? 'GIFT 가구원 표본'
+            : (isGallup
+              ? 'G-CAII 귀농 표본'
+              : (isStratified ? '9대 업종 층화' : (isExcelUpload ? '엑셀 업로드' : '단순 수집'))))));
 
     const iconMap = {
       '★선정(우선)': '⭐', '대체(예비)': '🔄', '조사완료': '✅', '조사완료(99)': '✅', '대기(진행대상)': '⏳', '대기(미진행)': '⏳',

@@ -7287,3 +7287,242 @@ body.monitor-drawer-open .floating-monitor-launcher {
 }
 
 
+/* ==========================================================================
+   전 설문 공통 구분자별 분할 배치 패널 & K-BPI 전용 스타일
+   ========================================================================== */
+.seg-partition-panel {
+  border: 1.5px solid #dbeafe;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.seg-axis-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.seg-header-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.seg-axis-select {
+  height: 32px;
+  padding: 0 28px 0 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  min-width: 170px;
+  border-radius: 8px;
+}
+
+.seg-target-count-pill {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.seg-card-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.kbpi-segment-toolbar {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.kbpi-bar-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.kbpi-bar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kbpi-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kbpi-bar-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-right: 4px;
+}
+
+.kbpi-th-check {
+  width: 38px;
+}
+
+.kbpi-th-action {
+  width: 104px;
+}
+
+.kbpi-phone-tag {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.kbpi-phone-tag.is-mobile {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.kbpi-phone-tag.is-landline {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.kbpi-cat-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.kbpi-cat-exp-chip {
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  transition: all 0.14s ease;
+}
+
+.kbpi-cat-exp-chip:hover {
+  transform: translateY(-1px);
+}
+
+.kbpi-cat-exp-chip.is-yes {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
+
+.kbpi-cat-exp-chip.is-none {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.kbpi-cat-exp-chip.is-auto {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.kbpi-blueprint-wrap {
+  width: 100%;
+}
+
+.kbpi-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.kbpi-guide-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.kbpi-guide-card-wide {
+  grid-column: 1 / -1;
+}
+
+.kbpi-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.kbpi-card-head-between {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.kbpi-step-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.kbpi-step-pill.step-tunable {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.kbpi-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.kbpi-rule-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #334155;
+}
+
+.kbpi-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+  margin-top: 8px;
+}
+
+.kbpi-span-2 {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .kbpi-guide-grid,
+  .kbpi-controls-grid {
+    grid-template-columns: 1fr;
+  }
+}

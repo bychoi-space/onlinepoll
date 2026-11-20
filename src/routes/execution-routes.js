@@ -36,6 +36,17 @@ import {
   syncGyeonggiPanelAnswersToGoogleSheet
 } from '../utils/gyeonggi-panel-answer-excel.js';
 import {
+  KBPI_DEFAULT_URL,
+  runKmacKbpiSurvey
+} from '../engine/kmac-kbpi-runner.js';
+import {
+  KBPI_DEFAULT_SHEET_ID,
+  KBPI_DEFAULT_SHEET_URL,
+  pullKbpiSheetOverrides,
+  persistKbpiQuotaDatabase,
+  syncKbpiProgressToGoogleSheet
+} from '../utils/kmac-kbpi-sheet-sync.js';
+import {
   MAX_CONCURRENT_TASKS,
   getActiveTasksList,
   isCampaignTaskRunning,
@@ -199,8 +210,25 @@ export function registerExecutionRoutes({
     const isKonaCampaign = (campaign.surveyType === 'kona_youth');
     const isGlobalriLiteracyCampaign = (campaign.surveyType === 'globalri_literacy');
     const isGallupReturnFarmCampaign = (campaign.surveyType === 'gallup_return_farm');
+    const isKmacKbpiCampaign = (campaign.surveyType === 'kmac_kbpi');
+
+    if (isKmacKbpiCampaign) {
+      try {
+        const synced = await pullKbpiSheetOverrides({
+          quotaDatabase: quotaDb,
+          sheetId: KBPI_DEFAULT_SHEET_ID,
+          quotasDir
+        });
+        if (synced?.quotaDatabase?.length > 0) {
+          quotaDb.splice(0, quotaDb.length, ...synced.quotaDatabase);
+        }
+      } catch (pullWarn) {
+        logger.warn(`[K-BPI 파일럿 사전 시트 동기화 경고] ${pullWarn.message}`);
+      }
+    }
+
     let targetBiz = quotaDb.find(b => Number(b.index || b.seq) === Number(quotaIndex)) || quotaDb[Math.max(0, quotaIndex - 1)];
-    if ((isMetrixCampaign || isKonaCampaign || isGlobalriLiteracyCampaign || isGallupReturnFarmCampaign || isMetrixSeoulCampaign) && targetBiz && (targetBiz.isClosedBiz || targetBiz.quotaStatus === 'excluded' || targetBiz.quotaStatus === 'completed' || String(targetBiz.status || '').includes('완료') || (isMetrixCampaign && String(targetBiz.status || '').includes('98%')))) {
+    if ((isMetrixCampaign || isKonaCampaign || isGlobalriLiteracyCampaign || isGallupReturnFarmCampaign || isMetrixSeoulCampaign || isKmacKbpiCampaign) && targetBiz && (targetBiz.isClosedBiz || targetBiz.quotaStatus === 'excluded' || targetBiz.quotaStatus === 'completed' || String(targetBiz.status || '').includes('완료') || (isMetrixCampaign && String(targetBiz.status || '').includes('98%')))) {
       const firstReady = quotaDb.find(b => !b.isClosedBiz && b.quotaStatus !== 'excluded' && b.quotaStatus !== 'completed' && !String(b.status || '').includes('완료') && !(isMetrixCampaign && String(b.status || '').includes('98%')));
       if (firstReady) targetBiz = firstReady;
     }
@@ -208,7 +236,7 @@ export function registerExecutionRoutes({
       return res.status(400).json({ error: '실행 대상 쿼터를 찾을 수 없습니다.' });
     }
 
-    const targetUrl = targetBiz.surveyUrl || targetBiz.slotUrl || targetBiz.householdUrl || (isMetrixSeoulCampaign ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${targetBiz.resid}&fwid=S21401by41s3${targetBiz.accountKey || targetBiz.akey || '2010'}` : (isGallupReturnFarmCampaign ? GALLUP_20263603_DEFAULT_URL : (isKonaCampaign ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : (isGlobalriLiteracyCampaign ? 'https://gift.globalri.it/login' : ''))));
+    const targetUrl = targetBiz.surveyUrl || targetBiz.slotUrl || targetBiz.householdUrl || (isKmacKbpiCampaign ? KBPI_DEFAULT_URL : (isMetrixSeoulCampaign ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${targetBiz.resid}&fwid=S21401by41s3${targetBiz.accountKey || targetBiz.akey || '2010'}` : (isGallupReturnFarmCampaign ? GALLUP_20263603_DEFAULT_URL : (isKonaCampaign ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : (isGlobalriLiteracyCampaign ? 'https://gift.globalri.it/login' : '')))));
     if (!targetUrl) {
       return res.status(400).json({
         error: isMetrixCampaign
@@ -229,7 +257,7 @@ export function registerExecutionRoutes({
     targetBiz.quotaStatus = 'running';
     CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'running' });
     logger.runWithCampaignContext(campaign.id, () => {
-      logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상: "${targetBiz.companyName}" (${targetBiz.idx || targetBiz.bizNumber || ''}) (슬롯: ${targetBiz.slotIndex ? '#' + targetBiz.slotIndex : '단독'} · 가동 슬롯: ${getActiveTasksList().length}/${MAX_CONCURRENT_TASKS})`);
+      logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상: "${targetBiz.companyName}" (${targetBiz.uid || targetBiz.idx || targetBiz.bizNumber || ''}) (슬롯: ${targetBiz.slotIndex ? '#' + targetBiz.slotIndex : '단독'} · 가동 슬롯: ${getActiveTasksList().length}/${MAX_CONCURRENT_TASKS})`);
       logger.broadcast({
         type: 'QUOTA_UPDATED',
         campaignId: campaign.id,
@@ -239,7 +267,9 @@ export function registerExecutionRoutes({
 
     res.json({
       success: true,
-      message: `"${targetBiz.companyName}" 파일럿 시뮬레이션이 시작되었습니다. (제출 직전 안전 정지)`,
+      message: isKmacKbpiCampaign
+        ? `"${targetBiz.name || targetBiz.companyName}" K-BPI 파일럿 실행이 시작되었습니다. (문항 4 도달 시 안전 정지)`
+        : `"${targetBiz.companyName}" 파일럿 시뮬레이션이 시작되었습니다. (제출 직전 안전 정지)`,
       targetBiz
     });
 
@@ -252,9 +282,30 @@ export function registerExecutionRoutes({
         const isHrcEnergy = (campaign.surveyType === 'hrc_energy');
         const isGlobalriLiteracy = (campaign.surveyType === 'globalri_literacy');
         const isGallupReturnFarm = (campaign.surveyType === 'gallup_return_farm');
+        const isKmacKbpi = (campaign.surveyType === 'kmac_kbpi');
         let result;
 
-        if (isMetrixSeoul) {
+        if (isKmacKbpi) {
+          logger.info(`[K-BPI 파일럿 실행] 러너 가동: "${targetBiz.name || targetBiz.companyName}" (고유번호: ${targetBiz.uid}, ${targetBiz.region}/${targetBiz.gender}/${targetBiz.ageGroup})`);
+          const kbpiPol = campaign.kbpiPolicy || campaign.masterBaseline?.policy || policy || {};
+          result = await runKmacKbpiSurvey({
+            campaign,
+            slotData: targetBiz,
+            policy: kbpiPol,
+            quotaIndex: targetBiz.index || quotaIndex,
+            pilotMode: true,
+            safetyGuard: true,
+            onProgress: (info) => {
+              logger.info(`[K-BPI 파일럿 - ${info.step}] ${info.message}`);
+              logger.broadcast({
+                type: 'PILOT_PROGRESS',
+                campaignId: campaign.id,
+                quotaIndex: targetBiz.index,
+                ...info
+              });
+            }
+          });
+        } else if (isMetrixSeoul) {
           logger.info(`[서울시 소상공인 패널 파일럿 실행] 러너 가동: "${targetBiz.companyName}" (resid: ${targetBiz.resid}, 계정: ${targetBiz.accountKey || targetBiz.akey})`);
           const seoulPol = campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || policy || {};
           result = await runMetrixSeoulSurvey({
@@ -428,7 +479,29 @@ export function registerExecutionRoutes({
         }
 
         if (result.success) {
-          if (isMetrixSeoul) {
+          if (isKmacKbpi) {
+            targetBiz.quotaStatus = result.quotaStatus || (result.completed ? 'completed' : 'pilot_done');
+            targetBiz.status = result.statusLabel || (result.completed ? '완료' : '문항4 대기(파일럿)');
+            targetBiz.progress = result.progress || (result.completed ? '100%' : '4%');
+            if (Array.isArray(result.categoryConfigs)) {
+              targetBiz.categoryConfigs = result.categoryConfigs;
+            }
+            targetBiz.pilotAt = new Date().toISOString();
+            try {
+              persistKbpiQuotaDatabase({ quotaDatabase: quotaDb, quotasDir });
+              const kbpiPol = campaign.kbpiPolicy || campaign.masterBaseline?.policy || policy || {};
+              if (kbpiPol.autoSyncGoogleSheet !== false) {
+                syncKbpiProgressToGoogleSheet({
+                  quotaDatabase: quotaDb,
+                  sheetUrl: campaign.googleSheetUrl || KBPI_DEFAULT_SHEET_URL,
+                  quotasDir
+                }).catch(syncErr => logger.warn(`[K-BPI 구글시트 기록 경고] ${syncErr.message}`));
+              }
+            } catch (exErr) {
+              logger.warn(`[K-BPI 로컬 쿼터 저장 경고] ${exErr.message}`);
+            }
+            logger.success(`🎉 [K-BPI 파일럿 완료] "${targetBiz.name || targetBiz.companyName}" (${targetBiz.uid}) ${targetBiz.status} 달성 및 시트 동기화 큐 등록!`);
+          } else if (isMetrixSeoul) {
             if (result.alreadyCompleted) {
               targetBiz.quotaStatus = 'completed';
               targetBiz.status = '완료(100%)';
@@ -549,7 +622,7 @@ export function registerExecutionRoutes({
             targetBiz.capturedSteps = result.capturedSteps;
           }
 
-          if (!isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
+          if (!isKmacKbpi && !isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
             const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
             if (evalUrl) {
               logger.info(`[파일럿 2단계] "${targetBiz.marketName || targetBiz.companyName}" 상인회 조사원 평가 작성 자동 연계 시작...`);
@@ -575,7 +648,7 @@ export function registerExecutionRoutes({
                 if (evalResult.success) {
                   targetBiz.evalStatus = 'completed';
                   targetBiz.evalResults = evalResult.evalResults;
-                  logger.success(`🎉 [파일럿 2단계 완료] "${targetBiz.marketName || targetBiz.companyName}" 본 설문 + 조사원 평가 100% 동시 완료!`);
+                  logger.success(`🎉 [파일럿 2단계 완료] "${targetBiz.marketName || targetBiz.companyName}" 상인회 조사원 평가 작성 100% 완료!`);
                   await syncKstatSlotStatus({
                     pridSel: '2026070801',
                     idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
@@ -588,7 +661,7 @@ export function registerExecutionRoutes({
                 logger.warn(`[파일럿 평가 경고] 상인회 조사원 평가 연계 중 예외: ${evalErr.message}`);
               }
             }
-          } else if (!isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
+          } else if (!isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
             const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
             if (evalUrl) {
               logger.info(`[파일럿 2단계] "${targetBiz.companyName}" 조사원 평가항목 작성 자동 연계 시작...`);
@@ -629,7 +702,7 @@ export function registerExecutionRoutes({
             }
           }
 
-          if (!isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
+          if (!isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
             const targetPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
             await syncKstatSlotStatus({
               pridSel: targetPridSel,
@@ -721,7 +794,26 @@ export function registerExecutionRoutes({
     const isHrcEnergy = (campaign.surveyType === 'hrc_energy');
     const isGlobalriLiteracy = (campaign.surveyType === 'globalri_literacy');
     const isGallupReturnFarm = (campaign.surveyType === 'gallup_return_farm');
-    const effectivePolicy = isMetrixSeoul
+    const isKmacKbpi = (campaign.surveyType === 'kmac_kbpi');
+
+    if (isKmacKbpi) {
+      try {
+        const synced = await pullKbpiSheetOverrides({
+          quotaDatabase: quotaDb,
+          sheetId: KBPI_DEFAULT_SHEET_ID,
+          quotasDir
+        });
+        if (synced?.quotaDatabase?.length > 0) {
+          quotaDb.splice(0, quotaDb.length, ...synced.quotaDatabase);
+        }
+      } catch (pullWarn) {
+        logger.warn(`[K-BPI 배치 사전 시트 동기화 경고] ${pullWarn.message}`);
+      }
+    }
+
+    const effectivePolicy = isKmacKbpi
+      ? (campaign.kbpiPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
+      : (isMetrixSeoul
       ? (campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
       : (isGallupReturnFarm
         ? (campaign.gallupReturnFarmPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
@@ -731,7 +823,7 @@ export function registerExecutionRoutes({
             ? (campaign.hrcEnergyPolicy || policy || {})
             : (isKona
               ? (campaign.konaPolicy || policy || {})
-              : (isMetrix ? (campaign.metrixPolicy || policy || {}) : (isAssoc ? (campaign.assocPolicy || policy || {}) : policy))))));
+              : (isMetrix ? (campaign.metrixPolicy || policy || {}) : (isAssoc ? (campaign.assocPolicy || policy || {}) : policy)))))));
 
     const skipCompletedSlots = (effectivePolicy.skipCompletedSlots !== false);
     const skipSlotIndices = (effectivePolicy.skipSlotIndices || '')
@@ -758,7 +850,7 @@ export function registerExecutionRoutes({
       }
       if (idx < startIndex) return false;
       if (skipSlotIndices.includes(idx)) return false;
-      if ((isMetrix || isMetrixSeoul || isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm) && (b.uid || b.resid || b.memberUid || b.idx || b.id) && skipSlotUids.includes(String(b.memberUid || b.resid || b.uid || b.idx || b.id))) return false;
+      if ((isKmacKbpi || isMetrix || isMetrixSeoul || isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm) && (b.uid || b.resid || b.memberUid || b.idx || b.id) && skipSlotUids.includes(String(b.memberUid || b.resid || b.uid || b.idx || b.id))) return false;
       if (isHrcEnergy && effectivePolicy.onlySelectedByDefault !== false && b.selectionType && b.selectionType !== '선정') {
         return false;
       }
@@ -785,7 +877,7 @@ export function registerExecutionRoutes({
       return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다. (이미 완료되었거나 안전 대기 상태임)' });
     }
 
-    const unmapped = (isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
+    const unmapped = (isKmacKbpi || isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
     if (unmapped.length > 0) {
       return res.status(400).json({
         error: isMetrix
@@ -802,7 +894,7 @@ export function registerExecutionRoutes({
 
     res.json({
       success: true,
-      message: `잔여 쿼터 ${targets.length}건 배치 자동화가 시작되었습니다. (동시 실행 슬롯 ${getActiveTasksList().length}/${MAX_CONCURRENT_TASKS})`,
+      message: `선택 쿼터 ${targets.length}건 배치 자동화가 시작되었습니다. (동시 실행 슬롯 ${getActiveTasksList().length}/${MAX_CONCURRENT_TASKS})`,
       totalTargets: targets.length
     });
 
@@ -824,7 +916,7 @@ export function registerExecutionRoutes({
           };
 
           const biz = targets[i];
-          const bizUrl = biz.slotUrl || biz.surveyUrl || (isMetrixSeoul ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${biz.resid}&fwid=S21401by41s3${biz.accountKey || biz.akey || '2010'}` : (isGallupReturnFarm ? GALLUP_20263603_DEFAULT_URL : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${biz.uid}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''))));
+          const bizUrl = biz.slotUrl || biz.surveyUrl || (isKmacKbpi ? KBPI_DEFAULT_URL : (isMetrixSeoul ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${biz.resid}&fwid=S21401by41s3${biz.accountKey || biz.akey || '2010'}` : (isGallupReturnFarm ? GALLUP_20263603_DEFAULT_URL : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${biz.uid}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '')))));
           if (!bizUrl) {
             logger.error(`[배치 ${i + 1}/${targets.length}] "${biz.companyName}"에 할당된 설문 URL이 없습니다.`);
             biz.quotaStatus = 'error';
@@ -845,7 +937,27 @@ export function registerExecutionRoutes({
 
           let result;
           try {
-            if (isMetrixSeoul) {
+            if (isKmacKbpi) {
+              result = await runKmacKbpiSurvey({
+                campaign,
+                slotData: biz,
+                policy: effectivePolicy,
+                quotaIndex: biz.index || (i + startIndex),
+                pilotMode: false,
+                safetyGuard: Boolean(safetyGuard),
+                onProgress: (info) => {
+                  logger.info(`[K-BPI 배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
+                  logger.broadcast({
+                    type: 'BATCH_PROGRESS',
+                    campaignId: campaign.id,
+                    quotaIndex: biz.index || (i + startIndex),
+                    itemNumber: i + 1,
+                    totalItems: targets.length,
+                    ...info
+                  });
+                }
+              });
+            } else if (isMetrixSeoul) {
               result = await runMetrixSeoulSurvey({
                 campaign,
                 policy: effectivePolicy,
@@ -1083,7 +1195,28 @@ export function registerExecutionRoutes({
           }
 
           if (result?.success) {
-            if (isMetrixSeoul) {
+            if (isKmacKbpi) {
+              biz.quotaStatus = result.quotaStatus || (result.completed ? 'completed' : 'pilot_done');
+              biz.status = result.statusLabel || (result.completed ? '완료' : '검증대기(완료직전)');
+              biz.progress = result.progress || (result.completed ? '100%' : '98%');
+              if (Array.isArray(result.categoryConfigs)) {
+                biz.categoryConfigs = result.categoryConfigs;
+              }
+              biz.completedAt = new Date().toISOString();
+              try {
+                persistKbpiQuotaDatabase({ quotaDatabase: quotaDb, quotasDir });
+                if (effectivePolicy.autoSyncGoogleSheet !== false) {
+                  await syncKbpiProgressToGoogleSheet({
+                    quotaDatabase: quotaDb,
+                    sheetUrl: campaign.googleSheetUrl || KBPI_DEFAULT_SHEET_URL,
+                    quotasDir
+                  }).catch(syncErr => logger.warn(`[K-BPI 배치 구글시트 기록 경고] ${syncErr.message}`));
+                }
+              } catch (exErr) {
+                logger.warn(`[K-BPI 로컬 쿼터 저장 경고] ${exErr.message}`);
+              }
+              logger.success(`🎉 [K-BPI 배치 ${i + 1}/${targets.length} 완료] "${biz.name || biz.companyName}" (${biz.uid}, ${biz.region}/${biz.gender}/${biz.ageGroup}) ${biz.status} 달성!`);
+            } else if (isMetrixSeoul) {
               if (result.alreadyCompleted) {
                 biz.quotaStatus = 'completed';
                 biz.status = '완료(100%)';
@@ -1208,7 +1341,7 @@ export function registerExecutionRoutes({
               biz.capturedSteps = result.capturedSteps;
             }
 
-            if (!isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
+            if (!isKmacKbpi && !isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
               const evalUrl = biz.evalUrl || (biz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${biz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
               if (evalUrl) {
                 logger.info(`[배치 #${biz.index || (i + startIndex)} 2단계] "${biz.marketName || biz.companyName}" 상인회 조사원 평가 연계 시작...`);
@@ -1251,7 +1384,7 @@ export function registerExecutionRoutes({
               } else {
                 logger.success(`[상인회 배치 ${i + 1}/${targets.length} 완료] "${biz.marketName || biz.companyName}" 본 설문 완료!`);
               }
-            } else if (!isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
+            } else if (!isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
               const evalUrl = biz.evalUrl || (biz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${biz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
               if (evalUrl) {
                 logger.info(`[배치 #${biz.index || (i + startIndex)} 2단계] "${biz.companyName}" 조사원 평가 작성 연계 시작...`);
@@ -1296,7 +1429,7 @@ export function registerExecutionRoutes({
               }
             }
 
-            if (!isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
+            if (!isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
               const batchPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
               await syncKstatSlotStatus({
                 pridSel: batchPridSel,
@@ -1340,9 +1473,9 @@ export function registerExecutionRoutes({
               if (isMetrix && Array.isArray(result?.submittedAnswers) && result.submittedAnswers.length > 0) {
                 biz.submittedAnswers = result.submittedAnswers;
               }
-              logger.error(`[배치 ${i + 1}/${targets.length} 실패] "${biz.buildingName || biz.marketName || biz.companyName}": ${result?.error || '설문 실행 오류'}`);
-              if (isMetrix) {
-                const haltNotice = `🛑 [스킵 금지 · 배치 즉시 중단] "${biz.companyName}" (UID: ${biz.uid}) 진행 중 막힘이 발생하여 다음 대상으로 넘어가지 않고 배치를 즉시 중단했습니다. 사유: ${result?.error || '설문 진행 차단'}`;
+              logger.error(`[배치 ${i + 1}/${targets.length} 실패] "${biz.name || biz.buildingName || biz.marketName || biz.companyName}": ${result?.error || '설문 실행 오류'}`);
+              if (isMetrix || isKmacKbpi) {
+                const haltNotice = `🛑 [배치 즉시 중단] "${biz.name || biz.companyName}" (${biz.uid || '-'}) 진행 중 차단/오류가 발생하여 배치를 안전하게 중단했습니다. 사유: ${result?.error || '설문 진행 차단'}`;
                 haltedByBlock = true;
                 haltedReason = haltNotice;
                 logger.error(haltNotice);
@@ -1460,15 +1593,33 @@ export function registerExecutionRoutes({
     const isGlobalriLiteracy = (campaign.surveyType === 'globalri_literacy');
     const isGallupReturnFarm = (campaign.surveyType === 'gallup_return_farm');
     const isMetrixSeoul = (campaign.surveyType === 'metrix_seoul_panel');
-    const targetUrl = targetBiz.slotUrl || targetBiz.surveyUrl || targetBiz.householdUrl || (isMetrixSeoul ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${targetBiz.resid}&fwid=S21401by41s3${targetBiz.accountKey || targetBiz.akey || '2010'}` : (isGallupReturnFarm ? GALLUP_20263603_DEFAULT_URL : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${targetBiz.uid}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''))));
+    const isKmacKbpi = (campaign.surveyType === 'kmac_kbpi');
+
+    if (isKmacKbpi) {
+      try {
+        const synced = await pullKbpiSheetOverrides({
+          quotaDatabase: quotaDb,
+          sheetId: KBPI_DEFAULT_SHEET_ID,
+          quotasDir
+        });
+        if (synced?.quotaDatabase?.length > 0) {
+          quotaDb.splice(0, quotaDb.length, ...synced.quotaDatabase);
+        }
+      } catch (pullWarn) {
+        logger.warn(`[K-BPI 단건 사전 시트 동기화 경고] ${pullWarn.message}`);
+      }
+    }
+
+    const refreshedTarget = quotaDb.find(b => Number(b.index || b.seq) === Number(quotaIndex)) || targetBiz;
+    const targetUrl = refreshedTarget.slotUrl || refreshedTarget.surveyUrl || refreshedTarget.householdUrl || (isKmacKbpi ? KBPI_DEFAULT_URL : (isMetrixSeoul ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${refreshedTarget.resid}&fwid=S21401by41s3${refreshedTarget.accountKey || refreshedTarget.akey || '2010'}` : (isGallupReturnFarm ? GALLUP_20263603_DEFAULT_URL : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${refreshedTarget.uid}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '')))));
     if (!targetUrl) {
       return res.status(400).json({
-        error: `[${targetBiz.marketName || targetBiz.companyName}] 쿼터에 설문 URL이 매핑되지 않았습니다.`
+        error: `[${refreshedTarget.marketName || refreshedTarget.companyName}] 쿼터에 설문 URL이 매핑되지 않았습니다.`
       });
     }
 
     startCampaignTask(campaign, 'single', { current: 0, total: 1, percent: 0 });
-    targetBiz.quotaStatus = 'running';
+    refreshedTarget.quotaStatus = 'running';
     CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'running' });
     logger.broadcast({
       type: 'QUOTA_UPDATED',
@@ -1476,33 +1627,51 @@ export function registerExecutionRoutes({
       quotaDatabase: quotaDb
     });
 
-    const slotNotice = targetBiz.slotIndex ? ` [Kstat 슬롯 #${targetBiz.slotIndex} ${targetBiz.slotExtra || ''}]` : '';
-    logger.info(`[개별 쿼터 테스트] "${targetBiz.respondentName || targetBiz.buildingName || targetBiz.marketName || targetBiz.companyName}" (순번: #${targetBiz.index || quotaIndex})${slotNotice} 1건 실행 시작...`);
+    const slotNotice = refreshedTarget.slotIndex ? ` [Kstat 슬롯 #${refreshedTarget.slotIndex} ${refreshedTarget.slotExtra || ''}]` : '';
+    logger.info(`[개별 쿼터 테스트] "${refreshedTarget.name || refreshedTarget.respondentName || refreshedTarget.buildingName || refreshedTarget.marketName || refreshedTarget.companyName}" (순번: #${refreshedTarget.index || quotaIndex})${slotNotice} 1건 실행 시작...`);
 
     res.json({
       success: true,
-      message: `"${targetBiz.respondentName || targetBiz.buildingName || targetBiz.marketName || targetBiz.companyName}" 1건 실행이 시작되었습니다.`,
-      targetBiz
+      message: `"${refreshedTarget.name || refreshedTarget.respondentName || refreshedTarget.buildingName || refreshedTarget.marketName || refreshedTarget.companyName}" 1건 실행이 시작되었습니다.`,
+      targetBiz: refreshedTarget
     });
 
     logger.runWithCampaignContext(campaign.id, () => (async () => {
       try {
         const assocPol = campaign.assocPolicy || {};
-        const result = isMetrix
-          ? await runMetrixSurvey({
-              surveyUrl: targetUrl,
-              slotData: targetBiz,
-              policy: campaign.metrixPolicy || campaign.masterBaseline?.policy || {},
-              quotaIndex: targetBiz.index || quotaIndex,
-              pilotMode: true,
+        const kbpiSinglePilotMode = (req.body.pilotMode !== undefined) ? Boolean(req.body.pilotMode) : false;
+        const result = isKmacKbpi
+          ? await runKmacKbpiSurvey({
+              campaign,
+              slotData: refreshedTarget,
+              policy: campaign.kbpiPolicy || campaign.masterBaseline?.policy || {},
+              quotaIndex: refreshedTarget.index || quotaIndex,
+              pilotMode: kbpiSinglePilotMode,
               safetyGuard: (safetyGuard !== false),
-              haltOnBlock: true,
-              reportDir: path.join(reportsDir, campaign.id, `metrix_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || ''}`),
               onProgress: (info) => {
                 logger.broadcast({
                   type: 'PILOT_PROGRESS',
                   campaignId: campaign.id,
-                  quotaIndex: targetBiz.index,
+                  quotaIndex: refreshedTarget.index,
+                  ...info
+                });
+              }
+            })
+          : (isMetrix
+          ? await runMetrixSurvey({
+              surveyUrl: targetUrl,
+              slotData: refreshedTarget,
+              policy: campaign.metrixPolicy || campaign.masterBaseline?.policy || {},
+              quotaIndex: refreshedTarget.index || quotaIndex,
+              pilotMode: true,
+              safetyGuard: (safetyGuard !== false),
+              haltOnBlock: true,
+              reportDir: path.join(reportsDir, campaign.id, `metrix_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.uid || ''}`),
+              onProgress: (info) => {
+                logger.broadcast({
+                  type: 'PILOT_PROGRESS',
+                  campaignId: campaign.id,
+                  quotaIndex: refreshedTarget.index,
                   ...info
                 });
               }
@@ -1512,66 +1681,66 @@ export function registerExecutionRoutes({
               campaign,
               policy: campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || {},
               slotUrl: targetUrl,
-              slotData: targetBiz,
+              slotData: refreshedTarget,
               mode: 'pilot',
               onProgress: (info) => {
                 logger.broadcast({
                   type: 'PILOT_PROGRESS',
                   campaignId: campaign.id,
-                  quotaIndex: targetBiz.index,
+                  quotaIndex: refreshedTarget.index,
                   ...info
                 });
               }
             })
           : (isGallupReturnFarm
             ? await runGallupReturnFarmSurvey({
-                slotData: targetBiz,
+                slotData: refreshedTarget,
                 policy: campaign.gallupReturnFarmPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || {},
-                quotaIndex: targetBiz.index || quotaIndex,
+                quotaIndex: refreshedTarget.index || quotaIndex,
                 pilotMode: true,
                 safetyGuard: true,
-                reportDir: path.join(reportsDir, campaign.id, `gallup_item_${targetBiz.index || quotaIndex}_${targetBiz.id || targetBiz.uid || ''}`),
+                reportDir: path.join(reportsDir, campaign.id, `gallup_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.id || refreshedTarget.uid || ''}`),
                 onProgress: (info) => {
                   logger.broadcast({
                     type: 'PILOT_PROGRESS',
                     campaignId: campaign.id,
-                    quotaIndex: targetBiz.index,
+                    quotaIndex: refreshedTarget.index,
                     ...info
                   });
                 }
               })
             : (isGlobalriLiteracy
               ? await runGlobalriLiteracySurvey({
-                  slotData: targetBiz,
+                  slotData: refreshedTarget,
                   policy: campaign.globalriLiteracyPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || {},
-                  quotaIndex: targetBiz.index || quotaIndex,
+                  quotaIndex: refreshedTarget.index || quotaIndex,
                   pilotMode: safetyGuard,
                   safetyGuard,
-                  reportDir: path.join(reportsDir, campaign.id, `globalri_item_${targetBiz.index || quotaIndex}_${targetBiz.memberUid || targetBiz.uid || ''}`),
+                  reportDir: path.join(reportsDir, campaign.id, `globalri_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.memberUid || refreshedTarget.uid || ''}`),
                   onProgress: (info) => {
                     logger.broadcast({
                       type: 'PILOT_PROGRESS',
                       campaignId: campaign.id,
-                      quotaIndex: targetBiz.index,
+                      quotaIndex: refreshedTarget.index,
                       ...info
                     });
                   }
                 })
               : (isHrcEnergy
                 ? await runHrcEnergySurvey({
-                    slotData: targetBiz,
+                    slotData: refreshedTarget,
                     policy: campaign.hrcEnergyPolicy || {},
-                    loginId: targetBiz.surveyorId || campaign.loginId || '700275',
-                    loginPw: campaign.loginPw || targetBiz.surveyorId || campaign.loginId || '700275',
-                    quotaIndex: targetBiz.index || quotaIndex,
+                    loginId: refreshedTarget.surveyorId || campaign.loginId || '700275',
+                    loginPw: campaign.loginPw || refreshedTarget.surveyorId || campaign.loginId || '700275',
+                    quotaIndex: refreshedTarget.index || quotaIndex,
                     pilotMode: (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false,
                     safetyGuard: (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false,
-                    reportDir: path.join(reportsDir, campaign.id, `hrc_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || ''}`),
+                    reportDir: path.join(reportsDir, campaign.id, `hrc_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.uid || ''}`),
                     onProgress: (info) => {
                       logger.broadcast({
                         type: 'PILOT_PROGRESS',
                         campaignId: campaign.id,
-                        quotaIndex: targetBiz.index,
+                        quotaIndex: refreshedTarget.index,
                         ...info
                       });
                     }
@@ -1579,17 +1748,17 @@ export function registerExecutionRoutes({
                 : (isKona
                   ? await runKonaSurvey({
                       surveyUrl: targetUrl,
-                      slotData: targetBiz,
+                      slotData: refreshedTarget,
                       policy: campaign.konaPolicy || {},
-                      quotaIndex: targetBiz.index || quotaIndex,
+                      quotaIndex: refreshedTarget.index || quotaIndex,
                       pilotMode: safetyGuard,
                       safetyGuard,
-                      reportDir: path.join(reportsDir, campaign.id, `kona_item_${targetBiz.index || quotaIndex}_${targetBiz.idx || ''}`),
+                      reportDir: path.join(reportsDir, campaign.id, `kona_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.idx || ''}`),
                       onProgress: (info) => {
                         logger.broadcast({
                           type: 'PILOT_PROGRESS',
                           campaignId: campaign.id,
-                          quotaIndex: targetBiz.index,
+                          quotaIndex: refreshedTarget.index,
                           ...info
                         });
                       }
@@ -1597,27 +1766,27 @@ export function registerExecutionRoutes({
                   : (isAssoc
                     ? await runKstatAssocSurvey({
                         surveyUrl: targetUrl,
-                        assocData: targetBiz,
-                        quotaIndex: targetBiz.index || quotaIndex,
+                        assocData: refreshedTarget,
+                        quotaIndex: refreshedTarget.index || quotaIndex,
                         policy: assocPol,
-                        surveyorAccount: targetBiz.surveyorAccount || campaign.kstatLoginId || '가온이강윤',
+                        surveyorAccount: refreshedTarget.surveyorAccount || campaign.kstatLoginId || '가온이강윤',
                         preserveExistingInputs: (assocPol.preserveExistingInputs !== false),
                         pilotMode: true,
                         safetyGuard: Boolean(safetyGuard),
-                        reportDir: path.join(reportsDir, campaign.id, `assoc_item_${targetBiz.index || quotaIndex}`),
+                        reportDir: path.join(reportsDir, campaign.id, `assoc_item_${refreshedTarget.index || quotaIndex}`),
                         onProgress: (info) => {
                           logger.broadcast({
                             type: 'PILOT_PROGRESS',
                             campaignId: campaign.id,
-                            quotaIndex: targetBiz.index,
+                            quotaIndex: refreshedTarget.index,
                             ...info
                           });
                         }
                       })
                     : await runKstatSurvey({
                         surveyUrl: targetUrl,
-                        bizData: targetBiz,
-                        quotaIndex: targetBiz.index || quotaIndex,
+                        bizData: refreshedTarget,
+                        quotaIndex: refreshedTarget.index || quotaIndex,
                         guidelineConfig: {
                           ...(campaign.guidelineConfig || {}),
                           masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
@@ -1625,29 +1794,50 @@ export function registerExecutionRoutes({
                         policy: campaign.guidelineConfig?.policy || {},
                         pilotMode: true,
                         safetyGuard: Boolean(safetyGuard),
-                        reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`),
+                        reportDir: path.join(reportsDir, campaign.id, `item_${refreshedTarget.index || quotaIndex}`),
                         onProgress: (info) => {
                           logger.broadcast({
                             type: 'PILOT_PROGRESS',
                             campaignId: campaign.id,
-                            quotaIndex: targetBiz.index,
+                            quotaIndex: refreshedTarget.index,
                             ...info
                           });
                         }
-                      })))))));
+                      }))))))));
 
         if (result?.success) {
-          if (isMetrix) {
-            targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? '진행중(98%)' : 'completed';
-            targetBiz.status = (result.status === 'stopped_at_review') ? '진행중(98%)' : '완료';
-            if (result.phoneUpdated && result.updatedPhone) {
-              targetBiz.serverPhone = result.updatedPhone;
-              targetBiz.phone = result.updatedPhone;
-              targetBiz.phoneNeedsSync = false;
+          if (isKmacKbpi) {
+            refreshedTarget.quotaStatus = result.quotaStatus || (result.completed ? 'completed' : 'pilot_done');
+            refreshedTarget.status = result.statusLabel || (result.completed ? '완료' : '검증대기(완료직전)');
+            refreshedTarget.progress = result.progress || (result.completed ? '100%' : '98%');
+            if (Array.isArray(result.categoryConfigs)) {
+              refreshedTarget.categoryConfigs = result.categoryConfigs;
             }
-            targetBiz.pilotAt = new Date().toISOString();
+            refreshedTarget.completedAt = new Date().toISOString();
+            try {
+              persistKbpiQuotaDatabase({ quotaDatabase: quotaDb, quotasDir });
+              const kbpiPol = campaign.kbpiPolicy || campaign.masterBaseline?.policy || {};
+              if (kbpiPol.autoSyncGoogleSheet !== false) {
+                await syncKbpiProgressToGoogleSheet({
+                  quotaDatabase: quotaDb,
+                  sheetUrl: campaign.googleSheetUrl || KBPI_DEFAULT_SHEET_URL,
+                  quotasDir
+                }).catch(syncErr => logger.warn(`[K-BPI 단건 구글시트 기록 경고] ${syncErr.message}`));
+              }
+            } catch (exErr) {
+              logger.warn(`[K-BPI 로컬 쿼터 저장 경고] ${exErr.message}`);
+            }
+          } else if (isMetrix) {
+            refreshedTarget.quotaStatus = (result.status === 'stopped_at_review') ? '진행중(98%)' : 'completed';
+            refreshedTarget.status = (result.status === 'stopped_at_review') ? '진행중(98%)' : '완료';
+            if (result.phoneUpdated && result.updatedPhone) {
+              refreshedTarget.serverPhone = result.updatedPhone;
+              refreshedTarget.phone = result.updatedPhone;
+              refreshedTarget.phoneNeedsSync = false;
+            }
+            refreshedTarget.pilotAt = new Date().toISOString();
             if (Array.isArray(result.submittedAnswers) && result.submittedAnswers.length > 0) {
-              targetBiz.submittedAnswers = result.submittedAnswers;
+              refreshedTarget.submittedAnswers = result.submittedAnswers;
             }
             try {
               persistGyeonggiPanelQuotaDatabase({ quotaDatabase: quotaDb });
@@ -1662,19 +1852,19 @@ export function registerExecutionRoutes({
             }
           } else if (isMetrixSeoul) {
             if (result.alreadyCompleted) {
-              targetBiz.quotaStatus = 'completed';
-              targetBiz.status = '완료(100%)';
-              targetBiz.progressText = '완료(100%)';
-              targetBiz.progressPct = 100;
+              refreshedTarget.quotaStatus = 'completed';
+              refreshedTarget.status = '완료(100%)';
+              refreshedTarget.progressText = '완료(100%)';
+              refreshedTarget.progressPct = 100;
             } else {
-              targetBiz.quotaStatus = 'pilot_done';
-              targetBiz.status = '동의서대기(99%/Step115)';
-              targetBiz.progressText = '응답중(99%)';
-              targetBiz.progressPct = 99;
+              refreshedTarget.quotaStatus = 'pilot_done';
+              refreshedTarget.status = '동의서대기(99%/Step115)';
+              refreshedTarget.progressText = '응답중(99%)';
+              refreshedTarget.progressPct = 99;
             }
-            targetBiz.completedAt = new Date().toISOString();
+            refreshedTarget.completedAt = new Date().toISOString();
             if (result.submittedAnswers && Object.keys(result.submittedAnswers).length > 0) {
-              targetBiz.submittedAnswers = result.submittedAnswers;
+              refreshedTarget.submittedAnswers = result.submittedAnswers;
             }
             try {
               persistSeoulPanelQuotaDatabase({ quotaDatabase: quotaDb });
@@ -1688,29 +1878,29 @@ export function registerExecutionRoutes({
               logger.warn(`[서울시 소상공인 패널 답변 엑셀/구글시트 자동저장 경고] ${exErr.message}`);
             }
           } else if (isGallupReturnFarm) {
-            targetBiz.quotaStatus = 'pilot_done';
-            targetBiz.status = '완료직전 대기 (Page 118)';
-            targetBiz.serverStatus = '01';
-            targetBiz.lastVisitResult = '컨택성공';
-            targetBiz.visitCount = Math.max(1, Number(targetBiz.visitCount || 1));
-            targetBiz.progress = '99% (Page 118 완료직전)';
-            targetBiz.surveyCompleted = '대기';
+            refreshedTarget.quotaStatus = 'pilot_done';
+            refreshedTarget.status = '완료직전 대기 (Page 118)';
+            refreshedTarget.serverStatus = '01';
+            refreshedTarget.lastVisitResult = '컨택성공';
+            refreshedTarget.visitCount = Math.max(1, Number(refreshedTarget.visitCount || 1));
+            refreshedTarget.progress = '99% (Page 118 완료직전)';
+            refreshedTarget.surveyCompleted = '대기';
             if (Array.isArray(result.submittedAnswers) && result.submittedAnswers.length > 0) {
-              targetBiz.submittedAnswers = result.submittedAnswers;
+              refreshedTarget.submittedAnswers = result.submittedAnswers;
             }
           } else if (isGlobalriLiteracy) {
             const isPartCDone = (result.status === 'part_c_completed');
             const isStoppedReview = (result.status === 'stopped_at_review');
-            targetBiz.quotaStatus = (isPartCDone || isStoppedReview) ? 'pilot_done' : 'completed';
-            targetBiz.status = isPartCDone ? 'Part C 완료 (수기대기)' : (isStoppedReview ? '검증대기(F05_2)' : '완료');
-            targetBiz.memberStatus = targetBiz.status;
-            targetBiz.progress = isPartCDone ? `Part C 완료 (채점 ${result.gradeSummary?.partC || '완료'})` : (isStoppedReview ? '98% (제출직전)' : '100%');
-            targetBiz.surveyCompleted = (targetBiz.quotaStatus === 'completed') ? '완료' : '대기';
+            refreshedTarget.quotaStatus = (isPartCDone || isStoppedReview) ? 'pilot_done' : 'completed';
+            refreshedTarget.status = isPartCDone ? 'Part C 완료 (수기대기)' : (isStoppedReview ? '검증대기(F05_2)' : '완료');
+            refreshedTarget.memberStatus = refreshedTarget.status;
+            refreshedTarget.progress = isPartCDone ? `Part C 완료 (채점 ${result.gradeSummary?.partC || '완료'})` : (isStoppedReview ? '98% (제출직전)' : '100%');
+            refreshedTarget.surveyCompleted = (refreshedTarget.quotaStatus === 'completed') ? '완료' : '대기';
             if (Array.isArray(result.submittedAnswers) && result.submittedAnswers.length > 0) {
-              targetBiz.submittedAnswers = result.submittedAnswers;
+              refreshedTarget.submittedAnswers = result.submittedAnswers;
             }
             if (result.gradeSummary) {
-              targetBiz.gradeSummary = result.gradeSummary;
+              refreshedTarget.gradeSummary = result.gradeSummary;
             }
             try {
               persistGlobalriQuotaDatabase({ quotaDatabase: quotaDb });
@@ -1721,59 +1911,59 @@ export function registerExecutionRoutes({
               logger.warn(`[성인문해능력조사 답변 엑셀/구글시트 자동저장 경고] ${exErr.message}`);
             }
           } else if (isHrcEnergy) {
-            targetBiz.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
-            targetBiz.status = (result.status === 'stopped_at_review') ? '검증대기(91%)' : '완료';
-            targetBiz.progress = (result.status === 'stopped_at_review') ? '91%' : '100%';
-            targetBiz.surveyCompleted = (targetBiz.quotaStatus === 'completed') ? '완료' : '대기';
+            refreshedTarget.quotaStatus = (result.status === 'stopped_at_review') ? 'pilot_done' : 'completed';
+            refreshedTarget.status = (result.status === 'stopped_at_review') ? '검증대기(91%)' : '완료';
+            refreshedTarget.progress = (result.status === 'stopped_at_review') ? '91%' : '100%';
+            refreshedTarget.surveyCompleted = (refreshedTarget.quotaStatus === 'completed') ? '완료' : '대기';
             if (result.giftSignResult?.ok) {
-              targetBiz.giftSigned = true;
-              targetBiz.giftBrand = result.giftSignResult.giftBrand || '신세계';
-              targetBiz.giftValue = result.giftSignResult.giftValue || '5000';
-              targetBiz.giftSignerName = result.giftSignResult.signerName || targetBiz.contactName || '';
-              targetBiz.giftSignerPhone = result.giftSignResult.signerPhone || targetBiz.phone || '';
-              targetBiz.giftStyleLabel = result.giftSignResult.styleLabel || '';
+              refreshedTarget.giftSigned = true;
+              refreshedTarget.giftBrand = result.giftSignResult.giftBrand || '신세계';
+              refreshedTarget.giftValue = result.giftSignResult.giftValue || '5000';
+              refreshedTarget.giftSignerName = result.giftSignResult.signerName || refreshedTarget.contactName || '';
+              refreshedTarget.giftSignerPhone = result.giftSignResult.signerPhone || refreshedTarget.phone || '';
+              refreshedTarget.giftStyleLabel = result.giftSignResult.styleLabel || '';
             }
           } else {
-            targetBiz.quotaStatus = (!safetyGuard) ? 'completed' : 'pilot_done';
+            refreshedTarget.quotaStatus = (!safetyGuard) ? 'completed' : 'pilot_done';
             if (isKona) {
-              targetBiz.status = (!safetyGuard) ? '완료' : '검증완료(제출직전)';
-              targetBiz.surveyCompleted = (!safetyGuard) ? '완료' : '대기';
+              refreshedTarget.status = (!safetyGuard) ? '완료' : '검증완료(제출직전)';
+              refreshedTarget.surveyCompleted = (!safetyGuard) ? '완료' : '대기';
             }
           }
-          targetBiz.pilotAt = new Date().toISOString();
-          targetBiz.capturedSteps = result.capturedSteps;
-          logger.success(`[개별 쿼터 테스트 성공] "${targetBiz.respondentName || targetBiz.buildingName || targetBiz.marketName || targetBiz.companyName}" 완주 완료!`);
+          refreshedTarget.pilotAt = new Date().toISOString();
+          refreshedTarget.capturedSteps = result.capturedSteps;
+          logger.success(`[개별 쿼터 테스트 성공] "${refreshedTarget.name || refreshedTarget.respondentName || refreshedTarget.buildingName || refreshedTarget.marketName || refreshedTarget.companyName}" 완주 완료!`);
 
-          if (!isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
+          if (!isKmacKbpi && !isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
             if (!safetyGuard) {
-              const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
+              const evalUrl = refreshedTarget.evalUrl || (refreshedTarget.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${refreshedTarget.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
               if (evalUrl) {
                 try {
                   const evalResult = await runKstatAssocEvaluation({
                     evalUrl,
-                    assocData: targetBiz,
+                    assocData: refreshedTarget,
                     guidelineConfig: {
                       ...(campaign.guidelineConfig || {}),
                       assocPolicy: campaign.assocPolicy || campaign.guidelineConfig?.assocPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline
                     },
-                    reportDir: path.join(reportsDir, campaign.id, `assoc_item_${targetBiz.index || quotaIndex}`),
+                    reportDir: path.join(reportsDir, campaign.id, `assoc_item_${refreshedTarget.index || quotaIndex}`),
                     onProgress: (info) => {
                       logger.broadcast({
                         type: 'PILOT_PROGRESS',
                         campaignId: campaign.id,
-                        quotaIndex: targetBiz.index,
+                        quotaIndex: refreshedTarget.index,
                         ...info
                       });
                     }
                   });
                   if (evalResult?.success) {
-                    targetBiz.evalStatus = 'completed';
-                    targetBiz.evalResults = evalResult.evalResults;
+                    refreshedTarget.evalStatus = 'completed';
+                    refreshedTarget.evalResults = evalResult.evalResults;
                     await syncKstatSlotStatus({
                       pridSel: '2026070801',
-                      idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
-                      kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
-                      gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
+                      idSel: refreshedTarget.idSel || refreshedTarget.kstatMeta?.idSel,
+                      kid: refreshedTarget.kid || refreshedTarget.kstatMeta?.kid,
+                      gid: refreshedTarget.gid || refreshedTarget.kstatMeta?.gid || '0',
                       srt: 2
                     }).catch(err => logger.warn(`[실행 후처리 경고] ${err.message}`));
                   }
@@ -1782,27 +1972,27 @@ export function registerExecutionRoutes({
                 }
               }
             }
-          } else if (!isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) {
-            const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
+          } else if (!isKmacKbpi && !isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) {
+            const evalUrl = refreshedTarget.evalUrl || (refreshedTarget.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${refreshedTarget.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
             if (evalUrl) {
               try {
                 const evalResult = await runKstatEvaluation({
                   evalUrl,
-                  bizData: targetBiz,
+                  bizData: refreshedTarget,
                   guidelineConfig: {
                     ...(campaign.guidelineConfig || {}),
                     masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
                   },
-                  reportDir: path.join(reportsDir, campaign.id, `item_${targetBiz.index || quotaIndex}`)
+                  reportDir: path.join(reportsDir, campaign.id, `item_${refreshedTarget.index || quotaIndex}`)
                 });
                 if (evalResult?.success) {
-                  targetBiz.evalStatus = 'completed';
-                  targetBiz.evalResults = evalResult.evalResults;
+                  refreshedTarget.evalStatus = 'completed';
+                  refreshedTarget.evalResults = evalResult.evalResults;
                   await syncKstatSlotStatus({
                     pridSel: '2026070802',
-                    idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
-                    kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
-                    gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
+                    idSel: refreshedTarget.idSel || refreshedTarget.kstatMeta?.idSel,
+                    kid: refreshedTarget.kid || refreshedTarget.kstatMeta?.kid,
+                    gid: refreshedTarget.gid || refreshedTarget.kstatMeta?.gid || '0',
                     srt: 2
                   }).catch(err => logger.warn(`[실행 후처리 경고] ${err.message}`));
                 }
@@ -1812,25 +2002,25 @@ export function registerExecutionRoutes({
             }
           }
 
-          if (!isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) {
+          if (!isKmacKbpi && !isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) {
             const singlePridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
             await syncKstatSlotStatus({
               pridSel: singlePridSel,
-              idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
-              kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
-              gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
+              idSel: refreshedTarget.idSel || refreshedTarget.kstatMeta?.idSel,
+              kid: refreshedTarget.kid || refreshedTarget.kstatMeta?.kid,
+              gid: refreshedTarget.gid || refreshedTarget.kstatMeta?.gid || '0',
               srt: 1
             }).catch(err => logger.warn(`[실행 후처리 경고] ${err.message}`));
 
-            if (targetBiz.evalStatus === 'completed') {
-              const effLoginId = targetBiz.surveyorAccount || campaign.kstatLoginId || (isAssoc ? '가온박정순' : '가온김영옥');
+            if (refreshedTarget.evalStatus === 'completed') {
+              const effLoginId = refreshedTarget.surveyorAccount || campaign.kstatLoginId || (isAssoc ? '가온박정순' : '가온김영옥');
               const effLoginPw = campaign.kstatLoginPw || '1234';
               const progRes = await saveKstatSlotProgressStatus({
                 pridSel: singlePridSel,
-                idSel: targetBiz.idSel || targetBiz.kstatMeta?.idSel,
-                kid: targetBiz.kid || targetBiz.kstatMeta?.kid,
-                gid: targetBiz.gid || targetBiz.kstatMeta?.gid || '0',
-                ranId: targetBiz.ranId || targetBiz.ran_id,
+                idSel: refreshedTarget.idSel || refreshedTarget.kstatMeta?.idSel,
+                kid: refreshedTarget.kid || refreshedTarget.kstatMeta?.kid,
+                gid: refreshedTarget.gid || refreshedTarget.kstatMeta?.gid || '0',
+                ranId: refreshedTarget.ranId || refreshedTarget.ran_id,
                 loginId: effLoginId,
                 loginPw: effLoginPw
               }).catch(err => {
@@ -1838,17 +2028,17 @@ export function registerExecutionRoutes({
                 return { success: false };
               });
               if (progRes?.success) {
-                targetBiz.kstatProgressSaved = true;
+                refreshedTarget.kstatProgressSaved = true;
               }
             }
           }
         } else {
-          targetBiz.quotaStatus = 'error';
-          targetBiz.error = result?.error || '테스트 오류';
+          refreshedTarget.quotaStatus = 'error';
+          refreshedTarget.error = result?.error || '테스트 오류';
           if (isMetrix && Array.isArray(result?.submittedAnswers) && result.submittedAnswers.length > 0) {
-            targetBiz.submittedAnswers = result.submittedAnswers;
+            refreshedTarget.submittedAnswers = result.submittedAnswers;
           }
-          logger.error(`[개별 쿼터 테스트 실패] "${targetBiz.marketName || targetBiz.companyName}": ${result?.error || '테스트 오류'}`);
+          logger.error(`[개별 쿼터 테스트 실패] "${refreshedTarget.name || refreshedTarget.marketName || refreshedTarget.companyName}": ${result?.error || '테스트 오류'}`);
         }
 
         finishCampaignTask(campaign.id);
@@ -1860,7 +2050,7 @@ export function registerExecutionRoutes({
         });
       } catch (err) {
         finishCampaignTask(campaign.id);
-        targetBiz.quotaStatus = 'error';
+        refreshedTarget.quotaStatus = 'error';
         CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'ready' });
         logger.broadcast({
           type: 'QUOTA_UPDATED',

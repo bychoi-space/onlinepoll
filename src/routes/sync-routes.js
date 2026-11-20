@@ -30,6 +30,12 @@ import {
   verifyBizStatusViaHometax,
   METRIX_622_GOOGLE_SHEET_URL
 } from '../engine/metrix-slot-scraper.js';
+import {
+  KBPI_DEFAULT_SHEET_ID,
+  KBPI_DEFAULT_SHEET_URL,
+  pullKbpiSheetOverrides,
+  syncKbpiProgressToGoogleSheet
+} from '../utils/kmac-kbpi-sheet-sync.js';
 import { logger } from '../utils/logger.js';
 import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 
@@ -856,5 +862,56 @@ export function registerSyncRoutes({
       res.status(500).json({ success: false, error: err.message });
     }
   });
+
+  // [KMAC K-BPI] 구글 스프레드시트 2번 탭(5911000005645) 양방향 동기화 API (direction: 'pull' | 'push')
+  app.post('/api/campaigns/:id/sync-kbpi-sheet', async (req, res) => {
+    try {
+      const campaign = CampaignStore.getCampaignById(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+      }
+      const direction = String(req.body?.direction || 'pull').toLowerCase();
+
+      if (direction === 'push') {
+        const pushRes = await syncKbpiProgressToGoogleSheet({
+          quotaDatabase: campaign.quotaDatabase || [],
+          sheetUrl: campaign.googleSheetUrl || KBPI_DEFAULT_SHEET_URL,
+          quotasDir
+        });
+        if (!pushRes.success) {
+          return res.status(500).json({ error: `구글 시트 내보내기 실패: ${pushRes.error}` });
+        }
+        logger.success(`[K-BPI 구글시트 내보내기 완료] ${pushRes.syncedRows}명 진행상태 및 품목별 구입경험이 시트에 기록되었습니다.`);
+        return res.json({
+          success: true,
+          message: `구글 시트에 ${pushRes.syncedRows}명의 진행상태 및 품목·구입경험 내역을 기록했습니다.`,
+          quotaDatabase: campaign.quotaDatabase || []
+        });
+      }
+
+      const pullRes = await pullKbpiSheetOverrides({
+        quotaDatabase: campaign.quotaDatabase || [],
+        sheetId: KBPI_DEFAULT_SHEET_ID,
+        quotasDir
+      });
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: pullRes.quotaDatabase });
+      logger.broadcast({
+        type: 'QUOTA_UPDATED',
+        campaignId: campaign.id,
+        quotaDatabase: pullRes.quotaDatabase
+      });
+      logger.success(`[K-BPI 구글시트 불러오기 완료] 총 ${pullRes.totalCount}명 쿼터 점검 (변경 반영 ${pullRes.updatedCount}건)`);
+      return res.json({
+        success: true,
+        message: `구글 시트에서 최신 구입경험(있음/없음) 설정을 불러왔습니다. (총 ${pullRes.totalCount}명 · 변경 반영 ${pullRes.updatedCount}건)`,
+        updatedCount: pullRes.updatedCount,
+        quotaDatabase: pullRes.quotaDatabase
+      });
+    } catch (err) {
+      logger.error('[K-BPI 구글시트 동기화 오류]', err);
+      return res.status(500).json({ error: '구글 시트 동기화 실패: ' + err.message });
+    }
+  });
 }
+
 

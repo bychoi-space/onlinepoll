@@ -19,6 +19,8 @@ const filesToCheck = [
   'public/modules/blueprint-globalri.js',
   'public/modules/blueprint-gallup-hrc-kona.js',
   'public/modules/blueprint-kstat-store.js',
+  'public/modules/blueprint-kbpi.js',
+  'public/modules/quota-segment-filter.js',
   'public/modules/quota-table-renderers.js',
   'src/server.js',
   'src/config/env.js',
@@ -36,13 +38,16 @@ const filesToCheck = [
   'src/utils/chromium-launcher.js',
   'src/engine/metrix-runner.js',
   'src/engine/metrix-slot-scraper.js',
-  'src/utils/gyeonggi-panel-answer-excel.js'
+  'src/utils/gyeonggi-panel-answer-excel.js',
+  'src/engine/kmac-kbpi-runner.js',
+  'src/engine/kmac-kbpi-scraper.js',
+  'src/utils/kmac-kbpi-sheet-sync.js'
 ];
 
 for (const file of filesToCheck) {
   execSync(`node --check "${file}"`, { stdio: 'inherit' });
 }
-console.log(`✅ [1/3] 정적 구문 검사(node --check) ${filesToCheck.length}개 파일 100% 통과`);
+console.log(`✅ [1/4] 정적 구문 검사(node --check) ${filesToCheck.length}개 파일 100% 통과`);
 
 // 2. 모의 브라우저 DOM 환경 구성
 function makeEl(id = '') {
@@ -305,6 +310,104 @@ if (!tbody.innerHTML.includes('105036')) {
   throw new Error('Gallup quota table render failed');
 }
 
+// K-BPI 블루프린트 + 테이블 + 전 설문 공통 구분자 분할 패널 검증
+const kbpiMod = await import('../public/modules/blueprint-kbpi.js');
+const segMod = await import('../public/modules/quota-segment-filter.js');
+
+const kbpiPol = kbpiMod.renderKmacKbpiBlueprint(
+  { surveyType: 'kmac_kbpi', policy: {} },
+  {
+    blueprintStageGrid: container,
+    badgeMasterStatus: badgeEl,
+    btnSaveBaseline: saveBtnEl
+  }
+);
+if (
+  kbpiPol.pilotStopAtStep !== 'Q4' ||
+  !container.innerHTML.includes('편의점') ||
+  !container.innerHTML.includes('동네슈퍼') ||
+  !container.innerHTML.includes('인천광역시청')
+) {
+  throw new Error('K-BPI blueprint render failed');
+}
+
+const sampleKbpiDb = [
+  {
+    index: 1,
+    seq: 1,
+    finalId: '24',
+    uid: '1_1_1_1_1',
+    region: '서울',
+    gpsLabel: '서울 노원구청',
+    latitude: 37.65421,
+    longitude: 127.05681,
+    gender: '남',
+    ageGroup: '10대',
+    age: 18,
+    name: '김도윤',
+    phone: '010-1234-5678',
+    categoryConfigs: [
+      { slot: 1, categoryName: '생수', purchaseExp: '있음' },
+      { slot: 2, categoryName: '소주', purchaseExp: '없음' }
+    ],
+    quotaStatus: 'ready'
+  },
+  {
+    index: 101,
+    seq: 101,
+    finalId: '124',
+    uid: '2_2_3_1_1',
+    region: '인천',
+    gpsLabel: '인천광역시청',
+    latitude: 37.4563,
+    longitude: 126.7052,
+    gender: '여',
+    ageGroup: '30대',
+    age: 34,
+    name: '이서연',
+    phone: '02-345-6789',
+    categoryConfigs: [],
+    quotaStatus: 'ready'
+  }
+];
+
+const kbpiTbody = makeEl('quota-table-body');
+quotaRenderers.renderKmacKbpiQuotaTable({
+  db: sampleKbpiDb,
+  quotaTableBody: kbpiTbody,
+  checkedKbpiSeqs: new Set([1]),
+  activeAxisId: 'gender_age',
+  selectedSegments: new Set(['남 · 10대']),
+  onReRender: () => {},
+  onSelectionChange: () => {},
+  onTriggerBatchRun: () => {}
+});
+if (
+  !kbpiTbody.innerHTML.includes('김도윤') ||
+  !kbpiTbody.innerHTML.includes('소주: 없음') ||
+  kbpiTbody.innerHTML.includes('이서연')
+) {
+  throw new Error('K-BPI segmented quota table filter/render failed');
+}
+
+const segPanelEl = makeEl('universal-step3-segment-panel');
+segMod.renderUniversalStep3SegmentPanel({
+  panelEl: segPanelEl,
+  db: sampleKbpiDb,
+  surveyType: 'kmac_kbpi',
+  activeAxisId: 'gender_age',
+  selectedSegments: new Set(['남 · 10대']),
+  checkedSeqs: new Set([1]),
+  isRunning: false
+});
+if (
+  !segPanelEl.innerHTML.includes('쿼터 구분자별 분할 선택') ||
+  !segPanelEl.innerHTML.includes('남 · 10대') ||
+  !segPanelEl.innerHTML.includes('여 · 30대')
+) {
+  throw new Error('Universal STEP 3 segment panel render failed');
+}
+
 // survey-detail.js 메인 컨트롤러 임포트 및 초기화 실행
 await import('../public/survey-detail.js');
 await new Promise((r) => setTimeout(r, 80));
@@ -316,12 +419,65 @@ if (!elements['detail-campaign-title']?.textContent.includes('제5차 성인문�
   throw new Error(`Expected campaign title to load, got: ${elements['detail-campaign-title']?.textContent}`);
 }
 
-console.log('✅ [2/3] 프론트엔드 7대 분리 모듈 + survey-detail.js 모의 DOM 렌더링 검증 통과');
+console.log('✅ [2/4] 프론트엔드 9대 분리 모듈 + survey-detail.js 모의 DOM 렌더링 검증 통과');
 
 // 백엔드 분리 모듈 임포트 검증
 const seedersMod = await import('../src/config/campaign-seeders.js');
 const quotaRoutesMod = await import('../src/routes/quota-routes.js');
-if (typeof seedersMod.seedInitialCampaigns !== 'function' || typeof quotaRoutesMod.registerQuotaRoutes !== 'function') {
+const kbpiRunnerMod = await import('../src/engine/kmac-kbpi-runner.js');
+const kbpiSyncMod = await import('../src/utils/kmac-kbpi-sheet-sync.js');
+if (
+  typeof seedersMod.seedInitialCampaigns !== 'function' ||
+  typeof quotaRoutesMod.registerQuotaRoutes !== 'function' ||
+  typeof kbpiRunnerMod.runKmacKbpiSurvey !== 'function' ||
+  typeof kbpiSyncMod.computeKbpiGps !== 'function'
+) {
   throw new Error('Backend module export verification failed');
 }
-console.log('✅ [3/3] 백엔드 분리 모듈(campaign-seeders.js, quota-routes.js) Export 검증 통과');
+console.log('✅ [3/4] 백엔드 분리 모듈 및 K-BPI 러너/시트동기화 Export 검증 통과');
+
+// K-BPI 점수 생성기 정합성 검증 (300회 반복: 44444 일렬응답 금지, 평균 반올림 일치, 구입경험='없음' 시 3-11 4·5번 절대 금지)
+for (let iter = 0; iter < 300; iter++) {
+  const yesScores = kbpiRunnerMod.generateKbpiMatrixScores({ hasPurchaseExp: true });
+  const noScores = kbpiRunnerMod.generateKbpiMatrixScores({ hasPurchaseExp: false });
+  if (new Set(yesScores.itemScores).size < 2 || new Set(noScores.itemScores).size < 2) {
+    throw new Error('Straight-lining detected in K-BPI Q3 1~9 scores!');
+  }
+  const expectedYes10 = Math.round(yesScores.itemScores.reduce((a, b) => a + b, 0) / 9);
+  const expectedNo10 = Math.round(noScores.itemScores.reduce((a, b) => a + b, 0) / 9);
+  if (yesScores.overallSatisfaction !== expectedYes10 || noScores.overallSatisfaction !== expectedNo10) {
+    throw new Error('Q3-10 rounded mean mismatch!');
+  }
+  if (noScores.attitudeChoice >= 4 || noScores.attitudeChoice < 1) {
+    throw new Error(`Q3-11 purchaseExp='없음' rule violated: attitudeChoice=${noScores.attitudeChoice}`);
+  }
+  if (yesScores.overallSatisfaction >= 4 && yesScores.attitudeChoice < 4) {
+    throw new Error(`Q3-11 high satisfaction rule violated: overall=${yesScores.overallSatisfaction}, attitudeChoice=${yesScores.attitudeChoice}`);
+  }
+}
+const explicitNone = kbpiRunnerMod.decideCategoryPurchaseExp({
+  categoryName: '생수',
+  categorySlotIdx: 1,
+  categoryConfigs: [{ slot: 1, categoryName: '생수', purchaseExp: '없음' }],
+  respondentAge: 35,
+  policy: { purchaseYesRate: 100 },
+  rng: () => 0.1
+});
+const teenAlcohol = kbpiRunnerMod.decideCategoryPurchaseExp({
+  categoryName: '소주',
+  categorySlotIdx: 2,
+  categoryConfigs: [],
+  respondentAge: 17,
+  policy: { purchaseYesRate: 100, teenAutoNoneUnfitCategories: true },
+  rng: () => 0.1
+});
+if (explicitNone !== '없음' || teenAlcohol !== '없음') {
+  throw new Error(`decideCategoryPurchaseExp failed: explicitNone=${explicitNone}, teenAlcohol=${teenAlcohol}`);
+}
+const seoulGps1 = kbpiSyncMod.computeKbpiGps('서울', '1_1_1_1_1');
+const incheonGps1 = kbpiSyncMod.computeKbpiGps('인천', '2_1_1_1_1');
+if (Math.abs(seoulGps1.latitude - 37.654192) > 0.001 || Math.abs(incheonGps1.latitude - 37.456256) > 0.001) {
+  throw new Error('K-BPI GPS micro-jitter out of 50~80m bounds!');
+}
+console.log('✅ [4/4] K-BPI 매트릭스 정합성(300회 시뮬레이션) · 구입경험 없음 제약 · 서울/인천 GPS 미세분산 검증 100% 통과');
+
