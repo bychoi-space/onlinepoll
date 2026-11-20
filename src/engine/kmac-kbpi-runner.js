@@ -394,7 +394,8 @@ async function findAndStartRespondentSlot({
         }
 
         if (matchedBtn) {
-          matchedBtn.setAttribute('data-kbpi-target-start', '1');
+          const clickEl = matchedBtn.closest('button, a') || matchedBtn;
+          clickEl.setAttribute('data-kbpi-target-start', '1');
           return {
             found: true,
             hasBtn: true,
@@ -424,15 +425,64 @@ async function findAndStartRespondentSlot({
     }
     const targetBtn = listPage.locator('[data-kbpi-target-start="1"]').first();
     if ((await targetBtn.count()) > 0) {
+      const beforePagesCount = context.pages().length;
+      const beforeUrl = listPage.url();
       emitLog(`[슬롯 매칭 완료] "${matchInfo.rowText}" ➔ [${matchInfo.btnText}] 클릭!`);
-      const popupPromise = context.waitForEvent('page', { timeout: 7500 }).catch(() => null);
       await targetBtn.click();
-      const popupPage = await popupPromise;
-      if (popupPage) {
-        await popupPage.waitForLoadState('domcontentloaded').catch(err => emitLog(`설문창 로드 경고: ${err.message}`, 'warn'));
-        return { alreadyCompleted: false, page: popupPage };
+
+      // [시작] 클릭 후: 1) 새 탭 팝업, 2) 모달 확인창("확인/조사시작/예"), 3) 현재 탭 URL/iframe 전환까지 최대 10초 추적
+      for (let waitStep = 0; waitStep < 20; waitStep++) {
+        await listPage.waitForTimeout(500);
+        const currentPages = context.pages();
+        if (currentPages.length > beforePagesCount) {
+          const popupPage = currentPages[currentPages.length - 1];
+          await popupPage.waitForLoadState('domcontentloaded').catch(err => emitLog(`설문창 로드 경고: ${err.message}`, 'warn'));
+          emitLog(`[설문 새 탭 감지] URL: ${popupPage.url()}`);
+          return { alreadyCompleted: false, page: popupPage };
+        }
+
+        if (listPage.url() !== beforeUrl) {
+          emitLog(`[설문 동일 탭 이동 감지] URL: ${listPage.url()}`);
+          return { alreadyCompleted: false, page: listPage };
+        }
+
+        // 만약 CAPI 리스트 위에 시작 확인 모달("조사를 시작하시겠습니까? [확인/시작]")이 뜬 경우 자동 승인 클릭
+        const modalClicked = await listPage.evaluate(() => {
+          const modals = Array.from(
+            document.querySelectorAll('[role="dialog"], .modal, .swal2-container, .ant-modal, .el-message-box, .layer-popup, .popup')
+          ).filter(m => m.offsetParent !== null);
+          for (const modal of modals) {
+            const confirmBtn = Array.from(modal.querySelectorAll('button, a, input[type="button"], span'))
+              .find(b => {
+                const t = (b.innerText || b.value || '').trim();
+                return b.offsetParent !== null && /^(확인|예|시작|조사\s*시작|시작하기|진행)$/.test(t);
+              });
+            if (confirmBtn) {
+              confirmBtn.click();
+              return (confirmBtn.innerText || confirmBtn.value || '').trim();
+            }
+          }
+          return '';
+        }).catch(() => '');
+
+        if (modalClicked) {
+          emitLog(`[시작 확인 모달 승인] "${modalClicked}" 클릭`);
+          continue;
+        }
+
+        // 동일 URL 내에서 설문 화면(GP1 / 응답자 확인 / SQ1 / iframe)으로 DOM이 교체되었는지 확인
+        const inPageSurveyLoaded = await listPage.evaluate(() => {
+          const txt = (document.body?.innerText || '');
+          if (/GP1|응답자\s*확인|연령\s*\(\s*만\s*\)|\bSQ\s*1\b/i.test(txt)) return true;
+          if (!/실사코드/.test(txt) && !/최종\s*id/i.test(txt)) return true;
+          return document.querySelectorAll('iframe').length > 0;
+        }).catch(() => false);
+
+        if (inPageSurveyLoaded) {
+          return { alreadyCompleted: false, page: listPage };
+        }
       }
-      await listPage.waitForTimeout(2000);
+
       return { alreadyCompleted: false, page: listPage };
     }
     return null;
@@ -559,11 +609,44 @@ async function findAndStartRespondentSlot({
 }
 
 /**
+ * 설문이 메인 문서가 아닌 iframe 내부에서 렌더링되는 경우 해당 Frame을 반환
+ */
+async function resolveActiveSurveyFrame(page) {
+  const frames = page.frames();
+  if (frames.length <= 1) return page;
+  for (const frame of frames) {
+    if (frame === page.mainFrame()) continue;
+    const hasSurveyDom = await frame.evaluate(() => {
+      const txt = (document.body?.innerText || '').trim();
+      return txt.length > 15 && (/GP1|응답자\s*확인|다음|브랜드|\bSQ\s*1\b/i.test(txt) || document.querySelectorAll('input, select, button').length > 0);
+    }).catch(() => false);
+    if (hasSurveyDom) return frame;
+  }
+  return page;
+}
+
+/**
  * 현재 설문 화면의 단계 유형과 출제 산업군명(예: '생수', '음식물처리기')을 정밀 분류
  */
-async function classifyCurrentScreen(page) {
-  return page.evaluate(() => {
+async function classifyCurrentScreen(target) {
+  return target.evaluate(() => {
     const bodyText = (document.body?.innerText || '').trim();
+    const buttonTexts = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"], a'))
+      .filter(el => el.offsetParent !== null)
+      .map(el => (el.innerText || el.value || '').replace(/\s+/g, ' ').trim())
+      .filter(t => t && t.length <= 24)
+      .slice(0, 10);
+
+    // 아직 CAPI 슬롯 리스트 화면에 머물러 있는 경우 명시적 분류
+    if (/실사코드/.test(bodyText) && /최종\s*id/i.test(bodyText) && /조사지역/.test(bodyText)) {
+      return {
+        screenType: 'CAPI_LIST_PENDING',
+        categoryName: '',
+        progressPct: null,
+        buttonTexts,
+        bodySnippet: bodyText.replace(/\s+/g, ' ').slice(0, 220)
+      };
+    }
 
     // 산업군명 추출: ‘생수 브랜드’에 대한 내용입니다. 또는 지금부터 【생수】 브랜드에 대한 질문입니다.
     let categoryName = '';
@@ -582,73 +665,78 @@ async function classifyCurrentScreen(page) {
     // 설문 완료 화면 감지
     if (/설문이\s*종료|조사가\s*완료|응답해\s*주셔서\s*감사|수고하셨습니다/.test(bodyText) &&
         document.querySelectorAll('input, select, textarea').length === 0) {
-      return { screenType: 'COMPLETED', categoryName, progressPct, bodySnippet: bodyText.slice(0, 200) };
+      return { screenType: 'COMPLETED', categoryName, progressPct, buttonTexts, bodySnippet: bodyText.slice(0, 200) };
     }
 
     // 1) GP1 위치 확인
     if (/GP1/.test(bodyText) && /현재\s*위치를\s*확인/.test(bodyText)) {
-      return { screenType: 'GP1', categoryName, progressPct };
+      return { screenType: 'GP1', categoryName, progressPct, buttonTexts };
     }
 
     // 2) 응답자 신상정보 등록 (이름 / 성별 / 연령(만) / 휴대폰 / 전화번호 + 응답자 확인)
     if (/응답자\s*확인/.test(bodyText) && /연령\s*\(\s*만\s*\)/.test(bodyText)) {
-      return { screenType: 'PROFILE', categoryName, progressPct };
+      return { screenType: 'PROFILE', categoryName, progressPct, buttonTexts };
     }
 
-    // 3) SQ1 스크리닝
-    if (/\bSQ1\b/i.test(bodyText) || (/다음\s*업종|종사하는\s*가족|시장조사|광고대행사/.test(bodyText) && !categoryName)) {
-      return { screenType: 'SQ1', categoryName, progressPct };
+    // 3) SQ1 스크리닝 (비산업군 화면에서 SQ1 또는 '모두 없다' 보기 출현 시)
+    if (!categoryName && (/\bSQ\s*1\b/i.test(bodyText) || /모두\s*없다/.test(bodyText) || /다음\s*업종|종사하는\s*가족|시장조사|광고대행사/.test(bodyText))) {
+      return { screenType: 'SQ1', categoryName, progressPct, buttonTexts };
     }
 
     // 4) 문항 1 (1-1, 1-2, 1-3, 1-4 비보조 인지도)
     if (/1-1/.test(bodyText) && /가장\s*먼저\s*생각나는\s*브랜드/.test(bodyText)) {
-      return { screenType: 'Q1_UNAIDED', categoryName, progressPct };
+      return { screenType: 'Q1_UNAIDED', categoryName, progressPct, buttonTexts };
     }
 
     // 5) 문항 2 (보조 인지도 체크박스)
     if (/알고\s*계시는\s*브랜드를\s*모두/.test(bodyText)) {
-      return { screenType: 'Q2_AIDED', categoryName, progressPct };
+      return { screenType: 'Q2_AIDED', categoryName, progressPct, buttonTexts };
     }
 
     // 6) 문항 3 (1점~5점 평가 매트릭스 + 11~13번)
     if (/1점\s*~\s*5점으로\s*평가/.test(bodyText) || /전반적으로\s*만족한다/.test(bodyText)) {
-      return { screenType: 'Q3_MATRIX', categoryName, progressPct };
+      return { screenType: 'Q3_MATRIX', categoryName, progressPct, buttonTexts };
     }
 
     // 7) 문항 4-1 (구입 채널 경로 주관식)
     if (/4-1/.test(bodyText) || /어느\s*채널\s*\(\s*경로\s*\)\s*을?\s*통해서\s*구입/.test(bodyText)) {
-      return { screenType: 'Q4_1_CHANNEL', categoryName, progressPct };
+      return { screenType: 'Q4_1_CHANNEL', categoryName, progressPct, buttonTexts };
     }
 
     // 8) 문항 4 (가장 최근에 구입/이용한 브랜드)
     if (/가장\s*최근에\s*구입\/이용한\s*적이\s*있는\s*브랜드/.test(bodyText)) {
-      return { screenType: 'Q4_RECENT_BRAND', categoryName, progressPct };
+      return { screenType: 'Q4_RECENT_BRAND', categoryName, progressPct, buttonTexts };
     }
 
-    // 좌측 문항 번호 배지 탐색 (5, 6, 7, 8 또는 DQ)
-    const badgeTexts = Array.from(document.querySelectorAll('div, span, th, td, strong'))
-      .map(el => (el.innerText || '').trim())
-      .filter(t => /^(5|6|7|8|DQ\d*|배경\d*)$/i.test(t));
-    const firstBadge = badgeTexts[0] || '';
+    // 9) 산업군(categoryName)이 명시된 본 설문 문항(5, 6, 7, 8)만 배지 번호로 판별!
+    //    (categoryName이 없는 인트로/리스트/SQ 화면의 숫자 '5' 등이 Q5로 오분류되는 현상 원천 차단)
+    let firstBadge = '';
+    if (categoryName) {
+      const badgeTexts = Array.from(document.querySelectorAll('div, span, th, td, strong'))
+        .filter(el => el.children.length === 0 && el.offsetParent !== null)
+        .map(el => (el.innerText || '').trim())
+        .filter(t => /^(5|6|7|8)$/.test(t));
+      firstBadge = badgeTexts[0] || '';
 
-    if (firstBadge === '5' || (/주\s*구입|가장\s*선호|주로\s*이용|가장\s*자주/.test(bodyText) && categoryName)) {
-      return { screenType: 'Q5_SAME_AS_Q4', categoryName, progressPct };
-    }
-    if (firstBadge === '6' || (categoryName && document.querySelectorAll('input[type="radio"]').length === 2 && /예/.test(bodyText) && /아니오/.test(bodyText))) {
-      return { screenType: 'Q6_YES_NO', categoryName, progressPct };
-    }
-    if (firstBadge === '7' || /1\s*순위/.test(bodyText) && /2\s*순위/.test(bodyText)) {
-      return { screenType: 'Q7_RANK_1_2', categoryName, progressPct };
-    }
-    if (firstBadge === '8') {
-      return { screenType: 'Q8_MULTI_2', categoryName, progressPct };
+      if (firstBadge === '5' || /주\s*구입|가장\s*선호|주로\s*이용|가장\s*자주/.test(bodyText)) {
+        return { screenType: 'Q5_SAME_AS_Q4', categoryName, progressPct, buttonTexts };
+      }
+      if (firstBadge === '6' || (document.querySelectorAll('input[type="radio"]').length === 2 && /예/.test(bodyText) && /아니오/.test(bodyText))) {
+        return { screenType: 'Q6_YES_NO', categoryName, progressPct, buttonTexts };
+      }
+      if (firstBadge === '7' || (/1\s*순위/.test(bodyText) && /2\s*순위/.test(bodyText))) {
+        return { screenType: 'Q7_RANK_1_2', categoryName, progressPct, buttonTexts };
+      }
+      if (firstBadge === '8') {
+        return { screenType: 'Q8_MULTI_2', categoryName, progressPct, buttonTexts };
+      }
     }
 
     // 최종 제출 버튼 여부 판별
     const hasFinalBtn = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"], a'))
       .some(el => /조사\s*완료|설문\s*완료|최종\s*제출|완료하기/.test((el.innerText || el.value || '').trim()));
     if (hasFinalBtn) {
-      return { screenType: 'FINAL_SUBMIT_GATE', categoryName, progressPct, bodySnippet: bodyText.slice(0, 200) };
+      return { screenType: 'FINAL_SUBMIT_GATE', categoryName, progressPct, buttonTexts, bodySnippet: bodyText.slice(0, 200) };
     }
 
     return {
@@ -656,22 +744,31 @@ async function classifyCurrentScreen(page) {
       categoryName,
       progressPct,
       badge: firstBadge,
-      bodySnippet: bodyText.slice(0, 240)
+      buttonTexts,
+      bodySnippet: bodyText.replace(/\s+/g, ' ').slice(0, 240)
     };
   });
 }
 
-async function clickNextButton(page) {
-  const clicked = await page.evaluate(() => {
-    const candidates = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"], a'));
-    const nextBtn = candidates.find(el => {
-      const txt = (el.innerText || el.value || '').trim();
-      const visible = el.offsetParent !== null;
-      return visible && !el.disabled && /^(다음|다음으로|응답자\s*확인|확인|저장\s*후\s*다음)$/.test(txt);
+async function clickNextButton(target) {
+  const clicked = await target.evaluate(() => {
+    const nextRegex = /^(다음|다음으로|다음\s*단계|응답자\s*확인|확인|저장\s*후\s*다음|설문\s*시작|조사\s*시작|시작하기|동의|동의합니다|동의\s*후\s*시작)$/;
+    const primaryCandidates = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"], a'));
+    const primaryBtn = primaryCandidates.find(el => {
+      const txt = (el.innerText || el.value || '').replace(/\s+/g, ' ').trim();
+      return el.offsetParent !== null && !el.disabled && nextRegex.test(txt);
     });
-    if (nextBtn) {
-      nextBtn.click();
-      return (nextBtn.innerText || nextBtn.value || '').trim();
+    if (primaryBtn) {
+      primaryBtn.click();
+      return (primaryBtn.innerText || primaryBtn.value || '').trim();
+    }
+    const fallbackBtn = Array.from(document.querySelectorAll('div, span')).find(el => {
+      const txt = (el.innerText || '').trim();
+      return el.offsetParent !== null && el.children.length === 0 && nextRegex.test(txt);
+    });
+    if (fallbackBtn) {
+      fallbackBtn.click();
+      return (fallbackBtn.innerText || '').trim();
     }
     return '';
   });
@@ -813,7 +910,7 @@ export async function runKmacKbpiSurvey({
       };
     }
 
-    const surveyPage = slotEntry.page;
+    let surveyPage = slotEntry.page;
     await surveyPage.waitForTimeout(1500);
 
     // 산업군별 런타임 상태 추적
@@ -876,16 +973,48 @@ export async function runKmacKbpiSurvey({
 
     for (let stepIter = 0; stepIter < 260; stepIter++) {
       await surveyPage.waitForTimeout(750);
-      const info = await classifyCurrentScreen(surveyPage);
+
+      // 지연 팝업 탭이 새로 열렸다면 최신 설문 탭으로 자동 전환
+      const allOpenPages = context.pages().filter(p => p.url() && p.url() !== 'about:blank');
+      if (allOpenPages.length > 0 && allOpenPages[allOpenPages.length - 1] !== surveyPage) {
+        surveyPage = allOpenPages[allOpenPages.length - 1];
+      }
+
+      const activeTarget = await resolveActiveSurveyFrame(surveyPage);
+      const info = await classifyCurrentScreen(activeTarget);
       const sig = `${info.screenType}|${info.categoryName}|${info.progressPct}`;
       if (sig === lastSignature) {
         sameScreenStuckCount++;
         if (sameScreenStuckCount >= 5) {
-          throw new Error(`동일 화면 반복 정체 감지 (${sig}) — 최근 알림: ${alertHistory.slice(-2).join(' / ') || '없음'}`);
+          throw new Error(
+            `동일 화면 반복 정체 감지 (${sig}) | URL=${surveyPage.url()} | 버튼=[${(info.buttonTexts || []).join(', ')}] | 요약="${(info.bodySnippet || '').slice(0, 140)}" — 최근 알림: ${alertHistory.slice(-2).join(' / ') || '없음'}`
+          );
         }
       } else {
         sameScreenStuckCount = 0;
         lastSignature = sig;
+        emitLog(
+          `[화면 진입] ${info.screenType}${info.categoryName ? ` (${info.categoryName})` : ''} | 진행률=${info.progressPct ?? '-'}% | 버튼=[${(info.buttonTexts || []).join(', ')}]`,
+          'info',
+          'STEP'
+        );
+      }
+
+      if (info.screenType === 'CAPI_LIST_PENDING') {
+        const retryAction = await activeTarget.evaluate(() => {
+          const marked = document.querySelector('[data-kbpi-target-start="1"]');
+          if (marked) {
+            const href = marked.getAttribute('href') || marked.closest('a')?.getAttribute('href') || '';
+            const onclick = marked.getAttribute('onclick') || '';
+            marked.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+            if (typeof marked.click === 'function') marked.click();
+            return { retried: true, tag: marked.tagName, href, onclick };
+          }
+          return { retried: false };
+        }).catch(err => ({ retried: false, err: err.message }));
+        emitLog(`[CAPI 리스트 대기 재시도] ${JSON.stringify(retryAction)} | URL=${surveyPage.url()}`, 'warn', 'SLOT_RETRY');
+        await surveyPage.waitForTimeout(1200);
+        continue;
       }
 
       if (info.screenType === 'COMPLETED') {
@@ -904,23 +1033,23 @@ export async function runKmacKbpiSurvey({
       // [GP1] 현재 위치 확인
       if (info.screenType === 'GP1') {
         emitLog(`[GP1 위치 확인] ${gps.baseLabel} 기준 GPS(${gps.latitude}, ${gps.longitude}) 주입 및 [위치 확인] 클릭...`, 'info', 'GP1');
-        const locBtn = surveyPage.locator('button:has-text("위치 확인"), a:has-text("위치 확인"), input[value*="위치 확인"], :text-is("위치 확인")').first();
+        const locBtn = activeTarget.locator('button:has-text("위치 확인"), a:has-text("위치 확인"), input[value*="위치 확인"], :text-is("위치 확인")').first();
         if ((await locBtn.count()) > 0) {
           await locBtn.click();
           for (let gWait = 0; gWait < 12; gWait++) {
             await surveyPage.waitForTimeout(400);
-            const hasCoords = await surveyPage.evaluate(() => /위도\s*:\s*3\d\./.test(document.body?.innerText || ''));
+            const hasCoords = await activeTarget.evaluate(() => /위도\s*:\s*3\d\./.test(document.body?.innerText || ''));
             if (hasCoords) break;
           }
         }
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
       // [신상정보 등록] 이름 / 성별 / 연령(만) / 휴대폰 또는 전화번호
       if (info.screenType === 'PROFILE') {
         emitLog(`[신상정보 입력] 이름=${respondentName}, 성별=${gender}, 만=${age}세, 연락처=${phone} (${phone.startsWith('010') ? '휴대폰' : '일반전화'})`, 'info', 'PROFILE');
-        await surveyPage.evaluate(({ rName, rGender, rAge, rPhone }) => {
+        await activeTarget.evaluate(({ rName, rGender, rAge, rPhone }) => {
           const triggerControl = (el, val) => {
             if (!el || el.disabled) return;
             if (el.tagName === 'SELECT') {
@@ -994,49 +1123,58 @@ export async function runKmacKbpiSurvey({
         }, { rName: respondentName, rGender: gender, rAge: age, rPhone: phone });
 
         await surveyPage.waitForTimeout(500);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
-      // [SQ1] 스크리닝 -> 모두 없다
+      // [SQ1] 스크리닝 -> 모두 없다 (단일 체크박스 재클릭 해제 방지)
       if (info.screenType === 'SQ1') {
         emitLog('[SQ1 스크리닝] "모두 없다" 선택...', 'info', 'SQ1');
-        await surveyPage.evaluate(() => {
-          const allRadiosAndChecks = Array.from(document.querySelectorAll('input[type="radio"], input[type="checkbox"]'));
-          // 행별 '없다/아니오' 라디오가 여러 개인 경우와 단일 '모두 없다' 버튼 모두 대응
-          const noneLabels = Array.from(document.querySelectorAll('label, td, div, span')).filter(el => {
-            const t = (el.innerText || '').trim();
-            return /^(모두\s*없다|해당\s*없음|해당사항\s*없음|없음|없다|아니오)$/.test(t);
-          });
-          for (const lb of noneLabels) {
-            const inp = lb.querySelector('input') ||
-              document.getElementById(lb.getAttribute('for') || '') ||
-              lb.previousElementSibling;
-            if (inp && (inp.type === 'radio' || inp.type === 'checkbox')) {
+        await activeTarget.evaluate(() => {
+          const inputs = Array.from(document.querySelectorAll('input[type="checkbox"], input[type="radio"]'))
+            .filter(inp => !inp.disabled);
+          let matchedAny = false;
+
+          // 1순위: '모두 없다' / '해당 없음' 단일 배타 옵션 탐색
+          for (const inp of inputs) {
+            const labelTxt = (inp.closest('label, li, tr, td, div')?.innerText || '').trim();
+            if (/모두\s*없다|해당\s*없음|해당사항\s*없음|^없음$/.test(labelTxt)) {
               if (!inp.checked) inp.click();
               inp.checked = true;
               inp.dispatchEvent(new Event('change', { bubbles: true }));
-            } else {
-              lb.click();
+              matchedAny = true;
             }
           }
-          // 만약 아직 선택 안 된 라디오 그룹이 남아있다면 마지막 보기(보통 '없다/해당없음') 선택
-          const byName = new Map();
-          for (const r of allRadiosAndChecks.filter(x => x.type === 'radio' && !x.disabled)) {
-            if (!byName.has(r.name)) byName.set(r.name, []);
-            byName.get(r.name).push(r);
+
+          // 2순위: 행별 라디오 그룹('있다/없다' 또는 '예/아니오')인 경우 각 그룹의 '없다/아니오'(또는 마지막 보기) 선택
+          const radioGroups = new Map();
+          for (const r of inputs.filter(x => x.type === 'radio')) {
+            if (!radioGroups.has(r.name)) radioGroups.set(r.name, []);
+            radioGroups.get(r.name).push(r);
           }
-          for (const group of byName.values()) {
-            if (!group.some(x => x.checked) && group.length > 0) {
-              const lastOpt = group[group.length - 1];
-              lastOpt.click();
-              lastOpt.checked = true;
-              lastOpt.dispatchEvent(new Event('change', { bubbles: true }));
+          for (const grp of radioGroups.values()) {
+            if (grp.some(x => x.checked)) continue;
+            const noneRadio = grp.find(x => /없다|없음|아니오/.test((x.closest('label, li, tr, td, div')?.innerText || '').trim()))
+              || grp[grp.length - 1];
+            if (noneRadio) {
+              noneRadio.click();
+              noneRadio.checked = true;
+              noneRadio.dispatchEvent(new Event('change', { bubbles: true }));
+              matchedAny = true;
             }
+          }
+
+          // 3순위: 커스텀 버튼형 보기인 경우
+          if (!matchedAny) {
+            const leafNone = Array.from(document.querySelectorAll('label, button, span, div')).find(el => {
+              const t = (el.innerText || '').trim();
+              return el.offsetParent !== null && el.children.length === 0 && /^(모두\s*없다|해당\s*없음)$/.test(t);
+            });
+            if (leafNone) leafNone.click();
           }
         });
         await surveyPage.waitForTimeout(450);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
@@ -1046,7 +1184,7 @@ export async function runKmacKbpiSurvey({
         const fill4th = (rng() * 100) < Number(policy.unaided4thBrandRate ?? 35) && catState.unaidedBrands.length >= 4;
         emitLog(`[${catState.categoryName} - 문항 1] 1-1="${catState.unaidedBrands[0]}", 1-2="${catState.unaidedBrands[1]}", 1-3="${catState.unaidedBrands[2]}", 1-4="${fill4th ? catState.unaidedBrands[3] : '없음'}"`, 'info', 'Q1');
 
-        await surveyPage.evaluate(({ brands, use4th }) => {
+        await activeTarget.evaluate(({ brands, use4th }) => {
           const triggerVal = (el, val) => {
             if (!el || el.disabled) return;
             el.focus();
@@ -1082,7 +1220,7 @@ export async function runKmacKbpiSurvey({
         }, { brands: catState.unaidedBrands, use4th: fill4th });
 
         await surveyPage.waitForTimeout(550);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
@@ -1093,7 +1231,7 @@ export async function runKmacKbpiSurvey({
         const extraMax = Math.max(extraMin, Number(policy.aidedExtraMax ?? 4));
         const extraTargetCount = extraMin + Math.floor(rng() * (extraMax - extraMin + 1));
 
-        const q2Result = await surveyPage.evaluate(({ unaidedList, addCount, randSeed }) => {
+        const q2Result = await activeTarget.evaluate(({ unaidedList, addCount, randSeed }) => {
           const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
           const allOfficialLabels = [];
           const uncheckedNormal = [];
@@ -1148,7 +1286,7 @@ export async function runKmacKbpiSurvey({
         emitLog(`[${catState.categoryName} - 문항 2] 보조인지도 추가 선택(${q2Result.pickedExtra.length}개): [${q2Result.pickedExtra.join(', ')}]`, 'info', 'Q2');
 
         await surveyPage.waitForTimeout(500);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
@@ -1174,7 +1312,7 @@ export async function runKmacKbpiSurvey({
           });
         }
 
-        const matrixApplied = await surveyPage.evaluate(({ plans }) => {
+        const matrixApplied = await activeTarget.evaluate(({ plans }) => {
           const triggerInput = (el, val) => {
             if (!el || el.disabled) return;
             el.focus();
@@ -1269,7 +1407,7 @@ export async function runKmacKbpiSurvey({
         );
 
         await surveyPage.waitForTimeout(600);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
@@ -1295,7 +1433,7 @@ export async function runKmacKbpiSurvey({
           };
         }
 
-        const pickedQ4 = await surveyPage.evaluate(({ targetBrand, isNone }) => {
+        const pickedQ4 = await activeTarget.evaluate(({ targetBrand, isNone }) => {
           const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
           let chosen = null;
           if (isNone) {
@@ -1328,7 +1466,7 @@ export async function runKmacKbpiSurvey({
         emitLog(`[${catState.categoryName} - 문항 4] 최근 구입 브랜드 = "${pickedQ4 || catState.q4SelectedBrand}"`, 'info', 'Q4');
 
         await surveyPage.waitForTimeout(450);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
@@ -1336,7 +1474,7 @@ export async function runKmacKbpiSurvey({
       if (info.screenType === 'Q4_1_CHANNEL') {
         const catState = await getOrInitCategoryState(info.categoryName);
         emitLog(`[${catState.categoryName} - 문항 4-1] 구입 채널 = "${catState.selectedChannel}"`, 'info', 'Q4-1');
-        await surveyPage.evaluate(({ channelText }) => {
+        await activeTarget.evaluate(({ channelText }) => {
           const inp = Array.from(document.querySelectorAll('input[type="text"], textarea, input:not([type])'))
             .find(el => el.offsetParent !== null && !el.disabled && !el.readOnly);
           if (inp) {
@@ -1349,14 +1487,14 @@ export async function runKmacKbpiSurvey({
         }, { channelText: catState.selectedChannel });
 
         await surveyPage.waitForTimeout(450);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
       // [문항 5] 문항 4 응답과 동일 선택
       if (info.screenType === 'Q5_SAME_AS_Q4') {
         const catState = await getOrInitCategoryState(info.categoryName);
-        const pickedQ5 = await surveyPage.evaluate(({ sameBrand, isNone }) => {
+        const pickedQ5 = await activeTarget.evaluate(({ sameBrand, isNone }) => {
           const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
           let chosen = null;
           if (isNone) {
@@ -1381,7 +1519,7 @@ export async function runKmacKbpiSurvey({
         emitLog(`[${catState.categoryName} - 문항 5] 문항 4 동일 응답 = "${pickedQ5}"`, 'info', 'Q5');
 
         await surveyPage.waitForTimeout(450);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
@@ -1390,7 +1528,7 @@ export async function runKmacKbpiSurvey({
         const catState = await getOrInitCategoryState(info.categoryName);
         const chooseNo = (rng() * 100) < Number(policy.q6NoRate ?? 80);
         const targetLabel = chooseNo ? '아니오' : '예';
-        await surveyPage.evaluate(({ want }) => {
+        await activeTarget.evaluate(({ want }) => {
           const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
           const chosen = radios.find(r => (r.closest('label, li, tr, div')?.innerText || '').trim().includes(want))
             || (want === '아니오' ? radios[1] : radios[0]);
@@ -1404,7 +1542,7 @@ export async function runKmacKbpiSurvey({
         // 만약 '예' 선택 시 하위 텍스트 입력창이 활성화되면 자연스러운 단답 채움
         if (!chooseNo) {
           await surveyPage.waitForTimeout(350);
-          await surveyPage.evaluate(({ fallbackBrand }) => {
+          await activeTarget.evaluate(({ fallbackBrand }) => {
             const extraInputs = Array.from(document.querySelectorAll('input[type="text"], textarea'))
               .filter(el => el.offsetParent !== null && !el.disabled && !el.value);
             for (const inp of extraInputs) {
@@ -1417,14 +1555,14 @@ export async function runKmacKbpiSurvey({
 
         emitLog(`[${catState.categoryName} - 문항 6] "${targetLabel}" 선택`, 'info', 'Q6');
         await surveyPage.waitForTimeout(450);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
       // [문항 7] 1순위 · 2순위 랜덤 선택 ('기타' 클릭 절대 금지!)
       if (info.screenType === 'Q7_RANK_1_2') {
         const catState = await getOrInitCategoryState(info.categoryName);
-        const rankInfo = await surveyPage.evaluate(({ seedNum }) => {
+        const rankInfo = await activeTarget.evaluate(({ seedNum }) => {
           const isForbiddenLabel = (txt) => /기타|없음|모름/.test(txt);
 
           // 케이스 A: 1순위/2순위 드롭다운(<select>) 형태
@@ -1491,14 +1629,14 @@ export async function runKmacKbpiSurvey({
 
         emitLog(`[${catState.categoryName} - 문항 7] 1순위="${rankInfo.r1}", 2순위="${rankInfo.r2}" (기타 배제 완료)`, 'info', 'Q7');
         await surveyPage.waitForTimeout(450);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
       // [문항 8] 랜덤 2개 복수 선택 ('기타'/'없음' 제외)
       if (info.screenType === 'Q8_MULTI_2') {
         const catState = await getOrInitCategoryState(info.categoryName);
-        const picked2 = await surveyPage.evaluate(({ seedNum }) => {
+        const picked2 = await activeTarget.evaluate(({ seedNum }) => {
           const validCbs = Array.from(document.querySelectorAll('input[type="checkbox"]')).filter(cb => {
             const txt = (cb.closest('label, li, tr, td, div')?.innerText || '').trim();
             return !cb.disabled && !cb.checked && txt && !/기타|없음|모름/.test(txt);
@@ -1523,7 +1661,7 @@ export async function runKmacKbpiSurvey({
 
         emitLog(`[${catState.categoryName} - 문항 8] 랜덤 2개 선택 = [${picked2.join(', ')}]`, 'info', 'Q8');
         await surveyPage.waitForTimeout(450);
-        await clickNextButton(surveyPage);
+        await clickNextButton(activeTarget);
         continue;
       }
 
@@ -1550,7 +1688,7 @@ export async function runKmacKbpiSurvey({
 
       // [배경변인(DQ) 또는 일반 미분류 스텝] 연령/성별 정합 안전 응답
       emitLog(`[일반/배경 문항 처리] 진행률=${info.progressPct ?? '-'}% (${info.badge || 'DQ'})`, 'info', 'DQ');
-      await surveyPage.evaluate(({ rAge, seedNum }) => {
+      await activeTarget.evaluate(({ rAge, seedNum }) => {
         const isForbidden = (txt) => /기타|모름|거절/.test(txt);
 
         // 라디오 그룹 미선택 시 정합 선택 (10대 만 17~18세: 재학/미혼 우선)
@@ -1588,7 +1726,7 @@ export async function runKmacKbpiSurvey({
       }, { rAge: age, seedNum: Math.floor(rng() * 1000) });
 
       await surveyPage.waitForTimeout(450);
-      const clickedBtn = await clickNextButton(surveyPage);
+      const clickedBtn = await clickNextButton(activeTarget);
       if (!clickedBtn && stopAtStep === 'FINAL_GATE') {
         return {
           success: true,
