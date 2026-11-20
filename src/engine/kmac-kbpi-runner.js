@@ -708,73 +708,79 @@ async function classifyCurrentScreen(target) {
     // 진행률 퍼센트 추출
     const pctMatch = bodyText.match(/(\d{1,3})\s*%/);
     const progressPct = pctMatch ? Number(pctMatch[1]) : null;
+    const bodySnippet = bodyText.replace(/\s+/g, ' ').slice(0, 220);
+    const qTypeEl = document.querySelector('[question-type]');
+    const domMeta = `qType=${qTypeEl?.getAttribute('question-type') || '-'},grade=${document.querySelectorAll('.s-gradeclick').length},sel=${document.querySelectorAll('select').length},rad=${document.querySelectorAll('input[type="radio"]').length},cb=${document.querySelectorAll('input[type="checkbox"]').length},txt=${document.querySelectorAll('input[type="text"],input[type="number"],textarea').length}`;
 
     // 설문 완료 화면 감지
     if (/설문이\s*종료|조사가\s*완료|응답해\s*주셔서\s*감사|참여해\s*주셔서\s*대단히\s*감사|수고하셨습니다/.test(bodyText) &&
         document.querySelectorAll('input:not([type="hidden"]), select, textarea').length === 0) {
-      return { screenType: 'COMPLETED', categoryName, progressPct, buttonTexts, bodySnippet: bodyText.slice(0, 200) };
+      return { screenType: 'COMPLETED', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 1) GP1 위치 확인
     if (/GP1/.test(bodyText) && /현재\s*위치를\s*확인/.test(bodyText)) {
-      return { screenType: 'GP1', categoryName, progressPct, buttonTexts };
+      return { screenType: 'GP1', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 2) 응답자 신상정보 등록 (이름 / 성별 / 연령(만) / 휴대폰 / 전화번호 + 응답자 확인)
     if (/응답자\s*확인/.test(bodyText) && /연령\s*\(\s*만\s*\)/.test(bodyText)) {
-      return { screenType: 'PROFILE', categoryName, progressPct, buttonTexts };
+      return { screenType: 'PROFILE', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 3) SQ1 스크리닝 (비산업군 화면에서 SQ1 또는 '모두 없다' 보기 출현 시)
     if (!categoryName && (/\bSQ\s*1\b/i.test(bodyText) || /모두\s*없다/.test(bodyText) || /다음\s*업종|종사하는\s*가족|시장조사|광고대행사/.test(bodyText))) {
-      return { screenType: 'SQ1', categoryName, progressPct, buttonTexts };
+      return { screenType: 'SQ1', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 4) 문항 1 (1-1, 1-2, 1-3, 1-4 비보조 인지도)
     if (/1-1/.test(bodyText) && /가장\s*먼저\s*생각나는\s*브랜드/.test(bodyText)) {
-      return { screenType: 'Q1_UNAIDED', categoryName, progressPct, buttonTexts };
+      return { screenType: 'Q1_UNAIDED', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 5) 문항 2 (보조 인지도 체크박스)
     if (/알고\s*계시는\s*브랜드를\s*모두/.test(bodyText)) {
-      return { screenType: 'Q2_AIDED', categoryName, progressPct, buttonTexts };
+      return { screenType: 'Q2_AIDED', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 6) 문항 3 (1점~5점 평가 매트릭스 + 11~13번)
     if (/1점\s*~\s*5점으로\s*평가/.test(bodyText) || /전반적으로\s*만족한다/.test(bodyText)) {
-      return { screenType: 'Q3_MATRIX', categoryName, progressPct, buttonTexts };
+      return { screenType: 'Q3_MATRIX', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 7) 문항 4-1 (구입 채널 경로 주관식)
-    if (/4-1/.test(bodyText) || /어느\s*채널\s*\(\s*경로\s*\)\s*을?\s*통해서\s*구입/.test(bodyText)) {
-      return { screenType: 'Q4_1_CHANNEL', categoryName, progressPct, buttonTexts };
+    if (/\b4-1\b/.test(bodyText) || /어느\s*채널\s*\(\s*경로\s*\)\s*을?\s*통해서/.test(bodyText)) {
+      return { screenType: 'Q4_1_CHANNEL', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
-    // 8) 문항 4 (가장 최근에 구입/이용한 브랜드)
-    if (/가장\s*최근에\s*구입\/이용한\s*적이\s*있는\s*브랜드/.test(bodyText)) {
-      return { screenType: 'Q4_RECENT_BRAND', categoryName, progressPct, buttonTexts };
+    // 8) 문항 4 (가장 최근에 구입/이용/방문한 브랜드 — 소매/서비스/제품 전 산업군 호환)
+    if (/가장\s*최근에[^\n]{0,35}(구입|이용|방문|사용)/.test(bodyText)) {
+      return { screenType: 'Q4_RECENT_BRAND', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
-    // 9) 산업군(categoryName)이 명시된 본 설문 문항(5, 6, 7, 8)만 배지 번호로 판별!
+    // 9) 산업군(categoryName)이 명시된 본 설문 문항(4, 5, 6, 7, 8) 배지 번호 판별!
     let firstBadge = '';
     if (categoryName) {
       const badgeTexts = Array.from(document.querySelectorAll('div, span, th, td, strong'))
         .filter(el => el.children.length === 0 && el.offsetParent !== null)
         .map(el => (el.innerText || '').trim())
-        .filter(t => /^(5|6|7|8)$/.test(t));
+        .filter(t => /^(4|5|6|7|8)$/.test(t));
       firstBadge = badgeTexts[0] || '';
 
+      if (firstBadge === '4') {
+        return { screenType: 'Q4_RECENT_BRAND', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      }
       if (firstBadge === '5' || /주\s*구입|가장\s*선호|주로\s*이용|가장\s*자주/.test(bodyText)) {
-        return { screenType: 'Q5_SAME_AS_Q4', categoryName, progressPct, buttonTexts };
+        return { screenType: 'Q5_SAME_AS_Q4', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
       }
       if (firstBadge === '6' || (document.querySelectorAll('input[type="radio"]').length === 2 && /예/.test(bodyText) && /아니오/.test(bodyText))) {
-        return { screenType: 'Q6_YES_NO', categoryName, progressPct, buttonTexts };
+        return { screenType: 'Q6_YES_NO', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
       }
       if (firstBadge === '7' || document.querySelectorAll('.s-gradeclick').length >= 2 || (/1\s*순위/.test(bodyText) && /2\s*순위/.test(bodyText))) {
-        return { screenType: 'Q7_RANK_1_2', categoryName, progressPct, buttonTexts };
+        return { screenType: 'Q7_RANK_1_2', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
       }
       if (firstBadge === '8') {
-        return { screenType: 'Q8_MULTI_2', categoryName, progressPct, buttonTexts };
+        return { screenType: 'Q8_MULTI_2', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
       }
     }
 
@@ -782,7 +788,7 @@ async function classifyCurrentScreen(target) {
     const hasFinalBtn = Array.from(document.querySelectorAll('#next, button, input[type="button"], input[type="submit"], a'))
       .some(el => /조사\s*완료|설문\s*완료|최종\s*제출|완료하기/.test((el.innerText || el.value || '').trim()));
     if (hasFinalBtn) {
-      return { screenType: 'FINAL_SUBMIT_GATE', categoryName, progressPct, buttonTexts, bodySnippet: bodyText.slice(0, 200) };
+      return { screenType: 'FINAL_SUBMIT_GATE', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     return {
@@ -791,7 +797,8 @@ async function classifyCurrentScreen(target) {
       progressPct,
       badge: firstBadge,
       buttonTexts,
-      bodySnippet: bodyText.replace(/\s+/g, ' ').slice(0, 240)
+      bodySnippet,
+      domMeta
     };
   });
 }
@@ -1034,6 +1041,29 @@ export async function runKmacKbpiSurvey({
       }
 
       const activeTarget = await resolveActiveSurveyFrame(surveyPage);
+
+      // GetData 커스텀 레이어 알림창(.modal / .bootbox / .swal2) 감지 시 텍스트 기록 후 자동 닫기
+      const modalAlertMsg = await activeTarget.evaluate(() => {
+        const modals = Array.from(
+          document.querySelectorAll('.bootbox.modal, .modal.in, .modal.show, .swal2-container, .ui-dialog')
+        ).filter(m => m.offsetParent !== null);
+        for (const m of modals) {
+          const msg = (m.innerText || '').replace(/\s+/g, ' ').trim();
+          const okBtn = Array.from(m.querySelectorAll('button, a, input[type="button"]'))
+            .find(b => b.offsetParent !== null && /^(확인|닫기|OK|예)$/i.test((b.innerText || b.value || '').trim()));
+          if (okBtn) {
+            okBtn.click();
+            return msg.slice(0, 140);
+          }
+        }
+        return '';
+      }).catch(() => '');
+      if (modalAlertMsg) {
+        alertHistory.push(modalAlertMsg);
+        emitLog(`[레이어 알림 감지] 🔔 "${modalAlertMsg}"`, 'warn', 'MODAL_ALERT');
+        await surveyPage.waitForTimeout(350);
+      }
+
       const info = await classifyCurrentScreen(activeTarget);
       if (info.screenType === 'LOADING') {
         await surveyPage.waitForTimeout(600);
@@ -1044,14 +1074,14 @@ export async function runKmacKbpiSurvey({
         sameScreenStuckCount++;
         if (sameScreenStuckCount >= 5) {
           throw new Error(
-            `동일 화면 반복 정체 감지 (${sig}) | URL=${surveyPage.url()} | 버튼=[${(info.buttonTexts || []).join(', ')}] | 요약="${(info.bodySnippet || '').slice(0, 140)}" — 최근 알림: ${alertHistory.slice(-2).join(' / ') || '없음'}`
+            `동일 화면 반복 정체 감지 (${sig}) | DOM=[${info.domMeta || '-'}] | URL=${surveyPage.url()} | 버튼=[${(info.buttonTexts || []).join(', ')}] | 요약="${(info.bodySnippet || '').slice(0, 150)}" — 최근 알림: ${alertHistory.slice(-2).join(' / ') || '없음'}`
           );
         }
       } else {
         sameScreenStuckCount = 0;
         lastSignature = sig;
         emitLog(
-          `[화면 진입] ${info.screenType}${info.categoryName ? ` (${info.categoryName})` : ''} | 진행률=${info.progressPct ?? '-'}% | 버튼=[${(info.buttonTexts || []).join(', ')}]`,
+          `[화면 진입] ${info.screenType}${info.categoryName ? ` (${info.categoryName})` : ''} | 진행률=${info.progressPct ?? '-'}% | [${info.domMeta || '-'}]`,
           'info',
           'STEP'
         );
@@ -1616,131 +1646,310 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [문항 7] 1순위 · 2순위 랜덤 선택 ('기타' 클릭 절대 금지!)
+      // [문항 7] 1순위 · 2순위 랜덤 선택 ('기타' 클릭 절대 금지! GetData 전 유형 대응)
       if (info.screenType === 'Q7_RANK_1_2') {
         const catState = await getOrInitCategoryState(info.categoryName);
-        const rankInfo = await activeTarget.evaluate(({ seedNum }) => {
-          const isForbiddenLabel = (txt) => /기타|없음|모름/.test(txt);
+        const seedNum = Math.floor(rng() * 10000);
 
-          // 케이스 0: GetData 표준 .s-gradeclick 우선순위 클릭형 컴포넌트
+        // 1단계: GetData .s-gradeclick(GRADE_CLICK) 여부 먼저 확인 후 실제 마우스 클릭 수행
+        const gradeClickPlan = await activeTarget.evaluate(({ sNum }) => {
+          const isForbiddenLabel = (txt) => /기타|없음|모름|생각나지|잘\s*모르/.test(txt);
+          document.querySelectorAll('[data-kbpi-rank-pick]').forEach(el => el.removeAttribute('data-kbpi-rank-pick'));
+
           const gradeEls = Array.from(document.querySelectorAll('.s-gradeclick')).filter(el => el.offsetParent !== null);
-          if (gradeEls.length >= 2) {
-            const reBtn = document.querySelector('button.re-select');
-            if (reBtn && reBtn.offsetParent !== null) reBtn.click();
-            const validGrades = gradeEls.filter(el => {
-              if (el.querySelector('input.input-etc, textarea.input-etc')) return false;
-              const txt = (el.innerText || '').replace(/\s+/g, ' ').trim();
-              return !isForbiddenLabel(txt);
-            });
-            if (validGrades.length >= 2) {
-              const g1 = validGrades[seedNum % validGrades.length];
-              let idx2 = (seedNum + 1 + ((seedNum >> 2) % (validGrades.length - 1))) % validGrades.length;
-              if (idx2 === (seedNum % validGrades.length)) idx2 = (idx2 + 1) % validGrades.length;
-              const g2 = validGrades[idx2];
-              g1.click();
-              g2.click();
-              return {
-                r1: (g1.innerText || '').replace(/\s+/g, ' ').trim(),
-                r2: (g2.innerText || '').replace(/\s+/g, ' ').trim()
-              };
+          if (gradeEls.length < 2) return { isGradeClick: false };
+
+          // 기존 선택값이 있으면 초기화 버튼 또는 선택된 항목 클릭으로 리셋
+          const reBtn = document.querySelector('button.re-select');
+          let didReset = false;
+          if (reBtn && reBtn.offsetParent !== null) {
+            reBtn.click();
+            didReset = true;
+          } else {
+            const activeOnes = gradeEls.filter(el =>
+              el.classList.contains('selected') || el.classList.contains('active') || el.classList.contains('on') || /(1순위|2순위)/.test(el.innerText || '')
+            );
+            if (activeOnes.length > 0) {
+              activeOnes.forEach(el => el.click());
+              didReset = true;
             }
           }
 
-          // 케이스 A: 1순위/2순위 드롭다운(<select>) 형태
-          const selects = Array.from(document.querySelectorAll('select')).filter(s => !s.disabled && s.offsetParent !== null);
-          if (selects.length >= 2) {
-            const opts1 = Array.from(selects[0].options).filter(o => o.value !== '' && !/선택/.test(o.text) && !isForbiddenLabel(o.text));
-            if (opts1.length >= 2) {
-              const idx1 = seedNum % opts1.length;
-              const idx2 = (seedNum + 1 + ((seedNum >> 3) % (opts1.length - 1))) % opts1.length;
-              selects[0].value = opts1[idx1].value;
-              selects[0].dispatchEvent(new Event('change', { bubbles: true }));
-              const opts2 = Array.from(selects[1].options).filter(o => o.value !== '' && o.value !== opts1[idx1].value && !/선택/.test(o.text) && !isForbiddenLabel(o.text));
-              if (opts2[0]) {
-                const pick2 = opts2[idx2 % opts2.length];
-                selects[1].value = pick2.value;
-                selects[1].dispatchEvent(new Event('change', { bubbles: true }));
-                return { r1: opts1[idx1].text, r2: pick2.text };
+          const validGrades = gradeEls.filter(el => {
+            if (el.querySelector('input.input-etc, textarea.input-etc')) return false;
+            const txt = (el.innerText || '').replace(/\s+/g, ' ').trim();
+            return !isForbiddenLabel(txt);
+          });
+          if (validGrades.length < 2) return { isGradeClick: false };
+
+          const idx1 = sNum % validGrades.length;
+          let idx2 = (sNum + 1 + ((sNum >> 2) % (validGrades.length - 1))) % validGrades.length;
+          if (idx2 === idx1) idx2 = (idx1 + 1) % validGrades.length;
+
+          validGrades[idx1].setAttribute('data-kbpi-rank-pick', '1');
+          validGrades[idx2].setAttribute('data-kbpi-rank-pick', '2');
+
+          return {
+            isGradeClick: true,
+            didReset,
+            r1: (validGrades[idx1].innerText || '').replace(/\s+/g, ' ').trim(),
+            r2: (validGrades[idx2].innerText || '').replace(/\s+/g, ' ').trim()
+          };
+        }, { sNum: seedNum });
+
+        let rankInfo = { r1: '', r2: '', mode: '' };
+
+        if (gradeClickPlan.isGradeClick) {
+          if (gradeClickPlan.didReset) {
+            await surveyPage.waitForTimeout(320);
+          }
+          const rank1Loc = activeTarget.locator('[data-kbpi-rank-pick="1"]').first();
+          const rank2Loc = activeTarget.locator('[data-kbpi-rank-pick="2"]').first();
+          if ((await rank1Loc.count()) > 0) {
+            await rank1Loc.scrollIntoViewIfNeeded().catch(err => emitLog(`1순위 스크롤 경고: ${err.message}`, 'warn'));
+            await rank1Loc.click();
+            await surveyPage.waitForTimeout(350);
+          }
+          if ((await rank2Loc.count()) > 0) {
+            await rank2Loc.scrollIntoViewIfNeeded().catch(err => emitLog(`2순위 스크롤 경고: ${err.message}`, 'warn'));
+            await rank2Loc.click();
+            await surveyPage.waitForTimeout(300);
+          }
+          rankInfo = { r1: gradeClickPlan.r1, r2: gradeClickPlan.r2, mode: 'GRADE_CLICK' };
+        } else {
+          // 2단계: GRADE(hkey=1/2 행렬 라디오) / 2개 <select> / 행별 2열 라디오 / 체크박스 / 번호입력형 일괄 대응
+          rankInfo = await activeTarget.evaluate(async ({ sNum }) => {
+            const isForbiddenLabel = (txt) => /기타|없음|모름|생각나지|잘\s*모르/.test(txt);
+            const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
+
+            // 케이스 A: GetData [question-type="GRADE"] (input[type="radio"][hkey="1"][vkey] / [hkey="2"][vkey])
+            const hkey1Radios = Array.from(document.querySelectorAll('input[type="radio"][hkey="1"]')).filter(r => !r.disabled);
+            const hkey2Radios = Array.from(document.querySelectorAll('input[type="radio"][hkey="2"]')).filter(r => !r.disabled);
+            if (hkey1Radios.length >= 2 && hkey2Radios.length >= 2) {
+              const validR1 = hkey1Radios.filter(r => {
+                const rowTxt = (r.closest('tr, li, div')?.innerText || '').trim();
+                return !isForbiddenLabel(rowTxt);
+              });
+              if (validR1.length >= 2) {
+                const pick1 = validR1[sNum % validR1.length];
+                const vk1 = pick1.getAttribute('vkey') || pick1.value;
+                pick1.click();
+                pick1.checked = true;
+                if (typeof $ !== 'undefined') $(pick1).prop('checked', true).trigger('change');
+                await waitMs(220);
+
+                const validR2 = Array.from(document.querySelectorAll('input[type="radio"][hkey="2"]')).filter(r => {
+                  if (r.disabled) return false;
+                  const vk2 = r.getAttribute('vkey') || r.value;
+                  if (vk2 === vk1) return false;
+                  const rowTxt = (r.closest('tr, li, div')?.innerText || '').trim();
+                  return !isForbiddenLabel(rowTxt);
+                });
+                const pick2 = validR2[(sNum + 2) % Math.max(1, validR2.length)];
+                if (pick2) {
+                  pick2.click();
+                  pick2.checked = true;
+                  if (typeof $ !== 'undefined') $(pick2).prop('checked', true).trigger('change');
+                  return { r1: vk1, r2: pick2.getAttribute('vkey') || pick2.value, mode: 'GRADE_HKEY' };
+                }
               }
             }
-          }
 
-          // 케이스 B: 두 개의 라디오 그룹(1순위 열 / 2순위 열) 또는 순서 클릭형 체크박스
-          const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
-          const radioGroups = new Map();
-          for (const r of radios) {
-            if (!radioGroups.has(r.name)) radioGroups.set(r.name, []);
-            radioGroups.get(r.name).push(r);
-          }
-          const groups = Array.from(radioGroups.values());
-          if (groups.length >= 2) {
-            const g1 = groups[0].filter(r => !isForbiddenLabel((r.closest('label, tr, td, li, div')?.innerText || '').trim()));
-            const g2 = groups[1].filter(r => !isForbiddenLabel((r.closest('label, tr, td, li, div')?.innerText || '').trim()));
-            if (g1.length >= 2 && g2.length >= 2) {
-              const i1 = seedNum % g1.length;
-              let i2 = (seedNum + 2) % g2.length;
-              if (g2[i2].value === g1[i1].value) i2 = (i1 + 1) % g2.length;
-              g1[i1].click();
-              g1[i1].checked = true;
-              g1[i1].dispatchEvent(new Event('change', { bubbles: true }));
-              g2[i2].click();
-              g2[i2].checked = true;
-              g2[i2].dispatchEvent(new Event('change', { bubbles: true }));
-              return { r1: g1[i1].value, r2: g2[i2].value };
+            // 케이스 B: 1순위/2순위 드롭다운(<select>) 2개 (1순위 변경 후 2순위 동적 옵션 갱신 대기)
+            const selects = Array.from(document.querySelectorAll('select')).filter(s => !s.disabled && s.offsetParent !== null);
+            if (selects.length >= 2) {
+              const opts1 = Array.from(selects[0].options).filter(o => o.value !== '' && !/선택/.test(o.text) && !isForbiddenLabel(o.text));
+              if (opts1.length >= 2) {
+                const pick1 = opts1[sNum % opts1.length];
+                selects[0].value = pick1.value;
+                selects[0].dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(selects[0]).val(pick1.value).trigger('change');
+                await waitMs(250);
+
+                const opts2 = Array.from(selects[1].options).filter(o => o.value !== '' && o.value !== pick1.value && !/선택/.test(o.text) && !isForbiddenLabel(o.text));
+                if (opts2.length > 0) {
+                  const pick2 = opts2[(sNum + 1) % opts2.length];
+                  selects[1].value = pick2.value;
+                  selects[1].dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof $ !== 'undefined') $(selects[1]).val(pick2.value).trigger('change');
+                  return { r1: pick1.text.trim(), r2: pick2.text.trim(), mode: 'SELECT_2' };
+                }
+              }
             }
-          }
 
-          // 케이스 C: 순서 클릭형 체크박스 2개
-          const cbs = Array.from(document.querySelectorAll('input[type="checkbox"]')).filter(cb => {
-            const t = (cb.closest('label, tr, td, li, div')?.innerText || '').trim();
-            return !cb.disabled && !cb.checked && !isForbiddenLabel(t);
-          });
-          if (cbs.length >= 2) {
-            const c1 = cbs[seedNum % cbs.length];
-            const c2 = cbs[(seedNum + 1) % cbs.length];
-            c1.click();
-            c2.click();
-            return {
-              r1: (c1.closest('label, tr, td, li, div')?.innerText || '').trim(),
-              r2: (c2.closest('label, tr, td, li, div')?.innerText || '').trim()
-            };
-          }
-          return { r1: '', r2: '' };
-        }, { seedNum: Math.floor(rng() * 10000) });
+            // 케이스 C: 테이블 행(tr)마다 1순위·2순위 라디오 2개씩 배치된 매트릭스 또는 2열 라디오 그룹
+            const trsWith2Radios = Array.from(document.querySelectorAll('table tbody tr')).filter(tr => {
+              const rds = tr.querySelectorAll('input[type="radio"]');
+              const txt = (tr.innerText || '').trim();
+              return rds.length >= 2 && !isForbiddenLabel(txt);
+            });
+            if (trsWith2Radios.length >= 2) {
+              const row1 = trsWith2Radios[sNum % trsWith2Radios.length];
+              let rIdx2 = (sNum + 1) % trsWith2Radios.length;
+              if (rIdx2 === (sNum % trsWith2Radios.length)) rIdx2 = (rIdx2 + 1) % trsWith2Radios.length;
+              const row2 = trsWith2Radios[rIdx2];
+              const r1 = row1.querySelectorAll('input[type="radio"]')[0];
+              if (r1 && !r1.disabled) {
+                r1.click();
+                r1.checked = true;
+                if (typeof $ !== 'undefined') $(r1).prop('checked', true).trigger('change');
+              }
+              await waitMs(200);
+              const r2 = row2.querySelectorAll('input[type="radio"]')[1];
+              if (r2 && !r2.disabled) {
+                r2.click();
+                r2.checked = true;
+                if (typeof $ !== 'undefined') $(r2).prop('checked', true).trigger('change');
+              }
+              return {
+                r1: (row1.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 30),
+                r2: (row2.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 30),
+                mode: 'TR_RADIO_MATRIX'
+              };
+            }
 
-        emitLog(`[${catState.categoryName} - 문항 7] 1순위="${rankInfo.r1}", 2순위="${rankInfo.r2}" (기타 배제 완료)`, 'info', 'Q7');
+            // 케이스 D: 2개 독립 라디오 그룹(1순위 그룹 / 2순위 그룹)
+            const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
+            const radioGroups = new Map();
+            for (const r of radios) {
+              if (!radioGroups.has(r.name)) radioGroups.set(r.name, []);
+              radioGroups.get(r.name).push(r);
+            }
+            const groups = Array.from(radioGroups.values());
+            if (groups.length === 2 && groups[0].length >= 2 && groups[1].length >= 2) {
+              const g1 = groups[0].filter(r => !isForbiddenLabel((r.closest('label, tr, td, li, div')?.innerText || '').trim()));
+              const g2 = groups[1].filter(r => !isForbiddenLabel((r.closest('label, tr, td, li, div')?.innerText || '').trim()));
+              if (g1.length >= 2 && g2.length >= 2) {
+                const i1 = sNum % g1.length;
+                let i2 = (i1 + 1 + (sNum % (g2.length - 1))) % g2.length;
+                if (i2 === i1) i2 = (i1 + 1) % g2.length;
+                g1[i1].click();
+                g1[i1].checked = true;
+                if (typeof $ !== 'undefined') $(g1[i1]).prop('checked', true).trigger('change');
+                await waitMs(200);
+                g2[i2].click();
+                g2[i2].checked = true;
+                if (typeof $ !== 'undefined') $(g2[i2]).prop('checked', true).trigger('change');
+                return { r1: g1[i1].value, r2: g2[i2].value, mode: 'RADIO_2GRP' };
+              }
+            }
+
+            // 케이스 E: 체크박스 2개 선택형 (기존 체크 초기화 후 정확히 2개 선택)
+            const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.disabled);
+            if (allCbs.length >= 2) {
+              for (const cb of allCbs) {
+                if (cb.checked) {
+                  cb.click();
+                  if (cb.checked) {
+                    cb.checked = false;
+                    if (typeof $ !== 'undefined') $(cb).prop('checked', false).trigger('change');
+                  }
+                }
+              }
+              await waitMs(150);
+              const validCbs = allCbs.filter(cb => {
+                const t = (cb.closest('label, tr, td, li, div')?.innerText || '').trim();
+                return t && !isForbiddenLabel(t);
+              });
+              if (validCbs.length >= 2) {
+                const i1 = sNum % validCbs.length;
+                const i2 = (i1 + 1) % validCbs.length;
+                validCbs[i1].click();
+                validCbs[i1].checked = true;
+                if (typeof $ !== 'undefined') $(validCbs[i1]).prop('checked', true).trigger('change');
+                await waitMs(200);
+                validCbs[i2].click();
+                validCbs[i2].checked = true;
+                if (typeof $ !== 'undefined') $(validCbs[i2]).prop('checked', true).trigger('change');
+                return {
+                  r1: (validCbs[i1].closest('label, tr, td, li, div')?.innerText || '').trim().slice(0, 30),
+                  r2: (validCbs[i2].closest('label, tr, td, li, div')?.innerText || '').trim().slice(0, 30),
+                  mode: 'CHECKBOX_2'
+                };
+              }
+            }
+
+            // 케이스 F: 1순위·2순위 보기 번호 직접 입력칸(input[type="number"|"text"] 2개)
+            const numInps = Array.from(document.querySelectorAll('input[type="number"], input[type="text"], input:not([type])'))
+              .filter(inp => inp.offsetParent !== null && !inp.disabled && !inp.readOnly);
+            if (numInps.length >= 2) {
+              const setVal = (el, v) => {
+                el.focus();
+                el.value = String(v);
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(el).val(String(v)).trigger('input').trigger('change');
+                el.blur();
+              };
+              const v1 = (sNum % 3) + 1;
+              const v2 = ((sNum + 1) % 3) + 1 === v1 ? (v1 % 3) + 1 : ((sNum + 1) % 3) + 1;
+              setVal(numInps[0], v1);
+              setVal(numInps[1], v2);
+              return { r1: String(v1), r2: String(v2), mode: 'INPUT_RANK' };
+            }
+
+            return { r1: '', r2: '', mode: 'NONE' };
+          }, { sNum: seedNum });
+        }
+
+        emitLog(`[${catState.categoryName} - 문항 7 (${rankInfo.mode})] 1순위="${rankInfo.r1}", 2순위="${rankInfo.r2}" (기타 배제 완료)`, 'info', 'Q7');
         await surveyPage.waitForTimeout(450);
         await clickNextButton(activeTarget);
         continue;
       }
 
-      // [문항 8] 랜덤 2개 복수 선택 ('기타'/'없음' 제외)
+      // [문항 8] 랜덤 2개 복수 선택 ('기타'/'없음' 제외 + 기존 체크 초기화로 정확히 2개 보장)
       if (info.screenType === 'Q8_MULTI_2') {
         const catState = await getOrInitCategoryState(info.categoryName);
-        const picked2 = await activeTarget.evaluate(({ seedNum }) => {
-          const validCbs = Array.from(document.querySelectorAll('input[type="checkbox"]')).filter(cb => {
-            const txt = (cb.closest('label, li, tr, td, div')?.innerText || '').trim();
-            return !cb.disabled && !cb.checked && txt && !/기타|없음|모름/.test(txt);
-          });
-          if (validCbs.length >= 2) {
-            const idx1 = seedNum % validCbs.length;
-            let idx2 = (seedNum + 3) % validCbs.length;
-            if (idx2 === idx1) idx2 = (idx1 + 1) % validCbs.length;
-            validCbs[idx1].click();
-            validCbs[idx1].checked = true;
-            validCbs[idx1].dispatchEvent(new Event('change', { bubbles: true }));
-            validCbs[idx2].click();
-            validCbs[idx2].checked = true;
-            validCbs[idx2].dispatchEvent(new Event('change', { bubbles: true }));
-            return [
-              (validCbs[idx1].closest('label, li, tr, td, div')?.innerText || '').trim(),
-              (validCbs[idx2].closest('label, li, tr, td, div')?.innerText || '').trim()
-            ];
+        const seedNum8 = Math.floor(rng() * 10000);
+        const picked2 = await activeTarget.evaluate(async ({ sNum }) => {
+          const isForbidden = (txt) => /기타|없음|모름|생각나지/.test(txt);
+          const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.disabled);
+          if (allCbs.length >= 2) {
+            for (const cb of allCbs) {
+              if (cb.checked) {
+                cb.click();
+                if (cb.checked) {
+                  cb.checked = false;
+                  if (typeof $ !== 'undefined') $(cb).prop('checked', false).trigger('change');
+                }
+              }
+            }
+            await new Promise(r => setTimeout(r, 150));
+            const validCbs = allCbs.filter(cb => {
+              const txt = (cb.closest('label, li, tr, td, div')?.innerText || '').trim();
+              return txt && !isForbidden(txt);
+            });
+            if (validCbs.length >= 2) {
+              const idx1 = sNum % validCbs.length;
+              let idx2 = (sNum + 3) % validCbs.length;
+              if (idx2 === idx1) idx2 = (idx1 + 1) % validCbs.length;
+              validCbs[idx1].click();
+              validCbs[idx1].checked = true;
+              if (typeof $ !== 'undefined') $(validCbs[idx1]).prop('checked', true).trigger('change');
+              await new Promise(r => setTimeout(r, 150));
+              validCbs[idx2].click();
+              validCbs[idx2].checked = true;
+              if (typeof $ !== 'undefined') $(validCbs[idx2]).prop('checked', true).trigger('change');
+              return [
+                (validCbs[idx1].closest('label, li, tr, td, div')?.innerText || '').trim(),
+                (validCbs[idx2].closest('label, li, tr, td, div')?.innerText || '').trim()
+              ];
+            }
+          }
+          // 단일 라디오 문항인 경우 폴백
+          const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && !isForbidden((r.closest('label, li, tr, td, div')?.innerText || '').trim()));
+          if (radios.length > 0) {
+            const pick = radios[sNum % radios.length];
+            pick.click();
+            pick.checked = true;
+            if (typeof $ !== 'undefined') $(pick).prop('checked', true).trigger('change');
+            return [(pick.closest('label, li, tr, td, div')?.innerText || '').trim()];
           }
           return [];
-        }, { seedNum: Math.floor(rng() * 10000) });
+        }, { sNum: seedNum8 });
 
-        emitLog(`[${catState.categoryName} - 문항 8] 랜덤 2개 선택 = [${picked2.join(', ')}]`, 'info', 'Q8');
+        emitLog(`[${catState.categoryName} - 문항 8] 선택 완료 = [${picked2.join(', ')}]`, 'info', 'Q8');
         await surveyPage.waitForTimeout(450);
         await clickNextButton(activeTarget);
         continue;
