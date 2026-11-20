@@ -318,69 +318,97 @@ async function findAndStartRespondentSlot({
   const gender = String(slotData.gender || slotData.ceoGender || '').trim();
   const ageGroup = String(slotData.ageGroup || '').trim();
 
-  emitLog(`[슬롯 탐색] #${slotData.seq || slotData.index} ${slotData.name} (${region}/${gender}/${ageGroup}, 최종id=${finalId}, 고유번호=${uid}) 탐색...`);
+  emitLog(`[슬롯 탐색] #${slotData.seq || slotData.index} ${slotData.name} (${region}/${gender}/${ageGroup}, 최종id=${finalId}, 고유번호=${uid}) 탐색... (URL: ${listPage.url()})`);
 
-  // 상단 필터(조사지역/성별/연령) 체크박스가 있으면 먼저 필터링 시도
-  await listPage.evaluate(({ reg, gen, ag }) => {
-    const clickFilterLabel = (groupHint, labelText) => {
-      if (!labelText) return;
-      const trs = Array.from(document.querySelectorAll('tr, .filter-row, div'));
-      for (const tr of trs) {
-        const txt = (tr.innerText || '').trim();
-        if (txt.startsWith(groupHint) && txt.length < 150) {
-          const labels = Array.from(tr.querySelectorAll('label, span'));
-          for (const lb of labels) {
-            if ((lb.innerText || '').trim() === labelText) {
-              const inp = lb.querySelector('input') || document.getElementById(lb.getAttribute('for') || '');
-              if (inp && !inp.checked) inp.click();
-              else if (!inp) lb.click();
-              return;
-            }
-          }
-        }
-      }
-    };
-    clickFilterLabel('조사지역', reg);
-    clickFilterLabel('성별', gen);
-    clickFilterLabel('연령', ag);
-    const searchBtn = Array.from(document.querySelectorAll('button, input[type="button"], a'))
-      .find(el => /^(검색|조회)$/.test((el.innerText || el.value || '').trim()));
-    if (searchBtn) searchBtn.click();
-  }, { reg: region, gen: gender, ag: ageGroup }).catch(err => emitLog(`필터 적용 경고: ${err.message}`, 'warn'));
+  const scanCurrentDomForSlot = async () => {
+    return listPage.evaluate(({ targetUid, targetFinalId, targetReg, targetGen, targetAg }) => {
+      document.querySelectorAll('[data-kbpi-target-start]').forEach(el => el.removeAttribute('data-kbpi-target-start'));
 
-  await listPage.waitForTimeout(1200);
+      const rawRows = Array.from(
+        document.querySelectorAll('table tbody tr, [role="row"], .ag-row, .tui-grid-row, .ant-table-row, .el-table__row')
+      ).filter(r => {
+        if (r.closest('thead')) return false;
+        const t = (r.innerText || '').trim();
+        if (!t) return false;
+        if (/최종\s*id/i.test(t) && /조사지역/.test(t)) return false;
+        return true;
+      });
 
-  // 페이지 순회하며 고유번호(uid) 또는 최종id 일치 행 탐색
-  for (let pageAttempt = 0; pageAttempt < 15; pageAttempt++) {
-    const matchInfo = await listPage.evaluate(({ targetUid, targetFinalId, targetReg, targetGen, targetAg }) => {
-      const rows = Array.from(document.querySelectorAll('table tbody tr'));
-      for (let idx = 0; idx < rows.length; idx++) {
-        const tr = rows[idx];
-        const cells = Array.from(tr.querySelectorAll('td')).map(td => (td.innerText || '').trim());
+      const actionRegex = /^(시작|조사\s*시작|진행|진행중|이어하기|계속|참여)$/;
+      const allActionCandidates = Array.from(
+        document.querySelectorAll('button, a, input[type="button"], input[type="submit"], span, div')
+      ).filter(el => {
+        if (el.offsetParent === null) return false;
+        const txt = (el.innerText || el.value || '').trim();
+        if (!actionRegex.test(txt)) return false;
+        // 컨테이너가 아닌 실제 버튼/뱃지 요소만 선택
+        const hasSameTextChild = Array.from(el.children).some(ch => actionRegex.test((ch.innerText || ch.value || '').trim()));
+        return !hasSameTextChild;
+      });
+
+      for (const rowEl of rawRows) {
+        const cellEls = Array.from(
+          rowEl.querySelectorAll('td, [role="gridcell"], [role="cell"], .ag-cell, .tui-grid-cell')
+        );
+        const cells = cellEls.length > 0
+          ? cellEls.map(c => (c.innerText || '').trim())
+          : (rowEl.innerText || '').split(/[\t\n]+/).map(s => s.trim()).filter(Boolean);
         const fullText = cells.join(' | ');
-        const hasUid = targetUid && fullText.includes(targetUid);
-        const hasExactFinalId = targetFinalId && cells.some(c => c === targetFinalId);
-        const demoMatches = (!targetReg || fullText.includes(targetReg)) &&
-                            (!targetGen || cells.includes(targetGen)) &&
-                            (!targetAg || cells.includes(targetAg));
-        if (hasUid || (hasExactFinalId && demoMatches)) {
-          const btn = Array.from(tr.querySelectorAll('button, a, input[type="button"]'))
-            .find(b => /시작|진행|계속|참여/.test((b.innerText || b.value || '').trim()));
-          if (btn) {
-            btn.setAttribute('data-kbpi-target-start', '1');
-            return { found: true, rowText: fullText, btnText: (btn.innerText || btn.value || '').trim() };
-          }
-          return { found: true, alreadyDone: /완료/.test(fullText), rowText: fullText, btnText: '' };
+
+        const hasUid = Boolean(targetUid && fullText.includes(targetUid));
+        const hasExactFinalId = Boolean(targetFinalId && cells.some(c => c === targetFinalId));
+        const demoMatches =
+          (!targetReg || fullText.includes(targetReg)) &&
+          (!targetGen || cells.includes(targetGen) || fullText.includes(targetGen)) &&
+          (!targetAg || fullText.includes(targetAg));
+
+        if (!hasUid && !(hasExactFinalId && demoMatches)) continue;
+
+        // 1순위: 동일 행(rowEl) 내부에서 [시작] 버튼 탐색
+        const innerBtns = Array.from(
+          rowEl.querySelectorAll('button, a, input[type="button"], input[type="submit"], span, div')
+        ).filter(el => {
+          if (el.offsetParent === null) return false;
+          const txt = (el.innerText || el.value || '').trim();
+          if (!actionRegex.test(txt)) return false;
+          return !Array.from(el.children).some(ch => actionRegex.test((ch.innerText || ch.value || '').trim()));
+        });
+
+        let matchedBtn = innerBtns[0] || null;
+
+        // 2순위: 우측 고정 열(Sticky / Pinned Right 분리 테이블) Y좌표 정렬 매칭
+        if (!matchedBtn) {
+          rowEl.scrollIntoView({ block: 'center', inline: 'nearest' });
+          const rowRect = rowEl.getBoundingClientRect();
+          const rowMidY = rowRect.top + rowRect.height / 2;
+          const tolerance = Math.max(22, rowRect.height * 0.7);
+          const aligned = allActionCandidates
+            .map(btn => {
+              const br = btn.getBoundingClientRect();
+              const bMidY = br.top + br.height / 2;
+              return { btn, diffY: Math.abs(bMidY - rowMidY) };
+            })
+            .filter(x => x.diffY <= tolerance)
+            .sort((a, b) => a.diffY - b.diffY);
+          if (aligned[0]) matchedBtn = aligned[0].btn;
+        }
+
+        if (matchedBtn) {
+          matchedBtn.setAttribute('data-kbpi-target-start', '1');
+          return {
+            found: true,
+            hasBtn: true,
+            rowText: fullText,
+            btnText: (matchedBtn.innerText || matchedBtn.value || '시작').trim()
+          };
+        }
+
+        if (/완료|종료/.test(fullText)) {
+          return { found: true, hasBtn: false, alreadyDone: true, rowText: fullText };
         }
       }
-      // 다음 페이지 버튼 확인
-      const nextPg = Array.from(document.querySelectorAll('.pagination a, .paging a, a, button'))
-        .find(el => /^(다음|>|›)$/.test((el.innerText || '').trim()) && !el.classList.contains('disabled'));
-      if (nextPg) {
-        nextPg.setAttribute('data-kbpi-next-page', '1');
-        return { found: false, hasNextPage: true };
-      }
-      return { found: false, hasNextPage: false };
+
+      return { found: false, rowCount: rawRows.length };
     }, {
       targetUid: uid,
       targetFinalId: finalId,
@@ -388,36 +416,146 @@ async function findAndStartRespondentSlot({
       targetGen: gender,
       targetAg: ageGroup
     });
+  };
 
+  const clickMatchedStartButton = async (matchInfo) => {
+    if (matchInfo.alreadyDone && !matchInfo.hasBtn) {
+      return { alreadyCompleted: true, page: listPage };
+    }
+    const targetBtn = listPage.locator('[data-kbpi-target-start="1"]').first();
+    if ((await targetBtn.count()) > 0) {
+      emitLog(`[슬롯 매칭 완료] "${matchInfo.rowText}" ➔ [${matchInfo.btnText}] 클릭!`);
+      const popupPromise = context.waitForEvent('page', { timeout: 7500 }).catch(() => null);
+      await targetBtn.click();
+      const popupPage = await popupPromise;
+      if (popupPage) {
+        await popupPage.waitForLoadState('domcontentloaded').catch(err => emitLog(`설문창 로드 경고: ${err.message}`, 'warn'));
+        return { alreadyCompleted: false, page: popupPage };
+      }
+      await listPage.waitForTimeout(2000);
+      return { alreadyCompleted: false, page: listPage };
+    }
+    return null;
+  };
+
+  // Pass 1: 기본 로드 상태(필터 미조작)에서 즉시 스캔 + 스크롤 컨테이너 순회 스캔
+  for (let scrollStep = 0; scrollStep < 14; scrollStep++) {
+    const matchInfo = await scanCurrentDomForSlot();
     if (matchInfo.found) {
-      if (matchInfo.alreadyDone && !matchInfo.btnText) {
-        return { alreadyCompleted: true, page: listPage };
+      const started = await clickMatchedStartButton(matchInfo);
+      if (started) return started;
+    }
+    const scrolled = await listPage.evaluate(() => {
+      const scrollables = Array.from(
+        document.querySelectorAll('.ag-body-viewport, .tui-grid-body-area, .ant-table-body, .el-table__body-wrapper, .table-responsive, div')
+      ).filter(el => el.scrollHeight > el.clientHeight + 40 && el.clientHeight >= 180);
+      const container = scrollables.sort((a, b) => b.scrollHeight - a.scrollHeight)[0];
+      if (container) {
+        const prev = container.scrollTop;
+        container.scrollTop += Math.max(300, Math.floor(container.clientHeight * 0.75));
+        if (container.scrollTop > prev) return true;
       }
-      const targetBtn = listPage.locator('[data-kbpi-target-start="1"]').first();
-      if ((await targetBtn.count()) > 0) {
-        emitLog(`[슬롯 매칭 완료] "${matchInfo.rowText}" ➔ [${matchInfo.btnText}] 클릭!`);
-        const popupPromise = context.waitForEvent('page', { timeout: 7000 }).catch(() => null);
-        await targetBtn.click();
-        const popupPage = await popupPromise;
-        if (popupPage) {
-          await popupPage.waitForLoadState('domcontentloaded').catch(err => emitLog(`설문창 로드 경고: ${err.message}`, 'warn'));
-          return { alreadyCompleted: false, page: popupPage };
+      const prevWin = window.scrollY;
+      window.scrollBy(0, 450);
+      return window.scrollY > prevWin;
+    }).catch(() => false);
+    if (!scrolled) break;
+    await listPage.waitForTimeout(450);
+  }
+
+  // 스크롤 최상단 복귀 후 Pass 2: 상단 필터(조사지역/성별/연령) 정밀 선택 및 페이지네이션 탐색
+  await listPage.evaluate(() => {
+    window.scrollTo(0, 0);
+    document.querySelectorAll('div').forEach(el => {
+      if (el.scrollTop > 0) el.scrollTop = 0;
+    });
+  }).catch(err => emitLog(`스크롤 초기화 경고: ${err.message}`, 'warn'));
+
+  await listPage.evaluate(({ reg, gen, ag }) => {
+    const ensureOptionChecked = (rowKeyword, optText) => {
+      if (!optText) return;
+      const containers = Array.from(document.querySelectorAll('tr, .filter-row, div'))
+        .filter(el => {
+          const t = (el.innerText || '').trim();
+          return t.startsWith(rowKeyword) && t.length < 180;
+        })
+        .sort((a, b) => a.innerText.length - b.innerText.length);
+      const row = containers[0];
+      if (!row) return;
+      const labels = Array.from(row.querySelectorAll('label'));
+      for (const lb of labels) {
+        if ((lb.innerText || '').trim() === optText) {
+          const inp = lb.querySelector('input') || document.getElementById(lb.getAttribute('for') || '');
+          if (inp) {
+            if (!inp.checked) inp.click();
+          } else {
+            lb.click();
+          }
+          return;
         }
-        await listPage.waitForTimeout(2000);
-        return { alreadyCompleted: false, page: listPage };
       }
+    };
+    ensureOptionChecked('조사지역', reg);
+    ensureOptionChecked('성별', gen);
+    ensureOptionChecked('연령', ag);
+  }, { reg: region, gen: gender, ag: ageGroup }).catch(err => emitLog(`필터 적용 경고: ${err.message}`, 'warn'));
+
+  await listPage.waitForTimeout(1200);
+
+  for (let pageAttempt = 0; pageAttempt < 15; pageAttempt++) {
+    const matchInfo = await scanCurrentDomForSlot();
+    if (matchInfo.found) {
+      const started = await clickMatchedStartButton(matchInfo);
+      if (started) return started;
     }
 
-    if (matchInfo.hasNextPage) {
-      const nextBtn = listPage.locator('[data-kbpi-next-page="1"]').first();
-      await nextBtn.click();
-      await listPage.waitForTimeout(1200);
+    const hasNext = await listPage.evaluate(() => {
+      document.querySelectorAll('[data-kbpi-next-page]').forEach(el => el.removeAttribute('data-kbpi-next-page'));
+      const nextPg = Array.from(document.querySelectorAll('.pagination a, .paging a, nav a, nav button, a, button'))
+        .find(el => {
+          const t = (el.innerText || '').trim();
+          return el.offsetParent !== null && /^(다음|>|›|»)$/.test(t) && !el.disabled && !el.classList.contains('disabled');
+        });
+      if (nextPg) {
+        nextPg.setAttribute('data-kbpi-next-page', '1');
+        return true;
+      }
+      return false;
+    });
+
+    if (hasNext) {
+      await listPage.locator('[data-kbpi-next-page="1"]').first().click();
+      await listPage.waitForTimeout(1100);
     } else {
       break;
     }
   }
 
-  throw new Error(`CAPI 리스트에서 고유번호(${uid}) / 최종id(${finalId}) 슬롯을 찾을 수 없습니다.`);
+  // 실패 시 원인 즉시 파악을 위한 현재 화면 진단 스냅샷 로깅
+  const diag = await listPage.evaluate(() => {
+    const headers = Array.from(document.querySelectorAll('th, [role="columnheader"]'))
+      .map(el => (el.innerText || '').trim())
+      .filter(Boolean)
+      .slice(0, 16);
+    const sampleRows = Array.from(document.querySelectorAll('table tbody tr, [role="row"]'))
+      .slice(0, 4)
+      .map(r => (r.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 140));
+    return {
+      url: location.href,
+      title: document.title,
+      headers,
+      sampleRows,
+      bodyPreview: (document.body?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 260)
+    };
+  }).catch(err => ({ url: listPage.url(), err: err.message }));
+
+  emitLog(
+    `[슬롯 탐색 진단] URL=${diag.url} | 헤더=[${(diag.headers || []).join(', ')}] | 샘플행=${JSON.stringify(diag.sampleRows || [])} | 본문="${diag.bodyPreview || ''}"`,
+    'warn',
+    'SLOT_DIAG'
+  );
+
+  throw new Error(`CAPI 리스트에서 고유번호(${uid}) / 최종id(${finalId}) 슬롯을 찾을 수 없습니다. (현재 URL: ${diag.url || listPage.url()})`);
 }
 
 /**
@@ -769,7 +907,11 @@ export async function runKmacKbpiSurvey({
         const locBtn = surveyPage.locator('button:has-text("위치 확인"), a:has-text("위치 확인"), input[value*="위치 확인"], :text-is("위치 확인")').first();
         if ((await locBtn.count()) > 0) {
           await locBtn.click();
-          await surveyPage.waitForTimeout(1400);
+          for (let gWait = 0; gWait < 12; gWait++) {
+            await surveyPage.waitForTimeout(400);
+            const hasCoords = await surveyPage.evaluate(() => /위도\s*:\s*3\d\./.test(document.body?.innerText || ''));
+            if (hasCoords) break;
+          }
         }
         await clickNextButton(surveyPage);
         continue;
@@ -779,8 +921,17 @@ export async function runKmacKbpiSurvey({
       if (info.screenType === 'PROFILE') {
         emitLog(`[신상정보 입력] 이름=${respondentName}, 성별=${gender}, 만=${age}세, 연락처=${phone} (${phone.startsWith('010') ? '휴대폰' : '일반전화'})`, 'info', 'PROFILE');
         await surveyPage.evaluate(({ rName, rGender, rAge, rPhone }) => {
-          const triggerInput = (el, val) => {
-            if (!el) return;
+          const triggerControl = (el, val) => {
+            if (!el || el.disabled) return;
+            if (el.tagName === 'SELECT') {
+              const matchOpt = Array.from(el.options).find(o => o.value === String(val) || o.text.trim() === String(val));
+              if (matchOpt) {
+                el.value = matchOpt.value;
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              return;
+            }
+            if (el.readOnly) return;
             el.focus();
             el.value = String(val);
             el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -792,7 +943,7 @@ export async function runKmacKbpiSurvey({
           // 이름 입력
           const nameInp = document.querySelector('input[placeholder*="이름"]') ||
             rows.find(r => /^이름/.test((r.innerText || '').trim()))?.querySelector('input[type="text"], input:not([type])');
-          triggerInput(nameInp, rName);
+          triggerControl(nameInp, rName);
 
           // 성별 라디오 클릭
           const labels = Array.from(document.querySelectorAll('label, span'));
@@ -813,24 +964,30 @@ export async function runKmacKbpiSurvey({
           // 연령(만) 입력
           const ageInp = document.querySelector('input[placeholder*="숫자"]') ||
             rows.find(r => /연령\s*\(\s*만\s*\)/.test(r.innerText || ''))?.querySelector('input[type="number"], input[type="text"], input:not([type])');
-          triggerInput(ageInp, rAge);
+          triggerControl(ageInp, rAge);
 
-          // 연락처 하이픈 분리 입력 (010 -> 휴대폰 3칸 / 02 등 지역번호 -> 전화번호 3칸)
+          // 연락처 하이픈 분리 입력 (010 -> 휴대폰 칸 / 02 등 지역번호 -> 전화번호 칸)
           const parts = String(rPhone || '').split('-').map(s => s.trim()).filter(Boolean);
           if (parts.length === 3) {
             const isMobile = parts[0] === '010';
             const targetRowLabel = isMobile ? '휴대폰' : '전화번호';
             const phoneContainer = rows.filter(r => {
               const t = (r.innerText || '').trim();
-              return t.startsWith(targetRowLabel) && r.querySelectorAll('input').length >= 3;
+              const ctrlCnt = r.querySelectorAll('input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]), select').length;
+              return t.startsWith(targetRowLabel) && ctrlCnt >= 2 && ctrlCnt <= 4;
             }).sort((a, b) => a.innerText.length - b.innerText.length)[0];
 
             if (phoneContainer) {
-              const inps = Array.from(phoneContainer.querySelectorAll('input[type="text"], input[type="tel"], input[type="number"], input:not([type])'));
-              if (inps.length >= 3) {
-                triggerInput(inps[0], parts[0]);
-                triggerInput(inps[1], parts[1]);
-                triggerInput(inps[2], parts[2]);
+              const ctrls = Array.from(
+                phoneContainer.querySelectorAll('select, input[type="text"], input[type="tel"], input[type="number"], input:not([type])')
+              ).filter(el => el.type !== 'radio' && el.type !== 'checkbox' && el.type !== 'hidden');
+              if (ctrls.length >= 3) {
+                triggerControl(ctrls[0], parts[0]);
+                triggerControl(ctrls[1], parts[1]);
+                triggerControl(ctrls[2], parts[2]);
+              } else if (ctrls.length === 2) {
+                triggerControl(ctrls[0], parts[1]);
+                triggerControl(ctrls[1], parts[2]);
               }
             }
           }
@@ -1032,11 +1189,12 @@ export async function runKmacKbpiSurvey({
           if (!table) return { ok: false, reason: '평가 테이블 미발견' };
 
           // 상단 평가 브랜드 열 헤더 이름 파악 (문항 4 매칭용)
-          const headerInputsOrCells = Array.from(table.querySelectorAll('thead tr td, thead tr th, tbody tr:first-child td'));
           const colBrandNames = [];
-          table.querySelectorAll('thead input, thead div, thead th').forEach(el => {
+          table.querySelectorAll('thead input, thead div, thead th, thead td, tbody tr:first-child input, tbody tr:first-child td').forEach(el => {
+            const trTxt = (el.closest('tr')?.innerText || '').trim();
+            if (/^\d{1,2}\s*\)/.test(trTxt)) return;
             const v = (el.value || el.innerText || '').trim();
-            if (v && !/평가항목|^[123]$/.test(v) && colBrandNames.length < 5) {
+            if (v && v.length <= 30 && !/평가항목|^[123]$/.test(v) && colBrandNames.length < 5) {
               if (!colBrandNames.includes(v)) colBrandNames.push(v);
             }
           });
