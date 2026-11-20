@@ -176,17 +176,33 @@ async function resolveCategoryMeta(categoryName, policy = {}) {
   }
 
   if (brands.length < 3) {
-    brands = ['삼성', 'LG', '롯데', 'CJ', '현대', '카카오'];
+    if (/병원|의료원|검진/.test(cleanCat)) {
+      brands = ['서울아산병원', '세브란스병원', '삼성서울병원', '서울대학교병원', '가천대길병원', '인하대병원', '분당서울대학교병원', '아주대학교병원'];
+    } else if (/대학|학교/.test(cleanCat)) {
+      brands = ['서울대학교', '연세대학교', '고려대학교', '성균관대학교', '한양대학교', '인하대학교'];
+    } else if (/백화점|아울렛|면세점/.test(cleanCat)) {
+      brands = ['신세계백화점', '롯데백화점', '현대백화점', '갤러리아백화점', 'AK플라자'];
+    } else if (/호텔|리조트|콘도/.test(cleanCat)) {
+      brands = ['신라호텔', '롯데호텔', '조선호텔', '워커힐', '한화리조트', '소노호텔앤리조트'];
+    } else if (/여행사/.test(cleanCat)) {
+      brands = ['하나투어', '모두투어', '노랑풍선', '인터파크투어', '참좋은여행'];
+    } else if (/교육|학습지|학원|인강/.test(cleanCat)) {
+      brands = ['구몬학습', '눈높이', '웅진씽크빅', '메가스터디', '해커스', 'YBM'];
+    } else if (/아파트|건설/.test(cleanCat)) {
+      brands = ['래미안', '자이', '힐스테이트', '롯데캐슬', '푸르지오', '더샵'];
+    } else {
+      brands = ['삼성', 'LG', '롯데', 'CJ', '현대', '신세계'];
+    }
   }
 
   const groupKey = matchedEntry?.group || (
-    /은행|카드|보험|증권|통신|인터넷|앱|쇼핑몰|OTT|택배/.test(cleanCat)
+    /은행|카드|보험|증권|통신|인터넷|앱|쇼핑몰|OTT|택배|병원|의료|대학|교육|학습/.test(cleanCat)
       ? 'finance_telecom_service'
-      : (/TV|냉장고|세탁기|에어컨|청소기|정수기|처리기|밥솥|노트북|스마트폰|비데|침대/.test(cleanCat)
+      : (/TV|냉장고|세탁기|에어컨|청소기|정수기|처리기|밥솥|노트북|스마트폰|비데|침대|보일러|아파트/.test(cleanCat)
         ? 'appliance_digital'
-        : (/치킨|피자|커피전문점|베이커리|패스트푸드/.test(cleanCat)
+        : (/치킨|피자|커피전문점|베이커리|패스트푸드|외식/.test(cleanCat)
           ? 'dining_franchise'
-          : (/샴푸|화장품|운동화|의류|아웃도어|뷰티/.test(cleanCat)
+          : (/샴푸|화장품|운동화|의류|아웃도어|뷰티|백화점|면세점/.test(cleanCat)
             ? 'fashion_beauty'
             : 'food_living')))
   );
@@ -1377,110 +1393,289 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [문항 3] 3개 브랜드 × 13개 평가항목 복합 매트릭스
+      // [문항 3] 다중 브랜드 × 가변 개수 평가항목 복합 매트릭스 (소비재 13행 / 병원·서비스재 14~20행 전 산업군 호환)
       if (info.screenType === 'Q3_MATRIX') {
         const catState = await getOrInitCategoryState(info.categoryName);
         const colPlans = [];
-        for (let colIdx = 0; colIdx < 3; colIdx++) {
+        for (let colIdx = 0; colIdx < 6; colIdx++) {
           let colHasExp;
           if (catState.purchaseExp === '없음') {
-            colHasExp = false; // 구입경험 '없음' 지정 시 3개 열 전원 '아니오' + 3-11은 1·2·3번만!
+            colHasExp = false; // 구입경험 '없음' 지정 시 전 열 '아니오' + 평소태도 1·2·3번만!
           } else if (colIdx === 0) {
-            colHasExp = true;  // 구입경험 '있음' 시 1번 열(최초상기 브랜드)은 100% '예'
+            colHasExp = true;  // 구입경험 '있음' 시 1번 열은 100% '예'
           } else {
-            colHasExp = rng() < 0.75; // 2·3번 열은 75% 예 / 25% 아니오
+            colHasExp = rng() < 0.75;
           }
           const scorePlan = generateKbpiMatrixScores(rng, colHasExp);
+          const extraPool = colHasExp ? [3, 4, 4, 5, 4, 5] : [3, 3, 4, 3, 4, 5];
+          const extendedScores = [...scorePlan.itemScores];
+          for (let ex = 0; ex < 16; ex++) {
+            extendedScores.push(extraPool[Math.floor(rng() * extraPool.length)]);
+          }
           colPlans.push({
             colIdx,
             hasPurchaseExp: colHasExp,
             ...scorePlan,
+            extendedScores,
             adjective: catState.adjectives[colIdx % catState.adjectives.length] || `친숙함${colIdx + 1}`
           });
         }
 
         const matrixApplied = await activeTarget.evaluate(({ plans }) => {
           const triggerInput = (el, val) => {
-            if (!el || el.disabled) return;
+            if (!el || el.disabled || el.readOnly) return false;
             el.focus();
             el.value = String(val);
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
             el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+            if (typeof $ !== 'undefined') {
+              $(el).val(String(val)).trigger('input').trigger('change').trigger('keyup');
+            }
             el.blur();
+            return true;
           };
 
-          const table = document.querySelector('table');
-          if (!table) return { ok: false, reason: '평가 테이블 미발견' };
-
-          // 상단 평가 브랜드 열 헤더 이름 파악 (문항 4 매칭용)
-          const colBrandNames = [];
-          table.querySelectorAll('thead input, thead div, thead th, thead td, tbody tr:first-child input, tbody tr:first-child td').forEach(el => {
-            const trTxt = (el.closest('tr')?.innerText || '').trim();
-            if (/^\d{1,2}\s*\)/.test(trTxt)) return;
-            const v = (el.value || el.innerText || '').trim();
-            if (v && v.length <= 30 && !/평가항목|^[123]$/.test(v) && colBrandNames.length < 5) {
-              if (!colBrandNames.includes(v)) colBrandNames.push(v);
+          const setRadioChecked = (r) => {
+            if (!r || r.disabled) return false;
+            if (!r.checked) r.click();
+            r.checked = true;
+            r.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') {
+              $(r).prop('checked', true).trigger('change');
             }
-          });
+            return true;
+          };
 
-          const bodyRows = Array.from(table.querySelectorAll('tbody tr')).filter(tr => {
-            const txt = (tr.innerText || '').trim();
-            return /^\d{1,2}\s*\)/.test(txt);
-          });
-
-          for (const tr of bodyRows) {
-            const rowTitle = (tr.innerText || '').trim();
-            const qNumMatch = rowTitle.match(/^(\d{1,2})\s*\)/);
-            if (!qNumMatch) continue;
-            const qNum = Number(qNumMatch[1]);
-            const dataTds = Array.from(tr.querySelectorAll('td')).slice(1); // 첫 열이 문항 지문인 경우 제외
-            const cells = dataTds.length >= 1 ? dataTds : Array.from(tr.querySelectorAll('td'));
-
-            cells.forEach((td, cIdx) => {
-              const plan = plans[cIdx] || plans[plans.length - 1];
-              if (!plan) return;
-
-              if (qNum >= 1 && qNum <= 9) {
-                const inp = td.querySelector('input[type="number"], input[type="text"], input:not([type])');
-                triggerInput(inp, plan.itemScores[qNum - 1]);
-              } else if (qNum === 10) {
-                const inp = td.querySelector('input[type="number"], input[type="text"], input:not([type])');
-                triggerInput(inp, plan.overallSatisfaction);
-              } else if (qNum === 11) {
-                const sel = td.querySelector('select');
-                if (sel && !sel.disabled) {
-                  // 옵션 index 또는 value 매칭 (1~5번 보기)
-                  const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !/선택/.test(o.text));
-                  const targetOpt = validOpts[plan.attitudeChoice - 1] || validOpts[0];
-                  if (targetOpt) {
-                    sel.value = targetOpt.value;
-                    sel.dispatchEvent(new Event('change', { bubbles: true }));
-                  }
-                }
-              } else if (qNum === 12) {
-                const inp = td.querySelector('input[type="text"], input:not([type])');
-                triggerInput(inp, plan.adjective);
-              } else if (qNum === 13) {
-                const wantText = plan.hasPurchaseExp ? '예' : '아니오';
-                const labels = Array.from(td.querySelectorAll('label, span'));
-                const targetLb = labels.find(l => (l.innerText || '').trim() === wantText);
-                const radios = Array.from(td.querySelectorAll('input[type="radio"]'));
-                const targetRadio = targetLb
-                  ? (targetLb.querySelector('input[type="radio"]') || document.getElementById(targetLb.getAttribute('for') || ''))
-                  : (plan.hasPurchaseExp ? radios[0] : radios[1]);
-                if (targetRadio && !targetRadio.disabled) {
-                  if (!targetRadio.checked) targetRadio.click();
-                  targetRadio.checked = true;
-                  targetRadio.dispatchEvent(new Event('change', { bubbles: true }));
-                } else if (targetLb) {
-                  targetLb.click();
+          const uncheckSkipCheckboxesInCell = (cell) => {
+            cell.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+              if (!cb.disabled && cb.checked) {
+                cb.click();
+                if (cb.checked) {
+                  cb.checked = false;
+                  if (typeof $ !== 'undefined') $(cb).prop('checked', false).trigger('change');
                 }
               }
             });
+          };
+
+          const allTablesWithInputs = Array.from(document.querySelectorAll('table')).filter(t =>
+            t.offsetParent !== null && t.querySelector('input, select, textarea')
+          );
+          const tables = allTablesWithInputs.filter(t => !allTablesWithInputs.some(other => other !== t && t.contains(other)));
+          if (tables.length === 0) return { ok: false, reason: '평가 테이블 미발견' };
+
+          // 상단 평가 브랜드 열 헤더 이름 파악 (문항 4 매칭용)
+          const colBrandNames = [];
+          tables.forEach(tb => {
+            tb.querySelectorAll('thead input, thead div, thead th, thead td, tbody tr:first-child input, tbody tr:first-child td').forEach(el => {
+              const trTxt = (el.closest('tr')?.innerText || '').trim();
+              if (/^\d{1,2}\s*[).]/.test(trTxt)) return;
+              const v = (el.value || el.innerText || '').trim();
+              if (v && v.length <= 30 && !/평가항목|^[1-6]$/.test(v) && colBrandNames.length < 6) {
+                if (!colBrandNames.includes(v)) colBrandNames.push(v);
+              }
+            });
+          });
+
+          const enteredScoresByCol = [[], [], [], [], [], []];
+          let filledTxt = 0;
+          let filledSel = 0;
+          let filledRad = 0;
+          let processedRows = 0;
+
+          for (const tb of tables) {
+            const trs = Array.from(tb.querySelectorAll('tbody tr')).filter(tr => tr.offsetParent !== null);
+            for (const tr of trs) {
+              // 실제 편집 가능한 컨트롤을 포함한 셀만 추출 (지문 th/td 열 및 숨김 템플릿 열 자동 배제!)
+              const dataCells = Array.from(tr.querySelectorAll('td, th')).filter(cell => {
+                if (cell.offsetParent === null) return false;
+                return Boolean(
+                  cell.querySelector(
+                    'select:not(:disabled), textarea:not(:disabled):not([readonly]), input[type="radio"]:not(:disabled), input[type="checkbox"]:not(:disabled), input[type="number"]:not(:disabled):not([readonly]), input[type="text"]:not(:disabled):not([readonly]), input:not([type]):not(:disabled):not([readonly])'
+                  )
+                );
+              });
+              if (dataCells.length === 0) continue;
+
+              processedRows++;
+              // 행 제목 텍스트 추출 (첫 번째 비입력 셀 또는 전체 행 텍스트 앞부분)
+              const firstCell = tr.querySelector('th, td');
+              const rowTitle = ((firstCell && !dataCells.includes(firstCell) ? firstCell.innerText : tr.innerText) || '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+              const isOverallSatRow = /전반적으로\s*만족|전반적\s*만족/.test(rowTitle);
+              const isImageWordRow = /떠오르는\s*이미지|형용사|단어|연상|생각나는\s*이미지/.test(rowTitle);
+              const isExpRow = /구입|이용해\s*보신|방문해\s*보신|진료|경험이\s*있/.test(rowTitle);
+              const isNegativeRow = /전환|이탈|불만|피해|부작용|중단/.test(rowTitle);
+
+              dataCells.forEach((td, cIdx) => {
+                const plan = plans[cIdx] || plans[0];
+                if (!plan) return;
+                const colBucket = enteredScoresByCol[Math.min(cIdx, enteredScoresByCol.length - 1)];
+
+                // 1) <select> 드롭다운 셀 (평소 태도 등)
+                const sel = td.querySelector('select:not(:disabled)');
+                if (sel && sel.offsetParent !== null) {
+                  const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !/선택/.test(o.text));
+                  if (validOpts.length > 0) {
+                    // 선행 점수 평균 기반 태도 보정 (구입경험 '없음'은 절대 4·5번 불가 -> 2·3번 고정)
+                    let choiceIdx = plan.attitudeChoice - 1;
+                    if (plan.hasPurchaseExp && colBucket.length > 0) {
+                      const dynAvg = Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length);
+                      if (dynAvg >= 4 && choiceIdx < 3) choiceIdx = 3;
+                      else if (dynAvg <= 3 && choiceIdx >= 3) choiceIdx = 2;
+                    }
+                    const targetOpt = validOpts[Math.max(0, Math.min(validOpts.length - 1, choiceIdx))] || validOpts[0];
+                    sel.value = targetOpt.value;
+                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (typeof $ !== 'undefined') $(sel).val(targetOpt.value).trigger('change');
+                    filledSel++;
+                  }
+                  return;
+                }
+
+                // 2) 텍스트 / 숫자 입력 셀 (점수 평가 또는 떠오르는 이미지 형용사)
+                const txtInp = Array.from(
+                  td.querySelectorAll('textarea, input[type="number"], input[type="text"], input:not([type])')
+                ).find(inp => inp.offsetParent !== null && !inp.disabled && !inp.readOnly && !['radio', 'checkbox', 'hidden', 'button', 'submit'].includes(inp.type));
+
+                if (txtInp) {
+                  uncheckSkipCheckboxesInCell(td);
+                  if (isImageWordRow) {
+                    if (triggerInput(txtInp, plan.adjective)) filledTxt++;
+                  } else if (isOverallSatRow) {
+                    const avgScore = colBucket.length > 0
+                      ? Math.max(3, Math.min(5, Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length)))
+                      : plan.overallSatisfaction;
+                    if (triggerInput(txtInp, avgScore)) filledTxt++;
+                  } else {
+                    const sIdx = colBucket.length;
+                    let scoreVal = plan.extendedScores[sIdx % plan.extendedScores.length];
+                    // 동일 점수 일렬 방지 안전장치
+                    if (sIdx >= 2 && colBucket.every(v => v === scoreVal)) {
+                      scoreVal = scoreVal === 4 ? 5 : 4;
+                    }
+                    colBucket.push(scoreVal);
+                    if (triggerInput(txtInp, scoreVal)) filledTxt++;
+                  }
+                  return;
+                }
+
+                // 3) 라디오 버튼 셀 (예/아니오 또는 5점 척도 라디오)
+                const cellRadios = Array.from(td.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
+                if (cellRadios.length > 0) {
+                  const byName = new Map();
+                  cellRadios.forEach(r => {
+                    const k = r.name || '__cell_radio__';
+                    if (!byName.has(k)) byName.set(k, []);
+                    byName.get(k).push(r);
+                  });
+
+                  for (const grp of byName.values()) {
+                    if (grp.length >= 5) {
+                      const sIdx = colBucket.length;
+                      const scoreVal = isOverallSatRow
+                        ? (colBucket.length > 0 ? Math.max(3, Math.min(5, Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length))) : plan.overallSatisfaction)
+                        : plan.extendedScores[sIdx % plan.extendedScores.length];
+                      if (!isOverallSatRow) colBucket.push(scoreVal);
+                      const pickR = grp.find(r => String(r.value) === String(scoreVal)) || grp[Math.min(grp.length - 1, scoreVal - 1)];
+                      if (setRadioChecked(pickR)) filledRad++;
+                    } else {
+                      const wantPositive = isNegativeRow ? false : (isExpRow ? plan.hasPurchaseExp : plan.hasPurchaseExp);
+                      const wantLabel = wantPositive ? /^(예|있다|있음|그렇다)$/ : /^(아니오|아니요|없다|없음|아니다)$/;
+                      const byLb = grp.find(r => {
+                        const lbTxt = (r.closest('label, span, div')?.innerText || document.querySelector(`label[for="${r.id}"]`)?.innerText || '').trim();
+                        return wantLabel.test(lbTxt);
+                      });
+                      const fallbackR = wantPositive ? grp[0] : grp[grp.length - 1];
+                      if (setRadioChecked(byLb || fallbackR)) filledRad++;
+                    }
+                  }
+                  return;
+                }
+
+                // 4) 단독 체크박스 셀
+                const cellCbs = Array.from(td.querySelectorAll('input[type="checkbox"]'))
+                  .filter(cb => !cb.disabled && cb.offsetParent !== null);
+                if (cellCbs.length > 0) {
+                  const validCb = cellCbs.find(cb => !/없음|모름|기타/.test((cb.closest('label, span, div')?.innerText || '').trim())) || cellCbs[0];
+                  if (validCb && !validCb.checked) {
+                    validCb.click();
+                    validCb.checked = true;
+                    if (typeof $ !== 'undefined') $(validCb).prop('checked', true).trigger('change');
+                  }
+                }
+              });
+            }
           }
 
-          return { ok: true, colBrandNames, rowCount: bodyRows.length };
+          // 테이블 외부 또는 누락된 필수 라디오/셀렉트/인풋 최종 스윕
+          document.querySelectorAll('select:not(:disabled)').forEach((sel, idx) => {
+            if (sel.offsetParent !== null && (!sel.value || /선택/.test(sel.options[sel.selectedIndex]?.text || ''))) {
+              const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !/선택/.test(o.text));
+              const plan = plans[idx % plans.length] || plans[0];
+              const targetOpt = validOpts[Math.max(0, Math.min(validOpts.length - 1, plan.attitudeChoice - 1))] || validOpts[0];
+              if (targetOpt) {
+                sel.value = targetOpt.value;
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(sel).val(targetOpt.value).trigger('change');
+                filledSel++;
+              }
+            }
+          });
+
+          const allVisibleRadios = Array.from(document.querySelectorAll('input[type="radio"]:not(:disabled)'))
+            .filter(r => r.offsetParent !== null || r.closest('td, div, label')?.offsetParent !== null);
+          const globalRadioGroups = new Map();
+          allVisibleRadios.forEach(r => {
+            if (!r.name) return;
+            if (!globalRadioGroups.has(r.name)) globalRadioGroups.set(r.name, []);
+            globalRadioGroups.get(r.name).push(r);
+          });
+          let gIdx = 0;
+          for (const grp of globalRadioGroups.values()) {
+            if (!grp.some(r => r.checked) && grp.length > 0) {
+              const plan = plans[gIdx % plans.length] || plans[0];
+              const pick = plan.hasPurchaseExp ? grp[0] : grp[grp.length - 1];
+              if (setRadioChecked(pick)) filledRad++;
+            }
+            gIdx++;
+          }
+
+          document.querySelectorAll('textarea, input[type="number"], input[type="text"], input:not([type])').forEach((inp, idx) => {
+            if (inp.offsetParent === null || inp.disabled || inp.readOnly) return;
+            if (['radio', 'checkbox', 'hidden', 'button', 'submit', 'reset', 'file'].includes(inp.type)) return;
+            if (inp.classList.contains('input-etc') || /etc/i.test(inp.name || '') || /기타/.test((inp.closest('label, li, span')?.innerText || ''))) return;
+            if (String(inp.value || '').trim() !== '') return;
+            const trTxt = (inp.closest('tr, div')?.innerText || '').trim();
+            const val = /이미지|형용사|단어/.test(trTxt)
+              ? (plans[idx % plans.length]?.adjective || '믿음직함')
+              : (plans[idx % plans.length]?.overallSatisfaction || 4);
+            if (triggerInput(inp, val)) filledTxt++;
+          });
+
+          // 미입력 잔여 컨트롤 진단 수집
+          const emptyControls = Array.from(document.querySelectorAll('input:not([type="hidden"]):not(:disabled):not([readonly]), select:not(:disabled), textarea:not(:disabled)'))
+            .filter(el => {
+              if (el.offsetParent === null) return false;
+              if (el.type === 'radio') return !globalRadioGroups.get(el.name)?.some(x => x.checked);
+              if (el.type === 'checkbox') return false;
+              return String(el.value || '').trim() === '';
+            })
+            .slice(0, 5)
+            .map(el => `${el.tagName}[name=${el.name || el.id || '-'}]`);
+
+          return {
+            ok: true,
+            colBrandNames,
+            rowCount: processedRows,
+            filledTxt,
+            filledSel,
+            filledRad,
+            emptyControls
+          };
         }, { plans: colPlans });
 
         if (matrixApplied.colBrandNames?.[0] && catState.purchaseExp === '있음') {
@@ -1488,7 +1683,7 @@ export async function runKmacKbpiSurvey({
         }
 
         emitLog(
-          `[${catState.categoryName} - 문항 3] 3개열 평가 완료 | 1열(만족도=${colPlans[0].overallSatisfaction}, 태도=${colPlans[0].attitudeChoice}번, 이미지="${colPlans[0].adjective}", 경험=${colPlans[0].hasPurchaseExp ? '예' : '아니오'})`,
+          `[${catState.categoryName} - 문항 3] 평가 완료 (행=${matrixApplied.rowCount}, 입력=${matrixApplied.filledTxt}, 선택=${matrixApplied.filledSel}, 라디오=${matrixApplied.filledRad}${matrixApplied.emptyControls?.length ? `, 미입력=${matrixApplied.emptyControls.join(',')}` : ''})`,
           'info',
           'Q3'
         );
