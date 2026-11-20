@@ -19,17 +19,20 @@ export const DEFAULT_KBPI_UI_POLICY = {
 };
 
 export function renderKmacKbpiBlueprint(data = {}, {
+  campId = '',
   blueprintStageGrid,
   badgeMasterStatus,
   btnSaveBaseline,
   onSyncFromSheet = null,
-  onPushToSheet = null
+  onPushToSheet = null,
+  onInspectHtml = null
 } = {}) {
   const policy = {
     ...DEFAULT_KBPI_UI_POLICY,
     ...(data.policy || {})
   };
   const sheetUrl = data.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/16XEpH7ru9A3eBpEHQqYm3cd3sMUWNBxqD-1tXoCR8Hg/edit';
+  const htmlReportUrl = campId ? `/api/campaigns/${encodeURIComponent(campId)}/kbpi-html-report` : '#';
 
   // 기존 전통시장 3대 업종 그룹 탭 및 프리셋 바 숨김
   const groupNav = document.querySelector('.blueprint-group-nav-container');
@@ -87,8 +90,8 @@ export function renderKmacKbpiBlueprint(data = {}, {
         <ul class="kbpi-rule-list">
           <li><strong>문항 1 (비보조):</strong> <code>1-1 ~ 1-3</code> 중복 없는 정식 브랜드 3개 필수 입력, <code>1-4</code> 추가 1개 또는 <code>없음</code> 분산</li>
           <li><strong>문항 2 (보조):</strong> 문항 1 응답 브랜드 포함 + 미체크 브랜드 중 <strong>랜덤 2~4개 추가 선택</strong> (공식 보기 자동 학습)</li>
-          <li><strong>문항 3 (1~10, 12번):</strong> <code>44444</code> 일렬 응답 절대 금지! <code>3·4·5</code> 랜덤 분산 후 <code>10) 전반적 만족도</code>는 1~9번 평균 반올림 입력, <code>12) 이미지</code>는 형용사·구어체·명사 다양화</li>
-          <li><strong>구입경험 '없음' 절대 규칙:</strong> 시트에 <code>구입경험='없음'</code> 지정 시 <strong><code>3-11</code>은 <code>1·2·3번</code> 중 선택(<code>4·5번</code> 선택 불가)</strong> + <strong><code>3-13</code> 전원 '아니오'</strong> + <strong><code>문항 4·5</code> '없음'</strong> 일괄 처리</li>
+          <li><strong>문항 3 (가변 행 매트릭스):</strong> 소비재·유통·병원 등 산업군별 가변 평가 행 자동 인식, <code>3·4·5</code> 분산 후 <code>전반적 만족도</code> 평균 반올림 연동</li>
+          <li><strong>구입경험 '없음' 절대 규칙:</strong> 시트에 <code>구입경험='없음'</code> 지정 시 <strong><code>태도 문항</code>은 <code>1·2·3번</code> 중 선택(<code>4·5번</code> 금지)</strong> + <strong><code>예/아니오</code> 전원 '아니오'</strong> + <strong><code>문항 4·5</code> '없음'</strong> 일괄 처리</li>
         </ul>
       </div>
 
@@ -97,17 +100,23 @@ export function renderKmacKbpiBlueprint(data = {}, {
         <div class="kbpi-card-head kbpi-card-head-between">
           <div class="flex-center-gap-8">
             <span class="kbpi-step-pill step-tunable">STAGE 3</span>
-            <h3 class="kbpi-card-title">세부 확률 · 파일럿 정지 · 구입 채널 · 시트 연동 설정</h3>
+            <h3 class="kbpi-card-title">세부 확률 · 파일럿 정지 · 구입 채널 · HTML 구조 분석</h3>
           </div>
           <div class="flex-center-gap-8">
+            <button type="button" id="btn-kbpi-inspect-html" class="btn-pill btn-pill-primary btn-pill-small">
+              <i class="fa-solid fa-microscope"></i> 전 문항 HTML·구조 정밀 추출
+            </button>
+            <a id="link-kbpi-download-html" href="${escapeHtml(htmlReportUrl)}" class="btn-pill btn-pill-secondary btn-pill-small">
+              <i class="fa-solid fa-file-arrow-down text-primary-color"></i> HTML 분석 JSON 다운로드
+            </a>
             <a href="${escapeHtml(sheetUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small">
               <i class="fa-solid fa-table text-success-color"></i> 구글 시트 열기
             </a>
             <button type="button" id="btn-kbpi-pull-sheet" class="btn-pill btn-pill-secondary btn-pill-small">
-              <i class="fa-solid fa-cloud-arrow-down text-primary-color"></i> 시트 구입경험 설정 불러오기
+              <i class="fa-solid fa-cloud-arrow-down text-primary-color"></i> 시트 설정 불러오기
             </button>
             <button type="button" id="btn-kbpi-push-sheet" class="btn-pill btn-pill-secondary btn-pill-small">
-              <i class="fa-solid fa-cloud-arrow-up"></i> 현재 상태 시트로 내보내기
+              <i class="fa-solid fa-cloud-arrow-up"></i> 시트로 내보내기
             </button>
           </div>
         </div>
@@ -164,6 +173,10 @@ export function renderKmacKbpiBlueprint(data = {}, {
     </div>
   `;
 
+  const btnInspect = document.getElementById('btn-kbpi-inspect-html');
+  if (btnInspect && typeof onInspectHtml === 'function') {
+    btnInspect.addEventListener('click', () => onInspectHtml());
+  }
   const btnPull = document.getElementById('btn-kbpi-pull-sheet');
   if (btnPull && typeof onSyncFromSheet === 'function') {
     btnPull.addEventListener('click', () => onSyncFromSheet());

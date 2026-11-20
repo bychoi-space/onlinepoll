@@ -721,57 +721,66 @@ async function classifyCurrentScreen(target) {
       categoryName = quoteBrandMatch[1].trim();
     }
 
-    // 진행률 퍼센트 추출
+    // 진행률 퍼센트 및 GetData 문항 코드(qNameAttr) 추출
     const pctMatch = bodyText.match(/(\d{1,3})\s*%/);
     const progressPct = pctMatch ? Number(pctMatch[1]) : null;
     const bodySnippet = bodyText.replace(/\s+/g, ' ').slice(0, 220);
     const qTypeEl = document.querySelector('[question-type]');
-    const domMeta = `qType=${qTypeEl?.getAttribute('question-type') || '-'},grade=${document.querySelectorAll('.s-gradeclick').length},sel=${document.querySelectorAll('select').length},rad=${document.querySelectorAll('input[type="radio"]').length},cb=${document.querySelectorAll('input[type="checkbox"]').length},txt=${document.querySelectorAll('input[type="text"],input[type="number"],textarea').length}`;
+    const qNameEl = Array.from(document.querySelectorAll('[question-name], [qname], [data-qname], [id^="BOX_"]'))
+      .find(el => el.offsetParent !== null);
+    const qNameAttr = qNameEl
+      ? (qNameEl.getAttribute('question-name') || qNameEl.getAttribute('qname') || qNameEl.getAttribute('data-qname') || qNameEl.id.replace(/^BOX_/, ''))
+      : '';
+    const visibleControlCount = Array.from(
+      document.querySelectorAll('input:not([type="hidden"]), select, textarea, .s-gradeclick')
+    ).filter(el => el.offsetParent !== null).length;
+    const domMeta = `qName=${qNameAttr || '-'},qType=${qTypeEl?.getAttribute('question-type') || '-'},grade=${document.querySelectorAll('.s-gradeclick').length},sel=${document.querySelectorAll('select').length},rad=${document.querySelectorAll('input[type="radio"]').length},cb=${document.querySelectorAll('input[type="checkbox"]').length},txt=${document.querySelectorAll('input[type="text"],input[type="number"],textarea').length}`;
 
     // 설문 완료 화면 감지
     if (/설문이\s*종료|조사가\s*완료|응답해\s*주셔서\s*감사|참여해\s*주셔서\s*대단히\s*감사|수고하셨습니다/.test(bodyText) &&
-        document.querySelectorAll('input:not([type="hidden"]), select, textarea').length === 0) {
-      return { screenType: 'COMPLETED', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+        visibleControlCount === 0 &&
+        !document.querySelector('#next')) {
+      return { screenType: 'COMPLETED', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 1) GP1 위치 확인
     if (/GP1/.test(bodyText) && /현재\s*위치를\s*확인/.test(bodyText)) {
-      return { screenType: 'GP1', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'GP1', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 2) 응답자 신상정보 등록 (이름 / 성별 / 연령(만) / 휴대폰 / 전화번호 + 응답자 확인)
     if (/응답자\s*확인/.test(bodyText) && /연령\s*\(\s*만\s*\)/.test(bodyText)) {
-      return { screenType: 'PROFILE', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'PROFILE', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 3) SQ1 스크리닝 (비산업군 화면에서 SQ1 또는 '모두 없다' 보기 출현 시)
     if (!categoryName && (/\bSQ\s*1\b/i.test(bodyText) || /모두\s*없다/.test(bodyText) || /다음\s*업종|종사하는\s*가족|시장조사|광고대행사/.test(bodyText))) {
-      return { screenType: 'SQ1', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'SQ1', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 4) 문항 1 (1-1, 1-2, 1-3, 1-4 비보조 인지도)
     if (/1-1/.test(bodyText) && /가장\s*먼저\s*생각나는\s*브랜드/.test(bodyText)) {
-      return { screenType: 'Q1_UNAIDED', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'Q1_UNAIDED', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 5) 문항 2 (보조 인지도 체크박스)
     if (/알고\s*계시는\s*브랜드를\s*모두/.test(bodyText)) {
-      return { screenType: 'Q2_AIDED', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'Q2_AIDED', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 6) 문항 3 (1점~5점 평가 매트릭스 + 11~13번)
     if (/1점\s*~\s*5점으로\s*평가/.test(bodyText) || /전반적으로\s*만족한다/.test(bodyText)) {
-      return { screenType: 'Q3_MATRIX', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'Q3_MATRIX', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 7) 문항 4-1 (구입 채널 경로 주관식)
     if (/\b4-1\b/.test(bodyText) || /어느\s*채널\s*\(\s*경로\s*\)\s*을?\s*통해서/.test(bodyText)) {
-      return { screenType: 'Q4_1_CHANNEL', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'Q4_1_CHANNEL', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 8) 문항 4 (가장 최근에 구입/이용/방문한 브랜드 — 소매/서비스/제품 전 산업군 호환)
     if (/가장\s*최근에[^\n]{0,35}(구입|이용|방문|사용)/.test(bodyText)) {
-      return { screenType: 'Q4_RECENT_BRAND', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'Q4_RECENT_BRAND', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     // 9) 산업군(categoryName)이 명시된 본 설문 문항(4, 5, 6, 7, 8) 배지 번호 판별!
@@ -784,31 +793,35 @@ async function classifyCurrentScreen(target) {
       firstBadge = badgeTexts[0] || '';
 
       if (firstBadge === '4') {
-        return { screenType: 'Q4_RECENT_BRAND', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+        return { screenType: 'Q4_RECENT_BRAND', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
       }
       if (firstBadge === '5' || /주\s*구입|가장\s*선호|주로\s*이용|가장\s*자주/.test(bodyText)) {
-        return { screenType: 'Q5_SAME_AS_Q4', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+        return { screenType: 'Q5_SAME_AS_Q4', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
       }
       if (firstBadge === '6' || (document.querySelectorAll('input[type="radio"]').length === 2 && /예/.test(bodyText) && /아니오/.test(bodyText))) {
-        return { screenType: 'Q6_YES_NO', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+        return { screenType: 'Q6_YES_NO', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
       }
       if (firstBadge === '7' || document.querySelectorAll('.s-gradeclick').length >= 2 || (/1\s*순위/.test(bodyText) && /2\s*순위/.test(bodyText))) {
-        return { screenType: 'Q7_RANK_1_2', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+        return { screenType: 'Q7_RANK_1_2', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
       }
       if (firstBadge === '8') {
-        return { screenType: 'Q8_MULTI_2', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+        return { screenType: 'Q8_MULTI_2', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
       }
     }
 
-    // 최종 제출 버튼 여부 판별
+    // 최종 제출/종료 직전 관문 판별 (GetData END/OUTRO/동의서 및 종료 문구 포함)
     const hasFinalBtn = Array.from(document.querySelectorAll('#next, button, input[type="button"], input[type="submit"], a'))
-      .some(el => /조사\s*완료|설문\s*완료|최종\s*제출|완료하기/.test((el.innerText || el.value || '').trim()));
-    if (hasFinalBtn) {
-      return { screenType: 'FINAL_SUBMIT_GATE', categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      .some(el => /조사\s*완료|설문\s*완료|최종\s*제출|완료하기|설문\s*종료/.test((el.innerText || el.value || '').trim()));
+    const isEndOutroScreen = /^(END|OUTRO|FINISH|COMPLETE|LAST|SIGN|AGREE)/i.test(qNameAttr) ||
+      /설문을?\s*마치|응답을?\s*완료하시려면|참여해\s*주셔서\s*(대단히\s*)?감사|응답해\s*주셔서\s*감사|수고하셨습니다|설문이\s*모두\s*끝났|개인정보\s*수집.*동의/.test(bodyText);
+    if (hasFinalBtn || isEndOutroScreen) {
+      return { screenType: 'FINAL_SUBMIT_GATE', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
     }
 
     return {
       screenType: 'GENERIC_STEP',
+      qNameAttr,
+      visibleControlCount,
       categoryName,
       progressPct,
       badge: firstBadge,
@@ -858,6 +871,7 @@ export async function runKmacKbpiSurvey({
   quotaIndex = 1,
   pilotMode = false,
   safetyGuard = true,
+  captureHtmlDumpPath = null,
   onProgress = null
 } = {}) {
   const policy = {
@@ -895,6 +909,20 @@ export async function runKmacKbpiSurvey({
   const effectiveProxy = policy.proxyServer || process.env.KBPI_PROXY_SERVER || '';
   let browser = null;
   const alertHistory = [];
+  const seenCategoriesOrder = [];
+  const htmlInspectionDump = captureHtmlDumpPath
+    ? {
+        extractedAt: new Date().toISOString(),
+        respondent: { seq, uid, finalId, name: respondentName, region, gender, ageGroup, age },
+        networkJoinPayloads: [],
+        windowSchema: null,
+        screens: [],
+        seenCategories: [],
+        alertHistory: [],
+        finalOutcome: null
+      }
+    : null;
+  const seenHtmlTemplateKeys = new Set();
 
   try {
     browser = await launchChromium({
@@ -940,6 +968,30 @@ export async function runKmacKbpiSurvey({
         };
       }
     }, { lat: gps.latitude, lng: gps.longitude });
+
+    if (htmlInspectionDump) {
+      context.on('response', async (resp) => {
+        try {
+          const rUrl = resp.url() || '';
+          if (!/\/Join\/|\/Survey\/|SNUM=230/i.test(rUrl)) return;
+          const ct = (resp.headers()['content-type'] || '').toLowerCase();
+          if (!ct.includes('json') && !/\/Join\/(Init|Next|Start|Load|GetData)/i.test(rUrl)) return;
+          if (htmlInspectionDump.networkJoinPayloads.length >= 120) return;
+          const bodyTxt = await resp.text();
+          if (bodyTxt && bodyTxt.length <= 2500000) {
+            let parsed = null;
+            try { parsed = JSON.parse(bodyTxt); } catch (e) { parsed = bodyTxt.slice(0, 20000); }
+            htmlInspectionDump.networkJoinPayloads.push({
+              url: rUrl,
+              status: resp.status(),
+              data: parsed
+            });
+          }
+        } catch (respErr) {
+          console.warn('[K-BPI HTML 분석 응답 캡처 경고]', respErr.message);
+        }
+      });
+    }
 
     const rootPage = await context.newPage();
     const attachDialogHandler = (pg) => {
@@ -990,7 +1042,6 @@ export async function runKmacKbpiSurvey({
     await surveyPage.waitForTimeout(1500);
 
     // 산업군별 런타임 상태 추적
-    const seenCategoriesOrder = [];
     const categoryRuntimeMap = new Map();
 
     const getOrInitCategoryState = async (catNameRaw) => {
@@ -1085,10 +1136,30 @@ export async function runKmacKbpiSurvey({
         await surveyPage.waitForTimeout(600);
         continue;
       }
-      const sig = `${info.screenType}|${info.categoryName}|${info.progressPct}`;
+      const sig = `${info.screenType}|${info.qNameAttr || ''}|${info.categoryName}|${info.progressPct}`;
       if (sig === lastSignature) {
         sameScreenStuckCount++;
         if (sameScreenStuckCount >= 5) {
+          if (htmlInspectionDump) {
+            const stuckDom = await activeTarget.evaluate(() => {
+              const container = document.querySelector('[question-type], #question, .question-wrap, main') || document.body;
+              return {
+                url: location.href,
+                fullText: (document.body?.innerText || '').slice(0, 4000),
+                outerHTML: (container?.outerHTML || '').slice(0, 45000)
+              };
+            }).catch(e => ({ err: e.message }));
+            htmlInspectionDump.screens.push({
+              stepIter,
+              stalled: true,
+              screenType: info.screenType,
+              qNameAttr: info.qNameAttr,
+              categoryName: info.categoryName,
+              progressPct: info.progressPct,
+              domMeta: info.domMeta,
+              ...stuckDom
+            });
+          }
           throw new Error(
             `동일 화면 반복 정체 감지 (${sig}) | DOM=[${info.domMeta || '-'}] | URL=${surveyPage.url()} | 버튼=[${(info.buttonTexts || []).join(', ')}] | 요약="${(info.bodySnippet || '').slice(0, 150)}" — 최근 알림: ${alertHistory.slice(-2).join(' / ') || '없음'}`
           );
@@ -1097,10 +1168,95 @@ export async function runKmacKbpiSurvey({
         sameScreenStuckCount = 0;
         lastSignature = sig;
         emitLog(
-          `[화면 진입] ${info.screenType}${info.categoryName ? ` (${info.categoryName})` : ''} | 진행률=${info.progressPct ?? '-'}% | [${info.domMeta || '-'}]`,
+          `[화면 진입] ${info.screenType}${info.categoryName ? ` (${info.categoryName})` : ''}${info.qNameAttr ? ` [${info.qNameAttr}]` : ''} | 진행률=${info.progressPct ?? '-'}% | [${info.domMeta || '-'}]`,
           'info',
           'STEP'
         );
+
+        if (htmlInspectionDump) {
+          if (!htmlInspectionDump.windowSchema && info.screenType !== 'CAPI_LIST_PENDING') {
+            htmlInspectionDump.windowSchema = await activeTarget.evaluate(() => {
+              const iframe = document.createElement('iframe');
+              iframe.style.display = 'none';
+              document.body.appendChild(iframe);
+              const baseKeys = new Set(Object.keys(iframe.contentWindow || {}));
+              iframe.remove();
+
+              const customKeys = Object.keys(window).filter(k =>
+                !baseKeys.has(k) && !/^(\$|jQuery|webkit|moz|__)/i.test(k)
+              );
+              const scriptSrcs = Array.from(document.querySelectorAll('script[src]')).map(s => s.src);
+              const snapshot = { customWindowKeys: customKeys, scriptSrcs, values: {} };
+              for (const k of customKeys.slice(0, 30)) {
+                const v = window[k];
+                if (typeof v === 'function') {
+                  snapshot.values[k] = `[Function: ${String(v).slice(0, 240)}]`;
+                  continue;
+                }
+                try {
+                  const s = JSON.stringify(v);
+                  if (s && s.length <= 600000) snapshot.values[k] = JSON.parse(s);
+                  else if (s) snapshot.values[k] = `[Large Object: ${s.length} chars] ` + s.slice(0, 15000);
+                } catch (e) {
+                  snapshot.values[k] = `[Unserializable: ${typeof v}]`;
+                }
+              }
+              return snapshot;
+            }).catch(e => ({ err: e.message }));
+          }
+
+          const templateKey = `${info.screenType}|${info.domMeta}`;
+          const includeFullHtml = !seenHtmlTemplateKeys.has(templateKey) || info.screenType === 'GENERIC_STEP' || info.screenType === 'FINAL_SUBMIT_GATE';
+          seenHtmlTemplateKeys.add(templateKey);
+
+          const screenSnap = await activeTarget.evaluate(({ wantHtml }) => {
+            const qBox = document.querySelector('[question-type], #question, .question-box, main') || document.body;
+            const controls = Array.from(
+              document.querySelectorAll('input:not([type="hidden"]), select, textarea, .s-gradeclick')
+            )
+              .filter(el => el.offsetParent !== null)
+              .slice(0, 80)
+              .map(el => ({
+                tag: el.tagName,
+                type: el.type || (el.classList.contains('s-gradeclick') ? 's-gradeclick' : ''),
+                name: el.name || '',
+                qname: el.getAttribute('qname') || '',
+                akey: el.getAttribute('akey') || '',
+                vkey: el.getAttribute('vkey') || '',
+                hkey: el.getAttribute('hkey') || '',
+                disabled: Boolean(el.disabled),
+                readOnly: Boolean(el.readOnly),
+                label: (el.closest('label, tr, li, div')?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 90),
+                options: el.tagName === 'SELECT'
+                  ? Array.from(el.options).slice(0, 12).map(o => `${o.value}:${o.text.trim()}`)
+                  : undefined
+              }));
+            const inlineScripts = Array.from(qBox.querySelectorAll('script'))
+              .map(s => (s.textContent || '').trim())
+              .filter(Boolean)
+              .join('\n---\n')
+              .slice(0, 15000);
+            return {
+              url: location.href,
+              qNameAttr: qBox.getAttribute?.('question-name') || qBox.getAttribute?.('qname') || '',
+              qTypeAttr: qBox.getAttribute?.('question-type') || '',
+              bodyText: (document.body?.innerText || '').replace(/[ \t]+/g, ' ').trim().slice(0, 2500),
+              controls,
+              inlineScripts: inlineScripts || undefined,
+              outerHTML: wantHtml ? (qBox.outerHTML || '').slice(0, 35000) : undefined
+            };
+          }, { wantHtml: includeFullHtml }).catch(e => ({ err: e.message }));
+
+          htmlInspectionDump.screens.push({
+            stepIter,
+            screenType: info.screenType,
+            categoryName: info.categoryName,
+            progressPct: info.progressPct,
+            domMeta: info.domMeta,
+            buttonTexts: info.buttonTexts,
+            ...screenSnap
+          });
+        }
       }
 
       if (info.screenType === 'CAPI_LIST_PENDING') {
@@ -2145,16 +2301,9 @@ export async function runKmacKbpiSurvey({
         }, { sNum: seedNum8 });
 
         emitLog(`[${catState.categoryName} - 문항 8] 선택 완료 = [${picked2.join(', ')}]`, 'info', 'Q8');
-        await surveyPage.waitForTimeout(450);
-        await clickNextButton(activeTarget);
-        continue;
-      }
-
-      // [최종 완료 직전 관문] Rule 10 안전 대기 처리
-      if (info.screenType === 'FINAL_SUBMIT_GATE') {
-        if (safetyGuard || policy.stopBeforeFinalSubmit !== false) {
+        if ((safetyGuard || policy.stopBeforeFinalSubmit !== false) && info.progressPct !== null && info.progressPct >= (captureHtmlDumpPath ? 96 : 98)) {
           emitLog(
-            `🛡️ [완료 직전 안전 대기] #${seq} ${respondentName} — 최종 완료 화면 직전에 안전 정지했습니다 (진행률 ${info.progressPct || 99}%).`,
+            `🛡️ [완료 직전 안전 대기] #${seq} ${respondentName} — 마지막 품목 문항 8 작성 후 제출 직전(${info.progressPct}%)에서 안전 정지했습니다.`,
             'info',
             'SAFE_WAIT'
           );
@@ -2162,17 +2311,44 @@ export async function runKmacKbpiSurvey({
             success: true,
             safetyStopped: true,
             stoppedAt: 'FINAL_GATE',
-            statusLabel: '완료직전 대기(99%)',
+            statusLabel: `완료직전 대기(${info.progressPct}%)`,
             quotaStatus: 'pilot_done',
-            progress: `${info.progressPct || 99}%`,
+            progress: `${info.progressPct}%`,
             categoryConfigs,
             gps
           };
         }
+        await surveyPage.waitForTimeout(450);
+        await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // [최종 완료 직전 관문] Rule 10 안전 대기 처리 (진행률 임계치 및 비문항 종료 안내 화면 포함)
+      const isNearCompletionGate =
+        info.screenType === 'FINAL_SUBMIT_GATE' ||
+        (info.progressPct !== null && info.progressPct >= (captureHtmlDumpPath ? 96 : 98)) ||
+        (seenCategoriesOrder.length >= 8 && info.visibleControlCount === 0);
+
+      if (isNearCompletionGate && (safetyGuard || policy.stopBeforeFinalSubmit !== false)) {
+        emitLog(
+          `🛡️ [완료 직전 안전 대기] #${seq} ${respondentName} — 최종 완료 화면 직전에 안전 정지했습니다 (진행률 ${info.progressPct || 99}%, 문항=${info.qNameAttr || info.screenType}).`,
+          'info',
+          'SAFE_WAIT'
+        );
+        return {
+          success: true,
+          safetyStopped: true,
+          stoppedAt: 'FINAL_GATE',
+          statusLabel: `완료직전 대기(${info.progressPct || 99}%)`,
+          quotaStatus: 'pilot_done',
+          progress: `${info.progressPct || 99}%`,
+          categoryConfigs,
+          gps
+        };
       }
 
       // [배경변인(DQ) 또는 일반 미분류 스텝] 연령/성별 정합 안전 응답
-      emitLog(`[일반/배경 문항 처리] 진행률=${info.progressPct ?? '-'}% (${info.badge || 'DQ'})`, 'info', 'DQ');
+      emitLog(`[일반/배경 문항 처리] 문항=${info.qNameAttr || info.badge || 'DQ'} | 진행률=${info.progressPct ?? '-'}%`, 'info', 'DQ');
       await activeTarget.evaluate(({ rAge, seedNum }) => {
         const isForbidden = (txt) => /기타|모름|거절/.test(txt);
 
@@ -2228,6 +2404,9 @@ export async function runKmacKbpiSurvey({
 
     throw new Error('최대 단계 반복 횟수(260회)를 초과했습니다.');
   } catch (err) {
+    if (htmlInspectionDump) {
+      htmlInspectionDump.finalOutcome = { success: false, error: err.message };
+    }
     emitLog(`[K-BPI 실행 오류] ${err.message}`, 'error', 'ERROR');
     return {
       success: false,
@@ -2236,6 +2415,22 @@ export async function runKmacKbpiSurvey({
       gps
     };
   } finally {
+    if (htmlInspectionDump && captureHtmlDumpPath) {
+      try {
+        htmlInspectionDump.seenCategories = seenCategoriesOrder;
+        htmlInspectionDump.alertHistory = alertHistory;
+        htmlInspectionDump.categoryConfigs = categoryConfigs;
+        if (!htmlInspectionDump.finalOutcome) {
+          htmlInspectionDump.finalOutcome = { success: true, note: '안전 대기 지점 도달 및 캡처 완료' };
+        }
+        const dumpDir = path.dirname(captureHtmlDumpPath);
+        if (!fs.existsSync(dumpDir)) fs.mkdirSync(dumpDir, { recursive: true });
+        writeJsonAtomicSync(captureHtmlDumpPath, htmlInspectionDump);
+        emitLog(`[HTML 구조 분석 저장 완료] 총 ${htmlInspectionDump.screens.length}개 화면 · 네트워크 패킷 ${htmlInspectionDump.networkJoinPayloads.length}건 저장됨`, 'info', 'HTML_DUMP');
+      } catch (dumpErr) {
+        console.warn('[K-BPI HTML 분석 리포트 저장 경고]', dumpErr.message);
+      }
+    }
     if (browser) {
       await browser.close().catch(e => console.warn('[K-BPI Runner Browser 종료 경고]', e.message));
     }

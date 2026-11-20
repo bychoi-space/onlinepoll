@@ -17,12 +17,12 @@ import {
 import {
   renderKmacKbpiBlueprint,
   collectKmacKbpiPolicyFromDom
-} from './modules/blueprint-kbpi.js?v=20261120_kbpi_seg_v1';
+} from './modules/blueprint-kbpi.js?v=20261120_kbpi_seg_v2';
 import {
   renderUniversalStep3SegmentPanel,
   resolveSurveySegmentAxes,
   isQuotaItemDone
-} from './modules/quota-segment-filter.js?v=20261120_kbpi_seg_v1';
+} from './modules/quota-segment-filter.js?v=20261120_kbpi_seg_v2';
 import {
   PRESET_STANDARD,
   PRESET_GROWTH,
@@ -1048,6 +1048,36 @@ async function initSurveyDetailPage() {
       appendLog('error', `K-BPI 단건 검증 실패: ${err.message}`);
       setRunningState(false);
       alert(`K-BPI 단건 검증 실패:\n${err.message}`);
+    }
+  }
+
+  async function runKbpiHtmlInspection() {
+    if (!currentCampaign?.id) return;
+    try {
+      setRunningState(true);
+      openMonitorDrawer();
+      resetTimelineChips();
+      appendLog('info', '🔬 [K-BPI 전 문항 HTML·구조 정밀 추출] 현재 설정을 저장하고 슬롯 진입부터 완료 직전(96% 미제출 안전 정지)까지 전 문항 DOM·스크립트·스키마를 정밀 캡처합니다...');
+      await saveBaseline(false);
+      const latestPol = collectKmacKbpiPolicyFromDom(kbpiPolicyState || {});
+      const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/inspect-kbpi-html`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quotaIndex: 1,
+          policy: latestPol
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'HTML 구조 정밀 추출 시작 실패');
+      }
+      appendLog('success', `🔬 ${data.message}`);
+      showToast('K-BPI 전 문항 HTML·스키마 추출이 시작되었습니다.', 'info');
+    } catch (err) {
+      setRunningState(false);
+      appendLog('error', `K-BPI HTML 구조 추출 시작 실패: ${err.message}`);
+      showToast('HTML 구조 추출 오류: ' + err.message, 'error');
     }
   }
 
@@ -2734,11 +2764,13 @@ async function initSurveyDetailPage() {
       const isKmacKbpiCampaign = (data.surveyType === 'kmac_kbpi' || currentCampaign?.surveyType === 'kmac_kbpi');
       if (isKmacKbpiCampaign) {
         kbpiPolicyState = renderKmacKbpiBlueprint(data, {
+          campId,
           blueprintStageGrid,
           badgeMasterStatus,
           btnSaveBaseline,
           onSyncFromSheet: () => syncKbpiSheet('pull'),
-          onPushToSheet: () => syncKbpiSheet('push')
+          onPushToSheet: () => syncKbpiSheet('push'),
+          onInspectHtml: () => runKbpiHtmlInspection()
         });
         return;
       }
@@ -4362,6 +4394,30 @@ async function initSurveyDetailPage() {
           setRunningState(false);
           await loadCampaign();
           appendLog('error', `[파일럿 실패] ${data.error || '파일럿 실행 중 오류가 발생했습니다.'}`);
+        }
+
+        // K-BPI 전 문항 HTML·구조 정밀 추출 완료 및 자동 다운로드
+        else if (data.type === 'KBPI_HTML_REPORT_READY') {
+          if (data.campaignId && data.campaignId !== campId) return;
+          setRunningState(false);
+          await loadCampaign();
+          if (data.hasDump && data.downloadUrl) {
+            appendLog(
+              data.success ? 'success' : 'warn',
+              data.success
+                ? `📥 [K-BPI HTML 분석 리포트 준비 완료] "${data.bizName || ''}" 완료 직전까지 캡처 완료! JSON 파일을 자동 다운로드합니다.`
+                : `📥 [K-BPI HTML 분석 리포트 캡처 완료] 중간 정지 화면까지 JSON 파일에 저장되었습니다 (${data.error || ''}). 자동 다운로드합니다.`
+            );
+            showToast('K-BPI HTML 분석 JSON 파일 다운로드를 시작합니다.', 'success');
+            const dlAnchor = document.createElement('a');
+            dlAnchor.href = `${data.downloadUrl}?t=${Date.now()}`;
+            dlAnchor.download = 'kbpi_230_html_analysis.json';
+            document.body.appendChild(dlAnchor);
+            if (typeof dlAnchor.click === 'function') dlAnchor.click();
+            if (typeof dlAnchor.remove === 'function') dlAnchor.remove();
+          } else {
+            appendLog('error', `[K-BPI HTML 분석 실패] ${data.error || '리포트 파일이 생성되지 않았습니다.'}`);
+          }
         }
 
         // 배치 진행 (현재 캠페인 이벤트만 반영)
