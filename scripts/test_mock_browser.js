@@ -471,13 +471,52 @@ const teenAlcohol = kbpiRunnerMod.decideCategoryPurchaseExp({
   policy: { purchaseYesRate: 100, teenAutoNoneUnfitCategories: true },
   rng: () => 0.1
 });
-if (explicitNone !== '없음' || teenAlcohol !== '없음') {
-  throw new Error(`decideCategoryPurchaseExp failed: explicitNone=${explicitNone}, teenAlcohol=${teenAlcohol}`);
+const teenCyberUniv = kbpiRunnerMod.decideCategoryPurchaseExp({
+  categoryName: '사이버대학',
+  categorySlotIdx: 15,
+  categoryConfigs: [],
+  ageGroup: '10대',
+  respondentAge: 18,
+  policy: { purchaseYesRate: 100, teenAutoNoneUnfitCategories: true },
+  rng: () => 0.1
+});
+const maleFemaleProduct = kbpiRunnerMod.decideCategoryPurchaseExp({
+  categoryName: '생리대',
+  categorySlotIdx: 4,
+  categoryConfigs: [],
+  gender: '남',
+  respondentAge: 28,
+  policy: { purchaseYesRate: 100 },
+  rng: () => 0.1
+});
+if (explicitNone !== '없음' || teenAlcohol !== '없음' || teenCyberUniv !== '없음' || maleFemaleProduct !== '없음') {
+  throw new Error(`decideCategoryPurchaseExp failed: explicitNone=${explicitNone}, teenAlcohol=${teenAlcohol}, teenCyberUniv=${teenCyberUniv}, maleFemaleProduct=${maleFemaleProduct}`);
 }
+
+const hospChannels = kbpiRunnerMod.resolveSmartChannelPool('지역거점 종합병원');
+const cyberChannels = kbpiRunnerMod.resolveSmartChannelPool('사이버대학');
+const foodChannels = kbpiRunnerMod.resolveSmartChannelPool('우유', { customFoodLivingChannels: '편의점, 동네슈퍼, 이마트' });
+if (
+  !hospChannels.some(c => c.includes('병원')) ||
+  !cyberChannels.some(c => c.includes('홈페이지')) ||
+  !foodChannels.includes('동네슈퍼') ||
+  kbpiRunnerMod.Q3_RECOMMEND_REASON_POOLS.positive.length < 5
+) {
+  throw new Error('K-BPI v2.0 channel / 6-1 reason pool verification failed!');
+}
+
+const twentySlotNorm = kbpiSyncMod.normalizeCategoryConfigs(
+  Array.from({ length: 20 }, (_, idx) => ({ slot: idx + 1, categoryName: `품목${idx + 1}`, purchaseExp: '있음' }))
+);
+if (twentySlotNorm.length !== 20 || twentySlotNorm[19].categoryName !== '품목20') {
+  throw new Error('K-BPI 20-slot normalizeCategoryConfigs verification failed!');
+}
+
 const seoulGps1 = kbpiSyncMod.computeKbpiGps('서울', '1_1_1_1_1');
 const incheonGps1 = kbpiSyncMod.computeKbpiGps('인천', '2_1_1_1_1');
 if (Math.abs(seoulGps1.latitude - 37.654192) > 0.001 || Math.abs(incheonGps1.latitude - 37.456256) > 0.001) {
   throw new Error('K-BPI GPS micro-jitter out of 50~80m bounds!');
 }
-console.log('✅ [4/4] K-BPI 매트릭스 정합성(300회 시뮬레이션) · 구입경험 없음 제약 · 서울/인천 GPS 미세분산 검증 100% 통과');
+console.log('✅ [4/4] K-BPI v2.0 매트릭스(6-1~6-3) · 연령/성별 적합성 · 업종별 채널 · 20품목 확장 · GPS 검증 100% 통과');
+
 

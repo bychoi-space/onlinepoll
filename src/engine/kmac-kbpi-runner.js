@@ -49,10 +49,91 @@ export const DEFAULT_KBPI_POLICY = {
 };
 
 const TEEN_UNFIT_CATEGORY_KEYWORDS = [
-  '소주', '맥주', '위스키', '주류', '숙취', '담배',
-  '자동차', '타이어', '주유소', '운전자보험', '생명보험', '손해보험', '신용카드', '증권', '대출',
-  '음식물처리기', '김치냉장고', '식기세척기', '비데', '정수기', '안마의자', '침대', '보일러'
+  '소주', '맥주', '위스키', '와인', '막걸리', '전통주', '주류', '숙취', '담배', '전자담배',
+  '자동차', '수입차', '전기차', '중고차', '타이어', '주유소', '충전소', '내비게이션', '블랙박스', '렌터카', '카셰어링',
+  '운전자보험', '생명보험', '손해보험', '실손보험', '연금', '보험', '신용카드', '증권', '자산관리', '펀드', '대출', '저축은행', '신탁',
+  '사이버대학', '대학원', 'MBA', '평생교육', '결혼정보', '웨딩', '상조', '산후조리', '기저귀', '분유', '유모차', '카시트', '유아',
+  '음식물처리기', '김치냉장고', '식기세척기', '비데', '정수기', '안마의자', '침대', '매트리스', '보일러', '온수기', '부엌가구', '인테리어', '창호', '아파트', '오피스텔',
+  '건강검진센터', '임플란트', '구호개발단체', 'NGO', '자선'
 ];
+
+const MALE_UNFIT_CATEGORY_KEYWORDS = [
+  '생리대', '여성청결제', '여성복', '여성정장', '여성언더웨어', '산부인과', '산후조리'
+];
+
+const FEMALE_UNFIT_CATEGORY_KEYWORDS = [
+  '남성정장', '남성화장품', '전기면도기', '면도기', '남성복'
+];
+
+export const Q3_RECOMMEND_REASON_POOLS = {
+  positive: [
+    '인지도가 높고 신뢰가 가서',
+    '서비스와 품질이 우수해서',
+    '주변 평판이 좋아서',
+    '이용이 편리하고 만족스러워서',
+    '전문성과 시스템이 믿음직해서',
+    '기대만큼 만족도가 높아서',
+    '대중적이고 평이 좋아서',
+    '안정적이고 믿을 수 있어서'
+  ],
+  neutral: [
+    '무난하고 대중적이어서',
+    '보통 수준이라고 생각해서',
+    '익숙하지만 무난해서',
+    '주변에서 종종 들어봐서',
+    '특별한 단점 없이 평범해서'
+  ]
+};
+
+export function resolveSmartChannelPool(categoryName = '', policy = {}, baseDict = {}) {
+  const cleanCat = String(categoryName || '').replace(/브랜드$/g, '').trim();
+  const customFoodChannels = String(policy.customFoodLivingChannels || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (/병원|의료원|의원|치과|안과|한의원|검진/.test(cleanCat)) {
+    return ['병원 직접 방문', '공식 홈페이지 예약', '전화 예약 후 방문'];
+  }
+  if (/택배|물류|포장이사|퀵서비스/.test(cleanCat)) {
+    return ['편의점 접수', '공식 앱 예약', '온라인 쇼핑몰 배송'];
+  }
+  if (/사이버대학|온라인.*학원|AI.*학습|인강|온라인교육|이러닝|화상영어|학습앱/.test(cleanCat)) {
+    return ['공식 홈페이지', '모바일 공식 앱'];
+  }
+  if (/학원|학습지|어학원|교육|대학/.test(cleanCat)) {
+    return ['학원 직접 방문 상담', '공식 홈페이지 수강신청'];
+  }
+  if (/은행|카드|보험|증권|페이|결제|금융|저축|자산관리/.test(cleanCat)) {
+    return ['모바일 공식 앱', '공식 홈페이지', '영업점 직접 방문'];
+  }
+  if (/오픈마켓|소셜커머스|온라인쇼핑|배달앱|숙박앱|부동산앱|모빌리티|OTT|포털|음원|웹툰|초고속인터넷|IPTV|이동통신|알뜰폰/.test(cleanCat)) {
+    return ['모바일 공식 앱', '공식 웹사이트'];
+  }
+  if (/구호개발단체|NGO|자선/.test(cleanCat)) {
+    return ['공식 홈페이지 정기후원', '온라인 캠페인 참여'];
+  }
+  if (/백화점|대형할인점|면세점|편의점|슈퍼마켓|아울렛|복합쇼핑몰|창고형할인매장|드럭스토어|헬스앤뷰티/.test(cleanCat)) {
+    return ['오프라인 매장 직접 방문', '브랜드 공식 앱'];
+  }
+  if (/베이커리|제과|제빵|커피전문점|카페|치킨|피자|패스트푸드|외식|레스토랑|아이스크림전문점|영화관|호텔|리조트|콘도|주유소|렌터카|여행사|항공사/.test(cleanCat)) {
+    return ['오프라인 매장 직접 방문', '공식 모바일 앱', '공식 홈페이지 예약'];
+  }
+  if (/SPA|스포츠웨어|아웃도어|의류|패션|정장|캐주얼|구두|운동화|언더웨어|가방/.test(cleanCat)) {
+    return ['백화점 매장', '직영 오프라인 매장', '공식 온라인몰', '무신사'];
+  }
+  if (/화장품|뷰티|스킨케어|샴푸|바디|향수|염모제/.test(cleanCat)) {
+    return ['올리브영 매장', '백화점 매장', '공식 온라인몰', '쿠팡'];
+  }
+  if (/스마트워치|스마트폰|노트북|태블릿|이어폰|TV|냉장고|세탁기|에어컨|청소기|정수기|비데|처리기|밥솥|가전|침대|매트리스|가구|보일러|자동차|타이어/.test(cleanCat)) {
+    return ['브랜드 공식 스토어', '백화점 매장', '롯데하이마트', '쿠팡', '네이버 브랜드스토어'];
+  }
+
+  if (customFoodChannels.length > 0) {
+    return customFoodChannels;
+  }
+  return baseDict.channelPools?.food_living || ['편의점', '동네슈퍼', '이마트', '쿠팡', '홈플러스', '롯데마트'];
+}
 
 function hashSeed(str = '') {
   const s = String(str || '1');
@@ -165,9 +246,7 @@ async function resolveCategoryMeta(categoryName, policy = {}) {
           adjectives: Array.isArray(parsed.adjectives) && parsed.adjectives.length >= 4
             ? parsed.adjectives
             : (baseDict.defaultAdjectives?.positive || ['친숙하다', '믿음직함', '깔끔하다', '실용적임', '편리함', '안정적인']),
-          channels: Array.isArray(parsed.channels) && parsed.channels.length >= 2
-            ? parsed.channels
-            : (baseDict.channelPools?.food_living || ['편의점', '동네슈퍼', '이마트', '쿠팡'])
+          channels: resolveSmartChannelPool(cleanCat, policy, baseDict)
         };
       }
     } catch (aiErr) {
@@ -195,26 +274,7 @@ async function resolveCategoryMeta(categoryName, policy = {}) {
     }
   }
 
-  const groupKey = matchedEntry?.group || (
-    /은행|카드|보험|증권|통신|인터넷|앱|쇼핑몰|OTT|택배|병원|의료|대학|교육|학습/.test(cleanCat)
-      ? 'finance_telecom_service'
-      : (/TV|냉장고|세탁기|에어컨|청소기|정수기|처리기|밥솥|노트북|스마트폰|비데|침대|보일러|아파트/.test(cleanCat)
-        ? 'appliance_digital'
-        : (/치킨|피자|커피전문점|베이커리|패스트푸드|외식/.test(cleanCat)
-          ? 'dining_franchise'
-          : (/샴푸|화장품|운동화|의류|아웃도어|뷰티|백화점|면세점/.test(cleanCat)
-            ? 'fashion_beauty'
-            : 'food_living')))
-  );
-
-  const customFoodChannels = String(policy.customFoodLivingChannels || '')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  const channels = (groupKey === 'food_living' && customFoodChannels.length > 0)
-    ? customFoodChannels
-    : (baseDict.channelPools?.[groupKey] || baseDict.channelPools?.food_living || ['편의점', '동네슈퍼', '이마트', '쿠팡', '홈플러스']);
+  const channels = resolveSmartChannelPool(cleanCat, policy, baseDict);
 
   const adjectives = Array.from(new Set([
     ...(matchedEntry?.adjectives || []),
@@ -276,7 +336,7 @@ export function generateKbpiMatrixScores(rngOrOpts = Math.random, hasPurchaseExp
 
 /**
  * 해당 산업군에 대한 구입경험('있음' | '없음') 결정
- * 우선순위: 1) 시트 브랜드명 일치 설정 -> 2) 시트 슬롯 순번 설정 -> 3) 10대 비적합 품목 안전 보정 -> 4) 기본 90:10 확률
+ * 우선순위: 1) 시트 브랜드명 일치 설정 -> 2) 시트 슬롯 순번 설정 -> 3) 연령·성별 비적합 품목 안전 보정 -> 4) 기본 90:10 확률
  */
 export function decideCategoryPurchaseExp({
   categoryName,
@@ -284,12 +344,14 @@ export function decideCategoryPurchaseExp({
   categoryConfigs = [],
   ageGroup = '',
   age = 30,
+  gender = '',
   respondentAge,
   policy = {},
   rng = Math.random
 }) {
   const cleanCat = String(categoryName || '').replace(/브랜드$/g, '').trim();
   const effAge = respondentAge !== undefined ? Number(respondentAge) : Number(age);
+  const cleanGender = String(gender || '').trim();
 
   // 1) 시트에 카테고리명이 직접 명시되어 있는 경우 최우선 적용
   const namedCfg = categoryConfigs.find(c => {
@@ -306,12 +368,18 @@ export function decideCategoryPurchaseExp({
     return slotCfg.purchaseExp;
   }
 
-  // 3) 10대(미성년) 응답자에게 주류/자동차/대형가전 등 비적합 품목이 출제된 경우 자동 '없음' 안전 보정
+  // 3) 10대(미성년) 응답자 및 성별 전용 품목 자동 '없음' 안전 보정
   const isTeen = String(ageGroup || '').includes('10대') || (effAge > 0 && effAge <= 19);
   if (isTeen && policy.teenAutoNoneUnfitCategories !== false) {
     if (TEEN_UNFIT_CATEGORY_KEYWORDS.some(kw => cleanCat.includes(kw))) {
       return '없음';
     }
+  }
+  if (cleanGender.startsWith('남') && MALE_UNFIT_CATEGORY_KEYWORDS.some(kw => cleanCat.includes(kw))) {
+    return '없음';
+  }
+  if (cleanGender.startsWith('여') && FEMALE_UNFIT_CATEGORY_KEYWORDS.some(kw => cleanCat.includes(kw))) {
+    return '없음';
   }
 
   // 4) 가이드 기본 비율 (구입 90% : 없음 10%)
@@ -721,69 +789,85 @@ async function classifyCurrentScreen(target) {
       categoryName = quoteBrandMatch[1].trim();
     }
 
-    // 진행률 퍼센트 및 GetData 문항 코드(qNameAttr) 추출
+    // 진행률 퍼센트 및 GetData 가시 문항 코드(qNameAttr · industryKey) 추출
     const pctMatch = bodyText.match(/(\d{1,3})\s*%/);
     const progressPct = pctMatch ? Number(pctMatch[1]) : null;
     const bodySnippet = bodyText.replace(/\s+/g, ' ').slice(0, 220);
-    const qTypeEl = document.querySelector('[question-type]');
-    const qNameEl = Array.from(document.querySelectorAll('[question-name], [qname], [data-qname], [id^="BOX_"]'))
-      .find(el => el.offsetParent !== null);
+    const visibleQTypeEls = Array.from(document.querySelectorAll('[question-type]')).filter(el => el.offsetParent !== null);
+    const qTypeEl = visibleQTypeEls[visibleQTypeEls.length - 1] || document.querySelector('[question-type]');
+    const qNameEl = visibleQTypeEls[visibleQTypeEls.length - 1] ||
+      Array.from(document.querySelectorAll('[question-name], [qname], [data-qname], [id^="BOX_"]')).find(el => el.offsetParent !== null);
     const qNameAttr = qNameEl
       ? (qNameEl.getAttribute('question-name') || qNameEl.getAttribute('qname') || qNameEl.getAttribute('data-qname') || qNameEl.id.replace(/^BOX_/, ''))
       : '';
+    const indMatch = qNameAttr.match(/--(\d+)$/);
+    const industryKey = indMatch ? indMatch[1] : '';
+
+    // 화면에 표시명 텍스트가 누락된 경우 window.QO.INDUSTRY.ANSWERS에서 산업군명 보완
+    if (!categoryName && industryKey && window.QO?.INDUSTRY?.ANSWERS) {
+      const indItem = (window.QO.INDUSTRY.ANSWERS || []).find(x => String(x.K) === industryKey);
+      if (indItem) {
+        categoryName = String(indItem.DISPLAY || indItem.V || '').replace(/브랜드$/g, '').trim();
+      }
+    }
+
     const visibleControlCount = Array.from(
       document.querySelectorAll('input:not([type="hidden"]), select, textarea, .s-gradeclick')
     ).filter(el => el.offsetParent !== null).length;
     const domMeta = `qName=${qNameAttr || '-'},qType=${qTypeEl?.getAttribute('question-type') || '-'},grade=${document.querySelectorAll('.s-gradeclick').length},sel=${document.querySelectorAll('select').length},rad=${document.querySelectorAll('input[type="radio"]').length},cb=${document.querySelectorAll('input[type="checkbox"]').length},txt=${document.querySelectorAll('input[type="text"],input[type="number"],textarea').length}`;
 
+    const baseRet = { qNameAttr, industryKey, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+
     // 설문 완료 화면 감지
     if (/설문이\s*종료|조사가\s*완료|응답해\s*주셔서\s*감사|참여해\s*주셔서\s*대단히\s*감사|수고하셨습니다/.test(bodyText) &&
         visibleControlCount === 0 &&
         !document.querySelector('#next')) {
-      return { screenType: 'COMPLETED', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'COMPLETED', ...baseRet };
     }
 
+    // 0) GetData 표준 문항 코드(qNameAttr) 기반 100% 확정 분기
+    if (/^KBPI_Q1_\d+--/i.test(qNameAttr)) return { screenType: 'Q1_UNAIDED', ...baseRet };
+    if (/^KBPI_Q2--/i.test(qNameAttr)) return { screenType: 'Q2_AIDED', ...baseRet };
+    if (/^KBPI_Q3--/i.test(qNameAttr)) return { screenType: 'Q3_MATRIX', ...baseRet };
+    if (/^KBPI_Q4--/i.test(qNameAttr)) return { screenType: 'Q4_RECENT_BRAND', ...baseRet };
+    if (/^KBPI_Q41_CHANNEL--/i.test(qNameAttr)) return { screenType: 'Q4_1_CHANNEL', ...baseRet };
+    if (/^KBPI_Q5--/i.test(qNameAttr)) return { screenType: 'Q5_SAME_AS_Q4', ...baseRet };
+    if (/^KBPI_Q6--/i.test(qNameAttr)) return { screenType: 'Q6_YES_NO', ...baseRet };
+    if (/^KBPI_Q7--/i.test(qNameAttr)) return { screenType: 'Q7_RANK_1_2', ...baseRet };
+    if (/^KBPI_Q8--/i.test(qNameAttr)) return { screenType: 'Q8_RANK_1_2', ...baseRet };
+
     // 1) GP1 위치 확인
-    if (/GP1/.test(bodyText) && /현재\s*위치를\s*확인/.test(bodyText)) {
-      return { screenType: 'GP1', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+    if (/^GP1$/i.test(qNameAttr) || (/GP1/.test(bodyText) && /현재\s*위치를\s*확인/.test(bodyText))) {
+      return { screenType: 'GP1', ...baseRet };
     }
 
     // 2) 응답자 신상정보 등록 (이름 / 성별 / 연령(만) / 휴대폰 / 전화번호 + 응답자 확인)
     if (/응답자\s*확인/.test(bodyText) && /연령\s*\(\s*만\s*\)/.test(bodyText)) {
-      return { screenType: 'PROFILE', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'PROFILE', ...baseRet };
     }
 
     // 3) SQ1 스크리닝 (비산업군 화면에서 SQ1 또는 '모두 없다' 보기 출현 시)
-    if (!categoryName && (/\bSQ\s*1\b/i.test(bodyText) || /모두\s*없다/.test(bodyText) || /다음\s*업종|종사하는\s*가족|시장조사|광고대행사/.test(bodyText))) {
-      return { screenType: 'SQ1', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+    if (!categoryName && (/^SQ\d+/i.test(qNameAttr) || /\bSQ\s*1\b/i.test(bodyText) || /모두\s*없다/.test(bodyText) || /다음\s*업종|종사하는\s*가족|시장조사|광고대행사/.test(bodyText))) {
+      return { screenType: 'SQ1', ...baseRet };
     }
 
-    // 4) 문항 1 (1-1, 1-2, 1-3, 1-4 비보조 인지도)
+    // 4) 텍스트·배지 폴백 (문항 코드가 변형된 경우 대비)
     if (/1-1/.test(bodyText) && /가장\s*먼저\s*생각나는\s*브랜드/.test(bodyText)) {
-      return { screenType: 'Q1_UNAIDED', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'Q1_UNAIDED', ...baseRet };
     }
-
-    // 5) 문항 2 (보조 인지도 체크박스)
     if (/알고\s*계시는\s*브랜드를\s*모두/.test(bodyText)) {
-      return { screenType: 'Q2_AIDED', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'Q2_AIDED', ...baseRet };
     }
-
-    // 6) 문항 3 (1점~5점 평가 매트릭스 + 11~13번)
     if (/1점\s*~\s*5점으로\s*평가/.test(bodyText) || /전반적으로\s*만족한다/.test(bodyText)) {
-      return { screenType: 'Q3_MATRIX', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'Q3_MATRIX', ...baseRet };
     }
-
-    // 7) 문항 4-1 (구입 채널 경로 주관식)
     if (/\b4-1\b/.test(bodyText) || /어느\s*채널\s*\(\s*경로\s*\)\s*을?\s*통해서/.test(bodyText)) {
-      return { screenType: 'Q4_1_CHANNEL', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'Q4_1_CHANNEL', ...baseRet };
     }
-
-    // 8) 문항 4 (가장 최근에 구입/이용/방문한 브랜드 — 소매/서비스/제품 전 산업군 호환)
     if (/가장\s*최근에[^\n]{0,35}(구입|이용|방문|사용)/.test(bodyText)) {
-      return { screenType: 'Q4_RECENT_BRAND', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'Q4_RECENT_BRAND', ...baseRet };
     }
 
-    // 9) 산업군(categoryName)이 명시된 본 설문 문항(4, 5, 6, 7, 8) 배지 번호 판별!
     let firstBadge = '';
     if (categoryName) {
       const badgeTexts = Array.from(document.querySelectorAll('div, span, th, td, strong'))
@@ -792,21 +876,11 @@ async function classifyCurrentScreen(target) {
         .filter(t => /^(4|5|6|7|8)$/.test(t));
       firstBadge = badgeTexts[0] || '';
 
-      if (firstBadge === '4') {
-        return { screenType: 'Q4_RECENT_BRAND', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
-      }
-      if (firstBadge === '5' || /주\s*구입|가장\s*선호|주로\s*이용|가장\s*자주/.test(bodyText)) {
-        return { screenType: 'Q5_SAME_AS_Q4', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
-      }
-      if (firstBadge === '6' || (document.querySelectorAll('input[type="radio"]').length === 2 && /예/.test(bodyText) && /아니오/.test(bodyText))) {
-        return { screenType: 'Q6_YES_NO', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
-      }
-      if (firstBadge === '7' || document.querySelectorAll('.s-gradeclick').length >= 2 || (/1\s*순위/.test(bodyText) && /2\s*순위/.test(bodyText))) {
-        return { screenType: 'Q7_RANK_1_2', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
-      }
-      if (firstBadge === '8') {
-        return { screenType: 'Q8_MULTI_2', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
-      }
+      if (firstBadge === '4') return { screenType: 'Q4_RECENT_BRAND', ...baseRet };
+      if (firstBadge === '5' || /주\s*구입|가장\s*선호|주로\s*이용|가장\s*자주/.test(bodyText)) return { screenType: 'Q5_SAME_AS_Q4', ...baseRet };
+      if (firstBadge === '6' || (document.querySelectorAll('input[type="radio"]').length === 2 && /예/.test(bodyText) && /아니오/.test(bodyText))) return { screenType: 'Q6_YES_NO', ...baseRet };
+      if (firstBadge === '7') return { screenType: 'Q7_RANK_1_2', ...baseRet };
+      if (firstBadge === '8') return { screenType: 'Q8_RANK_1_2', ...baseRet };
     }
 
     // 최종 제출/종료 직전 관문 판별 (GetData END/OUTRO/동의서 및 종료 문구 포함)
@@ -815,19 +889,13 @@ async function classifyCurrentScreen(target) {
     const isEndOutroScreen = /^(END|OUTRO|FINISH|COMPLETE|LAST|SIGN|AGREE)/i.test(qNameAttr) ||
       /설문을?\s*마치|응답을?\s*완료하시려면|참여해\s*주셔서\s*(대단히\s*)?감사|응답해\s*주셔서\s*감사|수고하셨습니다|설문이\s*모두\s*끝났|개인정보\s*수집.*동의/.test(bodyText);
     if (hasFinalBtn || isEndOutroScreen) {
-      return { screenType: 'FINAL_SUBMIT_GATE', qNameAttr, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+      return { screenType: 'FINAL_SUBMIT_GATE', ...baseRet };
     }
 
     return {
       screenType: 'GENERIC_STEP',
-      qNameAttr,
-      visibleControlCount,
-      categoryName,
-      progressPct,
       badge: firstBadge,
-      buttonTexts,
-      bodySnippet,
-      domMeta
+      ...baseRet
     };
   });
 }
@@ -1044,16 +1112,45 @@ export async function runKmacKbpiSurvey({
     // 산업군별 런타임 상태 추적
     const categoryRuntimeMap = new Map();
 
-    const getOrInitCategoryState = async (catNameRaw) => {
+    const getOrInitCategoryState = async (catNameRaw, indKeyRaw = '', targetFrame = null) => {
       const cleanCat = String(catNameRaw || '').replace(/브랜드$/g, '').trim() || `품목${seenCategoriesOrder.length + 1}`;
       if (!categoryRuntimeMap.has(cleanCat)) {
         const catIdx = seenCategoriesOrder.length;
         seenCategoriesOrder.push(cleanCat);
 
+        // 1순위: GetData 내장 window.QO.INDUSTRY.ANSWERS (전 547개 산업군 공식 브랜드 마스터 B1~B58) 실시간 조회
+        let liveOfficialBrands = [];
+        const frameToQuery = targetFrame || surveyPage;
+        if (frameToQuery) {
+          liveOfficialBrands = await frameToQuery.evaluate(({ iKey, cName }) => {
+            const answers = window.QO?.INDUSTRY?.ANSWERS;
+            if (!Array.isArray(answers) || answers.length === 0) return [];
+            const norm = (s) => String(s || '').replace(/브랜드$/g, '').replace(/\s+/g, '').toLowerCase();
+            const targetNorm = norm(cName);
+            const found = (iKey && answers.find(x => String(x.K) === String(iKey))) ||
+              answers.find(x => norm(x.DISPLAY || x.V) === targetNorm);
+            if (!found) return [];
+            const list = [];
+            for (let b = 1; b <= 58; b++) {
+              const val = String(found['B' + b] || '').trim();
+              if (val && val !== '없음' && !list.includes(val)) {
+                list.push(val);
+              }
+            }
+            return list;
+          }, { iKey: String(indKeyRaw || ''), cName: cleanCat }).catch(() => []);
+        }
+
         const meta = await resolveCategoryMeta(cleanCat, policy);
-        const shuffledBrands = shuffleWithRng(meta.brands, rng);
+        if (liveOfficialBrands.length >= 3) {
+          saveLearnedCategoryBrands(cleanCat, liveOfficialBrands);
+        }
+        const brandSource = liveOfficialBrands.length >= 3 ? liveOfficialBrands : meta.brands;
+        const shuffledBrands = shuffleWithRng(brandSource, rng);
         const shuffledAdjs = shuffleWithRng(meta.adjectives, rng);
         const shuffledChannels = shuffleWithRng(meta.channels, rng);
+        const shuffledPosReasons = shuffleWithRng(Q3_RECOMMEND_REASON_POOLS.positive, rng);
+        const shuffledNeuReasons = shuffleWithRng(Q3_RECOMMEND_REASON_POOLS.neutral, rng);
 
         const purchaseExp = decideCategoryPurchaseExp({
           categoryName: cleanCat,
@@ -1061,9 +1158,13 @@ export async function runKmacKbpiSurvey({
           categoryConfigs,
           ageGroup,
           age,
+          gender,
           policy,
           rng
         });
+
+        // 문항 3(6-3) 및 문항 6 간 100% 논리 정합성을 위한 사전 AI 검색 경험 결정 (기본 아니오 80% : 예 20%)
+        const aiSearched = (rng() * 100) >= Number(policy.q6NoRate ?? 80);
 
         // categoryConfigs 배열에 품목명 및 구입경험(있음/없음) 기록
         while (categoryConfigs.length <= catIdx) {
@@ -1078,15 +1179,19 @@ export async function runKmacKbpiSurvey({
         categoryRuntimeMap.set(cleanCat, {
           slotIndex: catIdx,
           categoryName: cleanCat,
+          industryKey: String(indKeyRaw || ''),
           purchaseExp,
+          aiSearched,
           unaidedBrands: shuffledBrands.slice(0, 4),
           adjectives: shuffledAdjs,
+          posReasons: shuffledPosReasons,
+          neuReasons: shuffledNeuReasons,
           selectedChannel: shuffledChannels[0],
           q4SelectedBrand: purchaseExp === '없음' ? '없음' : shuffledBrands[0]
         });
 
         emitLog(
-          `[품목 #${catIdx + 1} 감지: ${cleanCat}] 구입경험="${purchaseExp}" | 상기브랜드=[${shuffledBrands.slice(0, 3).join(', ')}]${purchaseExp === '있음' ? ` | 채널="${shuffledChannels[0]}"` : ''}`,
+          `[품목 #${catIdx + 1} 감지: ${cleanCat}${liveOfficialBrands.length >= 3 ? ` (공식B:${liveOfficialBrands.length}개)` : ''}] 구입경험="${purchaseExp}" | AI검색="${aiSearched ? '예' : '아니오'}" | 상기=[${shuffledBrands.slice(0, 3).join(', ')}]${purchaseExp === '있음' ? ` | 채널="${shuffledChannels[0]}"` : ''}`,
           'info',
           `CAT${catIdx + 1}`
         );
@@ -1094,11 +1199,11 @@ export async function runKmacKbpiSurvey({
       return categoryRuntimeMap.get(cleanCat);
     };
 
-    // 3. 단계별 설문 진행 루프
+    // 3. 단계별 설문 진행 루프 (20개 산업군 완주 대응 450회 상한)
     let sameScreenStuckCount = 0;
     let lastSignature = '';
 
-    for (let stepIter = 0; stepIter < 260; stepIter++) {
+    for (let stepIter = 0; stepIter < 450; stepIter++) {
       await surveyPage.waitForTimeout(750);
 
       // 지연 팝업 탭이 새로 열렸다면 최신 설문 탭으로 자동 전환
@@ -1142,7 +1247,8 @@ export async function runKmacKbpiSurvey({
         if (sameScreenStuckCount >= 5) {
           if (htmlInspectionDump) {
             const stuckDom = await activeTarget.evaluate(() => {
-              const container = document.querySelector('[question-type], #question, .question-wrap, main') || document.body;
+              const visQs = Array.from(document.querySelectorAll('[question-type]')).filter(el => el.offsetParent !== null);
+              const container = visQs[visQs.length - 1] || document.querySelector('#question, .question-wrap, main') || document.body;
               return {
                 url: location.href,
                 fullText: (document.body?.innerText || '').slice(0, 4000),
@@ -1187,7 +1293,8 @@ export async function runKmacKbpiSurvey({
               );
               const scriptSrcs = Array.from(document.querySelectorAll('script[src]')).map(s => s.src);
               const snapshot = { customWindowKeys: customKeys, scriptSrcs, values: {} };
-              for (const k of customKeys.slice(0, 30)) {
+              const priorityKeys = ['Survey', 'Questions', 'Q', 'QO'].filter(k => customKeys.includes(k));
+              for (const k of [...priorityKeys, ...customKeys.filter(x => !priorityKeys.includes(x))].slice(0, 25)) {
                 const v = window[k];
                 if (typeof v === 'function') {
                   snapshot.values[k] = `[Function: ${String(v).slice(0, 240)}]`;
@@ -1210,7 +1317,8 @@ export async function runKmacKbpiSurvey({
           seenHtmlTemplateKeys.add(templateKey);
 
           const screenSnap = await activeTarget.evaluate(({ wantHtml }) => {
-            const qBox = document.querySelector('[question-type], #question, .question-box, main') || document.body;
+            const visQs = Array.from(document.querySelectorAll('[question-type]')).filter(el => el.offsetParent !== null);
+            const qBox = visQs[visQs.length - 1] || document.querySelector('#question, .question-box, main') || document.body;
             const controls = Array.from(
               document.querySelectorAll('input:not([type="hidden"]), select, textarea, .s-gradeclick')
             )
@@ -1437,38 +1545,83 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [문항 1] 1-1 ~ 1-4 비보조 인지도 (브랜드 주관식)
+      // [문항 1] 1-1 ~ 1-4 비보조 인지도 (순차 언하이드 1회 통과 + 1-4 전용 NOA 체크박스 지원)
       if (info.screenType === 'Q1_UNAIDED') {
-        const catState = await getOrInitCategoryState(info.categoryName);
+        const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
         const fill4th = (rng() * 100) < Number(policy.unaided4thBrandRate ?? 35) && catState.unaidedBrands.length >= 4;
-        emitLog(`[${catState.categoryName} - 문항 1] 1-1="${catState.unaidedBrands[0]}", 1-2="${catState.unaidedBrands[1]}", 1-3="${catState.unaidedBrands[2]}", 1-4="${fill4th ? catState.unaidedBrands[3] : '없음'}"`, 'info', 'Q1');
+        emitLog(`[${catState.categoryName} - 문항 1] 1-1="${catState.unaidedBrands[0]}", 1-2="${catState.unaidedBrands[1]}", 1-3="${catState.unaidedBrands[2]}", 1-4="${fill4th ? catState.unaidedBrands[3] : '없음(NOA)'}"`, 'info', 'Q1');
 
-        await activeTarget.evaluate(({ brands, use4th }) => {
+        await activeTarget.evaluate(async ({ brands, use4th }) => {
+          const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
           const triggerVal = (el, val) => {
-            if (!el || el.disabled) return;
+            if (!el || el.disabled || el.readOnly) return false;
             el.focus();
-            el.value = val;
+            el.value = String(val);
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
             el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+            if (typeof $ !== 'undefined') {
+              $(el).val(String(val)).trigger('input').trigger('change').trigger('keyup');
+            }
             el.blur();
+            return true;
           };
 
+          const uncheckNoa = (noaInp) => {
+            if (noaInp && !noaInp.disabled && noaInp.checked) {
+              noaInp.click();
+              if (noaInp.checked) {
+                noaInp.checked = false;
+                if (typeof $ !== 'undefined') $(noaInp).prop('checked', false).trigger('change');
+              }
+            }
+          };
+
+          // GetData 표준 KBPI_Q1_1--K ~ KBPI_Q1_4--K 순차 입력 (입력 시 다음 칸 자동 언하이드)
+          const firstBox = document.querySelector('[question-name^="KBPI_Q1_1--"]');
+          if (firstBox) {
+            const indKey = (firstBox.getAttribute('question-name') || '').split('--')[1] || '';
+            for (let n = 1; n <= 3; n++) {
+              const qn = `KBPI_Q1_${n}--${indKey}`;
+              const noa = document.querySelector(`input[name^="NOA_${qn}"], input.NOA[noa-qname="${qn}"]`);
+              uncheckNoa(noa);
+              const inp = document.querySelector(`[question-name="${qn}"] input[data-column="TEXT_1"], input[qname="${qn}"]`);
+              if (inp && brands[n - 1]) {
+                triggerVal(inp, brands[n - 1]);
+                await waitMs(90);
+              }
+            }
+
+            const qn4 = `KBPI_Q1_4--${indKey}`;
+            const noa4 = document.querySelector(`input[name^="NOA_${qn4}"], input.NOA[noa-qname="${qn4}"]`);
+            const inp4 = document.querySelector(`[question-name="${qn4}"] input[data-column="TEXT_1"], input[qname="${qn4}"]`);
+            if (use4th && inp4 && brands[3]) {
+              uncheckNoa(noa4);
+              await waitMs(40);
+              triggerVal(inp4, brands[3]);
+            } else if (noa4 && !noa4.disabled) {
+              if (!noa4.checked) {
+                noa4.click();
+                noa4.checked = true;
+                noa4.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof $ !== 'undefined') $(noa4).prop('checked', true).trigger('change');
+              }
+            }
+            return;
+          }
+
+          // 일반 텍스트 입력칸 폴백
           const textInputs = Array.from(document.querySelectorAll('input[type="text"], input:not([type])'))
             .filter(inp => inp.offsetParent !== null && !inp.readOnly);
-          if (textInputs[0]) triggerVal(textInputs[0], brands[0]);
-          if (textInputs[1]) triggerVal(textInputs[1], brands[1]);
-          if (textInputs[2]) triggerVal(textInputs[2], brands[2]);
+          if (textInputs[0] && brands[0]) { triggerVal(textInputs[0], brands[0]); await waitMs(80); }
+          if (textInputs[1] && brands[1]) { triggerVal(textInputs[1], brands[1]); await waitMs(80); }
+          if (textInputs[2] && brands[2]) { triggerVal(textInputs[2], brands[2]); await waitMs(80); }
 
           if (use4th && textInputs[3] && brands[3]) {
             triggerVal(textInputs[3], brands[3]);
           } else {
-            // 1-4 영역의 '없음' 체크박스만 정확히 클릭 (마지막 '없음' 체크박스)
             const noneCheckboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-              .filter(cb => {
-                const parentTxt = (cb.closest('label, div, td')?.innerText || '').trim();
-                return parentTxt.includes('없음') && !cb.disabled;
-              });
+              .filter(cb => (cb.closest('label, div, td')?.innerText || '').trim().includes('없음') && !cb.disabled && cb.offsetParent !== null);
             const lastNoneCb = noneCheckboxes[noneCheckboxes.length - 1];
             if (lastNoneCb && !lastNoneCb.checked) {
               lastNoneCb.click();
@@ -1483,15 +1636,16 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [문항 2] 보조 인지도 (1 응답값 포함 + 랜덤 2~4개 추가 선택 + 공식 브랜드 학습)
+      // [문항 2] 보조 인지도 (문항 1 응답값 포함 + 랜덤 2~4개 추가 선택 + 공식 브랜드 학습)
       if (info.screenType === 'Q2_AIDED') {
-        const catState = await getOrInitCategoryState(info.categoryName);
+        const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
         const extraMin = Number(policy.aidedExtraMin ?? 2);
         const extraMax = Math.max(extraMin, Number(policy.aidedExtraMax ?? 4));
         const extraTargetCount = extraMin + Math.floor(rng() * (extraMax - extraMin + 1));
 
         const q2Result = await activeTarget.evaluate(({ unaidedList, addCount, randSeed }) => {
-          const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+          const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q2--"]')).find(el => el.offsetParent !== null) || document;
+          const checkboxes = Array.from(visQBox.querySelectorAll('input[type="checkbox"]')).filter(cb => cb.offsetParent !== null);
           const allOfficialLabels = [];
           const uncheckedNormal = [];
 
@@ -1499,23 +1653,28 @@ export async function runKmacKbpiSurvey({
             const container = cb.closest('label, li, tr, div');
             const labelText = (container?.innerText || '').trim();
             if (!labelText) continue;
-            if (labelText === '없음' || labelText.includes('모름')) continue;
+            if (labelText === '없음' || labelText.includes('모름') || /^NOA_/i.test(cb.name || '')) {
+              if (cb.checked && !cb.disabled) {
+                cb.click();
+                if (cb.checked) cb.checked = false;
+              }
+              continue;
+            }
             allOfficialLabels.push(labelText);
 
-            // 문항 1에서 응답한 브랜드가 미체크 상태면 반드시 체크
             const matchesUnaided = unaidedList.some(u =>
-              u && (labelText.includes(u) || u.includes(labelText))
+              u && (labelText === u || labelText.includes(u) || u.includes(labelText))
             );
             if (matchesUnaided && !cb.checked && !cb.disabled) {
               cb.click();
               cb.checked = true;
               cb.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof $ !== 'undefined') $(cb).prop('checked', true).trigger('change');
             } else if (!cb.checked && !cb.disabled) {
               uncheckedNormal.push({ cb, labelText });
             }
           }
 
-          // 결정론적 셔플 후 addCount개 추가 체크
           let s = randSeed || 777;
           for (let i = uncheckedNormal.length - 1; i > 0; i--) {
             s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
@@ -1529,6 +1688,7 @@ export async function runKmacKbpiSurvey({
             target.cb.click();
             target.cb.checked = true;
             target.cb.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') $(target.cb).prop('checked', true).trigger('change');
             pickedExtra.push(target.labelText);
           }
 
@@ -1549,14 +1709,14 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [문항 3] 다중 브랜드 × 가변 개수 평가항목 복합 매트릭스 (소비재 13행 / 병원·서비스재 14~20행 전 산업군 호환)
+      // [문항 3] 다중 브랜드 매트릭스 (템플릿 A 표준 13행 + 템플릿 B 확장 16행 6-1/6-2/6-3 통합 정합성 엔진)
       if (info.screenType === 'Q3_MATRIX') {
-        const catState = await getOrInitCategoryState(info.categoryName);
+        const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
         const colPlans = [];
         for (let colIdx = 0; colIdx < 6; colIdx++) {
           let colHasExp;
           if (catState.purchaseExp === '없음') {
-            colHasExp = false; // 구입경험 '없음' 지정 시 전 열 '아니오' + 평소태도 1·2·3번만!
+            colHasExp = false; // 구입경험 '없음' 지정 시 전 열 13번 '아니오' + 11번 태도 1·2·3번만 + 6-2번 3·4번만!
           } else if (colIdx === 0) {
             colHasExp = true;  // 구입경험 '있음' 시 1번 열은 100% '예'
           } else {
@@ -1568,12 +1728,27 @@ export async function runKmacKbpiSurvey({
           for (let ex = 0; ex < 16; ex++) {
             extendedScores.push(extraPool[Math.floor(rng() * extraPool.length)]);
           }
+
+          // 6-3) AI 검색경험: 품목 사전 결정값(catState.aiSearched)과 100% 일치 (예일 때 1열 필수 예, 아니오일 때 전 열 아니오)
+          const aiSearchedCol = catState.aiSearched
+            ? (colIdx === 0 ? true : (colIdx === 1 ? rng() < 0.35 : false))
+            : false;
+
+          // 6-2) 추천/피추천 경험(0-based index): 이용경험 없으면 [2(추천받음), 3(경험없음)]만 선택, 있으면 [0,1,2,3] 분산
+          const rec27PosIdx = Math.floor(rng() * 4);
+          const rec27NonUseIdx = rng() < 0.45 ? 2 : 3;
+
           colPlans.push({
             colIdx,
             hasPurchaseExp: colHasExp,
+            aiSearchedCol,
+            rec27PosIdx,
+            rec27NonUseIdx,
             ...scorePlan,
             extendedScores,
-            adjective: catState.adjectives[colIdx % catState.adjectives.length] || `친숙함${colIdx + 1}`
+            adjective: catState.adjectives[colIdx % catState.adjectives.length] || `친숙함${colIdx + 1}`,
+            posReason: catState.posReasons[colIdx % catState.posReasons.length] || '인지도가 높고 신뢰가 가서',
+            neuReason: catState.neuReasons[colIdx % catState.neuReasons.length] || '무난하고 대중적이어서'
           });
         }
 
@@ -1626,15 +1801,16 @@ export async function runKmacKbpiSurvey({
           tables.forEach(tb => {
             tb.querySelectorAll('thead input, thead div, thead th, thead td, tbody tr:first-child input, tbody tr:first-child td').forEach(el => {
               const trTxt = (el.closest('tr')?.innerText || '').trim();
-              if (/^\d{1,2}\s*[).]/.test(trTxt)) return;
+              if (/^\d{1,2}(?:-\d+)?\s*[).]/.test(trTxt)) return;
               const v = (el.value || el.innerText || '').trim();
-              if (v && v.length <= 30 && !/평가항목|^[1-6]$/.test(v) && colBrandNames.length < 6) {
+              if (v && v.length <= 35 && !/평가항목|^[1-6]$/.test(v) && colBrandNames.length < 6) {
                 if (!colBrandNames.includes(v)) colBrandNames.push(v);
               }
             });
           });
 
           const enteredScoresByCol = [[], [], [], [], [], []];
+          const lastScoreByCol = [4, 4, 4, 4, 4, 4];
           let filledTxt = 0;
           let filledSel = 0;
           let filledRad = 0;
@@ -1643,7 +1819,6 @@ export async function runKmacKbpiSurvey({
           for (const tb of tables) {
             const trs = Array.from(tb.querySelectorAll('tbody tr')).filter(tr => tr.offsetParent !== null);
             for (const tr of trs) {
-              // 실제 편집 가능한 컨트롤을 포함한 셀만 추출 (지문 th/td 열 및 숨김 템플릿 열 자동 배제!)
               const dataCells = Array.from(tr.querySelectorAll('td, th')).filter(cell => {
                 if (cell.offsetParent === null) return false;
                 return Boolean(
@@ -1654,31 +1829,47 @@ export async function runKmacKbpiSurvey({
               });
               if (dataCells.length === 0) continue;
 
-              processedRows++;
-              // 행 제목 텍스트 추출 (첫 번째 비입력 셀 또는 전체 행 텍스트 앞부분)
               const firstCell = tr.querySelector('th, td');
               const rowTitle = ((firstCell && !dataCells.includes(firstCell) ? firstCell.innerText : tr.innerText) || '')
                 .replace(/\s+/g, ' ')
                 .trim();
 
+              // 템플릿 B의 0번 브랜드명 헤더 행(rowTitle이 비어 있고 이미 브랜드명이 채워진 행) 덮어쓰기 방지 가드!
+              if (!rowTitle || /^평가항목(\s+[1-6])*$/.test(rowTitle)) {
+                dataCells.forEach(td => {
+                  const hdrInp = td.querySelector('input');
+                  const bv = (hdrInp?.value || td.innerText || '').trim();
+                  if (bv && bv.length <= 35 && !/^[1-6]$/.test(bv) && !colBrandNames.includes(bv) && colBrandNames.length < 6) {
+                    colBrandNames.push(bv);
+                  }
+                });
+                continue;
+              }
+
+              processedRows++;
               const isOverallSatRow = /전반적으로\s*만족|전반적\s*만족/.test(rowTitle);
-              const isImageWordRow = /떠오르는\s*이미지|형용사|단어|연상|생각나는\s*이미지/.test(rowTitle);
-              const isExpRow = /구입|이용해\s*보신|방문해\s*보신|진료|경험이\s*있/.test(rowTitle);
+              const isReasonWordRow = /\b6-1\s*\)|점수를\s*주신\s*이유|이유는\s*무엇/.test(rowTitle);
+              const isRecExpRow = /\b6-2\s*\)|추천하거나.*추천\s*받은/.test(rowTitle);
+              const isAiExpRow = /\b6-3\s*\)|생성형\s*AI/.test(rowTitle);
+              const isImageWordRow = /\b12\s*\)|떠오르는\s*이미지|형용사|단어|연상|생각나는\s*이미지/.test(rowTitle);
+              const isExpRow = /\b13\s*\)|이용\/구입해\s*보신|구입해\s*보신|이용해\s*보신|방문해\s*보신|진료/.test(rowTitle);
               const isNegativeRow = /전환|이탈|불만|피해|부작용|중단/.test(rowTitle);
 
               dataCells.forEach((td, cIdx) => {
                 const plan = plans[cIdx] || plans[0];
                 if (!plan) return;
-                const colBucket = enteredScoresByCol[Math.min(cIdx, enteredScoresByCol.length - 1)];
+                const safeCol = Math.min(cIdx, enteredScoresByCol.length - 1);
+                const colBucket = enteredScoresByCol[safeCol];
 
-                // 1) <select> 드롭다운 셀 (평소 태도 등)
+                // 1) <select> 드롭다운 셀 (11번 평소 태도 등)
                 const sel = td.querySelector('select:not(:disabled)');
                 if (sel && sel.offsetParent !== null) {
                   const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !/선택/.test(o.text));
                   if (validOpts.length > 0) {
-                    // 선행 점수 평균 기반 태도 보정 (구입경험 '없음'은 절대 4·5번 불가 -> 2·3번 고정)
                     let choiceIdx = plan.attitudeChoice - 1;
-                    if (plan.hasPurchaseExp && colBucket.length > 0) {
+                    if (!plan.hasPurchaseExp) {
+                      choiceIdx = Math.min(2, Math.max(0, choiceIdx)); // 구입경험 없음: 절대 4·5번(idx 3,4) 선택 금지!
+                    } else if (colBucket.length > 0) {
                       const dynAvg = Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length);
                       if (dynAvg >= 4 && choiceIdx < 3) choiceIdx = 3;
                       else if (dynAvg <= 3 && choiceIdx >= 3) choiceIdx = 2;
@@ -1692,14 +1883,18 @@ export async function runKmacKbpiSurvey({
                   return;
                 }
 
-                // 2) 텍스트 / 숫자 입력 셀 (점수 평가 또는 떠오르는 이미지 형용사)
+                // 2) 텍스트 / 숫자 입력 셀 (점수 평가, 6-1 추천사유 단답형, 10 전반적만족도, 12 연상이미지)
                 const txtInp = Array.from(
                   td.querySelectorAll('textarea, input[type="number"], input[type="text"], input:not([type])')
                 ).find(inp => inp.offsetParent !== null && !inp.disabled && !inp.readOnly && !['radio', 'checkbox', 'hidden', 'button', 'submit'].includes(inp.type));
 
                 if (txtInp) {
                   uncheckSkipCheckboxesInCell(td);
-                  if (isImageWordRow) {
+                  if (isReasonWordRow) {
+                    const prevRecScore = lastScoreByCol[safeCol] || 4;
+                    const reasonText = prevRecScore >= 4 ? plan.posReason : plan.neuReason;
+                    if (triggerInput(txtInp, reasonText)) filledTxt++;
+                  } else if (isImageWordRow) {
                     if (triggerInput(txtInp, plan.adjective)) filledTxt++;
                   } else if (isOverallSatRow) {
                     const avgScore = colBucket.length > 0
@@ -1709,17 +1904,17 @@ export async function runKmacKbpiSurvey({
                   } else {
                     const sIdx = colBucket.length;
                     let scoreVal = plan.extendedScores[sIdx % plan.extendedScores.length];
-                    // 동일 점수 일렬 방지 안전장치
                     if (sIdx >= 2 && colBucket.every(v => v === scoreVal)) {
                       scoreVal = scoreVal === 4 ? 5 : 4;
                     }
                     colBucket.push(scoreVal);
+                    lastScoreByCol[safeCol] = scoreVal;
                     if (triggerInput(txtInp, scoreVal)) filledTxt++;
                   }
                   return;
                 }
 
-                // 3) 라디오 버튼 셀 (예/아니오 또는 5점 척도 라디오)
+                // 3) 라디오 버튼 셀 (6-2 추천경험 4지선다 / 6-3 AI검색 예·아니오 / 13번 이용경험 예·아니오 / 5점척도)
                 const cellRadios = Array.from(td.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
                 if (cellRadios.length > 0) {
                   const byName = new Map();
@@ -1729,16 +1924,32 @@ export async function runKmacKbpiSurvey({
                     byName.get(k).push(r);
                   });
 
-                  for (const grp of byName.values()) {
+                  for (const [rName, grp] of byName.entries()) {
                     if (grp.length >= 5) {
                       const sIdx = colBucket.length;
                       const scoreVal = isOverallSatRow
                         ? (colBucket.length > 0 ? Math.max(3, Math.min(5, Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length))) : plan.overallSatisfaction)
                         : plan.extendedScores[sIdx % plan.extendedScores.length];
-                      if (!isOverallSatRow) colBucket.push(scoreVal);
+                      if (!isOverallSatRow) {
+                        colBucket.push(scoreVal);
+                        lastScoreByCol[safeCol] = scoreVal;
+                      }
                       const pickR = grp.find(r => String(r.value) === String(scoreVal)) || grp[Math.min(grp.length - 1, scoreVal - 1)];
                       if (setRadioChecked(pickR)) filledRad++;
+                    } else if (isRecExpRow || /_REC\d+$/i.test(rName) || grp.length === 4) {
+                      // 6-2) 추천/피추천 경험 4지선다: 이용경험 없으면 3번(추천받음)·4번(경험없음)만 선택!
+                      const usePositiveRec = plan.hasPurchaseExp && (lastScoreByCol[safeCol] || 4) >= 4;
+                      const targetIdx = usePositiveRec ? plan.rec27PosIdx : plan.rec27NonUseIdx;
+                      const pickR = grp[Math.max(0, Math.min(grp.length - 1, targetIdx))] || grp[grp.length - 1];
+                      if (setRadioChecked(pickR)) filledRad++;
+                    } else if (isAiExpRow || /_AI\d+$/i.test(rName)) {
+                      // 6-3) 생성형 AI 검색 경험: 문항 6 응답과 100% 연동
+                      const wantLabel = plan.aiSearchedCol ? /^(예|있다|있음)$/ : /^(아니오|아니요|없다|없음)$/;
+                      const byLb = grp.find(r => wantLabel.test((r.closest('label, span, div')?.innerText || document.querySelector(`label[for="${r.id}"]`)?.innerText || '').trim()));
+                      const fallbackR = plan.aiSearchedCol ? grp[0] : grp[grp.length - 1];
+                      if (setRadioChecked(byLb || fallbackR)) filledRad++;
                     } else {
+                      // 13) 브랜드 이용/구입 경험 등 일반 예/아니오 라디오
                       const wantPositive = isNegativeRow ? false : (isExpRow ? plan.hasPurchaseExp : plan.hasPurchaseExp);
                       const wantLabel = wantPositive ? /^(예|있다|있음|그렇다)$/ : /^(아니오|아니요|없다|없음|아니다)$/;
                       const byLb = grp.find(r => {
@@ -1767,12 +1978,13 @@ export async function runKmacKbpiSurvey({
             }
           }
 
-          // 테이블 외부 또는 누락된 필수 라디오/셀렉트/인풋 최종 스윕
+          // 테이블 외부 또는 누락된 필수 컨트롤 최종 스윕
           document.querySelectorAll('select:not(:disabled)').forEach((sel, idx) => {
             if (sel.offsetParent !== null && (!sel.value || /선택/.test(sel.options[sel.selectedIndex]?.text || ''))) {
               const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !/선택/.test(o.text));
               const plan = plans[idx % plans.length] || plans[0];
-              const targetOpt = validOpts[Math.max(0, Math.min(validOpts.length - 1, plan.attitudeChoice - 1))] || validOpts[0];
+              const safeIdx = plan.hasPurchaseExp ? (plan.attitudeChoice - 1) : Math.min(2, plan.attitudeChoice - 1);
+              const targetOpt = validOpts[Math.max(0, Math.min(validOpts.length - 1, safeIdx))] || validOpts[0];
               if (targetOpt) {
                 sel.value = targetOpt.value;
                 sel.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1806,13 +2018,13 @@ export async function runKmacKbpiSurvey({
             if (inp.classList.contains('input-etc') || /etc/i.test(inp.name || '') || /기타/.test((inp.closest('label, li, span')?.innerText || ''))) return;
             if (String(inp.value || '').trim() !== '') return;
             const trTxt = (inp.closest('tr, div')?.innerText || '').trim();
-            const val = /이미지|형용사|단어/.test(trTxt)
-              ? (plans[idx % plans.length]?.adjective || '믿음직함')
-              : (plans[idx % plans.length]?.overallSatisfaction || 4);
+            const plan = plans[idx % plans.length] || plans[0];
+            const val = /6-1|이유/.test(trTxt)
+              ? plan.posReason
+              : (/이미지|형용사|단어/.test(trTxt) ? plan.adjective : plan.overallSatisfaction);
             if (triggerInput(inp, val)) filledTxt++;
           });
 
-          // 미입력 잔여 컨트롤 진단 수집
           const emptyControls = Array.from(document.querySelectorAll('input:not([type="hidden"]):not(:disabled):not([readonly]), select:not(:disabled), textarea:not(:disabled)'))
             .filter(el => {
               if (el.offsetParent === null) return false;
@@ -1836,6 +2048,7 @@ export async function runKmacKbpiSurvey({
 
         if (matrixApplied.colBrandNames?.[0] && catState.purchaseExp === '있음') {
           catState.q4SelectedBrand = matrixApplied.colBrandNames[0];
+          categoryConfigs[catState.slotIndex].topBrand = matrixApplied.colBrandNames[0];
         }
 
         emitLog(
@@ -1851,7 +2064,7 @@ export async function runKmacKbpiSurvey({
 
       // [문항 4] 가장 최근에 구입/이용한 브랜드 (파일럿 stopAtStep === 'Q4' 안전 정지 지점!)
       if (info.screenType === 'Q4_RECENT_BRAND') {
-        const catState = await getOrInitCategoryState(info.categoryName);
+        const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
 
         if (stopAtStep === 'Q4') {
           emitLog(
@@ -1872,26 +2085,28 @@ export async function runKmacKbpiSurvey({
         }
 
         const pickedQ4 = await activeTarget.evaluate(({ targetBrand, isNone }) => {
-          const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
+          const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q4--"]')).find(el => el.offsetParent !== null) || document;
+          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
           let chosen = null;
           if (isNone) {
             chosen = radios.find(r => {
               const txt = (r.closest('label, li, tr, div')?.innerText || '').trim();
-              return txt === '없음' || txt.includes('없음');
+              return r.getAttribute('akey') === '99' || txt === '없음' || txt.includes('없음');
             }) || radios[radios.length - 1];
           } else {
             chosen = radios.find(r => {
               const txt = (r.closest('label, li, tr, div')?.innerText || '').trim();
-              return txt && txt !== '없음' && (txt.includes(targetBrand) || targetBrand.includes(txt));
+              return txt && txt !== '없음' && r.getAttribute('akey') !== '99' && (txt === targetBrand || txt.includes(targetBrand) || targetBrand.includes(txt));
             }) || radios.find(r => {
               const txt = (r.closest('label, li, tr, div')?.innerText || '').trim();
-              return txt && txt !== '없음';
+              return txt && txt !== '없음' && r.getAttribute('akey') !== '99';
             });
           }
           if (chosen) {
             chosen.click();
             chosen.checked = true;
             chosen.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') $(chosen).prop('checked', true).trigger('change');
             return (chosen.closest('label, li, tr, div')?.innerText || '').trim();
           }
           return '';
@@ -1901,25 +2116,28 @@ export async function runKmacKbpiSurvey({
         });
 
         if (pickedQ4) catState.q4SelectedBrand = pickedQ4;
-        emitLog(`[${catState.categoryName} - 문항 4] 최근 구입 브랜드 = "${pickedQ4 || catState.q4SelectedBrand}"`, 'info', 'Q4');
+        emitLog(`[${catState.categoryName} - 문항 4] 최근 구입/이용 브랜드 = "${pickedQ4 || catState.q4SelectedBrand}"`, 'info', 'Q4');
 
         await surveyPage.waitForTimeout(450);
         await clickNextButton(activeTarget);
         continue;
       }
 
-      // [문항 4-1] 구입 채널 경로 주관식
+      // [문항 4-1] 구입/이용 채널 경로 주관식 (숨김 META_PARENT 인풋 제외, TEXT_1 정확 타겟팅)
       if (info.screenType === 'Q4_1_CHANNEL') {
-        const catState = await getOrInitCategoryState(info.categoryName);
-        emitLog(`[${catState.categoryName} - 문항 4-1] 구입 채널 = "${catState.selectedChannel}"`, 'info', 'Q4-1');
+        const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
+        emitLog(`[${catState.categoryName} - 문항 4-1] 구입/이용 채널 = "${catState.selectedChannel}"`, 'info', 'Q4-1');
         await activeTarget.evaluate(({ channelText }) => {
-          const inp = Array.from(document.querySelectorAll('input[type="text"], textarea, input:not([type])'))
-            .find(el => el.offsetParent !== null && !el.disabled && !el.readOnly);
+          const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q41_CHANNEL--"]')).find(el => el.offsetParent !== null) || document;
+          const inp = visQBox.querySelector('input[data-column="TEXT_1"]') ||
+            Array.from(visQBox.querySelectorAll('input[type="text"], textarea, input:not([type])'))
+              .find(el => el.offsetParent !== null && !el.disabled && !el.readOnly && !el.classList.contains('input-etc'));
           if (inp) {
             inp.focus();
             inp.value = channelText;
             inp.dispatchEvent(new Event('input', { bubbles: true }));
             inp.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') $(inp).val(channelText).trigger('input').trigger('change');
             inp.blur();
           }
         }, { channelText: catState.selectedChannel });
@@ -1929,24 +2147,26 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [문항 5] 문항 4 응답과 동일 선택
+      // [문항 5] 향후 구입/이용 선호 브랜드 (문항 4 응답과 100% 동일 선택)
       if (info.screenType === 'Q5_SAME_AS_Q4') {
-        const catState = await getOrInitCategoryState(info.categoryName);
+        const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
         const pickedQ5 = await activeTarget.evaluate(({ sameBrand, isNone }) => {
-          const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
+          const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q5--"]')).find(el => el.offsetParent !== null) || document;
+          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
           let chosen = null;
           if (isNone) {
-            chosen = radios.find(r => (r.closest('label, li, tr, div')?.innerText || '').trim().includes('없음')) || radios[radios.length - 1];
+            chosen = radios.find(r => r.getAttribute('akey') === '99' || (r.closest('label, li, tr, div')?.innerText || '').trim().includes('없음')) || radios[radios.length - 1];
           } else {
             chosen = radios.find(r => {
               const t = (r.closest('label, li, tr, div')?.innerText || '').trim();
-              return t && t !== '없음' && (t.includes(sameBrand) || sameBrand.includes(t));
-            }) || radios[0];
+              return t && t !== '없음' && r.getAttribute('akey') !== '99' && (t === sameBrand || t.includes(sameBrand) || sameBrand.includes(t));
+            }) || radios.find(r => r.getAttribute('akey') !== '99') || radios[0];
           }
           if (chosen) {
             chosen.click();
             chosen.checked = true;
             chosen.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') $(chosen).prop('checked', true).trigger('change');
             return (chosen.closest('label, li, tr, div')?.innerText || '').trim();
           }
           return '';
@@ -1961,57 +2181,61 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [문항 6] 아니오 80% / 예 20%
+      // [문항 6] 생성형 AI 브랜드 질문 경험 (문항 3 6-3 응답값 catState.aiSearched와 100% 연동!)
       if (info.screenType === 'Q6_YES_NO') {
-        const catState = await getOrInitCategoryState(info.categoryName);
-        const chooseNo = (rng() * 100) < Number(policy.q6NoRate ?? 80);
+        const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
+        const chooseNo = !catState.aiSearched;
         const targetLabel = chooseNo ? '아니오' : '예';
         await activeTarget.evaluate(({ want }) => {
-          const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
-          const chosen = radios.find(r => (r.closest('label, li, tr, div')?.innerText || '').trim().includes(want))
+          const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q6--"]')).find(el => el.offsetParent !== null) || document;
+          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
+          const chosen = radios.find(r => (r.closest('label, li, tr, div')?.innerText || '').trim() === want)
+            || radios.find(r => (r.closest('label, li, tr, div')?.innerText || '').trim().includes(want))
             || (want === '아니오' ? radios[1] : radios[0]);
           if (chosen) {
             chosen.click();
             chosen.checked = true;
             chosen.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') $(chosen).prop('checked', true).trigger('change');
           }
         }, { want: targetLabel });
 
-        // 만약 '예' 선택 시 하위 텍스트 입력창이 활성화되면 자연스러운 단답 채움
         if (!chooseNo) {
-          await surveyPage.waitForTimeout(350);
+          await surveyPage.waitForTimeout(300);
           await activeTarget.evaluate(({ fallbackBrand }) => {
-            const extraInputs = Array.from(document.querySelectorAll('input[type="text"], textarea'))
-              .filter(el => el.offsetParent !== null && !el.disabled && !el.value);
+            const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q6--"]')).find(el => el.offsetParent !== null) || document;
+            const extraInputs = Array.from(visQBox.querySelectorAll('input[type="text"], textarea'))
+              .filter(el => el.offsetParent !== null && !el.disabled && !el.readOnly && !el.classList.contains('input-etc') && !el.value);
             for (const inp of extraInputs) {
               inp.value = fallbackBrand;
               inp.dispatchEvent(new Event('input', { bubbles: true }));
               inp.dispatchEvent(new Event('change', { bubbles: true }));
             }
-          }, { fallbackBrand: catState.unaidedBrands[1] || '타사 브랜드' });
+          }, { fallbackBrand: catState.unaidedBrands[0] || '주요 브랜드' });
         }
 
-        emitLog(`[${catState.categoryName} - 문항 6] "${targetLabel}" 선택`, 'info', 'Q6');
+        emitLog(`[${catState.categoryName} - 문항 6] "${targetLabel}" 선택 (6-3 동기화)`, 'info', 'Q6');
         await surveyPage.waitForTimeout(450);
         await clickNextButton(activeTarget);
         continue;
       }
 
-      // [문항 7] 1순위 · 2순위 랜덤 선택 ('기타' 클릭 절대 금지! GetData 전 유형 대응)
-      if (info.screenType === 'Q7_RANK_1_2') {
-        const catState = await getOrInitCategoryState(info.categoryName);
-        const seedNum = Math.floor(rng() * 10000);
+      // [문항 7 & 문항 8] 생성형 AI 활용 상황(Q7) · 확인 내용(Q8) — 1순위 · 2순위 GRADE 선택 ('기타' 행 절대 배제!)
+      if (info.screenType === 'Q7_RANK_1_2' || info.screenType === 'Q8_RANK_1_2') {
+        const isQ8 = info.screenType === 'Q8_RANK_1_2';
+        const qLabelNum = isQ8 ? '8' : '7';
+        const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
+        const seedNum = Math.floor(rng() * 10000) + (isQ8 ? 37 : 0);
 
-        // 1단계: GetData .s-gradeclick(GRADE_CLICK) 여부 먼저 확인 후 실제 마우스 클릭 수행
         const gradeClickPlan = await activeTarget.evaluate(({ sNum }) => {
           const isForbiddenLabel = (txt) => /기타|없음|모름|생각나지|잘\s*모르/.test(txt);
           document.querySelectorAll('[data-kbpi-rank-pick]').forEach(el => el.removeAttribute('data-kbpi-rank-pick'));
 
-          const gradeEls = Array.from(document.querySelectorAll('.s-gradeclick')).filter(el => el.offsetParent !== null);
+          const visQBox = Array.from(document.querySelectorAll('[question-type]')).filter(el => el.offsetParent !== null).pop() || document;
+          const gradeEls = Array.from(visQBox.querySelectorAll('.s-gradeclick')).filter(el => el.offsetParent !== null);
           if (gradeEls.length < 2) return { isGradeClick: false };
 
-          // 기존 선택값이 있으면 초기화 버튼 또는 선택된 항목 클릭으로 리셋
-          const reBtn = document.querySelector('button.re-select');
+          const reBtn = visQBox.querySelector('button.re-select');
           let didReset = false;
           if (reBtn && reBtn.offsetParent !== null) {
             reBtn.click();
@@ -2068,17 +2292,18 @@ export async function runKmacKbpiSurvey({
           }
           rankInfo = { r1: gradeClickPlan.r1, r2: gradeClickPlan.r2, mode: 'GRADE_CLICK' };
         } else {
-          // 2단계: GRADE(hkey=1/2 행렬 라디오) / 2개 <select> / 행별 2열 라디오 / 체크박스 / 번호입력형 일괄 대응
           rankInfo = await activeTarget.evaluate(async ({ sNum }) => {
-            const isForbiddenLabel = (txt) => /기타|없음|모름|생각나지|잘\s*모르/.test(txt);
+            const isForbiddenLabel = (txt) => /(^|\s)기타(\s|$)|없음|모름|생각나지|잘\s*모르/.test(txt);
             const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
+            const visQBox = Array.from(document.querySelectorAll('[question-type]')).filter(el => el.offsetParent !== null).pop() || document;
 
-            // 케이스 A: GetData [question-type="GRADE"] (input[type="radio"][hkey="1"][vkey] / [hkey="2"][vkey])
-            const hkey1Radios = Array.from(document.querySelectorAll('input[type="radio"][hkey="1"]')).filter(r => !r.disabled);
-            const hkey2Radios = Array.from(document.querySelectorAll('input[type="radio"][hkey="2"]')).filter(r => !r.disabled);
-            if (hkey1Radios.length >= 2 && hkey2Radios.length >= 2) {
+            // 케이스 A: GetData [question-type="GRADE"] (input[type="radio"][hkey="1"][vkey] -> 동적 활성화 [hkey="2"][vkey])
+            const hkey1Radios = Array.from(visQBox.querySelectorAll('input[type="radio"][hkey="1"]')).filter(r => !r.disabled);
+            if (hkey1Radios.length >= 2) {
               const validR1 = hkey1Radios.filter(r => {
-                const rowTxt = (r.closest('tr, li, div')?.innerText || '').trim();
+                const tr = r.closest('tr, li, div');
+                if (tr?.querySelector('input.input-etc')) return false;
+                const rowTxt = (tr?.innerText || '').trim();
                 return !isForbiddenLabel(rowTxt);
               });
               if (validR1.length >= 2) {
@@ -2089,11 +2314,13 @@ export async function runKmacKbpiSurvey({
                 if (typeof $ !== 'undefined') $(pick1).prop('checked', true).trigger('change');
                 await waitMs(220);
 
-                const validR2 = Array.from(document.querySelectorAll('input[type="radio"][hkey="2"]')).filter(r => {
+                const validR2 = Array.from(visQBox.querySelectorAll('input[type="radio"][hkey="2"]')).filter(r => {
                   if (r.disabled) return false;
                   const vk2 = r.getAttribute('vkey') || r.value;
                   if (vk2 === vk1) return false;
-                  const rowTxt = (r.closest('tr, li, div')?.innerText || '').trim();
+                  const tr = r.closest('tr, li, div');
+                  if (tr?.querySelector('input.input-etc')) return false;
+                  const rowTxt = (tr?.innerText || '').trim();
                   return !isForbiddenLabel(rowTxt);
                 });
                 const pick2 = validR2[(sNum + 2) % Math.max(1, validR2.length)];
@@ -2106,8 +2333,8 @@ export async function runKmacKbpiSurvey({
               }
             }
 
-            // 케이스 B: 1순위/2순위 드롭다운(<select>) 2개 (1순위 변경 후 2순위 동적 옵션 갱신 대기)
-            const selects = Array.from(document.querySelectorAll('select')).filter(s => !s.disabled && s.offsetParent !== null);
+            // 케이스 B: 1순위/2순위 드롭다운(<select>) 2개
+            const selects = Array.from(visQBox.querySelectorAll('select')).filter(s => !s.disabled && s.offsetParent !== null);
             if (selects.length >= 2) {
               const opts1 = Array.from(selects[0].options).filter(o => o.value !== '' && !/선택/.test(o.text) && !isForbiddenLabel(o.text));
               if (opts1.length >= 2) {
@@ -2128,79 +2355,19 @@ export async function runKmacKbpiSurvey({
               }
             }
 
-            // 케이스 C: 테이블 행(tr)마다 1순위·2순위 라디오 2개씩 배치된 매트릭스 또는 2열 라디오 그룹
-            const trsWith2Radios = Array.from(document.querySelectorAll('table tbody tr')).filter(tr => {
-              const rds = tr.querySelectorAll('input[type="radio"]');
-              const txt = (tr.innerText || '').trim();
-              return rds.length >= 2 && !isForbiddenLabel(txt);
-            });
-            if (trsWith2Radios.length >= 2) {
-              const row1 = trsWith2Radios[sNum % trsWith2Radios.length];
-              let rIdx2 = (sNum + 1) % trsWith2Radios.length;
-              if (rIdx2 === (sNum % trsWith2Radios.length)) rIdx2 = (rIdx2 + 1) % trsWith2Radios.length;
-              const row2 = trsWith2Radios[rIdx2];
-              const r1 = row1.querySelectorAll('input[type="radio"]')[0];
-              if (r1 && !r1.disabled) {
-                r1.click();
-                r1.checked = true;
-                if (typeof $ !== 'undefined') $(r1).prop('checked', true).trigger('change');
-              }
-              await waitMs(200);
-              const r2 = row2.querySelectorAll('input[type="radio"]')[1];
-              if (r2 && !r2.disabled) {
-                r2.click();
-                r2.checked = true;
-                if (typeof $ !== 'undefined') $(r2).prop('checked', true).trigger('change');
-              }
-              return {
-                r1: (row1.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 30),
-                r2: (row2.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 30),
-                mode: 'TR_RADIO_MATRIX'
-              };
-            }
-
-            // 케이스 D: 2개 독립 라디오 그룹(1순위 그룹 / 2순위 그룹)
-            const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
-            const radioGroups = new Map();
-            for (const r of radios) {
-              if (!radioGroups.has(r.name)) radioGroups.set(r.name, []);
-              radioGroups.get(r.name).push(r);
-            }
-            const groups = Array.from(radioGroups.values());
-            if (groups.length === 2 && groups[0].length >= 2 && groups[1].length >= 2) {
-              const g1 = groups[0].filter(r => !isForbiddenLabel((r.closest('label, tr, td, li, div')?.innerText || '').trim()));
-              const g2 = groups[1].filter(r => !isForbiddenLabel((r.closest('label, tr, td, li, div')?.innerText || '').trim()));
-              if (g1.length >= 2 && g2.length >= 2) {
-                const i1 = sNum % g1.length;
-                let i2 = (i1 + 1 + (sNum % (g2.length - 1))) % g2.length;
-                if (i2 === i1) i2 = (i1 + 1) % g2.length;
-                g1[i1].click();
-                g1[i1].checked = true;
-                if (typeof $ !== 'undefined') $(g1[i1]).prop('checked', true).trigger('change');
-                await waitMs(200);
-                g2[i2].click();
-                g2[i2].checked = true;
-                if (typeof $ !== 'undefined') $(g2[i2]).prop('checked', true).trigger('change');
-                return { r1: g1[i1].value, r2: g2[i2].value, mode: 'RADIO_2GRP' };
-              }
-            }
-
-            // 케이스 E: 체크박스 2개 선택형 (기존 체크 초기화 후 정확히 2개 선택)
-            const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.disabled);
+            // 케이스 C: 체크박스 2개 복수선택 폴백
+            const allCbs = Array.from(visQBox.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.disabled && cb.offsetParent !== null);
             if (allCbs.length >= 2) {
               for (const cb of allCbs) {
                 if (cb.checked) {
                   cb.click();
-                  if (cb.checked) {
-                    cb.checked = false;
-                    if (typeof $ !== 'undefined') $(cb).prop('checked', false).trigger('change');
-                  }
+                  if (cb.checked) cb.checked = false;
                 }
               }
-              await waitMs(150);
+              await waitMs(120);
               const validCbs = allCbs.filter(cb => {
                 const t = (cb.closest('label, tr, td, li, div')?.innerText || '').trim();
-                return t && !isForbiddenLabel(t);
+                return t && !isForbiddenLabel(t) && !/^NOA_/i.test(cb.name || '');
               });
               if (validCbs.length >= 2) {
                 const i1 = sNum % validCbs.length;
@@ -2208,7 +2375,7 @@ export async function runKmacKbpiSurvey({
                 validCbs[i1].click();
                 validCbs[i1].checked = true;
                 if (typeof $ !== 'undefined') $(validCbs[i1]).prop('checked', true).trigger('change');
-                await waitMs(200);
+                await waitMs(160);
                 validCbs[i2].click();
                 validCbs[i2].checked = true;
                 if (typeof $ !== 'undefined') $(validCbs[i2]).prop('checked', true).trigger('change');
@@ -2220,118 +2387,23 @@ export async function runKmacKbpiSurvey({
               }
             }
 
-            // 케이스 F: 1순위·2순위 보기 번호 직접 입력칸(input[type="number"|"text"] 2개)
-            const numInps = Array.from(document.querySelectorAll('input[type="number"], input[type="text"], input:not([type])'))
-              .filter(inp => inp.offsetParent !== null && !inp.disabled && !inp.readOnly);
-            if (numInps.length >= 2) {
-              const setVal = (el, v) => {
-                el.focus();
-                el.value = String(v);
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-                el.dispatchEvent(new Event('change', { bubbles: true }));
-                if (typeof $ !== 'undefined') $(el).val(String(v)).trigger('input').trigger('change');
-                el.blur();
-              };
-              const v1 = (sNum % 3) + 1;
-              const v2 = ((sNum + 1) % 3) + 1 === v1 ? (v1 % 3) + 1 : ((sNum + 1) % 3) + 1;
-              setVal(numInps[0], v1);
-              setVal(numInps[1], v2);
-              return { r1: String(v1), r2: String(v2), mode: 'INPUT_RANK' };
-            }
-
             return { r1: '', r2: '', mode: 'NONE' };
           }, { sNum: seedNum });
         }
 
-        emitLog(`[${catState.categoryName} - 문항 7 (${rankInfo.mode})] 1순위="${rankInfo.r1}", 2순위="${rankInfo.r2}" (기타 배제 완료)`, 'info', 'Q7');
+        emitLog(`[${catState.categoryName} - 문항 ${qLabelNum} (${rankInfo.mode})] 1순위="${rankInfo.r1}", 2순위="${rankInfo.r2}" (기타 배제 완료)`, 'info', `Q${qLabelNum}`);
         await surveyPage.waitForTimeout(450);
         await clickNextButton(activeTarget);
         continue;
       }
 
-      // [문항 8] 랜덤 2개 복수 선택 ('기타'/'없음' 제외 + 기존 체크 초기화로 정확히 2개 보장)
-      if (info.screenType === 'Q8_MULTI_2') {
-        const catState = await getOrInitCategoryState(info.categoryName);
-        const seedNum8 = Math.floor(rng() * 10000);
-        const picked2 = await activeTarget.evaluate(async ({ sNum }) => {
-          const isForbidden = (txt) => /기타|없음|모름|생각나지/.test(txt);
-          const allCbs = Array.from(document.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.disabled);
-          if (allCbs.length >= 2) {
-            for (const cb of allCbs) {
-              if (cb.checked) {
-                cb.click();
-                if (cb.checked) {
-                  cb.checked = false;
-                  if (typeof $ !== 'undefined') $(cb).prop('checked', false).trigger('change');
-                }
-              }
-            }
-            await new Promise(r => setTimeout(r, 150));
-            const validCbs = allCbs.filter(cb => {
-              const txt = (cb.closest('label, li, tr, td, div')?.innerText || '').trim();
-              return txt && !isForbidden(txt);
-            });
-            if (validCbs.length >= 2) {
-              const idx1 = sNum % validCbs.length;
-              let idx2 = (sNum + 3) % validCbs.length;
-              if (idx2 === idx1) idx2 = (idx1 + 1) % validCbs.length;
-              validCbs[idx1].click();
-              validCbs[idx1].checked = true;
-              if (typeof $ !== 'undefined') $(validCbs[idx1]).prop('checked', true).trigger('change');
-              await new Promise(r => setTimeout(r, 150));
-              validCbs[idx2].click();
-              validCbs[idx2].checked = true;
-              if (typeof $ !== 'undefined') $(validCbs[idx2]).prop('checked', true).trigger('change');
-              return [
-                (validCbs[idx1].closest('label, li, tr, td, div')?.innerText || '').trim(),
-                (validCbs[idx2].closest('label, li, tr, td, div')?.innerText || '').trim()
-              ];
-            }
-          }
-          // 단일 라디오 문항인 경우 폴백
-          const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && !isForbidden((r.closest('label, li, tr, td, div')?.innerText || '').trim()));
-          if (radios.length > 0) {
-            const pick = radios[sNum % radios.length];
-            pick.click();
-            pick.checked = true;
-            if (typeof $ !== 'undefined') $(pick).prop('checked', true).trigger('change');
-            return [(pick.closest('label, li, tr, td, div')?.innerText || '').trim()];
-          }
-          return [];
-        }, { sNum: seedNum8 });
-
-        emitLog(`[${catState.categoryName} - 문항 8] 선택 완료 = [${picked2.join(', ')}]`, 'info', 'Q8');
-        if ((safetyGuard || policy.stopBeforeFinalSubmit !== false) && info.progressPct !== null && info.progressPct >= (captureHtmlDumpPath ? 96 : 98)) {
-          emitLog(
-            `🛡️ [완료 직전 안전 대기] #${seq} ${respondentName} — 마지막 품목 문항 8 작성 후 제출 직전(${info.progressPct}%)에서 안전 정지했습니다.`,
-            'info',
-            'SAFE_WAIT'
-          );
-          return {
-            success: true,
-            safetyStopped: true,
-            stoppedAt: 'FINAL_GATE',
-            statusLabel: `완료직전 대기(${info.progressPct}%)`,
-            quotaStatus: 'pilot_done',
-            progress: `${info.progressPct}%`,
-            categoryConfigs,
-            gps
-          };
-        }
-        await surveyPage.waitForTimeout(450);
-        await clickNextButton(activeTarget);
-        continue;
-      }
-
-      // [최종 완료 직전 관문] Rule 10 안전 대기 처리 (진행률 임계치 및 비문항 종료 안내 화면 포함)
-      const isNearCompletionGate =
-        info.screenType === 'FINAL_SUBMIT_GATE' ||
-        (info.progressPct !== null && info.progressPct >= (captureHtmlDumpPath ? 96 : 98)) ||
-        (seenCategoriesOrder.length >= 8 && info.visibleControlCount === 0);
-
-      if (isNearCompletionGate && (safetyGuard || policy.stopBeforeFinalSubmit !== false)) {
+      // [종료 안내 화면 / 0컨트롤 완료 관문] Rule 10 즉시 안전 대기
+      if (
+        (info.screenType === 'FINAL_SUBMIT_GATE' || (seenCategoriesOrder.length >= 1 && info.visibleControlCount === 0)) &&
+        (safetyGuard || policy.stopBeforeFinalSubmit !== false)
+      ) {
         emitLog(
-          `🛡️ [완료 직전 안전 대기] #${seq} ${respondentName} — 최종 완료 화면 직전에 안전 정지했습니다 (진행률 ${info.progressPct || 99}%, 문항=${info.qNameAttr || info.screenType}).`,
+          `🛡️ [완료 직전 안전 대기] #${seq} ${respondentName} — 종료 직전 관문(${info.qNameAttr || info.screenType}, ${info.progressPct || 99}%)에서 안전 정지했습니다.`,
           'info',
           'SAFE_WAIT'
         );
@@ -2347,44 +2419,198 @@ export async function runKmacKbpiSurvey({
         };
       }
 
-      // [배경변인(DQ) 또는 일반 미분류 스텝] 연령/성별 정합 안전 응답
-      emitLog(`[일반/배경 문항 처리] 문항=${info.qNameAttr || info.badge || 'DQ'} | 진행률=${info.progressPct ?? '-'}%`, 'info', 'DQ');
-      await activeTarget.evaluate(({ rAge, seedNum }) => {
-        const isForbidden = (txt) => /기타|모름|거절/.test(txt);
+      // [후반부 의견·배경변인(DQ1~) 및 일반 문항] CHECK(min/max-check)·GRADE·RADIO·SELECT 완비 + 마지막 문항 정밀 안전 정지
+      const dqOutcome = await activeTarget.evaluate(async ({ rAge, rGender, seedNum }) => {
+        const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
+        const isForbidden = (txt) => /(^|\s)기타(\s|$)|모름|거절|무응답/.test(txt);
+        const visQBox = Array.from(document.querySelectorAll('[question-type]')).filter(el => el.offsetParent !== null).pop() || document.body;
+        const curQName = visQBox?.getAttribute?.('question-name') || visQBox?.getAttribute?.('qname') || '';
+        const curQType = String(visQBox?.getAttribute?.('question-type') || '').toUpperCase();
+        const pickedSummary = [];
 
-        // 라디오 그룹 미선택 시 정합 선택 (10대 만 17~18세: 재학/미혼 우선)
-        const radios = Array.from(document.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
-        const groups = new Map();
-        for (const r of radios) {
-          if (!groups.has(r.name)) groups.set(r.name, []);
-          groups.get(r.name).push(r);
-        }
-        for (const grp of groups.values()) {
-          if (grp.some(r => r.checked)) continue;
-          const valid = grp.filter(r => !isForbidden((r.closest('label, li, tr, td, div')?.innerText || '').trim()));
-          let pick = valid[seedNum % Math.max(1, valid.length)] || grp[0];
-          if (rAge <= 19) {
-            const teenPick = valid.find(r => /학생|고등|재학|미혼/.test((r.closest('label, li, tr, td, div')?.innerText || '').trim()));
-            if (teenPick) pick = teenPick;
+        // 1) 복수선택(CHECK — 예: DQ1 제품/서비스 정보 습득 경로 min-check=2, max-check=2)
+        const cbs = Array.from(visQBox.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.disabled && cb.offsetParent !== null);
+        if (curQType === 'CHECK' || cbs.length >= 2) {
+          const minChk = Math.max(1, Number(visQBox.getAttribute?.('min-check') || visQBox.getAttribute?.('data-min_check') || 2));
+          const maxChk = Math.max(minChk, Number(visQBox.getAttribute?.('max-check') || visQBox.getAttribute?.('data-max_check') || minChk));
+          const targetCount = minChk;
+
+          for (const cb of cbs) {
+            if (cb.checked) {
+              cb.click();
+              if (cb.checked) {
+                cb.checked = false;
+                if (typeof $ !== 'undefined') $(cb).prop('checked', false).trigger('change');
+              }
+            }
           }
-          if (pick) {
-            pick.click();
-            pick.checked = true;
-            pick.dispatchEvent(new Event('change', { bubbles: true }));
+          await waitMs(100);
+
+          const validCbs = cbs.filter(cb => {
+            const lb = (cb.closest('label, li, tr, td, div')?.innerText || '').trim();
+            return lb && !isForbidden(lb) && !/^NOA_/i.test(cb.name || '');
+          });
+
+          // 연령대 친화 매체 우선 정렬 (10~30대: 소셜미디어·커뮤니티·쇼핑플랫폼·지인·AI / 40대+: TV·쇼핑플랫폼·지인·커뮤니티·홈페이지)
+          const preferredRegex = rAge <= 39
+            ? /소셜미디어|커뮤니티|쇼핑\s*플랫폼|지인|생성형\s*AI|홈페이지/
+            : /TV|쇼핑\s*플랫폼|지인|커뮤니티|홈페이지/;
+          const preferred = validCbs.filter(cb => preferredRegex.test((cb.closest('label, li, tr, td, div')?.innerText || '')));
+          const candidatePool = preferred.length >= targetCount ? preferred : validCbs;
+
+          const chosenIndices = new Set();
+          for (let step = 0; step < candidatePool.length && chosenIndices.size < Math.min(targetCount, maxChk, candidatePool.length); step++) {
+            const idx = (seedNum + step * 3) % candidatePool.length;
+            chosenIndices.add(idx);
+          }
+          for (let idx = 0; idx < candidatePool.length && chosenIndices.size < Math.min(targetCount, candidatePool.length); idx++) {
+            chosenIndices.add(idx);
+          }
+
+          for (const idx of chosenIndices) {
+            const cb = candidatePool[idx];
+            cb.click();
+            cb.checked = true;
+            cb.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof $ !== 'undefined') $(cb).prop('checked', true).trigger('change');
+            pickedSummary.push((cb.closest('label, li, tr, td, div')?.innerText || '').trim().slice(0, 28));
+            await waitMs(80);
           }
         }
 
-        // 셀렉트 박스 미선택 시 선택
-        document.querySelectorAll('select').forEach(sel => {
-          if (!sel.disabled && !sel.value) {
+        // 2) 순위형(GRADE)
+        const h1List = Array.from(visQBox.querySelectorAll('input[type="radio"][hkey="1"]')).filter(r => !r.disabled);
+        if (curQType === 'GRADE' && h1List.length >= 2) {
+          const valid1 = h1List.filter(r => !isForbidden((r.closest('tr, li, div')?.innerText || '').trim()) && !r.closest('tr')?.querySelector('input.input-etc'));
+          if (valid1.length >= 2) {
+            const p1 = valid1[seedNum % valid1.length];
+            const vk1 = p1.getAttribute('vkey') || p1.value;
+            p1.click();
+            p1.checked = true;
+            if (typeof $ !== 'undefined') $(p1).prop('checked', true).trigger('change');
+            await waitMs(180);
+            const valid2 = Array.from(visQBox.querySelectorAll('input[type="radio"][hkey="2"]')).filter(r =>
+              !r.disabled && (r.getAttribute('vkey') || r.value) !== vk1 && !isForbidden((r.closest('tr, li, div')?.innerText || '').trim()) && !r.closest('tr')?.querySelector('input.input-etc')
+            );
+            const p2 = valid2[(seedNum + 1) % Math.max(1, valid2.length)];
+            if (p2) {
+              p2.click();
+              p2.checked = true;
+              if (typeof $ !== 'undefined') $(p2).prop('checked', true).trigger('change');
+              pickedSummary.push(`1순위:${vk1},2순위:${p2.getAttribute('vkey') || p2.value}`);
+            }
+          }
+        } else {
+          // 3) 일반 라디오(RADIO — 결혼·학력·직업·소득 등 연령/성별 정합 선택)
+          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
+          const groups = new Map();
+          for (const r of radios) {
+            if (!groups.has(r.name)) groups.set(r.name, []);
+            groups.get(r.name).push(r);
+          }
+          for (const grp of groups.values()) {
+            if (grp.some(r => r.checked)) continue;
+            const valid = grp.filter(r => !isForbidden((r.closest('label, li, tr, td, div')?.innerText || '').trim()) && !r.closest('label, tr, li, div')?.querySelector('input.input-etc'));
+            let pick = valid[seedNum % Math.max(1, valid.length)] || grp[0];
+            if (rAge <= 19) {
+              const teenPick = valid.find(r => /학생|고등|재학|미혼/.test((r.closest('label, li, tr, td, div')?.innerText || '').trim()));
+              if (teenPick) pick = teenPick;
+            } else if (rAge <= 27) {
+              const youngPick = valid.find(r => /미혼|대학|재학|사무|전문/.test((r.closest('label, li, tr, td, div')?.innerText || '').trim()));
+              if (youngPick) pick = youngPick;
+            } else if (rAge >= 38) {
+              const adultPick = valid.find(r => /기혼|대학\s*졸업|대졸|사무|관리|자영업|전업주부|400|500|600/.test((r.closest('label, li, tr, td, div')?.innerText || '').trim()) && !(rGender === '남' && /전업주부/.test((r.closest('label, li, tr, td, div')?.innerText || ''))));
+              if (adultPick) pick = adultPick;
+            }
+            if (pick) {
+              pick.click();
+              pick.checked = true;
+              pick.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof $ !== 'undefined') $(pick).prop('checked', true).trigger('change');
+              pickedSummary.push((pick.closest('label, li, tr, td, div')?.innerText || '').trim().slice(0, 28));
+            }
+          }
+        }
+
+        // 4) 셀렉트 박스 미선택 시 선택
+        visQBox.querySelectorAll('select').forEach(sel => {
+          if (!sel.disabled && sel.offsetParent !== null && !sel.value) {
             const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !/선택/.test(o.text) && !isForbidden(o.text));
             if (validOpts[0]) {
-              sel.value = validOpts[seedNum % validOpts.length].value;
+              const chosenOpt = validOpts[seedNum % validOpts.length];
+              sel.value = chosenOpt.value;
               sel.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof $ !== 'undefined') $(sel).val(chosenOpt.value).trigger('change');
+              pickedSummary.push(chosenOpt.text.trim().slice(0, 24));
             }
           }
         });
-      }, { rAge: age, seedNum: Math.floor(rng() * 1000) });
+
+        // 5) window.QO / window.Questions 조회: 현재 문항 이후에 실행될 후속 실문항이 남아 있는지 판별
+        let isLastQuestionBeforeEnd = false;
+        let remainingQuestionNames = [];
+        if (window.QO && typeof window.QO === 'object' && curQName && window.QO[curQName]) {
+          const allKeys = Object.keys(window.QO);
+          const curIdx = allKeys.indexOf(curQName);
+          if (curIdx >= 0) {
+            remainingQuestionNames = allKeys.slice(curIdx + 1).filter(k => {
+              const qObj = window.QO[k];
+              if (!qObj) return false;
+              const qt = String(qObj.TYPE || qObj.type || '').toUpperCase();
+              if (/^(END|OUTRO|FINISH|COMPLETE|QUOTA|HIDDEN|DUMMY|COMPUTE)/i.test(k)) return false;
+              if (['END', 'QUOTA', 'HIDDEN', 'DUMMY', 'COMPUTE', 'DESC'].includes(qt)) return false;
+              const cond = String(qObj.CONDITION || qObj.condition || '').trim();
+              if (cond && typeof window.Condition === 'function') {
+                try {
+                  return Boolean(window.Condition(cond));
+                } catch (e) {
+                  return false;
+                }
+              }
+              return !cond;
+            });
+            if (remainingQuestionNames.length === 0) {
+              isLastQuestionBeforeEnd = true;
+            }
+          }
+        } else if (curQName.startsWith('DQ')) {
+          // window.QO 미노출 환경에서는 안전을 위해 DQ 문항 입력 직후 제출 전 정지
+          isLastQuestionBeforeEnd = true;
+        }
+
+        return {
+          curQName,
+          curQType,
+          pickedSummary,
+          isLastQuestionBeforeEnd,
+          remainingQuestionNames: remainingQuestionNames.slice(0, 5)
+        };
+      }, { rAge: age, rGender: gender, seedNum: Math.floor(rng() * 1000) });
+
+      emitLog(
+        `[후반부/배경 문항 처리] ${dqOutcome.curQName || info.qNameAttr || 'DQ'} (${dqOutcome.curQType || '-'}) ➔ [${dqOutcome.pickedSummary.join(', ')}] | 잔여문항=${dqOutcome.remainingQuestionNames.length ? dqOutcome.remainingQuestionNames.join(',') : '없음(마지막 문항)'}`,
+        'info',
+        'DQ'
+      );
+
+      // 마지막 문항 작성 완료 시 [다음](최종 제출) 클릭 직전에 100% 안전 정지! (AGENTS.md 제10원칙)
+      if (dqOutcome.isLastQuestionBeforeEnd && (safetyGuard || policy.stopBeforeFinalSubmit !== false)) {
+        emitLog(
+          `🛡️ [완료 직전 안전 대기] #${seq} ${respondentName} — 마지막 문항(${dqOutcome.curQName || info.qNameAttr})까지 응답 입력을 완료하고 최종 제출 직전(${info.progressPct || 99}%)에서 안전 정지했습니다!`,
+          'info',
+          'SAFE_WAIT'
+        );
+        return {
+          success: true,
+          safetyStopped: true,
+          stoppedAt: 'FINAL_GATE',
+          statusLabel: `완료직전 대기(${info.progressPct || 99}%)`,
+          quotaStatus: 'pilot_done',
+          progress: `${info.progressPct || 99}%`,
+          categoryConfigs,
+          gps
+        };
+      }
 
       await surveyPage.waitForTimeout(450);
       const clickedBtn = await clickNextButton(activeTarget);
@@ -2402,7 +2628,7 @@ export async function runKmacKbpiSurvey({
       }
     }
 
-    throw new Error('최대 단계 반복 횟수(260회)를 초과했습니다.');
+    throw new Error('최대 단계 반복 횟수(450회)를 초과했습니다.');
   } catch (err) {
     if (htmlInspectionDump) {
       htmlInspectionDump.finalOutcome = { success: false, error: err.message };

@@ -52,11 +52,11 @@ export function renderKmacKbpiBlueprint(data = {}, {
     step2TitleEl.textContent = '2027년 K-BPI 브랜드파워 조사 전 문항 응답 가이드라인';
   }
   if (step2SubEl) {
-    step2SubEl.textContent = 'GP1 위치 주입 · 신상정보 · SQ1 스크리닝 · 산업군별 문항 1~8 점수/구입경험 연동 및 구글 시트 자동 기록 설정을 관리합니다.';
+    step2SubEl.textContent = '547개 전 산업군 공식 브랜드(QO) 연동 · 문항 3(표준 13행 / 확장 16행 6-1~6-3) · 문항 6↔6-3 동기화 · DQ1 복수선택 및 시트 연동을 관리합니다.';
   }
   if (badgeMasterStatus) {
     badgeMasterStatus.className = 'badge-status badge-blueprint ready';
-    badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> K-BPI 정합성 엔진 활성 (노원구청/인천시청 GPS · 문항4 파일럿 정지)';
+    badgeMasterStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> K-BPI v2.0 실측 정합성 엔진 활성 (547개 품목 QO · 99% 안전대기)';
   }
   if (btnSaveBaseline) {
     btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> K-BPI 응답 가이드 저장';
@@ -67,31 +67,31 @@ export function renderKmacKbpiBlueprint(data = {}, {
 
   blueprintStageGrid.innerHTML = `
     <div class="kbpi-guide-grid">
-      <!-- 카드 1: 진입 · GPS · 신상정보 · SQ1 -->
+      <!-- 카드 1: 진입 · GPS · 신상정보 · SQ1 · DQ -->
       <div class="kbpi-guide-card">
         <div class="kbpi-card-head">
           <span class="kbpi-step-pill">STAGE 1</span>
-          <h3 class="kbpi-card-title">진입 · 지역별 GPS 미세분산 · 신상정보 · SQ1</h3>
+          <h3 class="kbpi-card-title">진입 · GPS 미세분산 · 신상정보 · SQ1 · 후반부 DQ</h3>
         </div>
         <ul class="kbpi-rule-list">
-          <li><strong>CAPI 포털 로그인:</strong> <code>5911000005645</code> 접속 ➔ <code>ID: 230 브랜드파워</code> ➔ <code>최종id / 고유번호</code> 일치 슬롯 자동 진입</li>
+          <li><strong>CAPI 포털 로그인:</strong> <code>5911000005645</code> 접속 ➔ <code>ID: 230</code> ➔ <code>최종id / 고유번호</code> 일치 슬롯 자동 진입 (응답자당 약 20개 품목 순회)</li>
           <li><strong>GP1 위치 확인 (반경 50~80m 미세 분산):</strong> <code>서울(100명)</code> = 노원구청(<code>37.654192, 127.056794</code>) / <code>인천(50명)</code> = 인천광역시청(<code>37.456256, 126.705206</code>)</li>
-          <li><strong>신상정보 연락처 분기:</strong> <code>010-</code>(124명)은 휴대폰 칸, <code>02-</code>(26명)는 일반전화 칸 자동 분리 입력</li>
-          <li><strong>SQ1 스크리닝:</strong> 전 항목 <strong>"모두 없다"</strong> 고정 선택</li>
+          <li><strong>신상정보 &amp; SQ1:</strong> <code>010-</code> 휴대폰 / <code>02-</code> 일반전화 자동 분리 입력, <code>SQ1</code> 전 항목 <strong>"모두 없다"</strong></li>
+          <li><strong>후반부 DQ(99%) &amp; 안전 대기:</strong> <code>DQ1</code>(정보 습득 경로 2개 복수선택, 기타 제외) 등 연령 정합 입력 후 <strong>최종 제출 직전 마지막 문항에서 안전 정지</strong></li>
         </ul>
       </div>
 
-      <!-- 카드 2: 문항 1~3 브랜드 인지도 및 매트릭스 정합성 -->
+      <!-- 카드 2: 문항 1~8 브랜드 인지도 및 확장 매트릭스 정합성 -->
       <div class="kbpi-guide-card">
         <div class="kbpi-card-head">
           <span class="kbpi-step-pill">STAGE 2</span>
-          <h3 class="kbpi-card-title">문항 1 ~ 3 인지도 · 평가점수 · 태도 연동 규칙</h3>
+          <h3 class="kbpi-card-title">문항 1 ~ 8 공식 브랜드(QO) · 확장 매트릭스(6-1~6-3) 연동</h3>
         </div>
         <ul class="kbpi-rule-list">
-          <li><strong>문항 1 (비보조):</strong> <code>1-1 ~ 1-3</code> 중복 없는 정식 브랜드 3개 필수 입력, <code>1-4</code> 추가 1개 또는 <code>없음</code> 분산</li>
-          <li><strong>문항 2 (보조):</strong> 문항 1 응답 브랜드 포함 + 미체크 브랜드 중 <strong>랜덤 2~4개 추가 선택</strong> (공식 보기 자동 학습)</li>
-          <li><strong>문항 3 (가변 행 매트릭스):</strong> 소비재·유통·병원 등 산업군별 가변 평가 행 자동 인식, <code>3·4·5</code> 분산 후 <code>전반적 만족도</code> 평균 반올림 연동</li>
-          <li><strong>구입경험 '없음' 절대 규칙:</strong> 시트에 <code>구입경험='없음'</code> 지정 시 <strong><code>태도 문항</code>은 <code>1·2·3번</code> 중 선택(<code>4·5번</code> 금지)</strong> + <strong><code>예/아니오</code> 전원 '아니오'</strong> + <strong><code>문항 4·5</code> '없음'</strong> 일괄 처리</li>
+          <li><strong>문항 1·2 (547개 전 산업군 QO 직결):</strong> <code>QO.INDUSTRY.ANSWERS</code> 공식 브랜드 자동 조회 ➔ <code>1-1~1-3</code> 순차 입력 + <code>1-4</code> 추가 또는 전용 <code>없음(NOA)</code> 체크, <code>문항 2</code> 2~4개 추가 선택</li>
+          <li><strong>문항 3 (표준 13행 &amp; 확장 16행 통합):</strong> <code>1~9</code> 점수 분산 ➔ <code>6-1</code> 추천점수 연동 단답형 사유 ➔ <code>6-2</code> 추천경험 정합 ➔ <code>6-3 ↔ 문항 6</code> AI 검색경험 100% 일치 ➔ <code>10</code> 평균 반올림</li>
+          <li><strong>구입경험 '없음' 절대 규칙:</strong> <code>11번 태도</code> <code>1·2·3번</code>만 선택(<code>4·5번</code> 금지) + <code>6-2</code> 직접추천 배제(<code>3·4번</code>) + <code>13번</code> 전원 '아니오' + <code>문항 4·5</code> '없음'</li>
+          <li><strong>문항 4-1 채널 &amp; 문항 7·8 순위:</strong> 병원·택배·교육·금융·식음료 등 업종별 맞춤 채널 자동 매핑, <code>문항 7·8(GRADE)</code> 기타 제외 1·2순위 선택</li>
         </ul>
       </div>
 
@@ -126,7 +126,7 @@ export function renderKmacKbpiBlueprint(data = {}, {
             <label class="figma-label font-bold" for="sel-kbpi-pilot-stop">파일럿(단건 검증) 정지 지점</label>
             <select id="sel-kbpi-pilot-stop" class="figma-select">
               <option value="Q4" ${policy.pilotStopAtStep === 'Q4' ? 'selected' : ''}>1번째 품목 [문항 4] 도달 시 안전 정지 (요청 기본값)</option>
-              <option value="FINAL_GATE" ${policy.pilotStopAtStep === 'FINAL_GATE' ? 'selected' : ''}>전 품목 응답 후 최종 제출 직전 정지</option>
+              <option value="FINAL_GATE" ${policy.pilotStopAtStep === 'FINAL_GATE' ? 'selected' : ''}>전 품목 + DQ 응답 후 최종 제출 직전(99%) 정지</option>
             </select>
           </div>
 
@@ -136,31 +136,31 @@ export function renderKmacKbpiBlueprint(data = {}, {
           </div>
 
           <div class="form-group">
-            <label class="figma-label font-bold" for="num-kbpi-q6-no-rate">문항 6 '아니오' 응답 비율 (%) (가이드: 80%)</label>
+            <label class="figma-label font-bold" for="num-kbpi-q6-no-rate">문항 6 &amp; 6-3 '아니오' 응답 비율 (%) (가이드: 80%)</label>
             <input type="number" id="num-kbpi-q6-no-rate" class="figma-input" min="0" max="100" step="5" value="${Number(policy.q6NoRate ?? 80)}" />
           </div>
 
           <div class="form-group">
-            <label class="figma-label font-bold" for="num-kbpi-q1-4-rate">문항 1-4 추가 브랜드 기재 비율 (%) (나머지 '없음')</label>
+            <label class="figma-label font-bold" for="num-kbpi-q1-4-rate">문항 1-4 추가 브랜드 기재 비율 (%) (나머지 '없음' 체크)</label>
             <input type="number" id="num-kbpi-q1-4-rate" class="figma-input" min="0" max="100" step="5" value="${Number(policy.unaided4thBrandRate ?? 35)}" />
           </div>
 
           <div class="form-group kbpi-span-2">
-            <label class="figma-label font-bold" for="inp-kbpi-food-channels">문항 4-1 식음료 · 생활소비재 구입 채널 풀 (쉼표 구분 — 편의점·동네슈퍼 포함)</label>
+            <label class="figma-label font-bold" for="inp-kbpi-food-channels">문항 4-1 식음료 · 생활소비재 구입 채널 풀 (쉼표 구분 — 서비스·병원·금융 등은 업종별 전용 채널 자동 적용)</label>
             <input type="text" id="inp-kbpi-food-channels" class="figma-input" value="${escapeHtml(policy.customFoodLivingChannels || DEFAULT_KBPI_UI_POLICY.customFoodLivingChannels)}" />
           </div>
 
           <div class="form-group">
             <label class="custom-cb-label mt-6">
               <input type="checkbox" id="chk-kbpi-teen-guard" ${policy.teenAutoNoneUnfitCategories !== false ? 'checked' : ''} />
-              <span>10대 미성년자 비적합 품목(주류·자동차·대형주방가전 등) 시트 미지정 시 자동 '구입경험 없음' 보정</span>
+              <span>연령·성별 비적합 품목(10대 사이버대학·신용카드·렌터카·주류·대형가전 등) 시트 미지정 시 자동 '없음' 보정</span>
             </label>
           </div>
 
           <div class="form-group">
             <label class="custom-cb-label mt-6">
               <input type="checkbox" id="chk-kbpi-auto-sheet" ${policy.autoSyncGoogleSheet !== false ? 'checked' : ''} />
-              <span>실행 직후 구글 시트(진행상태 · 브랜드1~8 · 구입경험1~8) 실시간 자동 기입</span>
+              <span>실행 직후 구글 시트(진행상태 · 출제 전 품목 브랜드N · 구입경험N) 실시간 자동 기입</span>
             </label>
           </div>
 

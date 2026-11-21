@@ -17,12 +17,12 @@ import {
 import {
   renderKmacKbpiBlueprint,
   collectKmacKbpiPolicyFromDom
-} from './modules/blueprint-kbpi.js?v=20261120_kbpi_seg_v2';
+} from './modules/blueprint-kbpi.js?v=20261120_kbpi_v2';
 import {
   renderUniversalStep3SegmentPanel,
   resolveSurveySegmentAxes,
   isQuotaItemDone
-} from './modules/quota-segment-filter.js?v=20261120_kbpi_seg_v2';
+} from './modules/quota-segment-filter.js?v=20261120_kbpi_v2';
 import {
   PRESET_STANDARD,
   PRESET_GROWTH,
