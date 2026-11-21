@@ -9,10 +9,11 @@ export const METRIX_622_GOOGLE_SHEET_ID = '1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4ch
 export const METRIX_622_GOOGLE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${METRIX_622_GOOGLE_SHEET_ID}/edit?gid=1453131911#gid=1453131911`;
 
 export const METRIX_622_ACCOUNTS = [
-  { loginId: '강영미', loginPw: '5254', sheetName: '광주시 리스트' },
-  { loginId: '김정례', loginPw: '3995', sheetName: '김정례' },
-  { loginId: '노영미', loginPw: '7791', sheetName: '노영미-7791' },
-  { loginId: '송춘희', loginPw: '0307', sheetName: '송춘희0307' }
+  { loginId: '강영미', loginPw: '5254', sheetName: '깅영미5254', altSheetNames: ['광주시 리스트', '강영미5254', '강영미-5254', '강영미'] },
+  { loginId: '김정례', loginPw: '3995', sheetName: '김정례-3995', altSheetNames: ['김정례', '김정례3995'] },
+  { loginId: '노영미', loginPw: '7791', sheetName: '노영미-7791', altSheetNames: ['노영미', '노영미7791'] },
+  { loginId: '송춘희', loginPw: '0307', sheetName: '송춘희0307', altSheetNames: ['송춘희-0307', '송춘희'] },
+  { loginId: '지연옥', loginPw: '8336', sheetName: '지연옥-8336', altSheetNames: ['지연옥8336', '지연옥'] }
 ];
 
 export const METRIX_622_INDUSTRIES = [
@@ -106,7 +107,7 @@ export async function verifyBizStatusViaHometax(bizNumbers = []) {
           const bizStatus = isClosed ? '폐업자' : (isSuspended ? '휴업자' : '계속사업자');
           const taxType = trt ? trt.replace(/\s*입니다\.?\s*$/, '').trim() : '부가가치세 일반과세자';
           resultMap.set(item.bizNo, {
-            bizNo: item.bizNo,
+            bizNo: bNoFromItem(item),
             trtCntn: trt,
             taxType,
             bizStatus,
@@ -126,8 +127,12 @@ export async function verifyBizStatusViaHometax(bizNumbers = []) {
   return resultMap;
 }
 
+function bNoFromItem(item) {
+  return String(item?.bizNo || '');
+}
+
 /**
- * 구글 스프레드시트(1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM)에서 3개 조사원 시트 휴대폰 번호 로드
+ * 구글 스프레드시트(1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM)에서 5개 조사원 시트 휴대폰·보증금·월세 로드
  */
 export async function fetchMetrix622GoogleSheetData(sheetId = METRIX_622_GOOGLE_SHEET_ID) {
   const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=xlsx`;
@@ -158,7 +163,10 @@ export async function fetchMetrix622GoogleSheetData(sheetId = METRIX_622_GOOGLE_
 
   const wb = XLSX.read(buffer, { type: 'buffer' });
   for (const acc of METRIX_622_ACCOUNTS) {
-    const ws = wb.Sheets[acc.sheetName];
+    const candidates = [acc.sheetName, ...(acc.altSheetNames || [])].filter(Boolean);
+    const matchedTabName = candidates.find(t => wb.Sheets[t]) ||
+      (wb.SheetNames || []).find(n => n !== '오토서베이_응답내역' && (n.includes(acc.loginId) || n.includes(acc.loginPw)));
+    const ws = matchedTabName ? wb.Sheets[matchedTabName] : null;
     if (!ws) continue;
     const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
     const byUid = new Map();
@@ -175,14 +183,14 @@ export async function fetchMetrix622GoogleSheetData(sheetId = METRIX_622_GOOGLE_
       if (uid) byUid.set(uid, r);
       if (bizNo) byBizNo.set(bizNo, r);
     }
-    sheetMapByAccount[acc.loginId] = { byUid, byBizNo, rows };
+    sheetMapByAccount[acc.loginId] = { byUid, byBizNo, rows, matchedTabName };
   }
 
   return { sheetMapByAccount, sparePhones };
 }
 
 /**
- * 경기도 소상공인 사업체패널 3차조사 (SNUM=622) 다중 조사원 계정(강영미/김정례/노영미/송춘희) + 구글시트 휴대폰 + 사업자번호 폐업조회 통합 동기화
+ * 경기도 소상공인 사업체패널 3차조사 (SNUM=622) 다중 조사원 계정(강영미/김정례/노영미/송춘희/지연옥) + 구글시트 휴대폰 + 사업자번호 폐업조회 통합 동기화
  */
 export async function scrapeMetrix622AllAccounts(options = {}) {
   const {

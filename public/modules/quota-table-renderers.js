@@ -270,7 +270,7 @@ export function renderEmptyQuotaTableRow({
   } else if (isMetrixSeoul) {
     emptyMsg = '아직 장착된 서울시 소상공인 사업체패널 표본이 없습니다.<br>상단의 <strong>[2개 계정(2010·2016) + 구글시트 동기화]</strong> 또는 <strong>[기존 쿼터 불러오기]</strong> 버튼을 클릭해 주세요.';
   } else if (isMetrix) {
-    emptyMsg = '아직 장착된 경기도 소상공인 패널 사업체가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong> 또는 <strong>[4계정·시트·폐업 동기화]</strong> 버튼을 클릭해 주세요.';
+    emptyMsg = '아직 장착된 경기도 소상공인 패널 사업체가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong> 또는 <strong>[5계정·시트·폐업 동기화]</strong> 버튼을 클릭해 주세요.';
   } else if (isKona) {
     emptyMsg = '아직 장착된 청소년 설문 응답자 쿼터가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.';
   } else if (isAssoc) {
@@ -1371,7 +1371,7 @@ export function renderMetrixQuotaTable({
   const isDone = (it) => (it.quotaStatus === 'completed' || it.status === '완료' || String(it.status || '').includes('완료(100%)'));
   const isWait98 = (it) => (it.quotaStatus === '진행중(98%)' || /98%|99%/.test(String(it.quotaStatus || '')) || /98%|99%/.test(String(it.status || '')));
 
-  const baseAccounts = ['강영미', '김정례', '노영미', '송춘희'];
+  const baseAccounts = ['강영미', '김정례', '노영미', '송춘희', '지연옥'];
   const accCountMap = new Map(baseAccounts.map(a => [a, 0]));
   db.forEach(it => {
     const a = getAcc(it);
@@ -1425,7 +1425,7 @@ export function renderMetrixQuotaTable({
 
           <span class="metrix-slim-label">빠른선택:</span>
           <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="visible_active" title="현재 화면에 표시된 계정·업종 필터 내 미완료 업체만 선택합니다">현재 필터 미완료 (${visibleDb.filter(it => !isClosed(it) && !isDone(it) && !isWait98(it)).length})</button>
-          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="uncompleted_active" title="4개 계정 전체 미완료 업체를 모두 선택합니다">전체 미완료 (${uncompletedActive.length})</button>
+          <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="uncompleted_active" title="${orderedAccounts.length}개 계정 전체 미완료 업체를 모두 선택합니다">전체 미완료 (${uncompletedActive.length})</button>
           <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="phone_changed">휴대폰 변경 (${phoneChangedItems.length})</button>
           <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="wait_98">98~99% 대기 (${wait98Items.length})</button>
           <button type="button" class="globalri-quick-check-btn metrix-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
@@ -1471,7 +1471,7 @@ export function renderMetrixQuotaTable({
     `;
   }
 
-  const defaultPwByAcc = { '강영미': '5254', '김정례': '3995', '노영미': '7791', '송춘희': '0307' };
+  const defaultPwByAcc = { '강영미': '5254', '김정례': '3995', '노영미': '7791', '송춘희': '0307', '지연옥': '8336' };
 
   quotaTableBody.innerHTML = visibleDb.map((item, idx) => {
     const seq = Number(item.index || item.seq || (idx + 1));

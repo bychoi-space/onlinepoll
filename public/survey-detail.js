@@ -22,7 +22,7 @@ import {
   renderUniversalStep3SegmentPanel,
   resolveSurveySegmentAxes,
   isQuotaItemDone
-} from './modules/quota-segment-filter.js?v=20261120_kbpi_v2';
+} from './modules/quota-segment-filter.js?v=20261121_gg5acc_v1';
 import {
   PRESET_STANDARD,
   PRESET_GROWTH,
@@ -44,7 +44,7 @@ import {
   renderMetrixSeoulQuotaTable,
   renderAssocQuotaTable,
   renderKmacKbpiQuotaTable
-} from './modules/quota-table-renderers.js?v=20261120_kbpi_seg_v1';
+} from './modules/quota-table-renderers.js?v=20261121_gg5acc_v1';
 import {
   showToast,
   showConfirmModal,
@@ -783,11 +783,11 @@ async function initSurveyDetailPage() {
       }
       const labelSurveyor = document.getElementById('exec-surveyor-label');
       if (labelSurveyor) {
-        labelSurveyor.textContent = '강영미(5254) · 김정례(3995) · 노영미(7791) · 송춘희(0307)';
+        labelSurveyor.textContent = '강영미(5254) · 김정례(3995) · 노영미(7791) · 송춘희(0307) · 지연옥(8336)';
       }
       const slotCountLabel = document.getElementById('exec-slot-count-label');
       if (slotCountLabel) {
-        const uniqAccCnt = new Set(qList.map(i => i.surveyorId || i.loginId).filter(Boolean)).size || 4;
+        const uniqAccCnt = new Set(qList.map(i => i.surveyorId || i.loginId).filter(Boolean)).size || 5;
         slotCountLabel.textContent = `${uniqAccCnt}계정 ${qList.length}건 (유효 ${qList.length - closedCnt}건)`;
       }
       const badgeBp = document.getElementById('badge-blueprint-status');
@@ -1518,7 +1518,7 @@ async function initSurveyDetailPage() {
       : (isMetrixSeoul
         ? `${currentCampaign?.loginId || '2010 / 2016'} (${currentCampaign?.surveyorName || '송준희 · 정소영'})`
         : (isMetrix
-          ? '강영미(5254) · 김정례(3995) · 노영미(7791) · 송춘희(0307)'
+          ? '강영미(5254) · 김정례(3995) · 노영미(7791) · 송춘희(0307) · 지연옥(8336)'
           : (isGallupReturnFarm
             ? `${currentCampaign?.loginId || '076_000009'} (${currentCampaign?.surveyorName || '백영자'})`
             : (isGlobalriLiteracy
@@ -1846,7 +1846,7 @@ async function initSurveyDetailPage() {
       existingMetrixBar.style.display = 'none';
     }
 
-    // [메트릭스 경기도 소상공인 패널 4계정 통합 테이블 렌더링]
+    // [메트릭스 경기도 소상공인 패널 5계정 통합 테이블 렌더링]
     if (isMetrix) {
       if (!metrixSelectionInitialized && db.length > 0) {
         metrixSelectionInitialized = true;
@@ -4702,7 +4702,7 @@ async function initSurveyDetailPage() {
       const originalText = btnSyncKstatStatus.innerHTML;
       btnSyncKstatStatus.disabled = true;
       btnSyncKstatStatus.innerHTML = isMetrix
-        ? '<i class="fa-solid fa-spinner fa-spin"></i> 4계정·구글시트·폐업조회 동기화 중...'
+        ? '<i class="fa-solid fa-spinner fa-spin"></i> 5계정·구글시트·폐업조회 동기화 중...'
         : (isMetrixSeoul
           ? '<i class="fa-solid fa-spinner fa-spin"></i> 구글 스프레드시트(시트2) 동기화 중...'
           : (isGallupReturnFarm
@@ -4734,7 +4734,7 @@ async function initSurveyDetailPage() {
         const data = await res.json();
         if (data.success) {
           showToast(data.message, 'success');
-          appendLog('success', `[${isMetrix ? '경기도 622 4계정·구글시트·폐업 동기화' : (isMetrixSeoul ? '서울시 패널 구글시트 동기화' : (isGallupReturnFarm ? '한국갤럽 상태 동기화' : (isGlobalriLiteracy ? '글로벌리서치 GIFT 동기화' : (isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화'))))}] ${data.message}`);
+          appendLog('success', `[${isMetrix ? '경기도 622 5계정·구글시트·폐업 동기화' : (isMetrixSeoul ? '서울시 패널 구글시트 동기화' : (isGallupReturnFarm ? '한국갤럽 상태 동기화' : (isGlobalriLiteracy ? '글로벌리서치 GIFT 동기화' : (isHrcEnergy ? '한국리서치 TAPI 동기화' : 'Kstat 상태 동기화'))))}] ${data.message}`);
           if (isMetrix || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) {
             await loadCampaign();
             await loadBlueprint();

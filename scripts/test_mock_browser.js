@@ -263,11 +263,12 @@ quotaRenderers.renderMetrixQuotaTable({
     { index: 1, seq: 1, surveyorId: '강영미', uid: '2220', companyName: '주식회사 일화검사소', industry: '6.전문, 과학 및 기술 서비스업', quotaStatus: 'ready' },
     { index: 54, seq: 54, surveyorId: '강영미', uid: '30109', companyName: '아이가루', industry: '1.제조업', status: '인원초과', quotaStatus: 'excluded' },
     { index: 111, seq: 111, surveyorId: '김정례', uid: '1044', companyName: '가나안꽃화원', industry: '3.도매 및 소매업', status: '진행중(99%)', quotaStatus: '진행중(98%)' },
-    { index: 172, seq: 172, surveyorId: '송춘희', uid: '4498', companyName: '양평상회', industry: '3.도매 및 소매업', quotaStatus: 'ready' }
+    { index: 172, seq: 172, surveyorId: '송춘희', uid: '4498', companyName: '양평상회', industry: '3.도매 및 소매업', quotaStatus: 'ready' },
+    { index: 245, seq: 245, surveyorId: '지연옥', uid: '8001', companyName: '하남테크', industry: '3.도매 및 소매업', quotaStatus: 'ready' }
   ],
   quotaTableBody: metrixTbody,
   campId: 'camp_1794792483912',
-  checkedMetrixSeqs: new Set([1, 172]),
+  checkedMetrixSeqs: new Set([1, 172, 245]),
   metrixPolicy: metrixState,
   onReRender: () => {},
   onSelectionChange: () => {},
@@ -279,14 +280,16 @@ const metrixBarHtml = elements['metrix-622-step1-check-bar']?.innerHTML || '';
 if (
   !metrixTbody.innerHTML.includes('일화검사소') ||
   !metrixTbody.innerHTML.includes('양평상회') ||
+  !metrixTbody.innerHTML.includes('하남테크') ||
   !metrixTbody.innerHTML.includes('인원초과 제외') ||
   !metrixTbody.innerHTML.includes('99% 검토대기') ||
   !metrixBarHtml.includes('data-acc-filter="송춘희"') ||
-  !metrixBarHtml.includes('4계정·시트·폐업 동기화') ||
+  !metrixBarHtml.includes('data-acc-filter="지연옥"') ||
+  !metrixBarHtml.includes('5계정·시트·폐업 동기화') ||
   !metrixBarHtml.includes('btn-metrix-622-top-batch-run') ||
-  !metrixBarHtml.includes('선택 업체만 자동설문 실행 (2건)')
+  !metrixBarHtml.includes('선택 업체만 자동설문 실행 (3건)')
 ) {
-  throw new Error('Metrix 4-account quota table render failed');
+  throw new Error('Metrix 5-account quota table render failed');
 }
 kstatStoreMod.renderKstatStoreStages({
   blueprintStageGrid: container,

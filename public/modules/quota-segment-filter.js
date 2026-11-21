@@ -138,7 +138,7 @@ export function resolveSurveySegmentAxes(surveyType = '', db = []) {
     return [
       {
         id: 'surveyor_acc',
-        label: '담당 조사원 계정별 (4계정 분할)',
+        label: '담당 조사원 계정별 (5계정 분할)',
         shortLabel: '조사원 계정',
         extractor: (it) => String(it.surveyorId || it.loginId || '기본계정').trim()
       },

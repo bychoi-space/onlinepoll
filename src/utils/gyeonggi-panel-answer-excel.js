@@ -19,9 +19,16 @@ export const GYEONGGI_PANEL_ANSWER_TAB_NAME = '오토서베이_응답내역';
 
 const PROTECTED_SOURCE_TABS = new Set([
   '광주시 리스트',
+  '깅영미5254',
+  '강영미5254',
+  '강영미-5254',
   '김정례',
+  '김정례-3995',
   '노영미-7791',
-  '송춘희0307'
+  '송춘희0307',
+  '지연옥-8336',
+  '지연옥8336',
+  '지연옥'
 ]);
 
 function extractQuotaArray(quotaDatabase) {
@@ -65,9 +72,12 @@ export function persistGyeonggiPanelQuotaDatabase({
       incomingByUid.set(String(item.uid), item);
     });
 
+    const seenKeys = new Set();
     const mergedRows = existingRows.map((row, idx) => {
       const surv = String(row.surveyorId || '').trim();
-      const inc = (surv && incomingByKey.get(`${surv}::${row.uid}`)) || incomingByUid.get(String(row.uid));
+      const key = `${surv}::${row.uid}`;
+      seenKeys.add(key);
+      const inc = (surv && incomingByKey.get(key)) || incomingByUid.get(String(row.uid));
       if (!inc) return row;
 
       const safeQuotaStatus =
@@ -91,7 +101,24 @@ export function persistGyeonggiPanelQuotaDatabase({
       };
     });
 
+    rows.forEach(item => {
+      if (!item || !item.uid) return;
+      const surv = String(item.surveyorId || '').trim();
+      const key = `${surv}::${item.uid}`;
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        const nextIdx = mergedRows.length + 1;
+        mergedRows.push({
+          ...item,
+          index: item.index || nextIdx,
+          seq: item.seq || nextIdx,
+          slotIndex: item.slotIndex || nextIdx
+        });
+      }
+    });
+
     fileObj.data = mergedRows;
+    fileObj.rows = mergedRows;
     fileObj.count = mergedRows.length;
     fileObj.updatedAt = new Date().toISOString();
     writeJsonAtomicSync(targetPath, fileObj);

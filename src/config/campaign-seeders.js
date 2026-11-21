@@ -543,7 +543,7 @@ export function seedInitialCampaigns({
       }
     }
 
-    // [메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 4계정 통합 244건 (강영미 54건 + 김정례 55건 + 노영미 62건 + 송춘희 73건) 자동 시드
+    // [메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - 5계정 통합 319건 (강영미 54건 + 김정례 55건 + 노영미 62건 + 송춘희 73건 + 지연옥 75건) 자동 시드
     const gyeonggi622CampId = 'camp_metrix_gyeonggi_622_2026';
     const gyeonggiQuotaPath = path.join(quotasDir, 'quota_metrix_gyeonggi_622_all.json');
     if (fs.existsSync(gyeonggiQuotaPath)) {
@@ -574,10 +574,11 @@ export function seedInitialCampaigns({
         }
 
         const defaultAccounts = ggContent.accounts || [
-          { loginId: '강영미', loginPw: '5254', sheetName: '광주시 리스트' },
-          { loginId: '김정례', loginPw: '3995', sheetName: '김정례' },
+          { loginId: '강영미', loginPw: '5254', sheetName: '깅영미5254' },
+          { loginId: '김정례', loginPw: '3995', sheetName: '김정례-3995' },
           { loginId: '노영미', loginPw: '7791', sheetName: '노영미-7791' },
-          { loginId: '송춘희', loginPw: '0307', sheetName: '송춘희0307' }
+          { loginId: '송춘희', loginPw: '0307', sheetName: '송춘희0307' },
+          { loginId: '지연옥', loginPw: '8336', sheetName: '지연옥-8336' }
         ];
 
         const existingGyeonggiCamps = CampaignStore.getAllCampaigns().filter(
@@ -591,8 +592,8 @@ export function seedInitialCampaigns({
         if (existingGyeonggiCamps.length === 0) {
           CampaignStore.createCampaign({
             id: gyeonggi622CampId,
-            title: `[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - ${defaultAccounts.length}계정 통합 ${ggList.length}건 (강영미·김정례·노영미·송춘희)`,
-            description: `메트릭스 GetData(SNUM=622) · ${defaultAccounts.length}개 조사원 계정(강영미 54건 + 김정례 55건 + 노영미 62건 + 송춘희 73건) 통합 · 사업자번호 기반 폐업 리스트 자동 제외 · 컨택 팝업 휴대폰 번호 엑셀(구글시트) 변경 저장 후 [설문참여] · 8대 업종별 맞춤 가이드 체크 및 98%(Step 119) 안전 대기`,
+            title: `[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - ${defaultAccounts.length}계정 통합 ${ggList.length}건 (강영미·김정례·노영미·송춘희·지연옥)`,
+            description: `메트릭스 GetData(SNUM=622) · ${defaultAccounts.length}개 조사원 계정(강영미 54건 + 김정례 55건 + 노영미 62건 + 송춘희 73건 + 지연옥 75건) 통합 · 사업자번호 기반 폐업 리스트 자동 제외 · 컨택 팝업 휴대폰 번호 엑셀(구글시트) 변경 저장 후 [설문참여] · 8대 업종별 맞춤 가이드 체크 및 98%(Step 119) 안전 대기`,
             quotaType: 'b2b',
             surveyType: 'metrix_panel',
             snum: '622',
@@ -837,15 +838,17 @@ export function seedInitialCampaigns({
               const totalCnt = Array.isArray(existingGyeonggiCamp.quotaDatabase) ? existingGyeonggiCamp.quotaDatabase.length : ggList.length;
               const prevTitle = String(existingGyeonggiCamp.title || '');
               const updatedTitle = existingGyeonggiCamp.id === gyeonggi622CampId
-                ? `[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - ${defaultAccounts.length}계정 통합 ${totalCnt}건 (강영미·김정례·노영미·송춘희)`
-                : (prevTitle.includes('3계정 통합 171건')
+                ? `[메트릭스] 2026년 경기도 소상공인 사업체패널 3차조사 (SNUM 622) - ${defaultAccounts.length}계정 통합 ${totalCnt}건 (강영미·김정례·노영미·송춘희·지연옥)`
+                : ((prevTitle.includes('3계정') || prevTitle.includes('4계정'))
                   ? prevTitle
-                      .replace('3계정 통합 171건', `${defaultAccounts.length}계정 통합 ${totalCnt}건`)
-                      .replace('강영미·김정례·노영미)', '강영미·김정례·노영미·송춘희)')
+                      .replace(/\d+계정 통합 \d+건/, `${defaultAccounts.length}계정 통합 ${totalCnt}건`)
+                      .replace('강영미·김정례·노영미·송춘희)', '강영미·김정례·노영미·송춘희·지연옥)')
+                      .replace('강영미·김정례·노영미)', '강영미·김정례·노영미·송춘희·지연옥)')
                   : prevTitle);
 
               CampaignStore.updateCampaign(existingGyeonggiCamp.id, {
                 title: updatedTitle,
+                description: `메트릭스 GetData(SNUM=622) · ${defaultAccounts.length}개 조사원 계정(강영미 54건 + 김정례 55건 + 노영미 62건 + 송춘희 73건 + 지연옥 75건) 통합 · 사업자번호 기반 폐업 리스트 자동 제외 · 컨택 팝업 휴대폰 번호 엑셀(구글시트) 변경 저장 후 [설문참여] · 8대 업종별 맞춤 가이드 체크 및 98%(Step 119) 안전 대기`,
                 accounts: defaultAccounts,
                 sparePhones: ggContent.sparePhones || existingGyeonggiCamp.sparePhones || [],
                 googleSheetUrl: existingGyeonggiCamp.googleSheetUrl || ggContent.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1rp3yBon3PEHrSc71v_j_rs9zdQP2Vv_WS4chL5AUrUM/edit?gid=1453131911#gid=1453131911',

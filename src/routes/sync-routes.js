@@ -729,7 +729,7 @@ export function registerSyncRoutes({
     }
   });
 
-  // [경기도 소상공인 사업체패널 3차조사 SNUM=622] 다중 조사원 계정(강영미/김정례/노영미/송춘희) + 구글시트 휴대폰 + 홈택스 폐업조회 통합 동기화 API
+  // [경기도 소상공인 사업체패널 3차조사 SNUM=622] 다중 조사원 계정(강영미/김정례/노영미/송춘희/지연옥) + 구글시트 휴대폰 + 홈택스 폐업조회 통합 동기화 API
   app.post('/api/campaigns/:id/sync-metrix-622', async (req, res) => {
     try {
       const campaign = CampaignStore.getCampaignById(req.params.id);
@@ -755,7 +755,7 @@ export function registerSyncRoutes({
         accBreakdownMap.set(k, (accBreakdownMap.get(k) || 0) + 1);
       });
       const accSummaryStr = Array.from(accBreakdownMap.entries()).map(([k, v]) => `${k} ${v}건`).join('·');
-      const accCount = accBreakdownMap.size || 4;
+      const accCount = accBreakdownMap.size || 5;
 
       CampaignStore.updateCampaign(campaign.id, {
         accounts: syncRes.quotaDbData?.accounts || campaign.accounts,
