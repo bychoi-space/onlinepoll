@@ -638,11 +638,15 @@ export function seedInitialCampaigns({
                 const resolvedClosed = prev.manualClosedOverride ? prev.isClosedBiz : ggItem.isClosedBiz;
                 const resolvedBizStatus = prev.manualClosedOverride ? prev.bizStatus : ggItem.bizStatus;
                 const isEitherDone = String(prev.status || '').includes('완료') || String(ggItem.status || '').includes('완료');
+                const isPrevWait98 = /98%|99%/.test(String(prev.status || '')) || /98%|99%/.test(String(prev.quotaStatus || ''));
+                const isGgWait98 = /98%|99%/.test(String(ggItem.status || '')) || /98%|99%/.test(String(ggItem.quotaStatus || ''));
                 const resolvedStatus = isEitherDone
                   ? (String(ggItem.status || '').includes('완료') ? ggItem.status : prev.status)
-                  : (ggItem.status || prev.status || '');
+                  : (isPrevWait98 && !isGgWait98
+                    ? (prev.status || '진행중(98%)')
+                    : (ggItem.status || prev.status || ''));
                 const isOverQuota = String(resolvedStatus).includes('인원초과') || String(ggItem.rawMeta?.COMPLETE || '').toUpperCase() === 'OVER';
-                const isSafeWait98 = /98%|99%/.test(String(resolvedStatus)) || /98%|99%/.test(String(prev.quotaStatus || '')) || /98%|99%/.test(String(ggItem.quotaStatus || ''));
+                const isSafeWait98 = isPrevWait98 || isGgWait98;
                 const resolvedQuotaStatus = (resolvedClosed || isOverQuota)
                   ? 'excluded'
                   : ((prev.quotaStatus === 'completed' || ggItem.quotaStatus === 'completed' || isEitherDone)
