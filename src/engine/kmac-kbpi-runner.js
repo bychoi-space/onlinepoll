@@ -1000,8 +1000,11 @@ async function classifyCurrentScreen(target) {
     if (visibleQNames.includes('SQ1')) return { screenType: 'SQ1', ...baseRet };
     if (visibleQNames.includes('SQ2')) return { screenType: 'SQ2_AGE', ...baseRet };
     if (visibleQNames.includes('SQ3')) return { screenType: 'SQ3_GENDER', ...baseRet };
-    if (visibleQNames.includes('M_CHECK') || visibleQNames.includes('INDUSTRY_ORDER')) {
+    if (visibleQNames.includes('M_CHECK') || document.querySelector('[question-name="M_CHECK"] select')) {
       return { screenType: 'M_CHECK_REGION', ...baseRet };
+    }
+    if (document.querySelector('[question-name="INDUSTRY_ORDER"]') && visibleQNames.length === 0) {
+      return { screenType: 'ALLOCATING_INDUSTRIES', ...baseRet };
     }
 
     // 4) 본 설문 산업군별 문항 (KBPI_Q1 ~ KBPI_Q8 및 특수 진단 블록)
@@ -2019,6 +2022,27 @@ export async function runKmacKbpiSurvey({
         await syncAssignedIndustriesOnce(activeTarget);
         await surveyPage.waitForTimeout(350);
         await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // [INDUSTRY_ORDER 비동기 자동 배정 대기 — KBPI_Q1_1 진입 및 서버 영구 저장 보장]
+      if (info.screenType === 'ALLOCATING_INDUSTRIES') {
+        emitLog('[업종 자동 배정 대기] KbpiContext 배정 결과 서버 저장 및 문항 1 진입 대기...', 'info', 'ALLOC');
+        for (let iWait = 0; iWait < 25; iWait++) {
+          const st = await activeTarget.evaluate(() => {
+            const q1 = document.querySelector('[question-name^="KBPI_Q1_1--"]');
+            if (q1 && q1.offsetParent !== null) return { movedToQ1: true, ready: true };
+            const w = document.querySelector('div[question-name="INDUSTRY_ORDER"]');
+            const ready = w && typeof window.$ !== 'undefined' ? Boolean(window.$(w).data('ready')) : false;
+            return { movedToQ1: false, ready };
+          }).catch(() => ({ movedToQ1: false, ready: false }));
+          if (st.movedToQ1) break;
+          if (st.ready && iWait >= 4) {
+            await clickNextButton(activeTarget);
+            break;
+          }
+          await surveyPage.waitForTimeout(350);
+        }
         continue;
       }
 
