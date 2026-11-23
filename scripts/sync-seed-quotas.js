@@ -79,9 +79,39 @@ function mergeQuotaItem(prev, remoteItem) {
           ? prev.quotaStatus
           : (remoteItem.quotaStatus || 'ready'))));
 
+  // K-BPI 등 품목별 설정(categoryConfigs)은 로컬 런타임 스캔/선택값을 최우선 보존하고 원격 시드로 빈칸만 보충
+  let mergedCategoryConfigs = remoteItem.categoryConfigs;
+  if (Array.isArray(prev.categoryConfigs) || Array.isArray(remoteItem.categoryConfigs)) {
+    const prevCfgs = Array.isArray(prev.categoryConfigs) ? prev.categoryConfigs : [];
+    const remCfgs = Array.isArray(remoteItem.categoryConfigs) ? remoteItem.categoryConfigs : [];
+    const maxLen = Math.max(prevCfgs.length, remCfgs.length);
+    mergedCategoryConfigs = [];
+    for (let i = 0; i < maxLen; i++) {
+      const p = prevCfgs[i] || {};
+      const r = remCfgs[i] || {};
+      mergedCategoryConfigs.push({
+        slot: i + 1,
+        industryKey: p.industryKey || r.industryKey || '',
+        categoryName: p.categoryName || r.categoryName || '',
+        purchaseExp: p.purchaseExp || r.purchaseExp || '',
+        topBrand: p.topBrand || r.topBrand || '',
+        channel: p.channel || r.channel || ''
+      });
+    }
+  }
+
   return {
     ...prev,
     ...remoteItem,
+    ...(mergedCategoryConfigs ? { categoryConfigs: mergedCategoryConfigs } : {}),
+    education: prev.education || remoteItem.education || '',
+    job: prev.job || remoteItem.job || '',
+    householdIncome: prev.householdIncome || remoteItem.householdIncome || '',
+    maritalStatus: prev.maritalStatus || remoteItem.maritalStatus || '',
+    familySize: prev.familySize || remoteItem.familySize || '',
+    childrenCount: prev.childrenCount || remoteItem.childrenCount || '',
+    surveyDistrict: prev.surveyDistrict || remoteItem.surveyDistrict || '',
+    surveyDong: prev.surveyDong || remoteItem.surveyDong || '',
     phone: (prev.phoneNeedsSync === false && prev.phone) ? prev.phone : remoteItem.phone,
     serverPhone: (prev.phoneNeedsSync === false && prev.serverPhone) ? prev.serverPhone : remoteItem.serverPhone,
     phoneNeedsSync: prev.phoneNeedsSync === false ? false : remoteItem.phoneNeedsSync,
@@ -172,10 +202,18 @@ function main() {
       const fk = getFallbackIdKey(r);
       return k ? (!localByKey.has(k) && !( !r.surveyorId && fk && localByKey.has(fk) )) : false;
     });
+    const hasNewRemoteFields = remoteRows.some(r => {
+      const k = getItemKey(r);
+      const fk = getFallbackIdKey(r);
+      const prev = (k && localByKey.get(k)) || (!r.surveyorId && fk ? localByKey.get(fk) : null);
+      if (!prev) return false;
+      return ['education', 'job', 'householdIncome', 'maritalStatus', 'familySize', 'childrenCount', 'surveyDistrict', 'surveyDong']
+        .some(field => r[field] && !prev[field]);
+    });
     const remoteAccLen = Array.isArray(remoteObj.accounts) ? remoteObj.accounts.length : 0;
     const localAccLen = Array.isArray(localObj.accounts) ? localObj.accounts.length : 0;
 
-    if (!hasNewRemoteItems && remoteRows.length <= localRows.length && remoteAccLen <= localAccLen) {
+    if (!hasNewRemoteItems && !hasNewRemoteFields && remoteRows.length <= localRows.length && remoteAccLen <= localAccLen) {
       continue;
     }
 

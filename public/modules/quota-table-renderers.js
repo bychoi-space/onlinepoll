@@ -70,11 +70,11 @@ export function renderQuotaTableHead({
         </th>
         <th class="th-no">순번</th>
         <th>최종ID / 고유번호</th>
-        <th>조사지역 · 주입 GPS</th>
+        <th>조사지역 · 조사구/동 · GPS</th>
         <th>성별 · 연령대 (만 나이)</th>
-        <th>응답자 성명</th>
-        <th>연락처 (분기유형)</th>
-        <th>품목별 구입경험 가이드 (브랜드1~8 · 시트연동)</th>
+        <th>응답자 성명 · 연락처</th>
+        <th>배경변인 (학력·직업·소득 / 결혼·가족·자녀)</th>
+        <th>출제 브랜드 스캔 &amp; 구입경험 (클릭 시 있음⇄없음)</th>
         <th class="th-status">진행 상태</th>
         <th class="text-center kbpi-th-action">단건 실행</th>
       </tr>
@@ -2054,6 +2054,7 @@ export function renderKmacKbpiQuotaTable({
   onReRender = null,
   onSelectionChange = null,
   onTriggerBatchRun = null,
+  onScanBrands = null,
   onSyncFromSheet = null,
   onRunSingle = null,
   onToggleCategoryExp = null
@@ -2090,6 +2091,7 @@ export function renderKmacKbpiQuotaTable({
     : indexedDb.filter(r => selectedSegments.has(r.segName));
 
   const actionableCheckedCount = indexedDb.filter(r => !r.done && checkedKbpiSeqs.has(r.seq)).length;
+  const scannedTotalCount = db.filter(it => Array.isArray(it.categoryConfigs) && it.categoryConfigs.some(c => c && c.categoryName)).length;
 
   if (kbpiBar) {
     kbpiBar.innerHTML = `
@@ -2101,7 +2103,7 @@ export function renderKmacKbpiQuotaTable({
           </select>
           <button type="button" class="hrc-use-chip ${isAllMode ? 'is-active' : ''}" data-kbpi-seg="__ALL__">
             <span>전체</span>
-            <span class="hrc-use-chip-count">${db.length}명</span>
+            <span class="hrc-use-chip-count">${db.length}명 (스캔 ${scannedTotalCount})</span>
           </button>
           ${segStats.map(st => {
             const active = selectedSegments.has(st.segName);
@@ -2115,7 +2117,16 @@ export function renderKmacKbpiQuotaTable({
           }).join('')}
         </div>
         <div class="kbpi-bar-right">
-          <button type="button" class="btn-pill btn-pill-secondary btn-pill-small" id="btn-kbpi-step1-sync-sheet" title="구글 시트의 최신 구입경험(있음/없음) 설정을 즉시 불러옵니다">
+          <button
+            type="button"
+            class="btn-pill btn-pill-secondary btn-pill-small font-bold"
+            id="btn-kbpi-step1-scan-brands"
+            title="CAPI에 신상명세·조사구(노원구/남동구)를 등록하고 응답자별 출제 브랜드(약 18~20종)를 스캔하여 시트에 기록합니다"
+          >
+            <i class="fa-solid fa-barcode text-primary-color"></i>
+            ${actionableCheckedCount > 0 ? `체크 대상(${actionableCheckedCount}명) 스캔` : '150명 신상등록 & 브랜드 스캔'}
+          </button>
+          <button type="button" class="btn-pill btn-pill-secondary btn-pill-small" id="btn-kbpi-step1-sync-sheet" title="구글 시트의 최신 배경변인 및 구입경험(있음/없음) 설정을 즉시 불러옵니다">
             <i class="fa-solid fa-arrows-rotate text-success-color"></i> 구글 시트 동기화
           </button>
           <button
@@ -2140,10 +2151,12 @@ export function renderKmacKbpiQuotaTable({
       statusBadge = '<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 진행중</span>';
     } else if (qs === 'completed' || item.status === '완료') {
       statusBadge = '<span class="badge-status completed">완료 (100%)</span>';
+    } else if (qs === 'scanned' || String(item.status || '').includes('스캔완료')) {
+      statusBadge = '<span class="badge-status kbpi-scanned"><i class="fa-solid fa-barcode"></i> 신상등록·스캔완료</span>';
     } else if (qs === 'pilot_done') {
-      statusBadge = `<span class="badge-status pilot">${escapeHtml(item.status || '문항4 대기')}</span>`;
+      statusBadge = `<span class="badge-status pilot">${escapeHtml(item.status || '완료직전 대기')}</span>`;
     } else if (qs === 'error') {
-      statusBadge = '<span class="badge-status error">오류</span>';
+      statusBadge = `<span class="badge-status error" title="${escapeHtml(item.lastScanError || item.error || '')}">오류</span>`;
     }
 
     const phoneStr = String(item.phone || '-');
@@ -2152,16 +2165,36 @@ export function renderKmacKbpiQuotaTable({
       ? '<span class="kbpi-phone-tag is-mobile">휴대폰</span>'
       : '<span class="kbpi-phone-tag is-landline">일반전화</span>';
 
+    const distStr = item.surveyDistrict || (String(item.region || '').includes('인천') ? '남동구' : '노원구');
+    const dongStr = item.surveyDong || '';
+
+    const eduStr = item.education || '-';
+    const jobStr = item.job || '-';
+    const incStr = item.householdIncome || '-';
+    const marStr = item.maritalStatus || '-';
+    const famStr = item.familySize !== undefined && item.familySize !== '' ? `가족 ${item.familySize}명` : '가족 -';
+    const childStr = (Number(item.familySize) === 1)
+      ? '자녀 해당없음(1인가구)'
+      : (item.childrenCount !== undefined && item.childrenCount !== '' ? `자녀 ${item.childrenCount}명` : '자녀 0명');
+
     const cfgs = Array.isArray(item.categoryConfigs) ? item.categoryConfigs : [];
     const filledCfgs = cfgs.filter(c => c && (c.categoryName || c.purchaseExp));
+    const scannedNamedCount = filledCfgs.filter(c => c.categoryName).length;
+    const yesCnt = filledCfgs.filter(c => (c.purchaseExp || '있음') === '있음').length;
+    const noneCnt = filledCfgs.filter(c => c.purchaseExp === '없음').length;
+
+    const summaryHead = scannedNamedCount > 0
+      ? `<div class="kbpi-row-scan-summary">스캔 <strong>${scannedNamedCount}종</strong> · <span class="kbpi-stat-yes">있음 ${yesCnt}</span> / <span class="kbpi-stat-none">없음 ${noneCnt}</span></div>`
+      : '';
+
     const catChipsHtml = filledCfgs.length > 0
-      ? filledCfgs.map(c => {
-          const exp = c.purchaseExp || '자동(90:10)';
+      ? summaryHead + `<div class="kbpi-cat-chip-wrap">` + filledCfgs.map(c => {
+          const exp = c.purchaseExp || '있음';
           const cls = exp === '없음' ? 'is-none' : (exp === '있음' ? 'is-yes' : 'is-auto');
-          const label = c.categoryName ? `${c.categoryName}: ${exp}` : `품목${c.slot}: ${exp}`;
-          return `<button type="button" class="kbpi-cat-exp-chip ${cls}" data-seq="${seq}" data-slot="${c.slot}" title="클릭하여 구입경험 전환 (있음 ➔ 없음 ➔ 자동)">${escapeHtml(label)}</button>`;
-        }).join(' ')
-      : '<span class="font-caption text-dim">출제 시 자동기입 (시트/클릭으로 없음 지정 가능)</span>';
+          const label = c.categoryName ? `${c.slot}.${c.categoryName}: ${exp}` : `품목${c.slot}: ${exp}`;
+          return `<button type="button" class="kbpi-cat-exp-chip ${cls}" data-seq="${seq}" data-slot="${c.slot}" title="클릭하여 구입경험 전환 (있음 ⇄ 없음)">${escapeHtml(label)}</button>`;
+        }).join(' ') + `</div>`
+      : '<span class="font-caption text-dim">상단 [신상등록 &amp; 브랜드 스캔] 실행 시 출제 전 품목 표시</span>';
 
     return `
       <tr class="${isChecked ? 'globalri-row-checked' : ''}" data-row-idx="${seq}">
@@ -2174,19 +2207,22 @@ export function renderKmacKbpiQuotaTable({
           <div class="font-caption text-dim">${escapeHtml(item.uid || '-')}</div>
         </td>
         <td>
-          <div><strong>${escapeHtml(item.region || '-')}</strong> · <span class="font-caption">${escapeHtml(item.gpsLabel || '')}</span></div>
+          <div><strong>${escapeHtml(item.region || '-')}</strong> · <span class="kbpi-district-badge">${escapeHtml(distStr)} ${escapeHtml(dongStr)}</span></div>
           <div class="font-caption font-mono text-dim">${escapeHtml(String(item.latitude || ''))}, ${escapeHtml(String(item.longitude || ''))}</div>
         </td>
         <td>
           <span class="quota-ind-badge">${escapeHtml(item.gender || '-')} · ${escapeHtml(item.ageGroup || '-')}</span>
-          <span class="font-caption font-bold ml-4">(만 ${escapeHtml(String(item.age || '-'))}세)</span>
+          <div class="font-caption font-bold mt-2">만 ${escapeHtml(String(item.age || '-'))}세</div>
         </td>
-        <td><strong>${escapeHtml(item.name || item.ceoName || '-')}</strong></td>
-        <td class="font-mono">
-          <div>${escapeHtml(phoneStr)}</div>
-          <div>${phoneBadge}</div>
+        <td>
+          <div><strong>${escapeHtml(item.name || item.ceoName || '-')}</strong> ${phoneBadge}</div>
+          <div class="font-mono font-caption">${escapeHtml(phoneStr)}</div>
         </td>
-        <td><div class="kbpi-cat-chip-wrap">${catChipsHtml}</div></td>
+        <td>
+          <div class="kbpi-demo-line"><strong>${escapeHtml(eduStr)}</strong> · ${escapeHtml(jobStr)} · <span class="kbpi-income-tag">${escapeHtml(incStr)}</span></div>
+          <div class="kbpi-demo-sub">${escapeHtml(marStr)} · ${escapeHtml(famStr)} · ${escapeHtml(childStr)}</div>
+        </td>
+        <td class="kbpi-td-brands">${catChipsHtml}</td>
         <td class="text-center">${statusBadge}</td>
         <td class="text-center">
           <button type="button" class="btn-pill btn-pill-secondary btn-pill-small btn-kbpi-run-single" data-seq="${seq}" ${qs === 'running' ? 'disabled' : ''}>
@@ -2272,6 +2308,13 @@ export function renderKmacKbpiQuotaTable({
       });
     });
 
+    const btnScan = kbpiBar.querySelector('#btn-kbpi-step1-scan-brands');
+    if (btnScan && typeof onScanBrands === 'function') {
+      btnScan.addEventListener('click', () => {
+        onScanBrands({ onlySelected: actionableCheckedCount > 0 });
+      });
+    }
+
     const btnSync = kbpiBar.querySelector('#btn-kbpi-step1-sync-sheet');
     if (btnSync && typeof onSyncFromSheet === 'function') {
       btnSync.addEventListener('click', () => onSyncFromSheet());
@@ -2283,5 +2326,6 @@ export function renderKmacKbpiQuotaTable({
     }
   }
 }
+
 
 

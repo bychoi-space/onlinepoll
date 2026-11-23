@@ -8,9 +8,13 @@ import { SEOUL_PANEL_DEFAULT_GSHEET_URL } from '../utils/seoul-panel-answer-exce
 import {
   KBPI_DEFAULT_SHEET_URL,
   normalizeCategoryConfigs,
-  persistKbpiQuotaDatabase
+  persistKbpiQuotaDatabase,
+  syncKbpiProgressToGoogleSheet
 } from '../utils/kmac-kbpi-sheet-sync.js';
-import { DEFAULT_KBPI_POLICY } from '../engine/kmac-kbpi-runner.js';
+import {
+  DEFAULT_KBPI_POLICY,
+  recommendDefaultPurchaseExp
+} from '../engine/kmac-kbpi-runner.js';
 import {
   MAX_CONCURRENT_TASKS,
   getActiveTasksList,
@@ -1729,35 +1733,166 @@ export function registerCampaignRoutes({
     res.json({ success: true, screenshots: [], message: '실행 완료된 스크린샷이 없습니다.' });
   });
 
-  // K-BPI 개별 응답자 품목 슬롯의 구입경험('있음' -> '없음' -> '') 순환 토글 API
+  // K-BPI 개별 응답자 품목 슬롯의 구입경험('있음' ⇄ '없음') 토글 API
   app.post('/api/campaigns/:id/kbpi-toggle-exp', (req, res) => {
     const campaign = CampaignStore.getCampaignById(req.params.id);
     if (!campaign) {
       return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
     }
-    const { seq, slot } = req.body;
+    const { seq, slot, syncSheet = false } = req.body || {};
     const quotaDb = campaign.quotaDatabase || [];
     const target = quotaDb.find((q, idx) => Number(q.seq || q.index || (idx + 1)) === Number(seq));
     if (!target) {
       return res.status(404).json({ error: '대상 쿼터 행을 찾을 수 없습니다.' });
     }
 
-    const configs = normalizeCategoryConfigs(target.categoryConfigs || [], Math.max(8, Number(slot) || 1));
+    const configs = normalizeCategoryConfigs(target.categoryConfigs || [], Math.max(20, Number(slot) || 1));
     const slotIdx = Math.max(0, Number(slot) - 1);
+    const hasScannedName = Boolean(String(configs[slotIdx]?.categoryName || '').trim());
     const cur = configs[slotIdx]?.purchaseExp || '';
-    const nextExp = cur === '있음' ? '없음' : (cur === '없음' ? '' : '있음');
+    const nextExp = hasScannedName
+      ? (cur === '있음' ? '없음' : '있음')
+      : (cur === '있음' ? '없음' : (cur === '없음' ? '' : '있음'));
     configs[slotIdx].purchaseExp = nextExp;
     target.categoryConfigs = configs;
 
     CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
     persistKbpiQuotaDatabase({ quotaDatabase: quotaDb, quotasDir });
+    logger.broadcast({
+      type: 'QUOTA_UPDATED',
+      campaignId: campaign.id,
+      quotaDatabase: quotaDb
+    });
+
+    if (syncSheet) {
+      syncKbpiProgressToGoogleSheet({
+        quotaDatabase: quotaDb,
+        sheetUrl: campaign.googleSheetUrl || KBPI_DEFAULT_SHEET_URL,
+        quotasDir
+      }).catch(err => logger.warn(`[K-BPI 토글 시트 동기화 경고] ${err.message}`));
+    }
 
     res.json({
       success: true,
       seq: Number(seq),
       slot: Number(slot),
+      categoryName: configs[slotIdx]?.categoryName || '',
       purchaseExp: nextExp,
       quotaDatabase: quotaDb
     });
+  });
+
+  // K-BPI 출제 브랜드 스캔 가이드 전용 구입경험('있음' / '없음') 일괄 제어 API
+  app.post('/api/campaigns/:id/kbpi-bulk-category-exp', async (req, res) => {
+    try {
+      const campaign = CampaignStore.getCampaignById(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+      }
+      const {
+        mode = 'category',
+        categoryName = '',
+        purchaseExp = '있음',
+        targetSeqs = null,
+        seq = null,
+        slots = [],
+        syncSheet = false
+      } = req.body || {};
+
+      const quotaDb = campaign.quotaDatabase || [];
+      const seqSet = (Array.isArray(targetSeqs) && targetSeqs.length > 0)
+        ? new Set(targetSeqs.map(n => Number(n)).filter(n => !isNaN(n)))
+        : null;
+      const cleanTargetCat = String(categoryName || '').replace(/브랜드$/g, '').trim();
+      const validExp = purchaseExp === '없음' ? '없음' : (purchaseExp === '' ? '' : '있음');
+
+      let updatedRespondents = 0;
+      let updatedSlots = 0;
+
+      quotaDb.forEach((q, idx) => {
+        const rowSeq = Number(q.seq || q.index || (idx + 1));
+        if (mode === 'respondent_slots') {
+          if (Number(seq) !== rowSeq) return;
+          const configs = normalizeCategoryConfigs(q.categoryConfigs || [], 20);
+          let rowChanged = false;
+          (Array.isArray(slots) ? slots : []).forEach(s => {
+            const sIdx = Math.max(0, Number(s.slot || 1) - 1);
+            if (configs[sIdx]) {
+              const sExp = s.purchaseExp === '없음' ? '없음' : (s.purchaseExp === '' ? '' : '있음');
+              configs[sIdx].purchaseExp = sExp;
+              updatedSlots++;
+              rowChanged = true;
+            }
+          });
+          if (rowChanged) {
+            q.categoryConfigs = configs;
+            updatedRespondents++;
+          }
+          return;
+        }
+
+        if (seqSet && !seqSet.has(rowSeq)) return;
+        const configs = normalizeCategoryConfigs(q.categoryConfigs || [], 20);
+        let rowChanged = false;
+
+        configs.forEach((cfg) => {
+          const cName = String(cfg?.categoryName || '').replace(/브랜드$/g, '').trim();
+          if (!cName) return;
+          if (mode === 'category') {
+            if (cName === cleanTargetCat) {
+              cfg.purchaseExp = validExp;
+              updatedSlots++;
+              rowChanged = true;
+            }
+          } else if (mode === 'all') {
+            cfg.purchaseExp = validExp;
+            updatedSlots++;
+            rowChanged = true;
+          } else if (mode === 'auto_recommend') {
+            cfg.purchaseExp = recommendDefaultPurchaseExp({
+              categoryName: cName,
+              ageGroup: q.ageGroup,
+              age: q.age,
+              gender: q.gender
+            });
+            updatedSlots++;
+            rowChanged = true;
+          }
+        });
+
+        if (rowChanged) {
+          q.categoryConfigs = configs;
+          updatedRespondents++;
+        }
+      });
+
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+      persistKbpiQuotaDatabase({ quotaDatabase: quotaDb, quotasDir });
+      logger.broadcast({
+        type: 'QUOTA_UPDATED',
+        campaignId: campaign.id,
+        quotaDatabase: quotaDb
+      });
+
+      if (syncSheet) {
+        syncKbpiProgressToGoogleSheet({
+          quotaDatabase: quotaDb,
+          sheetUrl: campaign.googleSheetUrl || KBPI_DEFAULT_SHEET_URL,
+          quotasDir
+        }).catch(err => logger.warn(`[K-BPI 가이드 일괄 시트 동기화 경고] ${err.message}`));
+      }
+
+      res.json({
+        success: true,
+        mode,
+        updatedRespondents,
+        updatedSlots,
+        message: `${updatedRespondents}명 (${updatedSlots}개 품목 슬롯)의 구입경험 설정이 반영되었습니다.${syncSheet ? ' (구글 시트 동기화 진행 중)' : ''}`,
+        quotaDatabase: quotaDb
+      });
+    } catch (err) {
+      logger.error('[K-BPI 구입경험 일괄 변경 오류]', err);
+      res.status(500).json({ error: err.message });
+    }
   });
 }

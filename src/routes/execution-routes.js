@@ -37,7 +37,8 @@ import {
 } from '../utils/gyeonggi-panel-answer-excel.js';
 import {
   KBPI_DEFAULT_URL,
-  runKmacKbpiSurvey
+  runKmacKbpiSurvey,
+  scanKmacKbpiBrandsBatch
 } from '../engine/kmac-kbpi-runner.js';
 import {
   KBPI_DEFAULT_SHEET_ID,
@@ -486,6 +487,8 @@ export function registerExecutionRoutes({
             if (Array.isArray(result.categoryConfigs)) {
               targetBiz.categoryConfigs = result.categoryConfigs;
             }
+            if (result.surveyDistrict) targetBiz.surveyDistrict = result.surveyDistrict;
+            if (result.surveyDong) targetBiz.surveyDong = result.surveyDong;
             targetBiz.pilotAt = new Date().toISOString();
             try {
               persistKbpiQuotaDatabase({ quotaDatabase: quotaDb, quotasDir });
@@ -838,6 +841,16 @@ export function registerExecutionRoutes({
       .map(x => x.trim())
       .filter(Boolean);
 
+    const isItemStrictlyCompleted = (b) => {
+      if (b.quotaStatus === 'completed' || b.memberStatus === '완료' || b.substitutedByUid || b.surveyCompleted === '완료' || b.surveyCompleted === true) {
+        return true;
+      }
+      const st = String(b.status || '').trim();
+      if (!st) return false;
+      if (/스캔완료|직전|대기|수기대기/.test(st)) return false;
+      return st.includes('완료');
+    };
+
     const targets = quotaDb.filter(b => {
       const idx = Number(b.index || b.seq || b.slotIndex || 1);
       if (b.isClosedBiz || String(b.bizStatus || '').includes('폐업') || b.quotaStatus === 'excluded') {
@@ -845,7 +858,7 @@ export function registerExecutionRoutes({
       }
       if (selectedIndexSet) {
         if (!selectedIndexSet.has(idx)) return false;
-        if (b.quotaStatus === 'completed' || String(b.status || '').includes('완료') || b.memberStatus === '완료' || b.substitutedByUid) return false;
+        if (isItemStrictlyCompleted(b)) return false;
         return true;
       }
       if (idx < startIndex) return false;
@@ -854,9 +867,9 @@ export function registerExecutionRoutes({
       if (isHrcEnergy && effectivePolicy.onlySelectedByDefault !== false && b.selectionType && b.selectionType !== '선정') {
         return false;
       }
-      if (b.quotaStatus === 'completed' || String(b.status || '').includes('완료') || b.memberStatus === '완료' || b.substitutedByUid) return false;
+      if (isItemStrictlyCompleted(b)) return false;
       if ((isGallupReturnFarm || isMetrixSeoul) && (b.quotaStatus === 'pilot_done' || String(b.status || '').includes('동의서대기'))) return false;
-      if (skipCompletedSlots && (b.surveyCompleted === '완료' || b.surveyCompleted === true || String(b.status || '').includes('완료'))) {
+      if (skipCompletedSlots && isItemStrictlyCompleted(b)) {
         return false;
       }
       if (isMetrix) {
@@ -1202,6 +1215,8 @@ export function registerExecutionRoutes({
               if (Array.isArray(result.categoryConfigs)) {
                 biz.categoryConfigs = result.categoryConfigs;
               }
+              if (result.surveyDistrict) biz.surveyDistrict = result.surveyDistrict;
+              if (result.surveyDong) biz.surveyDong = result.surveyDong;
               biz.completedAt = new Date().toISOString();
               try {
                 persistKbpiQuotaDatabase({ quotaDatabase: quotaDb, quotasDir });
@@ -2314,5 +2329,179 @@ export function registerExecutionRoutes({
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="kbpi_230_html_analysis.json"; filename*=UTF-8''${filename}`);
     res.sendFile(dumpFilePath);
+  });
+
+  // [KMAC 2027 K-BPI] 150명 일괄 신상명세 등록 & 출제 브랜드 전수 스캔 API
+  app.post('/api/campaigns/:id/kbpi-scan-brands', async (req, res) => {
+    const campaign = CampaignStore.getCampaignById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+    }
+    if (campaign.surveyType !== 'kmac_kbpi') {
+      return res.status(400).json({ error: 'K-BPI 캠페인 전용 기능입니다.' });
+    }
+
+    const slotCheck = checkCanStartCampaignTask(campaign);
+    if (!slotCheck.ok) {
+      return res.status(409).json({ error: slotCheck.error });
+    }
+
+    const {
+      targetIndices = null,
+      forceRescanAll = false,
+      autoSyncSheet = true,
+      policy = {}
+    } = req.body || {};
+
+    const quotaDb = campaign.quotaDatabase || [];
+    try {
+      const synced = await pullKbpiSheetOverrides({
+        quotaDatabase: quotaDb,
+        sheetId: KBPI_DEFAULT_SHEET_ID,
+        quotasDir
+      });
+      if (synced?.quotaDatabase?.length > 0) {
+        quotaDb.splice(0, quotaDb.length, ...synced.quotaDatabase);
+      }
+    } catch (pullWarn) {
+      logger.warn(`[K-BPI 스캔 사전 시트 동기화 경고] ${pullWarn.message}`);
+    }
+
+    const selectedSet = (Array.isArray(targetIndices) && targetIndices.length > 0)
+      ? new Set(targetIndices.map(n => Number(n)).filter(n => !isNaN(n)))
+      : null;
+
+    const targets = quotaDb.filter((item, idx) => {
+      const seq = Number(item.seq || item.index || (idx + 1));
+      if (selectedSet && !selectedSet.has(seq)) return false;
+      if (item.quotaStatus === 'completed' || String(item.status || '').trim() === '완료') return false;
+      return true;
+    });
+
+    if (targets.length === 0) {
+      return res.status(400).json({ error: '신상명세 등록 및 브랜드 스캔을 진행할 대상 슬롯이 없습니다.' });
+    }
+
+    const mergedPolicy = {
+      ...(campaign.kbpiPolicy || campaign.masterBaseline?.policy || {}),
+      ...policy,
+      forceRescanAll: Boolean(forceRescanAll)
+    };
+
+    const scanTask = startCampaignTask(campaign, 'scan_brands', {
+      current: 0,
+      total: targets.length,
+      percent: 0
+    });
+    CampaignStore.updateCampaign(campaign.id, {
+      status: 'running',
+      quotaDatabase: quotaDb
+    });
+
+    logger.runWithCampaignContext(campaign.id, () => {
+      logger.info(`🚀 [K-BPI 신상명세 등록 & 브랜드 전수 스캔 시작] 대상 ${targets.length}명 연속 처리 (재스캔모드: ${forceRescanAll ? 'ON' : 'OFF'}, 시트자동동기화: ${autoSyncSheet !== false ? 'ON' : 'OFF'})`);
+    });
+
+    res.json({
+      success: true,
+      totalTargets: targets.length,
+      message: `K-BPI 응답자 ${targets.length}명 신상명세 등록 및 출제 브랜드 전수 스캔이 시작되었습니다.`
+    });
+
+    logger.runWithCampaignContext(campaign.id, () => (async () => {
+      let scanSummary = null;
+      try {
+        scanSummary = await scanKmacKbpiBrandsBatch({
+          campaign,
+          targets,
+          policy: mergedPolicy,
+          shouldStop: () => !isCampaignTaskRunning(campaign.id),
+          onProgress: (info) => {
+            logger.info(`[K-BPI 스캔] ${info.message}`);
+            logger.broadcast({
+              type: 'BATCH_PROGRESS',
+              campaignId: campaign.id,
+              ...info
+            });
+          },
+          onItemDone: async (item, itemRes, idx, total) => {
+            scanTask.progress = {
+              current: idx + 1,
+              total,
+              percent: Math.round(((idx + 1) / Math.max(1, total)) * 100)
+            };
+
+            if (itemRes?.success) {
+              if (!itemRes.skipped) {
+                item.quotaStatus = itemRes.quotaStatus || 'scanned';
+                item.status = itemRes.statusLabel || '신상등록·스캔완료';
+                item.progress = itemRes.progress || item.progress || '12%';
+                if (Array.isArray(itemRes.categoryConfigs)) {
+                  item.categoryConfigs = itemRes.categoryConfigs;
+                }
+                if (itemRes.surveyDistrict) item.surveyDistrict = itemRes.surveyDistrict;
+                if (itemRes.surveyDong) item.surveyDong = itemRes.surveyDong;
+                item.scannedAt = new Date().toISOString();
+              }
+            } else {
+              item.quotaStatus = 'error';
+              item.lastScanError = itemRes?.error || '신상등록/스캔 실패';
+              logger.warn(`⚠️ [K-BPI 스캔 실패 #${item.seq || item.index}] ${item.name} (${item.uid}): ${item.lastScanError}`);
+            }
+
+            CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+            persistKbpiQuotaDatabase({ quotaDatabase: quotaDb, quotasDir });
+            logger.broadcast({
+              type: 'QUOTA_UPDATED',
+              campaignId: campaign.id,
+              quotaDatabase: quotaDb
+            });
+
+            if (autoSyncSheet !== false && (idx + 1) % 25 === 0 && idx + 1 < total) {
+              await syncKbpiProgressToGoogleSheet({
+                quotaDatabase: quotaDb,
+                sheetUrl: campaign.googleSheetUrl || KBPI_DEFAULT_SHEET_URL,
+                quotasDir
+              }).catch(syncErr => logger.warn(`[K-BPI 중간 시트 동기화 경고] ${syncErr.message}`));
+            }
+          }
+        });
+      } catch (err) {
+        logger.error(`[K-BPI 일괄 스캔 치명 오류] ${err.message}`);
+      } finally {
+        try {
+          persistKbpiQuotaDatabase({ quotaDatabase: quotaDb, quotasDir });
+          if (autoSyncSheet !== false) {
+            const syncRes = await syncKbpiProgressToGoogleSheet({
+              quotaDatabase: quotaDb,
+              sheetUrl: campaign.googleSheetUrl || KBPI_DEFAULT_SHEET_URL,
+              quotasDir
+            });
+            logger.info(`☁️ [K-BPI 구글 시트 최종 기록] ${syncRes?.message || '동기화 완료'}`);
+          }
+        } catch (finErr) {
+          logger.warn(`[K-BPI 최종 시트 동기화 경고] ${finErr.message}`);
+        }
+
+        finishCampaignTask(campaign.id);
+        CampaignStore.updateCampaign(campaign.id, {
+          status: 'ready',
+          quotaDatabase: quotaDb
+        });
+        logger.broadcast({
+          type: 'QUOTA_UPDATED',
+          campaignId: campaign.id,
+          quotaDatabase: quotaDb
+        });
+        logger.broadcast({
+          type: 'BATCH_COMPLETED',
+          campaignId: campaign.id,
+          summary: scanSummary
+        });
+        logger.success(
+          `🎉 [K-BPI 일괄 신상등록 & 브랜드 스캔 종료] 신규스캔 ${scanSummary?.scannedSuccessCount ?? 0}명 · 기존스캔보존 ${scanSummary?.skippedAlreadyScannedCount ?? 0}명 · 실패 ${scanSummary?.failCount ?? 0}명`
+        );
+      }
+    })());
   });
 }

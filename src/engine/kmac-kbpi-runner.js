@@ -20,6 +20,8 @@ import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 import {
   KBPI_DEFAULT_LOGIN_ID,
   computeKbpiGps,
+  computeKbpiDistrictDong,
+  enrichKbpiRespondentDemographics,
   normalizeCategoryConfigs
 } from '../utils/kmac-kbpi-sheet-sync.js';
 import {
@@ -388,6 +390,149 @@ export function decideCategoryPurchaseExp({
 }
 
 /**
+ * 스캔된 품목의 초기 권장 구입경험('있음' | '없음') 산출
+ * - 연령(10대)·성별 부적합 품목은 자동으로 '없음' 추천, 일반 품목은 '있음' 기본 세팅 (가이드/시트에서 1클릭 전환 가능)
+ */
+export function recommendDefaultPurchaseExp({
+  categoryName = '',
+  ageGroup = '',
+  age = 30,
+  gender = '',
+  teenAutoNone = true
+} = {}) {
+  const cleanCat = String(categoryName || '').replace(/브랜드$/g, '').trim();
+  const effAge = Number(age || 30);
+  const cleanGender = String(gender || '').trim();
+  const isTeen = String(ageGroup || '').includes('10대') || (effAge > 0 && effAge <= 19);
+  if (isTeen && teenAutoNone !== false && TEEN_UNFIT_CATEGORY_KEYWORDS.some(kw => cleanCat.includes(kw))) {
+    return '없음';
+  }
+  if (cleanGender.startsWith('남') && MALE_UNFIT_CATEGORY_KEYWORDS.some(kw => cleanCat.includes(kw))) {
+    return '없음';
+  }
+  if (cleanGender.startsWith('여') && FEMALE_UNFIT_CATEGORY_KEYWORDS.some(kw => cleanCat.includes(kw))) {
+    return '없음';
+  }
+  return '있음';
+}
+
+/**
+ * [요구사항 3.1] DQ1 정보 습득 경로(2개 응답): '생성형 AI', '신문/잡지/카탈로그', '기타' 제외 후 랜덤 2개 선택
+ */
+export function pickKbpiDq1Keys(options = [], rng = Math.random) {
+  const isExcludedDq1 = (opt) => {
+    const ak = String(opt?.akey || opt?.K || '').trim();
+    const lb = String(opt?.label || opt?.V || '').trim();
+    if (ak === '6' || ak === '9' || ak === '10') return true;
+    if (/생성형\s*AI|\bAI\b|신문|잡지|카탈로그|(^|\s)기타(\s|$)|없음|모름/i.test(lb)) return true;
+    return false;
+  };
+  const valid = (Array.isArray(options) ? options : []).filter(o => !isExcludedDq1(o));
+  const shuffled = shuffleWithRng(valid, rng);
+  return shuffled.slice(0, 2);
+}
+
+/**
+ * [요구사항 3.2] 구글 스프레드시트의 (연령·학력·직업·가구소득·결혼여부·가족수·자녀수) 데이터를
+ * Survey 230의 ZQ1 ~ ZQ5_2 공식 보기 코드(akey)로 1:1 정밀 매핑
+ */
+export function resolveKbpiZqAnswers(rawSlot = {}) {
+  const enriched = enrichKbpiRespondentDemographics(rawSlot);
+  const age = Number(rawSlot.age || rawSlot.ceoAge || 30);
+
+  // ZQ1: 연령대 (만 나이 십의 자리와 100% 일치 필수 — CONFIRM 검증 통과 보장)
+  const zq1Key = String(Math.min(5, Math.max(1, Math.floor(age / 10))));
+
+  // ZQ2: 학력 (1:중졸이하, 2:고졸이하, 3:중/고등학생, 4:대학생, 5:대졸, 6:대학원 재학/졸업)
+  const edu = String(rawSlot.education || enriched.education || '').trim();
+  let zq2Key = '5';
+  if (/대학원|석사|박사/.test(edu)) zq2Key = '6';
+  else if (/대학생|대학\s*재학/.test(edu)) zq2Key = '4';
+  else if (/중\/고등|중고등|고등학생|중학생|고교\s*재학/.test(edu)) zq2Key = '3';
+  else if (/중졸/.test(edu)) zq2Key = '1';
+  else if (/고졸/.test(edu)) zq2Key = '2';
+  else if (/대졸|대학\s*졸업|전문대/.test(edu)) zq2Key = '5';
+  else if (age <= 19) zq2Key = '3';
+
+  // ZQ3: 직업 (1:농림어업, 2:자영업, 3:사무직, 4:판매/서비스직, 5:관리직, 6:생산직, 7:전문직, 8:기술직, 9:중/고등학생, 10:대학생, 11:주부, 12:무직, 13:기타)
+  const job = String(rawSlot.job || enriched.job || '').trim();
+  let zq3Key = '3';
+  let zq3EtcText = '';
+  if (/농업|어업|임업/.test(job)) zq3Key = '1';
+  else if (/자영업|사업/.test(job)) zq3Key = '2';
+  else if (/사무/.test(job)) zq3Key = '3';
+  else if (/판매|서비스/.test(job)) zq3Key = '4';
+  else if (/관리|임원/.test(job)) zq3Key = '5';
+  else if (/생산|노무|기능/.test(job)) zq3Key = '6';
+  else if (/전문|의사|약사|교사|강사/.test(job)) zq3Key = '7';
+  else if (/기술|엔지니어|개발/.test(job)) zq3Key = '8';
+  else if (/중\/고등|중고등|고등학생|중학생/.test(job)) zq3Key = '9';
+  else if (/대학생/.test(job)) zq3Key = '10';
+  else if (/주부/.test(job)) zq3Key = '11';
+  else if (/무직|취준|구직/.test(job)) zq3Key = '12';
+  else if (job) {
+    zq3Key = '13';
+    zq3EtcText = job.replace(/^기타\s*[:()-]?\s*/, '').trim() || '프리랜서';
+  }
+
+  // ZQ4: 월평균 가구소득 (1:200만원 미만, 2:200~399만원, 3:400~599만원, 4:600~799만원, 5:800만원 이상)
+  const inc = String(rawSlot.householdIncome || enriched.householdIncome || '').trim();
+  let zq4Key = '3';
+  if (/200\s*만?\s*원?\s*미만|^1\b|^1\d\d/.test(inc)) zq4Key = '1';
+  else if (/200\s*[~-]\s*399|200|300/.test(inc)) zq4Key = '2';
+  else if (/400\s*[~-]\s*599|400|500/.test(inc)) zq4Key = '3';
+  else if (/600\s*[~-]\s*799|600|700/.test(inc)) zq4Key = '4';
+  else if (/800|900|1,?000|이상/.test(inc)) zq4Key = '5';
+
+  // ZQ5: 결혼 여부 (1:미혼, 2:기혼, 3:기타(이혼/사별/별거), 4:비혼)
+  const mar = String(rawSlot.maritalStatus || enriched.maritalStatus || '').trim();
+  let zq5Key = age <= 29 ? '1' : '2';
+  if (/비혼/.test(mar)) zq5Key = '4';
+  else if (/기타|이혼|사별|별거/.test(mar)) zq5Key = '3';
+  else if (/기혼/.test(mar)) zq5Key = '2';
+  else if (/미혼/.test(mar)) zq5Key = '1';
+
+  // ZQ5_1: 가족 수 (1:1명(본인), 2:2명, 3:3명, 4:4명, 5:5명 이상)
+  const fam = String(rawSlot.familySize || enriched.familySize || '4명').trim();
+  const famMatch = fam.match(/(\d+)/);
+  const famNum = famMatch ? Number(famMatch[1]) : 4;
+  const zq5_1Key = String(Math.min(5, Math.max(1, famNum)));
+
+  // ZQ5_2: 자녀 수 (1:1명, 2:2명, 3:3명, 4:4명 이상, 5:해당사항 없음)
+  // 주의: Survey 230 HIDE 규칙상 [ZQ5_1=1](가족수 1명)일 때 1~4번 보기가 숨겨지고 5번(해당사항 없음)만 활성화됨!
+  const ch = String(rawSlot.childrenCount || enriched.childrenCount || '').trim();
+  let zq5_2Key = '5';
+  if (zq5_1Key === '1') {
+    zq5_2Key = '5';
+  } else if (/해당\s*사항\s*없음|해당없음|없음|^0(?:\.0+)?$/.test(ch) || !ch) {
+    zq5_2Key = '5';
+  } else {
+    const chMatch = ch.match(/(\d+)/);
+    const chNum = chMatch ? Number(chMatch[1]) : 0;
+    zq5_2Key = chNum <= 0 ? '5' : String(Math.min(4, chNum));
+  }
+
+  return {
+    zq1Key,
+    zq2Key,
+    zq3Key,
+    zq3EtcText,
+    zq4Key,
+    zq5Key,
+    zq5_1Key,
+    zq5_2Key,
+    labels: {
+      education: edu,
+      job,
+      householdIncome: inc,
+      maritalStatus: mar,
+      familySize: fam,
+      childrenCount: zq5_1Key === '1' ? '해당사항 없음(1인가구 보정)' : (ch || '해당사항 없음')
+    }
+  };
+}
+
+/**
  * 슬롯 목록 화면에서 대상 응답자(고유번호 uid / 최종id finalId / 지역 / 성별 / 연령대) 행을 찾아 [시작] 클릭
  */
 async function findAndStartRespondentSlot({
@@ -751,7 +896,7 @@ async function resolveActiveSurveyFrame(page) {
 }
 
 /**
- * 현재 설문 화면의 단계 유형과 출제 산업군명(예: '생수', '음식물처리기')을 정밀 분류
+ * 현재 설문 화면의 단계 유형과 출제 산업군명(예: '생수', '음식물처리기')을 정밀 분류 (Survey 230 전 문항 100% 대응)
  */
 async function classifyCurrentScreen(target) {
   return target.evaluate(() => {
@@ -779,7 +924,6 @@ async function classifyCurrentScreen(target) {
       };
     }
 
-    // 산업군명 추출: ‘생수 브랜드’에 대한 내용입니다. 또는 지금부터 【생수】 브랜드에 대한 질문입니다.
     let categoryName = '';
     const bracketMatch = bodyText.match(/【\s*([^】]+?)\s*】/);
     const quoteBrandMatch = bodyText.match(/[‘'"]\s*([^’'"]+?)\s*브랜드\s*[’'"]\s*에\s*대한\s*내용/);
@@ -789,21 +933,25 @@ async function classifyCurrentScreen(target) {
       categoryName = quoteBrandMatch[1].trim();
     }
 
-    // 진행률 퍼센트 및 GetData 가시 문항 코드(qNameAttr · industryKey) 추출
     const pctMatch = bodyText.match(/(\d{1,3})\s*%/);
     const progressPct = pctMatch ? Number(pctMatch[1]) : null;
     const bodySnippet = bodyText.replace(/\s+/g, ' ').slice(0, 220);
-    const visibleQTypeEls = Array.from(document.querySelectorAll('[question-type]')).filter(el => el.offsetParent !== null);
-    const qTypeEl = visibleQTypeEls[visibleQTypeEls.length - 1] || document.querySelector('[question-type]');
-    const qNameEl = visibleQTypeEls[visibleQTypeEls.length - 1] ||
-      Array.from(document.querySelectorAll('[question-name], [qname], [data-qname], [id^="BOX_"]')).find(el => el.offsetParent !== null);
-    const qNameAttr = qNameEl
-      ? (qNameEl.getAttribute('question-name') || qNameEl.getAttribute('qname') || qNameEl.getAttribute('data-qname') || qNameEl.id.replace(/^BOX_/, ''))
-      : '';
-    const indMatch = qNameAttr.match(/--(\d+)$/);
+
+    const visibleQNameEls = Array.from(
+      document.querySelectorAll('[question-name], [question-type]')
+    ).filter(el => el.offsetParent !== null);
+    const visibleQNames = Array.from(new Set(
+      visibleQNameEls
+        .map(el => (el.getAttribute('question-name') || el.getAttribute('qname') || '').trim())
+        .filter(Boolean)
+    ));
+
+    const qTypeEl = visibleQNameEls[visibleQNameEls.length - 1] || document.querySelector('[question-type]');
+    const qNameAttr = visibleQNames[0] ||
+      (qTypeEl ? (qTypeEl.getAttribute('question-name') || qTypeEl.getAttribute('qname') || '') : '');
+    const indMatch = (visibleQNames.find(n => /--\d+$/.test(n)) || qNameAttr).match(/--(\d+)$/);
     const industryKey = indMatch ? indMatch[1] : '';
 
-    // 화면에 표시명 텍스트가 누락된 경우 window.QO.INDUSTRY.ANSWERS에서 산업군명 보완
     if (!categoryName && industryKey && window.QO?.INDUSTRY?.ANSWERS) {
       const indItem = (window.QO.INDUSTRY.ANSWERS || []).find(x => String(x.K) === industryKey);
       if (indItem) {
@@ -814,44 +962,74 @@ async function classifyCurrentScreen(target) {
     const visibleControlCount = Array.from(
       document.querySelectorAll('input:not([type="hidden"]), select, textarea, .s-gradeclick')
     ).filter(el => el.offsetParent !== null).length;
-    const domMeta = `qName=${qNameAttr || '-'},qType=${qTypeEl?.getAttribute('question-type') || '-'},grade=${document.querySelectorAll('.s-gradeclick').length},sel=${document.querySelectorAll('select').length},rad=${document.querySelectorAll('input[type="radio"]').length},cb=${document.querySelectorAll('input[type="checkbox"]').length},txt=${document.querySelectorAll('input[type="text"],input[type="number"],textarea').length}`;
+    const domMeta = `qNames=[${visibleQNames.join(',')}],qType=${qTypeEl?.getAttribute('question-type') || '-'},grade=${document.querySelectorAll('.s-gradeclick').length},sel=${document.querySelectorAll('select').length},rad=${document.querySelectorAll('input[type="radio"]').length},cb=${document.querySelectorAll('input[type="checkbox"]').length},txt=${document.querySelectorAll('input[type="text"],input[type="number"],textarea').length}`;
 
-    const baseRet = { qNameAttr, industryKey, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
+    const baseRet = { qNameAttr, visibleQNames, industryKey, visibleControlCount, categoryName, progressPct, buttonTexts, bodySnippet, domMeta };
 
-    // 설문 완료 화면 감지
-    if (/설문이\s*종료|조사가\s*완료|응답해\s*주셔서\s*감사|참여해\s*주셔서\s*대단히\s*감사|수고하셨습니다/.test(bodyText) &&
+    // 스크리닝 탈락 / 쿼터 초과 화면 감지
+    if (visibleQNames.some(q => /^(OUT|TXT_OUT|OVER|TXT_OVER|BAD|TXT_BAD)/i.test(q))) {
+      return { screenType: 'SCREENED_OUT', ...baseRet };
+    }
+
+    // 설문 완료 화면 감지 (TXT_COMPLETE / COMPLETE)
+    if (
+      visibleQNames.some(q => /^(TXT_COMPLETE|COMPLETE\d*$)/i.test(q)) ||
+      (/설문이\s*종료|조사가\s*완료|끝까지\s*응답해\s*주셔서\s*대단히\s*감사|응답해\s*주셔서\s*감사|참여해\s*주셔서\s*대단히\s*감사|수고하셨습니다/.test(bodyText) &&
         visibleControlCount === 0 &&
-        !document.querySelector('#next')) {
+        !document.querySelector('#next'))
+    ) {
       return { screenType: 'COMPLETED', ...baseRet };
     }
 
-    // 0) GetData 표준 문항 코드(qNameAttr) 기반 100% 확정 분기
-    if (/^KBPI_Q1_\d+--/i.test(qNameAttr)) return { screenType: 'Q1_UNAIDED', ...baseRet };
-    if (/^KBPI_Q2--/i.test(qNameAttr)) return { screenType: 'Q2_AIDED', ...baseRet };
-    if (/^KBPI_Q3--/i.test(qNameAttr)) return { screenType: 'Q3_MATRIX', ...baseRet };
-    if (/^KBPI_Q4--/i.test(qNameAttr)) return { screenType: 'Q4_RECENT_BRAND', ...baseRet };
-    if (/^KBPI_Q41_CHANNEL--/i.test(qNameAttr)) return { screenType: 'Q4_1_CHANNEL', ...baseRet };
-    if (/^KBPI_Q5--/i.test(qNameAttr)) return { screenType: 'Q5_SAME_AS_Q4', ...baseRet };
-    if (/^KBPI_Q6--/i.test(qNameAttr)) return { screenType: 'Q6_YES_NO', ...baseRet };
-    if (/^KBPI_Q7--/i.test(qNameAttr)) return { screenType: 'Q7_RANK_1_2', ...baseRet };
-    if (/^KBPI_Q8--/i.test(qNameAttr)) return { screenType: 'Q8_RANK_1_2', ...baseRet };
+    // 0) 초기 안내문(TITLE + DESC)
+    if (visibleQNames.includes('DESC') || visibleQNames.includes('TITLE')) {
+      return { screenType: 'INTRO_DESC', ...baseRet };
+    }
 
     // 1) GP1 위치 확인
-    if (/^GP1$/i.test(qNameAttr) || (/GP1/.test(bodyText) && /현재\s*위치를\s*확인/.test(bodyText))) {
+    if (visibleQNames.includes('GP1') || (/GP1/.test(bodyText) && /현재\s*위치를\s*확인/.test(bodyText))) {
       return { screenType: 'GP1', ...baseRet };
     }
 
-    // 2) 응답자 신상정보 등록 (이름 / 성별 / 연령(만) / 휴대폰 / 전화번호 + 응답자 확인)
-    if (/응답자\s*확인/.test(bodyText) && /연령\s*\(\s*만\s*\)/.test(bodyText)) {
+    // 2) WOKERD_DUP 응답자 신상명세 확인
+    if (visibleQNames.includes('WOKERD_DUP') || document.querySelector('.worker-info-card') || (/응답자\s*확인/.test(bodyText) && /연령\s*\(\s*만\s*\)/.test(bodyText))) {
       return { screenType: 'PROFILE', ...baseRet };
     }
 
-    // 3) SQ1 스크리닝 (비산업군 화면에서 SQ1 또는 '모두 없다' 보기 출현 시)
-    if (!categoryName && (/^SQ\d+/i.test(qNameAttr) || /\bSQ\s*1\b/i.test(bodyText) || /모두\s*없다/.test(bodyText) || /다음\s*업종|종사하는\s*가족|시장조사|광고대행사/.test(bodyText))) {
-      return { screenType: 'SQ1', ...baseRet };
+    // 3) SQ1 / SQ2 / SQ3 / M_CHECK
+    if (visibleQNames.includes('SQ1')) return { screenType: 'SQ1', ...baseRet };
+    if (visibleQNames.includes('SQ2')) return { screenType: 'SQ2_AGE', ...baseRet };
+    if (visibleQNames.includes('SQ3')) return { screenType: 'SQ3_GENDER', ...baseRet };
+    if (visibleQNames.includes('M_CHECK') || visibleQNames.includes('INDUSTRY_ORDER')) {
+      return { screenType: 'M_CHECK_REGION', ...baseRet };
     }
 
-    // 4) 텍스트·배지 폴백 (문항 코드가 변형된 경우 대비)
+    // 4) 본 설문 산업군별 문항 (KBPI_Q1 ~ KBPI_Q8 및 특수 진단 블록)
+    if (visibleQNames.some(q => /^KBPI_Q1_\d+--/i.test(q))) return { screenType: 'Q1_UNAIDED', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_Q2--/i.test(q))) return { screenType: 'Q2_AIDED', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_Q3--/i.test(q))) return { screenType: 'Q3_MATRIX', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_Q4--/i.test(q))) return { screenType: 'Q4_RECENT_BRAND', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_Q41--/i.test(q))) return { screenType: 'Q4_1_FACTOR', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_Q41_CHANNEL--/i.test(q))) return { screenType: 'Q4_1_CHANNEL', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_Q42--/i.test(q))) return { screenType: 'Q4_2_DETERGENT', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_Q5--/i.test(q))) return { screenType: 'Q5_SAME_AS_Q4', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_Q6--/i.test(q))) return { screenType: 'Q6_YES_NO', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_Q7--/i.test(q))) return { screenType: 'Q7_RANK_1_2', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_Q8--/i.test(q))) return { screenType: 'Q8_RANK_1_2', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_NGO/i.test(q))) return { screenType: 'KBPI_NGO_SPECIAL', ...baseRet };
+    if (visibleQNames.some(q => /^KBPI_DIAG_/i.test(q))) return { screenType: 'KBPI_DIAG_SPECIAL', ...baseRet };
+
+    // 5) 후반부 의견 및 배경변인 (3.1 DQ1 / 3.2 ZQ1~ZQ5_2 / 3.3 ZQ6 패널가입)
+    if (visibleQNames.includes('DQ1')) return { screenType: 'DQ1_INFO_SOURCE', ...baseRet };
+    if (visibleQNames.some(q => /^ZQ([1-5]|5_1|5_2)$/i.test(q))) return { screenType: 'ZQ_DEMOGRAPHICS', ...baseRet };
+    if (visibleQNames.some(q => /^ZQ6(_1)?$/i.test(q)) || /한국능률협회컨설팅\s*패널로\s*가입/.test(bodyText)) {
+      return { screenType: 'ZQ6_PANEL_INTENT', ...baseRet };
+    }
+
+    // 6) 텍스트·배지 폴백 (문항 코드가 변형된 경우 대비)
+    if (!categoryName && (/\bSQ\s*1\b/i.test(bodyText) || /광고회사나\s*조사회사/.test(bodyText))) {
+      return { screenType: 'SQ1', ...baseRet };
+    }
     if (/1-1/.test(bodyText) && /가장\s*먼저\s*생각나는\s*브랜드/.test(bodyText)) {
       return { screenType: 'Q1_UNAIDED', ...baseRet };
     }
@@ -861,7 +1039,10 @@ async function classifyCurrentScreen(target) {
     if (/1점\s*~\s*5점으로\s*평가/.test(bodyText) || /전반적으로\s*만족한다/.test(bodyText)) {
       return { screenType: 'Q3_MATRIX', ...baseRet };
     }
-    if (/\b4-1\b/.test(bodyText) || /어느\s*채널\s*\(\s*경로\s*\)\s*을?\s*통해서/.test(bodyText)) {
+    if (/고려하신\s*가장\s*중요한\s*요인/.test(bodyText)) {
+      return { screenType: 'Q4_1_FACTOR', ...baseRet };
+    }
+    if (/어느\s*채널\s*\(\s*경로\s*\)\s*을?\s*통해서/.test(bodyText)) {
       return { screenType: 'Q4_1_CHANNEL', ...baseRet };
     }
     if (/가장\s*최근에[^\n]{0,35}(구입|이용|방문|사용)/.test(bodyText)) {
@@ -878,16 +1059,15 @@ async function classifyCurrentScreen(target) {
 
       if (firstBadge === '4') return { screenType: 'Q4_RECENT_BRAND', ...baseRet };
       if (firstBadge === '5' || /주\s*구입|가장\s*선호|주로\s*이용|가장\s*자주/.test(bodyText)) return { screenType: 'Q5_SAME_AS_Q4', ...baseRet };
-      if (firstBadge === '6' || (document.querySelectorAll('input[type="radio"]').length === 2 && /예/.test(bodyText) && /아니오/.test(bodyText))) return { screenType: 'Q6_YES_NO', ...baseRet };
+      if (firstBadge === '6') return { screenType: 'Q6_YES_NO', ...baseRet };
       if (firstBadge === '7') return { screenType: 'Q7_RANK_1_2', ...baseRet };
       if (firstBadge === '8') return { screenType: 'Q8_RANK_1_2', ...baseRet };
     }
 
-    // 최종 제출/종료 직전 관문 판별 (GetData END/OUTRO/동의서 및 종료 문구 포함)
     const hasFinalBtn = Array.from(document.querySelectorAll('#next, button, input[type="button"], input[type="submit"], a'))
       .some(el => /조사\s*완료|설문\s*완료|최종\s*제출|완료하기|설문\s*종료/.test((el.innerText || el.value || '').trim()));
     const isEndOutroScreen = /^(END|OUTRO|FINISH|COMPLETE|LAST|SIGN|AGREE)/i.test(qNameAttr) ||
-      /설문을?\s*마치|응답을?\s*완료하시려면|참여해\s*주셔서\s*(대단히\s*)?감사|응답해\s*주셔서\s*감사|수고하셨습니다|설문이\s*모두\s*끝났|개인정보\s*수집.*동의/.test(bodyText);
+      /설문을?\s*마치|응답을?\s*완료하시려면|설문이\s*모두\s*끝났|개인정보\s*수집.*동의/.test(bodyText);
     if (hasFinalBtn || isEndOutroScreen) {
       return { screenType: 'FINAL_SUBMIT_GATE', ...baseRet };
     }
@@ -900,9 +1080,106 @@ async function classifyCurrentScreen(target) {
   });
 }
 
+/**
+ * GetData 내장 상태(PD('INDUSTRY_ORDER') / A.PREV_DATA.INDUSTRY_ORDER / AO.INDUSTRY_ORDER + QO.INDUSTRY.ANSWERS)에서
+ * 해당 응답자에게 배정된 전체 18~20개 브랜드(산업군) 순서를 일괄 추출
+ */
+async function extractAssignedIndustriesFromPage(target) {
+  return target.evaluate(() => {
+    try {
+      let orderStr = '';
+      if (typeof window.PD === 'function') {
+        const pdObj = window.PD('INDUSTRY_ORDER');
+        if (pdObj && pdObj.TEXT_1) orderStr = String(pdObj.TEXT_1);
+      }
+      if (!orderStr && window.A?.PREV_DATA?.INDUSTRY_ORDER?.TEXT_1) {
+        orderStr = String(window.A.PREV_DATA.INDUSTRY_ORDER.TEXT_1);
+      }
+      if (!orderStr && window.AO?.INDUSTRY_ORDER?.TEXT_1) {
+        orderStr = String(window.AO.INDUSTRY_ORDER.TEXT_1);
+      }
+      if (!orderStr && typeof window.Replacer === 'function') {
+        const rep = String(window.Replacer('[KEY:INDUSTRY_ORDER/TEXT_1]') || '');
+        if (rep && !rep.includes('KEY:INDUSTRY_ORDER')) orderStr = rep;
+      }
+      if (!orderStr) {
+        const inp = document.querySelector('[question-name="INDUSTRY_ORDER"] input[data-column="TEXT_1"]');
+        if (inp && inp.value) orderStr = String(inp.value);
+      }
+
+      const rawKeys = orderStr.split(',').map(s => s.trim()).filter(Boolean);
+      const answers = Array.isArray(window.QO?.INDUSTRY?.ANSWERS) ? window.QO.INDUSTRY.ANSWERS : [];
+      const byKey = new Map(answers.map(a => [String(a.K), a]));
+
+      const assigned = [];
+      for (const k of rawKeys) {
+        const item = byKey.get(String(k));
+        const rawTitle = item
+          ? String(item.DISPLAY || item.INDUSTRY || item.V || k)
+          : String(k);
+        const cleanTitle = rawTitle.replace(/브랜드$/g, '').trim();
+        if (cleanTitle) {
+          assigned.push({
+            industryKey: String(k),
+            categoryName: cleanTitle,
+            special: String(item?.SPECIAL || '')
+          });
+        }
+      }
+      return assigned;
+    } catch (err) {
+      return [];
+    }
+  }).catch(err => {
+    console.warn('[K-BPI 배정 산업군 추출 경고]', err.message);
+    return [];
+  });
+}
+
+function mergeAssignedIndustriesIntoConfigs({
+  assigned = [],
+  categoryConfigs = [],
+  ageGroup = '',
+  age = 30,
+  gender = '',
+  policy = {}
+} = {}) {
+  if (!Array.isArray(assigned) || assigned.length === 0) return categoryConfigs;
+
+  const prevByCat = new Map();
+  for (const c of (categoryConfigs || [])) {
+    const cn = String(c?.categoryName || '').replace(/브랜드$/g, '').trim();
+    if (cn) prevByCat.set(cn, c);
+  }
+
+  const nextConfigs = assigned.map((item, idx) => {
+    const prevMatch = prevByCat.get(item.categoryName) || categoryConfigs[idx] || {};
+    let exp = String(prevMatch.purchaseExp || '').trim();
+    if (exp !== '있음' && exp !== '없음') {
+      exp = recommendDefaultPurchaseExp({
+        categoryName: item.categoryName,
+        ageGroup,
+        age,
+        gender,
+        teenAutoNone: policy.teenAutoNoneUnfitCategories !== false
+      });
+    }
+    return {
+      slot: idx + 1,
+      industryKey: item.industryKey || prevMatch.industryKey || '',
+      categoryName: item.categoryName,
+      purchaseExp: exp,
+      topBrand: prevMatch.topBrand || '',
+      channel: prevMatch.channel || ''
+    };
+  });
+
+  categoryConfigs.splice(0, categoryConfigs.length, ...nextConfigs);
+  return categoryConfigs;
+}
+
 async function clickNextButton(target) {
   const clicked = await target.evaluate(() => {
-    // GetData 표준 #next 버튼 최우선 확인
     const gdNext = document.querySelector('#next');
     if (gdNext && gdNext.offsetParent !== null && !gdNext.disabled) {
       gdNext.click();
@@ -939,6 +1216,8 @@ export async function runKmacKbpiSurvey({
   quotaIndex = 1,
   pilotMode = false,
   safetyGuard = true,
+  stopAtStepOverride = null,
+  sharedSession = null,
   captureHtmlDumpPath = null,
   onProgress = null
 } = {}) {
@@ -948,7 +1227,7 @@ export async function runKmacKbpiSurvey({
     ...(rawPolicy || {})
   };
 
-  const stopAtStep = pilotMode ? (policy.pilotStopAtStep || 'Q4') : (safetyGuard ? 'FINAL_GATE' : 'NONE');
+  const stopAtStep = stopAtStepOverride || (pilotMode ? (policy.pilotStopAtStep || 'Q4') : (safetyGuard ? 'FINAL_GATE' : 'NONE'));
   const loginId = String(campaign?.loginId || slotData.loginId || KBPI_DEFAULT_LOGIN_ID).trim();
   const loginPw = String(campaign?.loginPw || loginId).trim();
   const seq = Number(slotData.seq || slotData.index || quotaIndex || 1);
@@ -961,11 +1240,25 @@ export async function runKmacKbpiSurvey({
   const respondentName = String(slotData.name || slotData.ceoName || '').trim();
   const phone = String(slotData.phone || '').trim();
 
+  const demoEnriched = enrichKbpiRespondentDemographics({
+    ...slotData,
+    seq,
+    finalId,
+    region,
+    gender,
+    age,
+    ageGroup
+  });
+  const distInfo = computeKbpiDistrictDong(region, finalId, seq);
+  const surveyDistrict = String(slotData.surveyDistrict || demoEnriched.surveyDistrict || distInfo.surveyDistrict).trim();
+  const surveyDong = String(slotData.surveyDong || demoEnriched.surveyDong || distInfo.surveyDong).trim();
+  const cityCode = distInfo.cityCode;
+
   const gps = (slotData.latitude && slotData.longitude)
     ? { baseLabel: slotData.gpsLabel || (region.includes('인천') ? '인천광역시청' : '서울 노원구청'), latitude: Number(slotData.latitude), longitude: Number(slotData.longitude) }
     : computeKbpiGps(region, finalId, seq);
 
-  const categoryConfigs = normalizeCategoryConfigs(slotData.categoryConfigs || [], 8);
+  const categoryConfigs = normalizeCategoryConfigs(slotData.categoryConfigs || [], 20);
   const rng = makeSeededRng(`${uid}_${finalId}_${seq}_${respondentName}`);
 
   const emitLog = (message, level = 'info', step = '진행') => {
@@ -976,8 +1269,12 @@ export async function runKmacKbpiSurvey({
 
   const effectiveProxy = policy.proxyServer || process.env.KBPI_PROXY_SERVER || '';
   let browser = null;
+  let openedSurveyTab = null;
+  const ownsBrowser = !sharedSession;
   const alertHistory = [];
   const seenCategoriesOrder = [];
+  let assignedIndustriesSynced = false;
+
   const htmlInspectionDump = captureHtmlDumpPath
     ? {
         extractedAt: new Date().toISOString(),
@@ -993,98 +1290,108 @@ export async function runKmacKbpiSurvey({
   const seenHtmlTemplateKeys = new Set();
 
   try {
-    browser = await launchChromium({
-      headless: true,
-      args: ['--ignore-certificate-errors'],
-      ...(effectiveProxy ? { proxy: { server: effectiveProxy } } : {})
-    });
+    let context = sharedSession?.context || null;
+    let listPage = sharedSession?.listPage || null;
 
-    const context = await browser.newContext({
-      viewport: { width: 1360, height: 920 },
-      locale: 'ko-KR',
-      timezoneId: 'Asia/Seoul',
-      geolocation: {
+    if (ownsBrowser) {
+      browser = await launchChromium({
+        headless: true,
+        args: ['--ignore-certificate-errors'],
+        ...(effectiveProxy ? { proxy: { server: effectiveProxy } } : {})
+      });
+
+      context = await browser.newContext({
+        viewport: { width: 1360, height: 920 },
+        locale: 'ko-KR',
+        timezoneId: 'Asia/Seoul',
+        geolocation: {
+          latitude: gps.latitude,
+          longitude: gps.longitude,
+          accuracy: 14
+        },
+        permissions: ['geolocation'],
+        ignoreHTTPSErrors: true
+      });
+
+      await context.addInitScript(({ lat, lng }) => {
+        const mockPos = {
+          coords: {
+            latitude: lat,
+            longitude: lng,
+            accuracy: 14,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null
+          },
+          timestamp: Date.now()
+        };
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition = (success) => {
+            setTimeout(() => success(mockPos), 120);
+          };
+          navigator.geolocation.watchPosition = (success) => {
+            setTimeout(() => success(mockPos), 120);
+            return 1;
+          };
+        }
+      }, { lat: gps.latitude, lng: gps.longitude });
+
+      if (htmlInspectionDump) {
+        context.on('response', async (resp) => {
+          try {
+            const rUrl = resp.url() || '';
+            if (!/\/Join\/|\/Survey\/|SNUM=230/i.test(rUrl)) return;
+            const ct = (resp.headers()['content-type'] || '').toLowerCase();
+            if (!ct.includes('json') && !/\/Join\/(Init|Next|Start|Load|GetData)/i.test(rUrl)) return;
+            if (htmlInspectionDump.networkJoinPayloads.length >= 120) return;
+            const bodyTxt = await resp.text();
+            if (bodyTxt && bodyTxt.length <= 2500000) {
+              let parsed = null;
+              try { parsed = JSON.parse(bodyTxt); } catch (e) { parsed = bodyTxt.slice(0, 20000); }
+              htmlInspectionDump.networkJoinPayloads.push({
+                url: rUrl,
+                status: resp.status(),
+                data: parsed
+              });
+            }
+          } catch (respErr) {
+            console.warn('[K-BPI HTML 분석 응답 캡처 경고]', respErr.message);
+          }
+        });
+      }
+
+      const rootPage = await context.newPage();
+      const attachDialogHandler = (pg) => {
+        pg.on('dialog', async (dialog) => {
+          const msg = dialog.message() || '';
+          alertHistory.push(msg);
+          emitLog(`[설문 알림] 🔔 "${msg}"`, 'warn', 'ALERT');
+          try {
+            await dialog.accept();
+          } catch (err) {
+            emitLog(`알림 수락 경고: ${err.message}`, 'warn', 'ALERT');
+          }
+        });
+      };
+      attachDialogHandler(rootPage);
+      context.on('page', (newPg) => attachDialogHandler(newPg));
+
+      listPage = await loginAndEnterKbpiCapiList({
+        context,
+        page: rootPage,
+        loginId,
+        loginPw,
+        emitLog: (m, lv) => emitLog(m, lv, 'LOGIN')
+      });
+    } else {
+      // 공유 세션 모드: 응답자별 고유 GPS 좌표를 즉시 갱신
+      await context.setGeolocation({
         latitude: gps.latitude,
         longitude: gps.longitude,
         accuracy: 14
-      },
-      permissions: ['geolocation'],
-      ignoreHTTPSErrors: true
-    });
-
-    // 브라우저 Geolocation API 2중 강제 오버라이드
-    await context.addInitScript(({ lat, lng }) => {
-      const mockPos = {
-        coords: {
-          latitude: lat,
-          longitude: lng,
-          accuracy: 14,
-          altitude: null,
-          altitudeAccuracy: null,
-          heading: null,
-          speed: null
-        },
-        timestamp: Date.now()
-      };
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition = (success) => {
-          setTimeout(() => success(mockPos), 120);
-        };
-        navigator.geolocation.watchPosition = (success) => {
-          setTimeout(() => success(mockPos), 120);
-          return 1;
-        };
-      }
-    }, { lat: gps.latitude, lng: gps.longitude });
-
-    if (htmlInspectionDump) {
-      context.on('response', async (resp) => {
-        try {
-          const rUrl = resp.url() || '';
-          if (!/\/Join\/|\/Survey\/|SNUM=230/i.test(rUrl)) return;
-          const ct = (resp.headers()['content-type'] || '').toLowerCase();
-          if (!ct.includes('json') && !/\/Join\/(Init|Next|Start|Load|GetData)/i.test(rUrl)) return;
-          if (htmlInspectionDump.networkJoinPayloads.length >= 120) return;
-          const bodyTxt = await resp.text();
-          if (bodyTxt && bodyTxt.length <= 2500000) {
-            let parsed = null;
-            try { parsed = JSON.parse(bodyTxt); } catch (e) { parsed = bodyTxt.slice(0, 20000); }
-            htmlInspectionDump.networkJoinPayloads.push({
-              url: rUrl,
-              status: resp.status(),
-              data: parsed
-            });
-          }
-        } catch (respErr) {
-          console.warn('[K-BPI HTML 분석 응답 캡처 경고]', respErr.message);
-        }
       });
     }
-
-    const rootPage = await context.newPage();
-    const attachDialogHandler = (pg) => {
-      pg.on('dialog', async (dialog) => {
-        const msg = dialog.message() || '';
-        alertHistory.push(msg);
-        emitLog(`[설문 알림] 🔔 "${msg}"`, 'warn', 'ALERT');
-        try {
-          await dialog.accept();
-        } catch (err) {
-          emitLog(`알림 수락 경고: ${err.message}`, 'warn', 'ALERT');
-        }
-      });
-    };
-    attachDialogHandler(rootPage);
-    context.on('page', (newPg) => attachDialogHandler(newPg));
-
-    // 1. 통합 로그인 -> CAPI 이동 -> K-BPI 슬롯 목록 진입
-    const listPage = await loginAndEnterKbpiCapiList({
-      context,
-      page: rootPage,
-      loginId,
-      loginPw,
-      emitLog: (m, lv) => emitLog(m, lv, 'LOGIN')
-    });
 
     // 2. 대상 응답자 슬롯 매칭 및 [시작] 클릭
     const slotEntry = await findAndStartRespondentSlot({
@@ -1102,25 +1409,78 @@ export async function runKmacKbpiSurvey({
         statusLabel: '완료',
         quotaStatus: 'completed',
         categoryConfigs,
-        gps
+        gps,
+        surveyDistrict,
+        surveyDong
       };
     }
 
     let surveyPage = slotEntry.page;
-    await surveyPage.waitForTimeout(1500);
+    if (surveyPage !== listPage) {
+      openedSurveyTab = surveyPage;
+    }
+    // 응답자 탭 내부 navigator.geolocation 2중 보강 (공유 세션에서도 개별 좌표 보장)
+    await surveyPage.evaluate(({ lat, lng }) => {
+      const mockPos = {
+        coords: {
+          latitude: lat,
+          longitude: lng,
+          accuracy: 14,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null
+        },
+        timestamp: Date.now()
+      };
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition = (success) => {
+          setTimeout(() => success(mockPos), 90);
+        };
+        navigator.geolocation.watchPosition = (success) => {
+          setTimeout(() => success(mockPos), 90);
+          return 1;
+        };
+      }
+    }, { lat: gps.latitude, lng: gps.longitude }).catch(err => console.warn('[K-BPI 탭 GPS 보강 경고]', err.message));
 
-    // 산업군별 런타임 상태 추적
+    await surveyPage.waitForTimeout(1100);
+
     const categoryRuntimeMap = new Map();
+
+    const syncAssignedIndustriesOnce = async (targetFrame) => {
+      if (assignedIndustriesSynced) return;
+      const assigned = await extractAssignedIndustriesFromPage(targetFrame);
+      if (assigned.length > 0) {
+        mergeAssignedIndustriesIntoConfigs({
+          assigned,
+          categoryConfigs,
+          ageGroup,
+          age,
+          gender,
+          policy
+        });
+        assignedIndustriesSynced = true;
+        emitLog(
+          `[배정 브랜드 전수 스캔 완료] 총 ${assigned.length}개 품목 확인: [${assigned.map((a, i) => `${i + 1}.${a.categoryName}(${categoryConfigs[i]?.purchaseExp || '있음'})`).join(', ')}]`,
+          'info',
+          'SCAN'
+        );
+      }
+    };
 
     const getOrInitCategoryState = async (catNameRaw, indKeyRaw = '', targetFrame = null) => {
       const cleanCat = String(catNameRaw || '').replace(/브랜드$/g, '').trim() || `품목${seenCategoriesOrder.length + 1}`;
       if (!categoryRuntimeMap.has(cleanCat)) {
+        const frameToQuery = targetFrame || surveyPage;
+        if (frameToQuery) {
+          await syncAssignedIndustriesOnce(frameToQuery);
+        }
+
         const catIdx = seenCategoriesOrder.length;
         seenCategoriesOrder.push(cleanCat);
 
-        // 1순위: GetData 내장 window.QO.INDUSTRY.ANSWERS (전 547개 산업군 공식 브랜드 마스터 B1~B58) 실시간 조회
         let liveOfficialBrands = [];
-        const frameToQuery = targetFrame || surveyPage;
         if (frameToQuery) {
           liveOfficialBrands = await frameToQuery.evaluate(({ iKey, cName }) => {
             const answers = window.QO?.INDUSTRY?.ANSWERS;
@@ -1138,7 +1498,10 @@ export async function runKmacKbpiSurvey({
               }
             }
             return list;
-          }, { iKey: String(indKeyRaw || ''), cName: cleanCat }).catch(() => []);
+          }, { iKey: String(indKeyRaw || ''), cName: cleanCat }).catch(err => {
+            console.warn('[K-BPI QO 브랜드 조회 경고]', err.message);
+            return [];
+          });
         }
 
         const meta = await resolveCategoryMeta(cleanCat, policy);
@@ -1163,21 +1526,24 @@ export async function runKmacKbpiSurvey({
           rng
         });
 
-        // 문항 3(6-3) 및 문항 6 간 100% 논리 정합성을 위한 사전 AI 검색 경험 결정 (기본 아니오 80% : 예 20%)
         const aiSearched = (rng() * 100) >= Number(policy.q6NoRate ?? 80);
 
-        // categoryConfigs 배열에 품목명 및 구입경험(있음/없음) 기록
-        while (categoryConfigs.length <= catIdx) {
+        const existingSlotIdx = categoryConfigs.findIndex(c => {
+          const cn = String(c?.categoryName || '').replace(/브랜드$/g, '').trim();
+          return cn && cn === cleanCat;
+        });
+        const targetCfgIdx = existingSlotIdx >= 0 ? existingSlotIdx : catIdx;
+        while (categoryConfigs.length <= targetCfgIdx) {
           categoryConfigs.push({ slot: categoryConfigs.length + 1, categoryName: '', purchaseExp: '' });
         }
-        categoryConfigs[catIdx].slot = catIdx + 1;
-        categoryConfigs[catIdx].categoryName = cleanCat;
-        categoryConfigs[catIdx].purchaseExp = purchaseExp;
-        categoryConfigs[catIdx].topBrand = purchaseExp === '없음' ? '없음' : shuffledBrands[0];
-        categoryConfigs[catIdx].channel = purchaseExp === '없음' ? '' : shuffledChannels[0];
+        categoryConfigs[targetCfgIdx].slot = targetCfgIdx + 1;
+        categoryConfigs[targetCfgIdx].categoryName = cleanCat;
+        categoryConfigs[targetCfgIdx].purchaseExp = purchaseExp;
+        categoryConfigs[targetCfgIdx].topBrand = purchaseExp === '없음' ? '없음' : shuffledBrands[0];
+        categoryConfigs[targetCfgIdx].channel = purchaseExp === '없음' ? '' : shuffledChannels[0];
 
         categoryRuntimeMap.set(cleanCat, {
-          slotIndex: catIdx,
+          slotIndex: targetCfgIdx,
           categoryName: cleanCat,
           industryKey: String(indKeyRaw || ''),
           purchaseExp,
@@ -1191,9 +1557,9 @@ export async function runKmacKbpiSurvey({
         });
 
         emitLog(
-          `[품목 #${catIdx + 1} 감지: ${cleanCat}${liveOfficialBrands.length >= 3 ? ` (공식B:${liveOfficialBrands.length}개)` : ''}] 구입경험="${purchaseExp}" | AI검색="${aiSearched ? '예' : '아니오'}" | 상기=[${shuffledBrands.slice(0, 3).join(', ')}]${purchaseExp === '있음' ? ` | 채널="${shuffledChannels[0]}"` : ''}`,
+          `[품목 #${targetCfgIdx + 1} 감지: ${cleanCat}${liveOfficialBrands.length >= 3 ? ` (공식B:${liveOfficialBrands.length}개)` : ''}] 구입경험="${purchaseExp}" | AI검색="${aiSearched ? '예' : '아니오'}" | 상기=[${shuffledBrands.slice(0, 3).join(', ')}]${purchaseExp === '있음' ? ` | 채널="${shuffledChannels[0]}"` : ''}`,
           'info',
-          `CAT${catIdx + 1}`
+          `CAT${targetCfgIdx + 1}`
         );
       }
       return categoryRuntimeMap.get(cleanCat);
@@ -1204,17 +1570,16 @@ export async function runKmacKbpiSurvey({
     let lastSignature = '';
 
     for (let stepIter = 0; stepIter < 450; stepIter++) {
-      await surveyPage.waitForTimeout(750);
+      await surveyPage.waitForTimeout(650);
 
-      // 지연 팝업 탭이 새로 열렸다면 최신 설문 탭으로 자동 전환
-      const allOpenPages = context.pages().filter(p => p.url() && p.url() !== 'about:blank');
+      const allOpenPages = context.pages().filter(p => p !== listPage && p.url() && p.url() !== 'about:blank');
       if (allOpenPages.length > 0 && allOpenPages[allOpenPages.length - 1] !== surveyPage) {
         surveyPage = allOpenPages[allOpenPages.length - 1];
+        openedSurveyTab = surveyPage;
       }
 
       const activeTarget = await resolveActiveSurveyFrame(surveyPage);
 
-      // GetData 커스텀 레이어 알림창(.modal / .bootbox / .swal2) 감지 시 텍스트 기록 후 자동 닫기
       const modalAlertMsg = await activeTarget.evaluate(() => {
         const modals = Array.from(
           document.querySelectorAll('.bootbox.modal, .modal.in, .modal.show, .swal2-container, .ui-dialog')
@@ -1229,7 +1594,10 @@ export async function runKmacKbpiSurvey({
           }
         }
         return '';
-      }).catch(() => '');
+      }).catch(err => {
+        console.warn('[K-BPI 모달 감지 경고]', err.message);
+        return '';
+      });
       if (modalAlertMsg) {
         alertHistory.push(modalAlertMsg);
         emitLog(`[레이어 알림 감지] 🔔 "${modalAlertMsg}"`, 'warn', 'MODAL_ALERT');
@@ -1238,7 +1606,7 @@ export async function runKmacKbpiSurvey({
 
       const info = await classifyCurrentScreen(activeTarget);
       if (info.screenType === 'LOADING') {
-        await surveyPage.waitForTimeout(600);
+        await surveyPage.waitForTimeout(550);
         continue;
       }
       const sig = `${info.screenType}|${info.qNameAttr || ''}|${info.categoryName}|${info.progressPct}`;
@@ -1384,6 +1752,10 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
+      if (info.screenType === 'SCREENED_OUT') {
+        throw new Error(`설문 스크리닝/쿼터 중단 화면 도달 (${info.qNameAttr}): "${(info.bodySnippet || '').slice(0, 140)}"`);
+      }
+
       if (info.screenType === 'COMPLETED') {
         emitLog(`[설문 최종 완료] #${seq} ${respondentName} (${uid}) 100% 완료 확인!`, 'info', 'DONE');
         return {
@@ -1393,8 +1765,17 @@ export async function runKmacKbpiSurvey({
           quotaStatus: 'completed',
           progress: '100%',
           categoryConfigs,
-          gps
+          gps,
+          surveyDistrict,
+          surveyDong
         };
+      }
+
+      // [TITLE / DESC] 초기 조사 안내문
+      if (info.screenType === 'INTRO_DESC') {
+        emitLog('[안내문 통과] K-BPI 조사 안내 화면 [다음] 클릭...', 'info', 'INTRO');
+        await clickNextButton(activeTarget);
+        continue;
       }
 
       // [GP1] 현재 위치 확인
@@ -1404,8 +1785,12 @@ export async function runKmacKbpiSurvey({
         if ((await locBtn.count()) > 0) {
           await locBtn.click();
           for (let gWait = 0; gWait < 12; gWait++) {
-            await surveyPage.waitForTimeout(400);
-            const hasCoords = await activeTarget.evaluate(() => /위도\s*:\s*3\d\./.test(document.body?.innerText || ''));
+            await surveyPage.waitForTimeout(350);
+            const hasCoords = await activeTarget.evaluate(() => {
+              const txt = document.body?.innerText || '';
+              if (/위도\s*:\s*3\d\./.test(txt) || /37\.\d{3,}/.test(txt)) return true;
+              return Array.from(document.querySelectorAll('[question-name="GP1"] input')).some(inp => /37\.\d+/.test(inp.value || ''));
+            }).catch(() => false);
             if (hasCoords) break;
           }
         }
@@ -1413,136 +1798,262 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [신상정보 등록] 이름 / 성별 / 연령(만) / 휴대폰 또는 전화번호
+      // [WOKERD_DUP] 응답자 신상명세 등록 및 외부 DB [응답자 확인] AJAX 통과
       if (info.screenType === 'PROFILE') {
-        emitLog(`[신상정보 입력] 이름=${respondentName}, 성별=${gender}, 만=${age}세, 연락처=${phone} (${phone.startsWith('010') ? '휴대폰' : '일반전화'})`, 'info', 'PROFILE');
-        await activeTarget.evaluate(({ rName, rGender, rAge, rPhone }) => {
-          const triggerControl = (el, val) => {
-            if (!el || el.disabled) return;
-            if (el.tagName === 'SELECT') {
-              const matchOpt = Array.from(el.options).find(o => o.value === String(val) || o.text.trim() === String(val));
-              if (matchOpt) {
-                el.value = matchOpt.value;
-                el.dispatchEvent(new Event('change', { bubbles: true }));
-              }
-              return;
+        emitLog(`[신상명세 등록] 이름=${respondentName}, 성별=${gender}, 만=${age}세, 연락처=${phone} (${phone.startsWith('010') ? '휴대폰' : '일반전화'})`, 'info', 'PROFILE');
+        const profileResult = await activeTarget.evaluate(({ rName, rGender, rAge, rPhone }) => {
+          const root = document.querySelector('[question-name="WOKERD_DUP"]') || document.querySelector('.worker-info-card')?.parentElement || document;
+          if (typeof window.$ !== 'undefined') {
+            const jqRoot = window.$(root);
+            if (jqRoot.data('workerApiSaved') === true) {
+              return { alreadySaved: true };
             }
-            if (el.readOnly) return;
+          }
+
+          const setField = (sel, val) => {
+            const el = root.querySelector(sel);
+            if (!el || el.disabled || el.readOnly) return false;
             el.focus();
             el.value = String(val);
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(el).val(String(val)).trigger('input').trigger('change');
             el.blur();
+            return true;
           };
 
-          const rows = Array.from(document.querySelectorAll('tr, .form-row, .row, div'));
-          // 이름 입력
-          const nameInp = document.querySelector('input[placeholder*="이름"]') ||
-            rows.find(r => /^이름/.test((r.innerText || '').trim()))?.querySelector('input[type="text"], input:not([type])');
-          triggerControl(nameInp, rName);
+          setField('[custom-save-name="WORKER_NAME"], input[name="WORKER_NAME"], input[placeholder*="이름"]', rName);
 
-          // 성별 라디오 클릭
-          const labels = Array.from(document.querySelectorAll('label, span'));
-          const genderLabel = labels.find(lb => (lb.innerText || '').trim() === rGender);
-          if (genderLabel) {
-            const rInp = genderLabel.querySelector('input[type="radio"]') ||
-              document.getElementById(genderLabel.getAttribute('for') || '') ||
-              genderLabel.previousElementSibling;
-            if (rInp && rInp.type === 'radio') {
-              if (!rInp.checked) rInp.click();
-              rInp.checked = true;
-              rInp.dispatchEvent(new Event('change', { bubbles: true }));
-            } else {
-              genderLabel.click();
-            }
+          const wantGenderCode = String(rGender || '').startsWith('여') ? 'F' : 'M';
+          const genderInp = root.querySelector(`input[custom-save-name="GENDER"][value="${wantGenderCode}"]`) ||
+            Array.from(root.querySelectorAll('input[type="radio"]')).find(r => r.value === wantGenderCode);
+          if (genderInp) {
+            if (!genderInp.checked) genderInp.click();
+            genderInp.checked = true;
+            genderInp.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(genderInp).prop('checked', true).trigger('change');
           }
 
-          // 연령(만) 입력
-          const ageInp = document.querySelector('input[placeholder*="숫자"]') ||
-            rows.find(r => /연령\s*\(\s*만\s*\)/.test(r.innerText || ''))?.querySelector('input[type="number"], input[type="text"], input:not([type])');
-          triggerControl(ageInp, rAge);
+          setField('[custom-save-name="AGE"], input[name="AGE"], input[placeholder*="숫자"]', rAge);
 
-          // 연락처 하이픈 분리 입력 (010 -> 휴대폰 칸 / 02 등 지역번호 -> 전화번호 칸)
           const parts = String(rPhone || '').split('-').map(s => s.trim()).filter(Boolean);
           if (parts.length === 3) {
-            const isMobile = parts[0] === '010';
-            const targetRowLabel = isMobile ? '휴대폰' : '전화번호';
-            const phoneContainer = rows.filter(r => {
-              const t = (r.innerText || '').trim();
-              const ctrlCnt = r.querySelectorAll('input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]), select').length;
-              return t.startsWith(targetRowLabel) && ctrlCnt >= 2 && ctrlCnt <= 4;
-            }).sort((a, b) => a.innerText.length - b.innerText.length)[0];
-
-            if (phoneContainer) {
-              const ctrls = Array.from(
-                phoneContainer.querySelectorAll('select, input[type="text"], input[type="tel"], input[type="number"], input:not([type])')
-              ).filter(el => el.type !== 'radio' && el.type !== 'checkbox' && el.type !== 'hidden');
-              if (ctrls.length >= 3) {
-                triggerControl(ctrls[0], parts[0]);
-                triggerControl(ctrls[1], parts[1]);
-                triggerControl(ctrls[2], parts[2]);
-              } else if (ctrls.length === 2) {
-                triggerControl(ctrls[0], parts[1]);
-                triggerControl(ctrls[1], parts[2]);
-              }
+            if (parts[0] === '010') {
+              setField('[custom-save-name="MOBILE_1"]', '010');
+              setField('[custom-save-name="MOBILE_2"]', parts[1]);
+              setField('[custom-save-name="MOBILE_3"]', parts[2]);
+              setField('[custom-save-name="TEL_1"]', '');
+              setField('[custom-save-name="TEL_2"]', '');
+              setField('[custom-save-name="TEL_3"]', '');
+            } else {
+              setField('[custom-save-name="MOBILE_1"]', '');
+              setField('[custom-save-name="MOBILE_2"]', '');
+              setField('[custom-save-name="MOBILE_3"]', '');
+              setField('[custom-save-name="TEL_1"]', parts[0]);
+              setField('[custom-save-name="TEL_2"]', parts[1]);
+              setField('[custom-save-name="TEL_3"]', parts[2]);
             }
           }
+
+          const submitBtn = root.querySelector('.worker-api-submit');
+          if (submitBtn && !submitBtn.disabled) {
+            submitBtn.click();
+            return { clickedSubmit: true };
+          }
+          return { clickedSubmit: false };
         }, { rName: respondentName, rGender: gender, rAge: age, rPhone: phone });
 
-        await surveyPage.waitForTimeout(500);
+        if (profileResult.alreadySaved) {
+          await clickNextButton(activeTarget);
+          continue;
+        }
+
+        // WorkerCheck(IDENTITY -> CHECK) 비동기 응답 및 자동 페이지 전환 대기 (최대 16초)
+        let workerErr = '';
+        for (let wIdx = 0; wIdx < 32; wIdx++) {
+          await surveyPage.waitForTimeout(500);
+          const checkState = await activeTarget.evaluate(() => {
+            const wBox = document.querySelector('[question-name="WOKERD_DUP"]');
+            if (!wBox || wBox.offsetParent === null) {
+              return { transitioned: true };
+            }
+            const jqSaved = (typeof window.$ !== 'undefined') ? Boolean(window.$(wBox).data('workerApiSaved')) : false;
+            const resBox = wBox.querySelector('.worker-api-result');
+            const resVisible = Boolean(resBox && resBox.offsetParent !== null && (resBox.innerText || '').trim());
+            const isSuccess = Boolean(resBox && resBox.classList.contains('is-success'));
+            const resMsg = resBox ? (resBox.innerText || '').replace(/\s+/g, ' ').trim() : '';
+            const btnDisabled = Boolean(wBox.querySelector('.worker-api-submit')?.disabled);
+            return { transitioned: false, jqSaved, resVisible, isSuccess, resMsg, btnDisabled };
+          }).catch(() => ({ transitioned: true }));
+
+          if (checkState.transitioned) break;
+          if (checkState.jqSaved) {
+            await surveyPage.waitForTimeout(350);
+            await clickNextButton(activeTarget);
+            break;
+          }
+          if (checkState.resVisible && !checkState.isSuccess && !checkState.btnDisabled && checkState.resMsg) {
+            workerErr = checkState.resMsg;
+            break;
+          }
+        }
+        if (workerErr) {
+          throw new Error(`[신상명세 등록 거부] #${seq} ${respondentName}(${phone}): ${workerErr}`);
+        }
+        continue;
+      }
+
+      // [SQ1] 광고회사/조사회사 종사 가족 유무 -> 2번 '없다' 선택
+      if (info.screenType === 'SQ1') {
+        emitLog('[SQ1 스크리닝] "없다(2)" 선택...', 'info', 'SQ1');
+        await activeTarget.evaluate(() => {
+          const sq1None = document.querySelector('input[qname="SQ1"][akey="2"]') ||
+            Array.from(document.querySelectorAll('[question-name="SQ1"] input[type="radio"], input[type="radio"], input[type="checkbox"]'))
+              .find(inp => !inp.disabled && /모두\s*없다|해당\s*없음|^없다$|^없음$/.test((inp.closest('label, li, tr, td, div')?.innerText || '').trim()));
+          if (sq1None) {
+            if (!sq1None.checked) sq1None.click();
+            sq1None.checked = true;
+            sq1None.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(sq1None).prop('checked', true).trigger('change');
+          }
+        });
+        await surveyPage.waitForTimeout(350);
         await clickNextButton(activeTarget);
         continue;
       }
 
-      // [SQ1] 스크리닝 -> 모두 없다 (단일 체크박스 재클릭 해제 방지)
-      if (info.screenType === 'SQ1') {
-        emitLog('[SQ1 스크리닝] "모두 없다" 선택...', 'info', 'SQ1');
-        await activeTarget.evaluate(() => {
-          const inputs = Array.from(document.querySelectorAll('input[type="checkbox"], input[type="radio"]'))
-            .filter(inp => !inp.disabled);
-          let matchedAny = false;
-
-          // 1순위: '모두 없다' / '해당 없음' 단일 배타 옵션 탐색
-          for (const inp of inputs) {
-            const labelTxt = (inp.closest('label, li, tr, td, div')?.innerText || '').trim();
-            if (/모두\s*없다|해당\s*없음|해당사항\s*없음|^없음$/.test(labelTxt)) {
-              if (!inp.checked) inp.click();
-              inp.checked = true;
-              inp.dispatchEvent(new Event('change', { bubbles: true }));
-              matchedAny = true;
-            }
+      // [SQ2] 만 나이 입력 (15~59세)
+      if (info.screenType === 'SQ2_AGE') {
+        emitLog(`[SQ2 연령] 만 ${age}세 입력...`, 'info', 'SQ2');
+        await activeTarget.evaluate(({ rAge }) => {
+          const inp = document.querySelector('[question-name="SQ2"] input[data-column="NUMBER_1"], input[qname="SQ2"]') ||
+            document.querySelector('[question-name="SQ2"] input:not([type="hidden"])');
+          if (inp && !inp.disabled && !inp.readOnly) {
+            inp.focus();
+            inp.value = String(rAge);
+            inp.dispatchEvent(new Event('input', { bubbles: true }));
+            inp.dispatchEvent(new Event('change', { bubbles: true }));
+            inp.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(inp).val(String(rAge)).trigger('input').trigger('change').trigger('keyup');
+            inp.blur();
           }
-
-          // 2순위: 행별 라디오 그룹('있다/없다' 또는 '예/아니오')인 경우 각 그룹의 '없다/아니오'(또는 마지막 보기) 선택
-          const radioGroups = new Map();
-          for (const r of inputs.filter(x => x.type === 'radio')) {
-            if (!radioGroups.has(r.name)) radioGroups.set(r.name, []);
-            radioGroups.get(r.name).push(r);
-          }
-          for (const grp of radioGroups.values()) {
-            if (grp.some(x => x.checked)) continue;
-            const noneRadio = grp.find(x => /없다|없음|아니오/.test((x.closest('label, li, tr, td, div')?.innerText || '').trim()))
-              || grp[grp.length - 1];
-            if (noneRadio) {
-              noneRadio.click();
-              noneRadio.checked = true;
-              noneRadio.dispatchEvent(new Event('change', { bubbles: true }));
-              matchedAny = true;
-            }
-          }
-
-          // 3순위: 커스텀 버튼형 보기인 경우
-          if (!matchedAny) {
-            const leafNone = Array.from(document.querySelectorAll('label, button, span, div')).find(el => {
-              const t = (el.innerText || '').trim();
-              return el.offsetParent !== null && el.children.length === 0 && /^(모두\s*없다|해당\s*없음)$/.test(t);
-            });
-            if (leafNone) leafNone.click();
-          }
-        });
-        await surveyPage.waitForTimeout(450);
+        }, { rAge: age });
+        await surveyPage.waitForTimeout(350);
         await clickNextButton(activeTarget);
         continue;
+      }
+
+      // [SQ3] 성별 선택 (1: 남자 / 2: 여자)
+      if (info.screenType === 'SQ3_GENDER') {
+        const sq3Akey = gender.startsWith('여') ? '2' : '1';
+        emitLog(`[SQ3 성별] "${gender}" (akey=${sq3Akey}) 선택...`, 'info', 'SQ3');
+        await activeTarget.evaluate(({ ak }) => {
+          const r = document.querySelector(`input[qname="SQ3"][akey="${ak}"]`) ||
+            Array.from(document.querySelectorAll('[question-name="SQ3"] input[type="radio"]'))[ak === '2' ? 1 : 0];
+          if (r && !r.disabled) {
+            if (!r.checked) r.click();
+            r.checked = true;
+            r.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(r).prop('checked', true).trigger('change');
+          }
+        }, { ak: sq3Akey });
+        await surveyPage.waitForTimeout(350);
+        await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // [M_CHECK + INDUSTRY_ORDER] 조사지역·조사구·조사동 선택 및 배정 브랜드 할당 대기
+      if (info.screenType === 'M_CHECK_REGION') {
+        emitLog(`[조사지역 입력] 지역=${region}(코드:${cityCode}) · 조사구=${surveyDistrict} · 조사동=${surveyDong} 선택 및 브랜드 할당 대기...`, 'info', 'M_CHECK');
+        await activeTarget.evaluate(async ({ cCode, sDist, sDong }) => {
+          const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
+          const box = document.querySelector('[question-name="M_CHECK"]') || document;
+          const cityRadio = box.querySelector(`input[custom-save-name="ZQ1"][value="${cCode}"]`);
+          if (cityRadio) {
+            if (!cityRadio.checked) cityRadio.click();
+            cityRadio.checked = true;
+            cityRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(cityRadio).prop('checked', true).trigger('change');
+          }
+          await waitMs(180);
+
+          const distSel = box.querySelector('select[custom-save-name="ZQ2"]');
+          if (distSel && !distSel.disabled) {
+            const distOpt = Array.from(distSel.options).find(o => o.value === sDist || o.text.trim() === sDist) ||
+              Array.from(distSel.options).find(o => o.value !== '');
+            if (distOpt) {
+              distSel.value = distOpt.value;
+              distSel.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof window.$ !== 'undefined') window.$(distSel).val(distOpt.value).trigger('change');
+            }
+          }
+          await waitMs(180);
+
+          const dongSel = box.querySelector('select[custom-save-name="ZQ3"]');
+          if (dongSel && !dongSel.disabled) {
+            const dongOpt = Array.from(dongSel.options).find(o => o.value === sDong || o.text.trim() === sDong) ||
+              Array.from(dongSel.options).find(o => o.value !== '');
+            if (dongOpt) {
+              dongSel.value = dongOpt.value;
+              dongSel.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof window.$ !== 'undefined') window.$(dongSel).val(dongOpt.value).trigger('change');
+            }
+          }
+        }, { cCode: cityCode, sDist: surveyDistrict, sDong: surveyDong });
+
+        // INDUSTRY_ORDER(/Custom/230/KbpiContext) 비동기 할당 완료(ready === true)까지 최대 15초 대기
+        for (let iWait = 0; iWait < 30; iWait++) {
+          const orderState = await activeTarget.evaluate(() => {
+            const w = document.querySelector('div[question-name="INDUSTRY_ORDER"]');
+            if (!w || typeof window.$ === 'undefined') return { ready: true, keysCount: 0 };
+            const jqW = window.$(w);
+            const ready = Boolean(jqW.data('ready'));
+            const err = String(jqW.data('error') || '');
+            const pickerVisible = Boolean(w.querySelector('.kbpi-test-picker') && w.offsetParent !== null);
+            return { ready, err, pickerVisible };
+          }).catch(() => ({ ready: true }));
+          if (orderState.ready) break;
+          await surveyPage.waitForTimeout(450);
+        }
+
+        await syncAssignedIndustriesOnce(activeTarget);
+        await surveyPage.waitForTimeout(350);
+        await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // [신상명세 등록 + 배정 브랜드 스캔 전용 정지 지점 (stopAtStep === 'SCAN_BRANDS')]
+      // M_CHECK 통과 직후 Q1_UNAIDED(또는 이미 진행 중인 슬롯의 현재 화면)에서 배정된 전 품목(18~20개)을 추출하고 즉시 안전 정지!
+      if (stopAtStep === 'SCAN_BRANDS') {
+        await syncAssignedIndustriesOnce(activeTarget);
+        const scannedItems = categoryConfigs.filter(c => c && c.categoryName);
+        if (scannedItems.length === 0 && info.categoryName) {
+          await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
+        }
+        const finalScannedCount = categoryConfigs.filter(c => c && c.categoryName).length;
+        const keepPrevPilot = slotData.quotaStatus === 'pilot_done' && /완료직전|문항4/.test(String(slotData.status || ''));
+        const nextStatusLabel = keepPrevPilot ? slotData.status : '신상등록·스캔완료';
+        const nextQuotaStatus = keepPrevPilot ? 'pilot_done' : 'scanned';
+
+        emitLog(
+          `✅ [신상명세 등록 & 브랜드 스캔 완료] #${seq} ${respondentName} (${surveyDistrict} ${surveyDong}) — 총 ${finalScannedCount}개 출제 브랜드 스캔 완료!`,
+          'info',
+          'SCAN_DONE'
+        );
+        return {
+          success: true,
+          scannedOnly: true,
+          safetyStopped: true,
+          stoppedAt: 'SCAN_BRANDS',
+          scannedCount: finalScannedCount,
+          statusLabel: nextStatusLabel,
+          quotaStatus: nextQuotaStatus,
+          progress: info.progressPct ? `${info.progressPct}%` : '12%',
+          categoryConfigs,
+          gps,
+          surveyDistrict,
+          surveyDong
+        };
       }
 
       // [문항 1] 1-1 ~ 1-4 비보조 인지도 (순차 언하이드 1회 통과 + 1-4 전용 NOA 체크박스 지원)
@@ -2123,10 +2634,35 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [문항 4-1] 구입/이용 채널 경로 주관식 (숨김 META_PARENT 인풋 제외, TEXT_1 정확 타겟팅)
+      // [문항 4-1 요인] 고려하신 가장 중요한 요인 (RADIO 1~9)
+      if (info.screenType === 'Q4_1_FACTOR') {
+        const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
+        const factorSeed = Math.floor(rng() * 1000);
+        const pickedFactor = await activeTarget.evaluate(({ fSeed }) => {
+          const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q41--"]')).find(el => el.offsetParent !== null) || document;
+          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
+          const preferredAkeys = ['2', '3', '1', '9', '8', '4', '6'];
+          const targetAk = preferredAkeys[fSeed % preferredAkeys.length];
+          const chosen = radios.find(r => r.getAttribute('akey') === targetAk) || radios[fSeed % Math.max(1, radios.length)];
+          if (chosen) {
+            chosen.click();
+            chosen.checked = true;
+            chosen.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(chosen).prop('checked', true).trigger('change');
+            return (chosen.closest('label, li, tr, div')?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 36);
+          }
+          return '';
+        }, { fSeed: factorSeed });
+        emitLog(`[${catState.categoryName} - 문항 4-1(요인)] "${pickedFactor}" 선택`, 'info', 'Q4-1F');
+        await surveyPage.waitForTimeout(380);
+        await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // [문항 4-1 채널] 구입/이용 채널 경로 주관식 (숨김 META_PARENT 인풋 제외, TEXT_1 정확 타겟팅)
       if (info.screenType === 'Q4_1_CHANNEL') {
         const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
-        emitLog(`[${catState.categoryName} - 문항 4-1] 구입/이용 채널 = "${catState.selectedChannel}"`, 'info', 'Q4-1');
+        emitLog(`[${catState.categoryName} - 문항 4-1(채널)] 구입/이용 채널 = "${catState.selectedChannel}"`, 'info', 'Q4-1');
         await activeTarget.evaluate(({ channelText }) => {
           const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q41_CHANNEL--"]')).find(el => el.offsetParent !== null) || document;
           const inp = visQBox.querySelector('input[data-column="TEXT_1"]') ||
@@ -2137,12 +2673,33 @@ export async function runKmacKbpiSurvey({
             inp.value = channelText;
             inp.dispatchEvent(new Event('input', { bubbles: true }));
             inp.dispatchEvent(new Event('change', { bubbles: true }));
-            if (typeof $ !== 'undefined') $(inp).val(channelText).trigger('input').trigger('change');
+            if (typeof window.$ !== 'undefined') window.$(inp).val(channelText).trigger('input').trigger('change');
             inp.blur();
           }
         }, { channelText: catState.selectedChannel });
 
-        await surveyPage.waitForTimeout(450);
+        await surveyPage.waitForTimeout(400);
+        await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // [문항 4-2 세제 제형] 세제류 전용 복수선택 (가루형/액체형/캡슐형/시트형)
+      if (info.screenType === 'Q4_2_DETERGENT') {
+        const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
+        const detPicked = await activeTarget.evaluate(({ seedN }) => {
+          const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q42--"]')).find(el => el.offsetParent !== null) || document;
+          const cbs = Array.from(visQBox.querySelectorAll('input[type="checkbox"]')).filter(c => !c.disabled && c.offsetParent !== null);
+          const prefer = cbs.find(c => /액체|캡슐/.test((c.closest('label, div, li')?.innerText || ''))) || cbs[seedN % Math.max(1, cbs.length)];
+          if (prefer && !prefer.checked) {
+            prefer.click();
+            prefer.checked = true;
+            prefer.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(prefer).prop('checked', true).trigger('change');
+          }
+          return prefer ? (prefer.closest('label, div, li')?.innerText || '').trim() : '';
+        }, { seedN: Math.floor(rng() * 100) });
+        emitLog(`[${catState.categoryName} - 문항 4-2(제형)] "${detPicked}" 선택`, 'info', 'Q4-2');
+        await surveyPage.waitForTimeout(380);
         await clickNextButton(activeTarget);
         continue;
       }
@@ -2166,7 +2723,7 @@ export async function runKmacKbpiSurvey({
             chosen.click();
             chosen.checked = true;
             chosen.dispatchEvent(new Event('change', { bubbles: true }));
-            if (typeof $ !== 'undefined') $(chosen).prop('checked', true).trigger('change');
+            if (typeof window.$ !== 'undefined') window.$(chosen).prop('checked', true).trigger('change');
             return (chosen.closest('label, li, tr, div')?.innerText || '').trim();
           }
           return '';
@@ -2176,17 +2733,21 @@ export async function runKmacKbpiSurvey({
         });
         emitLog(`[${catState.categoryName} - 문항 5] 문항 4 동일 응답 = "${pickedQ5}"`, 'info', 'Q5');
 
-        await surveyPage.waitForTimeout(450);
+        await surveyPage.waitForTimeout(420);
         await clickNextButton(activeTarget);
         continue;
       }
 
-      // [문항 6] 생성형 AI 브랜드 질문 경험 (문항 3 6-3 응답값 catState.aiSearched와 100% 연동!)
+      // [문항 6 + 조건부 6-1·6-2] 생성형 AI 브랜드 질문 경험 (문항 3 6-3 응답값 catState.aiSearched와 100% 연동!)
       if (info.screenType === 'Q6_YES_NO') {
         const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
         const chooseNo = !catState.aiSearched;
         const targetLabel = chooseNo ? '아니오' : '예';
-        await activeTarget.evaluate(({ want }) => {
+        const q6SubScore1 = rng() < 0.65 ? '4' : '5';
+        const q6SubScore2 = rng() < 0.7 ? '4' : '3';
+
+        await activeTarget.evaluate(async ({ want, isYes, sc1, sc2 }) => {
+          const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
           const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q6--"]')).find(el => el.offsetParent !== null) || document;
           const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
           const chosen = radios.find(r => (r.closest('label, li, tr, div')?.innerText || '').trim() === want)
@@ -2196,26 +2757,37 @@ export async function runKmacKbpiSurvey({
             chosen.click();
             chosen.checked = true;
             chosen.dispatchEvent(new Event('change', { bubbles: true }));
-            if (typeof $ !== 'undefined') $(chosen).prop('checked', true).trigger('change');
+            if (typeof window.$ !== 'undefined') window.$(chosen).prop('checked', true).trigger('change');
           }
-        }, { want: targetLabel });
 
-        if (!chooseNo) {
-          await surveyPage.waitForTimeout(300);
-          await activeTarget.evaluate(({ fallbackBrand }) => {
-            const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q6--"]')).find(el => el.offsetParent !== null) || document;
-            const extraInputs = Array.from(visQBox.querySelectorAll('input[type="text"], textarea'))
-              .filter(el => el.offsetParent !== null && !el.disabled && !el.readOnly && !el.classList.contains('input-etc') && !el.value);
-            for (const inp of extraInputs) {
-              inp.value = fallbackBrand;
-              inp.dispatchEvent(new Event('input', { bubbles: true }));
-              inp.dispatchEvent(new Event('change', { bubbles: true }));
+          if (isYes) {
+            await waitMs(260);
+            const q61Box = Array.from(document.querySelectorAll('[question-name^="KBPI_Q61--"]')).find(el => el.offsetParent !== null);
+            if (q61Box) {
+              const r61 = q61Box.querySelector(`input[type="radio"][akey="${sc1}"]`) || q61Box.querySelector('input[type="radio"][akey="4"]') || q61Box.querySelectorAll('input[type="radio"]')[3];
+              if (r61 && !r61.disabled) {
+                r61.click();
+                r61.checked = true;
+                r61.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof window.$ !== 'undefined') window.$(r61).prop('checked', true).trigger('change');
+              }
             }
-          }, { fallbackBrand: catState.unaidedBrands[0] || '주요 브랜드' });
-        }
+            await waitMs(160);
+            const q62Box = Array.from(document.querySelectorAll('[question-name^="KBPI_Q62--"]')).find(el => el.offsetParent !== null);
+            if (q62Box) {
+              const r62 = q62Box.querySelector(`input[type="radio"][akey="${sc2}"]`) || q62Box.querySelector('input[type="radio"][akey="4"]') || q62Box.querySelectorAll('input[type="radio"]')[3];
+              if (r62 && !r62.disabled) {
+                r62.click();
+                r62.checked = true;
+                r62.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof window.$ !== 'undefined') window.$(r62).prop('checked', true).trigger('change');
+              }
+            }
+          }
+        }, { want: targetLabel, isYes: !chooseNo, sc1: q6SubScore1, sc2: q6SubScore2 });
 
-        emitLog(`[${catState.categoryName} - 문항 6] "${targetLabel}" 선택 (6-3 동기화)`, 'info', 'Q6');
-        await surveyPage.waitForTimeout(450);
+        emitLog(`[${catState.categoryName} - 문항 6] "${targetLabel}" 선택${!chooseNo ? ` (6-1=${q6SubScore1}점, 6-2=${q6SubScore2}점)` : ''} (6-3 동기화)`, 'info', 'Q6');
+        await surveyPage.waitForTimeout(420);
         await clickNextButton(activeTarget);
         continue;
       }
@@ -2297,7 +2869,6 @@ export async function runKmacKbpiSurvey({
             const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
             const visQBox = Array.from(document.querySelectorAll('[question-type]')).filter(el => el.offsetParent !== null).pop() || document;
 
-            // 케이스 A: GetData [question-type="GRADE"] (input[type="radio"][hkey="1"][vkey] -> 동적 활성화 [hkey="2"][vkey])
             const hkey1Radios = Array.from(visQBox.querySelectorAll('input[type="radio"][hkey="1"]')).filter(r => !r.disabled);
             if (hkey1Radios.length >= 2) {
               const validR1 = hkey1Radios.filter(r => {
@@ -2311,7 +2882,7 @@ export async function runKmacKbpiSurvey({
                 const vk1 = pick1.getAttribute('vkey') || pick1.value;
                 pick1.click();
                 pick1.checked = true;
-                if (typeof $ !== 'undefined') $(pick1).prop('checked', true).trigger('change');
+                if (typeof window.$ !== 'undefined') window.$(pick1).prop('checked', true).trigger('change');
                 await waitMs(220);
 
                 const validR2 = Array.from(visQBox.querySelectorAll('input[type="radio"][hkey="2"]')).filter(r => {
@@ -2327,13 +2898,12 @@ export async function runKmacKbpiSurvey({
                 if (pick2) {
                   pick2.click();
                   pick2.checked = true;
-                  if (typeof $ !== 'undefined') $(pick2).prop('checked', true).trigger('change');
+                  if (typeof window.$ !== 'undefined') window.$(pick2).prop('checked', true).trigger('change');
                   return { r1: vk1, r2: pick2.getAttribute('vkey') || pick2.value, mode: 'GRADE_HKEY' };
                 }
               }
             }
 
-            // 케이스 B: 1순위/2순위 드롭다운(<select>) 2개
             const selects = Array.from(visQBox.querySelectorAll('select')).filter(s => !s.disabled && s.offsetParent !== null);
             if (selects.length >= 2) {
               const opts1 = Array.from(selects[0].options).filter(o => o.value !== '' && !/선택/.test(o.text) && !isForbiddenLabel(o.text));
@@ -2341,7 +2911,7 @@ export async function runKmacKbpiSurvey({
                 const pick1 = opts1[sNum % opts1.length];
                 selects[0].value = pick1.value;
                 selects[0].dispatchEvent(new Event('change', { bubbles: true }));
-                if (typeof $ !== 'undefined') $(selects[0]).val(pick1.value).trigger('change');
+                if (typeof window.$ !== 'undefined') window.$(selects[0]).val(pick1.value).trigger('change');
                 await waitMs(250);
 
                 const opts2 = Array.from(selects[1].options).filter(o => o.value !== '' && o.value !== pick1.value && !/선택/.test(o.text) && !isForbiddenLabel(o.text));
@@ -2349,13 +2919,12 @@ export async function runKmacKbpiSurvey({
                   const pick2 = opts2[(sNum + 1) % opts2.length];
                   selects[1].value = pick2.value;
                   selects[1].dispatchEvent(new Event('change', { bubbles: true }));
-                  if (typeof $ !== 'undefined') $(selects[1]).val(pick2.value).trigger('change');
+                  if (typeof window.$ !== 'undefined') window.$(selects[1]).val(pick2.value).trigger('change');
                   return { r1: pick1.text.trim(), r2: pick2.text.trim(), mode: 'SELECT_2' };
                 }
               }
             }
 
-            // 케이스 C: 체크박스 2개 복수선택 폴백
             const allCbs = Array.from(visQBox.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.disabled && cb.offsetParent !== null);
             if (allCbs.length >= 2) {
               for (const cb of allCbs) {
@@ -2374,11 +2943,11 @@ export async function runKmacKbpiSurvey({
                 const i2 = (i1 + 1) % validCbs.length;
                 validCbs[i1].click();
                 validCbs[i1].checked = true;
-                if (typeof $ !== 'undefined') $(validCbs[i1]).prop('checked', true).trigger('change');
+                if (typeof window.$ !== 'undefined') window.$(validCbs[i1]).prop('checked', true).trigger('change');
                 await waitMs(160);
                 validCbs[i2].click();
                 validCbs[i2].checked = true;
-                if (typeof $ !== 'undefined') $(validCbs[i2]).prop('checked', true).trigger('change');
+                if (typeof window.$ !== 'undefined') window.$(validCbs[i2]).prop('checked', true).trigger('change');
                 return {
                   r1: (validCbs[i1].closest('label, tr, td, li, div')?.innerText || '').trim().slice(0, 30),
                   r2: (validCbs[i2].closest('label, tr, td, li, div')?.innerText || '').trim().slice(0, 30),
@@ -2392,6 +2961,354 @@ export async function runKmacKbpiSurvey({
         }
 
         emitLog(`[${catState.categoryName} - 문항 ${qLabelNum} (${rankInfo.mode})] 1순위="${rankInfo.r1}", 2순위="${rankInfo.r2}" (기타 배제 완료)`, 'info', `Q${qLabelNum}`);
+        await surveyPage.waitForTimeout(420);
+        await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // [KBPI_NGO 특수 블록] 구호개발단체(NGO) 세부진단
+      if (info.screenType === 'KBPI_NGO_SPECIAL') {
+        emitLog('[특수 진단: 구호개발단체(NGO)] 문항 1~11 자동 입력...', 'info', 'NGO');
+        await activeTarget.evaluate(({ sNum }) => {
+          const box = Array.from(document.querySelectorAll('[question-name^="KBPI_NGO"]')).find(el => el.offsetParent !== null) || document;
+          const setTxt = (inp, val) => {
+            if (!inp || inp.disabled || inp.readOnly) return;
+            inp.focus();
+            inp.value = String(val);
+            inp.dispatchEvent(new Event('input', { bubbles: true }));
+            inp.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(inp).val(String(val)).trigger('input').trigger('change');
+            inp.blur();
+          };
+
+          const ngoDomestic = ['월드비전', '초록우산', '굿네이버스'];
+          const ngoOverseas = ['유니세프', '월드비전', '세이브더칠드런'];
+          const assocWords = ['어린이 후원', '국제 구호', '이웃 나눔', '아동 복지', '긴급 의료구호'];
+
+          const allTxt = Array.from(box.querySelectorAll('input[type="text"], textarea, input:not([type])'))
+            .filter(el => el.offsetParent !== null && !el.disabled && !el.readOnly && !['radio', 'checkbox', 'hidden', 'button'].includes(el.type));
+          allTxt.forEach((inp, idx) => {
+            const cName = inp.getAttribute('custom-save-name') || inp.name || '';
+            if (/_1_1$|^Q?1_1$/.test(cName)) setTxt(inp, ngoDomestic[sNum % ngoDomestic.length]);
+            else if (/_1_2$|^Q?1_2$/.test(cName)) setTxt(inp, ngoDomestic[(sNum + 1) % ngoDomestic.length]);
+            else if (/_1_[34]$|^Q?1_[34]$/.test(cName)) setTxt(inp, '');
+            else if (/_2_1$|^Q?2_1$/.test(cName)) setTxt(inp, ngoOverseas[sNum % ngoOverseas.length]);
+            else if (/_2_2$|^Q?2_2$/.test(cName)) setTxt(inp, ngoOverseas[(sNum + 1) % ngoOverseas.length]);
+            else if (/_2_[34]$|^Q?2_[34]$/.test(cName)) setTxt(inp, '');
+            else if (!inp.value) setTxt(inp, assocWords[(sNum + idx) % assocWords.length]);
+          });
+
+          const radios = Array.from(box.querySelectorAll('input[type="radio"]:not(:disabled)'));
+          const byGroup = new Map();
+          radios.forEach(r => {
+            const k = r.getAttribute('custom-save-name') || r.name || '';
+            if (!k) return;
+            if (!byGroup.has(k)) byGroup.set(k, []);
+            byGroup.get(k).push(r);
+          });
+          let gIdx = 0;
+          for (const grp of byGroup.values()) {
+            const visGrp = grp.filter(r => r.offsetParent !== null || r.closest('label, td, div')?.offsetParent !== null);
+            if (visGrp.length > 0 && !visGrp.some(r => r.checked)) {
+              const noOpt = visGrp.find(r => /아니오|모른다|없다/.test((r.closest('label, span, div')?.innerText || '').trim()));
+              const pick = noOpt || visGrp[(sNum + gIdx) % visGrp.length];
+              pick.click();
+              pick.checked = true;
+              if (typeof window.$ !== 'undefined') window.$(pick).prop('checked', true).trigger('change');
+            }
+            gIdx++;
+          }
+        }, { sNum: Math.floor(rng() * 100) });
+
+        await surveyPage.waitForTimeout(450);
+        await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // [KBPI_DIAG_* 특수 블록] 가정용보일러 · 신용카드 · 자동차배터리 세부진단
+      if (info.screenType === 'KBPI_DIAG_SPECIAL') {
+        emitLog(`[특수 진단 블록: ${info.qNameAttr}] 조건부 문항 순차 응답...`, 'info', 'DIAG');
+        await activeTarget.evaluate(async ({ isBoilerSkip, sNum }) => {
+          const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
+          const box = Array.from(document.querySelectorAll('[question-name^="KBPI_DIAG_"]')).find(el => el.offsetParent !== null) || document;
+
+          // 보일러(BOILER): 구입/사용 경험 ELIGIBLE='2'(아니오) 선택 시 즉시 검증 통과 가능
+          const eligRadios = Array.from(box.querySelectorAll('input[type="radio"][custom-save-name="ELIGIBLE"]'));
+          if (eligRadios.length >= 2) {
+            const wantCode = isBoilerSkip ? '2' : '1';
+            const pickElig = eligRadios.find(r => r.value === wantCode) || eligRadios[0];
+            pickElig.click();
+            pickElig.checked = true;
+            if (typeof window.$ !== 'undefined') window.$(pickElig).prop('checked', true).trigger('change');
+            await waitMs(200);
+            if (wantCode === '2') return;
+
+            const purRadios = Array.from(box.querySelectorAll('input[type="radio"][custom-save-name="PURCHASE"]'));
+            if (purRadios[0]) {
+              purRadios[0].click();
+              purRadios[0].checked = true;
+              if (typeof window.$ !== 'undefined') window.$(purRadios[0]).prop('checked', true).trigger('change');
+              await waitMs(180);
+            }
+          }
+
+          // 조건부 섹션이 열릴 수 있으므로 최대 4회 반복 스윕
+          for (let pass = 0; pass < 4; pass++) {
+            const radios = Array.from(box.querySelectorAll('input[type="radio"]:not(:disabled)'))
+              .filter(r => r.offsetParent !== null || r.closest('label, div, td')?.offsetParent !== null);
+            const radGroups = new Map();
+            radios.forEach(r => {
+              const k = r.getAttribute('custom-save-name') || r.name || '';
+              if (!k) return;
+              if (!radGroups.has(k)) radGroups.set(k, []);
+              radGroups.get(k).push(r);
+            });
+            for (const grp of radGroups.values()) {
+              if (grp.some(r => r.checked)) continue;
+              const nonEtc = grp.filter(r => !/기타/.test((r.closest('label, span, div')?.innerText || '').trim()));
+              const pick = (nonEtc.length > 0 ? nonEtc : grp)[sNum % Math.max(1, (nonEtc.length || grp.length))];
+              if (pick) {
+                pick.click();
+                pick.checked = true;
+                if (typeof window.$ !== 'undefined') window.$(pick).prop('checked', true).trigger('change');
+              }
+            }
+            await waitMs(150);
+
+            // 복수선택 체크박스 섹션
+            const diagSections = Array.from(box.querySelectorAll('[data-diag]')).filter(sec => sec.offsetParent !== null);
+            for (const sec of diagSections) {
+              const cbs = Array.from(sec.querySelectorAll('input[type="checkbox"]:not(:disabled)')).filter(c => c.offsetParent !== null);
+              if (cbs.length > 0 && !cbs.some(c => c.checked)) {
+                const validCbs = cbs.filter(c => !/기타|없음|모름/.test((c.closest('label, span, div')?.innerText || '').trim()));
+                const targetCb = (validCbs.length > 0 ? validCbs : cbs)[sNum % Math.max(1, validCbs.length || cbs.length)];
+                if (targetCb) {
+                  targetCb.click();
+                  targetCb.checked = true;
+                  if (typeof window.$ !== 'undefined') window.$(targetCb).prop('checked', true).trigger('change');
+                }
+              }
+            }
+
+            // 순위/일반 select
+            const sels = Array.from(box.querySelectorAll('select:not(:disabled)')).filter(s => s.offsetParent !== null);
+            const chosenByPrefix = new Map();
+            for (const sel of sels) {
+              const cName = sel.getAttribute('custom-save-name') || sel.name || '';
+              const basePrefix = cName.replace(/_[12]$/, '');
+              const prevVal = chosenByPrefix.get(basePrefix) || '';
+              if (!sel.value) {
+                const validOpts = Array.from(sel.options).filter(o =>
+                  o.value !== '' &&
+                  o.value !== prevVal &&
+                  !/선택|기타|정보탐색하지|없음/.test(o.text)
+                );
+                const pickOpt = validOpts[sNum % Math.max(1, validOpts.length)] || Array.from(sel.options).find(o => o.value !== '' && o.value !== prevVal);
+                if (pickOpt) {
+                  sel.value = pickOpt.value;
+                  sel.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof window.$ !== 'undefined') window.$(sel).val(pickOpt.value).trigger('change');
+                  chosenByPrefix.set(basePrefix, pickOpt.value);
+                }
+              } else {
+                chosenByPrefix.set(basePrefix, sel.value);
+              }
+            }
+
+            // 주관식 텍스트 (기타 입력칸 제외)
+            box.querySelectorAll('input[type="text"]:not(:disabled), textarea:not(:disabled)').forEach(inp => {
+              if (inp.offsetParent === null || inp.readOnly) return;
+              const cName = inp.getAttribute('custom-save-name') || inp.name || '';
+              if (/_ETC$/i.test(cName) || inp.closest('[data-other]')) return;
+              if (!String(inp.value || '').trim()) {
+                inp.value = '품질이 우수하고 신뢰가 감';
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                if (typeof window.$ !== 'undefined') window.$(inp).val(inp.value).trigger('input').trigger('change');
+              }
+            });
+            await waitMs(150);
+          }
+        }, { isBoilerSkip: age <= 24, sNum: Math.floor(rng() * 100) });
+
+        await surveyPage.waitForTimeout(420);
+        await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // =========================================================================
+      // [요구사항 3.1] DQ1 정보 습득 경로(2개 응답): '생성형 AI' · '신문/잡지/카탈로그' · '기타' 제외 랜덤 2개 선택
+      // =========================================================================
+      if (info.screenType === 'DQ1_INFO_SOURCE') {
+        const availableOpts = await activeTarget.evaluate(() => {
+          const box = document.querySelector('[question-name="DQ1"]') || document;
+          return Array.from(box.querySelectorAll('input[type="checkbox"]:not(:disabled)'))
+            .filter(cb => cb.offsetParent !== null || cb.closest('label, div')?.offsetParent !== null)
+            .map(cb => ({
+              akey: cb.getAttribute('akey') || cb.value || '',
+              name: cb.name || '',
+              label: (cb.closest('label, li, div')?.innerText || '').replace(/\s+/g, ' ').trim()
+            }));
+        });
+
+        const pickedTwo = pickKbpiDq1Keys(availableOpts, rng);
+        const targetAkeys = pickedTwo.map(o => String(o.akey));
+
+        await activeTarget.evaluate(async ({ akeys }) => {
+          const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
+          const box = document.querySelector('[question-name="DQ1"]') || document;
+          const cbs = Array.from(box.querySelectorAll('input[type="checkbox"]:not(:disabled)'));
+
+          for (const cb of cbs) {
+            if (cb.checked) {
+              cb.click();
+              if (cb.checked) {
+                cb.checked = false;
+                if (typeof window.$ !== 'undefined') window.$(cb).prop('checked', false).trigger('change');
+              }
+            }
+          }
+          await waitMs(100);
+
+          for (const ak of akeys) {
+            const cb = cbs.find(c => String(c.getAttribute('akey') || c.value) === String(ak));
+            if (cb && !cb.checked) {
+              cb.click();
+              cb.checked = true;
+              cb.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof window.$ !== 'undefined') window.$(cb).prop('checked', true).trigger('change');
+              await waitMs(90);
+            }
+          }
+        }, { akeys: targetAkeys });
+
+        emitLog(
+          `[DQ1 정보습득 경로 (3.1)] 생성형 AI·신문잡지·기타 제외 랜덤 2개 선택 완료 ➔ [${pickedTwo.map(x => x.label).join(', ')}]`,
+          'info',
+          'DQ1'
+        );
+        await surveyPage.waitForTimeout(420);
+        await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // =========================================================================
+      // [요구사항 3.2] ZQ1 ~ ZQ5_2 통계처리 배경변인: 구글 스프레드시트 데이터 기반 순차 자동 선택
+      // =========================================================================
+      if (info.screenType === 'ZQ_DEMOGRAPHICS') {
+        const zqPlan = resolveKbpiZqAnswers({
+          ...slotData,
+          ...demoEnriched,
+          age,
+          ageGroup
+        });
+
+        const zqApplied = await activeTarget.evaluate(async ({ plan }) => {
+          const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
+          const pickedLabels = [];
+
+          const selectZqRadio = async (qName, akey, etcText = '') => {
+            const box = document.querySelector(`[question-name="${qName}"]`) || document;
+            let r = box.querySelector(`input[type="radio"][qname="${qName}"][akey="${akey}"]`) ||
+              box.querySelector(`input[type="radio"][akey="${akey}"]`);
+
+            // ZQ5_2에서 [ZQ5_1=1](1인가구) HIDE 조건으로 해당 보기가 숨겨진 경우 5번(해당사항 없음) 안전 폴백
+            if (qName === 'ZQ5_2' && (!r || r.disabled || (r.offsetParent === null && r.closest('label, div')?.offsetParent === null))) {
+              r = box.querySelector('input[type="radio"][qname="ZQ5_2"][akey="5"]') ||
+                Array.from(box.querySelectorAll('input[type="radio"]:not(:disabled)')).pop();
+            }
+
+            if (r && !r.disabled) {
+              if (!r.checked) r.click();
+              r.checked = true;
+              r.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof window.$ !== 'undefined') window.$(r).prop('checked', true).trigger('change');
+
+              if (etcText) {
+                await waitMs(80);
+                const etcInp = box.querySelector('input[data-column="TEXT_1"], input.input-etc, input[type="text"]');
+                if (etcInp && !etcInp.disabled) {
+                  etcInp.value = etcText;
+                  etcInp.dispatchEvent(new Event('input', { bubbles: true }));
+                  etcInp.dispatchEvent(new Event('change', { bubbles: true }));
+                  if (typeof window.$ !== 'undefined') window.$(etcInp).val(etcText).trigger('input').trigger('change');
+                }
+              }
+
+              const lb = (r.closest('label, li, div')?.innerText || '').replace(/\s+/g, ' ').trim();
+              pickedLabels.push(`${qName}=${lb || akey}`);
+            }
+          };
+
+          await selectZqRadio('ZQ1', plan.zq1Key);
+          await waitMs(130);
+          await selectZqRadio('ZQ2', plan.zq2Key);
+          await waitMs(130);
+          await selectZqRadio('ZQ3', plan.zq3Key, plan.zq3EtcText);
+          await waitMs(130);
+          await selectZqRadio('ZQ4', plan.zq4Key);
+          await waitMs(130);
+          await selectZqRadio('ZQ5', plan.zq5Key);
+          await waitMs(130);
+          await selectZqRadio('ZQ5_1', plan.zq5_1Key);
+          await waitMs(220); // ZQ5_2 DYNAMIC_REMAKE 반영 대기
+          await selectZqRadio('ZQ5_2', plan.zq5_2Key);
+          await waitMs(120);
+
+          return pickedLabels;
+        }, { plan: zqPlan });
+
+        emitLog(
+          `[통계 배경변인 ZQ1~ZQ5_2 (3.2 시트기반)] [${zqApplied.join(' | ')}] 선택 완료`,
+          'info',
+          'ZQ1_5'
+        );
+        await surveyPage.waitForTimeout(450);
+        await clickNextButton(activeTarget);
+        continue;
+      }
+
+      // =========================================================================
+      // [요구사항 3.3] ZQ6 한국능률협회컨설팅 패널 가입 의향: 전원 '없다(akey=2)' 선택 + 완료 직전 안전 대기
+      // =========================================================================
+      if (info.screenType === 'ZQ6_PANEL_INTENT') {
+        await activeTarget.evaluate(() => {
+          const box = document.querySelector('[question-name="ZQ6"]') || document;
+          const noRadio = box.querySelector('input[type="radio"][qname="ZQ6"][akey="2"]') ||
+            Array.from(box.querySelectorAll('input[type="radio"]:not(:disabled)'))
+              .find(r => /없다|아니오/.test((r.closest('label, li, div')?.innerText || '').trim())) ||
+            box.querySelectorAll('input[type="radio"]:not(:disabled)')[1];
+          if (noRadio) {
+            if (!noRadio.checked) noRadio.click();
+            noRadio.checked = true;
+            noRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(noRadio).prop('checked', true).trigger('change');
+          }
+        });
+
+        emitLog('[패널 가입 의향 ZQ6 (3.3)] "없다(2)" 선택 완료!', 'info', 'ZQ6');
+
+        // AGENTS.md 제10원칙: ZQ6='없다'일 때 [다음] 클릭 시 즉시 COMPLETE(최종 제출)로 넘어가므로 안전가드 활성 시 여기서 정지!
+        if (safetyGuard || policy.stopBeforeFinalSubmit !== false) {
+          emitLog(
+            `🛡️ [완료 직전 안전 대기] #${seq} ${respondentName} — 마지막 문항 ZQ6("없다")까지 모든 응답 입력을 마치고 최종 제출 직전(${info.progressPct || 100}%)에서 안전 정지했습니다!`,
+            'info',
+            'SAFE_WAIT'
+          );
+          return {
+            success: true,
+            safetyStopped: true,
+            stoppedAt: 'FINAL_GATE',
+            statusLabel: '완료직전 대기(ZQ6)',
+            quotaStatus: 'pilot_done',
+            progress: '99%',
+            categoryConfigs,
+            gps,
+            surveyDistrict,
+            surveyDong
+          };
+        }
+
         await surveyPage.waitForTimeout(450);
         await clickNextButton(activeTarget);
         continue;
@@ -2415,202 +3332,37 @@ export async function runKmacKbpiSurvey({
           quotaStatus: 'pilot_done',
           progress: `${info.progressPct || 99}%`,
           categoryConfigs,
-          gps
+          gps,
+          surveyDistrict,
+          surveyDong
         };
       }
 
-      // [후반부 의견·배경변인(DQ1~) 및 일반 문항] CHECK(min/max-check)·GRADE·RADIO·SELECT 완비 + 마지막 문항 정밀 안전 정지
-      const dqOutcome = await activeTarget.evaluate(async ({ rAge, rGender, seedNum }) => {
+      // [기타 미분류 일반 문항 폴백]
+      await activeTarget.evaluate(async ({ seedNum }) => {
         const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
         const isForbidden = (txt) => /(^|\s)기타(\s|$)|모름|거절|무응답/.test(txt);
         const visQBox = Array.from(document.querySelectorAll('[question-type]')).filter(el => el.offsetParent !== null).pop() || document.body;
-        const curQName = visQBox?.getAttribute?.('question-name') || visQBox?.getAttribute?.('qname') || '';
-        const curQType = String(visQBox?.getAttribute?.('question-type') || '').toUpperCase();
-        const pickedSummary = [];
 
-        // 1) 복수선택(CHECK — 예: DQ1 제품/서비스 정보 습득 경로 min-check=2, max-check=2)
-        const cbs = Array.from(visQBox.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.disabled && cb.offsetParent !== null);
-        if (curQType === 'CHECK' || cbs.length >= 2) {
-          const minChk = Math.max(1, Number(visQBox.getAttribute?.('min-check') || visQBox.getAttribute?.('data-min_check') || 2));
-          const maxChk = Math.max(minChk, Number(visQBox.getAttribute?.('max-check') || visQBox.getAttribute?.('data-max_check') || minChk));
-          const targetCount = minChk;
-
-          for (const cb of cbs) {
-            if (cb.checked) {
-              cb.click();
-              if (cb.checked) {
-                cb.checked = false;
-                if (typeof $ !== 'undefined') $(cb).prop('checked', false).trigger('change');
-              }
-            }
-          }
-          await waitMs(100);
-
-          const validCbs = cbs.filter(cb => {
-            const lb = (cb.closest('label, li, tr, td, div')?.innerText || '').trim();
-            return lb && !isForbidden(lb) && !/^NOA_/i.test(cb.name || '');
-          });
-
-          // 연령대 친화 매체 우선 정렬 (10~30대: 소셜미디어·커뮤니티·쇼핑플랫폼·지인·AI / 40대+: TV·쇼핑플랫폼·지인·커뮤니티·홈페이지)
-          const preferredRegex = rAge <= 39
-            ? /소셜미디어|커뮤니티|쇼핑\s*플랫폼|지인|생성형\s*AI|홈페이지/
-            : /TV|쇼핑\s*플랫폼|지인|커뮤니티|홈페이지/;
-          const preferred = validCbs.filter(cb => preferredRegex.test((cb.closest('label, li, tr, td, div')?.innerText || '')));
-          const candidatePool = preferred.length >= targetCount ? preferred : validCbs;
-
-          const chosenIndices = new Set();
-          for (let step = 0; step < candidatePool.length && chosenIndices.size < Math.min(targetCount, maxChk, candidatePool.length); step++) {
-            const idx = (seedNum + step * 3) % candidatePool.length;
-            chosenIndices.add(idx);
-          }
-          for (let idx = 0; idx < candidatePool.length && chosenIndices.size < Math.min(targetCount, candidatePool.length); idx++) {
-            chosenIndices.add(idx);
-          }
-
-          for (const idx of chosenIndices) {
-            const cb = candidatePool[idx];
-            cb.click();
-            cb.checked = true;
-            cb.dispatchEvent(new Event('change', { bubbles: true }));
-            if (typeof $ !== 'undefined') $(cb).prop('checked', true).trigger('change');
-            pickedSummary.push((cb.closest('label, li, tr, td, div')?.innerText || '').trim().slice(0, 28));
+        const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
+        const groups = new Map();
+        for (const r of radios) {
+          if (!groups.has(r.name)) groups.set(r.name, []);
+          groups.get(r.name).push(r);
+        }
+        for (const grp of groups.values()) {
+          if (grp.some(r => r.checked)) continue;
+          const valid = grp.filter(r => !isForbidden((r.closest('label, li, tr, td, div')?.innerText || '').trim()));
+          const pick = valid[seedNum % Math.max(1, valid.length)] || grp[0];
+          if (pick) {
+            pick.click();
+            pick.checked = true;
+            pick.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(pick).prop('checked', true).trigger('change');
             await waitMs(80);
           }
         }
-
-        // 2) 순위형(GRADE)
-        const h1List = Array.from(visQBox.querySelectorAll('input[type="radio"][hkey="1"]')).filter(r => !r.disabled);
-        if (curQType === 'GRADE' && h1List.length >= 2) {
-          const valid1 = h1List.filter(r => !isForbidden((r.closest('tr, li, div')?.innerText || '').trim()) && !r.closest('tr')?.querySelector('input.input-etc'));
-          if (valid1.length >= 2) {
-            const p1 = valid1[seedNum % valid1.length];
-            const vk1 = p1.getAttribute('vkey') || p1.value;
-            p1.click();
-            p1.checked = true;
-            if (typeof $ !== 'undefined') $(p1).prop('checked', true).trigger('change');
-            await waitMs(180);
-            const valid2 = Array.from(visQBox.querySelectorAll('input[type="radio"][hkey="2"]')).filter(r =>
-              !r.disabled && (r.getAttribute('vkey') || r.value) !== vk1 && !isForbidden((r.closest('tr, li, div')?.innerText || '').trim()) && !r.closest('tr')?.querySelector('input.input-etc')
-            );
-            const p2 = valid2[(seedNum + 1) % Math.max(1, valid2.length)];
-            if (p2) {
-              p2.click();
-              p2.checked = true;
-              if (typeof $ !== 'undefined') $(p2).prop('checked', true).trigger('change');
-              pickedSummary.push(`1순위:${vk1},2순위:${p2.getAttribute('vkey') || p2.value}`);
-            }
-          }
-        } else {
-          // 3) 일반 라디오(RADIO — 결혼·학력·직업·소득 등 연령/성별 정합 선택)
-          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
-          const groups = new Map();
-          for (const r of radios) {
-            if (!groups.has(r.name)) groups.set(r.name, []);
-            groups.get(r.name).push(r);
-          }
-          for (const grp of groups.values()) {
-            if (grp.some(r => r.checked)) continue;
-            const valid = grp.filter(r => !isForbidden((r.closest('label, li, tr, td, div')?.innerText || '').trim()) && !r.closest('label, tr, li, div')?.querySelector('input.input-etc'));
-            let pick = valid[seedNum % Math.max(1, valid.length)] || grp[0];
-            if (rAge <= 19) {
-              const teenPick = valid.find(r => /학생|고등|재학|미혼/.test((r.closest('label, li, tr, td, div')?.innerText || '').trim()));
-              if (teenPick) pick = teenPick;
-            } else if (rAge <= 27) {
-              const youngPick = valid.find(r => /미혼|대학|재학|사무|전문/.test((r.closest('label, li, tr, td, div')?.innerText || '').trim()));
-              if (youngPick) pick = youngPick;
-            } else if (rAge >= 38) {
-              const adultPick = valid.find(r => /기혼|대학\s*졸업|대졸|사무|관리|자영업|전업주부|400|500|600/.test((r.closest('label, li, tr, td, div')?.innerText || '').trim()) && !(rGender === '남' && /전업주부/.test((r.closest('label, li, tr, td, div')?.innerText || ''))));
-              if (adultPick) pick = adultPick;
-            }
-            if (pick) {
-              pick.click();
-              pick.checked = true;
-              pick.dispatchEvent(new Event('change', { bubbles: true }));
-              if (typeof $ !== 'undefined') $(pick).prop('checked', true).trigger('change');
-              pickedSummary.push((pick.closest('label, li, tr, td, div')?.innerText || '').trim().slice(0, 28));
-            }
-          }
-        }
-
-        // 4) 셀렉트 박스 미선택 시 선택
-        visQBox.querySelectorAll('select').forEach(sel => {
-          if (!sel.disabled && sel.offsetParent !== null && !sel.value) {
-            const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !/선택/.test(o.text) && !isForbidden(o.text));
-            if (validOpts[0]) {
-              const chosenOpt = validOpts[seedNum % validOpts.length];
-              sel.value = chosenOpt.value;
-              sel.dispatchEvent(new Event('change', { bubbles: true }));
-              if (typeof $ !== 'undefined') $(sel).val(chosenOpt.value).trigger('change');
-              pickedSummary.push(chosenOpt.text.trim().slice(0, 24));
-            }
-          }
-        });
-
-        // 5) window.QO / window.Questions 조회: 현재 문항 이후에 실행될 후속 실문항이 남아 있는지 판별
-        let isLastQuestionBeforeEnd = false;
-        let remainingQuestionNames = [];
-        if (window.QO && typeof window.QO === 'object' && curQName && window.QO[curQName]) {
-          const allKeys = Object.keys(window.QO);
-          const curIdx = allKeys.indexOf(curQName);
-          if (curIdx >= 0) {
-            remainingQuestionNames = allKeys.slice(curIdx + 1).filter(k => {
-              const qObj = window.QO[k];
-              if (!qObj) return false;
-              const qt = String(qObj.TYPE || qObj.type || '').toUpperCase();
-              if (/^(END|OUTRO|FINISH|COMPLETE|QUOTA|HIDDEN|DUMMY|COMPUTE)/i.test(k)) return false;
-              if (['END', 'QUOTA', 'HIDDEN', 'DUMMY', 'COMPUTE', 'DESC'].includes(qt)) return false;
-              const cond = String(qObj.CONDITION || qObj.condition || '').trim();
-              if (cond && typeof window.Condition === 'function') {
-                try {
-                  return Boolean(window.Condition(cond));
-                } catch (e) {
-                  return false;
-                }
-              }
-              return !cond;
-            });
-            if (remainingQuestionNames.length === 0) {
-              isLastQuestionBeforeEnd = true;
-            }
-          }
-        } else if (curQName.startsWith('DQ')) {
-          // window.QO 미노출 환경에서는 안전을 위해 DQ 문항 입력 직후 제출 전 정지
-          isLastQuestionBeforeEnd = true;
-        }
-
-        return {
-          curQName,
-          curQType,
-          pickedSummary,
-          isLastQuestionBeforeEnd,
-          remainingQuestionNames: remainingQuestionNames.slice(0, 5)
-        };
-      }, { rAge: age, rGender: gender, seedNum: Math.floor(rng() * 1000) });
-
-      emitLog(
-        `[후반부/배경 문항 처리] ${dqOutcome.curQName || info.qNameAttr || 'DQ'} (${dqOutcome.curQType || '-'}) ➔ [${dqOutcome.pickedSummary.join(', ')}] | 잔여문항=${dqOutcome.remainingQuestionNames.length ? dqOutcome.remainingQuestionNames.join(',') : '없음(마지막 문항)'}`,
-        'info',
-        'DQ'
-      );
-
-      // 마지막 문항 작성 완료 시 [다음](최종 제출) 클릭 직전에 100% 안전 정지! (AGENTS.md 제10원칙)
-      if (dqOutcome.isLastQuestionBeforeEnd && (safetyGuard || policy.stopBeforeFinalSubmit !== false)) {
-        emitLog(
-          `🛡️ [완료 직전 안전 대기] #${seq} ${respondentName} — 마지막 문항(${dqOutcome.curQName || info.qNameAttr})까지 응답 입력을 완료하고 최종 제출 직전(${info.progressPct || 99}%)에서 안전 정지했습니다!`,
-          'info',
-          'SAFE_WAIT'
-        );
-        return {
-          success: true,
-          safetyStopped: true,
-          stoppedAt: 'FINAL_GATE',
-          statusLabel: `완료직전 대기(${info.progressPct || 99}%)`,
-          quotaStatus: 'pilot_done',
-          progress: `${info.progressPct || 99}%`,
-          categoryConfigs,
-          gps
-        };
-      }
+      }, { seedNum: Math.floor(rng() * 1000) });
 
       await surveyPage.waitForTimeout(450);
       const clickedBtn = await clickNextButton(activeTarget);
@@ -2623,7 +3375,9 @@ export async function runKmacKbpiSurvey({
           quotaStatus: 'pilot_done',
           progress: `${info.progressPct || 99}%`,
           categoryConfigs,
-          gps
+          gps,
+          surveyDistrict,
+          surveyDong
         };
       }
     }
@@ -2638,7 +3392,9 @@ export async function runKmacKbpiSurvey({
       success: false,
       error: err.message,
       categoryConfigs,
-      gps
+      gps,
+      surveyDistrict,
+      surveyDong
     };
   } finally {
     if (htmlInspectionDump && captureHtmlDumpPath) {
@@ -2657,8 +3413,201 @@ export async function runKmacKbpiSurvey({
         console.warn('[K-BPI HTML 분석 리포트 저장 경고]', dumpErr.message);
       }
     }
-    if (browser) {
+    if (!ownsBrowser && openedSurveyTab) {
+      await openedSurveyTab.close().catch(e => console.warn('[K-BPI 공유세션 탭 닫기 경고]', e.message));
+    }
+    if (ownsBrowser && browser) {
       await browser.close().catch(e => console.warn('[K-BPI Runner Browser 종료 경고]', e.message));
     }
   }
 }
+
+/**
+ * [150명 고속 일괄 신상명세 등록 & 배정 브랜드 전수 스캔 엔진]
+ * - CAPI 포털에 단 1회 로그인한 뒤 공유 브라우저 세션에서 대상 슬롯들을 순차 진입하여
+ *   GP1(GPS) -> WOKERD_DUP(신상명세 확인) -> SQ1~SQ3 -> M_CHECK(노원구/남동구)까지만 수행하고
+ *   배정된 18~20개 브랜드 목록(INDUSTRY_ORDER)을 스캔한 직후 탭을 닫아 고속으로 처리합니다.
+ */
+export async function scanKmacKbpiBrandsBatch({
+  campaign = null,
+  targets = [],
+  policy: rawPolicy = {},
+  shouldStop = () => false,
+  onItemDone = async () => {},
+  onProgress = () => {}
+} = {}) {
+  const policy = {
+    ...DEFAULT_KBPI_POLICY,
+    ...(campaign?.kbpiPolicy || campaign?.masterBaseline?.policy || {}),
+    ...(rawPolicy || {})
+  };
+  const loginId = String(campaign?.loginId || KBPI_DEFAULT_LOGIN_ID).trim();
+  const loginPw = String(campaign?.loginPw || loginId).trim();
+  const effectiveProxy = policy.proxyServer || process.env.KBPI_PROXY_SERVER || '';
+
+  let browser = null;
+  let scannedSuccessCount = 0;
+  let skippedAlreadyScannedCount = 0;
+  let failCount = 0;
+
+  const emitBatch = (message, level = 'info', step = 'SCAN_BATCH', extra = {}) => {
+    onProgress({ step, message, level, ...extra });
+  };
+
+  try {
+    browser = await launchChromium({
+      headless: true,
+      args: ['--ignore-certificate-errors'],
+      ...(effectiveProxy ? { proxy: { server: effectiveProxy } } : {})
+    });
+
+    const createSharedSession = async () => {
+      const context = await browser.newContext({
+        viewport: { width: 1400, height: 920 },
+        locale: 'ko-KR',
+        timezoneId: 'Asia/Seoul',
+        geolocation: { latitude: 37.654192, longitude: 127.056794, accuracy: 14 },
+        permissions: ['geolocation'],
+        ignoreHTTPSErrors: true
+      });
+      const rootPage = await context.newPage();
+      const attachDialog = (pg) => {
+        pg.on('dialog', async (dialog) => {
+          const msg = dialog.message() || '';
+          emitBatch(`[설문 알림] 🔔 "${msg}"`, 'warn', 'ALERT');
+          await dialog.accept().catch(e => console.warn('[Dialog 수락 경고]', e.message));
+        });
+      };
+      attachDialog(rootPage);
+      context.on('page', newPg => attachDialog(newPg));
+
+      const listPage = await loginAndEnterKbpiCapiList({
+        context,
+        page: rootPage,
+        loginId,
+        loginPw,
+        emitLog: (m, lv) => emitBatch(m, lv, 'LOGIN')
+      });
+      return { context, listPage };
+    };
+
+    let sharedSession = await createSharedSession();
+
+    const resetListPageToFirst = async (lp) => {
+      await lp.evaluate(() => {
+        const p1 = document.querySelector('.pagination .page-link[data-page="1"], .paging a[data-page="1"], a[data-page="1"], button[data-page="1"]');
+        if (p1 && !p1.closest('.active')) {
+          p1.click();
+        }
+      }).catch(err => console.warn('[K-BPI 1페이지 복귀 경고]', err.message));
+      await lp.waitForTimeout(550);
+    };
+
+    for (let i = 0; i < targets.length; i++) {
+      if (shouldStop()) {
+        emitBatch('사용자에 의해 신상명세 등록 및 브랜드 스캔 배치가 안전하게 중지되었습니다.', 'warn', 'STOPPED');
+        break;
+      }
+
+      const item = targets[i];
+      const seq = Number(item.seq || item.index || (i + 1));
+      const existingCats = (item.categoryConfigs || []).filter(c => c && c.categoryName);
+
+      // 이미 15개 이상 전수 스캔 완료된 항목(예: #1 이상진 18개 스캔 + 99% 대기)은 불필요한 재진입 생략
+      if (existingCats.length >= 15 && !policy.forceRescanAll) {
+        skippedAlreadyScannedCount++;
+        emitBatch(
+          `[${i + 1}/${targets.length}] #${seq} ${item.name} (${item.uid}) — 이미 ${existingCats.length}개 브랜드 스캔 완료 상태 보존`,
+          'info',
+          'SKIP_SCANNED',
+          { quotaIndex: seq, itemNumber: i + 1, totalItems: targets.length }
+        );
+        await onItemDone(item, {
+          success: true,
+          skipped: true,
+          scannedCount: existingCats.length,
+          statusLabel: item.status || '신상등록·스캔완료',
+          quotaStatus: item.quotaStatus || 'scanned',
+          categoryConfigs: item.categoryConfigs
+        }, i, targets.length);
+        continue;
+      }
+
+      emitBatch(
+        `[${i + 1}/${targets.length}] #${seq} ${item.name} (${item.region}/${item.gender}/${item.ageGroup}, ${item.uid}) 신상명세 등록 & 출제 브랜드 스캔 시작...`,
+        'info',
+        'SCAN_ITEM',
+        { quotaIndex: seq, itemNumber: i + 1, totalItems: targets.length }
+      );
+
+      let res = await runKmacKbpiSurvey({
+        campaign,
+        slotData: item,
+        policy,
+        quotaIndex: seq,
+        pilotMode: false,
+        safetyGuard: true,
+        stopAtStepOverride: 'SCAN_BRANDS',
+        sharedSession,
+        onProgress: (info) => emitBatch(info.message, info.level, info.step, {
+          quotaIndex: seq,
+          itemNumber: i + 1,
+          totalItems: targets.length
+        })
+      });
+
+      // 페이지네이션 역방향이거나 세션 만료로 슬롯 미발견 시 1페이지 복귀/재로그인 후 1회 자동 재시도
+      if (!res.success && /슬롯을 찾을 수 없습니다|Target page, context or browser has been closed/i.test(String(res.error || ''))) {
+        emitBatch(`[세션/페이지 복구 재시도] #${seq} ${item.name} 슬롯 재탐색 중...`, 'warn', 'RETRY');
+        try {
+          if (/closed/i.test(String(res.error || ''))) {
+            await sharedSession.context.close().catch(e => console.warn(e.message));
+            sharedSession = await createSharedSession();
+          } else {
+            await resetListPageToFirst(sharedSession.listPage);
+          }
+          res = await runKmacKbpiSurvey({
+            campaign,
+            slotData: item,
+            policy,
+            quotaIndex: seq,
+            pilotMode: false,
+            safetyGuard: true,
+            stopAtStepOverride: 'SCAN_BRANDS',
+            sharedSession,
+            onProgress: (info) => emitBatch(info.message, info.level, info.step, {
+              quotaIndex: seq,
+              itemNumber: i + 1,
+              totalItems: targets.length
+            })
+          });
+        } catch (retryErr) {
+          emitBatch(`[재시도 경고] ${retryErr.message}`, 'warn', 'RETRY_WARN');
+        }
+      }
+
+      if (res.success) {
+        scannedSuccessCount++;
+      } else {
+        failCount++;
+      }
+
+      await onItemDone(item, res, i, targets.length);
+    }
+
+    await sharedSession.context.close().catch(e => console.warn('[K-BPI Scan Context 종료 경고]', e.message));
+
+    return {
+      success: true,
+      scannedSuccessCount,
+      skippedAlreadyScannedCount,
+      failCount,
+      totalProcessed: scannedSuccessCount + skippedAlreadyScannedCount + failCount
+    };
+  } finally {
+    if (browser) {
+      await browser.close().catch(e => console.warn('[K-BPI Scan Browser 종료 경고]', e.message));
+    }
+  }
+}
+

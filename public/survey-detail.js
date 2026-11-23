@@ -16,8 +16,9 @@ import {
 } from './modules/blueprint-gallup-hrc-kona.js?v=20261119_hrc_guide_v2';
 import {
   renderKmacKbpiBlueprint,
+  refreshKbpiBrandScanGuidePanel,
   collectKmacKbpiPolicyFromDom
-} from './modules/blueprint-kbpi.js?v=20261120_kbpi_v2';
+} from './modules/blueprint-kbpi.js?v=20261123_kbpi_v3';
 import {
   renderUniversalStep3SegmentPanel,
   resolveSurveySegmentAxes,
@@ -44,7 +45,7 @@ import {
   renderMetrixSeoulQuotaTable,
   renderAssocQuotaTable,
   renderKmacKbpiQuotaTable
-} from './modules/quota-table-renderers.js?v=20261121_gg5acc_v1';
+} from './modules/quota-table-renderers.js?v=20261123_kbpi_v3';
 import {
   showToast,
   showConfirmModal,
@@ -983,10 +984,22 @@ async function initSurveyDetailPage() {
     });
   }
 
+  function refreshKbpiGuideIfMounted() {
+    if (currentCampaign?.surveyType !== 'kmac_kbpi') return;
+    refreshKbpiBrandScanGuidePanel({
+      quotaDatabase: currentCampaign.quotaDatabase || [],
+      checkedKbpiSeqs,
+      onScanBrands: (opts) => triggerKbpiBrandScan(opts),
+      onBulkCategoryExp: (payload) => applyKbpiBulkCategoryExp(payload),
+      onSyncFromSheet: () => syncKbpiSheet('pull'),
+      onPushToSheet: () => syncKbpiSheet('push')
+    });
+  }
+
   async function syncKbpiSheet(direction = 'pull') {
     if (!currentCampaign?.id) return;
     try {
-      appendLog('info', `🔄 [K-BPI 구글 시트 연동] ${direction === 'push' ? '진행상태·출제브랜드 내보내기' : '최신 구입경험(있음/없음) 설정 불러오기'} 실행 중...`);
+      appendLog('info', `🔄 [K-BPI 구글 시트 연동] ${direction === 'push' ? '진행상태·배경변인·출제브랜드 내보내기' : '최신 배경변인 및 구입경험(있음/없음) 설정 불러오기'} 실행 중...`);
       const res = await fetch(`/api/campaigns/${encodeURIComponent(currentCampaign.id)}/sync-kbpi-sheet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1006,20 +1019,81 @@ async function initSurveyDetailPage() {
   async function toggleKbpiCategoryExp(seq, slot) {
     if (!currentCampaign?.id) return;
     try {
+      const syncCb = document.getElementById('chk-kbpi-guide-sync-sheet');
+      const syncSheet = syncCb ? Boolean(syncCb.checked) : false;
       const res = await fetch(`/api/campaigns/${encodeURIComponent(currentCampaign.id)}/kbpi-toggle-exp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seq, slot })
+        body: JSON.stringify({ seq, slot, syncSheet })
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || '구입경험 변경 실패');
       if (Array.isArray(data.quotaDatabase)) {
         currentCampaign.quotaDatabase = data.quotaDatabase;
         renderQuotaTable(currentCampaign.quotaDatabase);
+        refreshKbpiGuideIfMounted();
       }
-      showToast(data.message, 'info');
+      showToast(`#${seq} ${data.categoryName || `품목${slot}`} ➔ '${data.purchaseExp}' 변경 완료`, 'info');
     } catch (err) {
       showToast('구입경험 전환 실패: ' + err.message, 'error');
+    }
+  }
+
+  async function applyKbpiBulkCategoryExp(payload = {}) {
+    if (!currentCampaign?.id) return;
+    try {
+      const res = await fetch(`/api/campaigns/${encodeURIComponent(currentCampaign.id)}/kbpi-bulk-category-exp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || '일괄 설정 변경 실패');
+      if (Array.isArray(data.quotaDatabase)) {
+        currentCampaign.quotaDatabase = data.quotaDatabase;
+        renderQuotaTable(currentCampaign.quotaDatabase);
+        refreshKbpiGuideIfMounted();
+      }
+      appendLog('info', `🏷️ [K-BPI 구입경험 가이드] ${data.message}`);
+      showToast(data.message, 'success');
+    } catch (err) {
+      showToast('일괄 구입경험 변경 실패: ' + err.message, 'error');
+    }
+  }
+
+  async function triggerKbpiBrandScan({ onlySelected = false } = {}) {
+    if (!currentCampaign?.id) return;
+    const targetIndices = (onlySelected && checkedKbpiSeqs.size > 0)
+      ? Array.from(checkedKbpiSeqs)
+      : null;
+    try {
+      setRunningState(true);
+      openMonitorDrawer();
+      resetTimelineChips();
+      appendLog(
+        'info',
+        `🚀 [K-BPI 신상명세 등록 & 출제 브랜드 스캔] ${targetIndices ? `선택 ${targetIndices.length}명` : '전체 150명'} 슬롯에 진입하여 신상명세·조사구(노원구/남동구) 등록 및 출제 브랜드 전수 스캔을 시작합니다...`
+      );
+      await saveBaseline(false);
+      const latestPol = collectKmacKbpiPolicyFromDom(kbpiPolicyState || {});
+      const res = await fetch(`/api/campaigns/${encodeURIComponent(currentCampaign.id)}/kbpi-scan-brands`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetIndices,
+          forceRescanAll: false,
+          autoSyncSheet: true,
+          policy: latestPol
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || '신상명세 등록 & 브랜드 스캔 시작 실패');
+      appendLog('success', `✅ ${data.message}`);
+      showToast(data.message, 'info');
+    } catch (err) {
+      setRunningState(false);
+      appendLog('error', `K-BPI 브랜드 스캔 오류: ${err.message}`);
+      showToast('브랜드 스캔 시작 오류: ' + err.message, 'error');
     }
   }
 
@@ -1650,10 +1724,15 @@ async function initSurveyDetailPage() {
           activeSegmentAxisId = nextAxis;
           renderQuotaTable(db);
           updateButtonStates();
+          refreshKbpiGuideIfMounted();
         },
         onReRender: renderQuotaTable,
-        onSelectionChange: () => updateButtonStates(),
+        onSelectionChange: () => {
+          updateButtonStates();
+          refreshKbpiGuideIfMounted();
+        },
         onTriggerBatchRun: (mode) => triggerBatchRun(mode || 'selected'),
+        onScanBrands: (opts) => triggerKbpiBrandScan(opts),
         onRunSingle: (seq) => runSingleKbpiQuota(seq),
         onToggleCategoryExp: (seq, slot) => toggleKbpiCategoryExp(seq, slot),
         onSyncFromSheet: () => syncKbpiSheet('pull')
@@ -2765,9 +2844,13 @@ async function initSurveyDetailPage() {
       if (isKmacKbpiCampaign) {
         kbpiPolicyState = renderKmacKbpiBlueprint(data, {
           campId,
+          quotaDatabase: currentCampaign?.quotaDatabase || [],
+          checkedKbpiSeqs,
           blueprintStageGrid,
           badgeMasterStatus,
           btnSaveBaseline,
+          onScanBrands: (opts) => triggerKbpiBrandScan(opts),
+          onBulkCategoryExp: (payload) => applyKbpiBulkCategoryExp(payload),
           onSyncFromSheet: () => syncKbpiSheet('pull'),
           onPushToSheet: () => syncKbpiSheet('push'),
           onInspectHtml: () => runKbpiHtmlInspection()
@@ -4432,6 +4515,7 @@ async function initSurveyDetailPage() {
             const completed = currentCampaign.quotaDatabase?.filter(b =>
               b.quotaStatus === 'completed' ||
               b.quotaStatus === 'pilot_done' ||
+              b.quotaStatus === 'scanned' ||
               b.status === '완료' ||
               /98%|99%/.test(String(b.quotaStatus || '')) ||
               /98%|99%/.test(String(b.status || ''))
@@ -4478,6 +4562,7 @@ async function initSurveyDetailPage() {
             currentCampaign.quotaDatabase = data.quotaDatabase;
             renderQuotaTable(data.quotaDatabase);
             updateButtonStates();
+            refreshKbpiGuideIfMounted();
           }
         }
       } catch (_) {}
@@ -4501,7 +4586,10 @@ async function initSurveyDetailPage() {
     'btn-globalri-batch-top',
     'btn-globalri-run-selected-batch',
     'btn-metrix-622-top-batch-run',
-    'btn-seoul-top-batch-run'
+    'btn-seoul-top-batch-run',
+    'btn-kbpi-step1-scan-brands',
+    'btn-kbpi-scan-all',
+    'btn-kbpi-scan-selected'
   ];
 
   function syncQuickActionBatchButtons(running) {

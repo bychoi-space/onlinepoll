@@ -921,6 +921,26 @@ export function seedInitialCampaigns({
               kbpiPolicy: existingKbpi.kbpiPolicy || defaultKbpiPolicy,
               hasMasterBlueprint: true
             });
+          } else {
+            let kbpiNeedUpdate = false;
+            const seedByUid = new Map(kbpiList.map(x => [String(x.uid || '').trim(), x]));
+            for (const row of existingKbpi.quotaDatabase) {
+              const seedRow = seedByUid.get(String(row.uid || '').trim());
+              if (!seedRow) continue;
+              for (const fk of ['education', 'job', 'householdIncome', 'maritalStatus', 'familySize', 'childrenCount', 'surveyDistrict', 'surveyDong']) {
+                if (!row[fk] && seedRow[fk]) {
+                  row[fk] = seedRow[fk];
+                  kbpiNeedUpdate = true;
+                }
+              }
+            }
+            if (kbpiNeedUpdate) {
+              CampaignStore.updateCampaign(kbpiCampId, {
+                quotaDatabase: existingKbpi.quotaDatabase,
+                quotaSourceFile: existingKbpi.quotaSourceFile || kbpiFile,
+                hasMasterBlueprint: true
+              });
+            }
           }
         }
       }

@@ -520,6 +520,145 @@ const incheonGps1 = kbpiSyncMod.computeKbpiGps('인천', '2_1_1_1_1');
 if (Math.abs(seoulGps1.latitude - 37.654192) > 0.001 || Math.abs(incheonGps1.latitude - 37.456256) > 0.001) {
   throw new Error('K-BPI GPS micro-jitter out of 50~80m bounds!');
 }
-console.log('✅ [4/4] K-BPI v2.0 매트릭스(6-1~6-3) · 연령/성별 적합성 · 업종별 채널 · 20품목 확장 · GPS 검증 100% 통과');
+
+// K-BPI v3.0 추가 검증: DQ1(3.1), ZQ1~ZQ5_2(3.2), 조사구/동(노원구·남동구), STEP 2 브랜드 스캔 가이드 & 150건 쿼터 무결성
+const officialDq1Options = [
+  { akey: '1', label: '포털 사이트 검색(네이버, 다음, 구글 등)' },
+  { akey: '2', label: '동영상 플랫폼(유튜브, 틱톡 등)' },
+  { akey: '3', label: 'SNS(인스타그램, 페이스북, X 등)' },
+  { akey: '4', label: '온라인 커뮤니티/카페/블로그' },
+  { akey: '5', label: 'TV/라디오 광고 및 방송 프로그램' },
+  { akey: '6', label: '신문/잡지/카탈로그' },
+  { akey: '7', label: '가족/친구/지인 추천' },
+  { akey: '8', label: '오프라인 매장 방문/진열/직원 설명' },
+  { akey: '9', label: '생성형 AI(ChatGPT, 제미나이, 퍼플렉시티 등)' },
+  { akey: '10', label: '기타' }
+];
+for (let iter = 0; iter < 300; iter++) {
+  const dq1Picked = kbpiRunnerMod.pickKbpiDq1Keys(officialDq1Options, Math.random);
+  if (dq1Picked.length !== 2 || dq1Picked[0].akey === dq1Picked[1].akey) {
+    throw new Error(`DQ1 must pick 2 distinct options, got: ${JSON.stringify(dq1Picked)}`);
+  }
+  if (dq1Picked.some(o => o.akey === '6' || o.akey === '9' || o.akey === '10')) {
+    throw new Error(`DQ1 picked excluded option (신문/잡지=6, 생성형AI=9, 기타=10): ${JSON.stringify(dq1Picked)}`);
+  }
+}
+
+const zqMarried = kbpiRunnerMod.resolveKbpiZqAnswers({
+  age: 42,
+  education: '대졸(4년제)',
+  job: '사무직',
+  householdIncome: '600~799만원',
+  maritalStatus: '기혼',
+  familySize: 4,
+  childrenCount: 2
+});
+if (
+  zqMarried.zq1Key !== '4' ||
+  zqMarried.zq2Key !== '5' ||
+  zqMarried.zq3Key !== '3' ||
+  zqMarried.zq4Key !== '4' ||
+  zqMarried.zq5Key !== '2' ||
+  zqMarried.zq5_1Key !== '4' ||
+  zqMarried.zq5_2Key !== '2'
+) {
+  throw new Error(`ZQ married mapping mismatch: ${JSON.stringify(zqMarried)}`);
+}
+
+// 1인 가구 + 자녀수=1 데이터 트랩 방어 검증 (HIDE [ZQ5_1=1] -> ZQ5_2 반드시 '5: 해당사항 없음')
+const zqSingleTrap = kbpiRunnerMod.resolveKbpiZqAnswers({
+  age: 53,
+  education: '고졸 이하',
+  job: '자영업',
+  householdIncome: '200~399만원',
+  maritalStatus: '기타',
+  familySize: 1,
+  childrenCount: 1
+});
+if (zqSingleTrap.zq5_1Key !== '1' || zqSingleTrap.zq5_2Key !== '5') {
+  throw new Error(`ZQ 1-person household trap guard failed: ${JSON.stringify(zqSingleTrap)}`);
+}
+
+const kbpiUiMod = await import('../public/modules/blueprint-kbpi.js');
+const kbpiStageEl = elements['blueprint-stage-grid'] || makeEl('blueprint-stage-grid');
+elements['blueprint-stage-grid'] = kbpiStageEl;
+const mockKbpiDb = [
+  {
+    seq: 1,
+    index: 1,
+    finalId: '1',
+    uid: '1_1_1_1_1',
+    region: '서울',
+    surveyDistrict: '노원구',
+    surveyDong: '상계1동',
+    gender: '남',
+    ageGroup: '10대',
+    age: 18,
+    name: '이상진',
+    phone: '010-1234-5678',
+    education: '고졸 이하',
+    job: '학생',
+    householdIncome: '500~599만원',
+    maritalStatus: '미혼',
+    familySize: 4,
+    childrenCount: 0,
+    quotaStatus: 'scanned',
+    status: '신상등록·스캔완료',
+    categoryConfigs: [
+      { slot: 1, categoryName: '우유', purchaseExp: '있음' },
+      { slot: 2, categoryName: '사이버대학', purchaseExp: '없음' }
+    ]
+  }
+];
+kbpiUiMod.renderKmacKbpiBlueprint(
+  { surveyType: 'kmac_kbpi', policy: {} },
+  {
+    campId: 'camp_kmac_kbpi_5911000005645',
+    quotaDatabase: mockKbpiDb,
+    checkedKbpiSeqs: new Set([1]),
+    blueprintStageGrid: kbpiStageEl,
+    badgeMasterStatus: badgeEl,
+    btnSaveBaseline: saveBtnEl
+  }
+);
+const scanGuideEl = elements['kbpi-brand-scan-guide-panel'];
+if (
+  !scanGuideEl ||
+  !scanGuideEl.innerHTML.includes('150명 신상명세 등록 &amp; 브랜드 전수 스캔') ||
+  !scanGuideEl.innerHTML.includes('우유') ||
+  !scanGuideEl.innerHTML.includes('사이버대학') ||
+  scanGuideEl.innerHTML.includes('style=')
+) {
+  throw new Error('K-BPI Brand Scan Guide UI render or zero-inline-style check failed!');
+}
+
+const kbpiTbodyV3 = makeEl('kbpi-tbody-v3');
+quotaRenderers.renderKmacKbpiQuotaTable({
+  db: mockKbpiDb,
+  quotaTableBody: kbpiTbodyV3,
+  checkedKbpiSeqs: new Set([1])
+});
+if (
+  !kbpiTbodyV3.innerHTML.includes('노원구 상계1동') ||
+  !kbpiTbodyV3.innerHTML.includes('신상등록·스캔완료') ||
+  !kbpiTbodyV3.innerHTML.includes('500~599만원') ||
+  kbpiTbodyV3.innerHTML.includes('style=')
+) {
+  throw new Error('K-BPI STEP 1 Quota Table render or zero-inline-style check failed!');
+}
+
+const fsMod = await import('fs');
+const kbpiQuotaJson = JSON.parse(fsMod.default.readFileSync('data/quotas/quota_kmac_kbpi_5911000005645.json', 'utf8'));
+const kbpiRows = kbpiQuotaJson.data || [];
+if (kbpiRows.length !== 150) {
+  throw new Error(`Expected 150 K-BPI rows, got ${kbpiRows.length}`);
+}
+const missingDemo = kbpiRows.filter(r => !r.education || !r.job || !r.householdIncome || !r.maritalStatus || !r.familySize || !r.surveyDistrict || !r.surveyDong);
+if (missingDemo.length > 0) {
+  throw new Error(`Found ${missingDemo.length} K-BPI rows missing enriched demographics/district!`);
+}
+
+console.log('✅ [4/4] K-BPI v3.0 150명 신상·배경변인 무결성 · 브랜드 스캔 가이드 · DQ1(생성형AI/신문잡지 제외) · ZQ1~ZQ6 정합성 검증 100% 통과');
+
 
 
