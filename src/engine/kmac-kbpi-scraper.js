@@ -18,20 +18,35 @@ export async function loginAndEnterKbpiCapiList({
   emitLog = () => {}
 }) {
   emitLog(`[KMA 로그인] ${KMAC_ISURVEY_LOGIN_URL} 접속 중 (ID: ${loginId})...`);
-  await page.goto(KMAC_ISURVEY_LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 35000 });
-  await page.waitForTimeout(1200);
+  const gotoResp = await page.goto(KMAC_ISURVEY_LOGIN_URL, { waitUntil: 'load', timeout: 35000 }).catch(async (navErr) => {
+    emitLog(`[KMA 로그인 로드 경고] ${navErr.message}`, 'warn');
+    return null;
+  });
+  const httpStatus = gotoResp ? gotoResp.status() : 0;
+  await page.waitForTimeout(1500);
 
   const fillLoginForm = async (targetPg) => {
-    const idInput = targetPg.locator('input[type="text"], input[name*="id" i], input[placeholder*="아이디"]').first();
+    const idSelector = 'input[type="text"], input[type="tel"], input[name*="id" i], input[placeholder*="아이디"], input:not([type="password"]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"])';
+    const idInput = targetPg.locator(idSelector).first();
     const pwInput = targetPg.locator('input[type="password"]').first();
-    await idInput.waitFor({ state: 'visible', timeout: 15000 });
+    try {
+      await idInput.waitFor({ state: 'visible', timeout: 18000 });
+    } catch (waitErr) {
+      const diag = await targetPg.evaluate(() => ({
+        url: location.href,
+        title: document.title || '',
+        text: (document.body?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 300),
+        html: (document.body?.innerHTML || '').replace(/\s+/g, ' ').trim().slice(0, 300)
+      })).catch(e => ({ err: e.message }));
+      throw new Error(`로그인 입력창 미노출 (HTTP ${httpStatus}) | 진단=${JSON.stringify(diag)} | 원인=${waitErr.message.split('\n')[0]}`);
+    }
     await idInput.click();
     await idInput.fill(String(loginId));
     await pwInput.click();
     await pwInput.fill(String(loginPw || loginId));
     await targetPg.waitForTimeout(300);
 
-    const loginBtn = targetPg.locator('button:has-text("로그인"), input[type="submit"], a:has-text("로그인")').first();
+    const loginBtn = targetPg.locator('button:has-text("로그인"), input[type="submit"], a:has-text("로그인"), button[type="submit"]').first();
     await loginBtn.click();
   };
 
