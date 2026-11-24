@@ -322,6 +322,14 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
     employeeTemp = Math.max(0, baseTemp);
   }
 
+  // [Kstat 에디팅 검증 수식 정합성 방어]
+  // 유급 종업원(A10_1·A10_2)이 0명인데 A10_3(무급가족)만 1명 이상이고 B4_1(인건비)이 0%일 경우,
+  // 케이스탯 에디팅 수식(구버전 A10_2·A10_3 유급 판정)에서 반려되므로 A10_2(임시·일용직) 유급 인원으로 정규화
+  if (employeeRegular === 0 && employeeTemp === 0 && employeeFamily > 0) {
+    employeeTemp = employeeFamily;
+    employeeFamily = 0;
+  }
+
   const hasEmployees = employeeRegular > 0 || employeeTemp > 0;
 
   // 분기별 비중 (합계 100%)

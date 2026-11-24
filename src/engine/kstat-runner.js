@@ -689,9 +689,20 @@ export async function runKstatSurvey({
         if (fA10) {
           // Kstat A10.asp 실제 필드 정의:
           // A10_1 = 상용근로자, A10_2 = 임시·일용직, A10_3 = 무급 가족 종사자
-          await safeFill(fA10, 'input[name="A10_1"]', persona.employees.regular);
-          await safeFill(fA10, 'input[name="A10_2"]', persona.employees.temp);
-          await safeFill(fA10, 'input[name="A10_3"]', persona.employees.family);
+          let nReg = parseInt(persona.employees?.regular || '0', 10) || 0;
+          let nTmp = parseInt(persona.employees?.temp || '0', 10) || 0;
+          let nFam = parseInt(persona.employees?.family || '0', 10) || 0;
+          if (nReg === 0 && nTmp === 0 && nFam > 0) {
+            nTmp = nFam;
+            nFam = 0;
+            if (persona.employees) {
+              persona.employees.temp = String(nTmp);
+              persona.employees.family = '0';
+            }
+          }
+          await safeFill(fA10, 'input[name="A10_1"]', String(nReg));
+          await safeFill(fA10, 'input[name="A10_2"]', String(nTmp));
+          await safeFill(fA10, 'input[name="A10_3"]', String(nFam));
           await fA10.evaluate(() => {
             if (typeof PlusValue === 'function') PlusValue('A10_1,A10_2,A10_3');
             const sumEl = document.getElementById('SumValue');
