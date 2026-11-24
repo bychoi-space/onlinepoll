@@ -5,7 +5,7 @@
 import { escapeHtml } from './blueprint-utils.js';
 
 export const DEFAULT_KBPI_UI_POLICY = {
-  pilotStopAtStep: 'Q4',
+  pilotStopAtStep: 'FINAL_GATE',
   stopBeforeFinalSubmit: true,
   purchaseYesRate: 90,
   unaided4thBrandRate: 35,
@@ -468,10 +468,10 @@ export function renderKmacKbpiBlueprint(data = {}, {
           <h3 class="kbpi-card-title">문항 1 ~ 8 공식 브랜드(QO) · 구입경험(있음/없음) 연동 규칙</h3>
         </div>
         <ul class="kbpi-rule-list">
-          <li><strong>문항 1·2 (547개 전 산업군 QO 직결):</strong> <code>QO.INDUSTRY.ANSWERS</code> 공식 브랜드 자동 조회 ➔ <code>1-1~1-3</code> 순차 입력 + <code>1-4</code> 추가 또는 전용 <code>없음(NOA)</code> 체크, <code>문항 2</code> 2~4개 추가 선택</li>
-          <li><strong>문항 3 (표준 13행 &amp; 확장 16행 통합):</strong> <code>1~9</code> 점수 분산 ➔ <code>6-1</code> 추천점수 연동 사유 ➔ <code>6-2</code> 추천경험 정합 ➔ <code>6-3 ↔ 문항 6</code> AI 검색경험 100% 일치(<code>예</code> 선택 시 <code>6-1·6-2</code> 척도 응답)</li>
+          <li><strong>문항 1·2 (547개 전 산업군 QO 직결 &amp; 중복 브랜드 원천 차단):</strong> <code>QO.INDUSTRY.ANSWERS</code> 공식 브랜드 자동 조회 ➔ 모브랜드·동일명 중복 없이 <code>1-1~1-4</code> 순차 입력(또는 <code>없음(NOA)</code>) 및 동일 응답자 내 중복 품목 간 브랜드 자동 분산</li>
+          <li><strong>문항 3 ('평가항목' 브랜드 드롭다운 선행 선택 + 13/16행 통합):</strong> 상단 <code>평가항목</code> 드롭다운(NGO 등) 열별 중복 없는 순차 선택·잠금 해제 후 <code>1~9</code> 점수 분산, <code>6-1</code> 사유, <code>6-2</code> 추천경험, <code>6-3 ↔ 문항 6</code> AI 검색경험 100% 일치</li>
           <li><strong>구입경험 '없음' 절대 규칙:</strong> 가이드/시트에서 <code>없음</code> 지정 시 <code>11번 태도</code> <code>1·2·3번</code>만 선택(<code>4·5번</code> 금지) + <code>6-2</code> 직접추천 배제(<code>3·4번</code>) + <code>13번</code> '아니오' + <code>문항 4·5</code> '없음'</li>
-          <li><strong>특수 산업군 &amp; 문항 4-1·7·8:</strong> NGO(후원의향)·진단검사센터·세탁세제(제형) 전용 문항 자동 처리, 업종별 맞춤 채널 매핑 및 <code>문항 7·8</code> 기타 제외 1·2순위 선택</li>
+          <li><strong>문항 4·5 ControlsV2 스킨 &amp; 특수 산업군:</strong> 비활성 보기 배제 및 활성 브랜드 정확 선택(문항 4↔5 100% 일치), NGO(국내/해외 중복 없는 후원단체)·진단·세제 전용 문항 및 <code>문항 7·8</code> 기타 제외 1·2순위 선택</li>
         </ul>
       </div>
 
@@ -505,9 +505,9 @@ export function renderKmacKbpiBlueprint(data = {}, {
           <div class="form-group">
             <label class="figma-label font-bold" for="sel-kbpi-pilot-stop">파일럿(단건 검증) 정지 지점</label>
             <select id="sel-kbpi-pilot-stop" class="figma-select">
+              <option value="FINAL_GATE" ${(!policy.pilotStopAtStep || policy.pilotStopAtStep === 'FINAL_GATE') ? 'selected' : ''}>전 품목 + DQ1 + ZQ1~ZQ6('없다') 응답 후 완료 직전(99%) 정지 (권장)</option>
+              <option value="Q4" ${policy.pilotStopAtStep === 'Q4' ? 'selected' : ''}>품목 [문항 4] 도달 시 일시 정지</option>
               <option value="SCAN_BRANDS" ${policy.pilotStopAtStep === 'SCAN_BRANDS' ? 'selected' : ''}>신상명세 등록 + 출제 브랜드 스캔 직후 정지</option>
-              <option value="Q4" ${policy.pilotStopAtStep === 'Q4' ? 'selected' : ''}>1번째 품목 [문항 4] 도달 시 안전 정지</option>
-              <option value="FINAL_GATE" ${policy.pilotStopAtStep === 'FINAL_GATE' ? 'selected' : ''}>전 품목 + DQ1 + ZQ1~ZQ6('없다') 응답 후 완료 직전(99%) 정지</option>
             </select>
           </div>
 
@@ -592,7 +592,7 @@ export function collectKmacKbpiPolicyFromDom(fallback = {}) {
   return {
     ...DEFAULT_KBPI_UI_POLICY,
     ...fallback,
-    pilotStopAtStep: pilotStopEl ? pilotStopEl.value : (fallback.pilotStopAtStep || 'Q4'),
+    pilotStopAtStep: pilotStopEl ? pilotStopEl.value : (fallback.pilotStopAtStep || 'FINAL_GATE'),
     purchaseYesRate: purchaseRateEl ? Number(purchaseRateEl.value) : Number(fallback.purchaseYesRate ?? 90),
     q6NoRate: q6NoRateEl ? Number(q6NoRateEl.value) : Number(fallback.q6NoRate ?? 80),
     unaided4thBrandRate: q14RateEl ? Number(q14RateEl.value) : Number(fallback.unaided4thBrandRate ?? 35),

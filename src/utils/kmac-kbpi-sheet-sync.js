@@ -429,18 +429,21 @@ export function parseKbpiWorkbookAndMerge({
       }
     }
 
-    const preserveState = prev.quotaStatus === 'completed' || prev.quotaStatus === 'pilot_done' || prev.quotaStatus === 'scanned';
+    const prevIsFinalWait = prev.quotaStatus === 'pilot_done' && !/문항4/.test(String(prev.status || ''));
+    const preserveState = prev.quotaStatus === 'completed' || prevIsFinalWait || prev.quotaStatus === 'scanned';
     let resolvedQuotaStatus = 'ready';
     if (preserveState) {
       resolvedQuotaStatus = prev.quotaStatus;
     } else if (sheetStatus === '완료') {
       resolvedQuotaStatus = 'completed';
-    } else if (/완료직전|문항4/.test(sheetStatus)) {
+    } else if (/완료직전/.test(sheetStatus)) {
       resolvedQuotaStatus = 'pilot_done';
+    } else if (/문항4/.test(sheetStatus)) {
+      resolvedQuotaStatus = 'q4_wait';
     } else if (/신상등록|스캔완료/.test(sheetStatus)) {
       resolvedQuotaStatus = 'scanned';
     } else {
-      resolvedQuotaStatus = prev.quotaStatus || 'ready';
+      resolvedQuotaStatus = prev.quotaStatus === 'pilot_done' ? 'q4_wait' : (prev.quotaStatus || 'ready');
     }
 
     const nextStatus = preserveState ? (prev.status || sheetStatus || '대기') : (sheetStatus || prev.status || '대기');

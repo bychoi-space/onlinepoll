@@ -266,10 +266,11 @@ export function registerExecutionRoutes({
       });
     });
 
+    const kbpiStopStep = campaign.policy?.pilotStopAtStep || campaign.guidelineConfig?.kbpiPolicy?.pilotStopAtStep || 'FINAL_GATE';
     res.json({
       success: true,
       message: isKmacKbpiCampaign
-        ? `"${targetBiz.name || targetBiz.companyName}" K-BPI 파일럿 실행이 시작되었습니다. (문항 4 도달 시 안전 정지)`
+        ? `"${targetBiz.name || targetBiz.companyName}" K-BPI 단건 실행이 시작되었습니다. (${kbpiStopStep === 'Q4' ? '문항 4 도달 시 일시 정지' : '완료 직전 ZQ6 안전 대기'})`
         : `"${targetBiz.companyName}" 파일럿 시뮬레이션이 시작되었습니다. (제출 직전 안전 정지)`,
       targetBiz
     });
@@ -481,9 +482,9 @@ export function registerExecutionRoutes({
 
         if (result.success) {
           if (isKmacKbpi) {
-            targetBiz.quotaStatus = result.quotaStatus || (result.completed ? 'completed' : 'pilot_done');
-            targetBiz.status = result.statusLabel || (result.completed ? '완료' : '문항4 대기(파일럿)');
-            targetBiz.progress = result.progress || (result.completed ? '100%' : '4%');
+            targetBiz.quotaStatus = result.quotaStatus || (result.completed ? 'completed' : (result.stoppedAt === 'Q4' ? 'q4_wait' : 'pilot_done'));
+            targetBiz.status = result.statusLabel || (result.completed ? '완료' : '완료직전 대기(ZQ6)');
+            targetBiz.progress = result.progress || (result.completed ? '100%' : '99%');
             if (Array.isArray(result.categoryConfigs)) {
               targetBiz.categoryConfigs = result.categoryConfigs;
             }
@@ -746,7 +747,8 @@ export function registerExecutionRoutes({
             type: 'PILOT_COMPLETED',
             campaignId: campaign.id,
             quotaIndex: targetBiz.index,
-            bizName: targetBiz.companyName,
+            bizName: targetBiz.name || targetBiz.companyName,
+            status: targetBiz.status || '',
             capturedSteps: result.capturedSteps
           });
         } else {
@@ -882,7 +884,7 @@ export function registerExecutionRoutes({
           return false;
         }
       } else {
-        if (safetyGuard && b.quotaStatus === 'pilot_done') return false;
+        if (safetyGuard && b.quotaStatus === 'pilot_done' && !(isKmacKbpi && /문항4/.test(String(b.status || '')))) return false;
       }
       return true;
     });

@@ -18,7 +18,7 @@ import {
   renderKmacKbpiBlueprint,
   refreshKbpiBrandScanGuidePanel,
   collectKmacKbpiPolicyFromDom
-} from './modules/blueprint-kbpi.js?v=20261123_kbpi_v3';
+} from './modules/blueprint-kbpi.js?v=20261124_kbpi_v31';
 import {
   renderUniversalStep3SegmentPanel,
   resolveSurveySegmentAxes,
@@ -45,7 +45,7 @@ import {
   renderMetrixSeoulQuotaTable,
   renderAssocQuotaTable,
   renderKmacKbpiQuotaTable
-} from './modules/quota-table-renderers.js?v=20261123_kbpi_v3';
+} from './modules/quota-table-renderers.js?v=20261124_kbpi_v31';
 import {
   showToast,
   showConfirmModal,
@@ -311,7 +311,7 @@ async function initSurveyDetailPage() {
     const badgeBlueprintStatus = document.getElementById('badge-blueprint-status');
     if (badgeBlueprintStatus) {
       badgeBlueprintStatus.innerHTML = isKmacKbpi
-        ? '<i class="fa-solid fa-location-crosshairs"></i> 노원구청·인천시청 GPS 미세분산 · 문항4 파일럿 정지 · 구글시트 자동 기록'
+        ? '<i class="fa-solid fa-location-crosshairs"></i> 노원구청·인천시청 GPS 미세분산 · 완료직전(ZQ6) 안전 대기 · 중복 브랜드 원천 차단'
         : (isMetrixSeoul
           ? '<i class="fa-solid fa-shield-halved"></i> svyA115.asp(99%) 안전 대기 · 4차 기입력 보존 · 구글시트(시트2) 자동 기록'
           : (isGallupReturnFarm
@@ -878,7 +878,7 @@ async function initSurveyDetailPage() {
         btnPilot.classList.remove('d-none');
         btnPilot.className = 'btn-action-secondary font-bold';
         btnPilot.style.display = 'inline-flex';
-        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번째 미완료 대상자 [문항 4]까지 파일럿 실행';
+        btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번째 미완료 대상자 완료 직전(ZQ6)까지 단건 실행';
       }
     } else {
       if (btnOpenBindSlots) {
@@ -1105,7 +1105,11 @@ async function initSurveyDetailPage() {
       setRunningState(true);
       openMonitorDrawer();
       resetTimelineChips();
-      appendLog('info', `🎯 [K-BPI 단건 파일럿 검증] #${targetSeq} "${targetItem.name || targetItem.companyName}" (${targetItem.uid}, ${targetItem.region}/${targetItem.gender}/${targetItem.ageGroup}) GP1(${targetItem.gpsLabel || targetItem.region}) 주입 ➔ 신상정보 ➔ SQ1 모두 없다 ➔ 1번째 품목 [문항 4] 도달 시 안전 정지합니다...`);
+      const kbpiCurPol = collectKmacKbpiPolicyFromDom(currentCampaign?.policy || currentCampaign?.guidelineConfig?.kbpiPolicy || {});
+      const kbpiStopDesc = kbpiCurPol.pilotStopAtStep === 'Q4'
+        ? '1번째 품목 [문항 4] 도달 시 일시 정지합니다...'
+        : '전 품목 응답 후 완료 직전(ZQ6)에서 안전 대기합니다...';
+      appendLog('info', `🎯 [K-BPI 단건 검증 실행] #${targetSeq} "${targetItem.name || targetItem.companyName}" (${targetItem.uid}, ${targetItem.region}/${targetItem.gender}/${targetItem.ageGroup}) GP1(${targetItem.gpsLabel || targetItem.region}) 주입 ➔ 신상정보 ➔ SQ1 모두 없다 ➔ ${kbpiStopDesc}`);
       await saveBaseline(false);
       const res = await fetch(`/api/campaigns/${encodeURIComponent(campId)}/pilot-run`, {
         method: 'POST',
@@ -1253,7 +1257,7 @@ async function initSurveyDetailPage() {
       if (badgeBlueprintStatus) {
         if (isKmacKbpi) {
           badgeBlueprintStatus.className = 'badge-status badge-blueprint ready';
-          badgeBlueprintStatus.innerHTML = '<i class="fa-solid fa-location-crosshairs text-success"></i> 노원구청·인천시청 GPS 미세분산 · 문항4 파일럿 정지 · 구글시트 자동 기록';
+          badgeBlueprintStatus.innerHTML = '<i class="fa-solid fa-location-crosshairs text-success"></i> 노원구청·인천시청 GPS 미세분산 · 완료직전(ZQ6) 안전 대기 · 중복 브랜드 원천 차단';
         } else if (isMetrixSeoul) {
           badgeBlueprintStatus.className = 'badge-status badge-blueprint ready';
           badgeBlueprintStatus.innerHTML = '<i class="fa-solid fa-shield-halved text-success"></i> svyA115.asp(99%) 안전 대기 &amp; 구글 스프레드시트(시트2) 자동 기록 활성';
@@ -1281,7 +1285,7 @@ async function initSurveyDetailPage() {
       if (btnPilot) {
         if (isKmacKbpi) {
           btnPilot.disabled = false;
-          btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번째 미완료 대상자 [문항 4]까지 파일럿 실행';
+          btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 1번째 미완료 대상자 완료 직전(ZQ6)까지 단건 실행';
         } else if (isMetrixSeoul) {
           btnPilot.disabled = false;
           btnPilot.innerHTML = '<i class="fa-solid fa-flask"></i> 미완료 사업체 1건 svyA115(99%)까지 단건 안전 실행';
@@ -3416,7 +3420,11 @@ async function initSurveyDetailPage() {
       openMonitorDrawer();
       resetTimelineChips();
       if (isKmacKbpi) {
-        appendLog('info', `🎯 [2027년 K-BPI 파일럿 실행] #${targetPilotIdx} "${firstBiz.name || firstBiz.companyName}" (${firstBiz.uid}, ${firstBiz.region}/${firstBiz.gender}/${firstBiz.ageGroup}) GP1(${firstBiz.gpsLabel || firstBiz.region}) 미세분산 주입 ➔ 신상정보 ➔ SQ1 모두 없다 ➔ 1번째 품목 [문항 4] 도달 시 안전 정지합니다...`);
+        const kbpiCurPol = collectKmacKbpiPolicyFromDom(currentCampaign?.policy || currentCampaign?.guidelineConfig?.kbpiPolicy || {});
+        const kbpiStopDesc = kbpiCurPol.pilotStopAtStep === 'Q4'
+          ? '1번째 품목 [문항 4] 도달 시 일시 정지합니다...'
+          : '전 품목 응답 후 완료 직전(ZQ6)에서 안전 대기합니다...';
+        appendLog('info', `🎯 [2027년 K-BPI 단건 실행] #${targetPilotIdx} "${firstBiz.name || firstBiz.companyName}" (${firstBiz.uid}, ${firstBiz.region}/${firstBiz.gender}/${firstBiz.ageGroup}) GP1(${firstBiz.gpsLabel || firstBiz.region}) 미세분산 주입 ➔ 신상정보 ➔ SQ1 모두 없다 ➔ ${kbpiStopDesc}`);
       } else if (isMetrixSeoul) {
         appendLog('info', `🎯 [서울시 소상공인 패널조사 단건 99% 실행] "${firstBiz.companyName}" (resid=${firstBiz.resid || firstBiz.uid}, 계정=${firstBiz.accountKey || '2010'}) svyA115.asp(99% 동의서)까지 안전 진행 및 구글 스프레드시트 자동 기록을 시작합니다...`);
       } else if (isGallupReturnFarm) {
@@ -4457,7 +4465,7 @@ async function initSurveyDetailPage() {
           setRunningState(false);
           await loadCampaign();
           if (currentCampaign?.surveyType === 'kmac_kbpi') {
-            appendLog('success', `🎉 K-BPI 대상자 "${data.bizName || ''}" 1번째 품목 [문항 4] 도달 및 안전 정지 완료! (구글 시트 상태 동기화됨)`);
+            appendLog('success', `🎉 K-BPI 대상자 "${data.bizName || ''}" ${data.status || '완료직전 대기(ZQ6)'} 완료! (구글 시트 상태 동기화됨)`);
           } else if (currentCampaign?.surveyType === 'metrix_seoul_panel') {
             appendLog('success', `🎉 사업체 "${data.bizName || ''}" svyA115.asp(99% 개인정보 동의서 화면) 안전 정지 및 구글 스프레드시트(시트2) 기록 완료!`);
           } else if (currentCampaign?.surveyType === 'metrix_panel') {

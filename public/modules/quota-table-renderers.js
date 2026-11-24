@@ -2153,8 +2153,8 @@ export function renderKmacKbpiQuotaTable({
       statusBadge = '<span class="badge-status completed">완료 (100%)</span>';
     } else if (qs === 'scanned' || String(item.status || '').includes('스캔완료')) {
       statusBadge = '<span class="badge-status kbpi-scanned"><i class="fa-solid fa-barcode"></i> 신상등록·스캔완료</span>';
-    } else if (qs === 'pilot_done') {
-      statusBadge = `<span class="badge-status pilot">${escapeHtml(item.status || '완료직전 대기')}</span>`;
+    } else if (qs === 'pilot_done' || qs === 'q4_wait') {
+      statusBadge = `<span class="badge-status pilot">${escapeHtml(item.status || (qs === 'q4_wait' ? '문항4 대기' : '완료직전 대기'))}</span>`;
     } else if (qs === 'error') {
       statusBadge = `<span class="badge-status error" title="${escapeHtml(item.lastScanError || item.error || '')}">오류</span>`;
     }

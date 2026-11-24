@@ -881,7 +881,8 @@ export function seedInitialCampaigns({
           const allNow = CampaignStore.getAllCampaigns();
           const existingKbpi = allNow.find(c => c.id === kbpiCampId);
           const defaultKbpiPolicy = {
-            pilotStopAtStep: 'Q4',
+            pilotStopAtStep: 'FINAL_GATE',
+            pilotStopMigratedV31: true,
             stopBeforeFinalSubmit: true,
             purchaseYesRate: 90,
             unaided4thBrandRate: 35,
@@ -923,6 +924,14 @@ export function seedInitialCampaigns({
             });
           } else {
             let kbpiNeedUpdate = false;
+            let nextKbpiPolicy = existingKbpi.kbpiPolicy ? { ...existingKbpi.kbpiPolicy } : { ...defaultKbpiPolicy };
+            if (!nextKbpiPolicy.pilotStopMigratedV31) {
+              if (!nextKbpiPolicy.pilotStopAtStep || nextKbpiPolicy.pilotStopAtStep === 'Q4') {
+                nextKbpiPolicy.pilotStopAtStep = 'FINAL_GATE';
+              }
+              nextKbpiPolicy.pilotStopMigratedV31 = true;
+              kbpiNeedUpdate = true;
+            }
             const seedByUid = new Map(kbpiList.map(x => [String(x.uid || '').trim(), x]));
             for (const row of existingKbpi.quotaDatabase) {
               const seedRow = seedByUid.get(String(row.uid || '').trim());
@@ -933,11 +942,16 @@ export function seedInitialCampaigns({
                   kbpiNeedUpdate = true;
                 }
               }
+              if (row.quotaStatus === 'pilot_done' && /문항4/.test(String(row.status || ''))) {
+                row.quotaStatus = 'q4_wait';
+                kbpiNeedUpdate = true;
+              }
             }
             if (kbpiNeedUpdate) {
               CampaignStore.updateCampaign(kbpiCampId, {
                 quotaDatabase: existingKbpi.quotaDatabase,
                 quotaSourceFile: existingKbpi.quotaSourceFile || kbpiFile,
+                kbpiPolicy: nextKbpiPolicy,
                 hasMasterBlueprint: true
               });
             }

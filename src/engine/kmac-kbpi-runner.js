@@ -38,7 +38,7 @@ const learnedDictPath = path.join(rootDir, 'data', 'kbpi_2027_learned_categories
 export const KBPI_DEFAULT_URL = KMAC_ISURVEY_LOGIN_URL;
 
 export const DEFAULT_KBPI_POLICY = {
-  pilotStopAtStep: 'Q4',          // 파일럿 실행 시 1번째 산업군의 문항 4 화면에서 안전 정지
+  pilotStopAtStep: 'FINAL_GATE',  // 단건(파일럿) 실행 시에도 문항 4에서 멈추지 않고 최종 제출 직전(ZQ6)까지 진행 후 안전 대기
   stopBeforeFinalSubmit: true,    // 배치 실행 시에도 기본 완료 직전 대기 (Rule 10)
   purchaseYesRate: 90,            // 시트 미지정 품목의 구입경험 '있음' 비율 (기본 90%)
   unaided4thBrandRate: 35,        // 문항 1-4 추가 브랜드 1개 입력 비율 (나머지 65%는 '없음' 체크)
@@ -164,6 +164,118 @@ function shuffleWithRng(arr, rng) {
   return copy;
 }
 
+export function normalizeKbpiBrandKey(raw = '') {
+  return String(raw || '')
+    .replace(/브랜드$/g, '')
+    .replace(/[\s()[\]{}·•,./'"`’‘“”_-]+/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+export function extractKbpiBrandRoot(raw = '') {
+  const clean = String(raw || '').replace(/^\s+|\s+$/g, '');
+  if (!clean) return '';
+  const withoutParens = clean.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim() || clean;
+  const lower = withoutParens.toLowerCase();
+
+  const canonicalRoots = [
+    [/^(서울우유)/, '서울우유'],
+    [/^(매일우유|매일\b|상하목장)/, '매일'],
+    [/^(남양유업|남양)/, '남양'],
+    [/^(건국우유|건국)/, '건국'],
+    [/^(파스퇴르|롯데웰푸드|롯데칠성|롯데)/, '롯데'],
+    [/^(연세우유|연세)/, '연세'],
+    [/^(빙그레)/, '빙그레'],
+    [/^(푸르밀)/, '푸르밀'],
+    [/^(삼성전자|삼성)/, '삼성'],
+    [/^(lg전자|lg유플러스|lg생활건강|lg|엘지|u\+)/i, 'lg'],
+    [/^(sk텔레콤|sk매직|sk렌터카|sk브로드밴드|sk엔크린|sk|에스케이)/i, 'sk'],
+    [/^(kt스카이라이프|kt|케이티|지니tv)/i, 'kt'],
+    [/^(cj제일제당|cj대한통운|cj|씨제이)/i, 'cj'],
+    [/^(현대자동차|현대모비스|현대백화점|현대카드|현대해상|현대)/, '현대'],
+    [/^(신세계백화점|신세계|이마트)/, '신세계'],
+    [/^(초록우산)/, '초록우산'],
+    [/^(월드비전)/, '월드비전'],
+    [/^(굿네이버스)/, '굿네이버스'],
+    [/^(유니세프)/, '유니세프'],
+    [/^(세이브더칠드런)/, '세이브더칠드런'],
+    [/^(대한적십자)/, '대한적십자사'],
+    [/^(사랑의열매|사회복지공동모금회)/, '사랑의열매'],
+    [/^(국경없는의사회)/, '국경없는의사회']
+  ];
+  for (const [rx, root] of canonicalRoots) {
+    if (rx.test(lower)) return root;
+  }
+
+  const firstToken = withoutParens.split(/\s+/)[0] || withoutParens;
+  const normToken = normalizeKbpiBrandKey(firstToken);
+  return normToken.length >= 2 ? normToken : normalizeKbpiBrandKey(withoutParens);
+}
+
+/**
+ * [중복 브랜드 원천 차단 선택기]
+ * 1순위: 정규화 문자열 중복 X + 모브랜드(Root) 중복 X + 동일 응답자의 이전 품목에서 사용한 브랜드(priorUsedNorms) X
+ * 2순위: 정규화 문자열 중복 X + 모브랜드(Root) 중복 X
+ * 3순위: 정규화 문자열 중복 X (모브랜드 수가 적은 소규모 산업군 대비, 동일 문자열 중복은 100% 금지)
+ */
+export function selectDistinctKbpiBrands(
+  candidates = [],
+  maxCount = 4,
+  priorUsedNorms = new Set(),
+  priorUsedRoots = new Set()
+) {
+  const validItems = [];
+  const seenInputNorm = new Set();
+  for (const raw of (Array.isArray(candidates) ? candidates : [])) {
+    const label = String(raw || '').trim();
+    if (!label) continue;
+    if (/^(없음|모름|선택|해당\s*없음|잘\s*모르|생각나지|더\s*이상\s*없음)$/i.test(label) || /(^|\s)기타(\s|$)/.test(label)) {
+      continue;
+    }
+    const norm = normalizeKbpiBrandKey(label);
+    if (!norm || seenInputNorm.has(norm)) continue;
+    seenInputNorm.add(norm);
+    validItems.push({
+      label,
+      norm,
+      root: extractKbpiBrandRoot(label)
+    });
+  }
+
+  const chosen = [];
+  const chosenNorms = new Set();
+  const chosenRoots = new Set();
+
+  // Pass 1: 모브랜드 고유 + 응답자 내 타 슬롯 미사용 브랜드 최우선
+  for (const item of validItems) {
+    if (chosen.length >= maxCount) break;
+    if (chosenNorms.has(item.norm) || chosenRoots.has(item.root)) continue;
+    if (priorUsedNorms?.has(item.norm) || priorUsedRoots?.has(item.root)) continue;
+    chosen.push(item.label);
+    chosenNorms.add(item.norm);
+    if (item.root) chosenRoots.add(item.root);
+  }
+
+  // Pass 2: 모브랜드 고유 (현재 문항 내 모브랜드 중복 100% 차단)
+  for (const item of validItems) {
+    if (chosen.length >= maxCount) break;
+    if (chosenNorms.has(item.norm) || chosenRoots.has(item.root)) continue;
+    chosen.push(item.label);
+    chosenNorms.add(item.norm);
+    if (item.root) chosenRoots.add(item.root);
+  }
+
+  // Pass 3: 산업군 내 기업 수가 부족한 경우에도 동일 브랜드명 중복은 100% 차단
+  for (const item of validItems) {
+    if (chosen.length >= maxCount) break;
+    if (chosenNorms.has(item.norm)) continue;
+    chosen.push(item.label);
+    chosenNorms.add(item.norm);
+  }
+
+  return chosen;
+}
+
 function loadBrandDictionary() {
   let baseDict = { defaultAdjectives: { positive: [], neutral: [] }, channelPools: {}, categories: {} };
   try {
@@ -188,11 +300,16 @@ function loadBrandDictionary() {
 
 function saveLearnedCategoryBrands(categoryName, brands = []) {
   const cleanCat = String(categoryName || '').trim();
-  const cleanBrands = Array.from(new Set(
-    brands
-      .map(b => String(b || '').trim())
-      .filter(b => b && b !== '없음' && b !== '모름' && !b.includes('기타'))
-  ));
+  const seenNorm = new Set();
+  const cleanBrands = [];
+  for (const raw of (Array.isArray(brands) ? brands : [])) {
+    const b = String(raw || '').trim();
+    if (!b || b === '없음' || b === '모름' || b.includes('기타')) continue;
+    const nk = normalizeKbpiBrandKey(b);
+    if (!nk || seenNorm.has(nk)) continue;
+    seenNorm.add(nk);
+    cleanBrands.push(b);
+  }
   if (!cleanCat || cleanBrands.length < 3) return;
 
   try {
@@ -214,19 +331,20 @@ async function resolveCategoryMeta(categoryName, policy = {}) {
   const cleanCat = String(categoryName || '').replace(/브랜드$/g, '').trim() || '일반소비재';
   const { baseDict, learned } = loadBrandDictionary();
 
-  // 1) 정확히 일치하거나 부분 일치하는 사전 항목 탐색
+  // 1) 정확히 일치하거나 가장 긴 키워드로 부분 일치하는 사전 항목 탐색 ('가공우유'가 '우유'에 오매칭되지 않도록 길이 내림차순)
   let matchedEntry = baseDict.categories?.[cleanCat] || null;
   if (!matchedEntry) {
-    const keys = Object.keys(baseDict.categories || {});
+    const keys = Object.keys(baseDict.categories || {}).sort((a, b) => b.length - a.length);
     const partialKey = keys.find(k => cleanCat.includes(k) || k.includes(cleanCat));
     if (partialKey) matchedEntry = baseDict.categories[partialKey];
   }
 
   let brands = [];
-  if (learned[cleanCat]?.brands?.length >= 3) {
-    brands = learned[cleanCat].brands;
-  } else if (matchedEntry?.brands?.length >= 3) {
-    brands = matchedEntry.brands;
+  if (learned[cleanCat]?.brands?.length >= 3 || matchedEntry?.brands?.length >= 3) {
+    brands = selectDistinctKbpiBrands(
+      [...(learned[cleanCat]?.brands || []), ...(matchedEntry?.brands || [])],
+      24
+    );
   }
 
   // 2) 사전에 없는 미등록 산업군 등장 시 Gemini AI 실시간 추론 폴백
@@ -235,18 +353,18 @@ async function resolveCategoryMeta(categoryName, policy = {}) {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const prompt = `한국능률협회컨설팅 K-BPI 소비자 브랜드 조사에서 "${cleanCat}" 산업군에 해당하는 대한민국 실제 유명 대표 브랜드명 6개와, 소비자가 떠올리는 짧은 이미지 표현(형용사/명사 혼합, 예: 깨끗하다, 편리함, 믿음직한) 8개, 실제 주 구매/이용 경로 4개를 JSON으로만 반환해줘. 형식: {"brands":["..."],"adjectives":["..."],"channels":["..."]}`;
+      const prompt = `한국능률협회컨설팅 K-BPI 소비자 브랜드 조사에서 "${cleanCat}" 산업군에 해당하는 대한민국 실제 유명 대표 브랜드명 6개(중복 없는 서로 다른 기업/단체 브랜드)와, 소비자가 떠올리는 짧은 이미지 표현(형용사/명사 혼합, 예: 깨끗하다, 편리함, 믿음직한) 8개, 실제 주 구매/이용 경로 4개를 JSON으로만 반환해줘. 형식: {"brands":["..."],"adjectives":["..."],"channels":["..."]}`;
       const resp = await model.generateContent(prompt);
       const txt = resp.response.text().replace(/```json|```/g, '').trim();
       const parsed = JSON.parse(txt);
       if (Array.isArray(parsed.brands) && parsed.brands.length >= 3) {
-        brands = parsed.brands;
+        brands = selectDistinctKbpiBrands(parsed.brands, 12);
         saveLearnedCategoryBrands(cleanCat, brands);
         return {
           categoryName: cleanCat,
           brands,
           adjectives: Array.isArray(parsed.adjectives) && parsed.adjectives.length >= 4
-            ? parsed.adjectives
+            ? Array.from(new Set(parsed.adjectives))
             : (baseDict.defaultAdjectives?.positive || ['친숙하다', '믿음직함', '깔끔하다', '실용적임', '편리함', '안정적인']),
           channels: resolveSmartChannelPool(cleanCat, policy, baseDict)
         };
@@ -257,7 +375,9 @@ async function resolveCategoryMeta(categoryName, policy = {}) {
   }
 
   if (brands.length < 3) {
-    if (/병원|의료원|검진/.test(cleanCat)) {
+    if (/구호개발단체|NGO|자선|후원/.test(cleanCat)) {
+      brands = ['월드비전', '굿네이버스', '초록우산 어린이재단', '유니세프', '세이브더칠드런', '대한적십자사', '사랑의열매'];
+    } else if (/병원|의료원|검진/.test(cleanCat)) {
       brands = ['서울아산병원', '세브란스병원', '삼성서울병원', '서울대학교병원', '가천대길병원', '인하대병원', '분당서울대학교병원', '아주대학교병원'];
     } else if (/대학|학교/.test(cleanCat)) {
       brands = ['서울대학교', '연세대학교', '고려대학교', '성균관대학교', '한양대학교', '인하대학교'];
@@ -342,6 +462,7 @@ export function generateKbpiMatrixScores(rngOrOpts = Math.random, hasPurchaseExp
  */
 export function decideCategoryPurchaseExp({
   categoryName,
+  industryKey = '',
   categorySlotIdx = 0,
   categoryConfigs = [],
   ageGroup = '',
@@ -352,22 +473,43 @@ export function decideCategoryPurchaseExp({
   rng = Math.random
 }) {
   const cleanCat = String(categoryName || '').replace(/브랜드$/g, '').trim();
+  const cleanKey = String(industryKey || '').trim();
   const effAge = respondentAge !== undefined ? Number(respondentAge) : Number(age);
   const cleanGender = String(gender || '').trim();
 
-  // 1) 시트에 카테고리명이 직접 명시되어 있는 경우 최우선 적용
-  const namedCfg = categoryConfigs.find(c => {
-    const cn = String(c.categoryName || '').replace(/브랜드$/g, '').trim();
-    return cn && (cn === cleanCat || cleanCat.includes(cn) || cn.includes(cleanCat));
+  // 1-A) 고유 산업군 코드(industryKey) 정확 일치 설정 최우선 적용 (35 vs 36 등 동일명 코드 분리 보장)
+  if (cleanKey) {
+    const keyCfg = categoryConfigs.find(c => String(c?.industryKey || '').trim() === cleanKey);
+    if (keyCfg && (keyCfg.purchaseExp === '없음' || keyCfg.purchaseExp === '있음')) {
+      return keyCfg.purchaseExp;
+    }
+  }
+
+  // 1-B) 해당 순번 슬롯의 카테고리명이 정확히 일치하는 경우 적용
+  const slotDirectCfg = categoryConfigs.find(c => Number(c?.slot) === Number(categorySlotIdx) + 1) || categoryConfigs[categorySlotIdx];
+  if (slotDirectCfg) {
+    const slotCn = String(slotDirectCfg.categoryName || '').replace(/브랜드$/g, '').trim();
+    if (slotCn && slotCn === cleanCat && (slotDirectCfg.purchaseExp === '없음' || slotDirectCfg.purchaseExp === '있음')) {
+      return slotDirectCfg.purchaseExp;
+    }
+  }
+
+  // 1-C) 카테고리명 완전 일치('우유' vs '가공우유' 부분 오매칭 방지) -> 없을 때만 부분 일치 폴백
+  const exactNamedCfg = categoryConfigs.find(c => {
+    const cn = String(c?.categoryName || '').replace(/브랜드$/g, '').trim();
+    return cn && cn === cleanCat;
+  });
+  const namedCfg = exactNamedCfg || categoryConfigs.find(c => {
+    const cn = String(c?.categoryName || '').replace(/브랜드$/g, '').trim();
+    return cn && (cleanCat.includes(cn) || cn.includes(cleanCat));
   });
   if (namedCfg && (namedCfg.purchaseExp === '없음' || namedCfg.purchaseExp === '있음')) {
     return namedCfg.purchaseExp;
   }
 
   // 2) 해당 순번 슬롯(0-based index 또는 slot = categorySlotIdx + 1)에 '없음'/'있음'이 사전 기재된 경우
-  const slotCfg = categoryConfigs.find(c => Number(c?.slot) === Number(categorySlotIdx) + 1) || categoryConfigs[categorySlotIdx];
-  if (slotCfg && !slotCfg.categoryName && (slotCfg.purchaseExp === '없음' || slotCfg.purchaseExp === '있음')) {
-    return slotCfg.purchaseExp;
+  if (slotDirectCfg && !slotDirectCfg.categoryName && (slotDirectCfg.purchaseExp === '없음' || slotDirectCfg.purchaseExp === '있음')) {
+    return slotDirectCfg.purchaseExp;
   }
 
   // 3) 10대(미성년) 응답자 및 성별 전용 품목 자동 '없음' 안전 보정
@@ -1115,19 +1257,34 @@ async function extractAssignedIndustriesFromPage(target) {
       const byKey = new Map(answers.map(a => [String(a.K), a]));
 
       const assigned = [];
+      const seenKeys = new Set();
+      const displayCounts = new Map();
+
       for (const k of rawKeys) {
-        const item = byKey.get(String(k));
-        const rawTitle = item
-          ? String(item.DISPLAY || item.INDUSTRY || item.V || k)
-          : String(k);
-        const cleanTitle = rawTitle.replace(/브랜드$/g, '').trim();
-        if (cleanTitle) {
-          assigned.push({
-            industryKey: String(k),
-            categoryName: cleanTitle,
-            special: String(item?.SPECIAL || '')
-          });
+        const keyStr = String(k);
+        if (seenKeys.has(keyStr)) continue;
+        seenKeys.add(keyStr);
+
+        const item = byKey.get(keyStr);
+        const dispTitle = item ? String(item.DISPLAY || '').replace(/브랜드$/g, '').trim() : '';
+        const vTitle = item ? String(item.INDUSTRY || item.V || '').replace(/브랜드$/g, '').trim() : '';
+        const baseTitle = dispTitle || vTitle || keyStr;
+        if (!baseTitle) continue;
+
+        const prevCnt = displayCounts.get(baseTitle) || 0;
+        displayCounts.set(baseTitle, prevCnt + 1);
+
+        // 동일 표시명(DISPLAY) 품목이 2개 코드(예: 35·36 구호개발단체)로 배정된 경우 세부 산업군명(INDUSTRY/V) 우선 표기
+        let finalTitle = baseTitle;
+        if (prevCnt > 0 && vTitle && vTitle !== baseTitle) {
+          finalTitle = vTitle;
         }
+
+        assigned.push({
+          industryKey: keyStr,
+          categoryName: finalTitle,
+          special: String(item?.SPECIAL || '')
+        });
       }
       return assigned;
     } catch (err) {
@@ -1149,14 +1306,27 @@ function mergeAssignedIndustriesIntoConfigs({
 } = {}) {
   if (!Array.isArray(assigned) || assigned.length === 0) return categoryConfigs;
 
-  const prevByCat = new Map();
-  for (const c of (categoryConfigs || [])) {
-    const cn = String(c?.categoryName || '').replace(/브랜드$/g, '').trim();
-    if (cn) prevByCat.set(cn, c);
-  }
+  const prevList = Array.isArray(categoryConfigs) ? [...categoryConfigs] : [];
+  const usedPrevIndices = new Set();
 
   const nextConfigs = assigned.map((item, idx) => {
-    const prevMatch = prevByCat.get(item.categoryName) || categoryConfigs[idx] || {};
+    const itemKey = String(item.industryKey || '').trim();
+    const cleanItemCat = String(item.categoryName || '').replace(/브랜드$/g, '').trim();
+
+    // 1순위: industryKey 일치 -> 2순위: 동일 슬롯 순번 + 카테고리명 일치 -> 3순위: 미사용 동일 카테고리명 -> 4순위: 동일 슬롯 순번
+    let matchIdx = itemKey
+      ? prevList.findIndex((c, pIdx) => !usedPrevIndices.has(pIdx) && String(c?.industryKey || '').trim() === itemKey)
+      : -1;
+    if (matchIdx < 0 && prevList[idx] && !usedPrevIndices.has(idx)) {
+      const slotCat = String(prevList[idx]?.categoryName || '').replace(/브랜드$/g, '').trim();
+      if (!slotCat || slotCat === cleanItemCat) matchIdx = idx;
+    }
+    if (matchIdx < 0 && cleanItemCat) {
+      matchIdx = prevList.findIndex((c, pIdx) => !usedPrevIndices.has(pIdx) && String(c?.categoryName || '').replace(/브랜드$/g, '').trim() === cleanItemCat);
+    }
+    if (matchIdx >= 0) usedPrevIndices.add(matchIdx);
+
+    const prevMatch = matchIdx >= 0 ? prevList[matchIdx] : (prevList[idx] || {});
     let exp = String(prevMatch.purchaseExp || '').trim();
     if (exp !== '있음' && exp !== '없음') {
       exp = recommendDefaultPurchaseExp({
@@ -1169,7 +1339,7 @@ function mergeAssignedIndustriesIntoConfigs({
     }
     return {
       slot: idx + 1,
-      industryKey: item.industryKey || prevMatch.industryKey || '',
+      industryKey: itemKey || prevMatch.industryKey || '',
       categoryName: item.categoryName,
       purchaseExp: exp,
       topBrand: prevMatch.topBrand || '',
@@ -1230,7 +1400,7 @@ export async function runKmacKbpiSurvey({
     ...(rawPolicy || {})
   };
 
-  const stopAtStep = stopAtStepOverride || (pilotMode ? (policy.pilotStopAtStep || 'Q4') : (safetyGuard ? 'FINAL_GATE' : 'NONE'));
+  const stopAtStep = stopAtStepOverride || (pilotMode ? (policy.pilotStopAtStep || 'FINAL_GATE') : (safetyGuard ? 'FINAL_GATE' : 'NONE'));
   const loginId = String(campaign?.loginId || slotData.loginId || KBPI_DEFAULT_LOGIN_ID).trim();
   const loginPw = String(campaign?.loginPw || loginId).trim();
   const seq = Number(slotData.seq || slotData.index || quotaIndex || 1);
@@ -1450,6 +1620,9 @@ export async function runKmacKbpiSurvey({
     await surveyPage.waitForTimeout(1100);
 
     const categoryRuntimeMap = new Map();
+    const claimedConfigSlots = new Set();
+    const respondentUsedBrandNorms = new Set();
+    const respondentUsedBrandRoots = new Set();
 
     const syncAssignedIndustriesOnce = async (targetFrame) => {
       if (assignedIndustriesSynced) return;
@@ -1474,14 +1647,24 @@ export async function runKmacKbpiSurvey({
 
     const getOrInitCategoryState = async (catNameRaw, indKeyRaw = '', targetFrame = null) => {
       const cleanCat = String(catNameRaw || '').replace(/브랜드$/g, '').trim() || `품목${seenCategoriesOrder.length + 1}`;
-      if (!categoryRuntimeMap.has(cleanCat)) {
+      const cleanIndKey = String(indKeyRaw || '').trim();
+      const runtimeKey = cleanIndKey ? `${cleanCat}__${cleanIndKey}` : cleanCat;
+
+      // industryKey 없이 먼저 생성된 상태가 있거나 역방향 조회 시 호환 매칭
+      if (!categoryRuntimeMap.has(runtimeKey) && !cleanIndKey) {
+        for (const [rk, rv] of categoryRuntimeMap.entries()) {
+          if (rk.startsWith(`${cleanCat}__`)) return rv;
+        }
+      }
+
+      if (!categoryRuntimeMap.has(runtimeKey)) {
         const frameToQuery = targetFrame || surveyPage;
         if (frameToQuery) {
           await syncAssignedIndustriesOnce(frameToQuery);
         }
 
         const catIdx = seenCategoriesOrder.length;
-        seenCategoriesOrder.push(cleanCat);
+        seenCategoriesOrder.push(runtimeKey);
 
         let liveOfficialBrands = [];
         if (frameToQuery) {
@@ -1491,7 +1674,7 @@ export async function runKmacKbpiSurvey({
             const norm = (s) => String(s || '').replace(/브랜드$/g, '').replace(/\s+/g, '').toLowerCase();
             const targetNorm = norm(cName);
             const found = (iKey && answers.find(x => String(x.K) === String(iKey))) ||
-              answers.find(x => norm(x.DISPLAY || x.V) === targetNorm);
+              answers.find(x => norm(x.DISPLAY || x.INDUSTRY || x.V) === targetNorm);
             if (!found) return [];
             const list = [];
             for (let b = 1; b <= 58; b++) {
@@ -1501,7 +1684,7 @@ export async function runKmacKbpiSurvey({
               }
             }
             return list;
-          }, { iKey: String(indKeyRaw || ''), cName: cleanCat }).catch(err => {
+          }, { iKey: cleanIndKey, cName: cleanCat }).catch(err => {
             console.warn('[K-BPI QO 브랜드 조회 경고]', err.message);
             return [];
           });
@@ -1512,15 +1695,45 @@ export async function runKmacKbpiSurvey({
           saveLearnedCategoryBrands(cleanCat, liveOfficialBrands);
         }
         const brandSource = liveOfficialBrands.length >= 3 ? liveOfficialBrands : meta.brands;
-        const shuffledBrands = shuffleWithRng(brandSource, rng);
-        const shuffledAdjs = shuffleWithRng(meta.adjectives, rng);
-        const shuffledChannels = shuffleWithRng(meta.channels, rng);
-        const shuffledPosReasons = shuffleWithRng(Q3_RECOMMEND_REASON_POOLS.positive, rng);
-        const shuffledNeuReasons = shuffleWithRng(Q3_RECOMMEND_REASON_POOLS.neutral, rng);
+        const shuffledRawBrands = shuffleWithRng(brandSource, rng);
+        // [중복 브랜드 방지 규칙] 동일 문항 내 모브랜드/문자열 중복 차단 + 동일 응답자 내 선행 품목 사용 브랜드 후순위 배치
+        const distinctBrands = selectDistinctKbpiBrands(
+          shuffledRawBrands,
+          Math.max(8, shuffledRawBrands.length),
+          respondentUsedBrandNorms,
+          respondentUsedBrandRoots
+        );
+        const unaidedTargetBrands = distinctBrands.slice(0, 4);
+        for (const ub of unaidedTargetBrands) {
+          const nk = normalizeKbpiBrandKey(ub);
+          const rk = extractKbpiBrandRoot(ub);
+          if (nk) respondentUsedBrandNorms.add(nk);
+          if (rk) respondentUsedBrandRoots.add(rk);
+        }
+
+        const shuffledAdjs = Array.from(new Set(shuffleWithRng(meta.adjectives, rng)));
+        const shuffledChannels = Array.from(new Set(shuffleWithRng(meta.channels, rng)));
+        const shuffledPosReasons = Array.from(new Set(shuffleWithRng(Q3_RECOMMEND_REASON_POOLS.positive, rng)));
+        const shuffledNeuReasons = Array.from(new Set(shuffleWithRng(Q3_RECOMMEND_REASON_POOLS.neutral, rng)));
+
+        // 슬롯 인덱스 매칭: 1) industryKey 일치 -> 2) 아직 배정되지 않은 동일 categoryName 슬롯 -> 3) 순차 catIdx
+        let existingSlotIdx = cleanIndKey
+          ? categoryConfigs.findIndex((c, sIdx) => !claimedConfigSlots.has(sIdx) && String(c?.industryKey || '').trim() === cleanIndKey)
+          : -1;
+        if (existingSlotIdx < 0) {
+          existingSlotIdx = categoryConfigs.findIndex((c, sIdx) => {
+            if (claimedConfigSlots.has(sIdx)) return false;
+            const cn = String(c?.categoryName || '').replace(/브랜드$/g, '').trim();
+            return cn && cn === cleanCat;
+          });
+        }
+        const targetCfgIdx = existingSlotIdx >= 0 ? existingSlotIdx : catIdx;
+        claimedConfigSlots.add(targetCfgIdx);
 
         const purchaseExp = decideCategoryPurchaseExp({
           categoryName: cleanCat,
-          categorySlotIdx: catIdx,
+          industryKey: cleanIndKey,
+          categorySlotIdx: targetCfgIdx,
           categoryConfigs,
           ageGroup,
           age,
@@ -1531,41 +1744,40 @@ export async function runKmacKbpiSurvey({
 
         const aiSearched = (rng() * 100) >= Number(policy.q6NoRate ?? 80);
 
-        const existingSlotIdx = categoryConfigs.findIndex(c => {
-          const cn = String(c?.categoryName || '').replace(/브랜드$/g, '').trim();
-          return cn && cn === cleanCat;
-        });
-        const targetCfgIdx = existingSlotIdx >= 0 ? existingSlotIdx : catIdx;
         while (categoryConfigs.length <= targetCfgIdx) {
           categoryConfigs.push({ slot: categoryConfigs.length + 1, categoryName: '', purchaseExp: '' });
         }
         categoryConfigs[targetCfgIdx].slot = targetCfgIdx + 1;
-        categoryConfigs[targetCfgIdx].categoryName = cleanCat;
+        if (cleanIndKey) categoryConfigs[targetCfgIdx].industryKey = cleanIndKey;
+        categoryConfigs[targetCfgIdx].categoryName = categoryConfigs[targetCfgIdx].categoryName || cleanCat;
         categoryConfigs[targetCfgIdx].purchaseExp = purchaseExp;
-        categoryConfigs[targetCfgIdx].topBrand = purchaseExp === '없음' ? '없음' : shuffledBrands[0];
-        categoryConfigs[targetCfgIdx].channel = purchaseExp === '없음' ? '' : shuffledChannels[0];
+        categoryConfigs[targetCfgIdx].topBrand = purchaseExp === '없음' ? '없음' : (unaidedTargetBrands[0] || '');
+        categoryConfigs[targetCfgIdx].channel = purchaseExp === '없음' ? '' : (shuffledChannels[0] || '');
 
-        categoryRuntimeMap.set(cleanCat, {
+        categoryRuntimeMap.set(runtimeKey, {
           slotIndex: targetCfgIdx,
           categoryName: cleanCat,
-          industryKey: String(indKeyRaw || ''),
+          industryKey: cleanIndKey,
           purchaseExp,
           aiSearched,
-          unaidedBrands: shuffledBrands.slice(0, 4),
+          unaidedBrands: unaidedTargetBrands,
+          allDistinctBrands: distinctBrands,
+          q2CheckedBrands: [],
           adjectives: shuffledAdjs,
           posReasons: shuffledPosReasons,
           neuReasons: shuffledNeuReasons,
-          selectedChannel: shuffledChannels[0],
-          q4SelectedBrand: purchaseExp === '없음' ? '없음' : shuffledBrands[0]
+          selectedChannel: shuffledChannels[0] || '편의점',
+          q4SelectedBrand: purchaseExp === '없음' ? '없음' : (unaidedTargetBrands[0] || ''),
+          q4SelectedAkey: ''
         });
 
         emitLog(
-          `[품목 #${targetCfgIdx + 1} 감지: ${cleanCat}${liveOfficialBrands.length >= 3 ? ` (공식B:${liveOfficialBrands.length}개)` : ''}] 구입경험="${purchaseExp}" | AI검색="${aiSearched ? '예' : '아니오'}" | 상기=[${shuffledBrands.slice(0, 3).join(', ')}]${purchaseExp === '있음' ? ` | 채널="${shuffledChannels[0]}"` : ''}`,
+          `[품목 #${targetCfgIdx + 1} 감지: ${cleanCat}${cleanIndKey ? `(코드:${cleanIndKey})` : ''}${liveOfficialBrands.length >= 3 ? ` (공식B:${liveOfficialBrands.length}개)` : ''}] 구입경험="${purchaseExp}" | AI검색="${aiSearched ? '예' : '아니오'}" | 상기=[${unaidedTargetBrands.slice(0, 3).join(', ')}]${purchaseExp === '있음' ? ` | 채널="${shuffledChannels[0]}"` : ''}`,
           'info',
           `CAT${targetCfgIdx + 1}`
         );
       }
-      return categoryRuntimeMap.get(cleanCat);
+      return categoryRuntimeMap.get(runtimeKey);
     };
 
     // 3. 단계별 설문 진행 루프 (20개 산업군 완주 대응 450회 상한)
@@ -2005,18 +2217,68 @@ export async function runKmacKbpiSurvey({
         }, { cCode: cityCode, sDist: surveyDistrict, sDong: surveyDong });
 
         // INDUSTRY_ORDER(/Custom/230/KbpiContext) 비동기 할당 완료(ready === true)까지 최대 15초 대기
-        for (let iWait = 0; iWait < 30; iWait++) {
-          const orderState = await activeTarget.evaluate(() => {
+        const waitIndustryOrderReady = async () => {
+          for (let iWait = 0; iWait < 30; iWait++) {
+            const orderState = await activeTarget.evaluate(() => {
+              const w = document.querySelector('div[question-name="INDUSTRY_ORDER"]');
+              if (!w || typeof window.$ === 'undefined') return { ready: true, pickerVisible: false };
+              const jqW = window.$(w);
+              const ready = Boolean(jqW.data('ready'));
+              const err = String(jqW.data('error') || '');
+              const pickerVisible = Boolean(w.querySelector('.kbpi-test-picker') && w.offsetParent !== null);
+              return { ready, err, pickerVisible };
+            }).catch(() => ({ ready: true, pickerVisible: false }));
+            if (orderState.ready) return orderState;
+            await surveyPage.waitForTimeout(450);
+          }
+          return { ready: true, pickerVisible: false };
+        };
+
+        const initOrderState = await waitIndustryOrderReady();
+
+        // 만약 테스트 피커(.kbpi-test-picker)가 노출된 경우 동일 DISPLAY 품목 중복 체크 방지
+        if (initOrderState.pickerVisible) {
+          await activeTarget.evaluate(() => {
             const w = document.querySelector('div[question-name="INDUSTRY_ORDER"]');
-            if (!w || typeof window.$ === 'undefined') return { ready: true, keysCount: 0 };
-            const jqW = window.$(w);
-            const ready = Boolean(jqW.data('ready'));
-            const err = String(jqW.data('error') || '');
-            const pickerVisible = Boolean(w.querySelector('.kbpi-test-picker') && w.offsetParent !== null);
-            return { ready, err, pickerVisible };
-          }).catch(() => ({ ready: true }));
-          if (orderState.ready) break;
-          await surveyPage.waitForTimeout(450);
+            if (!w) return;
+            const seenLabels = new Set();
+            w.querySelectorAll('.kbpi-test-picker input[type="checkbox"]').forEach(cb => {
+              const lb = (cb.closest('label, li, div')?.innerText || '').replace(/브랜드$/g, '').trim();
+              if (cb.checked && lb) {
+                if (seenLabels.has(lb) && !cb.disabled) {
+                  cb.click();
+                  if (cb.checked) cb.checked = false;
+                } else {
+                  seenLabels.add(lb);
+                }
+              }
+            });
+          }).catch(err => console.warn('[K-BPI 테스트 피커 중복 점검 경고]', err.message));
+        }
+
+        // 신규 배정 시 동일 표시명(예: 구호개발단체 2건)이 중복 배정된 경우, 동일 조사구 내 다른 조사동으로 1회 재할당 요청 시도
+        const firstAssigned = await extractAssignedIndustriesFromPage(activeTarget);
+        const firstNames = firstAssigned.map(a => a.categoryName).filter(Boolean);
+        if (firstNames.length > 0 && new Set(firstNames).size < firstNames.length) {
+          const retriedDong = await activeTarget.evaluate(async () => {
+            const box = document.querySelector('[question-name="M_CHECK"]') || document;
+            const dongSel = box.querySelector('select[custom-save-name="ZQ3"]');
+            if (!dongSel || dongSel.disabled) return '';
+            const curVal = dongSel.value;
+            const altOpt = Array.from(dongSel.options).find(o => o.value !== '' && o.value !== curVal && !/선택/.test(o.text));
+            if (!altOpt) return '';
+            const w = document.querySelector('div[question-name="INDUSTRY_ORDER"]');
+            if (w && typeof window.$ !== 'undefined') window.$(w).data('ready', false);
+            dongSel.value = altOpt.value;
+            dongSel.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(dongSel).val(altOpt.value).trigger('change');
+            return altOpt.text.trim() || altOpt.value;
+          }).catch(() => '');
+          if (retriedDong) {
+            emitLog(`[중복 출제품목 재할당 시도] 동일 품목명 중복 배정 감지 ➔ 조사동 "${retriedDong}"으로 KbpiContext 재요청...`, 'info', 'M_CHECK_DEDUP');
+            await surveyPage.waitForTimeout(350);
+            await waitIndustryOrderReady();
+          }
         }
 
         await syncAssignedIndustriesOnce(activeTarget);
@@ -2055,7 +2317,7 @@ export async function runKmacKbpiSurvey({
           await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
         }
         const finalScannedCount = categoryConfigs.filter(c => c && c.categoryName).length;
-        const keepPrevPilot = slotData.quotaStatus === 'pilot_done' && /완료직전|문항4/.test(String(slotData.status || ''));
+        const keepPrevPilot = slotData.quotaStatus === 'pilot_done' && /완료직전/.test(String(slotData.status || ''));
         const nextStatusLabel = keepPrevPilot ? slotData.status : '신상등록·스캔완료';
         const nextQuotaStatus = keepPrevPilot ? 'pilot_done' : 'scanned';
 
@@ -2080,14 +2342,27 @@ export async function runKmacKbpiSurvey({
         };
       }
 
-      // [문항 1] 1-1 ~ 1-4 비보조 인지도 (순차 언하이드 1회 통과 + 1-4 전용 NOA 체크박스 지원)
+      // [문항 1] 1-1 ~ 1-4 비보조 인지도 (순차 언하이드 + 중복 브랜드 입력 100% 원천 차단 + 1-4 NOA 체크박스 지원)
       if (info.screenType === 'Q1_UNAIDED') {
         const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
-        const fill4th = (rng() * 100) < Number(policy.unaided4thBrandRate ?? 35) && catState.unaidedBrands.length >= 4;
-        emitLog(`[${catState.categoryName} - 문항 1] 1-1="${catState.unaidedBrands[0]}", 1-2="${catState.unaidedBrands[1]}", 1-3="${catState.unaidedBrands[2]}", 1-4="${fill4th ? catState.unaidedBrands[3] : '없음(NOA)'}"`, 'info', 'Q1');
+        const candidatePool = Array.isArray(catState.allDistinctBrands) && catState.allDistinctBrands.length > 0
+          ? catState.allDistinctBrands
+          : catState.unaidedBrands;
+        const fill4th = (rng() * 100) < Number(policy.unaided4thBrandRate ?? 35) && candidatePool.length >= 4;
 
-        await activeTarget.evaluate(async ({ brands, use4th }) => {
+        const q1Applied = await activeTarget.evaluate(async ({ pool, use4th }) => {
           const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
+          const normKey = (s) => String(s || '')
+            .replace(/브랜드$/g, '')
+            .replace(/[\s()[\]{}·•,./'"`’‘“”_-]+/g, '')
+            .toLowerCase()
+            .trim();
+          const rootKey = (s) => {
+            const clean = String(s || '').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+            const tok = (clean.split(/\s+/)[0] || clean).toLowerCase();
+            return normKey(tok.length >= 2 ? tok : clean);
+          };
+
           const triggerVal = (el, val) => {
             if (!el || el.disabled || el.readOnly) return false;
             el.focus();
@@ -2095,8 +2370,8 @@ export async function runKmacKbpiSurvey({
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
             el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-            if (typeof $ !== 'undefined') {
-              $(el).val(String(val)).trigger('input').trigger('change').trigger('keyup');
+            if (typeof window.$ !== 'undefined') {
+              window.$(el).val(String(val)).trigger('input').trigger('change').trigger('keyup');
             }
             el.blur();
             return true;
@@ -2107,71 +2382,135 @@ export async function runKmacKbpiSurvey({
               noaInp.click();
               if (noaInp.checked) {
                 noaInp.checked = false;
-                if (typeof $ !== 'undefined') $(noaInp).prop('checked', false).trigger('change');
+                if (typeof window.$ !== 'undefined') window.$(noaInp).prop('checked', false).trigger('change');
               }
             }
           };
 
-          // GetData 표준 KBPI_Q1_1--K ~ KBPI_Q1_4--K 순차 입력 (입력 시 다음 칸 자동 언하이드)
+          const checkNoa = (noaInp) => {
+            if (noaInp && !noaInp.disabled && !noaInp.checked) {
+              noaInp.click();
+              noaInp.checked = true;
+              noaInp.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof window.$ !== 'undefined') window.$(noaInp).prop('checked', true).trigger('change');
+            }
+          };
+
+          const usedNorms = new Set();
+          const usedRoots = new Set();
+          const pickNextUniqueBrand = () => {
+            // 1순위: 정규화명 & 모브랜드 모두 미사용
+            for (const cand of pool) {
+              const nk = normKey(cand);
+              const rk = rootKey(cand);
+              if (!nk || usedNorms.has(nk) || (rk && usedRoots.has(rk))) continue;
+              usedNorms.add(nk);
+              if (rk) usedRoots.add(rk);
+              return cand;
+            }
+            // 2순위: 정규화명 미사용 (절대 동일 브랜드 중복 불가)
+            for (const cand of pool) {
+              const nk = normKey(cand);
+              if (!nk || usedNorms.has(nk)) continue;
+              usedNorms.add(nk);
+              return cand;
+            }
+            return '';
+          };
+
+          const entered = [];
           const firstBox = document.querySelector('[question-name^="KBPI_Q1_1--"]');
           if (firstBox) {
             const indKey = (firstBox.getAttribute('question-name') || '').split('--')[1] || '';
             for (let n = 1; n <= 3; n++) {
               const qn = `KBPI_Q1_${n}--${indKey}`;
               const noa = document.querySelector(`input[name^="NOA_${qn}"], input.NOA[noa-qname="${qn}"]`);
-              uncheckNoa(noa);
               const inp = document.querySelector(`[question-name="${qn}"] input[data-column="TEXT_1"], input[qname="${qn}"]`);
-              if (inp && brands[n - 1]) {
-                triggerVal(inp, brands[n - 1]);
+              const brandVal = pickNextUniqueBrand();
+              if (inp && brandVal) {
+                uncheckNoa(noa);
+                triggerVal(inp, brandVal);
+                entered.push(brandVal);
                 await waitMs(90);
+              } else if (noa) {
+                if (inp) triggerVal(inp, '');
+                checkNoa(noa);
+                entered.push('없음(NOA)');
               }
             }
 
             const qn4 = `KBPI_Q1_4--${indKey}`;
             const noa4 = document.querySelector(`input[name^="NOA_${qn4}"], input.NOA[noa-qname="${qn4}"]`);
             const inp4 = document.querySelector(`[question-name="${qn4}"] input[data-column="TEXT_1"], input[qname="${qn4}"]`);
-            if (use4th && inp4 && brands[3]) {
+            const brand4 = use4th ? pickNextUniqueBrand() : '';
+            if (brand4 && inp4) {
               uncheckNoa(noa4);
               await waitMs(40);
-              triggerVal(inp4, brands[3]);
-            } else if (noa4 && !noa4.disabled) {
-              if (!noa4.checked) {
-                noa4.click();
-                noa4.checked = true;
-                noa4.dispatchEvent(new Event('change', { bubbles: true }));
-                if (typeof $ !== 'undefined') $(noa4).prop('checked', true).trigger('change');
+              triggerVal(inp4, brand4);
+              entered.push(brand4);
+            } else if (inp4 || noa4) {
+              if (inp4 && inp4.value) triggerVal(inp4, '');
+              checkNoa(noa4);
+              entered.push('없음(NOA)');
+            }
+
+            // 단일 KBPI_Q1 컨테이너 내부에 복수 TEXT 컬럼(TEXT_1, TEXT_2 등)이 배치된 변형 레이아웃 보완
+            const extraQ1Inputs = Array.from(
+              document.querySelectorAll('[question-name^="KBPI_Q1_"] input[type="text"], [question-name^="KBPI_Q1_"] input:not([type])')
+            ).filter(el => el.offsetParent !== null && !el.readOnly && !el.disabled && !['checkbox', 'radio', 'hidden', 'button'].includes(el.type));
+            const maxFill = use4th ? 4 : 3;
+            let curFilled = entered.filter(v => v && v !== '없음(NOA)').length;
+            for (const exInp of extraQ1Inputs) {
+              if (curFilled >= maxFill) break;
+              if (String(exInp.value || '').trim()) continue;
+              const nextB = pickNextUniqueBrand();
+              if (nextB && triggerVal(exInp, nextB)) {
+                entered.push(nextB);
+                curFilled++;
+                await waitMs(60);
               }
             }
-            return;
+            return entered;
           }
 
           // 일반 텍스트 입력칸 폴백
           const textInputs = Array.from(document.querySelectorAll('input[type="text"], input:not([type])'))
-            .filter(inp => inp.offsetParent !== null && !inp.readOnly);
-          if (textInputs[0] && brands[0]) { triggerVal(textInputs[0], brands[0]); await waitMs(80); }
-          if (textInputs[1] && brands[1]) { triggerVal(textInputs[1], brands[1]); await waitMs(80); }
-          if (textInputs[2] && brands[2]) { triggerVal(textInputs[2], brands[2]); await waitMs(80); }
-
-          if (use4th && textInputs[3] && brands[3]) {
-            triggerVal(textInputs[3], brands[3]);
-          } else {
-            const noneCheckboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-              .filter(cb => (cb.closest('label, div, td')?.innerText || '').trim().includes('없음') && !cb.disabled && cb.offsetParent !== null);
-            const lastNoneCb = noneCheckboxes[noneCheckboxes.length - 1];
-            if (lastNoneCb && !lastNoneCb.checked) {
-              lastNoneCb.click();
-              lastNoneCb.checked = true;
-              lastNoneCb.dispatchEvent(new Event('change', { bubbles: true }));
+            .filter(inp => inp.offsetParent !== null && !inp.readOnly && !inp.disabled);
+          for (let i = 0; i < Math.min(3, textInputs.length); i++) {
+            const bVal = pickNextUniqueBrand();
+            if (bVal) {
+              triggerVal(textInputs[i], bVal);
+              entered.push(bVal);
+              await waitMs(80);
             }
           }
-        }, { brands: catState.unaidedBrands, use4th: fill4th });
+          const bVal4 = use4th ? pickNextUniqueBrand() : '';
+          if (bVal4 && textInputs[3]) {
+            triggerVal(textInputs[3], bVal4);
+            entered.push(bVal4);
+          } else {
+            if (textInputs[3] && textInputs[3].value) triggerVal(textInputs[3], '');
+            const noneCheckboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+              .filter(cb => (cb.closest('label, div, td')?.innerText || '').trim().includes('없음') && !cb.disabled && (cb.offsetParent !== null || cb.closest('label, div')?.offsetParent !== null));
+            const lastNoneCb = noneCheckboxes[noneCheckboxes.length - 1];
+            checkNoa(lastNoneCb);
+            entered.push('없음(NOA)');
+          }
+          return entered;
+        }, { pool: candidatePool, use4th: fill4th });
+
+        const actualUnaided = (q1Applied || []).filter(b => b && b !== '없음(NOA)');
+        if (actualUnaided.length > 0) {
+          catState.unaidedBrands = actualUnaided;
+        }
+        emitLog(`[${catState.categoryName} - 문항 1] 중복 검증 통과 ➔ [${(q1Applied || []).map((v, i) => `1-${i + 1}="${v}"`).join(', ')}]`, 'info', 'Q1');
 
         await surveyPage.waitForTimeout(550);
         await clickNextButton(activeTarget);
         continue;
       }
 
-      // [문항 2] 보조 인지도 (문항 1 응답값 포함 + 랜덤 2~4개 추가 선택 + 공식 브랜드 학습)
+      // [문항 2] 보조 인지도 (문항 1 응답값 포함 + 중복 없는 랜덤 2~4개 추가 선택 + 공식 브랜드 학습)
       if (info.screenType === 'Q2_AIDED') {
         const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
         const extraMin = Number(policy.aidedExtraMin ?? 2);
@@ -2179,34 +2518,63 @@ export async function runKmacKbpiSurvey({
         const extraTargetCount = extraMin + Math.floor(rng() * (extraMax - extraMin + 1));
 
         const q2Result = await activeTarget.evaluate(({ unaidedList, addCount, randSeed }) => {
+          const normKey = (s) => String(s || '')
+            .replace(/브랜드$/g, '')
+            .replace(/[\s()[\]{}·•,./'"`’‘“”_-]+/g, '')
+            .toLowerCase()
+            .trim();
           const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q2--"]')).find(el => el.offsetParent !== null) || document;
-          const checkboxes = Array.from(visQBox.querySelectorAll('input[type="checkbox"]')).filter(cb => cb.offsetParent !== null);
+          const checkboxes = Array.from(visQBox.querySelectorAll('input[type="checkbox"]')).filter(cb =>
+            !cb.disabled && (cb.offsetParent !== null || cb.closest('label, .s-check, .answer-unit-box, li, tr, div')?.offsetParent !== null)
+          );
           const allOfficialLabels = [];
           const uncheckedNormal = [];
+          const checkedNorms = new Set();
+          const checkedLabels = [];
+
+          const getCbLabel = (cb) => {
+            const directLb = cb.closest('label');
+            const forLb = cb.id ? document.querySelector(`label[for="${CSS.escape(cb.id)}"]`) : null;
+            const unitLb = cb.closest('.s-check, .answer-unit-box, li, tr, div');
+            return ((directLb?.innerText || forLb?.innerText || unitLb?.innerText || '')).replace(/\s+/g, ' ').trim();
+          };
+
+          const setCbChecked = (cb) => {
+            if (!cb.checked) cb.click();
+            if (!cb.checked && cb.closest('label')) cb.closest('label').click();
+            cb.checked = true;
+            cb.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(cb).prop('checked', true).trigger('change');
+          };
 
           for (const cb of checkboxes) {
-            const container = cb.closest('label, li, tr, div');
-            const labelText = (container?.innerText || '').trim();
+            const labelText = getCbLabel(cb);
             if (!labelText) continue;
             if (labelText === '없음' || labelText.includes('모름') || /^NOA_/i.test(cb.name || '')) {
               if (cb.checked && !cb.disabled) {
                 cb.click();
                 if (cb.checked) cb.checked = false;
+                if (typeof window.$ !== 'undefined') window.$(cb).prop('checked', false).trigger('change');
               }
               continue;
             }
             allOfficialLabels.push(labelText);
+            const lbNorm = normKey(labelText);
 
-            const matchesUnaided = unaidedList.some(u =>
-              u && (labelText === u || labelText.includes(u) || u.includes(labelText))
-            );
-            if (matchesUnaided && !cb.checked && !cb.disabled) {
-              cb.click();
-              cb.checked = true;
-              cb.dispatchEvent(new Event('change', { bubbles: true }));
-              if (typeof $ !== 'undefined') $(cb).prop('checked', true).trigger('change');
-            } else if (!cb.checked && !cb.disabled) {
-              uncheckedNormal.push({ cb, labelText });
+            const matchesUnaided = unaidedList.some(u => {
+              if (!u) return false;
+              const uNorm = normKey(u);
+              return labelText === u || labelText.includes(u) || u.includes(labelText) || (uNorm && lbNorm && (lbNorm.includes(uNorm) || uNorm.includes(lbNorm)));
+            });
+            if (cb.checked) {
+              if (lbNorm) checkedNorms.add(lbNorm);
+              checkedLabels.push(labelText);
+            } else if (matchesUnaided && !checkedNorms.has(lbNorm)) {
+              setCbChecked(cb);
+              if (lbNorm) checkedNorms.add(lbNorm);
+              checkedLabels.push(labelText);
+            } else {
+              uncheckedNormal.push({ cb, labelText, lbNorm });
             }
           }
 
@@ -2218,35 +2586,58 @@ export async function runKmacKbpiSurvey({
           }
 
           const pickedExtra = [];
-          for (let i = 0; i < Math.min(addCount, uncheckedNormal.length); i++) {
-            const target = uncheckedNormal[i];
-            target.cb.click();
-            target.cb.checked = true;
-            target.cb.dispatchEvent(new Event('change', { bubbles: true }));
-            if (typeof $ !== 'undefined') $(target.cb).prop('checked', true).trigger('change');
+          for (const target of uncheckedNormal) {
+            if (pickedExtra.length >= addCount) break;
+            if (target.lbNorm && checkedNorms.has(target.lbNorm)) continue;
+            setCbChecked(target.cb);
+            if (target.lbNorm) checkedNorms.add(target.lbNorm);
             pickedExtra.push(target.labelText);
+            checkedLabels.push(target.labelText);
           }
 
-          return { allOfficialLabels, pickedExtra };
+          // 최소 1개 이상 체크 보장
+          if (checkedLabels.length === 0 && uncheckedNormal[0]) {
+            setCbChecked(uncheckedNormal[0].cb);
+            pickedExtra.push(uncheckedNormal[0].labelText);
+            checkedLabels.push(uncheckedNormal[0].labelText);
+          }
+
+          return { allOfficialLabels, pickedExtra, checkedLabels };
         }, {
-          unaidedList: catState.unaidedBrands.slice(0, 3),
+          unaidedList: catState.unaidedBrands,
           addCount: extraTargetCount,
           randSeed: Math.floor(rng() * 1000000)
         });
 
+        if (Array.isArray(q2Result.checkedLabels) && q2Result.checkedLabels.length > 0) {
+          catState.q2CheckedBrands = q2Result.checkedLabels;
+        }
         if (q2Result.allOfficialLabels?.length >= 3) {
           saveLearnedCategoryBrands(catState.categoryName, q2Result.allOfficialLabels);
         }
-        emitLog(`[${catState.categoryName} - 문항 2] 보조인지도 추가 선택(${q2Result.pickedExtra.length}개): [${q2Result.pickedExtra.join(', ')}]`, 'info', 'Q2');
+        emitLog(`[${catState.categoryName} - 문항 2] 보조인지도 총 ${q2Result.checkedLabels?.length || 0}개 선택 (추가: [${q2Result.pickedExtra.join(', ')}])`, 'info', 'Q2');
 
         await surveyPage.waitForTimeout(500);
         await clickNextButton(activeTarget);
         continue;
       }
 
-      // [문항 3] 다중 브랜드 매트릭스 (템플릿 A 표준 13행 + 템플릿 B 확장 16행 6-1/6-2/6-3 통합 정합성 엔진)
+      // [문항 3] 다중 브랜드 매트릭스 (상단 '평가항목' 브랜드 드롭다운 선행 선택 + 표준 13행/확장 16행 통합 정합성 엔진)
       if (info.screenType === 'Q3_MATRIX') {
         const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
+        const uniqueAdjs = Array.from(new Set([
+          ...catState.adjectives,
+          '신뢰가는', '믿음직함', '친숙하다', '깔끔함', '실용적인', '안정적인', '대중적인', '만족스러운'
+        ]));
+        const uniquePosReasons = Array.from(new Set([
+          ...catState.posReasons,
+          ...Q3_RECOMMEND_REASON_POOLS.positive
+        ]));
+        const uniqueNeuReasons = Array.from(new Set([
+          ...catState.neuReasons,
+          ...Q3_RECOMMEND_REASON_POOLS.neutral
+        ]));
+
         const colPlans = [];
         for (let colIdx = 0; colIdx < 6; colIdx++) {
           let colHasExp;
@@ -2281,13 +2672,26 @@ export async function runKmacKbpiSurvey({
             rec27NonUseIdx,
             ...scorePlan,
             extendedScores,
-            adjective: catState.adjectives[colIdx % catState.adjectives.length] || `친숙함${colIdx + 1}`,
-            posReason: catState.posReasons[colIdx % catState.posReasons.length] || '인지도가 높고 신뢰가 가서',
-            neuReason: catState.neuReasons[colIdx % catState.neuReasons.length] || '무난하고 대중적이어서'
+            adjective: uniqueAdjs[colIdx] || `${uniqueAdjs[colIdx % uniqueAdjs.length]}${colIdx + 1}`,
+            posReason: uniquePosReasons[colIdx % uniquePosReasons.length] || '인지도가 높고 신뢰가 가서',
+            neuReason: uniqueNeuReasons[colIdx % uniqueNeuReasons.length] || '무난하고 대중적이어서'
           });
         }
 
-        const matrixApplied = await activeTarget.evaluate(({ plans }) => {
+        const preferredHeaderBrands = Array.from(new Set([
+          ...(catState.unaidedBrands || []),
+          ...(catState.q2CheckedBrands || []),
+          ...(catState.allDistinctBrands || [])
+        ]));
+
+        const matrixApplied = await activeTarget.evaluate(async ({ plans, preferredBrands }) => {
+          const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
+          const normKey = (s) => String(s || '')
+            .replace(/브랜드$/g, '')
+            .replace(/[\s()[\]{}·•,./'"`’‘“”_-]+/g, '')
+            .toLowerCase()
+            .trim();
+
           const triggerInput = (el, val) => {
             if (!el || el.disabled || el.readOnly) return false;
             el.focus();
@@ -2295,20 +2699,38 @@ export async function runKmacKbpiSurvey({
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
             el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-            if (typeof $ !== 'undefined') {
-              $(el).val(String(val)).trigger('input').trigger('change').trigger('keyup');
+            if (typeof window.$ !== 'undefined') {
+              window.$(el).val(String(val)).trigger('input').trigger('change').trigger('keyup');
             }
             el.blur();
             return true;
           };
 
+          const setSelectVal = (sel, val) => {
+            if (!sel || sel.disabled) return false;
+            sel.focus();
+            sel.value = String(val);
+            sel.dispatchEvent(new Event('input', { bubbles: true }));
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') {
+              window.$(sel).val(String(val)).trigger('input').trigger('change');
+            }
+            sel.blur();
+            return true;
+          };
+
           const setRadioChecked = (r) => {
             if (!r || r.disabled) return false;
-            if (!r.checked) r.click();
+            const lb = r.closest('label') || (r.id ? document.querySelector(`label[for="${CSS.escape(r.id)}"]`) : null);
+            if (!r.checked) {
+              if (r.offsetParent !== null) r.click();
+              else if (lb && lb.offsetParent !== null) lb.click();
+              else r.click();
+            }
             r.checked = true;
             r.dispatchEvent(new Event('change', { bubbles: true }));
-            if (typeof $ !== 'undefined') {
-              $(r).prop('checked', true).trigger('change');
+            if (typeof window.$ !== 'undefined') {
+              window.$(r).prop('checked', true).trigger('change');
             }
             return true;
           };
@@ -2319,213 +2741,394 @@ export async function runKmacKbpiSurvey({
                 cb.click();
                 if (cb.checked) {
                   cb.checked = false;
-                  if (typeof $ !== 'undefined') $(cb).prop('checked', false).trigger('change');
+                  if (typeof window.$ !== 'undefined') window.$(cb).prop('checked', false).trigger('change');
                 }
               }
             });
           };
 
-          const allTablesWithInputs = Array.from(document.querySelectorAll('table')).filter(t =>
-            t.offsetParent !== null && t.querySelector('input, select, textarea')
-          );
-          const tables = allTablesWithInputs.filter(t => !allTablesWithInputs.some(other => other !== t && t.contains(other)));
+          const findMatrixTables = () => {
+            const allTables = Array.from(document.querySelectorAll('table')).filter(t =>
+              t.offsetParent !== null && (t.querySelector('input, select, textarea') || /평가항목/.test(t.innerText || ''))
+            );
+            return allTables.filter(t => !allTables.some(other => other !== t && t.contains(other)));
+          };
+
+          let tables = findMatrixTables();
           if (tables.length === 0) return { ok: false, reason: '평가 테이블 미발견' };
 
-          // 상단 평가 브랜드 열 헤더 이름 파악 (문항 4 매칭용)
-          const colBrandNames = [];
-          tables.forEach(tb => {
-            tb.querySelectorAll('thead input, thead div, thead th, thead td, tbody tr:first-child input, tbody tr:first-child td').forEach(el => {
-              const trTxt = (el.closest('tr')?.innerText || '').trim();
-              if (/^\d{1,2}(?:-\d+)?\s*[).]/.test(trTxt)) return;
-              const v = (el.value || el.innerText || '').trim();
-              if (v && v.length <= 35 && !/평가항목|^[1-6]$/.test(v) && colBrandNames.length < 6) {
-                if (!colBrandNames.includes(v)) colBrandNames.push(v);
+          // 상단 '평가항목' 브랜드 헤더 행 판별기 (1)~13) 문항 본문 행과 100% 분리!)
+          const isHeaderBrandRow = (tr) => {
+            if (!tr) return false;
+            if (tr.closest('thead')) return true;
+            const txt = (tr.innerText || '').replace(/\s+/g, ' ').trim();
+            if (/^\d{1,2}(?:-\d+)?\s*[).]/.test(txt)) return false;
+            if (/이\s*브랜드|후원\s*노력|전반적으로\s*만족|추천할\s*의향|신뢰가\s*간다|떠오르는\s*이미지|평소\s*생각과\s*가장|경험이\s*있으십니까/.test(txt)) {
+              return false;
+            }
+            return true;
+          };
+
+          const isPlaceholderOptText = (txt) => /^(선택|-\s*선택\s*-?|브랜드\s*선택|평가항목|--)$/i.test(String(txt || '').trim());
+
+          // 화면 상단 '알고 계신 브랜드 : 월드비전, 굿네이버스, 초록우산 어린이재단' 안내 배너 파싱
+          const bodyFullText = document.body?.innerText || '';
+          const bannerMatch = bodyFullText.match(/알고\s*계신\s*브랜드\s*[:：]\s*([^\n\r]+)/);
+          const bannerBrands = bannerMatch
+            ? bannerMatch[1].split(/[,，·|/]+/).map(s => s.trim()).filter(Boolean)
+            : [];
+          const orderedBrandHints = [...bannerBrands, ...(Array.isArray(preferredBrands) ? preferredBrands : [])];
+
+          // =========================================================================
+          // [Phase 1] 상단 '평가항목' 브랜드 드롭다운(<select>) 순차 선택 (Image 2 완벽 대응!)
+          // - 구호개발단체(NGO) 등 평가항목 헤더에서 브랜드를 먼저 선택해야 하위 1)~13) 셀이 생성·활성화되는 구조 처리
+          // - 열 간 동일 브랜드 중복 선택 100% 금지 (usedHeaderVals + usedHeaderNorms 추적)
+          // - 앞 열 선택 시 뒤 열(예: 3열) disabled가 해제되는 순차 잠금 구조를 위해 비동기 순차 대기 적용
+          // =========================================================================
+          let filledHeaderSel = 0;
+          const usedHeaderVals = new Set();
+          const usedHeaderNorms = new Set();
+          const headerBrandByCol = [];
+
+          for (let hPass = 0; hPass < 8; hPass++) {
+            tables = findMatrixTables();
+            const headerSelects = [];
+            for (const tb of tables) {
+              const allTrs = Array.from(tb.querySelectorAll('thead tr, tbody tr'));
+              for (const tr of allTrs) {
+                if (!isHeaderBrandRow(tr)) continue;
+                Array.from(tr.querySelectorAll('select')).forEach(sel => {
+                  if (sel.offsetParent !== null || sel.closest('th, td')?.offsetParent !== null) {
+                    headerSelects.push(sel);
+                  }
+                });
+              }
+            }
+            if (headerSelects.length === 0) break;
+
+            // 이미 선택되어 있는 헤더 브랜드 수집 (중복 방지 기준선)
+            headerSelects.forEach((sel, sIdx) => {
+              const curOpt = sel.options[sel.selectedIndex];
+              const curTxt = (curOpt?.text || '').trim();
+              if (sel.value && curTxt && !isPlaceholderOptText(curTxt)) {
+                usedHeaderVals.add(String(sel.value));
+                const nk = normKey(curTxt);
+                if (nk) usedHeaderNorms.add(nk);
+                headerBrandByCol[sIdx] = curTxt;
               }
             });
-          });
+
+            // 아직 선택되지 않은 첫 번째 활성 헤더 <select> 탐색
+            const targetIdx = headerSelects.findIndex(sel => {
+              if (sel.disabled) return false;
+              const curOpt = sel.options[sel.selectedIndex];
+              const curTxt = (curOpt?.text || '').trim();
+              return !sel.value || isPlaceholderOptText(curTxt);
+            });
+            if (targetIdx < 0) break;
+
+            const targetSel = headerSelects[targetIdx];
+            const candidateOpts = Array.from(targetSel.options).filter(o => {
+              const t = (o.text || '').trim();
+              if (o.value === '' || !t || isPlaceholderOptText(t)) return false;
+              if (/(^|\s)기타(\s|$)|모름/.test(t)) return false;
+              return true;
+            });
+
+            const realBrandOpts = candidateOpts.filter(o => !/^(없음|해당\s*없음|더\s*이상\s*없음)$/.test((o.text || '').trim()));
+            const noneOpts = candidateOpts.filter(o => /^(없음|해당\s*없음|더\s*이상\s*없음)$/.test((o.text || '').trim()));
+
+            // 이미 앞 열에서 선택된 브랜드는 100% 배제!
+            const unusedRealOpts = realBrandOpts.filter(o => {
+              const nk = normKey(o.text);
+              return !usedHeaderVals.has(String(o.value)) && (!nk || !usedHeaderNorms.has(nk));
+            });
+
+            let pickOpt = null;
+            if (unusedRealOpts.length > 0) {
+              for (const hint of orderedBrandHints) {
+                const hNorm = normKey(hint);
+                if (!hNorm) continue;
+                const matched = unusedRealOpts.find(o => {
+                  const oTxt = (o.text || '').trim();
+                  const oNorm = normKey(oTxt);
+                  return oTxt === hint || oNorm === hNorm || oTxt.includes(hint) || hint.includes(oTxt);
+                });
+                if (matched) {
+                  pickOpt = matched;
+                  break;
+                }
+              }
+              if (!pickOpt) pickOpt = unusedRealOpts[0];
+            } else if (noneOpts.length > 0) {
+              pickOpt = noneOpts[0];
+            }
+
+            if (!pickOpt) break;
+
+            setSelectVal(targetSel, pickOpt.value);
+            const pickedTxt = (pickOpt.text || '').trim();
+            usedHeaderVals.add(String(pickOpt.value));
+            const pickedNorm = normKey(pickedTxt);
+            if (pickedNorm && !/^(없음|해당없음|더이상없음)$/.test(pickedNorm)) {
+              usedHeaderNorms.add(pickedNorm);
+            }
+            headerBrandByCol[targetIdx] = pickedTxt;
+            filledHeaderSel++;
+
+            // 헤더 브랜드 선택 직후 하위 1)~13) 평가 셀 동적 생성 및 다음 열 잠금 해제 대기
+            await waitMs(230);
+          }
+
+          if (filledHeaderSel > 0) {
+            await waitMs(260);
+            tables = findMatrixTables();
+          }
+
+          // 상단 평가 브랜드 열 헤더 이름 파악 (헤더 드롭다운 선택값 최우선 + 고정 텍스트/인풋 병합)
+          const colBrandNames = headerBrandByCol.filter(b => b && !/^(없음|해당\s*없음|더\s*이상\s*없음|선택)$/.test(b));
+          if (colBrandNames.length === 0) {
+            tables.forEach(tb => {
+              tb.querySelectorAll('thead select, thead input, thead div, thead th, thead td, tbody tr:first-child select, tbody tr:first-child input, tbody tr:first-child td').forEach(el => {
+                const tr = el.closest('tr');
+                if (!isHeaderBrandRow(tr)) return;
+                let v = '';
+                if (el.tagName === 'SELECT') {
+                  v = (el.options[el.selectedIndex]?.text || '').trim();
+                } else {
+                  v = (el.value || el.innerText || '').trim();
+                }
+                if (v && v.length <= 40 && !isPlaceholderOptText(v) && !/평가항목|^[1-6]$/.test(v) && colBrandNames.length < 6) {
+                  if (!colBrandNames.includes(v)) colBrandNames.push(v);
+                }
+              });
+            });
+          }
 
           const enteredScoresByCol = [[], [], [], [], [], []];
           const lastScoreByCol = [4, 4, 4, 4, 4, 4];
+          const colActualHasExp = [null, null, null, null, null, null];
           let filledTxt = 0;
-          let filledSel = 0;
+          let filledSel = filledHeaderSel;
           let filledRad = 0;
           let processedRows = 0;
 
-          for (const tb of tables) {
-            const trs = Array.from(tb.querySelectorAll('tbody tr')).filter(tr => tr.offsetParent !== null);
-            for (const tr of trs) {
-              const dataCells = Array.from(tr.querySelectorAll('td, th')).filter(cell => {
-                if (cell.offsetParent === null) return false;
-                return Boolean(
-                  cell.querySelector(
-                    'select:not(:disabled), textarea:not(:disabled):not([readonly]), input[type="radio"]:not(:disabled), input[type="checkbox"]:not(:disabled), input[type="number"]:not(:disabled):not([readonly]), input[type="text"]:not(:disabled):not([readonly]), input:not([type]):not(:disabled):not([readonly])'
-                  )
-                );
-              });
-              if (dataCells.length === 0) continue;
+          // =========================================================================
+          // [Phase 2] 본문 1)~13) / 6-1~6-3 평가 행 정밀 기입 (동적 언하이드 행 2회 패스 지원)
+          // =========================================================================
+          const fillBodyRowsPass = (isRetryPass = false) => {
+            for (const tb of tables) {
+              const trs = Array.from(tb.querySelectorAll('tbody tr')).filter(tr => tr.offsetParent !== null);
+              for (const tr of trs) {
+                if (isHeaderBrandRow(tr)) {
+                  // 헤더 행의 고정 input 브랜드명만 보조 수집하고 덮어쓰기 절대 금지!
+                  if (!isRetryPass && colBrandNames.length === 0) {
+                    tr.querySelectorAll('td, th').forEach(td => {
+                      const hdrInp = td.querySelector('input:not([type="radio"]):not([type="checkbox"])');
+                      const hdrSel = td.querySelector('select');
+                      const bv = (hdrSel ? (hdrSel.options[hdrSel.selectedIndex]?.text || '') : (hdrInp?.value || td.innerText || '')).trim();
+                      if (bv && bv.length <= 40 && !isPlaceholderOptText(bv) && !/평가항목|^[1-6]$/.test(bv) && !colBrandNames.includes(bv) && colBrandNames.length < 6) {
+                        colBrandNames.push(bv);
+                      }
+                    });
+                  }
+                  continue;
+                }
 
-              const firstCell = tr.querySelector('th, td');
-              const rowTitle = ((firstCell && !dataCells.includes(firstCell) ? firstCell.innerText : tr.innerText) || '')
-                .replace(/\s+/g, ' ')
-                .trim();
+                const dataCells = Array.from(tr.querySelectorAll('td, th')).filter(cell => {
+                  if (cell.offsetParent === null) return false;
+                  return Boolean(
+                    cell.querySelector(
+                      'select:not(:disabled), textarea:not(:disabled):not([readonly]), input[type="radio"]:not(:disabled), input[type="checkbox"]:not(:disabled), input[type="number"]:not(:disabled):not([readonly]), input[type="text"]:not(:disabled):not([readonly]), input:not([type]):not(:disabled):not([readonly])'
+                    )
+                  );
+                });
+                if (dataCells.length === 0) continue;
 
-              // 템플릿 B의 0번 브랜드명 헤더 행(rowTitle이 비어 있고 이미 브랜드명이 채워진 행) 덮어쓰기 방지 가드!
-              if (!rowTitle || /^평가항목(\s+[1-6])*$/.test(rowTitle)) {
-                dataCells.forEach(td => {
-                  const hdrInp = td.querySelector('input');
-                  const bv = (hdrInp?.value || td.innerText || '').trim();
-                  if (bv && bv.length <= 35 && !/^[1-6]$/.test(bv) && !colBrandNames.includes(bv) && colBrandNames.length < 6) {
-                    colBrandNames.push(bv);
+                const firstCell = tr.querySelector('th, td');
+                const rowTitle = ((firstCell && !dataCells.includes(firstCell) ? firstCell.innerText : tr.innerText) || '')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                if (!rowTitle || /^평가항목(\s+[1-6])*$/.test(rowTitle)) continue;
+
+                if (!isRetryPass) processedRows++;
+                const isOverallSatRow = /전반적으로\s*만족|전반적\s*만족/.test(rowTitle);
+                const isReasonWordRow = /\b6-1\s*\)|점수를\s*주신\s*이유|이유는\s*무엇/.test(rowTitle);
+                const isRecExpRow = /\b6-2\s*\)|추천하거나.*추천\s*받은/.test(rowTitle);
+                const isAiExpRow = /\b6-3\s*\)|생성형\s*AI/.test(rowTitle);
+                const isAttitudeRow11 = /(^|\s)11\s*\)|평소.*생각|선호\s*태도|편익.*동의/.test(rowTitle);
+                const isImageWordRow = /(^|\s)12\s*\)|(^|\s)6\s*\)\s*떠오르는|떠오르는\s*이미지|형용사|단어|연상|생각나는\s*이미지/.test(rowTitle);
+                const isExpRow = /(^|\s)13\s*\)|이용\/구입해\s*보신|구입해\s*보신|이용해\s*보신|방문해\s*보신|후원을?\s*하신|후원\/이용해\s*본|진료/.test(rowTitle);
+                const isNegativeRow = /전환|이탈|불만|피해|부작용|중단/.test(rowTitle);
+
+                dataCells.forEach((td, cIdx) => {
+                  const plan = plans[cIdx] || plans[0];
+                  if (!plan) return;
+                  const safeCol = Math.min(cIdx, enteredScoresByCol.length - 1);
+                  const colBucket = enteredScoresByCol[safeCol];
+
+                  // 1) <select> 드롭다운 셀 (11번 평소 태도 등)
+                  const sel = td.querySelector('select:not(:disabled)');
+                  if (sel && (sel.offsetParent !== null || td.offsetParent !== null)) {
+                    const curOptTxt = (sel.options[sel.selectedIndex]?.text || '').trim();
+                    if (isRetryPass && sel.value && !isPlaceholderOptText(curOptTxt)) return;
+                    const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !isPlaceholderOptText(o.text));
+                    if (validOpts.length > 0) {
+                      let choiceIdx = plan.attitudeChoice - 1;
+                      if (!plan.hasPurchaseExp) {
+                        choiceIdx = Math.min(2, Math.max(0, choiceIdx)); // 구입경험 없음: 절대 4·5번(idx 3,4) 선택 금지!
+                      } else if (colBucket.length > 0) {
+                        const dynAvg = Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length);
+                        if (dynAvg >= 4 && choiceIdx < 3) choiceIdx = 3;
+                        else if (dynAvg <= 3 && choiceIdx >= 3) choiceIdx = 2;
+                      }
+                      const targetOpt = validOpts[Math.max(0, Math.min(validOpts.length - 1, choiceIdx))] || validOpts[0];
+                      if (setSelectVal(sel, targetOpt.value)) filledSel++;
+                    }
+                    return;
+                  }
+
+                  // 2) 텍스트 / 숫자 입력 셀 (점수 평가, 6-1 추천사유 단답형, 10 전반적만족도, 11 태도, 12 연상이미지)
+                  const txtInp = Array.from(
+                    td.querySelectorAll('textarea, input[type="number"], input[type="text"], input:not([type])')
+                  ).find(inp => (inp.offsetParent !== null || td.offsetParent !== null) && !inp.disabled && !inp.readOnly && !['radio', 'checkbox', 'hidden', 'button', 'submit'].includes(inp.type));
+
+                  if (txtInp) {
+                    if (isRetryPass && String(txtInp.value || '').trim() !== '') return;
+                    uncheckSkipCheckboxesInCell(td);
+                    if (isReasonWordRow) {
+                      const prevRecScore = lastScoreByCol[safeCol] || 4;
+                      const reasonText = prevRecScore >= 4 ? plan.posReason : plan.neuReason;
+                      if (triggerInput(txtInp, reasonText)) filledTxt++;
+                    } else if (isImageWordRow) {
+                      if (triggerInput(txtInp, plan.adjective)) filledTxt++;
+                    } else if (isAttitudeRow11 && !plan.hasPurchaseExp) {
+                      const cappedAtt = Math.min(3, Math.max(1, Number(plan.attitudeChoice || 2)));
+                      if (triggerInput(txtInp, cappedAtt)) filledTxt++;
+                    } else if (isOverallSatRow) {
+                      const avgScore = colBucket.length > 0
+                        ? Math.max(3, Math.min(5, Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length)))
+                        : plan.overallSatisfaction;
+                      if (triggerInput(txtInp, avgScore)) filledTxt++;
+                    } else {
+                      const sIdx = colBucket.length;
+                      let scoreVal = plan.extendedScores[sIdx % plan.extendedScores.length];
+                      if (sIdx >= 2 && colBucket.every(v => v === scoreVal)) {
+                        scoreVal = scoreVal === 4 ? 5 : 4;
+                      }
+                      colBucket.push(scoreVal);
+                      lastScoreByCol[safeCol] = scoreVal;
+                      if (triggerInput(txtInp, scoreVal)) filledTxt++;
+                    }
+                    return;
+                  }
+
+                  // 3) 라디오 버튼 셀 (6-2 추천경험 4지선다 / 6-3 AI검색 예·아니오 / 11번 태도 5지선다 / 13번 이용·후원경험 예·아니오 / 5점척도)
+                  const cellRadios = Array.from(td.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
+                  if (cellRadios.length > 0) {
+                    const byName = new Map();
+                    cellRadios.forEach(r => {
+                      const k = r.name || '__cell_radio__';
+                      if (!byName.has(k)) byName.set(k, []);
+                      byName.get(k).push(r);
+                    });
+
+                    for (const [rName, grp] of byName.entries()) {
+                      if (isRetryPass && grp.some(r => r.checked)) continue;
+                      if (grp.length >= 5) {
+                        const sIdx = colBucket.length;
+                        let scoreVal;
+                        if (isAttitudeRow11) {
+                          scoreVal = !plan.hasPurchaseExp
+                            ? Math.min(3, Math.max(1, Number(plan.attitudeChoice || 2)))
+                            : Math.min(5, Math.max(3, Number(plan.attitudeChoice || 4)));
+                        } else if (isOverallSatRow) {
+                          scoreVal = colBucket.length > 0
+                            ? Math.max(3, Math.min(5, Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length)))
+                            : plan.overallSatisfaction;
+                        } else {
+                          scoreVal = plan.extendedScores[sIdx % plan.extendedScores.length];
+                          if (sIdx >= 2 && colBucket.every(v => v === scoreVal)) {
+                            scoreVal = scoreVal === 4 ? 5 : 4;
+                          }
+                          colBucket.push(scoreVal);
+                          lastScoreByCol[safeCol] = scoreVal;
+                        }
+                        const pickR = grp.find(r => String(r.value) === String(scoreVal) || String(r.getAttribute('akey') || '') === String(scoreVal)) || grp[Math.min(grp.length - 1, scoreVal - 1)];
+                        if (setRadioChecked(pickR)) filledRad++;
+                      } else if (isRecExpRow || /_REC\d+$/i.test(rName) || grp.length === 4) {
+                        const usePositiveRec = plan.hasPurchaseExp && (lastScoreByCol[safeCol] || 4) >= 4;
+                        const targetIdx = usePositiveRec ? plan.rec27PosIdx : plan.rec27NonUseIdx;
+                        const pickR = grp[Math.max(0, Math.min(grp.length - 1, targetIdx))] || grp[grp.length - 1];
+                        if (setRadioChecked(pickR)) filledRad++;
+                      } else if (isAiExpRow || /_AI\d+$/i.test(rName)) {
+                        const wantLabel = plan.aiSearchedCol ? /^(예|있다|있음)$/ : /^(아니오|아니요|없다|없음)$/;
+                        const byLb = grp.find(r => wantLabel.test((r.closest('label, span, div')?.innerText || (r.id ? document.querySelector(`label[for="${CSS.escape(r.id)}"]`)?.innerText : '') || '').trim()));
+                        const fallbackR = plan.aiSearchedCol ? grp[0] : grp[grp.length - 1];
+                        if (setRadioChecked(byLb || fallbackR)) filledRad++;
+                      } else {
+                        const wantPositive = isNegativeRow ? false : (isExpRow ? plan.hasPurchaseExp : plan.hasPurchaseExp);
+                        const wantLabel = wantPositive ? /^(예|있다|있음|그렇다)$/ : /^(아니오|아니요|없다|없음|아니다)$/;
+                        const byLb = grp.find(r => {
+                          const lbTxt = (r.closest('label, span, div')?.innerText || (r.id ? document.querySelector(`label[for="${CSS.escape(r.id)}"]`)?.innerText : '') || '').trim();
+                          return wantLabel.test(lbTxt);
+                        });
+                        const fallbackR = wantPositive ? grp[0] : grp[grp.length - 1];
+                        if (setRadioChecked(byLb || fallbackR)) {
+                          filledRad++;
+                          if (isExpRow) colActualHasExp[safeCol] = wantPositive;
+                        }
+                      }
+                    }
+                    return;
+                  }
+
+                  // 4) 단독 체크박스 셀
+                  const cellCbs = Array.from(td.querySelectorAll('input[type="checkbox"]'))
+                    .filter(cb => !cb.disabled && (cb.offsetParent !== null || td.offsetParent !== null));
+                  if (cellCbs.length > 0 && !cellCbs.some(cb => cb.checked)) {
+                    const validCb = cellCbs.find(cb => !/없음|모름|기타/.test((cb.closest('label, span, div')?.innerText || '').trim())) || cellCbs[0];
+                    if (validCb && !validCb.checked) {
+                      validCb.click();
+                      validCb.checked = true;
+                      if (typeof window.$ !== 'undefined') window.$(validCb).prop('checked', true).trigger('change');
+                    }
                   }
                 });
-                continue;
               }
-
-              processedRows++;
-              const isOverallSatRow = /전반적으로\s*만족|전반적\s*만족/.test(rowTitle);
-              const isReasonWordRow = /\b6-1\s*\)|점수를\s*주신\s*이유|이유는\s*무엇/.test(rowTitle);
-              const isRecExpRow = /\b6-2\s*\)|추천하거나.*추천\s*받은/.test(rowTitle);
-              const isAiExpRow = /\b6-3\s*\)|생성형\s*AI/.test(rowTitle);
-              const isImageWordRow = /\b12\s*\)|떠오르는\s*이미지|형용사|단어|연상|생각나는\s*이미지/.test(rowTitle);
-              const isExpRow = /\b13\s*\)|이용\/구입해\s*보신|구입해\s*보신|이용해\s*보신|방문해\s*보신|진료/.test(rowTitle);
-              const isNegativeRow = /전환|이탈|불만|피해|부작용|중단/.test(rowTitle);
-
-              dataCells.forEach((td, cIdx) => {
-                const plan = plans[cIdx] || plans[0];
-                if (!plan) return;
-                const safeCol = Math.min(cIdx, enteredScoresByCol.length - 1);
-                const colBucket = enteredScoresByCol[safeCol];
-
-                // 1) <select> 드롭다운 셀 (11번 평소 태도 등)
-                const sel = td.querySelector('select:not(:disabled)');
-                if (sel && sel.offsetParent !== null) {
-                  const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !/선택/.test(o.text));
-                  if (validOpts.length > 0) {
-                    let choiceIdx = plan.attitudeChoice - 1;
-                    if (!plan.hasPurchaseExp) {
-                      choiceIdx = Math.min(2, Math.max(0, choiceIdx)); // 구입경험 없음: 절대 4·5번(idx 3,4) 선택 금지!
-                    } else if (colBucket.length > 0) {
-                      const dynAvg = Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length);
-                      if (dynAvg >= 4 && choiceIdx < 3) choiceIdx = 3;
-                      else if (dynAvg <= 3 && choiceIdx >= 3) choiceIdx = 2;
-                    }
-                    const targetOpt = validOpts[Math.max(0, Math.min(validOpts.length - 1, choiceIdx))] || validOpts[0];
-                    sel.value = targetOpt.value;
-                    sel.dispatchEvent(new Event('change', { bubbles: true }));
-                    if (typeof $ !== 'undefined') $(sel).val(targetOpt.value).trigger('change');
-                    filledSel++;
-                  }
-                  return;
-                }
-
-                // 2) 텍스트 / 숫자 입력 셀 (점수 평가, 6-1 추천사유 단답형, 10 전반적만족도, 12 연상이미지)
-                const txtInp = Array.from(
-                  td.querySelectorAll('textarea, input[type="number"], input[type="text"], input:not([type])')
-                ).find(inp => inp.offsetParent !== null && !inp.disabled && !inp.readOnly && !['radio', 'checkbox', 'hidden', 'button', 'submit'].includes(inp.type));
-
-                if (txtInp) {
-                  uncheckSkipCheckboxesInCell(td);
-                  if (isReasonWordRow) {
-                    const prevRecScore = lastScoreByCol[safeCol] || 4;
-                    const reasonText = prevRecScore >= 4 ? plan.posReason : plan.neuReason;
-                    if (triggerInput(txtInp, reasonText)) filledTxt++;
-                  } else if (isImageWordRow) {
-                    if (triggerInput(txtInp, plan.adjective)) filledTxt++;
-                  } else if (isOverallSatRow) {
-                    const avgScore = colBucket.length > 0
-                      ? Math.max(3, Math.min(5, Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length)))
-                      : plan.overallSatisfaction;
-                    if (triggerInput(txtInp, avgScore)) filledTxt++;
-                  } else {
-                    const sIdx = colBucket.length;
-                    let scoreVal = plan.extendedScores[sIdx % plan.extendedScores.length];
-                    if (sIdx >= 2 && colBucket.every(v => v === scoreVal)) {
-                      scoreVal = scoreVal === 4 ? 5 : 4;
-                    }
-                    colBucket.push(scoreVal);
-                    lastScoreByCol[safeCol] = scoreVal;
-                    if (triggerInput(txtInp, scoreVal)) filledTxt++;
-                  }
-                  return;
-                }
-
-                // 3) 라디오 버튼 셀 (6-2 추천경험 4지선다 / 6-3 AI검색 예·아니오 / 13번 이용경험 예·아니오 / 5점척도)
-                const cellRadios = Array.from(td.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled);
-                if (cellRadios.length > 0) {
-                  const byName = new Map();
-                  cellRadios.forEach(r => {
-                    const k = r.name || '__cell_radio__';
-                    if (!byName.has(k)) byName.set(k, []);
-                    byName.get(k).push(r);
-                  });
-
-                  for (const [rName, grp] of byName.entries()) {
-                    if (grp.length >= 5) {
-                      const sIdx = colBucket.length;
-                      const scoreVal = isOverallSatRow
-                        ? (colBucket.length > 0 ? Math.max(3, Math.min(5, Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length))) : plan.overallSatisfaction)
-                        : plan.extendedScores[sIdx % plan.extendedScores.length];
-                      if (!isOverallSatRow) {
-                        colBucket.push(scoreVal);
-                        lastScoreByCol[safeCol] = scoreVal;
-                      }
-                      const pickR = grp.find(r => String(r.value) === String(scoreVal)) || grp[Math.min(grp.length - 1, scoreVal - 1)];
-                      if (setRadioChecked(pickR)) filledRad++;
-                    } else if (isRecExpRow || /_REC\d+$/i.test(rName) || grp.length === 4) {
-                      // 6-2) 추천/피추천 경험 4지선다: 이용경험 없으면 3번(추천받음)·4번(경험없음)만 선택!
-                      const usePositiveRec = plan.hasPurchaseExp && (lastScoreByCol[safeCol] || 4) >= 4;
-                      const targetIdx = usePositiveRec ? plan.rec27PosIdx : plan.rec27NonUseIdx;
-                      const pickR = grp[Math.max(0, Math.min(grp.length - 1, targetIdx))] || grp[grp.length - 1];
-                      if (setRadioChecked(pickR)) filledRad++;
-                    } else if (isAiExpRow || /_AI\d+$/i.test(rName)) {
-                      // 6-3) 생성형 AI 검색 경험: 문항 6 응답과 100% 연동
-                      const wantLabel = plan.aiSearchedCol ? /^(예|있다|있음)$/ : /^(아니오|아니요|없다|없음)$/;
-                      const byLb = grp.find(r => wantLabel.test((r.closest('label, span, div')?.innerText || document.querySelector(`label[for="${r.id}"]`)?.innerText || '').trim()));
-                      const fallbackR = plan.aiSearchedCol ? grp[0] : grp[grp.length - 1];
-                      if (setRadioChecked(byLb || fallbackR)) filledRad++;
-                    } else {
-                      // 13) 브랜드 이용/구입 경험 등 일반 예/아니오 라디오
-                      const wantPositive = isNegativeRow ? false : (isExpRow ? plan.hasPurchaseExp : plan.hasPurchaseExp);
-                      const wantLabel = wantPositive ? /^(예|있다|있음|그렇다)$/ : /^(아니오|아니요|없다|없음|아니다)$/;
-                      const byLb = grp.find(r => {
-                        const lbTxt = (r.closest('label, span, div')?.innerText || document.querySelector(`label[for="${r.id}"]`)?.innerText || '').trim();
-                        return wantLabel.test(lbTxt);
-                      });
-                      const fallbackR = wantPositive ? grp[0] : grp[grp.length - 1];
-                      if (setRadioChecked(byLb || fallbackR)) filledRad++;
-                    }
-                  }
-                  return;
-                }
-
-                // 4) 단독 체크박스 셀
-                const cellCbs = Array.from(td.querySelectorAll('input[type="checkbox"]'))
-                  .filter(cb => !cb.disabled && cb.offsetParent !== null);
-                if (cellCbs.length > 0) {
-                  const validCb = cellCbs.find(cb => !/없음|모름|기타/.test((cb.closest('label, span, div')?.innerText || '').trim())) || cellCbs[0];
-                  if (validCb && !validCb.checked) {
-                    validCb.click();
-                    validCb.checked = true;
-                    if (typeof $ !== 'undefined') $(validCb).prop('checked', true).trigger('change');
-                  }
-                }
-              });
             }
-          }
+          };
 
-          // 테이블 외부 또는 누락된 필수 컨트롤 최종 스윕
+          fillBodyRowsPass(false);
+          await waitMs(160);
+          tables = findMatrixTables();
+          fillBodyRowsPass(true);
+
+          // [Phase 3] 테이블 외부 또는 누락된 필수 컨트롤 최종 스윕 (헤더 드롭다운 중복 방지 유지!)
           document.querySelectorAll('select:not(:disabled)').forEach((sel, idx) => {
-            if (sel.offsetParent !== null && (!sel.value || /선택/.test(sel.options[sel.selectedIndex]?.text || ''))) {
-              const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !/선택/.test(o.text));
+            if (sel.offsetParent === null && sel.closest('th, td, div')?.offsetParent === null) return;
+            const curTxt = (sel.options[sel.selectedIndex]?.text || '').trim();
+            if (sel.value && curTxt && !isPlaceholderOptText(curTxt)) return;
+
+            const inHeader = isHeaderBrandRow(sel.closest('tr'));
+            const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !isPlaceholderOptText(o.text) && !/(^|\s)기타(\s|$)|모름/.test(o.text));
+            if (validOpts.length === 0) return;
+
+            let targetOpt = null;
+            if (inHeader) {
+              targetOpt = validOpts.find(o => !usedHeaderVals.has(String(o.value)) && !usedHeaderNorms.has(normKey(o.text))) || validOpts[0];
+              if (targetOpt) {
+                usedHeaderVals.add(String(targetOpt.value));
+                const nk = normKey(targetOpt.text);
+                if (nk) usedHeaderNorms.add(nk);
+              }
+            } else {
               const plan = plans[idx % plans.length] || plans[0];
               const safeIdx = plan.hasPurchaseExp ? (plan.attitudeChoice - 1) : Math.min(2, plan.attitudeChoice - 1);
-              const targetOpt = validOpts[Math.max(0, Math.min(validOpts.length - 1, safeIdx))] || validOpts[0];
-              if (targetOpt) {
-                sel.value = targetOpt.value;
-                sel.dispatchEvent(new Event('change', { bubbles: true }));
-                if (typeof $ !== 'undefined') $(sel).val(targetOpt.value).trigger('change');
-                filledSel++;
-              }
+              targetOpt = validOpts[Math.max(0, Math.min(validOpts.length - 1, safeIdx))] || validOpts[0];
+            }
+            if (targetOpt && setSelectVal(sel, targetOpt.value)) {
+              filledSel++;
             }
           });
 
@@ -2541,12 +3144,15 @@ export async function runKmacKbpiSurvey({
           for (const grp of globalRadioGroups.values()) {
             if (!grp.some(r => r.checked) && grp.length > 0) {
               const plan = plans[gIdx % plans.length] || plans[0];
-              const pick = plan.hasPurchaseExp ? grp[0] : grp[grp.length - 1];
+              const pick = grp.length >= 5
+                ? (grp[Math.min(grp.length - 1, (plan.overallSatisfaction || 4) - 1)] || grp[0])
+                : (plan.hasPurchaseExp ? grp[0] : grp[grp.length - 1]);
               if (setRadioChecked(pick)) filledRad++;
             }
             gIdx++;
           }
 
+          const usedFallbackWords = new Set();
           document.querySelectorAll('textarea, input[type="number"], input[type="text"], input:not([type])').forEach((inp, idx) => {
             if (inp.offsetParent === null || inp.disabled || inp.readOnly) return;
             if (['radio', 'checkbox', 'hidden', 'button', 'submit', 'reset', 'file'].includes(inp.type)) return;
@@ -2554,17 +3160,26 @@ export async function runKmacKbpiSurvey({
             if (String(inp.value || '').trim() !== '') return;
             const trTxt = (inp.closest('tr, div')?.innerText || '').trim();
             const plan = plans[idx % plans.length] || plans[0];
-            const val = /6-1|이유/.test(trTxt)
+            let val = /6-1|이유/.test(trTxt)
               ? plan.posReason
               : (/이미지|형용사|단어/.test(trTxt) ? plan.adjective : plan.overallSatisfaction);
+            if (typeof val === 'string' && usedFallbackWords.has(val)) {
+              val = `${val} 느낌`;
+            }
+            if (typeof val === 'string') usedFallbackWords.add(val);
             if (triggerInput(inp, val)) filledTxt++;
           });
 
           const emptyControls = Array.from(document.querySelectorAll('input:not([type="hidden"]):not(:disabled):not([readonly]), select:not(:disabled), textarea:not(:disabled)'))
             .filter(el => {
-              if (el.offsetParent === null) return false;
+              if (el.offsetParent === null && el.closest('td, th, label')?.offsetParent === null) return false;
+              if (el.classList.contains('input-etc') || /etc/i.test(el.name || '')) return false;
               if (el.type === 'radio') return !globalRadioGroups.get(el.name)?.some(x => x.checked);
               if (el.type === 'checkbox') return false;
+              if (el.tagName === 'SELECT') {
+                const t = (el.options[el.selectedIndex]?.text || '').trim();
+                return !el.value || isPlaceholderOptText(t);
+              }
               return String(el.value || '').trim() === '';
             })
             .slice(0, 5)
@@ -2572,22 +3187,30 @@ export async function runKmacKbpiSurvey({
 
           return {
             ok: true,
+            filledHeaderSel,
             colBrandNames,
+            colActualHasExp,
             rowCount: processedRows,
             filledTxt,
             filledSel,
             filledRad,
             emptyControls
           };
-        }, { plans: colPlans });
+        }, { plans: colPlans, preferredBrands: preferredHeaderBrands });
 
-        if (matrixApplied.colBrandNames?.[0] && catState.purchaseExp === '있음') {
-          catState.q4SelectedBrand = matrixApplied.colBrandNames[0];
-          categoryConfigs[catState.slotIndex].topBrand = matrixApplied.colBrandNames[0];
+        if (Array.isArray(matrixApplied.colBrandNames) && matrixApplied.colBrandNames.length > 0 && catState.purchaseExp === '있음') {
+          const expColIdx = Array.isArray(matrixApplied.colActualHasExp)
+            ? matrixApplied.colActualHasExp.findIndex(v => v === true)
+            : 0;
+          const pickedBrand = matrixApplied.colBrandNames[expColIdx >= 0 ? expColIdx : 0] || matrixApplied.colBrandNames[0];
+          if (pickedBrand) {
+            catState.q4SelectedBrand = pickedBrand;
+            categoryConfigs[catState.slotIndex].topBrand = pickedBrand;
+          }
         }
 
         emitLog(
-          `[${catState.categoryName} - 문항 3] 평가 완료 (행=${matrixApplied.rowCount}, 입력=${matrixApplied.filledTxt}, 선택=${matrixApplied.filledSel}, 라디오=${matrixApplied.filledRad}${matrixApplied.emptyControls?.length ? `, 미입력=${matrixApplied.emptyControls.join(',')}` : ''})`,
+          `[${catState.categoryName} - 문항 3] 평가 완료 (${matrixApplied.filledHeaderSel ? `평가항목브랜드선택=${matrixApplied.filledHeaderSel}열([${(matrixApplied.colBrandNames || []).join(', ')}]), ` : ''}행=${matrixApplied.rowCount}, 입력=${matrixApplied.filledTxt}, 선택=${matrixApplied.filledSel}, 라디오=${matrixApplied.filledRad}${matrixApplied.emptyControls?.length ? `, 미입력=${matrixApplied.emptyControls.join(',')}` : ''})`,
           'info',
           'Q3'
         );
@@ -2597,13 +3220,13 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [문항 4] 가장 최근에 구입/이용한 브랜드 (파일럿 stopAtStep === 'Q4' 안전 정지 지점!)
+      // [문항 4] 가장 최근에 구입/이용한 브랜드 (GetData ControlsV2 스킨·분류이동 라디오·비활성 보기 완벽 대응)
       if (info.screenType === 'Q4_RECENT_BRAND') {
         const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
 
         if (stopAtStep === 'Q4') {
           emitLog(
-            `🛑 [파일럿 문항 4 안전 정지] #${seq} ${respondentName} — "${catState.categoryName}" 품목의 문항 4 화면에 도달하여 요청하신 대로 제출 전 안전 정지했습니다.`,
+            `🛑 [파일럿 문항 4 안전 정지] #${seq} ${respondentName} — "${catState.categoryName}" 품목의 문항 4 화면에 도달하여 설정된 정지 옵션에 따라 대기합니다.`,
             'info',
             'Q4_WAIT'
           );
@@ -2612,46 +3235,104 @@ export async function runKmacKbpiSurvey({
             safetyStopped: true,
             stoppedAt: 'Q4',
             statusLabel: '문항4 대기(파일럿)',
-            quotaStatus: 'pilot_done',
+            quotaStatus: 'q4_wait',
             progress: info.progressPct ? `${info.progressPct}%` : '4%',
             categoryConfigs,
-            gps
+            gps,
+            surveyDistrict,
+            surveyDong
           };
         }
 
         const pickedQ4 = await activeTarget.evaluate(({ targetBrand, isNone }) => {
+          const normKey = (s) => String(s || '')
+            .replace(/브랜드$/g, '')
+            .replace(/[\s()[\]{}·•,./'"`’‘“”_-]+/g, '')
+            .toLowerCase()
+            .trim();
           const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q4--"]')).find(el => el.offsetParent !== null) || document;
-          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
+
+          const getRadioMeta = (r) => {
+            const directLabel = r.closest('label');
+            const forLabel = r.id ? document.querySelector(`label[for="${CSS.escape(r.id)}"]`) : null;
+            const unitBox = r.closest('.answer-unit-box, .s-radio, li, tr');
+            const isVis = r.offsetParent !== null ||
+              directLabel?.offsetParent !== null ||
+              forLabel?.offsetParent !== null ||
+              unitBox?.offsetParent !== null;
+            const isDis = Boolean(
+              r.disabled ||
+              r.getAttribute('aria-disabled') === 'true' ||
+              directLabel?.classList.contains('disabled') ||
+              forLabel?.classList.contains('disabled') ||
+              unitBox?.classList.contains('disabled')
+            );
+            const spanTxt = (directLabel?.querySelector('.radio-value')?.innerText || forLabel?.querySelector('.radio-value')?.innerText || '').trim();
+            const rawTxt = spanTxt || (forLabel?.innerText || directLabel?.innerText || unitBox?.innerText || '').replace(/\s+/g, ' ').trim();
+            const akey = String(r.getAttribute('akey') || r.value || '').trim();
+            const isNoneOpt = akey === '99' || akey === '999' || /^(없음|해당\s*없음|구입.*없음|이용.*없음)$/.test(rawTxt);
+            return { r, directLabel, forLabel, isVis, isDis, label: rawTxt, norm: normKey(rawTxt), akey, isNoneOpt };
+          };
+
+          const allCandidates = Array.from(visQBox.querySelectorAll('input[type="radio"]'))
+            .map(getRadioMeta)
+            .filter(m => m.isVis && !m.isDis);
+
+          if (allCandidates.length === 0) {
+            return { ok: false, label: '', akey: '' };
+          }
+
+          const targetNorm = normKey(targetBrand);
           let chosen = null;
+
           if (isNone) {
-            chosen = radios.find(r => {
-              const txt = (r.closest('label, li, tr, div')?.innerText || '').trim();
-              return r.getAttribute('akey') === '99' || txt === '없음' || txt.includes('없음');
-            }) || radios[radios.length - 1];
+            chosen = allCandidates.find(m => m.isNoneOpt || m.label.includes('없음')) || allCandidates[allCandidates.length - 1];
           } else {
-            chosen = radios.find(r => {
-              const txt = (r.closest('label, li, tr, div')?.innerText || '').trim();
-              return txt && txt !== '없음' && r.getAttribute('akey') !== '99' && (txt === targetBrand || txt.includes(targetBrand) || targetBrand.includes(txt));
-            }) || radios.find(r => {
-              const txt = (r.closest('label, li, tr, div')?.innerText || '').trim();
-              return txt && txt !== '없음' && r.getAttribute('akey') !== '99';
-            });
+            const brandCandidates = allCandidates.filter(m => !m.isNoneOpt);
+            if (brandCandidates.length > 0) {
+              chosen =
+                (targetBrand && brandCandidates.find(m => m.label === targetBrand)) ||
+                (targetNorm && brandCandidates.find(m => m.norm && m.norm === targetNorm)) ||
+                (targetBrand && brandCandidates.find(m => m.label && (m.label.includes(targetBrand) || targetBrand.includes(m.label)))) ||
+                (targetNorm && brandCandidates.find(m => m.norm && (m.norm.includes(targetNorm) || targetNorm.includes(m.norm)))) ||
+                brandCandidates[0];
+            } else {
+              // 만약 모든 일반 브랜드가 비활성화되고 '없음'만 활성화된 특수 케이스면 '없음' 안전 선택 (정체 방지!)
+              chosen = allCandidates[0];
+            }
           }
+
           if (chosen) {
-            chosen.click();
-            chosen.checked = true;
-            chosen.dispatchEvent(new Event('change', { bubbles: true }));
-            if (typeof $ !== 'undefined') $(chosen).prop('checked', true).trigger('change');
-            return (chosen.closest('label, li, tr, div')?.innerText || '').trim();
+            const clickEl = chosen.r.offsetParent !== null
+              ? chosen.r
+              : (chosen.forLabel?.offsetParent !== null ? chosen.forLabel : (chosen.directLabel?.offsetParent !== null ? chosen.directLabel : chosen.r));
+            if (!chosen.r.checked) {
+              clickEl.click();
+            }
+            chosen.r.checked = true;
+            chosen.r.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') {
+              window.$(chosen.r).prop('checked', true).trigger('change');
+            }
+            return {
+              ok: true,
+              label: chosen.label || targetBrand || '',
+              akey: chosen.akey,
+              isNoneOpt: chosen.isNoneOpt
+            };
           }
-          return '';
+          return { ok: false, label: '', akey: '' };
         }, {
           targetBrand: catState.q4SelectedBrand,
           isNone: catState.purchaseExp === '없음'
         });
 
-        if (pickedQ4) catState.q4SelectedBrand = pickedQ4;
-        emitLog(`[${catState.categoryName} - 문항 4] 최근 구입/이용 브랜드 = "${pickedQ4 || catState.q4SelectedBrand}"`, 'info', 'Q4');
+        if (pickedQ4?.ok) {
+          if (pickedQ4.label) catState.q4SelectedBrand = pickedQ4.label;
+          catState.q4SelectedAkey = pickedQ4.akey || '';
+          if (pickedQ4.isNoneOpt) catState.purchaseExp = '없음';
+        }
+        emitLog(`[${catState.categoryName} - 문항 4] 최근 구입/이용 브랜드 = "${pickedQ4?.label || catState.q4SelectedBrand}" (akey=${pickedQ4?.akey || '-'})`, 'info', 'Q4');
 
         await surveyPage.waitForTimeout(450);
         await clickNextButton(activeTarget);
@@ -2664,16 +3345,28 @@ export async function runKmacKbpiSurvey({
         const factorSeed = Math.floor(rng() * 1000);
         const pickedFactor = await activeTarget.evaluate(({ fSeed }) => {
           const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q41--"]')).find(el => el.offsetParent !== null) || document;
-          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
+          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r =>
+            !r.disabled && (r.offsetParent !== null || r.closest('label, .s-radio, .answer-unit-box, li, tr, div')?.offsetParent !== null)
+          );
+          const nonEtcRadios = radios.filter(r => {
+            const lb = (r.closest('label, .answer-unit-box, li, tr, div')?.innerText || '').trim();
+            return !/(^|\s)기타(\s|$)/.test(lb) && !r.closest('label, .answer-unit-box, li, tr, div')?.querySelector('input.input-etc');
+          });
+          const pool = nonEtcRadios.length > 0 ? nonEtcRadios : radios;
           const preferredAkeys = ['2', '3', '1', '9', '8', '4', '6'];
           const targetAk = preferredAkeys[fSeed % preferredAkeys.length];
-          const chosen = radios.find(r => r.getAttribute('akey') === targetAk) || radios[fSeed % Math.max(1, radios.length)];
+          const chosen = pool.find(r => r.getAttribute('akey') === targetAk) || pool[fSeed % Math.max(1, pool.length)];
           if (chosen) {
-            chosen.click();
+            const lbEl = chosen.closest('label') || (chosen.id ? document.querySelector(`label[for="${CSS.escape(chosen.id)}"]`) : null);
+            if (!chosen.checked) {
+              if (chosen.offsetParent !== null) chosen.click();
+              else if (lbEl && lbEl.offsetParent !== null) lbEl.click();
+              else chosen.click();
+            }
             chosen.checked = true;
             chosen.dispatchEvent(new Event('change', { bubbles: true }));
             if (typeof window.$ !== 'undefined') window.$(chosen).prop('checked', true).trigger('change');
-            return (chosen.closest('label, li, tr, div')?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 36);
+            return ((lbEl?.innerText || chosen.closest('li, tr, div')?.innerText || '')).replace(/\s+/g, ' ').trim().slice(0, 36);
           }
           return '';
         }, { fSeed: factorSeed });
@@ -2712,10 +3405,13 @@ export async function runKmacKbpiSurvey({
         const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
         const detPicked = await activeTarget.evaluate(({ seedN }) => {
           const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q42--"]')).find(el => el.offsetParent !== null) || document;
-          const cbs = Array.from(visQBox.querySelectorAll('input[type="checkbox"]')).filter(c => !c.disabled && c.offsetParent !== null);
+          const cbs = Array.from(visQBox.querySelectorAll('input[type="checkbox"]')).filter(c =>
+            !c.disabled && (c.offsetParent !== null || c.closest('label, .s-check, .answer-unit-box, div, li')?.offsetParent !== null)
+          );
           const prefer = cbs.find(c => /액체|캡슐/.test((c.closest('label, div, li')?.innerText || ''))) || cbs[seedN % Math.max(1, cbs.length)];
           if (prefer && !prefer.checked) {
             prefer.click();
+            if (!prefer.checked && prefer.closest('label')) prefer.closest('label').click();
             prefer.checked = true;
             prefer.dispatchEvent(new Event('change', { bubbles: true }));
             if (typeof window.$ !== 'undefined') window.$(prefer).prop('checked', true).trigger('change');
@@ -2728,31 +3424,65 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [문항 5] 향후 구입/이용 선호 브랜드 (문항 4 응답과 100% 동일 선택)
+      // [문항 5] 향후 구입/이용 선호 브랜드 (문항 4 응답 브랜드/akey와 100% 동일 선택)
       if (info.screenType === 'Q5_SAME_AS_Q4') {
         const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
-        const pickedQ5 = await activeTarget.evaluate(({ sameBrand, isNone }) => {
+        const pickedQ5 = await activeTarget.evaluate(({ sameBrand, sameAkey, isNone }) => {
+          const normKey = (s) => String(s || '')
+            .replace(/브랜드$/g, '')
+            .replace(/[\s()[\]{}·•,./'"`’‘“”_-]+/g, '')
+            .toLowerCase()
+            .trim();
           const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q5--"]')).find(el => el.offsetParent !== null) || document;
-          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
+          const allCandidates = Array.from(visQBox.querySelectorAll('input[type="radio"]'))
+            .map(r => {
+              const directLabel = r.closest('label');
+              const forLabel = r.id ? document.querySelector(`label[for="${CSS.escape(r.id)}"]`) : null;
+              const unitBox = r.closest('.answer-unit-box, .s-radio, li, tr');
+              const isVis = r.offsetParent !== null || directLabel?.offsetParent !== null || forLabel?.offsetParent !== null || unitBox?.offsetParent !== null;
+              const isDis = Boolean(r.disabled || directLabel?.classList.contains('disabled') || forLabel?.classList.contains('disabled'));
+              const spanTxt = (directLabel?.querySelector('.radio-value')?.innerText || forLabel?.querySelector('.radio-value')?.innerText || '').trim();
+              const label = spanTxt || (forLabel?.innerText || directLabel?.innerText || unitBox?.innerText || '').replace(/\s+/g, ' ').trim();
+              const akey = String(r.getAttribute('akey') || r.value || '').trim();
+              const isNoneOpt = akey === '99' || akey === '999' || /^(없음|해당\s*없음)$/.test(label);
+              return { r, directLabel, forLabel, isVis, isDis, label, norm: normKey(label), akey, isNoneOpt };
+            })
+            .filter(m => m.isVis && !m.isDis);
+
+          if (allCandidates.length === 0) return '';
+
+          const sameNorm = normKey(sameBrand);
           let chosen = null;
           if (isNone) {
-            chosen = radios.find(r => r.getAttribute('akey') === '99' || (r.closest('label, li, tr, div')?.innerText || '').trim().includes('없음')) || radios[radios.length - 1];
+            chosen = allCandidates.find(m => m.isNoneOpt || m.label.includes('없음')) || allCandidates[allCandidates.length - 1];
           } else {
-            chosen = radios.find(r => {
-              const t = (r.closest('label, li, tr, div')?.innerText || '').trim();
-              return t && t !== '없음' && r.getAttribute('akey') !== '99' && (t === sameBrand || t.includes(sameBrand) || sameBrand.includes(t));
-            }) || radios.find(r => r.getAttribute('akey') !== '99') || radios[0];
+            const brandCands = allCandidates.filter(m => !m.isNoneOpt);
+            if (brandCands.length > 0) {
+              chosen =
+                (sameAkey && brandCands.find(m => m.akey === String(sameAkey))) ||
+                (sameBrand && brandCands.find(m => m.label === sameBrand)) ||
+                (sameNorm && brandCands.find(m => m.norm && m.norm === sameNorm)) ||
+                (sameBrand && brandCands.find(m => m.label && (m.label.includes(sameBrand) || sameBrand.includes(m.label)))) ||
+                brandCands[0];
+            } else {
+              chosen = allCandidates[0];
+            }
           }
+
           if (chosen) {
-            chosen.click();
-            chosen.checked = true;
-            chosen.dispatchEvent(new Event('change', { bubbles: true }));
-            if (typeof window.$ !== 'undefined') window.$(chosen).prop('checked', true).trigger('change');
-            return (chosen.closest('label, li, tr, div')?.innerText || '').trim();
+            const clickEl = chosen.r.offsetParent !== null
+              ? chosen.r
+              : (chosen.forLabel?.offsetParent !== null ? chosen.forLabel : (chosen.directLabel?.offsetParent !== null ? chosen.directLabel : chosen.r));
+            if (!chosen.r.checked) clickEl.click();
+            chosen.r.checked = true;
+            chosen.r.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(chosen.r).prop('checked', true).trigger('change');
+            return chosen.label || sameBrand || '';
           }
           return '';
         }, {
           sameBrand: catState.q4SelectedBrand,
+          sameAkey: catState.q4SelectedAkey || '',
           isNone: catState.purchaseExp === '없음'
         });
         emitLog(`[${catState.categoryName} - 문항 5] 문항 4 동일 응답 = "${pickedQ5}"`, 'info', 'Q5');
@@ -2772,40 +3502,44 @@ export async function runKmacKbpiSurvey({
 
         await activeTarget.evaluate(async ({ want, isYes, sc1, sc2 }) => {
           const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
+          const clickRadioSafe = (r) => {
+            if (!r || r.disabled) return;
+            const lb = r.closest('label') || (r.id ? document.querySelector(`label[for="${CSS.escape(r.id)}"]`) : null);
+            if (!r.checked) {
+              if (r.offsetParent !== null) r.click();
+              else if (lb && lb.offsetParent !== null) lb.click();
+              else r.click();
+            }
+            r.checked = true;
+            r.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof window.$ !== 'undefined') window.$(r).prop('checked', true).trigger('change');
+          };
+
           const visQBox = Array.from(document.querySelectorAll('[question-name^="KBPI_Q6--"]')).find(el => el.offsetParent !== null) || document;
-          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r => !r.disabled && r.offsetParent !== null);
-          const chosen = radios.find(r => (r.closest('label, li, tr, div')?.innerText || '').trim() === want)
-            || radios.find(r => (r.closest('label, li, tr, div')?.innerText || '').trim().includes(want))
+          const radios = Array.from(visQBox.querySelectorAll('input[type="radio"]')).filter(r =>
+            !r.disabled && (r.offsetParent !== null || r.closest('label, .s-radio, .answer-unit-box, li, tr, div')?.offsetParent !== null)
+          );
+          const getLb = (r) => {
+            const lb = r.closest('label') || (r.id ? document.querySelector(`label[for="${CSS.escape(r.id)}"]`) : null) || r.closest('.answer-unit-box, li, tr, div');
+            return (lb?.innerText || '').replace(/\s+/g, ' ').trim();
+          };
+          const chosen = radios.find(r => getLb(r) === want)
+            || radios.find(r => getLb(r).includes(want))
             || (want === '아니오' ? radios[1] : radios[0]);
-          if (chosen) {
-            chosen.click();
-            chosen.checked = true;
-            chosen.dispatchEvent(new Event('change', { bubbles: true }));
-            if (typeof window.$ !== 'undefined') window.$(chosen).prop('checked', true).trigger('change');
-          }
+          clickRadioSafe(chosen);
 
           if (isYes) {
             await waitMs(260);
             const q61Box = Array.from(document.querySelectorAll('[question-name^="KBPI_Q61--"]')).find(el => el.offsetParent !== null);
             if (q61Box) {
               const r61 = q61Box.querySelector(`input[type="radio"][akey="${sc1}"]`) || q61Box.querySelector('input[type="radio"][akey="4"]') || q61Box.querySelectorAll('input[type="radio"]')[3];
-              if (r61 && !r61.disabled) {
-                r61.click();
-                r61.checked = true;
-                r61.dispatchEvent(new Event('change', { bubbles: true }));
-                if (typeof window.$ !== 'undefined') window.$(r61).prop('checked', true).trigger('change');
-              }
+              clickRadioSafe(r61);
             }
             await waitMs(160);
             const q62Box = Array.from(document.querySelectorAll('[question-name^="KBPI_Q62--"]')).find(el => el.offsetParent !== null);
             if (q62Box) {
               const r62 = q62Box.querySelector(`input[type="radio"][akey="${sc2}"]`) || q62Box.querySelector('input[type="radio"][akey="4"]') || q62Box.querySelectorAll('input[type="radio"]')[3];
-              if (r62 && !r62.disabled) {
-                r62.click();
-                r62.checked = true;
-                r62.dispatchEvent(new Event('change', { bubbles: true }));
-                if (typeof window.$ !== 'undefined') window.$(r62).prop('checked', true).trigger('change');
-              }
+              clickRadioSafe(r62);
             }
           }
         }, { want: targetLabel, isYes: !chooseNo, sc1: q6SubScore1, sc2: q6SubScore2 });
@@ -2990,11 +3724,31 @@ export async function runKmacKbpiSurvey({
         continue;
       }
 
-      // [KBPI_NGO 특수 블록] 구호개발단체(NGO) 세부진단
+      // [KBPI_NGO 특수 블록] 구호개발단체(NGO) 세부진단 (국내/해외 중복 단체 입력 원천 차단)
       if (info.screenType === 'KBPI_NGO_SPECIAL') {
-        emitLog('[특수 진단: 구호개발단체(NGO)] 문항 1~11 자동 입력...', 'info', 'NGO');
+        emitLog('[특수 진단: 구호개발단체(NGO)] 문항 1~11 중복 없는 자동 입력...', 'info', 'NGO');
         await activeTarget.evaluate(({ sNum }) => {
-          const box = Array.from(document.querySelectorAll('[question-name^="KBPI_NGO"]')).find(el => el.offsetParent !== null) || document;
+          const visBoxes = Array.from(document.querySelectorAll('[question-name^="KBPI_NGO"]')).filter(el => el.offsetParent !== null);
+          const queryAllInBoxes = (sel) => {
+            if (visBoxes.length === 0) return Array.from(document.querySelectorAll(sel));
+            const out = [];
+            visBoxes.forEach(b => out.push(...Array.from(b.querySelectorAll(sel))));
+            return out;
+          };
+          const normKey = (s) => String(s || '').replace(/[\s()[\]{}·•,./'"`_-]+/g, '').toLowerCase().trim();
+          const usedNgoNorms = new Set();
+
+          const pickUniqueFromPool = (pool, startIdx = 0) => {
+            for (let i = 0; i < pool.length; i++) {
+              const cand = pool[(startIdx + i) % pool.length];
+              const nk = normKey(cand);
+              if (!nk || usedNgoNorms.has(nk)) continue;
+              usedNgoNorms.add(nk);
+              return cand;
+            }
+            return '';
+          };
+
           const setTxt = (inp, val) => {
             if (!inp || inp.disabled || inp.readOnly) return;
             inp.focus();
@@ -3005,24 +3759,54 @@ export async function runKmacKbpiSurvey({
             inp.blur();
           };
 
-          const ngoDomestic = ['월드비전', '초록우산', '굿네이버스'];
-          const ngoOverseas = ['유니세프', '월드비전', '세이브더칠드런'];
-          const assocWords = ['어린이 후원', '국제 구호', '이웃 나눔', '아동 복지', '긴급 의료구호'];
+          // 국내/해외 후원단체 풀을 100% 분리하여 동일 화면 내 중복 브랜드('월드비전' 등) 입력 원천 차단
+          const ngoDomestic = ['월드비전', '초록우산 어린이재단', '굿네이버스', '대한적십자사', '사랑의열매'];
+          const ngoOverseas = ['유니세프', '세이브더칠드런', '국경없는의사회', '옥스팜', '플랜코리아'];
+          const assocWords = ['어린이 후원', '국제 구호', '이웃 나눔', '아동 복지', '긴급 의료구호', '투명한 기부', '생명 나눔', '교육 지원'];
 
-          const allTxt = Array.from(box.querySelectorAll('input[type="text"], textarea, input:not([type])'))
+          const allTxt = queryAllInBoxes('input[type="text"], textarea, input:not([type])')
             .filter(el => el.offsetParent !== null && !el.disabled && !el.readOnly && !['radio', 'checkbox', 'hidden', 'button'].includes(el.type));
           allTxt.forEach((inp, idx) => {
             const cName = inp.getAttribute('custom-save-name') || inp.name || '';
-            if (/_1_1$|^Q?1_1$/.test(cName)) setTxt(inp, ngoDomestic[sNum % ngoDomestic.length]);
-            else if (/_1_2$|^Q?1_2$/.test(cName)) setTxt(inp, ngoDomestic[(sNum + 1) % ngoDomestic.length]);
-            else if (/_1_[34]$|^Q?1_[34]$/.test(cName)) setTxt(inp, '');
-            else if (/_2_1$|^Q?2_1$/.test(cName)) setTxt(inp, ngoOverseas[sNum % ngoOverseas.length]);
-            else if (/_2_2$|^Q?2_2$/.test(cName)) setTxt(inp, ngoOverseas[(sNum + 1) % ngoOverseas.length]);
-            else if (/_2_[34]$|^Q?2_[34]$/.test(cName)) setTxt(inp, '');
-            else if (!inp.value) setTxt(inp, assocWords[(sNum + idx) % assocWords.length]);
+            const ctxTxt = (inp.closest('[question-name], tr, div')?.innerText || '').trim();
+            if (/_1_[34]$|^Q?1_[34]$|_2_[34]$|^Q?2_[34]$/i.test(cName)) {
+              setTxt(inp, '');
+            } else if (/_1_[12]$|^Q?1_[12]$/i.test(cName) || (/국내/.test(ctxTxt) && /단체|후원|브랜드/.test(ctxTxt))) {
+              setTxt(inp, pickUniqueFromPool(ngoDomestic, sNum + idx));
+            } else if (/_2_[12]$|^Q?2_[12]$/i.test(cName) || (/해외|국제/.test(ctxTxt) && /단체|후원|브랜드/.test(ctxTxt))) {
+              setTxt(inp, pickUniqueFromPool(ngoOverseas, sNum + idx));
+            } else if (!String(inp.value || '').trim()) {
+              setTxt(inp, pickUniqueFromPool(assocWords, sNum + idx) || `나눔 활동${idx + 1}`);
+            } else {
+              const exNk = normKey(inp.value);
+              if (exNk && usedNgoNorms.has(exNk)) {
+                setTxt(inp, pickUniqueFromPool([...ngoDomestic, ...ngoOverseas, ...assocWords], sNum + idx));
+              } else if (exNk) {
+                usedNgoNorms.add(exNk);
+              }
+            }
           });
 
-          const radios = Array.from(box.querySelectorAll('input[type="radio"]:not(:disabled)'));
+          // 드롭다운(select)이 있는 경우에도 열/문항 간 중복 선택 방지
+          const usedSelVals = new Set();
+          queryAllInBoxes('select:not(:disabled)').forEach((sel, sIdx) => {
+            if (sel.offsetParent === null && sel.closest('td, th, div')?.offsetParent === null) return;
+            const curTxt = (sel.options[sel.selectedIndex]?.text || '').trim();
+            if (sel.value && curTxt && !/선택/.test(curTxt)) {
+              usedSelVals.add(String(sel.value));
+              return;
+            }
+            const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !/선택|기타|모름/.test(o.text));
+            const pick = validOpts.find(o => !usedSelVals.has(String(o.value))) || validOpts[(sNum + sIdx) % Math.max(1, validOpts.length)];
+            if (pick) {
+              sel.value = pick.value;
+              sel.dispatchEvent(new Event('change', { bubbles: true }));
+              if (typeof window.$ !== 'undefined') window.$(sel).val(pick.value).trigger('change');
+              usedSelVals.add(String(pick.value));
+            }
+          });
+
+          const radios = queryAllInBoxes('input[type="radio"]:not(:disabled)');
           const byGroup = new Map();
           radios.forEach(r => {
             const k = r.getAttribute('custom-save-name') || r.name || '';
@@ -3036,8 +3820,12 @@ export async function runKmacKbpiSurvey({
             if (visGrp.length > 0 && !visGrp.some(r => r.checked)) {
               const noOpt = visGrp.find(r => /아니오|모른다|없다/.test((r.closest('label, span, div')?.innerText || '').trim()));
               const pick = noOpt || visGrp[(sNum + gIdx) % visGrp.length];
-              pick.click();
+              const lb = pick.closest('label') || (pick.id ? document.querySelector(`label[for="${CSS.escape(pick.id)}"]`) : null);
+              if (pick.offsetParent !== null) pick.click();
+              else if (lb && lb.offsetParent !== null) lb.click();
+              else pick.click();
               pick.checked = true;
+              pick.dispatchEvent(new Event('change', { bubbles: true }));
               if (typeof window.$ !== 'undefined') window.$(pick).prop('checked', true).trigger('change');
             }
             gIdx++;

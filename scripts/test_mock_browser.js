@@ -326,7 +326,7 @@ const kbpiPol = kbpiMod.renderKmacKbpiBlueprint(
   }
 );
 if (
-  kbpiPol.pilotStopAtStep !== 'Q4' ||
+  kbpiPol.pilotStopAtStep !== 'FINAL_GATE' ||
   !container.innerHTML.includes('편의점') ||
   !container.innerHTML.includes('동네슈퍼') ||
   !container.innerHTML.includes('인천광역시청')
@@ -658,7 +658,65 @@ if (missingDemo.length > 0) {
   throw new Error(`Found ${missingDemo.length} K-BPI rows missing enriched demographics/district!`);
 }
 
-console.log('✅ [4/4] K-BPI v3.0 150명 신상·배경변인 무결성 · 브랜드 스캔 가이드 · DQ1(생성형AI/신문잡지 제외) · ZQ1~ZQ6 정합성 검증 100% 통과');
+// K-BPI v3.1 중복 브랜드 원천 차단 & 동일 명칭 산업군(key=36/35) 분리 검증
+const distinctMilk = kbpiRunnerMod.selectDistinctKbpiBrands([
+  '서울우유 나 100% 저지방우유',
+  '서울우유 나100%',
+  '서울우유',
+  '매일우유 오리지널',
+  '매일 소화가 잘되는 우유',
+  '남양 맛있는우유GT',
+  '연세우유',
+  '파스퇴르 후레쉬우유'
+], 4);
+if (
+  distinctMilk.length !== 4 ||
+  distinctMilk.filter(b => b.includes('서울우유')).length !== 1 ||
+  distinctMilk.filter(b => b.includes('매일')).length !== 1
+) {
+  throw new Error(`selectDistinctKbpiBrands root-dedup failed: ${JSON.stringify(distinctMilk)}`);
+}
+
+const distinctNgoSlot2 = kbpiRunnerMod.selectDistinctKbpiBrands(
+  ['월드비전', '굿네이버스', '초록우산 어린이재단', '유니세프', '세이브더칠드런'],
+  3,
+  new Set([kbpiRunnerMod.normalizeKbpiBrandKey('월드비전')]),
+  new Set([kbpiRunnerMod.extractKbpiBrandRoot('월드비전')])
+);
+if (distinctNgoSlot2.includes('월드비전') || distinctNgoSlot2.length !== 3) {
+  throw new Error(`selectDistinctKbpiBrands cross-slot rotation failed: ${JSON.stringify(distinctNgoSlot2)}`);
+}
+
+const expMilk = kbpiRunnerMod.decideCategoryPurchaseExp({
+  categoryName: '우유',
+  industryKey: '55',
+  categoryConfigs: [
+    { slot: 1, categoryName: '가공우유', industryKey: '56', purchaseExp: '없음' },
+    { slot: 6, categoryName: '우유', industryKey: '55', purchaseExp: '있음' }
+  ]
+});
+const expFlavoredMilk = kbpiRunnerMod.decideCategoryPurchaseExp({
+  categoryName: '가공우유',
+  industryKey: '56',
+  categoryConfigs: [
+    { slot: 1, categoryName: '가공우유', industryKey: '56', purchaseExp: '없음' },
+    { slot: 6, categoryName: '우유', industryKey: '55', purchaseExp: '있음' }
+  ]
+});
+const expNgo35 = kbpiRunnerMod.decideCategoryPurchaseExp({
+  categoryName: '구호개발단체(NGO)',
+  industryKey: '35',
+  slotIndex: 7,
+  categoryConfigs: [
+    { slot: 6, categoryName: '구호개발단체(NGO)', industryKey: '36', purchaseExp: '있음' },
+    { slot: 7, categoryName: '구호개발단체(NGO)', industryKey: '35', purchaseExp: '없음' }
+  ]
+});
+if (expMilk !== '있음' || expFlavoredMilk !== '없음' || expNgo35 !== '없음') {
+  throw new Error(`decideCategoryPurchaseExp isolation failed: milk=${expMilk}, flavored=${expFlavoredMilk}, ngo35=${expNgo35}`);
+}
+
+console.log('✅ [4/4] K-BPI v3.1 150명 신상·배경변인 무결성 · 중복 브랜드 차단 · 문항3 평가항목/문항4 진행 보장 검증 100% 통과');
 
 
 
