@@ -369,6 +369,9 @@ function renderOverviewTab() {
           <button type="button" class="stl-btn stl-btn-outline" data-action="open-new-project" data-source="manual">
             <i class="fa-solid fa-plus"></i> 외부 과제 직접 등록
           </button>
+          <button type="button" class="stl-btn stl-btn-outline" data-action="open-excel-import">
+            <i class="fa-solid fa-file-arrow-up" style="color: #0284c7;"></i> 엑셀 정산표 일괄 업로드
+          </button>
         </div>
       </div>
     `;
@@ -977,6 +980,9 @@ function renderPartnersTab() {
           <button type="button" class="stl-btn stl-btn-primary stl-btn-sm" data-action="open-new-partner">
             <i class="fa-solid fa-user-plus"></i> + 새 거래처·조사원 등록
           </button>
+          <button type="button" class="stl-btn stl-btn-outline stl-btn-sm" data-action="open-excel-import">
+            <i class="fa-solid fa-file-arrow-up" style="color: #0284c7;"></i> 엑셀 계좌명단 일괄 업로드
+          </button>
         </div>
       </div>
     `;
@@ -1250,6 +1256,115 @@ function openPartnerModal(editPartner = null) {
   modal.classList.remove('d-none');
 }
 
+// 엑셀 업로드 모달 제어 및 드라이런 미리보기
+let pendingExcelBase64 = null;
+
+function openExcelImportModal() {
+  const modal = document.getElementById('modal-excel-import');
+  if (!modal) return;
+  pendingExcelBase64 = null;
+
+  const fileInput = document.getElementById('input-excel-file');
+  if (fileInput) fileInput.value = '';
+
+  const nameLabel = document.getElementById('excel-selected-filename');
+  if (nameLabel) nameLabel.textContent = '터치하여 엑셀(.xlsx / .csv) 파일 선택';
+
+  document.getElementById('excel-file-dropzone')?.classList.remove('has-file');
+
+  const previewSec = document.getElementById('excel-preview-section');
+  if (previewSec) {
+    previewSec.classList.add('d-none');
+    previewSec.innerHTML = '';
+  }
+
+  const applyBtn = document.getElementById('btn-apply-excel-import');
+  if (applyBtn) applyBtn.disabled = true;
+
+  modal.classList.remove('d-none');
+}
+
+async function runExcelImportPreview() {
+  const previewSec = document.getElementById('excel-preview-section');
+  const applyBtn = document.getElementById('btn-apply-excel-import');
+  if (!pendingExcelBase64 || !previewSec || !applyBtn) return;
+
+  previewSec.classList.remove('d-none');
+  previewSec.innerHTML = `<div style="font-size:13px; color:var(--stl-ink-muted); text-align:center; padding:8px;">파일 내용을 분석하는 중입니다...</div>`;
+  applyBtn.disabled = true;
+
+  try {
+    const protectPaidStatus = Boolean(document.getElementById('chk-protect-paid')?.checked);
+    const res = await apiJson('/api/settlement/import/preview', {
+      method: 'POST',
+      body: JSON.stringify({
+        fileBase64: pendingExcelBase64,
+        protectPaidStatus
+      })
+    });
+
+    const c = res.counts || {};
+    const projTotal = (c.projectsNew || 0) + (c.projectsUpdated || 0);
+    const allocTotal = (c.allocationsNew || 0) + (c.allocationsUpdated || 0);
+    const ptnTotal = (c.partnersNew || 0) + (c.partnersUpdated || 0);
+
+    const warnHtml = (res.warnings || []).length > 0
+      ? `<div style="background:var(--stl-warn-bg); border:1px solid var(--stl-warn-border); color:#b45309; padding:8px 10px; border-radius:8px; font-size:12px;">
+          ${res.warnings.map(w => `<div>⚠️ ${escapeHtml(w)}</div>`).join('')}
+        </div>`
+      : '';
+
+    const itemsHtml = (res.previewItems || []).length > 0
+      ? `<div class="stl-preview-list">
+          ${res.previewItems.map(item => `<div>• ${escapeHtml(item)}</div>`).join('')}
+        </div>`
+      : `<div style="font-size:12.5px; color:var(--stl-ink-muted); text-align:center; padding:8px;">
+          반영할 새로운 데이터나 변경된 항목이 없습니다.${c.skippedRows > 0 ? ` (예시·빈 행 ${c.skippedRows}건 자동 제외됨)` : ''}
+        </div>`;
+
+    const protectNote = c.protectedStatusCount > 0
+      ? `<div style="font-size:12px; color:var(--stl-ok); font-weight:700;">🛡️ 기존 입금·송금완료 상태 ${c.protectedStatusCount}건이 안전하게 유지됩니다.</div>`
+      : '';
+
+    previewSec.innerHTML = `
+      <div style="font-size:13px; font-weight:800; color:var(--stl-ink);">
+        📋 변경점 검수 요약 (총 ${res.totalActionable}건 반영 예정)
+      </div>
+      <div class="stl-preview-counts">
+        <div class="stl-preview-stat">
+          <small>과제 (신규/수정)</small>
+          <strong class="num-mono">${projTotal}건 <span style="font-weight:500; font-size:11.5px;">(+${c.projectsNew || 0}/${c.projectsUpdated || 0})</span></strong>
+        </div>
+        <div class="stl-preview-stat">
+          <small>3티어 분배</small>
+          <strong class="num-mono">${allocTotal}건 <span style="font-weight:500; font-size:11.5px;">(+${c.allocationsNew || 0}/${c.allocationsUpdated || 0})</span></strong>
+        </div>
+        <div class="stl-preview-stat">
+          <small>거래처·계좌</small>
+          <strong class="num-mono">${ptnTotal}명 <span style="font-weight:500; font-size:11.5px;">(+${c.partnersNew || 0}/${c.partnersUpdated || 0})</span></strong>
+        </div>
+      </div>
+      ${protectNote}
+      ${warnHtml}
+      ${itemsHtml}
+    `;
+
+    applyBtn.disabled = !(res.totalActionable > 0);
+  } catch (err) {
+    previewSec.innerHTML = `<div style="color:var(--stl-outflow); font-size:13px; font-weight:700; padding:6px;">❌ ${escapeHtml(err.message)}</div>`;
+    applyBtn.disabled = true;
+  }
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('파일을 읽는 중 오류가 발생했습니다.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 // ============================================================================
 // 9. 이벤트 바인딩 및 액션 위임 핸들러
 // ============================================================================
@@ -1271,6 +1386,56 @@ function initSettlementApp() {
       loadDashboard();
     });
   }
+
+  // 엑셀 업로드 모달 열기 / 양식 받기 / 미리보기 / 반영
+  document.getElementById('btn-open-import-excel')?.addEventListener('click', openExcelImportModal);
+  document.getElementById('btn-partners-import-excel')?.addEventListener('click', openExcelImportModal);
+  document.getElementById('btn-close-excel-modal')?.addEventListener('click', () => document.getElementById('modal-excel-import')?.classList.add('d-none'));
+  document.getElementById('btn-cancel-excel-modal')?.addEventListener('click', () => document.getElementById('modal-excel-import')?.classList.add('d-none'));
+
+  document.getElementById('btn-download-excel-template')?.addEventListener('click', () => {
+    window.location.href = '/api/settlement/export/template';
+  });
+
+  document.getElementById('input-excel-file')?.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const nameLabel = document.getElementById('excel-selected-filename');
+    if (nameLabel) nameLabel.textContent = file.name;
+    document.getElementById('excel-file-dropzone')?.classList.add('has-file');
+    try {
+      pendingExcelBase64 = await readFileAsDataUrl(file);
+      await runExcelImportPreview();
+    } catch (err) {
+      showStlToast(err.message);
+    }
+  });
+
+  document.getElementById('chk-protect-paid')?.addEventListener('change', () => {
+    if (pendingExcelBase64) runExcelImportPreview();
+  });
+
+  document.getElementById('btn-apply-excel-import')?.addEventListener('click', async () => {
+    if (!pendingExcelBase64) return;
+    const applyBtn = document.getElementById('btn-apply-excel-import');
+    if (applyBtn) applyBtn.disabled = true;
+    try {
+      const protectPaidStatus = Boolean(document.getElementById('chk-protect-paid')?.checked);
+      const res = await apiJson('/api/settlement/import/apply', {
+        method: 'POST',
+        body: JSON.stringify({
+          fileBase64: pendingExcelBase64,
+          protectPaidStatus
+        })
+      });
+      document.getElementById('modal-excel-import')?.classList.add('d-none');
+      showStlToast(`엑셀 정산 데이터 ${res.totalActionable}건이 반영되었습니다.`);
+      await loadDashboard();
+    } catch (err) {
+      showStlToast(err.message);
+      if (applyBtn) applyBtn.disabled = false;
+    }
+  });
 
   // 엑셀 다운로드
   const btnExcel = document.getElementById('btn-export-excel');
@@ -1824,6 +1989,11 @@ function initSettlementApp() {
 
       if (action === 'open-new-partner') {
         openPartnerModal(null);
+        return;
+      }
+
+      if (action === 'open-excel-import') {
+        openExcelImportModal();
         return;
       }
 

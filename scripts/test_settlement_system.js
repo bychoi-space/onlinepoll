@@ -220,8 +220,21 @@ try {
   console.log('✅ [2/4] 정산 원장 수식(1티어 청구·3.3% 세금·실비·3티어 합산 송금·AutoSurvey 동기화) 검증 통과');
 
   // --------------------------------------------------------------------------
-  // [검증 3] 다중 시트 Excel(.xlsx) 다운로드 바이너리 파싱 검증
+  // [검증 3] Excel 표준양식 다운로드, 내보내기 ⇄ 가져오기 왕복(Round-Trip) 및 단일시트 명단 업로드 검증
   // --------------------------------------------------------------------------
+  // 3-1. 표준 양식 다운로드 후 그대로 업로드 시 '(예시)' 행 자동 제외 확인 (거짓 데이터 유입 차단)
+  const tplRes = await fetch(`${baseUrl}/api/settlement/export/template`);
+  assert.strictEqual(tplRes.status, 200);
+  const tplBuf = Buffer.from(await tplRes.arrayBuffer());
+  const tplPreview = await reqJson('/api/settlement/import/preview', {
+    method: 'POST',
+    body: JSON.stringify({ fileBase64: tplBuf.toString('base64'), protectPaidStatus: true })
+  });
+  assert.strictEqual(tplPreview.status, 200);
+  assert.strictEqual(tplPreview.body.totalActionable, 0, '표준 양식의 예시 행은 반영 대상이 0건이어야 합니다.');
+  assert.ok(tplPreview.body.counts.skippedRows >= 4);
+
+  // 3-2. 현재 정산 내역 엑셀 내보내기 -> 일부 수정 및 신규 행 추가 -> 미리보기 -> 스마트 병합(송금완료 상태 보호) 검증
   const excelRes = await fetch(`${baseUrl}/api/settlement/export/excel?periodMonth=all`);
   assert.strictEqual(excelRes.status, 200);
   const arrayBuf = await excelRes.arrayBuffer();
@@ -229,7 +242,61 @@ try {
   assert.deepStrictEqual(wb.SheetNames, ['과제별_정산요약', '3티어_분배및송금', '거래처_조사원장부']);
   const summaryRows = XLSX.utils.sheet_to_json(wb.Sheets['과제별_정산요약']);
   assert.strictEqual(summaryRows.length, 3);
-  console.log('✅ [3/4] 다중 시트 Excel(.xlsx) 다운로드 및 시트 무결성 검증 통과');
+
+  // 내보낸 데이터를 편집해 재업로드용 워크북 구성 (기송금완료 항목을 실수로 '미지급'으로 바꿨을 때 보호되는지 테스트 + 신규 과제 추가)
+  const allocSheetRows = XLSX.utils.sheet_to_json(wb.Sheets['3티어_분배및송금']);
+  allocSheetRows[0]['송금상태'] = '미지급'; // 기존에는 송금완료 상태였음 -> protectPaidStatus=true 시 '송금완료' 유지!
+  allocSheetRows[0]['확정부수'] = 16;      // 15건 -> 16건으로 수정
+  allocSheetRows[0]['완료부수'] = 16;
+
+  summaryRows.push({
+    '귀속월': '2026-12',
+    '과제명': '2026 연말 소비트렌드 설문',
+    '1티어 발주처': '한국리서치 이팀장',
+    '목표부수': 25,
+    '수주단가(1티어)': '18,000원',
+    '기본지급단가(3티어)': '12,000원',
+    '내 확정부수': 8,
+    '1티어 3.3%적용': 'Y',
+    '1티어 수금상태': '정산대기'
+  });
+
+  const editedWb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(editedWb, XLSX.utils.json_to_sheet(summaryRows), '과제별_정산요약');
+  XLSX.utils.book_append_sheet(editedWb, XLSX.utils.json_to_sheet(allocSheetRows), '3티어_분배및송금');
+  const editedBuf = XLSX.write(editedWb, { type: 'buffer', bookType: 'xlsx' });
+
+  const rtPreview = await reqJson('/api/settlement/import/preview', {
+    method: 'POST',
+    body: JSON.stringify({ fileBase64: editedBuf.toString('base64'), protectPaidStatus: true })
+  });
+  assert.strictEqual(rtPreview.status, 200);
+  assert.strictEqual(rtPreview.body.counts.projectsNew, 1);
+  assert.ok(rtPreview.body.counts.protectedStatusCount >= 1, '기존 송금완료 상태 보호 카운트가 1건 이상이어야 합니다.');
+
+  const rtApply = await reqJson('/api/settlement/import/apply', {
+    method: 'POST',
+    body: JSON.stringify({ fileBase64: editedBuf.toString('base64'), protectPaidStatus: true })
+  });
+  assert.strictEqual(rtApply.status, 200);
+
+  // 3-3. 단일 시트(Sheet1)로 된 3티어 조사원 계좌 명단만 단독 업로드 시 자동 시트 분류 및 등록 검증
+  const singleSheetWb = XLSX.utils.book_new();
+  const rawPartnerRows = [
+    { '조사원명': '최준호', '연락처': '010-5555-7777', '은행': '카카오뱅크', '계좌번호': '3333-01-9999999', '3.3%': 'Y' },
+    { '조사원명': '정유나', '연락처': '010-8888-9999', '은행': '토스뱅크', '계좌번호': '1000-1234-5678', '3.3%': 'N' }
+  ];
+  XLSX.utils.book_append_sheet(singleSheetWb, XLSX.utils.json_to_sheet(rawPartnerRows), 'Sheet1');
+  const singleSheetBuf = XLSX.write(singleSheetWb, { type: 'buffer', bookType: 'xlsx' });
+
+  const ptnImportRes = await reqJson('/api/settlement/import/apply', {
+    method: 'POST',
+    body: JSON.stringify({ fileBase64: singleSheetBuf.toString('base64'), protectPaidStatus: true })
+  });
+  assert.strictEqual(ptnImportRes.status, 200);
+  assert.strictEqual(ptnImportRes.body.counts.partnersNew, 2);
+
+  console.log('✅ [3/4] 다중 시트 Excel 내보내기 ⇄ 가져오기(송금완료 상태 보호) 및 단일 시트 계좌명단 업로드 검증 통과');
 
   // --------------------------------------------------------------------------
   // [검증 4] 프론트엔드 settlement.js 모의 DOM 렌더링 검증 (Empty State -> Active State)

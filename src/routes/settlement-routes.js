@@ -6,6 +6,10 @@
 import * as XLSX from 'xlsx';
 import * as CampaignStore from '../models/campaign.js';
 import * as SettlementStore from '../models/settlement.js';
+import {
+  generateSettlementTemplateBuffer,
+  parseSettlementExcelBuffer
+} from '../utils/settlement-excel.js';
 import { logger } from '../utils/logger.js';
 
 function setNoCache(res) {
@@ -297,6 +301,7 @@ export function registerSettlementRoutes({ app }) {
         '3티어 확정부수': p.metrics.tier3ApprovedTotal,
         '총 인정부수': p.metrics.totalApprovedCount,
         '1티어 세전청구액': p.metrics.grossReceivable,
+        '1티어 3.3%적용': p.taxWithholdingIn ? 'Y' : 'N',
         '1티어 3.3%공제': p.metrics.taxIn,
         '1티어 실비가감': p.extraAdjustmentIn || 0,
         '1티어 실수령액': p.metrics.netReceivable,
@@ -325,6 +330,7 @@ export function registerSettlementRoutes({ app }) {
             '확정부수': a.approvedCount,
             '지급단가': a.unitPriceOut,
             '세전금액': a.grossPayable,
+            '3.3%공제여부': a.taxWithholdingOut ? 'Y' : 'N',
             '3.3%원천징수': a.taxOut,
             '추가실비': a.extraAdjustmentOut || 0,
             '실송금액': a.netPayable,
@@ -383,6 +389,69 @@ export function registerSettlementRoutes({ app }) {
     } catch (err) {
       logger.error(`[정산 엑셀 내보내기 오류] ${err.message}`);
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 14. 정산 일괄 업로드용 표준 양식(.xlsx) 다운로드
+  app.get('/api/settlement/export/template', (_req, res) => {
+    try {
+      const ym = SettlementStore.getCurrentKstYearMonth();
+      const buf = generateSettlementTemplateBuffer(ym);
+      const fileName = encodeURIComponent('설문조사_정산_표준업로드양식.xlsx');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${fileName}`);
+      return res.send(buf);
+    } catch (err) {
+      logger.error(`[정산 표준양식 생성 오류] ${err.message}`);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 15. 엑셀 일괄 업로드 미리보기 검수 (Dry-run)
+  app.post('/api/settlement/import/preview', (req, res) => {
+    try {
+      const { fileBase64, protectPaidStatus = true } = req.body || {};
+      if (!fileBase64) {
+        return res.status(400).json({ error: '업로드된 엑셀 파일 데이터가 없습니다.' });
+      }
+      const base64Clean = String(fileBase64).replace(/^data:.*?;base64,/, '');
+      const buffer = Buffer.from(base64Clean, 'base64');
+      const fallbackPeriodMonth = SettlementStore.getCurrentKstYearMonth();
+      const parsed = parseSettlementExcelBuffer(buffer, { fallbackPeriodMonth });
+      const campaigns = CampaignStore.getAllCampaigns();
+      const preview = SettlementStore.importSettlementData(parsed, {
+        dryRun: true,
+        protectPaidStatus: Boolean(protectPaidStatus),
+        campaigns
+      });
+      return res.json({ success: true, ...preview });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  });
+
+  // 16. 엑셀 일괄 업로드 최종 스마트 병합 반영 (Upsert)
+  app.post('/api/settlement/import/apply', (req, res) => {
+    try {
+      const { fileBase64, protectPaidStatus = true } = req.body || {};
+      if (!fileBase64) {
+        return res.status(400).json({ error: '업로드된 엑셀 파일 데이터가 없습니다.' });
+      }
+      const base64Clean = String(fileBase64).replace(/^data:.*?;base64,/, '');
+      const buffer = Buffer.from(base64Clean, 'base64');
+      const fallbackPeriodMonth = SettlementStore.getCurrentKstYearMonth();
+      const parsed = parseSettlementExcelBuffer(buffer, { fallbackPeriodMonth });
+      const campaigns = CampaignStore.getAllCampaigns();
+      const applied = SettlementStore.importSettlementData(parsed, {
+        dryRun: false,
+        protectPaidStatus: Boolean(protectPaidStatus),
+        campaigns
+      });
+      logger.info(`[정산 엑셀 일괄 반영] 반영 합계 ${applied.totalActionable}건 (과제 +${applied.counts.projectsNew}/수정 ${applied.counts.projectsUpdated}, 분배 +${applied.counts.allocationsNew}/수정 ${applied.counts.allocationsUpdated}, 장부 +${applied.counts.partnersNew}/수정 ${applied.counts.partnersUpdated})`);
+      return res.json({ success: true, ...applied });
+    } catch (err) {
+      logger.error(`[정산 엑셀 반영 오류] ${err.message}`);
+      return res.status(400).json({ error: err.message });
     }
   });
 }

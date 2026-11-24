@@ -18,8 +18,8 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <link rel="stylesheet" href="tokens.css?v=20261124_stl_v1">
-  <link rel="stylesheet" href="settlement.css?v=20261124_stl_v1">
+  <link rel="stylesheet" href="tokens.css?v=20261124_stl_v2">
+  <link rel="stylesheet" href="settlement.css?v=20261124_stl_v2">
 </head>
 <body class="stl-body">
 
@@ -55,6 +55,10 @@
         <select id="select-period-month" class="stl-month-select" aria-label="정산 귀속월 선택">
           <option value="all">전체 기간</option>
         </select>
+        <button type="button" class="stl-icon-btn" id="btn-open-import-excel" title="정산표 및 계좌 명단 엑셀(.xlsx/.csv) 업로드">
+          <i class="fa-solid fa-file-arrow-up" style="color: #0284c7;"></i>
+          <span class="btn-label-desktop">엑셀 업로드</span>
+        </button>
         <button type="button" class="stl-icon-btn" id="btn-export-excel" title="정산 내역 엑셀(.xlsx) 다운로드">
           <i class="fa-solid fa-file-excel" style="color: #16a34a;"></i>
           <span class="btn-label-desktop">엑셀 저장</span>
@@ -192,9 +196,14 @@
           <button type="button" class="stl-chip" data-ptfilter="tier3">3티어 조사원</button>
           <button type="button" class="stl-chip" data-ptfilter="tier1">1티어 발주처</button>
         </div>
-        <button type="button" class="stl-btn stl-btn-primary stl-btn-sm" id="btn-open-new-partner">
-          <i class="fa-solid fa-user-plus"></i> 새 거래처·조사원 등록
-        </button>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button type="button" class="stl-btn stl-btn-outline stl-btn-sm" id="btn-partners-import-excel">
+            <i class="fa-solid fa-file-arrow-up" style="color: #0284c7;"></i> 엑셀 명단 업로드
+          </button>
+          <button type="button" class="stl-btn stl-btn-primary stl-btn-sm" id="btn-open-new-partner">
+            <i class="fa-solid fa-user-plus"></i> 새 거래처·조사원 등록
+          </button>
+        </div>
       </div>
       <div id="partners-cards-container" class="stl-card-grid"></div>
     </section>
@@ -495,6 +504,51 @@
     </div>
   </div>
 
+  <!-- ============================================================ -->
+  <!-- [모달 4] 엑셀 일괄 업로드 & 변경점 미리보기 검수 바텀시트 -->
+  <!-- ============================================================ -->
+  <div class="stl-modal-backdrop d-none" id="modal-excel-import" role="dialog" aria-modal="true" aria-labelledby="modal-excel-title">
+    <div class="stl-modal-sheet">
+      <div class="stl-modal-head">
+        <h3 class="stl-modal-title" id="modal-excel-title">정산표 · 계좌명단 엑셀 업로드</h3>
+        <button type="button" class="stl-modal-close" id="btn-close-excel-modal" aria-label="닫기">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="stl-modal-body">
+        <div class="stl-excel-guide-box">
+          <div style="font-size: 13px; color: var(--stl-ink-secondary); line-height: 1.5;">
+            <b>[엑셀 저장]</b>으로 받은 파일을 수정해 올리거나, <b>표준 양식</b>에 과제·3티어 분배·계좌 명단을 정리해 한 번에 등록하세요. <span style="color:var(--stl-ink-muted);">(단일 시트 계좌 명단 파일도 자동 인식됩니다)</span>
+          </div>
+          <button type="button" class="stl-btn stl-btn-outline stl-btn-sm" id="btn-download-excel-template" style="align-self: flex-start;">
+            <i class="fa-solid fa-download"></i> 표준 엑셀 양식 다운로드 (.xlsx)
+          </button>
+        </div>
+
+        <label class="stl-excel-dropzone" for="input-excel-file" id="excel-file-dropzone">
+          <input type="file" id="input-excel-file" accept=".xlsx,.xls,.csv" class="d-none">
+          <i class="fa-solid fa-file-arrow-up stl-excel-drop-icon"></i>
+          <strong id="excel-selected-filename">터치하여 엑셀(.xlsx / .csv) 파일 선택</strong>
+          <small>선택 즉시 저장 전 변경점 미리보기가 아래에 표시됩니다</small>
+        </label>
+
+        <label class="stl-check-row">
+          <input type="checkbox" id="chk-protect-paid" checked>
+          <span>이미 '입금완료 · 송금완료' 처리된 내역은 상태 유지 (권장)</span>
+        </label>
+
+        <!-- 파일 선택 시에만 열리는 미리보기 검수 영역 (Progressive Disclosure) -->
+        <div id="excel-preview-section" class="stl-excel-preview d-none"></div>
+      </div>
+      <div class="stl-modal-foot">
+        <button type="button" class="stl-btn stl-btn-soft" id="btn-cancel-excel-modal">닫기</button>
+        <button type="button" class="stl-btn stl-btn-primary" id="btn-apply-excel-import" disabled>
+          <i class="fa-solid fa-check"></i> 검수 완료 · 반영하기
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 확인 모달 -->
   <div class="stl-modal-backdrop d-none" id="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
     <div class="stl-modal-sheet" style="max-width: 420px;">
@@ -514,7 +568,7 @@
   <!-- 토스트 알림 -->
   <div id="stl-toast" class="stl-toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="nav-auth.js?v=20261124_stl_v1"></script>
-  <script type="module" src="settlement.js?v=20261124_stl_v1"></script>
+  <script type="module" src="nav-auth.js?v=20261124_stl_v2"></script>
+  <script type="module" src="settlement.js?v=20261124_stl_v2"></script>
 </body>
 </html>

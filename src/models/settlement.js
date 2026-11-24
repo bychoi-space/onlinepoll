@@ -1065,3 +1065,343 @@ export function buildSettlementDashboardPayload({ periodMonth = 'all' } = {}) {
     partners: enrichedPartners
   };
 }
+
+export { getCurrentKstYearMonth };
+
+/**
+ * 파싱된 엑셀 정산 데이터를 기반으로 변경점 미리보기(dryRun=true) 또는 스마트 병합 반영(dryRun=false)을 수행합니다.
+ */
+export function importSettlementData(parsed = {}, {
+  dryRun = true,
+  protectPaidStatus = true,
+  campaigns = []
+} = {}) {
+  const workingStore = JSON.parse(JSON.stringify(loadStore()));
+  const now = new Date().toISOString();
+  let idSeq = 0;
+  const nextId = (prefix) => `${prefix}_${Date.now()}_${++idSeq}_${Math.random().toString(36).slice(2, 5)}`;
+
+  const norm = (s) => String(s ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+
+  const counts = {
+    partnersNew: 0,
+    partnersUpdated: 0,
+    projectsNew: 0,
+    projectsUpdated: 0,
+    allocationsNew: 0,
+    allocationsUpdated: 0,
+    protectedStatusCount: 0,
+    skippedRows: Number(parsed.skippedRows) || 0
+  };
+
+  const previewItems = [];
+  const warnings = [];
+  const pushPreview = (msg) => {
+    if (previewItems.length < 25) previewItems.push(msg);
+  };
+
+  function upsertPartner(tier, info = {}) {
+    const cleanName = String(info.name || '').trim();
+    if (!cleanName) return null;
+    const key = norm(cleanName);
+    let found = workingStore.partners.find(p => p.tier === tier && norm(p.name) === key);
+
+    if (!found) {
+      found = {
+        id: nextId('ptn'),
+        tier,
+        name: cleanName,
+        phone: String(info.phone || '').trim(),
+        bankName: String(info.bankName || '').trim(),
+        accountNumber: String(info.accountNumber || '').trim(),
+        accountHolder: String(info.accountHolder || cleanName).trim(),
+        defaultUnitPrice: normalizeNonNegInt(info.defaultUnitPrice, 0),
+        defaultTaxWithholding: Boolean(info.defaultTaxWithholding),
+        memo: String(info.memo || '').trim(),
+        createdAt: now,
+        updatedAt: now
+      };
+      workingStore.partners.unshift(found);
+      counts.partnersNew += 1;
+      const acctTag = found.bankName ? ` (${found.bankName} ${found.accountNumber})` : '';
+      pushPreview(`[신규 ${tier === 'tier1' ? '1티어' : '3티어'}] ${found.name}${acctTag}`);
+      return found;
+    }
+
+    let changed = false;
+    const mergeStr = (field, incoming) => {
+      const val = String(incoming || '').trim();
+      if (val && val !== found[field]) {
+        found[field] = val;
+        changed = true;
+      }
+    };
+    mergeStr('phone', info.phone);
+    mergeStr('bankName', info.bankName);
+    mergeStr('accountNumber', info.accountNumber);
+    mergeStr('accountHolder', info.accountHolder);
+    mergeStr('memo', info.memo);
+
+    if (info.defaultUnitPrice && normalizeNonNegInt(info.defaultUnitPrice, 0) !== found.defaultUnitPrice) {
+      found.defaultUnitPrice = normalizeNonNegInt(info.defaultUnitPrice, 0);
+      changed = true;
+    }
+    if (info.defaultTaxWithholding !== undefined && info.defaultTaxWithholding !== null && Boolean(info.defaultTaxWithholding) !== Boolean(found.defaultTaxWithholding)) {
+      found.defaultTaxWithholding = Boolean(info.defaultTaxWithholding);
+      changed = true;
+    }
+
+    if (changed) {
+      found.updatedAt = now;
+      counts.partnersUpdated += 1;
+      pushPreview(`[장부 갱신] ${found.name} 연락처·계좌 정보 업데이트`);
+    }
+    return found;
+  }
+
+  // 1. 거래처·조사원 장부 시트 처리
+  for (const pRow of (parsed.partners || [])) {
+    upsertPartner(pRow.tier === 'tier1' ? 'tier1' : 'tier3', pRow);
+  }
+
+  // AutoSurvey 캠페인 제목 매핑
+  const campByTitle = new Map();
+  (campaigns || []).forEach(c => {
+    if (c && c.title) campByTitle.set(norm(c.title), c);
+  });
+
+  // 2. 과제별 정산요약 시트 처리
+  for (const pr of (parsed.projects || [])) {
+    const titleClean = String(pr.title || '').trim();
+    if (!titleClean) continue;
+    const ym = pr.periodMonth || getCurrentKstYearMonth();
+
+    let tier1Id = null;
+    let tier1Name = String(pr.tier1PartnerName || '').trim();
+    if (tier1Name) {
+      const t1 = upsertPartner('tier1', { name: tier1Name, defaultTaxWithholding: pr.taxWithholdingIn });
+      if (t1) {
+        tier1Id = t1.id;
+        tier1Name = t1.name;
+      }
+    }
+
+    let proj = workingStore.projects.find(
+      p => p.periodMonth === ym && norm(p.title) === norm(titleClean)
+    );
+
+    if (!proj) {
+      const matchedCamp = campByTitle.get(norm(titleClean)) || null;
+      const campStats = matchedCamp ? extractAutoSurveyCampaignStats(matchedCamp) : null;
+      const inflow = pr.inflowStatus || 'pending';
+
+      proj = {
+        id: nextId('stl'),
+        title: titleClean,
+        sourceType: matchedCamp ? 'autosurvey' : 'manual',
+        linkedCampaignId: matchedCamp ? matchedCamp.id : null,
+        tier1PartnerId: tier1Id,
+        tier1PartnerName: tier1Name,
+        periodMonth: ym,
+        targetQuota: pr.targetQuota > 0 ? pr.targetQuota : (campStats ? campStats.targetQuota : 0),
+        autoSurveyCompletedRef: campStats ? campStats.completedCount : 0,
+        autoSurveyWaitingRef: campStats ? campStats.waitingBeforeSubmitCount : 0,
+        lastSyncedAt: campStats ? now : null,
+        unitPriceIn: normalizeNonNegInt(pr.unitPriceIn, 0),
+        defaultUnitPriceOut: normalizeNonNegInt(pr.defaultUnitPriceOut, 0),
+        taxWithholdingIn: Boolean(pr.taxWithholdingIn),
+        extraAdjustmentIn: normalizeSignedInt(pr.extraAdjustmentIn, 0),
+        inflowStatus: inflow,
+        receivedAt: inflow === 'received' ? now : null,
+        status: 'active',
+        memo: String(pr.memo || '').trim(),
+        myWork: {
+          assignedCount: Math.max(pr.myCompleted, pr.myApproved),
+          completedCount: normalizeNonNegInt(pr.myCompleted, 0),
+          approvedCount: normalizeNonNegInt(pr.myApproved, 0),
+          autoSyncApproved: pr.myCompleted === pr.myApproved
+        },
+        allocations: [],
+        createdAt: now,
+        updatedAt: now
+      };
+      workingStore.projects.unshift(proj);
+      counts.projectsNew += 1;
+      pushPreview(`[신규 과제] (${ym}) ${proj.title} · 수주 ${proj.unitPriceIn.toLocaleString()}원 / 내 확정 ${proj.myWork.approvedCount}건`);
+    } else {
+      let nextInflow = pr.inflowStatus || proj.inflowStatus || 'pending';
+      if (protectPaidStatus && proj.inflowStatus === 'received' && nextInflow !== 'received') {
+        nextInflow = 'received';
+        counts.protectedStatusCount += 1;
+      }
+
+      if (tier1Id) {
+        proj.tier1PartnerId = tier1Id;
+        proj.tier1PartnerName = tier1Name;
+      }
+      if (pr.targetQuota > 0) proj.targetQuota = pr.targetQuota;
+      if (pr.unitPriceIn > 0 || proj.unitPriceIn === 0) proj.unitPriceIn = normalizeNonNegInt(pr.unitPriceIn, proj.unitPriceIn);
+      if (pr.defaultUnitPriceOut > 0 || proj.defaultUnitPriceOut === 0) {
+        proj.defaultUnitPriceOut = normalizeNonNegInt(pr.defaultUnitPriceOut, proj.defaultUnitPriceOut);
+      }
+      proj.taxWithholdingIn = Boolean(pr.taxWithholdingIn);
+      proj.extraAdjustmentIn = normalizeSignedInt(pr.extraAdjustmentIn, proj.extraAdjustmentIn || 0);
+      proj.inflowStatus = nextInflow;
+      if (nextInflow === 'received' && !proj.receivedAt) proj.receivedAt = now;
+      if (pr.memo) proj.memo = pr.memo;
+
+      proj.myWork = proj.myWork || { assignedCount: 0, completedCount: 0, approvedCount: 0, autoSyncApproved: true };
+      proj.myWork.completedCount = normalizeNonNegInt(pr.myCompleted, proj.myWork.completedCount);
+      proj.myWork.approvedCount = normalizeNonNegInt(pr.myApproved, proj.myWork.approvedCount);
+      if (proj.myWork.assignedCount < proj.myWork.completedCount) {
+        proj.myWork.assignedCount = proj.myWork.completedCount;
+      }
+      proj.updatedAt = now;
+
+      counts.projectsUpdated += 1;
+      pushPreview(`[과제 수정] (${ym}) ${proj.title} · 수주 ${proj.unitPriceIn.toLocaleString()}원 / 내 확정 ${proj.myWork.approvedCount}건`);
+    }
+  }
+
+  // 3. 3티어 분배 및 송금 시트 처리
+  for (const al of (parsed.allocations || [])) {
+    const ptn = upsertPartner('tier3', {
+      name: al.partnerName,
+      phone: al.phone,
+      bankName: al.bankName,
+      accountNumber: al.accountNumber,
+      accountHolder: al.accountHolder,
+      defaultUnitPrice: al.hasExplicitUnitOut ? al.unitPriceOut : 0,
+      defaultTaxWithholding: al.taxWithholdingOut ?? undefined
+    });
+    if (!ptn) continue;
+
+    const ym = al.periodMonth || getCurrentKstYearMonth();
+    let proj = workingStore.projects.find(
+      p => p.periodMonth === ym && norm(p.title) === norm(al.projectTitle)
+    );
+    if (!proj) {
+      proj = workingStore.projects.find(p => norm(p.title) === norm(al.projectTitle)) || null;
+    }
+
+    if (!proj) {
+      const inferredOut = al.hasExplicitUnitOut ? al.unitPriceOut : 0;
+      proj = {
+        id: nextId('stl'),
+        title: al.projectTitle,
+        sourceType: 'manual',
+        linkedCampaignId: null,
+        tier1PartnerId: null,
+        tier1PartnerName: '',
+        periodMonth: ym,
+        targetQuota: al.assignedCount,
+        autoSurveyCompletedRef: 0,
+        autoSurveyWaitingRef: 0,
+        lastSyncedAt: null,
+        unitPriceIn: inferredOut,
+        defaultUnitPriceOut: inferredOut,
+        taxWithholdingIn: false,
+        extraAdjustmentIn: 0,
+        inflowStatus: 'pending',
+        receivedAt: null,
+        status: 'active',
+        memo: '',
+        myWork: { assignedCount: 0, completedCount: 0, approvedCount: 0, autoSyncApproved: true },
+        allocations: [],
+        createdAt: now,
+        updatedAt: now
+      };
+      workingStore.projects.unshift(proj);
+      counts.projectsNew += 1;
+      warnings.push(`'${al.projectTitle}' 과제가 목록에 없어 신규 생성되었습니다 (1티어 수주 단가를 꼭 확인해 주세요).`);
+    }
+
+    proj.allocations = Array.isArray(proj.allocations) ? proj.allocations : [];
+    let existingAlloc = proj.allocations.find(a => a.partnerId === ptn.id || norm(a.partnerName) === norm(ptn.name));
+
+    const unitPriceOut = al.hasExplicitUnitOut
+      ? normalizeNonNegInt(al.unitPriceOut, proj.defaultUnitPriceOut || 0)
+      : normalizeNonNegInt(existingAlloc?.unitPriceOut ?? proj.defaultUnitPriceOut ?? ptn.defaultUnitPrice ?? 0, 0);
+
+    const taxOut = al.taxWithholdingOut !== null && al.taxWithholdingOut !== undefined
+      ? Boolean(al.taxWithholdingOut)
+      : Boolean(existingAlloc ? existingAlloc.taxWithholdingOut : ptn.defaultTaxWithholding);
+
+    const extraOut = normalizeSignedInt(al.extraAdjustmentOut, 0);
+    const gross = al.approvedCount * unitPriceOut;
+    const taxAmt = taxOut ? Math.floor(gross * 0.033) : 0;
+    const netAmt = Math.max(0, gross - taxAmt + extraOut);
+
+    if (!existingAlloc) {
+      const payout = al.payoutStatus || 'unpaid';
+      const newAlloc = {
+        id: nextId('alc'),
+        partnerId: ptn.id,
+        partnerName: ptn.name,
+        assignedCount: al.assignedCount,
+        completedCount: al.completedCount,
+        approvedCount: al.approvedCount,
+        autoSyncApproved: al.completedCount === al.approvedCount,
+        unitPriceOut,
+        taxWithholdingOut: taxOut,
+        extraAdjustmentOut: extraOut,
+        payoutStatus: payout,
+        paidAmount: payout === 'paid' ? netAmt : 0,
+        paidAt: payout === 'paid' ? now : null,
+        memo: al.memo || '',
+        createdAt: now,
+        updatedAt: now
+      };
+      proj.allocations.push(newAlloc);
+      proj.updatedAt = now;
+      counts.allocationsNew += 1;
+      pushPreview(`[분배 추가] ${proj.title} → ${ptn.name} (확정 ${al.approvedCount}건 · ${netAmt.toLocaleString()}원)`);
+    } else {
+      let nextPayout = al.payoutStatus || existingAlloc.payoutStatus || 'unpaid';
+      if (protectPaidStatus && existingAlloc.payoutStatus === 'paid' && nextPayout !== 'paid') {
+        nextPayout = 'paid';
+        counts.protectedStatusCount += 1;
+      }
+
+      existingAlloc.partnerId = ptn.id;
+      existingAlloc.partnerName = ptn.name;
+      existingAlloc.assignedCount = al.assignedCount;
+      existingAlloc.completedCount = al.completedCount;
+      existingAlloc.approvedCount = al.approvedCount;
+      existingAlloc.unitPriceOut = unitPriceOut;
+      existingAlloc.taxWithholdingOut = taxOut;
+      existingAlloc.extraAdjustmentOut = extraOut;
+      existingAlloc.payoutStatus = nextPayout;
+      existingAlloc.paidAmount = nextPayout === 'paid' ? netAmt : (nextPayout === 'partial' ? existingAlloc.paidAmount : 0);
+      if (nextPayout === 'paid' && !existingAlloc.paidAt) existingAlloc.paidAt = now;
+      if (al.memo) existingAlloc.memo = al.memo;
+      existingAlloc.updatedAt = now;
+      proj.updatedAt = now;
+
+      counts.allocationsUpdated += 1;
+      pushPreview(`[분배 수정] ${proj.title} → ${ptn.name} (확정 ${al.approvedCount}건 · ${netAmt.toLocaleString()}원)`);
+    }
+  }
+
+  const totalActionable =
+    counts.partnersNew +
+    counts.partnersUpdated +
+    counts.projectsNew +
+    counts.projectsUpdated +
+    counts.allocationsNew +
+    counts.allocationsUpdated;
+
+  if (!dryRun && totalActionable > 0) {
+    saveStore(workingStore);
+  }
+
+  return {
+    dryRun,
+    totalActionable,
+    counts,
+    detectedSheets: parsed.detectedSheets || [],
+    previewItems,
+    warnings
+  };
+}
+

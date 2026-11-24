@@ -36,6 +36,7 @@ const filesToCheck = [
   'src/routes/sync-routes.js',
   'src/routes/execution-routes.js',
   'src/routes/settlement-routes.js',
+  'src/utils/settlement-excel.js',
   'src/utils/atomic-file.js',
   'src/utils/logger.js',
   'src/utils/chromium-launcher.js',
