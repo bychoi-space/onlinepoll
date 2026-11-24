@@ -24,6 +24,7 @@ import { registerCampaignRoutes } from './routes/campaign-routes.js';
 import { registerSyncRoutes } from './routes/sync-routes.js';
 import { registerExecutionRoutes } from './routes/execution-routes.js';
 import { registerQuotaRoutes } from './routes/quota-routes.js';
+import { registerSettlementRoutes } from './routes/settlement-routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -105,6 +106,9 @@ registerQuotaRoutes({
   normalizeAssocQuotaItem,
   buildAssocQuotaColumns
 });
+
+// [5] 조사원 2티어 전용 설문조사 정산 시스템 라우트 (/settlement, /api/settlement/*)
+registerSettlementRoutes({ app });
 
 app.listen(PORT, () => {
   console.log(`=======================================================`);

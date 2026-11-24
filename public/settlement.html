@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="조사원 2티어 전용 설문조사 과제 수주·3티어 분배 및 실수령 정산 관리 시스템">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>설문조사 정산 허브 - AutoSurvey AI</title>
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261022">
+  <link rel="alternate icon" type="image/png" href="favicon.png?v=20261022">
+  <link rel="apple-touch-icon" href="favicon.png?v=20261022">
+
+  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <link rel="stylesheet" href="tokens.css?v=20261124_stl_v1">
+  <link rel="stylesheet" href="settlement.css?v=20261124_stl_v1">
+</head>
+<body class="stl-body">
+
+  <!-- 상단 앱 헤더 -->
+  <header class="stl-topbar">
+    <div class="stl-topbar-inner">
+      <div class="stl-brand-group">
+        <a href="index.html" class="stl-home-link" id="btn-go-autosurvey-home" title="AutoSurvey 캠페인 대시보드로 이동">
+          <i class="fa-solid fa-layer-group"></i>
+        </a>
+        <h1 class="stl-brand-title">조사 정산</h1>
+        <span class="stl-tier-pill">2티어 전용</span>
+      </div>
+
+      <!-- 태블릿·PC 인라인 탭 네비게이션 -->
+      <nav class="stl-desktop-tabs" aria-label="정산 주요 메뉴">
+        <button type="button" class="stl-desktop-tab active" data-tab="overview" id="dtab-overview">
+          <i class="fa-solid fa-chart-pie"></i> 요약·현황
+        </button>
+        <button type="button" class="stl-desktop-tab" data-tab="projects" id="dtab-projects">
+          <i class="fa-solid fa-clipboard-list"></i> 과제 정산
+        </button>
+        <button type="button" class="stl-desktop-tab" data-tab="remittance" id="dtab-remittance">
+          <i class="fa-solid fa-money-bill-transfer"></i> 3티어 송금함
+          <span class="stl-nav-badge d-none" id="dbadge-remittance">0</span>
+        </button>
+        <button type="button" class="stl-desktop-tab" data-tab="partners" id="dtab-partners">
+          <i class="fa-solid fa-address-book"></i> 거래처 장부
+        </button>
+      </nav>
+
+      <div class="stl-topbar-actions">
+        <select id="select-period-month" class="stl-month-select" aria-label="정산 귀속월 선택">
+          <option value="all">전체 기간</option>
+        </select>
+        <button type="button" class="stl-icon-btn" id="btn-export-excel" title="정산 내역 엑셀(.xlsx) 다운로드">
+          <i class="fa-solid fa-file-excel" style="color: #16a34a;"></i>
+          <span class="btn-label-desktop">엑셀 저장</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 작업 캔버스 -->
+  <main class="stl-main">
+
+    <!-- ========================================================== -->
+    <!-- [탭 1] 요약·현황 (내 순수익 / 받을 돈 / 줄 돈 / 빠른 액션) -->
+    <!-- ========================================================== -->
+    <section id="view-overview" class="stl-tab-view">
+      <div class="stl-overview-top-grid">
+        <!-- 내 최종 순수익 히어로 카드 -->
+        <div class="stl-hero-card">
+          <div class="stl-hero-top">
+            <span class="stl-hero-label">내 최종 순수익 (실수령 − 3티어 지급)</span>
+            <span class="stl-hero-period-tag" id="overview-period-label">전체 기간</span>
+          </div>
+          <div class="stl-hero-amount num-mono" id="stat-my-net-profit">0원</div>
+          <div class="stl-hero-subgrid">
+            <div class="stl-hero-subitem">
+              <small>🙋‍♂️ 내 직접 수행분 (<span id="stat-my-approved-cnt">0</span>건)</small>
+              <strong class="num-mono" id="stat-my-direct-gross">0원</strong>
+            </div>
+            <div class="stl-hero-subitem">
+              <small>🤝 3티어 분배 마진 (<span id="stat-t3-approved-cnt">0</span>건)</small>
+              <strong class="num-mono" id="stat-t3-spread-gross">+0원</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 받을 돈(1티어 미수금) / 줄 돈(3티어 미송금) 원터치 이동 카드 -->
+        <div class="stl-cashflow-grid">
+          <button type="button" class="stl-cash-card" id="card-jump-uncollected">
+            <div class="stl-cash-head">
+              <span>📥 1티어 받을 돈 (미수금)</span>
+              <i class="fa-solid fa-chevron-right" style="font-size: 11px;"></i>
+            </div>
+            <div class="stl-cash-amount is-inflow num-mono" id="stat-uncollected-in">0원</div>
+            <div class="stl-cash-foot">총 청구예정 <span class="num-mono" id="stat-net-receivable">0원</span></div>
+          </button>
+
+          <button type="button" class="stl-cash-card" id="card-jump-unpaid">
+            <div class="stl-cash-head">
+              <span>📤 3티어 줄 돈 (미송금)</span>
+              <i class="fa-solid fa-chevron-right" style="font-size: 11px;"></i>
+            </div>
+            <div class="stl-cash-amount is-outflow num-mono" id="stat-unpaid-out">0원</div>
+            <div class="stl-cash-foot">총 지급예정 <span class="num-mono" id="stat-net-payable">0원</span></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- 상태에 따라 Empty 온보딩 또는 즉시 챙길 과제 리스트 렌더링 -->
+      <div id="overview-dynamic-container"></div>
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- [탭 2] 과제 정산 (모바일 리스트+슬라이드 / 태블릿 2단 분할) -->
+    <!-- ========================================================== -->
+    <section id="view-projects" class="stl-tab-view d-none">
+      <div class="stl-projects-workspace">
+        <!-- 좌측: 과제 목록 및 추가 컨트롤 -->
+        <div class="stl-project-list-pane" id="project-list-pane">
+          <div class="stl-cta-pair">
+            <button type="button" class="stl-btn stl-btn-primary" id="btn-open-import-project">
+              <i class="fa-solid fa-cloud-arrow-down"></i> 캠페인 불러오기
+            </button>
+            <button type="button" class="stl-btn stl-btn-outline" id="btn-open-manual-project">
+              <i class="fa-solid fa-plus"></i> 직접 과제 등록
+            </button>
+          </div>
+
+          <div class="stl-search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="input-project-search" class="stl-search-input" placeholder="과제명 또는 1티어 발주처 검색...">
+          </div>
+
+          <div class="stl-chip-row" id="project-filter-chips">
+            <button type="button" class="stl-chip active" data-pfilter="all">전체 <span id="pcount-all">0</span></button>
+            <button type="button" class="stl-chip" data-pfilter="uncollected">1티어 미수금 <span id="pcount-uncollected">0</span></button>
+            <button type="button" class="stl-chip" data-pfilter="unpaid">3티어 미송금 <span id="pcount-unpaid">0</span></button>
+            <button type="button" class="stl-chip" data-pfilter="settled">정산완료 <span id="pcount-settled">0</span></button>
+          </div>
+
+          <div class="stl-project-cards" id="project-cards-container"></div>
+        </div>
+
+        <!-- 우측(태블릿) / 전체화면 슬라이드(모바일): 선택된 과제 상세 정산 -->
+        <div class="stl-project-detail-pane" id="project-detail-pane">
+          <div class="stl-detail-mobile-bar">
+            <button type="button" class="stl-btn stl-btn-soft stl-btn-sm" id="btn-close-mobile-detail">
+              <i class="fa-solid fa-arrow-left"></i> 과제 목록으로
+            </button>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="stl-btn stl-btn-outline stl-btn-sm" id="btn-mobile-edit-project">
+                <i class="fa-solid fa-pen"></i> 단가·정보 수정
+              </button>
+              <button type="button" class="stl-btn stl-btn-danger-soft stl-btn-sm" id="btn-mobile-delete-project" title="과제 삭제">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="stl-detail-body" id="project-detail-body"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- [탭 3] 3티어 송금함 (조사원 인물별 합산 정산 & 카톡 복사) -->
+    <!-- ========================================================== -->
+    <section id="view-remittance" class="stl-tab-view d-none">
+      <div class="stl-section-head">
+        <h2 class="stl-section-title"><i class="fa-solid fa-money-bill-transfer"></i> 3티어 조사원별 송금함</h2>
+        <div class="stl-chip-row" id="remittance-filter-chips">
+          <button type="button" class="stl-chip active" data-rfilter="unpaid" id="rchip-unpaid">미송금 대기만</button>
+          <button type="button" class="stl-chip" data-rfilter="all" id="rchip-all">송금완료 포함 전체</button>
+        </div>
+      </div>
+      <div id="remittance-cards-container" class="stl-card-grid"></div>
+    </section>
+
+    <!-- ========================================================== -->
+    <!-- [탭 4] 거래처·조사원 장부 (1티어 발주처 & 3티어 계좌 관리) -->
+    <!-- ========================================================== -->
+    <section id="view-partners" class="stl-tab-view d-none">
+      <div class="stl-section-head" style="flex-wrap: wrap;">
+        <div class="stl-chip-row" id="partner-filter-chips">
+          <button type="button" class="stl-chip active" data-ptfilter="all">전체</button>
+          <button type="button" class="stl-chip" data-ptfilter="tier3">3티어 조사원</button>
+          <button type="button" class="stl-chip" data-ptfilter="tier1">1티어 발주처</button>
+        </div>
+        <button type="button" class="stl-btn stl-btn-primary stl-btn-sm" id="btn-open-new-partner">
+          <i class="fa-solid fa-user-plus"></i> 새 거래처·조사원 등록
+        </button>
+      </div>
+      <div id="partners-cards-container" class="stl-card-grid"></div>
+    </section>
+
+  </main>
+
+  <!-- 모바일 하단 고정 네비게이션 바 -->
+  <nav class="stl-bottom-nav" aria-label="모바일 하단 메뉴">
+    <button type="button" class="stl-bnav-btn active" data-tab="overview" id="bnav-overview">
+      <i class="fa-solid fa-chart-pie"></i>
+      <span>요약·현황</span>
+    </button>
+    <button type="button" class="stl-bnav-btn" data-tab="projects" id="bnav-projects">
+      <i class="fa-solid fa-clipboard-list"></i>
+      <span>과제 정산</span>
+    </button>
+    <button type="button" class="stl-bnav-btn" data-tab="remittance" id="bnav-remittance">
+      <i class="fa-solid fa-money-bill-transfer"></i>
+      <span>3티어 송금함</span>
+      <span class="stl-nav-badge d-none" id="bbadge-remittance">0</span>
+    </button>
+    <button type="button" class="stl-bnav-btn" data-tab="partners" id="bnav-partners">
+      <i class="fa-solid fa-address-book"></i>
+      <span>거래처 장부</span>
+    </button>
+  </nav>
+
+  <!-- ============================================================ -->
+  <!-- [모달 1] 정산 과제 등록 / 수정 바텀시트 -->
+  <!-- ============================================================ -->
+  <div class="stl-modal-backdrop d-none" id="modal-project" role="dialog" aria-modal="true" aria-labelledby="modal-project-title">
+    <div class="stl-modal-sheet">
+      <div class="stl-modal-head">
+        <h3 class="stl-modal-title" id="modal-project-title">새 정산 과제 등록</h3>
+        <button type="button" class="stl-modal-close" id="btn-close-project-modal" aria-label="닫기">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="form-project" class="stl-modal-body">
+        <input type="hidden" id="proj-edit-id" value="">
+
+        <!-- 생성 시에만 노출되는 소스 전환 스위치 -->
+        <div class="stl-mode-switch" id="proj-source-switch">
+          <button type="button" class="stl-mode-btn active" data-psource="autosurvey" id="btn-psource-autosurvey">
+            AutoSurvey 캠페인 연동
+          </button>
+          <button type="button" class="stl-mode-btn" data-psource="manual" id="btn-psource-manual">
+            외부 과제 직접 입력
+          </button>
+        </div>
+
+        <!-- AutoSurvey 캠페인 선택 영역 -->
+        <div class="stl-form-group" id="group-autosurvey-select">
+          <label class="stl-label" for="proj-linked-campaign">불러올 AutoSurvey 캠페인 선택</label>
+          <select id="proj-linked-campaign" class="stl-select">
+            <option value="">캠페인 목록 불러오는 중...</option>
+          </select>
+          <label class="stl-check-row" id="row-apply-camp-completed">
+            <input type="checkbox" id="proj-apply-camp-completed" checked>
+            <span>현재 AutoSurvey 완료 건수를 내 수행 부수로 초기 반영</span>
+          </label>
+        </div>
+
+        <div class="stl-form-group">
+          <label class="stl-label" for="proj-title">설문 과제명</label>
+          <input type="text" id="proj-title" class="stl-input" placeholder="예: 2026 소상공인 경영실태조사" required>
+        </div>
+
+        <div class="stl-form-row-2">
+          <div class="stl-form-group">
+            <label class="stl-label" for="proj-period-month">정산 귀속월</label>
+            <input type="month" id="proj-period-month" class="stl-input" required>
+          </div>
+          <div class="stl-form-group">
+            <label class="stl-label" for="proj-target-quota">배정 목표 부수</label>
+            <input type="number" id="proj-target-quota" class="stl-input num-mono" inputmode="numeric" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="stl-form-group">
+          <label class="stl-label" for="proj-tier1-select">1티어 발주처 (일을 준 팀장/회사 · 선택)</label>
+          <select id="proj-tier1-select" class="stl-select">
+            <option value="">선택 안 함 (또는 아래 직접 입력)</option>
+          </select>
+          <input type="text" id="proj-tier1-custom-name" class="stl-input" placeholder="새 1티어 이름 직접 입력 (예: 박팀장님)" style="margin-top: 6px;">
+        </div>
+
+        <div class="stl-form-row-2">
+          <div class="stl-form-group">
+            <label class="stl-label" for="proj-unit-in">내가 받는 수주 단가 (원)</label>
+            <input type="number" id="proj-unit-in" class="stl-input num-mono" inputmode="numeric" min="0" step="100" value="0" required>
+            <div class="stl-quick-chips" data-target-input="proj-unit-in">
+              <button type="button" class="stl-mini-chip" data-add="5000">+5천</button>
+              <button type="button" class="stl-mini-chip" data-add="10000">+1만</button>
+              <button type="button" class="stl-mini-chip" data-add="20000">+2만</button>
+              <button type="button" class="stl-mini-chip" data-reset="1">0</button>
+            </div>
+          </div>
+
+          <div class="stl-form-group">
+            <label class="stl-label" for="proj-unit-out">3티어 기본 지급단가 (원)</label>
+            <input type="number" id="proj-unit-out" class="stl-input num-mono" inputmode="numeric" min="0" step="100" value="0">
+            <div class="stl-quick-chips" data-target-input="proj-unit-out">
+              <button type="button" class="stl-mini-chip" data-add="5000">+5천</button>
+              <button type="button" class="stl-mini-chip" data-add="10000">+1만</button>
+              <button type="button" class="stl-mini-chip" data-add="15000">+1.5만</button>
+              <button type="button" class="stl-mini-chip" data-reset="1">0</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stl-margin-preview">
+          <span>3티어 분배 시 건당 내 관리 마진</span>
+          <strong class="num-mono" id="proj-margin-preview">+0원 / 건</strong>
+        </div>
+
+        <div class="stl-form-row-2">
+          <label class="stl-check-row">
+            <input type="checkbox" id="proj-tax-in">
+            <span>1티어 수령 시 3.3% 세금 공제</span>
+          </label>
+          <div class="stl-form-group">
+            <input type="number" id="proj-extra-in" class="stl-input num-mono" inputmode="numeric" value="0" placeholder="답례품/실비 추가수령액(원)" title="1티어로부터 별도로 정산받는 답례품 대납/실비 금액(원)">
+          </div>
+        </div>
+
+        <div class="stl-form-group">
+          <label class="stl-label" for="proj-memo">메모 (선택)</label>
+          <input type="text" id="proj-memo" class="stl-input" placeholder="입금 예정일, 특이사항 등">
+        </div>
+      </form>
+      <div class="stl-modal-foot">
+        <button type="button" class="stl-btn stl-btn-soft" id="btn-cancel-project-modal">취소</button>
+        <button type="submit" form="form-project" class="stl-btn stl-btn-primary" id="btn-submit-project-modal">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- [모달 2] 3티어 조사원 분배 추가 / 단가·옵션 수정 바텀시트 -->
+  <!-- ============================================================ -->
+  <div class="stl-modal-backdrop d-none" id="modal-allocation" role="dialog" aria-modal="true" aria-labelledby="modal-alloc-title">
+    <div class="stl-modal-sheet">
+      <div class="stl-modal-head">
+        <h3 class="stl-modal-title" id="modal-alloc-title">3티어 조사원 분배 추가</h3>
+        <button type="button" class="stl-modal-close" id="btn-close-alloc-modal" aria-label="닫기">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="form-allocation" class="stl-modal-body">
+        <input type="hidden" id="alloc-edit-id" value="">
+
+        <!-- 신규 배정 시: 기존 3티어 선택 vs 신규 3티어 즉석 등록 -->
+        <div id="alloc-partner-picker-section">
+          <div class="stl-mode-switch" id="alloc-partner-mode-switch" style="margin-bottom: 12px;">
+            <button type="button" class="stl-mode-btn active" data-amode="existing" id="btn-amode-existing">장부에서 3티어 선택</button>
+            <button type="button" class="stl-mode-btn" data-amode="new" id="btn-amode-new">새 3티어 조사원 등록</button>
+          </div>
+
+          <div class="stl-form-group" id="alloc-existing-group">
+            <label class="stl-label" for="alloc-partner-select">배정할 3티어 조사원</label>
+            <select id="alloc-partner-select" class="stl-select"></select>
+          </div>
+
+          <div id="alloc-new-partner-group" class="d-none" style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="stl-form-row-2">
+              <div class="stl-form-group">
+                <label class="stl-label" for="alloc-new-name">조사원 이름 *</label>
+                <input type="text" id="alloc-new-name" class="stl-input" placeholder="예: 김민지">
+              </div>
+              <div class="stl-form-group">
+                <label class="stl-label" for="alloc-new-phone">연락처</label>
+                <input type="tel" id="alloc-new-phone" class="stl-input" placeholder="010-0000-0000">
+              </div>
+            </div>
+            <div class="stl-form-row-2">
+              <div class="stl-form-group">
+                <label class="stl-label" for="alloc-new-bank">은행명</label>
+                <input type="text" id="alloc-new-bank" class="stl-input" placeholder="예: 신한 / 카카오뱅크">
+              </div>
+              <div class="stl-form-group">
+                <label class="stl-label" for="alloc-new-account">계좌번호</label>
+                <input type="text" id="alloc-new-account" class="stl-input num-mono" inputmode="numeric" placeholder="계좌번호 입력">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stl-form-row-2">
+          <div class="stl-form-group">
+            <label class="stl-label" for="alloc-assigned">할당(분배) 부수</label>
+            <input type="number" id="alloc-assigned" class="stl-input num-mono" inputmode="numeric" min="0" value="0">
+          </div>
+          <div class="stl-form-group">
+            <label class="stl-label" for="alloc-completed">현재 완료 부수</label>
+            <input type="number" id="alloc-completed" class="stl-input num-mono" inputmode="numeric" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="stl-form-row-2">
+          <div class="stl-form-group">
+            <label class="stl-label" for="alloc-unit-out">지급 단가 (원)</label>
+            <input type="number" id="alloc-unit-out" class="stl-input num-mono" inputmode="numeric" min="0" step="100" value="0" required>
+          </div>
+          <div class="stl-form-group">
+            <label class="stl-label" for="alloc-extra-out">답례품·실비 추가지급 (원)</label>
+            <input type="number" id="alloc-extra-out" class="stl-input num-mono" inputmode="numeric" value="0">
+          </div>
+        </div>
+
+        <label class="stl-check-row">
+          <input type="checkbox" id="alloc-tax-out">
+          <span>3.3% 사업소득 원천징수 공제 후 송금</span>
+        </label>
+
+        <div class="stl-form-group">
+          <label class="stl-label" for="alloc-memo">분배 메모 (선택)</label>
+          <input type="text" id="alloc-memo" class="stl-input" placeholder="담당 구역, 선금 내역 등">
+        </div>
+      </form>
+      <div class="stl-modal-foot">
+        <button type="button" class="stl-btn stl-btn-soft" id="btn-cancel-alloc-modal">취소</button>
+        <button type="submit" form="form-allocation" class="stl-btn stl-btn-primary">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- [모달 3] 거래처(1티어) · 조사원(3티어) 장부 등록/수정 -->
+  <!-- ============================================================ -->
+  <div class="stl-modal-backdrop d-none" id="modal-partner" role="dialog" aria-modal="true" aria-labelledby="modal-partner-title">
+    <div class="stl-modal-sheet">
+      <div class="stl-modal-head">
+        <h3 class="stl-modal-title" id="modal-partner-title">거래처·조사원 등록</h3>
+        <button type="button" class="stl-modal-close" id="btn-close-partner-modal" aria-label="닫기">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="form-partner" class="stl-modal-body">
+        <input type="hidden" id="ptn-edit-id" value="">
+
+        <div class="stl-mode-switch" id="ptn-tier-switch">
+          <button type="button" class="stl-mode-btn active" data-ptier="tier3" id="btn-ptier-3">3티어 조사원 (일 받는 분)</button>
+          <button type="button" class="stl-mode-btn" data-ptier="tier1" id="btn-ptier-1">1티어 발주처 (일 주는 곳)</button>
+        </div>
+
+        <div class="stl-form-row-2">
+          <div class="stl-form-group">
+            <label class="stl-label" for="ptn-name">이름 / 상호 *</label>
+            <input type="text" id="ptn-name" class="stl-input" placeholder="예: 이수진 조사원" required>
+          </div>
+          <div class="stl-form-group">
+            <label class="stl-label" for="ptn-phone">연락처</label>
+            <input type="tel" id="ptn-phone" class="stl-input" placeholder="010-0000-0000">
+          </div>
+        </div>
+
+        <div class="stl-form-group">
+          <label class="stl-label" for="ptn-bank">은행명</label>
+          <input type="text" id="ptn-bank" class="stl-input" placeholder="은행 선택 또는 입력">
+          <div class="stl-quick-chips" id="ptn-bank-chips">
+            <button type="button" class="stl-mini-chip" data-bank="국민">국민</button>
+            <button type="button" class="stl-mini-chip" data-bank="신한">신한</button>
+            <button type="button" class="stl-mini-chip" data-bank="우리">우리</button>
+            <button type="button" class="stl-mini-chip" data-bank="하나">하나</button>
+            <button type="button" class="stl-mini-chip" data-bank="농협">농협</button>
+            <button type="button" class="stl-mini-chip" data-bank="카카오뱅크">카카오뱅크</button>
+            <button type="button" class="stl-mini-chip" data-bank="토스뱅크">토스뱅크</button>
+            <button type="button" class="stl-mini-chip" data-bank="기업">기업</button>
+          </div>
+        </div>
+
+        <div class="stl-form-row-2">
+          <div class="stl-form-group">
+            <label class="stl-label" for="ptn-account">계좌번호</label>
+            <input type="text" id="ptn-account" class="stl-input num-mono" placeholder="숫자 및 하이픈">
+          </div>
+          <div class="stl-form-group">
+            <label class="stl-label" for="ptn-holder">예금주</label>
+            <input type="text" id="ptn-holder" class="stl-input" placeholder="미입력 시 이름과 동일">
+          </div>
+        </div>
+
+        <label class="stl-check-row">
+          <input type="checkbox" id="ptn-default-tax">
+          <span>기본 3.3% 원천징수 적용 대상</span>
+        </label>
+
+        <div class="stl-form-group">
+          <label class="stl-label" for="ptn-memo">메모</label>
+          <input type="text" id="ptn-memo" class="stl-input" placeholder="주요 활동 지역, 성향 등">
+        </div>
+      </form>
+      <div class="stl-modal-foot">
+        <button type="button" class="stl-btn stl-btn-soft" id="btn-cancel-partner-modal">취소</button>
+        <button type="submit" form="form-partner" class="stl-btn stl-btn-primary">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 확인 모달 -->
+  <div class="stl-modal-backdrop d-none" id="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+    <div class="stl-modal-sheet" style="max-width: 420px;">
+      <div class="stl-modal-head">
+        <h3 class="stl-modal-title" id="confirm-modal-title">확인</h3>
+      </div>
+      <div class="stl-modal-body">
+        <p id="confirm-modal-msg" style="margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--stl-ink-secondary);"></p>
+      </div>
+      <div class="stl-modal-foot">
+        <button type="button" class="stl-btn stl-btn-soft" id="btn-confirm-cancel">취소</button>
+        <button type="button" class="stl-btn stl-btn-primary" id="btn-confirm-ok">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 -->
+  <div id="stl-toast" class="stl-toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="nav-auth.js?v=20261124_stl_v1"></script>
+  <script type="module" src="settlement.js?v=20261124_stl_v1"></script>
+</body>
+</html>

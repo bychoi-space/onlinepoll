@@ -48,6 +48,9 @@
           <span class="status-dot"></span>
           <span class="status-text font-caption" id="system-status-text">준비 완료 (대기 중)</span>
         </div>
+        <a href="settlement.html" class="btn-pill btn-pill-secondary" id="btn-header-settlement" onclick="const cid=new URLSearchParams(location.search).get('id'); if(cid){this.href='settlement.html?campaignId='+encodeURIComponent(cid);}">
+          <i class="fa-solid fa-coins"></i> 조사 정산
+        </a>
         <button type="button" class="btn-pill-logout" id="btn-global-logout">
           <i class="fa-solid fa-arrow-right-from-bracket"></i> 로그아웃
         </button>

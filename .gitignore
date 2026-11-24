@@ -18,6 +18,7 @@ data/*
 !data/sample_metrix_sign.png
 !data/ceo_persona_pool.json
 data/campaigns.json
+data/settlements.json
 *.tmp
 !data/quotas/
 !data/quotas/*
