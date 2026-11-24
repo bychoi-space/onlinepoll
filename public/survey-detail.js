@@ -13,7 +13,7 @@ import {
   renderKonaBlueprint,
   renderHrcEnergyBlueprint,
   renderGallupReturnFarmBlueprint
-} from './modules/blueprint-gallup-hrc-kona.js?v=20261119_hrc_guide_v2';
+} from './modules/blueprint-gallup-hrc-kona.js?v=20261124_hrc_v4';
 import {
   renderKmacKbpiBlueprint,
   refreshKbpiBrandScanGuidePanel,

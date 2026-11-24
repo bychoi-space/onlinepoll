@@ -716,7 +716,36 @@ if (expMilk !== '있음' || expFlavoredMilk !== '없음' || expNgo35 !== '없음
   throw new Error(`decideCategoryPurchaseExp isolation failed: milk=${expMilk}, flavored=${expFlavoredMilk}, ngo35=${expNgo35}`);
 }
 
-console.log('✅ [4/4] K-BPI v3.1 150명 신상·배경변인 무결성 · 중복 브랜드 차단 · 문항3 평가항목/문항4 진행 보장 검증 100% 통과');
+// HRC 에너지총조사 8계정(문선영-701492, 최미자-700550 전화번호 필터링) & 문화및집회시설 천장고 검증
+const hrcRunnerMod = await import('../src/engine/hrc-energy-runner.js');
+const hrc701492 = JSON.parse(fsMod.default.readFileSync('data/quotas/quota_hrc_energy_2025_701492_문선영_전체478개_선정74개.json', 'utf8'));
+const hrc700550 = JSON.parse(fsMod.default.readFileSync('data/quotas/quota_hrc_energy_2025_700550_최미자_전체30개_선정30개.json', 'utf8'));
+if ((hrc701492.data || []).length !== 478 || hrc701492.selectedCount !== 74) {
+  throw new Error(`HRC 701492 quota count mismatch: total=${(hrc701492.data || []).length}, selected=${hrc701492.selectedCount}`);
+}
+if ((hrc700550.data || []).length !== 30 || (hrc700550.data || []).some(r => !r.phone)) {
+  throw new Error(`HRC 700550 phone-filtered quota mismatch: total=${(hrc700550.data || []).length}`);
+}
+
+const ceilGen = await hrcRunnerMod.resolveHrcBuildingCeilingHeightM({
+  slotData: { uid: '800004', mainUse: '제1종근린생활시설', buildingName: '' }
+});
+const ceilSonje = await hrcRunnerMod.resolveHrcBuildingCeilingHeightM({
+  slotData: { uid: '802027', mainUse: '문화및집회시설', buildingName: '선재서울미술관' }
+});
+const ceilUnnamedCultural = await hrcRunnerMod.resolveHrcBuildingCeilingHeightM({
+  slotData: { uid: '802038', mainUse: '문화및집회시설', buildingName: '' },
+  grossAreaM2: 4000
+});
+if (
+  parseFloat(ceilGen.value) < 2.6 || parseFloat(ceilGen.value) > 3.0 ||
+  ceilSonje.value !== '3.9' ||
+  parseFloat(ceilUnnamedCultural.value) <= 3.0
+) {
+  throw new Error(`HRC ceiling height rule failed: gen=${ceilGen.value}, sonje=${ceilSonje.value}, unnamedCultural=${ceilUnnamedCultural.value}`);
+}
+
+console.log('✅ [4/4] K-BPI v3.1 & 에너지총조사(701492·700550 DB, 문화시설 천장고 검색/추정, 700277 검증보정) 100% 통과');
 
 
 

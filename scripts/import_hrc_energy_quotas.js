@@ -25,7 +25,9 @@ export const ACCOUNT_SHEETS = [
   { sheetName: '김정례_701493', accountId: '701493', surveyorName: '김정례', regionDesc: '서울 (노원구/그외) + 인천 (연수·남동·미추홀/그외)', quotaTableCol: 26 },
   { sheetName: '유희정-701494', accountId: '701494', surveyorName: '유희정', regionDesc: '서울 (구로구/송파구/용산구)', quotaTableCol: 26 },
   { sheetName: '강영미-700193', accountId: '700193', surveyorName: '강영미', regionDesc: '서울 (노원구 · 건물 15부)', quotaTableCol: 21 },
-  { sheetName: '김정례_700189', accountId: '700189', surveyorName: '김정례', regionDesc: '경기 (남양주시 · 건물 25부)', quotaTableCol: null }
+  { sheetName: '김정례_700189', accountId: '700189', surveyorName: '김정례', regionDesc: '경기 (남양주시 · 건물 25부)', quotaTableCol: null },
+  { sheetName: '문선영-701492', accountId: '701492', surveyorName: '문선영', regionDesc: '경기 (수원·안양·안산·화성·용인 등)', quotaTableCol: 26 },
+  { sheetName: '최미자-700550', accountId: '700550', surveyorName: '최미자', regionDesc: '서울 (동대문·종로·중구·용산 외 · 전화번호 확보분)', quotaTableCol: 26, requirePhone: true }
 ];
 
 const MAIN_USE_CODE_MAP = {
@@ -325,7 +327,11 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
       const cellPriority = Number(r[2]) || 1;
       const { buildingName, sq12BuildingName } = cleanSq12BuildingName(r[4]);
       const contactName = String(r[5] || '').trim();
-      const phone = String(r[6] || '').trim();
+      const prev = existingMap.get(uid) || {};
+      const phone = String(r[6] || prev.phone || '').trim();
+      if (meta.requirePhone && !/\d{2,4}[-.\s]?\d{3,4}[-.\s]?\d{4}|\d{8,11}/.test(phone)) {
+        continue;
+      }
       const sampleType = String(r[7] || '').trim();
       const mainUse = String(r[8] || '').trim();
       const areaScale = String(r[9] || '').trim();
@@ -368,8 +374,13 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
       const isPublicOrSchool = ['SC', 'UN', 'PB', 'PS'].includes(expectedTypeCode) ||
         /학교|대학|공공|청사|주민센터|행정복지|도서관|문화원|보건소/.test(`${mainUse} ${buildingName}`);
 
-      const { roadAddress, jibunAddress, memo } = parseAddressMemoCol(r[20]);
-      const prev = existingMap.get(uid) || {};
+      const col20Header = String(rows[3]?.[20] || '').trim();
+      const isCol20Contact = /접촉/.test(col20Header);
+      const { roadAddress, jibunAddress, memo } = isCol20Contact
+        ? { roadAddress: '', jibunAddress: '', memo: '' }
+        : parseAddressMemoCol(r[20]);
+      const sheetContactStatus = isCol20Contact ? String(r[20] || '').trim() : '';
+      const sheetContactCount = isCol20Contact ? String(r[21] || '0').trim() : '';
       const isDone = prev.quotaStatus === 'completed' || prev.status === '완료' || prev.progress === '100%' || uid === '800715';
 
       items.push({
@@ -398,6 +409,8 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
         address: roadAddress ? `${sido} ${sigungu} ${roadAddress}`.trim() : `${sido} ${sigungu}`.trim(),
         handledItems: mainUse,
         mainProducts: areaScale,
+        lastContactStatus: sheetContactStatus || prev.lastContactStatus || '',
+        contactCount: sheetContactCount || prev.contactCount || '0',
         quotaCode1,
         quotaCode2,
         memo: memo || prev.memo || '',

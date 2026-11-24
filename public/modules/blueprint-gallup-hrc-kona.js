@@ -84,13 +84,13 @@ export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBasel
   if (legendWrap) legendWrap.style.display = 'none';
 
   const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
-  if (titleEl) titleEl.textContent = '2025년 기준 에너지총조사 [건물 부문] 구글시트 연동 엔지니어링 응답 가이드 (6개 계정 통합)';
+  if (titleEl) titleEl.textContent = '2025년 기준 에너지총조사 [건물 부문] 구글시트 연동 엔지니어링 응답 가이드 (8개 계정 통합)';
 
   const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
-  if (subtitleEl) subtitleEl.textContent = '한국리서치 TAPI(2026-89-0342C) 6개 계정(700275·700277·701493·701494·700193·700189) 구글시트 가이드 연동 및 연면적·용도별 엔지니어링 부하 추정 규칙입니다.';
+  if (subtitleEl) subtitleEl.textContent = '한국리서치 TAPI(2026-89-0342C) 8개 계정(700275·700277·701493·701494·700193·700189·701492·700550) 구글시트 가이드 연동 및 연면적·용도별 엔지니어링 부하 추정 규칙입니다.';
 
   if (badgeMasterStatus) {
-    badgeMasterStatus.innerHTML = '<i class="fa-solid fa-shield-halved"></i> 구글시트 가이드 연동 · 면적별 부하추정 · 신세계 5천원 8종 서명 활성';
+    badgeMasterStatus.innerHTML = '<i class="fa-solid fa-shield-halved"></i> 구글시트 가이드 연동 · 문화시설 천장고 검색/추정 · 신세계 5천원 8종 서명 활성';
     badgeMasterStatus.className = 'badge-status badge-blueprint ready';
   }
 
@@ -110,7 +110,7 @@ export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBasel
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <a href="${escapeHtml(gsheetUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration: none;">
-            <i class="fa-solid fa-table text-success"></i> 구글 스프레드시트 열기 (6계정)
+            <i class="fa-solid fa-table text-success"></i> 구글 스프레드시트 열기 (8계정)
           </a>
           <span class="badge-status success"><i class="fa-solid fa-lock"></i> 상시 강제 적용</span>
         </div>
@@ -118,15 +118,15 @@ export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBasel
       <div class="p-14" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
         <div class="assoc-rule-box mb-0">
           <strong class="text-success"><i class="fa-solid fa-table-columns"></i> 1. 구글시트 M~U열 건물별 가이드 100% 연동</strong>
-          <div class="font-caption text-dim mt-4">SQ12(건물명/없음), A5-1~3(공조·민간/공공 온도), T41(입점), B1-1(설비·표준단위·연료·면적부하 용량·모름), T71(신재생+비상발전기 20~40%), C5-2(효율사업), D1(계약전력·기타 pc,사무기기 2~6%), D2(도시가스)를 시트 기준으로 주입합니다.</div>
+          <div class="font-caption text-dim mt-4">SQ12(건물명/없음), A5-1~3(공조·민간/공공 온도), T41(입점), B1-1(설비·표준단위·연료·1~999만 용량보정·모름), T71(신재생+비상발전기), C5-2(효율사업), D1(계약전력·기타 2~6%), D2(도시가스), D3(지역난방 Gcal)를 시트 기준으로 주입합니다.</div>
         </div>
         <div class="assoc-rule-box mb-0">
           <strong class="text-warning"><i class="fa-solid fa-ban"></i> 2. 기입력 보존 &amp; SMS/메일 발송 버튼 클릭 금지</strong>
           <div class="font-caption text-dim mt-4">[기본정보]의 문자/이메일 발송 버튼은 절대 클릭하지 않으며, 이미 현장에서 입력된 일반 문항 값은 안전하게 보존합니다.</div>
         </div>
         <div class="assoc-rule-box mb-0">
-          <strong class="text-primary-color"><i class="fa-solid fa-shuffle"></i> 3. 건물별 자연스러운 다양성(난수 분포) 보장</strong>
-          <div class="font-caption text-dim mt-4">A3-3-1 상근근로자(점포수×2~7), A5-6/8 운영시간(9~18시 포함 앞뒤 용도별 확장), C1-1 기준층 랜덤, C1-2 비율(10~20%), C1-3/C3-1/C4-1 면적·용도별 기기, D4-5-1 경유 월별 분산, E1-2 업무(엔지니어링/건물관리 랜덤)를 다양화합니다.</div>
+          <strong class="text-primary-color"><i class="fa-solid fa-shuffle"></i> 3. 용도별 천장고(문화시설 검색·추정) &amp; 다양성 보장</strong>
+          <div class="font-caption text-dim mt-4">A1-4 천장고(일반 2.6~3.0m / <strong>문화및집회시설은 건물명 검색 실측치 우선 · 미확인 시 3.5~9.5m 추정</strong>), A3-1-1 점포수(1~999 보정), A3-3-1 근로자(×2~7), A5-6/8 운영시간, D4-5-1 경유, E1-2 업무를 다양화합니다.</div>
         </div>
         <div class="assoc-rule-box mb-0">
           <strong style="color: #8b5cf6;"><i class="fa-solid fa-signature"></i> 4. [답례품 지급] 신세계 5,000원 &amp; 8종 필체 자동 서명</strong>

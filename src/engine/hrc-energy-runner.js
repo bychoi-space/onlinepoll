@@ -526,6 +526,157 @@ export async function fetchNaverMapPlaceCount(context, addresses = [], triedSet 
 }
 
 /**
+ * 문화및집회시설 건축·시설안내 실측/검증 천장고 사전 (단위: m)
+ */
+const CULTURAL_FACILITY_CEILING_DB = [
+  { pattern: /선재서울미술관|아트선재센터/i, ceilingM: 3.9, source: '시설안내 실측(전시실 3.9m)' },
+  { pattern: /일민미술관/i, ceilingM: 4.2, source: '전시실 기준치' },
+  { pattern: /세종문화회관\s*\(\s*예술동\s*\)|세종문화회관\s*예술동/i, ceilingM: 4.0, source: '예술동 기준치' },
+  { pattern: /세종문화회관/i, ceilingM: 6.5, source: '공연·전시 복합 평균' },
+  { pattern: /국립현대미술관\s*서울관/i, ceilingM: 5.5, source: '전시실 평균 천장고' },
+  { pattern: /국립현대미술관/i, ceilingM: 5.0, source: '과천관 전시동 기준치' },
+  { pattern: /동대문\s*디자인\s*플라자|\bDDP\b/i, ceilingM: 7.5, source: '아트홀·뮤지엄 복합 평균' },
+  { pattern: /송도\s*컨벤시아/i, ceilingM: 9.5, source: '컨벤션·볼룸·전시장 복합 평균' },
+  { pattern: /인천\s*아시아드\s*주경기장/i, ceilingM: 6.0, source: '주경기장 실내시설 평균' },
+  { pattern: /국립\s*세계\s*문자\s*박물관/i, ceilingM: 4.8, source: '상설·기획전시실 기준치' },
+  { pattern: /국립\s*민속\s*박물관/i, ceilingM: 4.5, source: '전시관 평균 천장고' },
+  { pattern: /국립\s*고궁\s*박물관|대한민국\s*역사\s*박물관|서울\s*역사\s*박물관/i, ceilingM: 4.2, source: '박물관 전시실 기준치' },
+  { pattern: /기독교\s*100주년\s*기념관/i, ceilingM: 4.0, source: '기념관·집회실 기준치' },
+  { pattern: /수원\s*박물관/i, ceilingM: 4.2, source: '박물관 전시실 기준치' },
+  { pattern: /해양\s*생태\s*과학관|해양\s*안전\s*체험관/i, ceilingM: 4.5, source: '과학·체험전시관 기준치' },
+  { pattern: /수원\s*SK\s*아트리움/i, ceilingM: 6.0, source: '대·소공연장 복합 평균' },
+  { pattern: /안양\s*아트\s*센터/i, ceilingM: 5.8, source: '공연장·컨벤션 복합 평균' },
+  { pattern: /서수원\s*칠보\s*체육관/i, ceilingM: 8.0, source: '실내체육관 천장고' },
+  { pattern: /오색\s*문화\s*체육\s*센터|문원\s*체육/i, ceilingM: 5.5, source: '문화체육센터 복합 평균' },
+  { pattern: /수봉\s*문화\s*회관|문예\s*회관/i, ceilingM: 4.8, source: '문화·문예회관 평균' },
+  { pattern: /과천\s*문화원|군포\s*문화원/i, ceilingM: 3.6, source: '문화원 강의·강당 평균' },
+  { pattern: /씨네\s*파크|CINE\s*11|영화관/i, ceilingM: 5.5, source: '상영관 복합 평균' },
+  { pattern: /AW\s*웨딩|빌라드\s*지디/i, ceilingM: 5.0, source: '웨딩·컨벤션홀 평균' },
+  { pattern: /플레이\s*월드/i, ceilingM: 4.5, source: '실내 테마·전시시설 평균' },
+  { pattern: /방문자\s*센터|도시\s*계획관/i, ceilingM: 3.8, source: '전시·방문자센터 평균' },
+  { pattern: /111\s*CM/i, ceilingM: 4.2, source: '복합문화공간 천장고' }
+];
+
+const culturalSearchCache = new Map();
+
+/**
+ * 문화및집회시설 건물명으로 웹 검색 스니펫에서 천장고/층고(m) 실시간 추출 (실패 시 null 반환)
+ */
+async function searchCulturalCeilingHeightM(buildingName, sido = '', sigungu = '') {
+  const cleanName = String(buildingName || '')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleanName || cleanName === '없음' || cleanName.length < 2 || /^(가동|나동|\d+[,.\s]*\d*동)$/.test(cleanName)) {
+    return null;
+  }
+  const cacheKey = `${sido}_${sigungu}_${cleanName}`;
+  if (culturalSearchCache.has(cacheKey)) {
+    return culturalSearchCache.get(cacheKey);
+  }
+
+  try {
+    const q = encodeURIComponent(`"${cleanName}" 천장고 OR 층고`);
+    const resp = await fetch(`https://search.naver.com/search.naver?where=nexearch&query=${q}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Accept-Language': 'ko-KR,ko;q=0.9'
+      },
+      signal: AbortSignal.timeout(4500)
+    });
+    if (resp.ok) {
+      const html = await resp.text();
+      const plain = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ');
+      const ceilMatch = plain.match(/(?:천장고|천정고|천장\s*높이|전시실\s*높이)[^0-9]{0,18}(\d{1,2}(?:\.\d)?)\s*(?:m|미터)/i);
+      if (ceilMatch) {
+        const val = parseFloat(ceilMatch[1]);
+        if (val >= 3.2 && val <= 15.0) {
+          const formatted = Number(val.toFixed(1));
+          culturalSearchCache.set(cacheKey, formatted);
+          return formatted;
+        }
+      }
+      const floorHMatch = plain.match(/층고[^0-9]{0,15}(\d{1,2}(?:\.\d)?)\s*(?:m|미터)/i);
+      if (floorHMatch) {
+        const rawFloorH = parseFloat(floorHMatch[1]);
+        if (rawFloorH >= 4.0 && rawFloorH <= 18.0) {
+          const estCeil = Math.max(3.4, Math.min(12.0, Number((rawFloorH * 0.82).toFixed(1))));
+          culturalSearchCache.set(cacheKey, estCeil);
+          return estCeil;
+        }
+      }
+    }
+  } catch (_) {
+    // 네트워크 제한 또는 타임아웃 시 추정치 폴백으로 자연스럽게 이관
+  }
+
+  culturalSearchCache.set(cacheKey, null);
+  return null;
+}
+
+/**
+ * 건물 주용도·건물명·규모에 따른 평균 천장고(q1470, m) 결정
+ * - 일반 건물: 가이드 기준 2.6~3.0m 내 건물별 분포
+ * - 문화및집회시설: 1) 실측/건축 DB 매칭 ➔ 2) 실시간 웹 검색 ➔ 3) 세부 시설유형·면적별 추정치(3.5~8.0m, >3.0m 보장)
+ */
+export async function resolveHrcBuildingCeilingHeightM({
+  slotData = {},
+  basicInfoState = {},
+  policy = {},
+  grossAreaM2 = 0
+} = {}) {
+  const mainUse = String(slotData.mainUse || slotData.mainUsage || basicInfoState.mainUse || '').trim();
+  const quotaCode1 = String(slotData.quotaCode1 || '').trim();
+  const bldgName = String(
+    slotData.sq12BuildingName || slotData.buildingName || slotData.siteBuildingName || basicInfoState.buildingName || ''
+  ).replace(/\(건물명\s*없음\)/g, '').trim();
+  const uidNum = parseInt(String(slotData.uid || '800001').replace(/[^0-9]/g, ''), 10) || 800001;
+  const effArea = Number(grossAreaM2 || slotData.estimatedGrossAreaM2 || 4000) || 4000;
+
+  const isCultural = mainUse.includes('문화') || quotaCode1 === '1003';
+  if (!isCultural) {
+    const customCeil = String(policy.ceilingHeightM || '').trim();
+    if (customCeil && customCeil !== '2.8' && !isNaN(parseFloat(customCeil))) {
+      return { value: String(Number(parseFloat(customCeil).toFixed(1))), source: '정책 지정값', isCultural: false };
+    }
+    const generalPool = ['2.6', '2.7', '2.8', '2.9', '3.0'];
+    const picked = generalPool[uidNum % generalPool.length];
+    return { value: picked, source: '일반건물 가이드(2.6~3.0m)', isCultural: false };
+  }
+
+  // [문화및집회시설] 1) 공식 건축·시설안내 실측 DB 우선 매칭
+  for (const entry of CULTURAL_FACILITY_CEILING_DB) {
+    if (entry.pattern.test(bldgName)) {
+      return { value: String(entry.ceilingM), source: `문화시설 검색실측(${entry.source})`, isCultural: true };
+    }
+  }
+
+  // [문화및집회시설] 2) 실시간 웹 검색 조회
+  const searchedVal = await searchCulturalCeilingHeightM(bldgName, slotData.sido, slotData.sigungu);
+  if (searchedVal && searchedVal > 3.0) {
+    return { value: String(searchedVal), source: '문화시설 웹검색 추출', isCultural: true };
+  }
+
+  // [문화및집회시설] 3) 건물 세부 특성·연면적 기반 엔지니어링 추정치 (3m 초과 보장)
+  let pool = [3.6, 3.8, 4.0, 4.2];
+  if (/컨벤션|전시장|박람회|체육관|경기장|아레나|돔/.test(bldgName)) {
+    pool = [6.5, 7.0, 7.5, 8.0];
+  } else if (/공연|아트센터|아트리움|문화회관|문예회관|예술회관|영화관|시네마|씨네|웨딩/.test(bldgName)) {
+    pool = [4.8, 5.2, 5.5, 6.0];
+  } else if (/박물관|미술관|기념관|과학관|체험관|전시관|갤러리/.test(bldgName)) {
+    pool = [4.0, 4.3, 4.5, 4.8];
+  } else if (effArea >= 30000) {
+    pool = [4.8, 5.2, 5.5, 5.8];
+  } else if (effArea >= 10000) {
+    pool = [4.0, 4.3, 4.5, 4.8];
+  } else if (effArea >= 5000) {
+    pool = [3.8, 4.0, 4.2, 4.5];
+  }
+  const estVal = pool[uidNum % pool.length];
+  return { value: String(estVal), source: '문화시설 유형·규모별 추정치(>3.0m)', isCultural: true };
+}
+
+/**
  * 한국리서치 2025년 기준 에너지총조사 (건물 부문) 단일 슬롯 자동화 러너
  * - 핵심 원칙: 기존에 이미 입력되어 있는 항목은 보존하되, 8대 핵심 응답 규칙 문항은 규칙에 맞춰 정확히 응답
  *
@@ -780,10 +931,25 @@ export async function runHrcEnergySurvey(options = {}) {
     const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
     const randChoice = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-    let trackedStoreCount = String(naverPlaceCount || policy.storeCount || randInt(6, 14));
+    const clampStoreCount = (rawCnt) => {
+      const n = parseInt(String(rawCnt || '').replace(/[^0-9]/g, ''), 10);
+      if (!n || n <= 0) return null;
+      // q2250 허용 범위(1 ~ 999) 및 q2500 근로자/내방객 연쇄 곱셈 오버플로우 방지 (초대형 복합단지 최대 350개 상한)
+      return Math.min(350, Math.max(1, n));
+    };
+
+    const clampedInitialStores = clampStoreCount(naverPlaceCount || policy.storeCount);
+    let trackedStoreCount = String(clampedInitialStores || randInt(6, 14));
     let trackedGrossFloorArea = Number(slotData.estimatedGrossAreaM2) || 2500;
     let trackedAboveGroundFloors = 5;
     let trackedCompletionYear = 2008;
+
+    const ceilingPlan = await resolveHrcBuildingCeilingHeightM({
+      slotData,
+      basicInfoState,
+      policy,
+      grossAreaM2: trackedGrossFloorArea
+    });
 
     const workerMultiplier = randInt(2, 7);       // A3-3-1 상근근로자 = 점포수 × (2~7 다양하게)
     const visitorMultiplier = randInt(30, 50);    // A3-3-1 내방객 = 점포수 × (30~50)
@@ -940,6 +1106,9 @@ export async function runHrcEnergySurvey(options = {}) {
       useDistrictHeat,
       dieselMonthly,
       e12RoleCode,
+      ceilingHeightM: ceilingPlan.value,
+      ceilingHeightSource: ceilingPlan.source,
+      isCulturalFacility: ceilingPlan.isCultural,
       monthlyJitterSeed: 0.96 + Math.random() * 0.08
     };
 
@@ -960,6 +1129,8 @@ export async function runHrcEnergySurvey(options = {}) {
       const s = String(cv || '');
       return (
         ENFORCED_RULE_CVS.has(s) ||
+        (s === 'q1470' && engPlan.isCulturalFacility) ||
+        /^q6[89]\d{2}/.test(s) ||
         s.startsWith('q4200_r') ||
         s.startsWith('q4250_r') ||
         s.startsWith('q4300_r') ||
@@ -1058,8 +1229,9 @@ export async function runHrcEnergySurvey(options = {}) {
         if (candRoad && !basicInfoState.roadAddress) basicInfoState.roadAddress = candRoad;
         if (candJibun && !basicInfoState.jibunAddress) basicInfoState.jibunAddress = candJibun;
         naverPlaceCount = await fetchNaverMapPlaceCount(context, [candRoad, candJibun], triedNaverAddrs);
-        if (naverPlaceCount) {
-          trackedStoreCount = String(naverPlaceCount);
+        const safeCnt1 = clampStoreCount(naverPlaceCount);
+        if (safeCnt1) {
+          trackedStoreCount = String(safeCnt1);
         }
       }
 
@@ -1069,8 +1241,9 @@ export async function runHrcEnergySurvey(options = {}) {
           basicInfoState.roadAddress || slotData.roadAddress,
           basicInfoState.jibunAddress || slotData.jibunAddress
         ], triedNaverAddrs);
-        if (naverPlaceCount) {
-          trackedStoreCount = String(naverPlaceCount);
+        const safeCnt2 = clampStoreCount(naverPlaceCount);
+        if (safeCnt2) {
+          trackedStoreCount = String(safeCnt2);
         }
       }
 
@@ -1199,6 +1372,35 @@ export async function runHrcEnergySurvey(options = {}) {
             return false;
           }
 
+          function normalizeValForInput(el, rawVal) {
+            const strVal = String(rawVal ?? '').trim();
+            if (!el || strVal === '') return strVal;
+            const ph = (el.getAttribute('placeholder') || '').trim();
+            const ptLenAttr = el.getAttribute('pointlength');
+            const rangeMatch = ph.match(/^(\d+(?:\.\d+)?)\s*~\s*(\d+(?:\.\d+)?)$/);
+            const isNumericInput = el.getAttribute('opendatatype')?.startsWith('numeric') || rangeMatch || ptLenAttr !== null;
+            if (!isNumericInput) return strVal;
+
+            const cleanNum = parseFloat(strVal.replace(/,/g, ''));
+            if (isNaN(cleanNum)) return strVal;
+
+            let clamped = cleanNum;
+            if (rangeMatch) {
+              const minV = parseFloat(rangeMatch[1]);
+              const maxV = parseFloat(rangeMatch[2]);
+              if (!isNaN(minV)) clamped = Math.max(minV, clamped);
+              if (!isNaN(maxV)) clamped = Math.min(maxV, clamped);
+            }
+            const ptLen = ptLenAttr !== null ? parseInt(ptLenAttr, 10) : null;
+            if (ptLen === 0) {
+              return String(Math.round(clamped));
+            }
+            if (ptLen !== null && !isNaN(ptLen) && ptLen > 0) {
+              return String(Number(clamped.toFixed(ptLen)));
+            }
+            return String(clamped);
+          }
+
           function setVal(el, val, allowEnable = false, forceOverwrite = false) {
             if (!el) return false;
             if (el.readOnly) {
@@ -1212,7 +1414,8 @@ export async function runHrcEnergySurvey(options = {}) {
             if (!forceOverwrite && preserveExisting && (el.value || '').trim() !== '') {
               return false; // 기입력 값 보존
             }
-            el.value = String(val);
+            const finalStr = normalizeValForInput(el, val);
+            el.value = finalStr;
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new KeyboardEvent('keyup', { key: '0', code: 'Digit0', keyCode: 48, which: 48, bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1320,8 +1523,13 @@ export async function runHrcEnergySurvey(options = {}) {
             return `q1460: 층수 확인 (지상=${op1?.value}, 지하=${op2?.value})`;
           }
           if (cv === 'q1470') {
-            setVal(document.querySelector('input[variable="q1470_op1"]'), policy.ceilingHeightM || '2.8');
-            return 'q1470: 천장고 2.8m';
+            const ceilEl = document.querySelector('input[variable="q1470_op1"], #OpenList_q1470_op1_');
+            const targetCeil = engPlan.ceilingHeightM || policy.ceilingHeightM || '2.8';
+            const curNum = parseFloat(String(ceilEl?.value || '').replace(/,/g, ''));
+            // 문화및집회시설이면서 기존 입력값이 없거나 3.0m 이하 기본값으로 들어간 경우 검색/추정치(>3.0m)로 갱신
+            const forceCultural = Boolean(engPlan.isCulturalFacility && (isNaN(curNum) || curNum <= 3.0));
+            setVal(ceilEl, targetCeil, true, forceCultural);
+            return `q1470: 천장고 ${ceilEl?.value || targetCeil}m (${engPlan.ceilingHeightSource || '가이드'})`;
           }
           if (cv === 'q1500') {
             const op1 = document.querySelector('input[variable="q1500_op1"]');
@@ -1657,12 +1865,14 @@ export async function runHrcEnergySurvey(options = {}) {
             clickEl(unitRadio);
             return `${cv}: 표준 용량단위 선택(${unitRadio?.value || targetUnit})`;
           }
-          // [B1-N-3] 건물 연면적×80%×용도별 부하밀도 기반 설비 총용량 산출 및 상용 규격 스냅
+          // [B1-N-3] 건물 연면적·공조비율·용도별 부하밀도 기반 설비 총용량 산출 및 허용범위(1~9,999,999) 안전 스냅
           if (cv.startsWith('q4250_r')) {
             document.querySelectorAll('#QuestionView input[type="checkbox"]').forEach(chk => uncheckEl(chk));
             const eqNum = cv.replace('q4250_r', '');
             const grossArea = Math.max(300, Number(trackedGrossFloorArea) || 2500);
-            const conditionedArea = grossArea * 0.80;
+            // 초대형 복합·오피스 빌딩(지하 다층 주차장 포함)은 비공조 지하주차장 비중(35~50%)을 반영하여 과대산출 방지
+            const conditionedRatio = grossArea >= 80000 ? 0.50 : (grossArea >= 30000 ? 0.58 : 0.80);
+            const conditionedArea = grossArea * conditionedRatio;
             const b11List = (engPlan.effectiveB11Codes || ['4']).map(String);
             const centralSet = new Set(['1', '2', '5', '6', '7', '8', '11', '12', '13', '14', '20']);
             const hasBothTypes = b11List.some(c => centralSet.has(c)) && b11List.some(c => !centralSet.has(c));
@@ -1674,9 +1884,9 @@ export async function runHrcEnergySurvey(options = {}) {
             let capVal = '100';
             let unitLabel = 'kW';
             if (['1', '11', '12', '13', '14'].includes(eqNum)) {
-              // USRT (1 USRT ≈ 3.517 kW; 예: 4,000㎡ 병원 -> 3,200×0.15=480kW ≈ 136USRT -> 120/150 USRT 규격)
+              // USRT (1 USRT ≈ 3.517 kW)
               const rawUsrt = equipKw / 3.517;
-              const stdUsrt = [20, 30, 40, 50, 60, 75, 80, 100, 120, 150, 180, 200, 250, 300, 350, 400, 500, 600, 800, 1000, 1200, 1500];
+              const stdUsrt = [20, 30, 40, 50, 60, 75, 80, 100, 120, 150, 180, 200, 250, 300, 350, 400, 500, 600, 800, 1000, 1200, 1500, 2000, 2500, 3000];
               const snapped = stdUsrt.reduce((b, c) => (Math.abs(c - rawUsrt) < Math.abs(b - rawUsrt) ? c : b), stdUsrt[0]);
               capVal = String(snapped);
               unitLabel = 'USRT';
@@ -1688,19 +1898,22 @@ export async function runHrcEnergySurvey(options = {}) {
               capVal = String(snapped);
               unitLabel = 't/h';
             } else if (['6', '7', '10'].includes(eqNum)) {
-              // 온수보일러·지역난방·온풍기 kcal/h (1 kW ≈ 860 kcal/h)
-              const rawKcal = equipKw * 860;
-              const snapped = Math.max(30000, Math.round(rawKcal / 10000) * 10000);
+              // 온수보일러·지역난방·온풍기 kcal/h (1 kW ≈ 860 kcal/h, RPS 입력 상한 1~9,999,999 엄수)
+              const heatingFactor = grossArea >= 50000 ? 0.78 : 1.0;
+              const rawKcal = equipKw * heatingFactor * 860;
+              const stepUnit = rawKcal >= 1000000 ? 100000 : 10000;
+              const snapped = Math.min(9200000, Math.max(30000, Math.round(rawKcal / stepUnit) * stepUnit));
               capVal = String(snapped);
               unitLabel = 'kcal/h';
             } else {
               // EHP·GHP·소형열병합·전기난방·룸에어컨 kW
-              const snapped = Math.max(15, Math.round(equipKw / 5) * 5);
+              const snapped = Math.min(9200000, Math.max(15, Math.round(equipKw / 5) * 5));
               capVal = String(snapped);
               unitLabel = 'kW';
             }
-            setVal(document.querySelector(`#OpenList_${cv}_op1_, input[variable="${cv}_op1"]`), capVal, true, true);
-            return `${cv}: 연면적(${Math.round(grossArea)}㎡×80%) 기반 총용량 ${capVal}${unitLabel}`;
+            const capEl = document.querySelector(`#OpenList_${cv}_op1_, input[variable="${cv}_op1"]`);
+            setVal(capEl, capVal, true, true);
+            return `${cv}: 연면적(${Math.round(grossArea)}㎡×${Math.round(conditionedRatio * 100)}%) 기반 총용량 ${capEl?.value || capVal}${unitLabel}`;
           }
           // [B1-N-4] 설비별 표준 주에너지원1 선택 (겸용 에너지원2는 비움)
           if (cv.startsWith('q4300_r')) {
@@ -2114,48 +2327,87 @@ export async function runHrcEnergySurvey(options = {}) {
             return `q6700: 도시가스 구성비 입력 (난방·급탕=${gOp1}%, 냉방=${gOp2}%, 취사=${gOp3}%, 발전=${gOp4}%)`;
           }
 
-          // [D3] 지역냉난방(열에너지) 정합성 처리 (B1-1에 7 또는 14 포함 시 사용)
+          // [D3] 지역냉난방(열에너지) 정합성 처리 (q6800 ~ q6999 전 문항 구조적 대응: q6950_r1 단위 Gcal·월별 소비량·구성비 100%)
           if (cv === 'q6800') {
             const code = engPlan.useDistrictHeat ? '1' : '2';
             clickEl(document.querySelector(`#q6800_${code}, input[variable="q6800"][value="${code}"]`));
             return `q6800: 열에너지(지역냉난방) ${engPlan.useDistrictHeat ? '사용한다(1)' : '사용하지 않는다(2)'}`;
           }
-          if (cv === 'q6850' || cv.startsWith('q6850')) {
-            const r1 = document.querySelector(`input[variable="${cv}_1"][value="2"], #${cv}_1_2`) || document.querySelector(`#${cv}_2, input[variable="${cv}"][value="2"]`);
-            const r2 = document.querySelector(`input[variable="${cv}_2"][value="1"], #${cv}_2_1`) || document.querySelector(`#${cv}_1, input[variable="${cv}"][value="1"]`);
-            if (r1) clickEl(r1);
-            if (r2) clickEl(r2);
-            return `${cv}: 열에너지 응답방식/단위 선택`;
-          }
-          if (cv === 'q6900' || cv.startsWith('q6900')) {
-            const grossArea = Math.max(500, Number(trackedGrossFloorArea) || 3000);
-            const b11Set = new Set((engPlan.effectiveB11Codes || []).map(String));
-            const weights = b11Set.has('14')
-              ? [0.16, 0.14, 0.09, 0.05, 0.03, 0.06, 0.10, 0.11, 0.05, 0.04, 0.07, 0.10]
-              : [0.22, 0.19, 0.12, 0.05, 0.02, 0.01, 0.01, 0.01, 0.02, 0.04, 0.12, 0.19];
-            const annualGcal = Math.max(80, Math.round(grossArea * 0.08));
-            weights.forEach((w, idx) => {
-              const v = String(Math.max(1, Math.round(annualGcal * w)));
-              setVal(document.querySelector(`#OpenList_${cv}_op${idx + 1}_, input[variable="${cv}_op${idx + 1}"]`), v, true, true);
-            });
-            return `${cv}: 월별 열에너지 소비량 입력`;
-          }
-          if (cv === 'q6920') {
-            clickEl(document.querySelector('#q6920_1, input[variable="q6920"][value="1"]'));
-            return 'q6920: 열에너지 구성비 응답(1)';
-          }
-          if (cv === 'q6950') {
+          if (/^q6[89]\d{2}/.test(cv)) {
             const b11Set = new Set((engPlan.effectiveB11Codes || []).map(String));
             const hasDistCool = b11Set.has('14');
-            const h1 = hasDistCool ? '65' : '100';
-            const h2 = hasDistCool ? '35' : '0';
-            setVal(document.querySelector('#OpenList_q6950_op1_, input[variable="q6950_op1"]'), h1, true, true);
-            setVal(document.querySelector('#OpenList_q6950_op2_, input[variable="q6950_op2"]'), h2, true, true);
-            ['op3', 'op4', 'op5', 'op6', 'op7'].forEach(op => {
-              const el = document.querySelector(`#OpenList_q6950_${op}_, input[variable="q6950_${op}"]`);
-              if (el) setVal(el, '0', true, true);
-            });
-            return `q6950: 열에너지 구성비 입력 (난방·급탕=${h1}%, 냉방=${h2}%)`;
+            const isCoolRow = /_r2$/i.test(cv) || /냉방열/.test(text);
+
+            // 1) D3-3-N 응답방법(_1 -> 2:회상) + D3-4-N 소비량 단위(_2 -> 2:Gcal) 복합 라디오 화면 (예: q6950_r1)
+            const methodRadio = document.querySelector(`input[type="radio"][variable="${cv}_1"][value="2"], input[type="radio"]#${cv}_1_2`);
+            const unitGcalRadio =
+              document.querySelector(`input[type="radio"][variable="${cv}_2"][codelabel*="Gcal"]`) ||
+              document.querySelector(`input[type="radio"][variable="${cv}_2"][value="2"], input[type="radio"]#${cv}_2_2`) ||
+              document.querySelector(`input[type="radio"][variable="${cv}_2"][value="1"], input[type="radio"]#${cv}_2_1`);
+            if (methodRadio && unitGcalRadio) {
+              clickEl(methodRadio);
+              clickEl(unitGcalRadio);
+              return `${cv}: 열에너지 응답방법(2:회상) 및 단위(${unitGcalRadio.getAttribute('codelabel') || '2:Gcal'}) 선택`;
+            }
+
+            // 2) 1~12월 월별 열에너지 소비량(Gcal) 12개 수치 입력 화면 (예: q6960_r1 / q6970_r1 / q6900_r1 등)
+            const op12Check = document.querySelector(`#OpenList_${cv}_op12_, input[variable="${cv}_op12"]`);
+            if (op12Check) {
+              document.querySelectorAll('#QuestionView input[type="checkbox"]').forEach(chk => uncheckEl(chk));
+              const grossArea = Math.max(500, Number(trackedGrossFloorArea) || 3000);
+              const conditionedRatio = grossArea >= 50000 ? 0.55 : 0.80;
+              const weights = isCoolRow
+                ? [0, 0, 0, 0.03, 0.10, 0.20, 0.28, 0.27, 0.10, 0.02, 0, 0]
+                : (hasDistCool
+                  ? [0.16, 0.14, 0.09, 0.05, 0.03, 0.06, 0.10, 0.11, 0.05, 0.04, 0.07, 0.10]
+                  : [0.22, 0.19, 0.12, 0.05, 0.02, 0.01, 0.01, 0.01, 0.02, 0.04, 0.12, 0.19]);
+              const annualGcal = Math.max(60, Math.round(grossArea * conditionedRatio * 0.075 * (engPlan.monthlyJitterSeed || 1)));
+              weights.forEach((w, idx) => {
+                const el = document.querySelector(`#OpenList_${cv}_op${idx + 1}_, input[variable="${cv}_op${idx + 1}"]`);
+                if (!el) return;
+                const minZeroAllowed = (el.getAttribute('placeholder') || '').trim().startsWith('0');
+                const v = String(w === 0 && minZeroAllowed ? 0 : Math.max(1, Math.round(annualGcal * w)));
+                setVal(el, v, true, true);
+              });
+              return `${cv}: 월별 열에너지 소비량(연 약 ${annualGcal}Gcal) 1~12월 입력`;
+            }
+
+            // 3) 용도별 구성비(%) 수치 입력 화면 (합계 100%)
+            const pctInputs = Array.from(document.querySelectorAll('#QuestionView input[type="text"], #QuestionView input[type="number"]'))
+              .filter(el => !el.disabled && !el.readOnly && !String(el.id).includes('op97') && !String(el.id).includes('op91'));
+            if (pctInputs.length >= 2) {
+              const etcLbl = document.querySelector(`#OpenList_${cv}_op97_, input[variable="${cv}_op97"]`);
+              if (etcLbl) setVal(etcLbl, '', true, true);
+              pctInputs.forEach((el, idx) => {
+                if (hasDistCool && !/_r[12]$/i.test(cv) && pctInputs.length >= 2) {
+                  setVal(el, idx === 0 ? '65' : (idx === 1 ? '35' : '0'), true, true);
+                } else {
+                  setVal(el, idx === 0 ? '100' : '0', true, true);
+                }
+              });
+              return `${cv}: 열에너지 용도별 구성비 합계 100% 입력`;
+            }
+
+            // 4) 열에너지 종류 선택(난방열/냉방열 체크박스) 또는 계량기/구성비 응답여부 라디오
+            const d3Checkboxes = Array.from(document.querySelectorAll('#QuestionView input[type="checkbox"]:not(:disabled)'));
+            if (d3Checkboxes.length > 0) {
+              d3Checkboxes.forEach(chk => {
+                const v = String(chk.value || '');
+                const lbl = (chk.getAttribute('codelabel') || chk.closest('label, tr')?.innerText || '').trim();
+                const shouldCheck = (v === '1' || /난방/.test(lbl)) || (hasDistCool && (v === '2' || /냉방/.test(lbl)));
+                if (shouldCheck) clickEl(chk);
+                else uncheckEl(chk);
+              });
+              if (!d3Checkboxes.some(c => c.checked)) clickEl(d3Checkboxes[0]);
+              return `${cv}: 열에너지 공급용도 선택 (난방열${hasDistCool ? '+냉방열' : ''})`;
+            }
+
+            const firstRadio = document.querySelector(`#${cv}_1, input[variable="${cv}"][value="1"]`) ||
+              document.querySelector('#QuestionView input[type="radio"]:not(:disabled)');
+            if (firstRadio) {
+              clickEl(firstRadio);
+              return `${cv}: 열에너지 단일선택(${firstRadio.value}) 응답`;
+            }
           }
 
           // [D4] 비상용발전기 경유(12) 소비량 — 건물별 점검주기·용량 다변화(engPlan.dieselMonthly)

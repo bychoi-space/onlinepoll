@@ -17,7 +17,9 @@ export const HRC_ACCOUNTS = {
   '701493': { loginId: '701493', loginPw: '701493', surveyorName: '김정례', filePrefix: 'quota_hrc_energy_2025_701493_김정례' },
   '701494': { loginId: '701494', loginPw: '701494', surveyorName: '유희정', filePrefix: 'quota_hrc_energy_2025_701494_유희정' },
   '700193': { loginId: '700193', loginPw: '700193', surveyorName: '강영미', filePrefix: 'quota_hrc_energy_2025_700193_강영미' },
-  '700189': { loginId: '700189', loginPw: '700189', surveyorName: '김정례', filePrefix: 'quota_hrc_energy_2025_700189_김정례' }
+  '700189': { loginId: '700189', loginPw: '700189', surveyorName: '김정례', filePrefix: 'quota_hrc_energy_2025_700189_김정례' },
+  '701492': { loginId: '701492', loginPw: '701492', surveyorName: '문선영', filePrefix: 'quota_hrc_energy_2025_701492_문선영' },
+  '700550': { loginId: '700550', loginPw: '700550', surveyorName: '최미자', filePrefix: 'quota_hrc_energy_2025_700550_최미자' }
 };
 
 /**
@@ -127,10 +129,20 @@ export async function scrapeHrcEnergySlots(options = {}) {
       if (!nextLink) break;
 
       currentPageNum = nextLink.num;
-      const targetUrl = nextLink.href.startsWith('http')
-        ? nextLink.href
-        : `https://tapi.hrcglobal.com${nextLink.href}`;
-      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      if (nextLink.href.startsWith('javascript:')) {
+        await page.evaluate((targetPg) => {
+          const link = Array.from(document.querySelectorAll('a.dxp-num')).find(
+            a => parseInt(a.innerText.trim().replace(/[\[\]]/g, ''), 10) === targetPg
+          );
+          if (link) link.click();
+        }, currentPageNum);
+        await page.waitForTimeout(1000);
+      } else {
+        const targetUrl = nextLink.href.startsWith('http')
+          ? nextLink.href
+          : `https://tapi.hrcglobal.com${nextLink.href}`;
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      }
       await page.waitForSelector('tr[id^="List4_DXDataRow"]', { timeout: 15000 }).catch(err => logger.warn(`[HRC List4 행 대기 경고] ${err.message}`));
     }
 
