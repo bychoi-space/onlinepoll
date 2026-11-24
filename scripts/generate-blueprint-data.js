@@ -78,9 +78,9 @@ const blueprint = {
       fields: [
         { id: 'A9_1', label: '매장 면적 (m²)', type: 'jitter', baseline: '45 m²', range: '23~79 m²', note: '평수와 연동' },
         { id: 'A9_2', label: '매장 면적 (평수)', type: 'jitter', baseline: '14 평', range: '7~24 평', note: '정수 평수' },
-        { id: 'A10_1', label: '가족 종사자 수', type: 'jitter', baseline: '1 명', range: '0~1 명', note: '무급 가족종사자' },
-        { id: 'A10_2', label: '상시 유급 종업원 수', type: 'tunable', baseline: '0 명', range: '0~2 명', note: '종업원 유무에 따라 인건비 연동' },
-        { id: 'A10_3', label: '임시/일용 종업원 수', type: 'fixed', value: '0 명', note: '표준 0명' }
+        { id: 'A10_1', label: '상용근로자 수', type: 'tunable', baseline: '0 명', range: '0~10 명', note: '유급 상용직 (종업원 유무에 따라 B4-1 인건비 연동)' },
+        { id: 'A10_2', label: '임시·일용직 종업원 수', type: 'tunable', baseline: '0 명', range: '0~5 명', note: '유급 임시·파트타임 (종업원 유무에 따라 B4-1 인건비 연동)' },
+        { id: 'A10_3', label: '무급 가족 종사자 수', type: 'tunable', baseline: '0 명', range: '0~5 명', note: '무급 가족종사자 (0명 가능)' }
       ]
     },
     {

@@ -270,11 +270,11 @@ export function renderKstatStoreStages(opts = {}) {
           </div>
         `;
       case 'A10_1':
-        return renderDualRangeControl('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, 1, 0, 0, '명');
-      case 'A10_2':
         return renderDualRangeControl('paid-emp', 'employeeRegularMin', 'employeeRegularMax', 0, 10, 1, 0, 0, '명');
-      case 'A10_3':
+      case 'A10_2':
         return renderDualRangeControl('temp-emp', 'employeeTempMin', 'employeeTempMax', 0, 5, 1, 0, 0, '명');
+      case 'A10_3':
+        return renderDualRangeControl('family-emp', 'employeeFamilyMin', 'employeeFamilyMax', 0, 5, 1, 0, 0, '명');
       case 'RULE_EMP_SALES': {
         const curRule = currentBaseline.empSalesLink || 'auto';
         return `
@@ -821,7 +821,9 @@ export function renderKstatStoreStages(opts = {}) {
         `;
       } else if (field.id === 'B4_2') {
         const tax = currentBaseline.costTaxRatio || 10;
-        const hasPaidEmp = (currentBaseline.employeeRegularMax !== undefined ? currentBaseline.employeeRegularMax : (currentBaseline.employeeRegular || 0)) > 0;
+        const regMax = currentBaseline.employeeRegularMax !== undefined ? currentBaseline.employeeRegularMax : (currentBaseline.employeeRegular || 0);
+        const tmpMax = currentBaseline.employeeTempMax !== undefined ? currentBaseline.employeeTempMax : (currentBaseline.employeeTemp || 0);
+        const hasPaidEmp = regMax > 0 || tmpMax > 0;
         const labor = (hasPaidEmp ? (currentBaseline.costLaborRatio || 25) : 0);
         const rent = currentBaseline.costRentRatio || 20;
         const raw = Math.max(10, 100 - tax - labor - rent);
@@ -994,7 +996,9 @@ export function renderKstatStoreStages(opts = {}) {
 
   const updateRawCost = () => {
     const tax = currentBaseline.costTaxRatio || 10;
-    const hasPaidEmp = (currentBaseline.employeeRegularMax !== undefined ? currentBaseline.employeeRegularMax : (currentBaseline.employeeRegular || 0)) > 0;
+    const regMax = currentBaseline.employeeRegularMax !== undefined ? currentBaseline.employeeRegularMax : (currentBaseline.employeeRegular || 0);
+    const tmpMax = currentBaseline.employeeTempMax !== undefined ? currentBaseline.employeeTempMax : (currentBaseline.employeeTemp || 0);
+    const hasPaidEmp = regMax > 0 || tmpMax > 0;
     const labor = (hasPaidEmp ? (currentBaseline.costLaborRatio || 25) : 0);
     const rent = currentBaseline.costRentRatio || 20;
     const raw = Math.max(10, 100 - tax - labor - rent);
@@ -1119,6 +1123,7 @@ export function renderKstatStoreStages(opts = {}) {
   bindDualRange('temp-emp', 'employeeTempMin', 'employeeTempMax', 0, 5, '명', (min, max) => {
     currentBaseline.employeeTemp = max;
     if (groupBaselines[activeGroup]) groupBaselines[activeGroup].employeeTemp = max;
+    updateRawCost();
   });
   bindSelect('select-emp-sales-link', 'empSalesLink');
 

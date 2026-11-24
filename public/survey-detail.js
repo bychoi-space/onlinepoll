@@ -30,7 +30,7 @@ import {
   PRESET_TRADITIONAL,
   PRESET_ROTATION,
   renderKstatStoreStages
-} from './modules/blueprint-kstat-store.js';
+} from './modules/blueprint-kstat-store.js?v=20261124_kstat_a10b4';
 import {
   renderQuotaTableHead,
   renderEmptyQuotaTableRow,

@@ -981,6 +981,9 @@ export async function runKstatSurvey({
           await safeFill(fB4, '#B4_3, input[name="B4_3"]', String(nRent));
           await safeFill(fB4, '#TB4_4, input[name="TB4_4"]', persona.costs?.etcText || '세금');
           await safeFill(fB4, '#B4_4, input[name="B4_4"]', String(nEtc));
+          await fB4.evaluate(() => {
+            if (typeof PlusValue === 'function') PlusValue('B4_1,B4_2,B4_3,B4_4');
+          }).catch(err => console.error('B4 sum sync error:', err));
         }
       }
 

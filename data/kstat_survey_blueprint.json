@@ -297,27 +297,27 @@
         },
         {
           "id": "A10_1",
-          "label": "가족 종사자 수",
+          "label": "상용근로자 수",
+          "type": "tunable",
+          "baseline": "0 명",
+          "range": "0~10 명",
+          "note": "유급 상용직 (종업원 유무에 따라 B4-1 인건비 자동 연동)"
+        },
+        {
+          "id": "A10_2",
+          "label": "임시·일용직 종업원 수",
+          "type": "tunable",
+          "baseline": "0 명",
+          "range": "0~5 명",
+          "note": "유급 임시·파트타임 (종업원 유무에 따라 B4-1 인건비 자동 연동)"
+        },
+        {
+          "id": "A10_3",
+          "label": "무급 가족 종사자 수",
           "type": "tunable",
           "baseline": "0 명",
           "range": "0~5 명",
           "note": "무급 가족종사자 (0명 가능)"
-        },
-        {
-          "id": "A10_2",
-          "label": "상시 유급 종업원 수",
-          "type": "tunable",
-          "baseline": "0 명",
-          "range": "0~5 명",
-          "note": "종업원 유무에 따라 인건비 연동"
-        },
-        {
-          "id": "A10_3",
-          "label": "임시/일용 종업원 수",
-          "type": "tunable",
-          "baseline": "0 명",
-          "range": "0~5 명",
-          "note": "임시·파트타임 종업원"
         },
         {
           "id": "RULE_EMP_SALES",
