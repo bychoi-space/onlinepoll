@@ -14,7 +14,7 @@
   "selectedCount": 58,
   "subCount": 128,
   "backupCount": 128,
-  "updatedAt": "2026-11-24T05:15:17.439Z",
+  "updatedAt": "2026-11-24T07:42:31.931Z",
   "cellQuotas": [
     {
       "cellKey": "인천_1001_1001",
@@ -579,7 +579,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "3",
+      "contactCount": "5",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -637,7 +637,8 @@
       "giftValue": "5000",
       "giftSignerName": "김동영",
       "giftSignerPhone": "010-8356-1145",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 2,
@@ -660,7 +661,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -718,7 +719,8 @@
       "giftValue": "5000",
       "giftSignerName": "김민욱",
       "giftSignerPhone": "010-8392-2084",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 3,
@@ -799,7 +801,8 @@
       "giftValue": "5000",
       "giftSignerName": "최준완",
       "giftSignerPhone": "010-8265-8761",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 4,
@@ -822,7 +825,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -880,7 +883,8 @@
       "giftValue": "5000",
       "giftSignerName": "하장희",
       "giftSignerPhone": "010-7988-1135",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 5,
@@ -903,7 +907,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -960,7 +964,8 @@
       "giftValue": "5000",
       "giftSignerName": "양용진",
       "giftSignerPhone": "010-5727-3205",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 6,
@@ -1056,7 +1061,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "4",
+      "contactCount": "6",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -1115,7 +1120,8 @@
       "giftValue": "5000",
       "giftSignerName": "이한규",
       "giftSignerPhone": "010-8327-1587",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 8,
@@ -1138,7 +1144,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "4",
+      "contactCount": "6",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -1197,7 +1203,8 @@
       "giftValue": "5000",
       "giftSignerName": "남준성",
       "giftSignerPhone": "010-3965-6318",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 9,
@@ -1220,7 +1227,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -1279,7 +1286,8 @@
       "giftValue": "5000",
       "giftSignerName": "성준호",
       "giftSignerPhone": "010-8018-1154",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 10,
@@ -1360,7 +1368,8 @@
       "giftValue": "5000",
       "giftSignerName": "조정준",
       "giftSignerPhone": "010-7652-4581",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 11,
@@ -1682,7 +1691,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1003",
       "memo": "",
@@ -1735,7 +1744,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "동아웰빙타운",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 16,
@@ -2035,7 +2045,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "대영빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 20,
@@ -2058,7 +2069,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1002",
       "quotaCode2": "1001",
       "memo": "",
@@ -2110,7 +2121,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "우림빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 21,
@@ -2185,7 +2197,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "부평민자역사 골프연습장",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 22,
@@ -2281,7 +2294,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -2336,7 +2349,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "부평남부체육센터",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 24,
@@ -2359,7 +2373,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -2412,7 +2426,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "상가동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 25,
@@ -2435,7 +2450,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -2487,7 +2502,8 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 26,
@@ -2510,7 +2526,7 @@
       "handledItems": "문화및집회시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1003",
       "quotaCode2": "1001",
       "memo": "",
@@ -2563,7 +2579,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "인천보건고등학교 3동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "4.5"
     },
     {
       "seq": 27,
@@ -2586,7 +2603,7 @@
       "handledItems": "판매시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -2638,7 +2655,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "GM마트",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 28,
@@ -2735,7 +2753,7 @@
       "handledItems": "판매시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1003",
       "memo": "",
@@ -2792,7 +2810,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "우리백화점",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 30,
@@ -3052,7 +3071,7 @@
       "handledItems": "판매시설",
       "mainProducts": "30,000-50,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1004",
       "memo": "",
@@ -3109,7 +3128,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "모다 아울렛 인천점 모다 아울렛",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 34,
@@ -3189,7 +3209,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "롯데마트 부평점",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 35,
@@ -3212,7 +3233,7 @@
       "handledItems": "판매시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -3269,7 +3290,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "롯데백화점 인천점",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 36,
@@ -3292,7 +3314,7 @@
       "handledItems": "판매시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -3349,7 +3371,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "뉴코아아울렛 인천점",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 37,
@@ -3372,7 +3395,7 @@
       "handledItems": "의료시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1001",
       "memo": "",
@@ -3424,7 +3447,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "새봄산부인과병원",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 38,
@@ -3447,7 +3471,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -3501,7 +3525,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "정명씨앤디",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 39,
@@ -3524,7 +3549,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -3578,7 +3603,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "한길안과병원",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 40,
@@ -3601,7 +3627,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -3655,7 +3681,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "산곡동 251-3 의료시설(새올요양병원)",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 41,
@@ -3678,7 +3705,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -3732,7 +3759,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "승현빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 42,
@@ -3755,7 +3783,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -3809,7 +3837,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "성훈빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 43,
@@ -3832,7 +3861,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -3886,7 +3915,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "부평힘찬병원",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 44,
@@ -4346,7 +4376,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "가톨릭대학교 인천성모병원 5동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 50,
@@ -4369,7 +4400,7 @@
       "handledItems": "의료시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1003",
       "memo": "",
@@ -4426,7 +4457,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "가톨릭대학교 인천성모병원 10동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 51,
@@ -4739,7 +4771,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "2동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 55,
@@ -4762,7 +4795,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -4815,7 +4848,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "인천부원초등학교 1동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 56,
@@ -4838,7 +4872,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -4891,7 +4925,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "1동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 57,
@@ -4914,7 +4949,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -4967,7 +5002,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "경찰종합학교 제1별관교실",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 58,
@@ -5045,7 +5081,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "경찰종합학교 제2생활관",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 59,
@@ -5068,7 +5105,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -5121,7 +5158,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "경찰종합학교 체육관",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 60,
@@ -5940,7 +5978,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "산곡고등학교",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 71,
@@ -5963,7 +6002,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -6015,7 +6054,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "포커스뷰",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 72,
@@ -6038,7 +6078,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -6090,7 +6130,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "조양휴캐슬",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 73,
@@ -6113,7 +6154,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -6165,7 +6206,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "인 마스터뷰",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 74,
@@ -6188,7 +6230,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -6240,7 +6282,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "반석아인스힐1동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 75,
@@ -9741,7 +9784,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -9794,7 +9837,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "부평4동 행정복지센터",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 123,
@@ -9817,7 +9861,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -9869,7 +9913,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "하임힐",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 124,
@@ -9892,7 +9937,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -9944,7 +9989,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "휴안",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 125,
@@ -12186,7 +12232,7 @@
       "handledItems": "업무시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -12238,7 +12284,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "부평쌍용플래티넘",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 156,
@@ -13247,7 +13294,7 @@
       "handledItems": "업무시설",
       "mainProducts": "30,000-50,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1004",
       "memo": "",
@@ -13303,7 +13350,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "한화생명보험(주)부평사옥",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 170,
@@ -14180,7 +14228,7 @@
       "handledItems": "숙박시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1008",
       "quotaCode2": "1001",
       "memo": "",
@@ -14232,7 +14280,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "더시티뷰",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 182,
@@ -14403,7 +14452,7 @@
       "handledItems": "숙박시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1008",
       "quotaCode2": "1003",
       "memo": "",
@@ -14456,7 +14505,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "토요코인 호텔 인천 부평점",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 185,
@@ -14479,7 +14529,7 @@
       "handledItems": "방송통신시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1009",
       "quotaCode2": "1002",
       "memo": "",
@@ -14529,7 +14579,8 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 186,
@@ -14626,7 +14677,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "3",
+      "contactCount": "5",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -14684,7 +14735,8 @@
       "giftValue": "5000",
       "giftSignerName": "김동영",
       "giftSignerPhone": "010-8356-1145",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 2,
@@ -14707,7 +14759,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -14765,7 +14817,8 @@
       "giftValue": "5000",
       "giftSignerName": "김민욱",
       "giftSignerPhone": "010-8392-2084",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 3,
@@ -14846,7 +14899,8 @@
       "giftValue": "5000",
       "giftSignerName": "최준완",
       "giftSignerPhone": "010-8265-8761",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 4,
@@ -14869,7 +14923,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -14927,7 +14981,8 @@
       "giftValue": "5000",
       "giftSignerName": "하장희",
       "giftSignerPhone": "010-7988-1135",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 5,
@@ -14950,7 +15005,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -15007,7 +15062,8 @@
       "giftValue": "5000",
       "giftSignerName": "양용진",
       "giftSignerPhone": "010-5727-3205",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 6,
@@ -15103,7 +15159,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "4",
+      "contactCount": "6",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -15162,7 +15218,8 @@
       "giftValue": "5000",
       "giftSignerName": "이한규",
       "giftSignerPhone": "010-8327-1587",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 8,
@@ -15185,7 +15242,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "4",
+      "contactCount": "6",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -15244,7 +15301,8 @@
       "giftValue": "5000",
       "giftSignerName": "남준성",
       "giftSignerPhone": "010-3965-6318",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 9,
@@ -15267,7 +15325,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -15326,7 +15384,8 @@
       "giftValue": "5000",
       "giftSignerName": "성준호",
       "giftSignerPhone": "010-8018-1154",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 10,
@@ -15407,7 +15466,8 @@
       "giftValue": "5000",
       "giftSignerName": "조정준",
       "giftSignerPhone": "010-7652-4581",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 11,
@@ -15729,7 +15789,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1003",
       "memo": "",
@@ -15782,7 +15842,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "동아웰빙타운",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 16,
@@ -16082,7 +16143,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "대영빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 20,
@@ -16105,7 +16167,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1002",
       "quotaCode2": "1001",
       "memo": "",
@@ -16157,7 +16219,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "우림빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 21,
@@ -16232,7 +16295,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "부평민자역사 골프연습장",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 22,
@@ -16328,7 +16392,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -16383,7 +16447,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "부평남부체육센터",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 24,
@@ -16406,7 +16471,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -16459,7 +16524,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "상가동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 25,
@@ -16482,7 +16548,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -16534,7 +16600,8 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 26,
@@ -16557,7 +16624,7 @@
       "handledItems": "문화및집회시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1003",
       "quotaCode2": "1001",
       "memo": "",
@@ -16610,7 +16677,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "인천보건고등학교 3동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "4.5"
     },
     {
       "seq": 27,
@@ -16633,7 +16701,7 @@
       "handledItems": "판매시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -16685,7 +16753,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "GM마트",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 28,
@@ -16782,7 +16851,7 @@
       "handledItems": "판매시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1003",
       "memo": "",
@@ -16839,7 +16908,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "우리백화점",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 30,
@@ -17099,7 +17169,7 @@
       "handledItems": "판매시설",
       "mainProducts": "30,000-50,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1004",
       "memo": "",
@@ -17156,7 +17226,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "모다 아울렛 인천점 모다 아울렛",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 34,
@@ -17236,7 +17307,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "롯데마트 부평점",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 35,
@@ -17259,7 +17331,7 @@
       "handledItems": "판매시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -17316,7 +17388,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "롯데백화점 인천점",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 36,
@@ -17339,7 +17412,7 @@
       "handledItems": "판매시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -17396,7 +17469,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "뉴코아아울렛 인천점",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 37,
@@ -17419,7 +17493,7 @@
       "handledItems": "의료시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1001",
       "memo": "",
@@ -17471,7 +17545,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "새봄산부인과병원",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 38,
@@ -17494,7 +17569,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -17548,7 +17623,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "정명씨앤디",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 39,
@@ -17571,7 +17647,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -17625,7 +17701,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "한길안과병원",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 40,
@@ -17648,7 +17725,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -17702,7 +17779,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "산곡동 251-3 의료시설(새올요양병원)",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 41,
@@ -17725,7 +17803,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -17779,7 +17857,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "승현빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 42,
@@ -17802,7 +17881,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -17856,7 +17935,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "성훈빌딩",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 43,
@@ -17879,7 +17959,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -17933,7 +18013,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "부평힘찬병원",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 44,
@@ -18393,7 +18474,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "가톨릭대학교 인천성모병원 5동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 50,
@@ -18416,7 +18498,7 @@
       "handledItems": "의료시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1003",
       "memo": "",
@@ -18473,7 +18555,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "가톨릭대학교 인천성모병원 10동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 51,
@@ -18786,7 +18869,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "2동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 55,
@@ -18809,7 +18893,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -18862,7 +18946,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "인천부원초등학교 1동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 56,
@@ -18885,7 +18970,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -18938,7 +19023,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "1동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 57,
@@ -18961,7 +19047,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -19014,7 +19100,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "경찰종합학교 제1별관교실",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 58,
@@ -19092,7 +19179,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "경찰종합학교 제2생활관",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 59,
@@ -19115,7 +19203,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -19168,7 +19256,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "경찰종합학교 체육관",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 60,
@@ -19987,7 +20076,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "산곡고등학교",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 71,
@@ -20010,7 +20100,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -20062,7 +20152,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "포커스뷰",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 72,
@@ -20085,7 +20176,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -20137,7 +20228,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "조양휴캐슬",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 73,
@@ -20160,7 +20252,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -20212,7 +20304,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "인 마스터뷰",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 74,
@@ -20235,7 +20328,7 @@
       "handledItems": "업무시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1001",
       "memo": "",
@@ -20287,7 +20380,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "반석아인스힐1동",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 75,
@@ -23788,7 +23882,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -23841,7 +23935,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "부평4동 행정복지센터",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 123,
@@ -23864,7 +23959,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -23916,7 +24011,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "하임힐",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 124,
@@ -23939,7 +24035,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -23991,7 +24087,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "휴안",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 125,
@@ -26233,7 +26330,7 @@
       "handledItems": "업무시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -26285,7 +26382,8 @@
       "d21UseGas": "2",
       "guideFromSheet": true,
       "siteBuildingName": "부평쌍용플래티넘",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 156,
@@ -27294,7 +27392,7 @@
       "handledItems": "업무시설",
       "mainProducts": "30,000-50,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1004",
       "memo": "",
@@ -27350,7 +27448,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "한화생명보험(주)부평사옥",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 170,
@@ -28227,7 +28326,7 @@
       "handledItems": "숙박시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1008",
       "quotaCode2": "1001",
       "memo": "",
@@ -28279,7 +28378,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "더시티뷰",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 182,
@@ -28450,7 +28550,7 @@
       "handledItems": "숙박시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1008",
       "quotaCode2": "1003",
       "memo": "",
@@ -28503,7 +28603,8 @@
       "d21UseGas": "1",
       "guideFromSheet": true,
       "siteBuildingName": "토요코인 호텔 인천 부평점",
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 185,
@@ -28526,7 +28627,7 @@
       "handledItems": "방송통신시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1009",
       "quotaCode2": "1002",
       "memo": "",
@@ -28576,7 +28677,8 @@
       "d21Raw": "사용하지 않는다",
       "d21UseGas": "2",
       "guideFromSheet": true,
-      "surveyCompleted": "완료"
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 186,

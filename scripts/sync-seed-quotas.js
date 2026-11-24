@@ -207,7 +207,7 @@ function main() {
       const fk = getFallbackIdKey(r);
       const prev = (k && localByKey.get(k)) || (!r.surveyorId && fk ? localByKey.get(fk) : null);
       if (!prev) return false;
-      return ['education', 'job', 'householdIncome', 'maritalStatus', 'familySize', 'childrenCount', 'surveyDistrict', 'surveyDong']
+      return ['education', 'job', 'householdIncome', 'maritalStatus', 'familySize', 'childrenCount', 'surveyDistrict', 'surveyDong', 'ceilingHeightM']
         .some(field => r[field] && !prev[field]);
     });
     const remoteAccLen = Array.isArray(remoteObj.accounts) ? remoteObj.accounts.length : 0;

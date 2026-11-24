@@ -554,7 +554,9 @@ const CULTURAL_FACILITY_CEILING_DB = [
   { pattern: /AW\s*웨딩|빌라드\s*지디/i, ceilingM: 5.0, source: '웨딩·컨벤션홀 평균' },
   { pattern: /플레이\s*월드/i, ceilingM: 4.5, source: '실내 테마·전시시설 평균' },
   { pattern: /방문자\s*센터|도시\s*계획관/i, ceilingM: 3.8, source: '전시·방문자센터 평균' },
-  { pattern: /111\s*CM/i, ceilingM: 4.2, source: '복합문화공간 천장고' }
+  { pattern: /111\s*CM/i, ceilingM: 4.2, source: '복합문화공간 천장고' },
+  { pattern: /대순진리회/i, ceilingM: 4.2, source: '종교·집회회관 기준 추정치' },
+  { pattern: /인천보건고.*3동|학교.*강당|학교.*체육관/i, ceilingM: 4.5, source: '학교 강당·집회동 기준 추정치' }
 ];
 
 const culturalSearchCache = new Map();
@@ -637,7 +639,7 @@ export async function resolveHrcBuildingCeilingHeightM({
   if (!isCultural) {
     const customCeil = String(policy.ceilingHeightM || '').trim();
     if (customCeil && customCeil !== '2.8' && !isNaN(parseFloat(customCeil))) {
-      return { value: String(Number(parseFloat(customCeil).toFixed(1))), source: '정책 지정값', isCultural: false };
+      return { value: Number(parseFloat(customCeil)).toFixed(1), source: '정책 지정값', isCultural: false };
     }
     const generalPool = ['2.6', '2.7', '2.8', '2.9', '3.0'];
     const picked = generalPool[uidNum % generalPool.length];
@@ -647,22 +649,22 @@ export async function resolveHrcBuildingCeilingHeightM({
   // [문화및집회시설] 1) 공식 건축·시설안내 실측 DB 우선 매칭
   for (const entry of CULTURAL_FACILITY_CEILING_DB) {
     if (entry.pattern.test(bldgName)) {
-      return { value: String(entry.ceilingM), source: `문화시설 검색실측(${entry.source})`, isCultural: true };
+      return { value: Number(entry.ceilingM).toFixed(1), source: `문화시설 검색실측(${entry.source})`, isCultural: true };
     }
   }
 
   // [문화및집회시설] 2) 실시간 웹 검색 조회
   const searchedVal = await searchCulturalCeilingHeightM(bldgName, slotData.sido, slotData.sigungu);
   if (searchedVal && searchedVal > 3.0) {
-    return { value: String(searchedVal), source: '문화시설 웹검색 추출', isCultural: true };
+    return { value: Number(searchedVal).toFixed(1), source: '문화시설 웹검색 추출', isCultural: true };
   }
 
   // [문화및집회시설] 3) 건물 세부 특성·연면적 기반 엔지니어링 추정치 (3m 초과 보장)
   let pool = [3.6, 3.8, 4.0, 4.2];
   if (/컨벤션|전시장|박람회|체육관|경기장|아레나|돔/.test(bldgName)) {
     pool = [6.5, 7.0, 7.5, 8.0];
-  } else if (/공연|아트센터|아트리움|문화회관|문예회관|예술회관|영화관|시네마|씨네|웨딩/.test(bldgName)) {
-    pool = [4.8, 5.2, 5.5, 6.0];
+  } else if (/공연|아트센터|아트리움|문화회관|문예회관|예술회관|영화관|시네마|씨네|웨딩|강당/.test(bldgName)) {
+    pool = [4.5, 4.8, 5.2, 5.5];
   } else if (/박물관|미술관|기념관|과학관|체험관|전시관|갤러리/.test(bldgName)) {
     pool = [4.0, 4.3, 4.5, 4.8];
   } else if (effArea >= 30000) {
@@ -673,7 +675,7 @@ export async function resolveHrcBuildingCeilingHeightM({
     pool = [3.8, 4.0, 4.2, 4.5];
   }
   const estVal = pool[uidNum % pool.length];
-  return { value: String(estVal), source: '문화시설 유형·규모별 추정치(>3.0m)', isCultural: true };
+  return { value: Number(estVal).toFixed(1), source: '문화시설 유형·규모별 추정치(>3.0m)', isCultural: true };
 }
 
 /**

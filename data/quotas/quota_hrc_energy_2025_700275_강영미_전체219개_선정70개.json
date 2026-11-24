@@ -14,7 +14,7 @@
   "selectedCount": 70,
   "subCount": 149,
   "backupCount": 149,
-  "updatedAt": "2026-11-24T05:01:15.367Z",
+  "updatedAt": "2026-11-24T07:42:54.171Z",
   "cellQuotas": [
     {
       "cellKey": "서울_1001_1001",
@@ -579,7 +579,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "3",
+      "contactCount": "5",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -637,7 +637,8 @@
       "siteBuildingName": "이에스",
       "giftSignerName": "박호균",
       "giftSignerPhone": "010-7523-1539",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 2,
@@ -660,7 +661,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -718,7 +719,8 @@
       "siteBuildingName": "임광아파트 상가",
       "giftSignerName": "엄윤성",
       "giftSignerPhone": "010-3962-2474",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 3,
@@ -741,7 +743,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "5",
+      "contactCount": "7",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -799,7 +801,8 @@
       "siteBuildingName": "노원 보룡약국",
       "giftSignerName": "김제찬",
       "giftSignerPhone": "010-8297-8755",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 4,
@@ -822,7 +825,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -880,7 +883,8 @@
       "siteBuildingName": "상계주공아파트 3단지상가",
       "giftSignerName": "이상윤",
       "giftSignerPhone": "010-6753-6594",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 5,
@@ -960,7 +964,8 @@
       "guideFromSheet": false,
       "giftSignerName": "임경수",
       "giftSignerPhone": "010-9311-4247",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 6,
@@ -1426,7 +1431,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "6",
+      "contactCount": "8",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -1483,7 +1488,8 @@
       "guideFromSheet": true,
       "giftSignerName": "임경수",
       "giftSignerPhone": "010-9311-4247",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 13,
@@ -2309,7 +2315,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "6",
+      "contactCount": "8",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -2367,7 +2373,8 @@
       "guideFromSheet": true,
       "giftSignerName": "김용식",
       "giftSignerPhone": "010-7935-2414",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 25,
@@ -2390,7 +2397,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -2448,7 +2455,8 @@
       "guideFromSheet": true,
       "giftSignerName": "이영호",
       "giftSignerPhone": "010-7610-8143",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 26,
@@ -2471,7 +2479,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -2529,7 +2537,8 @@
       "guideFromSheet": true,
       "giftSignerName": "이기원",
       "giftSignerPhone": "010-8421-6508",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 27,
@@ -2552,7 +2561,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -2610,7 +2619,8 @@
       "guideFromSheet": true,
       "giftSignerName": "김재명",
       "giftSignerPhone": "010-5671-2165",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 28,
@@ -2633,7 +2643,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -2692,7 +2702,8 @@
       "siteBuildingName": "극장빌딩",
       "giftSignerName": "김동열",
       "giftSignerPhone": "010-8235-4512",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 29,
@@ -3609,7 +3620,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1003",
       "memo": "",
@@ -3668,7 +3679,8 @@
       "siteBuildingName": "그랑빌아파트 주상가동",
       "giftSignerName": "이영철",
       "giftSignerPhone": "010-4271-2247",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 42,
@@ -3691,7 +3703,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1003",
       "memo": "",
@@ -3750,7 +3762,8 @@
       "siteBuildingName": "희성프라자",
       "giftSignerName": "김영민",
       "giftSignerPhone": "010-9081-5469",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 43,
@@ -3979,7 +3992,8 @@
       "guideFromSheet": true,
       "giftSignerName": "박영준",
       "giftSignerPhone": "010-9914-8409",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 46,
@@ -4002,7 +4016,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "6",
+      "contactCount": "8",
       "quotaCode1": "1002",
       "quotaCode2": "1001",
       "memo": "",
@@ -4060,7 +4074,8 @@
       "siteBuildingName": "미네르바빌딩",
       "giftSignerName": "배영남",
       "giftSignerPhone": "010-7138-0704",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 47,
@@ -4595,7 +4610,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -4653,7 +4668,8 @@
       "guideFromSheet": true,
       "giftSignerName": "박현철",
       "giftSignerPhone": "010-8178-2768",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 55,
@@ -4676,7 +4692,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "6",
+      "contactCount": "8",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -4735,7 +4751,8 @@
       "siteBuildingName": "우도빌딩",
       "giftSignerName": "박종길",
       "giftSignerPhone": "010-7589-6254",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 56,
@@ -4982,7 +4999,7 @@
       "handledItems": "문화및집회시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1003",
       "quotaCode2": "1002",
       "memo": "",
@@ -5039,7 +5056,8 @@
       "guideFromSheet": true,
       "giftSignerName": "김재균",
       "giftSignerPhone": "010-8190-8962",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "4.2"
     },
     {
       "seq": 60,
@@ -5136,7 +5154,7 @@
       "handledItems": "문화및집회시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1003",
       "quotaCode2": "1003",
       "memo": "",
@@ -5197,7 +5215,8 @@
       "siteBuildingName": "국립민속박물관",
       "giftSignerName": "한종석",
       "giftSignerPhone": "010-2289-4125",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "4.5"
     },
     {
       "seq": 62,
@@ -5528,7 +5547,7 @@
       "handledItems": "판매시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -5586,7 +5605,8 @@
       "siteBuildingName": "상계주공아파트 2단지상가아파트",
       "giftSignerName": "박경인",
       "giftSignerPhone": "010-3946-2372",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 67,
@@ -5666,7 +5686,8 @@
       "guideFromSheet": true,
       "giftSignerName": "이종덕",
       "giftSignerPhone": "010-5088-3650",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 68,
@@ -6058,7 +6079,7 @@
       "handledItems": "판매시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1002",
       "memo": "",
@@ -6117,7 +6138,8 @@
       "siteBuildingName": "상계주공아파트 15단지상가",
       "giftSignerName": "박준섭",
       "giftSignerPhone": "010-9170-5772",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 74,
@@ -6349,7 +6371,8 @@
       "siteBuildingName": "와우쇼핑몰",
       "giftSignerName": "김순규",
       "giftSignerPhone": "010-5923-5174",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 77,
@@ -6372,7 +6395,7 @@
       "handledItems": "판매시설",
       "mainProducts": "30,000-50,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1004",
       "memo": "",
@@ -6435,7 +6458,8 @@
       "siteBuildingName": "월계동 이마트 트레이더스",
       "giftSignerName": "이정남",
       "giftSignerPhone": "010-2077-7629",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 78,
@@ -6458,7 +6482,7 @@
       "handledItems": "판매시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -6521,7 +6545,8 @@
       "siteBuildingName": "월계동 이마트 이마트",
       "giftSignerName": "최성재",
       "giftSignerPhone": "010-8678-2954",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 79,
@@ -6544,7 +6569,7 @@
       "handledItems": "판매시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -6606,7 +6631,8 @@
       "guideFromSheet": true,
       "giftSignerName": "박종길",
       "giftSignerPhone": "010-5846-2935",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 80,
@@ -6629,7 +6655,7 @@
       "handledItems": "의료시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "6",
+      "contactCount": "8",
       "quotaCode1": "1005",
       "quotaCode2": "1001",
       "memo": "",
@@ -6687,7 +6713,8 @@
       "siteBuildingName": "마디세상병원빌딩",
       "giftSignerName": "이원복",
       "giftSignerPhone": "010-4967-4027",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 81,
@@ -6710,7 +6737,7 @@
       "handledItems": "의료시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1001",
       "memo": "",
@@ -6767,7 +6794,8 @@
       "guideFromSheet": true,
       "giftSignerName": "이상철",
       "giftSignerPhone": "010-6417-2194",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 82,
@@ -6790,7 +6818,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -6850,7 +6878,8 @@
       "siteBuildingName": "대감프라자",
       "giftSignerName": "정용종",
       "giftSignerPhone": "010-3985-7948",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 83,
@@ -6873,7 +6902,7 @@
       "handledItems": "의료시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1003",
       "memo": "",
@@ -6936,7 +6965,8 @@
       "siteBuildingName": "원진재단부설 녹색병원",
       "giftSignerName": "홍진구",
       "giftSignerPhone": "010-5639-8479",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 84,
@@ -7035,7 +7065,7 @@
       "handledItems": "의료시설",
       "mainProducts": "30,000-50,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1004",
       "memo": "",
@@ -7097,7 +7127,8 @@
       "guideFromSheet": true,
       "giftSignerName": "김강렬",
       "giftSignerPhone": "010-7543-3247",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 86,
@@ -7179,7 +7210,8 @@
       "siteBuildingName": "용화여자고등학교",
       "giftSignerName": "권형두",
       "giftSignerPhone": "010-3957-4732",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 87,
@@ -7202,7 +7234,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -7260,7 +7292,8 @@
       "guideFromSheet": true,
       "giftSignerName": "이성호",
       "giftSignerPhone": "010-2660-5006",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 88,
@@ -7803,7 +7836,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -7861,7 +7894,8 @@
       "siteBuildingName": "한국성서대학교 E동(일립관)",
       "giftSignerName": "고우석",
       "giftSignerPhone": "010-7291-6637",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 96,
@@ -7884,7 +7918,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -7942,7 +7976,8 @@
       "siteBuildingName": "순복음노원교회 비전센터",
       "giftSignerName": "김준혁",
       "giftSignerPhone": "010-2483-6497",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 97,
@@ -7965,7 +8000,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "6",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -8024,7 +8059,8 @@
       "siteBuildingName": "상원초등학교",
       "giftSignerName": "김찬호",
       "giftSignerPhone": "010-8415-3058",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 98,
@@ -8047,7 +8083,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -8106,7 +8142,8 @@
       "siteBuildingName": "온곡중학교",
       "giftSignerName": "이권준",
       "giftSignerPhone": "010-4181-5119",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 99,
@@ -8129,7 +8166,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -8188,7 +8225,8 @@
       "siteBuildingName": "서울녹천초등학교 가동",
       "giftSignerName": "김형석",
       "giftSignerPhone": "010-8678-2996",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 100,
@@ -8943,7 +8981,8 @@
       "siteBuildingName": "서울면동초등학교",
       "giftSignerName": "문인식",
       "giftSignerPhone": "010-7738-5993",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 110,
@@ -8966,7 +9005,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -9025,7 +9064,8 @@
       "siteBuildingName": "메가빌딩",
       "giftSignerName": "박강현",
       "giftSignerPhone": "010-5603-8409",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 111,
@@ -9048,7 +9088,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -9106,7 +9146,8 @@
       "guideFromSheet": true,
       "giftSignerName": "서승호",
       "giftSignerPhone": "010-4086-5717",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 112,
@@ -9129,7 +9170,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -9188,7 +9229,8 @@
       "siteBuildingName": "용마중학교",
       "giftSignerName": "송민규",
       "giftSignerPhone": "010-4894-2452",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 113,
@@ -9211,7 +9253,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -9270,7 +9312,8 @@
       "siteBuildingName": "신현중학교",
       "giftSignerName": "박정민",
       "giftSignerPhone": "010-3294-3948",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 114,
@@ -9426,7 +9469,8 @@
       "siteBuildingName": "삼성생명상계빌딩",
       "giftSignerName": "이정혁",
       "giftSignerPhone": "010-4531-2347",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 116,
@@ -9449,7 +9493,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -9506,7 +9550,8 @@
       "guideFromSheet": true,
       "giftSignerName": "한현재",
       "giftSignerPhone": "010-8054-7107",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 117,
@@ -9529,7 +9574,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -9587,7 +9632,8 @@
       "siteBuildingName": "이투스교육 주건축물제1동",
       "giftSignerName": "한웅희",
       "giftSignerPhone": "010-2418-2350",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 118,
@@ -13513,7 +13559,7 @@
       "handledItems": "업무시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -13573,7 +13619,8 @@
       "siteBuildingName": "파트너스1",
       "giftSignerName": "징은우",
       "giftSignerPhone": "010-6524-4170",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 172,
@@ -13596,7 +13643,7 @@
       "handledItems": "업무시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -13654,7 +13701,8 @@
       "siteBuildingName": "잠실헤리츠",
       "giftSignerName": "서동현",
       "giftSignerPhone": "010-7603-5175",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 173,
@@ -14889,7 +14937,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -14951,7 +14999,8 @@
       "siteBuildingName": "Crescendo(크레센도)",
       "giftSignerName": "이상훈",
       "giftSignerPhone": "010-7642-8376",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 190,
@@ -14974,7 +15023,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15036,7 +15085,8 @@
       "siteBuildingName": "콘코디언(concordian)",
       "giftSignerName": "김석훈",
       "giftSignerPhone": "010-2098-1694",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 191,
@@ -15059,7 +15109,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15121,7 +15171,8 @@
       "siteBuildingName": "광화문오피시아빌딩",
       "giftSignerName": "유석구",
       "giftSignerPhone": "010-2069-7153",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 192,
@@ -15206,7 +15257,8 @@
       "siteBuildingName": "흥국생명빌딩",
       "giftSignerName": "이진영",
       "giftSignerPhone": "010-7744-0740",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 193,
@@ -15229,7 +15281,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15291,7 +15343,8 @@
       "siteBuildingName": "LX광화문빌딩",
       "giftSignerName": "김창남",
       "giftSignerPhone": "010-6246-2748",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 194,
@@ -15314,7 +15367,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15372,7 +15425,8 @@
       "siteBuildingName": "디팰리스",
       "giftSignerName": "김전명",
       "giftSignerPhone": "010-2587-7691",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 195,
@@ -15395,7 +15449,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15457,7 +15511,8 @@
       "siteBuildingName": "영풍빌딩",
       "giftSignerName": "전승호",
       "giftSignerPhone": "010-9574-8572",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 196,
@@ -15480,7 +15535,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15542,7 +15597,8 @@
       "siteBuildingName": "SK 서린동빌딩",
       "giftSignerName": "이영섭",
       "giftSignerPhone": "010-2968-9875",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 197,
@@ -15565,7 +15621,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15623,7 +15679,8 @@
       "siteBuildingName": "두산위브파빌리온",
       "giftSignerName": "김성홍",
       "giftSignerPhone": "010-8260-8846",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 198,
@@ -15646,7 +15703,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15708,7 +15765,8 @@
       "siteBuildingName": "세미콜론수송",
       "giftSignerName": "김종혁",
       "giftSignerPhone": "010-7268-2108",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 199,
@@ -15731,7 +15789,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15793,7 +15851,8 @@
       "siteBuildingName": "더존을지타워",
       "giftSignerName": "박호영",
       "giftSignerPhone": "010-7211-7659",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 200,
@@ -15816,7 +15875,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15878,7 +15937,8 @@
       "siteBuildingName": "(주)KEB하나은행 본점 주건축물제1동",
       "giftSignerName": "박흥남",
       "giftSignerPhone": "010-6784-9764",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 201,
@@ -15901,7 +15961,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -15963,7 +16023,8 @@
       "siteBuildingName": "SK T-타워",
       "giftSignerName": "송명진",
       "giftSignerPhone": "010-5505-2743",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 202,
@@ -16048,7 +16109,8 @@
       "siteBuildingName": "부영그룹 명동빌딩",
       "giftSignerName": "김화석",
       "giftSignerPhone": "010-8469-4333",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 203,
@@ -16071,7 +16133,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -16133,7 +16195,8 @@
       "siteBuildingName": "파인에비뉴",
       "giftSignerName": "유도현",
       "giftSignerPhone": "010-5322-6574",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 204,
@@ -16156,7 +16219,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -16218,7 +16281,8 @@
       "siteBuildingName": "FERRUM TOWER",
       "giftSignerName": "김재영",
       "giftSignerPhone": "010-5904-8325",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 205,
@@ -16241,7 +16305,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -16303,7 +16367,8 @@
       "siteBuildingName": "미래에셋 센터원(Mirae Asset CENTER1)",
       "giftSignerName": "이민국",
       "giftSignerPhone": "010-8973-4275",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 206,
@@ -16388,7 +16453,8 @@
       "siteBuildingName": "시그니쳐타워",
       "giftSignerName": "정지혁",
       "giftSignerPhone": "010-4968-2765",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 207,
@@ -16954,7 +17020,7 @@
       "handledItems": "숙박시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1008",
       "quotaCode2": "1001",
       "memo": "",
@@ -17012,7 +17078,8 @@
       "siteBuildingName": "릿츠호텔",
       "giftSignerName": "오태균",
       "giftSignerPhone": "010-4965-9772",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 215,
@@ -17035,7 +17102,7 @@
       "handledItems": "숙박시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1008",
       "quotaCode2": "1001",
       "memo": "",
@@ -17093,7 +17160,8 @@
       "siteBuildingName": "에쿠스",
       "giftSignerName": "한재우",
       "giftSignerPhone": "010-7418-8038",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 216,
@@ -17174,7 +17242,8 @@
       "siteBuildingName": "라코지 스테이 서울",
       "giftSignerName": "박진명",
       "giftSignerPhone": "010-4922-9824",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 217,
@@ -17271,7 +17340,7 @@
       "handledItems": "숙박시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1008",
       "quotaCode2": "1003",
       "memo": "",
@@ -17330,7 +17399,8 @@
       "siteBuildingName": "노블레스관광호텔",
       "giftSignerName": "조재형",
       "giftSignerPhone": "010-2170-4972",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 219,
@@ -17353,7 +17423,7 @@
       "handledItems": "방송통신시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1009",
       "quotaCode2": "1002",
       "memo": "",
@@ -17410,7 +17480,8 @@
       "siteBuildingName": "KT노원지사 본관동",
       "giftSignerName": "강현수",
       "giftSignerPhone": "010-2877-5408",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "3.0"
     }
   ],
   "items": [
@@ -17435,7 +17506,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "3",
+      "contactCount": "5",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -17493,7 +17564,8 @@
       "siteBuildingName": "이에스",
       "giftSignerName": "박호균",
       "giftSignerPhone": "010-7523-1539",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 2,
@@ -17516,7 +17588,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -17574,7 +17646,8 @@
       "siteBuildingName": "임광아파트 상가",
       "giftSignerName": "엄윤성",
       "giftSignerPhone": "010-3962-2474",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 3,
@@ -17597,7 +17670,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "5",
+      "contactCount": "7",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -17655,7 +17728,8 @@
       "siteBuildingName": "노원 보룡약국",
       "giftSignerName": "김제찬",
       "giftSignerPhone": "010-8297-8755",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 4,
@@ -17678,7 +17752,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -17736,7 +17810,8 @@
       "siteBuildingName": "상계주공아파트 3단지상가",
       "giftSignerName": "이상윤",
       "giftSignerPhone": "010-6753-6594",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 5,
@@ -17816,7 +17891,8 @@
       "guideFromSheet": false,
       "giftSignerName": "임경수",
       "giftSignerPhone": "010-9311-4247",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 6,
@@ -18282,7 +18358,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "6",
+      "contactCount": "8",
       "quotaCode1": "1001",
       "quotaCode2": "1001",
       "memo": "",
@@ -18339,7 +18415,8 @@
       "guideFromSheet": true,
       "giftSignerName": "임경수",
       "giftSignerPhone": "010-9311-4247",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 13,
@@ -19165,7 +19242,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "6",
+      "contactCount": "8",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -19223,7 +19300,8 @@
       "guideFromSheet": true,
       "giftSignerName": "김용식",
       "giftSignerPhone": "010-7935-2414",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 25,
@@ -19246,7 +19324,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -19304,7 +19382,8 @@
       "guideFromSheet": true,
       "giftSignerName": "이영호",
       "giftSignerPhone": "010-7610-8143",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 26,
@@ -19327,7 +19406,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -19385,7 +19464,8 @@
       "guideFromSheet": true,
       "giftSignerName": "이기원",
       "giftSignerPhone": "010-8421-6508",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 27,
@@ -19408,7 +19488,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -19466,7 +19546,8 @@
       "guideFromSheet": true,
       "giftSignerName": "김재명",
       "giftSignerPhone": "010-5671-2165",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 28,
@@ -19489,7 +19570,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
       "memo": "",
@@ -19548,7 +19629,8 @@
       "siteBuildingName": "극장빌딩",
       "giftSignerName": "김동열",
       "giftSignerPhone": "010-8235-4512",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 29,
@@ -20465,7 +20547,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1003",
       "memo": "",
@@ -20524,7 +20606,8 @@
       "siteBuildingName": "그랑빌아파트 주상가동",
       "giftSignerName": "이영철",
       "giftSignerPhone": "010-4271-2247",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 42,
@@ -20547,7 +20630,7 @@
       "handledItems": "제1종근린생활시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1001",
       "quotaCode2": "1003",
       "memo": "",
@@ -20606,7 +20689,8 @@
       "siteBuildingName": "희성프라자",
       "giftSignerName": "김영민",
       "giftSignerPhone": "010-9081-5469",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 43,
@@ -20835,7 +20919,8 @@
       "guideFromSheet": true,
       "giftSignerName": "박영준",
       "giftSignerPhone": "010-9914-8409",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 46,
@@ -20858,7 +20943,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "6",
+      "contactCount": "8",
       "quotaCode1": "1002",
       "quotaCode2": "1001",
       "memo": "",
@@ -20916,7 +21001,8 @@
       "siteBuildingName": "미네르바빌딩",
       "giftSignerName": "배영남",
       "giftSignerPhone": "010-7138-0704",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 47,
@@ -21451,7 +21537,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -21509,7 +21595,8 @@
       "guideFromSheet": true,
       "giftSignerName": "박현철",
       "giftSignerPhone": "010-8178-2768",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 55,
@@ -21532,7 +21619,7 @@
       "handledItems": "제2종근린생활시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "6",
+      "contactCount": "8",
       "quotaCode1": "1002",
       "quotaCode2": "1002",
       "memo": "",
@@ -21591,7 +21678,8 @@
       "siteBuildingName": "우도빌딩",
       "giftSignerName": "박종길",
       "giftSignerPhone": "010-7589-6254",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 56,
@@ -21838,7 +21926,7 @@
       "handledItems": "문화및집회시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1003",
       "quotaCode2": "1002",
       "memo": "",
@@ -21895,7 +21983,8 @@
       "guideFromSheet": true,
       "giftSignerName": "김재균",
       "giftSignerPhone": "010-8190-8962",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "4.2"
     },
     {
       "seq": 60,
@@ -21992,7 +22081,7 @@
       "handledItems": "문화및집회시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1003",
       "quotaCode2": "1003",
       "memo": "",
@@ -22053,7 +22142,8 @@
       "siteBuildingName": "국립민속박물관",
       "giftSignerName": "한종석",
       "giftSignerPhone": "010-2289-4125",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "4.5"
     },
     {
       "seq": 62,
@@ -22384,7 +22474,7 @@
       "handledItems": "판매시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1001",
       "memo": "",
@@ -22442,7 +22532,8 @@
       "siteBuildingName": "상계주공아파트 2단지상가아파트",
       "giftSignerName": "박경인",
       "giftSignerPhone": "010-3946-2372",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 67,
@@ -22522,7 +22613,8 @@
       "guideFromSheet": true,
       "giftSignerName": "이종덕",
       "giftSignerPhone": "010-5088-3650",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 68,
@@ -22914,7 +23006,7 @@
       "handledItems": "판매시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1002",
       "memo": "",
@@ -22973,7 +23065,8 @@
       "siteBuildingName": "상계주공아파트 15단지상가",
       "giftSignerName": "박준섭",
       "giftSignerPhone": "010-9170-5772",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 74,
@@ -23205,7 +23298,8 @@
       "siteBuildingName": "와우쇼핑몰",
       "giftSignerName": "김순규",
       "giftSignerPhone": "010-5923-5174",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 77,
@@ -23228,7 +23322,7 @@
       "handledItems": "판매시설",
       "mainProducts": "30,000-50,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1004",
       "memo": "",
@@ -23291,7 +23385,8 @@
       "siteBuildingName": "월계동 이마트 트레이더스",
       "giftSignerName": "이정남",
       "giftSignerPhone": "010-2077-7629",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 78,
@@ -23314,7 +23409,7 @@
       "handledItems": "판매시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -23377,7 +23472,8 @@
       "siteBuildingName": "월계동 이마트 이마트",
       "giftSignerName": "최성재",
       "giftSignerPhone": "010-8678-2954",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 79,
@@ -23400,7 +23496,7 @@
       "handledItems": "판매시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1004",
       "quotaCode2": "1005",
       "memo": "",
@@ -23462,7 +23558,8 @@
       "guideFromSheet": true,
       "giftSignerName": "박종길",
       "giftSignerPhone": "010-5846-2935",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 80,
@@ -23485,7 +23582,7 @@
       "handledItems": "의료시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "6",
+      "contactCount": "8",
       "quotaCode1": "1005",
       "quotaCode2": "1001",
       "memo": "",
@@ -23543,7 +23640,8 @@
       "siteBuildingName": "마디세상병원빌딩",
       "giftSignerName": "이원복",
       "giftSignerPhone": "010-4967-4027",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 81,
@@ -23566,7 +23664,7 @@
       "handledItems": "의료시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1001",
       "memo": "",
@@ -23623,7 +23721,8 @@
       "guideFromSheet": true,
       "giftSignerName": "이상철",
       "giftSignerPhone": "010-6417-2194",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 82,
@@ -23646,7 +23745,7 @@
       "handledItems": "의료시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1002",
       "memo": "",
@@ -23706,7 +23805,8 @@
       "siteBuildingName": "대감프라자",
       "giftSignerName": "정용종",
       "giftSignerPhone": "010-3985-7948",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 83,
@@ -23729,7 +23829,7 @@
       "handledItems": "의료시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1003",
       "memo": "",
@@ -23792,7 +23892,8 @@
       "siteBuildingName": "원진재단부설 녹색병원",
       "giftSignerName": "홍진구",
       "giftSignerPhone": "010-5639-8479",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 84,
@@ -23891,7 +23992,7 @@
       "handledItems": "의료시설",
       "mainProducts": "30,000-50,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1005",
       "quotaCode2": "1004",
       "memo": "",
@@ -23953,7 +24054,8 @@
       "guideFromSheet": true,
       "giftSignerName": "김강렬",
       "giftSignerPhone": "010-7543-3247",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 86,
@@ -24035,7 +24137,8 @@
       "siteBuildingName": "용화여자고등학교",
       "giftSignerName": "권형두",
       "giftSignerPhone": "010-3957-4732",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 87,
@@ -24058,7 +24161,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1001",
       "memo": "",
@@ -24116,7 +24219,8 @@
       "guideFromSheet": true,
       "giftSignerName": "이성호",
       "giftSignerPhone": "010-2660-5006",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 88,
@@ -24659,7 +24763,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -24717,7 +24821,8 @@
       "siteBuildingName": "한국성서대학교 E동(일립관)",
       "giftSignerName": "고우석",
       "giftSignerPhone": "010-7291-6637",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 96,
@@ -24740,7 +24845,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -24798,7 +24903,8 @@
       "siteBuildingName": "순복음노원교회 비전센터",
       "giftSignerName": "김준혁",
       "giftSignerPhone": "010-2483-6497",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 97,
@@ -24821,7 +24927,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "6",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -24880,7 +24986,8 @@
       "siteBuildingName": "상원초등학교",
       "giftSignerName": "김찬호",
       "giftSignerPhone": "010-8415-3058",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 98,
@@ -24903,7 +25010,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -24962,7 +25069,8 @@
       "siteBuildingName": "온곡중학교",
       "giftSignerName": "이권준",
       "giftSignerPhone": "010-4181-5119",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 99,
@@ -24985,7 +25093,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1002",
       "memo": "",
@@ -25044,7 +25152,8 @@
       "siteBuildingName": "서울녹천초등학교 가동",
       "giftSignerName": "김형석",
       "giftSignerPhone": "010-8678-2996",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 100,
@@ -25799,7 +25908,8 @@
       "siteBuildingName": "서울면동초등학교",
       "giftSignerName": "문인식",
       "giftSignerPhone": "010-7738-5993",
-      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
+      "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 110,
@@ -25822,7 +25932,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -25881,7 +25991,8 @@
       "siteBuildingName": "메가빌딩",
       "giftSignerName": "박강현",
       "giftSignerPhone": "010-5603-8409",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 111,
@@ -25904,7 +26015,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -25962,7 +26073,8 @@
       "guideFromSheet": true,
       "giftSignerName": "서승호",
       "giftSignerPhone": "010-4086-5717",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 112,
@@ -25985,7 +26097,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -26044,7 +26156,8 @@
       "siteBuildingName": "용마중학교",
       "giftSignerName": "송민규",
       "giftSignerPhone": "010-4894-2452",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 113,
@@ -26067,7 +26180,7 @@
       "handledItems": "교육연구시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1006",
       "quotaCode2": "1003",
       "memo": "",
@@ -26126,7 +26239,8 @@
       "siteBuildingName": "신현중학교",
       "giftSignerName": "박정민",
       "giftSignerPhone": "010-3294-3948",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 114,
@@ -26282,7 +26396,8 @@
       "siteBuildingName": "삼성생명상계빌딩",
       "giftSignerName": "이정혁",
       "giftSignerPhone": "010-4531-2347",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 116,
@@ -26305,7 +26420,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -26362,7 +26477,8 @@
       "guideFromSheet": true,
       "giftSignerName": "한현재",
       "giftSignerPhone": "010-8054-7107",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 117,
@@ -26385,7 +26501,7 @@
       "handledItems": "업무시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1002",
       "memo": "",
@@ -26443,7 +26559,8 @@
       "siteBuildingName": "이투스교육 주건축물제1동",
       "giftSignerName": "한웅희",
       "giftSignerPhone": "010-2418-2350",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 118,
@@ -30369,7 +30486,7 @@
       "handledItems": "업무시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -30429,7 +30546,8 @@
       "siteBuildingName": "파트너스1",
       "giftSignerName": "징은우",
       "giftSignerPhone": "010-6524-4170",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 172,
@@ -30452,7 +30570,7 @@
       "handledItems": "업무시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1003",
       "memo": "",
@@ -30510,7 +30628,8 @@
       "siteBuildingName": "잠실헤리츠",
       "giftSignerName": "서동현",
       "giftSignerPhone": "010-7603-5175",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 173,
@@ -31745,7 +31864,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -31807,7 +31926,8 @@
       "siteBuildingName": "Crescendo(크레센도)",
       "giftSignerName": "이상훈",
       "giftSignerPhone": "010-7642-8376",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 190,
@@ -31830,7 +31950,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -31892,7 +32012,8 @@
       "siteBuildingName": "콘코디언(concordian)",
       "giftSignerName": "김석훈",
       "giftSignerPhone": "010-2098-1694",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 191,
@@ -31915,7 +32036,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -31977,7 +32098,8 @@
       "siteBuildingName": "광화문오피시아빌딩",
       "giftSignerName": "유석구",
       "giftSignerPhone": "010-2069-7153",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 192,
@@ -32062,7 +32184,8 @@
       "siteBuildingName": "흥국생명빌딩",
       "giftSignerName": "이진영",
       "giftSignerPhone": "010-7744-0740",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 193,
@@ -32085,7 +32208,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -32147,7 +32270,8 @@
       "siteBuildingName": "LX광화문빌딩",
       "giftSignerName": "김창남",
       "giftSignerPhone": "010-6246-2748",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 194,
@@ -32170,7 +32294,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -32228,7 +32352,8 @@
       "siteBuildingName": "디팰리스",
       "giftSignerName": "김전명",
       "giftSignerPhone": "010-2587-7691",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 195,
@@ -32251,7 +32376,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -32313,7 +32438,8 @@
       "siteBuildingName": "영풍빌딩",
       "giftSignerName": "전승호",
       "giftSignerPhone": "010-9574-8572",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 196,
@@ -32336,7 +32462,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -32398,7 +32524,8 @@
       "siteBuildingName": "SK 서린동빌딩",
       "giftSignerName": "이영섭",
       "giftSignerPhone": "010-2968-9875",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 197,
@@ -32421,7 +32548,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -32479,7 +32606,8 @@
       "siteBuildingName": "두산위브파빌리온",
       "giftSignerName": "김성홍",
       "giftSignerPhone": "010-8260-8846",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 198,
@@ -32502,7 +32630,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -32564,7 +32692,8 @@
       "siteBuildingName": "세미콜론수송",
       "giftSignerName": "김종혁",
       "giftSignerPhone": "010-7268-2108",
-      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)"
+      "giftStyleLabel": "스타일 F · 세로 장체 (어르신 정자풍)",
+      "ceilingHeightM": "2.7"
     },
     {
       "seq": 199,
@@ -32587,7 +32716,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -32649,7 +32778,8 @@
       "siteBuildingName": "더존을지타워",
       "giftSignerName": "박호영",
       "giftSignerPhone": "010-7211-7659",
-      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+      "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 200,
@@ -32672,7 +32802,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -32734,7 +32864,8 @@
       "siteBuildingName": "(주)KEB하나은행 본점 주건축물제1동",
       "giftSignerName": "박흥남",
       "giftSignerPhone": "010-6784-9764",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 201,
@@ -32757,7 +32888,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -32819,7 +32950,8 @@
       "siteBuildingName": "SK T-타워",
       "giftSignerName": "송명진",
       "giftSignerPhone": "010-5505-2743",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 202,
@@ -32904,7 +33036,8 @@
       "siteBuildingName": "부영그룹 명동빌딩",
       "giftSignerName": "김화석",
       "giftSignerPhone": "010-8469-4333",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 203,
@@ -32927,7 +33060,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -32989,7 +33122,8 @@
       "siteBuildingName": "파인에비뉴",
       "giftSignerName": "유도현",
       "giftSignerPhone": "010-5322-6574",
-      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)"
+      "giftStyleLabel": "스타일 A · 정자 손글씨체 (단정한 필압)",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 204,
@@ -33012,7 +33146,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -33074,7 +33208,8 @@
       "siteBuildingName": "FERRUM TOWER",
       "giftSignerName": "김재영",
       "giftSignerPhone": "010-5904-8325",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 205,
@@ -33097,7 +33232,7 @@
       "handledItems": "업무시설",
       "mainProducts": "50,000㎡ 초과",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1007",
       "quotaCode2": "1005",
       "memo": "",
@@ -33159,7 +33294,8 @@
       "siteBuildingName": "미래에셋 센터원(Mirae Asset CENTER1)",
       "giftSignerName": "이민국",
       "giftSignerPhone": "010-8973-4275",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "2.6"
     },
     {
       "seq": 206,
@@ -33244,7 +33380,8 @@
       "siteBuildingName": "시그니쳐타워",
       "giftSignerName": "정지혁",
       "giftSignerPhone": "010-4968-2765",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 207,
@@ -33810,7 +33947,7 @@
       "handledItems": "숙박시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1008",
       "quotaCode2": "1001",
       "memo": "",
@@ -33868,7 +34005,8 @@
       "siteBuildingName": "릿츠호텔",
       "giftSignerName": "오태균",
       "giftSignerPhone": "010-4965-9772",
-      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+      "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체",
+      "ceilingHeightM": "2.9"
     },
     {
       "seq": 215,
@@ -33891,7 +34029,7 @@
       "handledItems": "숙박시설",
       "mainProducts": "3,000-5,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1008",
       "quotaCode2": "1001",
       "memo": "",
@@ -33949,7 +34087,8 @@
       "siteBuildingName": "에쿠스",
       "giftSignerName": "한재우",
       "giftSignerPhone": "010-7418-8038",
-      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+      "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 216,
@@ -34030,7 +34169,8 @@
       "siteBuildingName": "라코지 스테이 서울",
       "giftSignerName": "박진명",
       "giftSignerPhone": "010-4922-9824",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "2.8"
     },
     {
       "seq": 217,
@@ -34127,7 +34267,7 @@
       "handledItems": "숙박시설",
       "mainProducts": "10,000-30,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1008",
       "quotaCode2": "1003",
       "memo": "",
@@ -34186,7 +34326,8 @@
       "siteBuildingName": "노블레스관광호텔",
       "giftSignerName": "조재형",
       "giftSignerPhone": "010-2170-4972",
-      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체"
+      "giftStyleLabel": "스타일 E · 가늘고 둥근 손글씨체",
+      "ceilingHeightM": "3.0"
     },
     {
       "seq": 219,
@@ -34209,7 +34350,7 @@
       "handledItems": "방송통신시설",
       "mainProducts": "5,000-10,000㎡",
       "lastContactStatus": "1. 조사성공",
-      "contactCount": "2",
+      "contactCount": "4",
       "quotaCode1": "1009",
       "quotaCode2": "1002",
       "memo": "",
@@ -34266,7 +34407,8 @@
       "siteBuildingName": "KT노원지사 본관동",
       "giftSignerName": "강현수",
       "giftSignerPhone": "010-2877-5408",
-      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+      "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)",
+      "ceilingHeightM": "3.0"
     }
   ]
 }

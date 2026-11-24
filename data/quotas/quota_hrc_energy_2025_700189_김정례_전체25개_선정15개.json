@@ -14,7 +14,7 @@
   "selectedCount": 15,
   "subCount": 10,
   "backupCount": 10,
-  "updatedAt": "2026-11-24T05:01:15.672Z",
+  "updatedAt": "2026-11-24T07:41:38.332Z",
   "cellQuotas": [
     {
       "cellKey": "경기_1001_1001",
@@ -1398,13 +1398,15 @@
       "surveyorName": "김정례",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=831433&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=831433&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": "",
-      "lastContactStatus": "",
-      "contactCount": "0",
-      "siteBuildingName": "성산타워 플레이스3"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "4",
+      "siteBuildingName": "성산타워 플레이스3",
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "index": 20,
@@ -1467,13 +1469,15 @@
       "surveyorName": "김정례",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=831438&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=831438&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": "",
-      "lastContactStatus": "",
-      "contactCount": "0",
-      "siteBuildingName": "주건축물제1동"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "4",
+      "siteBuildingName": "주건축물제1동",
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "index": 21,
@@ -1745,13 +1749,15 @@
       "surveyorName": "김정례",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=833227&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=833227&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": "",
-      "lastContactStatus": "",
-      "contactCount": "0",
-      "siteBuildingName": "브릭스타워"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
+      "siteBuildingName": "브릭스타워",
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "index": 25,
@@ -1815,13 +1821,15 @@
       "surveyorName": "김정례",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=833234&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=833234&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": "",
-      "lastContactStatus": "",
-      "contactCount": "0",
-      "siteBuildingName": "다산타임프라자"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "4",
+      "siteBuildingName": "다산타임프라자",
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     }
   ],
   "items": [
@@ -3133,13 +3141,15 @@
       "surveyorName": "김정례",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=831433&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=831433&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": "",
-      "lastContactStatus": "",
-      "contactCount": "0",
-      "siteBuildingName": "성산타워 플레이스3"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "4",
+      "siteBuildingName": "성산타워 플레이스3",
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "index": 20,
@@ -3202,13 +3212,15 @@
       "surveyorName": "김정례",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=831438&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=831438&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": "",
-      "lastContactStatus": "",
-      "contactCount": "0",
-      "siteBuildingName": "주건축물제1동"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "4",
+      "siteBuildingName": "주건축물제1동",
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.9"
     },
     {
       "index": 21,
@@ -3480,13 +3492,15 @@
       "surveyorName": "김정례",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=833227&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=833227&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": "",
-      "lastContactStatus": "",
-      "contactCount": "0",
-      "siteBuildingName": "브릭스타워"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "2",
+      "siteBuildingName": "브릭스타워",
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "2.8"
     },
     {
       "index": 25,
@@ -3550,13 +3564,15 @@
       "surveyorName": "김정례",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=833234&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=833234&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
-      "progress": "0%",
-      "siteStatus": "",
-      "lastContactStatus": "",
-      "contactCount": "0",
-      "siteBuildingName": "다산타임프라자"
+      "status": "완료",
+      "quotaStatus": "completed",
+      "progress": "100%",
+      "siteStatus": "완료",
+      "lastContactStatus": "1. 조사성공",
+      "contactCount": "4",
+      "siteBuildingName": "다산타임프라자",
+      "surveyCompleted": "완료",
+      "ceilingHeightM": "3.0"
     }
   ]
 }

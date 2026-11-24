@@ -110,7 +110,8 @@ export function seedInitialCampaigns({
       'c52Raw', 'c52Codes', 'zebCheckAfter2020', 'renewableRaw', 't71Codes',
       'contractPowerKw', 'd21Raw', 'd21UseGas', 'estimatedGrossAreaM2', 'guideFromSheet',
       'selectionType', 'cellPriority', 'cellKey', 'quotaCode1', 'quotaCode2',
-      'giftSigned', 'giftBrand', 'giftValue', 'giftSignerName', 'giftSignerPhone', 'giftStyleLabel'
+      'giftSigned', 'giftBrand', 'giftValue', 'giftSignerName', 'giftSignerPhone', 'giftStyleLabel',
+      'ceilingHeightM'
     ];
 
     let sheetGuideOverlay = {};
