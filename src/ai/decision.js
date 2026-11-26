@@ -43,15 +43,43 @@ export function decideChoices({
 
   // 1. 인구통계학적 질문 (성별) 판별
   if (lowerQ.includes('성별') || lowerQ.includes('gender')) {
-    const targetGender = persona.gender || '남성';
-    const matchIdx = options.findIndex(opt => opt.includes(targetGender));
-    if (matchIdx !== -1) return [matchIdx];
+    const isFemale = persona.genderCode === '여' || String(persona.gender || '').startsWith('여');
+    const genderTokens = isFemale ? ['여성', '여자', '여', 'female'] : ['남성', '남자', '남', 'male'];
+    for (const tok of genderTokens) {
+      const matchIdx = options.findIndex(opt => {
+        const clean = String(opt || '').trim().toLowerCase();
+        return tok.length === 1
+          ? (clean === tok || clean.startsWith(`${tok}(`) || clean.endsWith(` ${tok}`) || /^\d+[.)\s]*[남여]$/.test(clean) && clean.endsWith(tok))
+          : clean.includes(tok);
+      });
+      if (matchIdx !== -1) return [matchIdx];
+    }
   }
 
-  // 2. 인구통계학적 질문 (연령) 판별
+  // 2. 인구통계학적 질문 (연령/나이/출생연도) 판별
   if (lowerQ.includes('연령') || lowerQ.includes('나이') || lowerQ.includes('연령대') || lowerQ.includes('age')) {
-    const agePrefix = persona.age ? persona.age.slice(0, 2) : '20'; // '20', '30' 등
-    const matchIdx = options.findIndex(opt => opt.includes(agePrefix));
+    const ageNum = Number(persona.ageNum) || parseInt(String(persona.age || '30').slice(0, 2), 10) || 30;
+    const decadePrefix = ageNum < 20 ? '10' : (ageNum >= 70 ? '70' : String(Math.floor(ageNum / 10) * 10));
+
+    // (a) 범위형 보기 (예: '20~29세', '20세~29세', '60세 이상', '19세 이하') 우선 매칭
+    const rangeIdx = options.findIndex(opt => {
+      const s = String(opt || '');
+      const mRange = s.match(/(\d{2})\s*(?:세)?\s*[~\-]\s*(\d{2})\s*세?/);
+      if (mRange) {
+        const lo = parseInt(mRange[1], 10);
+        const hi = parseInt(mRange[2], 10);
+        return ageNum >= lo && ageNum <= hi;
+      }
+      const mUp = s.match(/(\d{2})\s*(?:세|대)\s*이상/);
+      if (mUp && ageNum >= parseInt(mUp[1], 10)) return true;
+      const mDown = s.match(/(\d{2})\s*(?:세|대)?\s*(?:이하|미만)/);
+      if (mDown && ageNum <= parseInt(mDown[1], 10)) return true;
+      return false;
+    });
+    if (rangeIdx !== -1) return [rangeIdx];
+
+    // (b) 연령대 텍스트 보기 ('10대', '20대', '30대' 등) 매칭
+    const matchIdx = options.findIndex(opt => String(opt || '').includes(decadePrefix));
     if (matchIdx !== -1) return [matchIdx];
   }
 

@@ -6,7 +6,7 @@
 
 ## ⚠️ [절대 준수] 시스템 개발 대전제 (Immutable Core Principles)
 
-시스템을 개발하고 운영하는 모든 과정에서 에이전트는 다음 11대 대전제를 **예외 없이 무조건 엄수**해야 합니다.
+시스템을 개발하고 운영하는 모든 과정에서 에이전트는 다음 12대 대전제를 **예외 없이 무조건 엄수**해야 합니다.
 
 1. **어떤 상황에서도 브라우저 검증은 진행하지 마라.**
    - 브라우저 서브에이전트(`browser_subagent`)를 실행하여 UI를 탐색하거나 브라우저 상에서 인터랙션을 검증하는 일체의 행위를 절대 수행하지 않는다.
@@ -47,6 +47,9 @@
 11. **신규/기존 모든 설문조사 쿼터 분석 시 '구분자(Segment) 자동 선정 및 구분자별 분할 배치' 필수 설계 원칙.**
     - 향후 어떤 설문지를 분석·구현하더라도 전체 쿼터를 한 번에 대량으로 일괄 구동하는 방식을 지양하고, 에이전트가 직접 쿼터 데이터 구조를 분석해 가장 적절한 **구분자(예: 성별·연령대, 주 용도, 업종, 지역·읍면, 조사원 계정 등)**를 자동 선정해야 한다.
     - [`public/modules/quota-segment-filter.js`](file:///c:/onlinepoll/public/modules/quota-segment-filter.js) 공통 모듈(`resolveSurveySegmentAxes`, `renderUniversalStep3SegmentPanel`)에 해당 설문의 최적 구분자 축을 등록하여, 사용자가 대시보드(STEP 1 필터 및 STEP 3 구분자 카드)에서 구분자 단위로 나누어 안전하게 선택·배치(`targetIndices`)를 수행할 수 있도록 기본 제공해야 한다.
+12. **신규/범용 설문 쿼터 구축 및 설문 응답 시 '통합 응답자 페르소나 마스터 DB(`data/respondent_persona_pool.json`, 1,138명)' 우선 재활용 원칙.**
+    - 응답자의 `이름`, `성별`, `나이(연령대·출생연도)`가 필요한 신규·범용 설문조사(B2C 일반·청소년 설문 및 B2B 대표자 결측 보완 포함)에서 임의의 가짜 이름(`홍길동`, `응답자_1`, `대표자`, `점포주` 등)을 지어내거나 성별·연령 정합성이 어긋나는 더미 값을 생성하지 않는다.
+    - 기존 쿼터에 실측 응답자 정보가 이미 존재하는 행은 100% 원본을 보존하고, 누락·플레이스홀더 행이나 신규 설문 응답 세션에서는 반드시 [`data/respondent_persona_pool.json`](file:///c:/onlinepoll/data/respondent_persona_pool.json) (및 연동 구글 스프레드시트 `13mKKRWN09YHep3Aodt2F9h_xoPgDmX6QOLTBbTqtIQ0`: `내 드라이브 > 오토서베이_통합쿼터_이름_성별_나이_재활용명단`)과 공통 배정 모듈 [`src/utils/respondent-pool.js`](file:///c:/onlinepoll/src/utils/respondent-pool.js)를 사용하여 목표 성별·연령대(10대~70대 이상) 조건에 부합하는 실측 프로필을 캠페인 내 중복 없이 결정론적으로 배정·활용한다.
 
 ---
 
@@ -232,6 +235,7 @@ c:/onlinepoll/
 │       ├── delays.js          # 인간 시뮬레이션 지연 계산 유틸
 │       ├── excel.js           # 조사 쿼터 데이터 Excel(.xlsx) 직렬화 및 내보내기 유틸
 │       ├── korean-signature.js # 8종 한글 자모 필체 다변화(초·중·종성 획 분해) 전자서명 공통 모듈
+│       ├── respondent-pool.js # 1,138인 통합 응답자 페르소나 마스터 DB(이름·성별·나이) 조회·중복방지 배정 모듈
 │       ├── market-festival-finder.js # 전통시장 공동마케팅·축제 실측 이력 탐색 유틸
 │       ├── assoc-quota-sync.js # 상인회 쿼터 보관함(JSON/Excel) 자동 동기화 헬퍼
 │       ├── globalri-answer-excel.js # 성인문해능력조사 제출 문항·답변 Excel 및 구글 시트 자동 동기화 유틸
@@ -256,7 +260,7 @@ c:/onlinepoll/
 │   │   └── quota-table-renderers.js # 설문 유형별 STEP 1 쿼터 테이블 전용 렌더러
 │   ├── quota-builder.js       # 조사 쿼터 생성기 제어 스크립트
 │   └── quota-detail.js        # 조사 쿼터 상세/편집 제어 스크립트
-├── data/                      # 쿼터 DB(JSON/XLSX), 캠페인 런타임 DB(Git 제외), 블루프린트, ceo_persona_pool.json
+├── data/                      # 쿼터 DB(JSON/XLSX), 캠페인 런타임 DB(Git 제외), 블루프린트, respondent_persona_pool.json(1,138명), ceo_persona_pool.json
 ├── reports/                   # 점포별 단계 스크린샷 갤러리 및 실행 결과 격리 보관소
 └── scripts/                   # 배포 안전 재기동(safe-pm2-restart.js), 정적 검증(test_mock_browser.js) 및 진단용 ESM 스크립트
 ```
@@ -1497,3 +1501,31 @@ c:/onlinepoll/
     - `문항 4-1` 식음료·생활소비재 구입 채널 풀에 **`편의점`, `동네슈퍼`**를 포함하며, 실행 직후 구글 시트(`H열 진행상태` 및 `K~Z열 브랜드N/구입경험N`)에 자동 기입한다.
 - **전 설문 공통 구분자별 분할 배치 모듈 ([`public/modules/quota-segment-filter.js`](file:///c:/onlinepoll/public/modules/quota-segment-filter.js))**:
   - K-BPI(`성별·연령대별` 10그룹 기본, `지역·연령대별`, `연령대별`, `지역별` 전환 지원)를 비롯해 기존·신규 모든 설문에서 쿼터 데이터를 분석해 최적 구분자 축을 자동 도출하고, STEP 3 `#universal-step3-segment-panel`에서 구분자 단위로 분할 배치할 수 있도록 표준화하였다.
+
+---
+
+## 5-22. 통합 응답자 페르소나 마스터 DB (`data/respondent_persona_pool.json`, 1,138명) 및 설문 응답 재활용 표준 규격
+
+### 1) 마스터 DB 및 구글 스프레드시트 원본 경로
+- **로컬 마스터 DB (Git 버전 관리 대상)**: [`data/respondent_persona_pool.json`](file:///c:/onlinepoll/data/respondent_persona_pool.json) (`.gitignore` 내 `!data/respondent_persona_pool.json` 예외 등록)
+- **구글 스프레드시트 원본**: `내 드라이브 (루트)` > **`오토서베이_통합쿼터_이름_성별_나이_재활용명단`**
+  - URL: `https://docs.google.com/spreadsheets/d/13mKKRWN09YHep3Aodt2F9h_xoPgDmX6QOLTBbTqtIQ0/edit` (`ID: 13mKKRWN09YHep3Aodt2F9h_xoPgDmX6QOLTBbTqtIQ0`)
+  - 탭 구성: `쿼터명단`(`이름 | 성별 | 나이` 3열 전용), `연령대별_성별_현황`, `출처포함_상세명단`
+- **데이터 구성 및 무결성 원칙**:
+  - 오토서베이 수행 설문 자료(경기도 소상공인 패널 3차 306건, 귀농귀촌 실태조사 선정·대체 274건, 기존 CEO 이름모음 242건, 2027 KMAC K-BPI 150건, 화성 동탄 청소년 설문 103건, 제5차 성인문해능력조사 72건, 벨포스트 상점가 4건 = 원천 1,151건) 중 **`이름·성별·나이` 3개 항목이 모두 실측 확인된 데이터만 정제·중복 제거하여 총 1,138명(남 664명 / 여 474명)**으로 구축하였다 (추정·보강 데이터 혼입 원천 배제).
+  - **연령대 분포**: `10대` 114명(남 57/여 57), `20대` 46명(남 24/여 22), `30대` 87명(남 46/여 41), `40대` 203명(남 114/여 89), `50대` 334명(남 200/여 134), `60대` 279명(남 177/여 102), `70대 이상` 75명(남 46/여 29).
+
+### 2) 공통 배정 유틸리티 ([`src/utils/respondent-pool.js`](file:///c:/onlinepoll/src/utils/respondent-pool.js)) 및 설문 엔진 연동 규칙
+1. **핵심 API 함수**:
+   - `loadRespondentPersonaPool()`: 1,138명 마스터 DB 캐시 로드 (`{ seq, name, gender, age, ageGroup, birthYear, sources }`).
+   - `pickRespondentFromPool({ gender, exactAge, minAge, maxAge, ageGroup, seed, usedState })`: 목표 성별·연령 조건에 맞는 미사용 응답자를 시드 기반으로 결정론적 선택 (동일 `usedState` 내 동명이인 중복 배정 원천 차단).
+   - `fillMissingRespondentProfile(quotaItem, options)` / `allocateRespondentsForQuotaList(quotaList, options)`:
+     - 기존 쿼터에 이미 실측 `이름·성별·나이`가 있는 행은 **절대 덮어쓰지 않고 100% 보존**한다.
+     - 공란이거나 플레이스홀더(`응답자_6001`, `대표자`, `점포주`, `관리소장`, 마스킹 `*` 등)인 항목만 마스터 DB에서 조건(청소년 `14~18세`, 일반 성인 `20~75세`, 사업자 개업연도 연동 `만 31~72세`, 지정 연령대 `10대~70대 이상`)에 맞춰 정합성 있게 채운다.
+2. **설문 실행 엔진 및 REST API 자동 연동**:
+   - **범용 설문 실행기 ([`src/engine/browser.js`](file:///c:/onlinepoll/src/engine/browser.js), [`src/ai/persona.js`](file:///c:/onlinepoll/src/ai/persona.js), [`src/ai/decision.js`](file:///c:/onlinepoll/src/ai/decision.js))**: 매 회차 `generatePersona()`가 마스터 DB에서 실측 `{ name, genderCode, ageNum, ageGroup, birthYear }`를 배정하며, 설문 문항 중 `성명/이름`, `만 나이/연령`, `출생연도/생년` 단답형 입력칸 및 `성별/연령대` 객관식 보기에 배정된 프로필 값을 자동 주입한다.
+   - **전문 설문 러너 및 쿼터 보강기 ([`src/engine/enricher.js`](file:///c:/onlinepoll/src/engine/enricher.js), [`src/engine/persona-builder.js`](file:///c:/onlinepoll/src/engine/persona-builder.js), [`src/engine/kona-runner.js`](file:///c:/onlinepoll/src/engine/kona-runner.js))**: B2B 대표자 페르소나 풀을 기존 242명에서 마스터 DB 성인(`만 25세 이상`) 통합 **978명**으로 확장하고, 점포주·청소년 쿼터의 이름/성별/나이 누락 시 일관되게 보완한다.
+   - **REST 엔드포인트 ([`src/routes/quota-routes.js`](file:///c:/onlinepoll/src/routes/quota-routes.js))**:
+     - `GET /api/respondent-pool` (`?gender=여&ageGroup=20대&minAge=20&maxAge=29&limit=100`): 마스터 DB 통계, 구글 시트 링크 및 조건별 응답자 풀 조회.
+     - `POST /api/campaigns/:id/allocate-respondents`: 특정 캠페인 `quotaDatabase` 내 결측/플레이스홀더 응답자 정보를 마스터 DB에서 중복 없이 일괄 배정·저장.
+

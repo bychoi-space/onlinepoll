@@ -45,7 +45,14 @@ const filesToCheck = [
   'src/utils/gyeonggi-panel-answer-excel.js',
   'src/engine/kmac-kbpi-runner.js',
   'src/engine/kmac-kbpi-scraper.js',
-  'src/utils/kmac-kbpi-sheet-sync.js'
+  'src/utils/kmac-kbpi-sheet-sync.js',
+  'src/utils/respondent-pool.js',
+  'src/engine/enricher.js',
+  'src/engine/persona-builder.js',
+  'src/engine/browser.js',
+  'src/engine/kona-runner.js',
+  'src/ai/persona.js',
+  'src/ai/decision.js'
 ];
 
 for (const file of filesToCheck) {
@@ -750,6 +757,50 @@ if (
 }
 
 console.log('✅ [4/4] K-BPI v3.1 & 에너지총조사(701492·700550 DB, 문화시설 천장고 검색/추정, 700277 검증보정) 100% 통과');
+
+// 5. 통합 응답자 페르소나 마스터 DB (1,138명: 이름·성별·나이) 및 배정 유틸 검증
+const respPoolMod = await import('../src/utils/respondent-pool.js');
+const personaMod = await import('../src/ai/persona.js');
+const decisionMod = await import('../src/ai/decision.js');
+
+const poolStats = respPoolMod.getRespondentPoolStats();
+if (poolStats.totalCount < 1100 || poolStats.maleCount < 600 || poolStats.femaleCount < 400) {
+  throw new Error(`Respondent pool stats mismatch: ${JSON.stringify(poolStats)}`);
+}
+
+const sampleBatch = respPoolMod.allocateRespondentsForQuotaList([
+  { seq: 1, ceoName: '응답자_6001', gender: '남', age: 15, schoolGrade: '중' },
+  { seq: 2, name: '', gender: '여', ageGroup: '20대' },
+  { seq: 3, companyName: '테스트상회', bizNumber: '123-45-67890', openDate: '2015-03-01', ceoName: '점포주' },
+  { seq: 4, name: '정귀영', gender: '남', age: 60 } // 기존 실측 데이터 보존 검증
+]);
+
+if (
+  sampleBatch[0].ceoName === '응답자_6001' || sampleBatch[0].age !== 15 || sampleBatch[0].gender !== '남' ||
+  !sampleBatch[1].name || sampleBatch[1].gender !== '여' || sampleBatch[1].age < 20 || sampleBatch[1].age > 29 ||
+  sampleBatch[2].ceoName === '점포주' || sampleBatch[2].ceoAge < 34 ||
+  sampleBatch[3].name !== '정귀영' || sampleBatch[3].age !== 60
+) {
+  throw new Error(`allocateRespondentsForQuotaList validation failed: ${JSON.stringify(sampleBatch)}`);
+}
+
+const pIter1 = personaMod.generatePersona({ gender: '여', ageGroup: '30대' }, 1);
+const genderChoice = decisionMod.decideChoices({
+  questionTitle: '귀하의 성별을 선택해 주세요.',
+  options: ['1. 남', '2. 여'],
+  persona: pIter1
+});
+const ageChoice = decisionMod.decideChoices({
+  questionTitle: '귀하의 연령대를 선택해 주세요.',
+  options: ['20~29세', '30~39세', '40~49세'],
+  persona: pIter1
+});
+if (pIter1.genderCode !== '여' || pIter1.ageNum < 30 || pIter1.ageNum > 39 || genderChoice[0] !== 1 || ageChoice[0] !== 1) {
+  throw new Error(`Persona/Decision integration failed: persona=${JSON.stringify(pIter1)}, g=${genderChoice}, a=${ageChoice}`);
+}
+
+console.log(`✅ [추가 검증] 통합 응답자 마스터 DB(${poolStats.totalCount}명) 조회·배정·페르소나 연동 100% 통과`);
+
 
 
 

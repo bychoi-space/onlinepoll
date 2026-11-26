@@ -17,6 +17,7 @@ data/*
 !data/kbpi_2027_brand_dict.json
 !data/sample_metrix_sign.png
 !data/ceo_persona_pool.json
+!data/respondent_persona_pool.json
 data/campaigns.json
 data/settlements.json
 *.tmp

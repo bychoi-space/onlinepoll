@@ -15,6 +15,7 @@ description: Comprehensive technical reference and operational guide for the Aut
 7. **Frontend JS Syntax Check Before Deploy**: Never deploy frontend Vanilla JS without passing `node scripts/test_mock_browser.js` with 0 SyntaxError/ReferenceError.
 8. **Playwright `evaluate()` Single Object Argument**: Never pass multiple arguments to `page.evaluate()` or `frame.evaluate()`; always wrap in `{ key1, key2 }`. Never silence errors with empty `.catch(() => {})`.
 9. **Headless E2E Simulation (`Success: true`) Before Deploy**: When modifying survey automation runners, always verify a complete run (Step 1 to 15 Agree) on a real slot URL in terminal headless Playwright, confirming `Success: true` with zero unhandled alert traps.
+10. **Reuse Master Respondent Persona Pool DB (`data/respondent_persona_pool.json`, 1,138 People)**: Whenever any new or generic B2C/B2B/youth survey or quota row requires respondent `name`, `gender`, or `age` (`birthYear`/`ageGroup`), never invent placeholder names (`홍길동`, `응답자_1`, `점포주`); preserve existing real quota values 100% and allocate missing profiles without duplicates via `src/utils/respondent-pool.js` (`data/respondent_persona_pool.json` / Google Sheet `13mKKRWN09YHep3Aodt2F9h_xoPgDmX6QOLTBbTqtIQ0`).
 
 ---
 
@@ -42,10 +43,11 @@ Both `public/quota-detail.html` and `public/survey-detail.html` (and all exporte
   - If the raw item string contains parentheses like `가공식품 (떡류)` or `음식점업 (치킨)`, extract a single core word from inside the parentheses (`떡류`, `치킨`).
   - If no parentheses exist, infer a single core word from `companyName` + `industry` (e.g., `청과`, `채소`, `한우`, `정육`, `활어`, `반찬`, `한식`, `분식`, `의류`, `신발`, `침구`, `철물`, `약국`, `한의원`, `미용`).
 
-### 2.3 215-Person CEO Profile Pool (`data/ceo_profile_pool.json` & `src/utils/ceo-pool.js`)
-- Whenever `ceoName`, `ceoGender`, or `ceoAge` is missing during quota generation or enrichment:
-  - If `ceoName` exists, match by name or infer gender and assign a realistic age from the 215-person pool.
-  - If `ceoName` is missing, deterministically select a complete `{ name, gender, age }` profile from `data/ceo_profile_pool.json` seeded by the 10-digit `bizNumber`.
+### 2.3 1,138-Person Master Respondent Persona Pool (`data/respondent_persona_pool.json` & `src/utils/respondent-pool.js`)
+- Consolidates 1,138 verified real respondent `{ name, gender, age, ageGroup, birthYear }` records (ages 14–90+, 10대~70대 이상; synced with Google Sheet `13mKKRWN09YHep3Aodt2F9h_xoPgDmX6QOLTBbTqtIQ0`) alongside `data/ceo_persona_pool.json` (978 adult profiles `age >= 25` for B2B CEOs).
+- Whenever `name`/`ceoName`, `gender`/`ceoGender`, or `age`/`ceoAge` is missing or a placeholder during quota generation, enrichment, or survey execution:
+  - Existing real values on a quota row are preserved 100%.
+  - Missing fields are deterministically allocated without duplicate names via `fillMissingRespondentProfile()` / `allocateRespondentsForQuotaList()` (`src/utils/respondent-pool.js`) and `fillMissingCeoPersona()` (`src/engine/enricher.js`), or via REST API `GET /api/respondent-pool` & `POST /api/campaigns/:id/allocate-respondents`.
 
 ### 2.4 Multi-Sweep Candidate Extraction (`src/engine/onnuri.js` & `src/engine/hybrid-quota.js`)
 - Because Onnuri Master DB (`data/onnuri_master_db.json` — 3,996 traditional markets, shopping districts, alley-type shopping districts, and 205,429 merchants) stores registration dates (`regDate`), filtering out `openYear > 2025` happens during Stage 2 (MarketBz lookup).

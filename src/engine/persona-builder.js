@@ -3,6 +3,7 @@
  * 사업자의 실존 팩트(업종, 개업일, 상호 등)와 캠페인 가이드라인(가중치 등)을 결합하여
  * 모든 쿼터마다 고유하고 현실적인 소상공인 응답 데이터셋을 실시간 생성합니다.
  */
+import { fillMissingRespondentProfile } from '../utils/respondent-pool.js';
 
 // 안정적인 의사 난수 생성기 (0 ~ 1 사이 양수 반환)
 function createSeededRandom(seed) {
@@ -154,12 +155,30 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   else if (mb.taxType === 'exempt') taxTypeSelector = '#A3A_3';
   else if (mb.taxType === 'rotation') taxTypeSelector = rotate(['#A3A_1', '#A3A_1', '#A3A_2', '#A3A_3'], quotaIndex);
 
-  // 2. 대표자 연령 및 성별 (사용자가 쿼터 테이블에 직접 입력한 값 무조건 100% 우선 반영)
-  const ceoName = String(bizData.ceoName || bizData.representativeName || bizData.ceo || bizData.ownerName || '점포주').trim();
+  // 2. 대표자 연령 및 성별 (쿼터 직접 입력값 100% 우선 반영 ➔ 누락 시 통합 응답자 마스터 DB 1,138명에서 일관 배정)
+  const rawInputCeoName = bizData.ceoName || bizData.representativeName || bizData.ceo || bizData.ownerName || '';
+  const rawInputGender = String(bizData.ceoGender || bizData.gender || bizData.ceo_gender || '').trim();
+  const rawInputAge = bizData.ceoAge ?? bizData.age ?? bizData.ceo_age;
+
+  const fallbackProfile = fillMissingRespondentProfile(
+    {
+      ...bizData,
+      ceoName: rawInputCeoName,
+      ceoGender: rawInputGender || (mb.defaultCeoGender === 'male' ? '남' : (mb.defaultCeoGender === 'female' ? '여' : '')),
+      ceoAge: rawInputAge
+    },
+    {
+      mode: 'b2b',
+      minAge: mb.defaultCeoAgeMin !== undefined ? Math.max(25, parseInt(mb.defaultCeoAgeMin, 10)) : undefined,
+      maxAge: mb.defaultCeoAgeMax !== undefined ? parseInt(mb.defaultCeoAgeMax, 10) : undefined,
+      seedFallback: quotaIndex
+    }
+  );
+
+  const ceoName = String(fallbackProfile.ceoName || rawInputCeoName || '점포주').trim();
   let genderSelector;
-  const rawGender = String(bizData.ceoGender || bizData.gender || bizData.ceo_gender || '').trim();
-  if (rawGender) {
-    const isFemale = (rawGender === '여' || rawGender.toLowerCase() === 'female' || rawGender === '여자' || rawGender === '여성');
+  if (rawInputGender) {
+    const isFemale = (rawInputGender === '여' || rawInputGender.toLowerCase() === 'female' || rawInputGender === '여자' || rawInputGender === '여성');
     genderSelector = isFemale ? '#A1_2' : '#A1_1';
   } else if (mb.defaultCeoGender === 'male') {
     genderSelector = '#A1_1';
@@ -168,24 +187,21 @@ export function generateQuotaPersona(bizData = {}, quotaIndex = 1, guidelineConf
   } else if (mb.defaultCeoGender === 'rotation') {
     genderSelector = (quotaIndex % 2 === 0 ? '#A1_2' : '#A1_1');
   } else {
-    // 이름 기반 성별 추론 (끝글자가 은/숙/미/희/자/순/영 등 여성 선호, 그 외 남성 선호)
-    const isFemaleName = /[은숙미희자순영경혜진선애]/.test(ceoName.slice(-1));
-    genderSelector = (quotaIndex % 2 === 0 ? !isFemaleName : isFemaleName) ? '#A1_2' : '#A1_1'; // A1_1: 남, A1_2: 여
+    genderSelector = fallbackProfile.ceoGender === '여' ? '#A1_2' : '#A1_1';
   }
 
-  const rawAge = bizData.ceoAge || bizData.age || bizData.ceo_age;
   let age;
-  if (rawAge !== undefined && rawAge !== null && !isNaN(parseInt(rawAge, 10)) && parseInt(rawAge, 10) > 0) {
-    age = String(parseInt(rawAge, 10));
+  if (rawInputAge !== undefined && rawInputAge !== null && !isNaN(parseInt(rawInputAge, 10)) && parseInt(rawInputAge, 10) > 0) {
+    age = String(parseInt(rawInputAge, 10));
   } else if (mb.defaultCeoAgeMin !== undefined && mb.defaultCeoAgeMax !== undefined) {
     const minA = Math.max(25, parseInt(mb.defaultCeoAgeMin, 10));
     const maxA = Math.max(minA, parseInt(mb.defaultCeoAgeMax, 10));
-    age = String(randBetween(minA, maxA));
+    age = String(fallbackProfile.ceoAge >= minA && fallbackProfile.ceoAge <= maxA ? fallbackProfile.ceoAge : randBetween(minA, maxA));
   } else if (mb.defaultCeoAge !== undefined && !isNaN(parseInt(mb.defaultCeoAge, 10))) {
     const baseAge = parseInt(mb.defaultCeoAge, 10);
     age = String(Math.max(30, Math.min(75, baseAge + randBetween(-2, 2))));
   } else {
-    age = String(randBetween(42, 63)); // 40대~60대
+    age = String(fallbackProfile.ceoAge || randBetween(42, 63));
   }
 
   // 3. 매장 면적 및 점포 규모 계수 (P2)

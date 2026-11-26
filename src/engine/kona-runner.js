@@ -9,6 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import { launchChromium } from '../utils/chromium-launcher.js';
+import { fillMissingRespondentProfile } from '../utils/respondent-pool.js';
 
 const DONG_OPTIONS = [
   '동탄1동', '동탄2동', '동탄3동', '동탄4동', '동탄5동',
@@ -398,8 +399,18 @@ export function buildKonaYouthPersona(slotData = {}, quotaIndex = 1, policy = {}
   // 40번 문항 (Child 53, IDX 입력): 엑셀 데이터 idx
   const q40_idxText = idxStr;
 
+  const filledYouth = fillMissingRespondentProfile(
+    {
+      ...slotData,
+      age: q2_age,
+      gender: isFemale ? '여' : '남'
+    },
+    { mode: 'youth', seedFallback: idxNum }
+  );
+
   return {
     idx: idxStr,
+    respondentName: filledYouth.name || filledYouth.ceoName || '',
     q1_resideIdx,
     q2_age: String(q2_age),
     q3_genderIdx,

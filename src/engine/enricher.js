@@ -17,6 +17,7 @@ import { fileURLToPath } from 'url';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/delays.js';
 import { ensureUniqueStorePhone } from '../utils/store-phone.js';
+import { loadRespondentPersonaPool } from '../utils/respondent-pool.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -757,17 +758,51 @@ export async function ensureRoadAddress({ companyName, marketName, address, bizN
 let cachedCeoPool = null;
 
 /**
- * data/ceo_persona_pool.json 로드 (캐싱 지원)
+ * data/ceo_persona_pool.json + data/respondent_persona_pool.json(만 25세 이상 성인 풀) 통합 로드 (캐싱 지원)
+ * 기존 242인 풀 순서를 선두에 보존하면서 통합 응답자 마스터 DB의 성인 프로필(총 978명)까지 확장 활용합니다.
  */
 export function loadCeoPersonaPool() {
   if (cachedCeoPool) return cachedCeoPool;
   try {
+    const merged = [];
+    const seenNames = new Set();
+
     if (fs.existsSync(CEO_POOL_PATH)) {
-      cachedCeoPool = JSON.parse(fs.readFileSync(CEO_POOL_PATH, 'utf-8'));
+      const legacyList = JSON.parse(fs.readFileSync(CEO_POOL_PATH, 'utf-8'));
+      if (Array.isArray(legacyList)) {
+        for (const item of legacyList) {
+          if (item && item.name) {
+            merged.push({
+              seq: merged.length + 1,
+              name: String(item.name).trim(),
+              gender: item.gender === '여' ? '여' : '남',
+              age: parseInt(item.age, 10) || 45
+            });
+            seenNames.add(String(item.name).trim());
+          }
+        }
+      }
+    }
+
+    const masterPool = loadRespondentPersonaPool();
+    for (const item of masterPool) {
+      if (!item || !item.name || item.age < 25) continue;
+      if (seenNames.has(item.name)) continue;
+      merged.push({
+        seq: merged.length + 1,
+        name: item.name,
+        gender: item.gender,
+        age: item.age
+      });
+      seenNames.add(item.name);
+    }
+
+    if (merged.length > 0) {
+      cachedCeoPool = merged;
       return cachedCeoPool;
     }
   } catch (err) {
-    logger.warn(`[Enricher] CEO 페르소나 풀 로드 실패: ${err.message}`);
+    logger.warn(`[Enricher] CEO/통합 응답자 페르소나 풀 로드 실패: ${err.message}`);
   }
   return [];
 }

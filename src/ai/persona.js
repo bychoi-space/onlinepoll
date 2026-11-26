@@ -1,10 +1,16 @@
 /**
- * 페르소나(가상 응답자 프로필) 생성기
- * 다회차 응답 시 다양한 인구통계학적 특성을 자연스럽게 변주합니다.
+ * 페르소나(실측 응답자 기반 프로필) 생성기
+ * 통합 응답자 페르소나 마스터 DB(data/respondent_persona_pool.json, 1,138명)를 우선 활용하여
+ * 다회차 설문 응답 시 실존 기반 이름·성별·나이와 어조를 일관되고 자연스럽게 배정합니다.
  */
+import {
+  pickRespondentFromPool,
+  parseAgeRangeConstraint,
+  normalizePoolGender,
+  resolveAgeGroupLabel
+} from '../utils/respondent-pool.js';
 
-const AGE_GROUPS = ['20대 초반 대학생', '20대 후반 사회초년생', '30대 직장인', '40대 기혼 직장인', '50대 자영업자'];
-const GENDERS = ['남성', '여성'];
+const DEFAULT_AGE_BANDS = ['20대', '30대', '40대', '50대', '60대'];
 const TONES = [
   '솔직하고 꼼꼼한 어조',
   '긍정적이고 적극적인 어조',
@@ -13,20 +19,57 @@ const TONES = [
 ];
 
 /**
- * 기본 페르소나 또는 사용자 지정 페르소나를 변주하여 회차별 고유 프로필 생성
+ * 사용자 지정 페르소나 조건(성별·연령대·나이)에 맞춰 마스터 DB에서 회차별 고유 응답자 프로필 생성
  */
-export function generatePersona(userPersonaConfig = {}, iterationIndex = 1) {
-  const baseAge = userPersonaConfig.age || AGE_GROUPS[(iterationIndex - 1) % AGE_GROUPS.length];
-  const baseGender = userPersonaConfig.gender || GENDERS[(iterationIndex - 1) % GENDERS.length];
-  const tone = TONES[(iterationIndex - 1) % TONES.length];
+export function generatePersona(userPersonaConfig = {}, iterationIndex = 1, usedState = null) {
+  const requestedGender = normalizePoolGender(userPersonaConfig.gender);
+  const targetGender = requestedGender || (iterationIndex % 2 === 1 ? '남' : '여');
+
+  const rawAgeHint = userPersonaConfig.ageGroup || userPersonaConfig.age || '';
+  const parsedRange = parseAgeRangeConstraint(rawAgeHint);
+  const fallbackBand = DEFAULT_AGE_BANDS[(Math.max(1, iterationIndex) - 1) % DEFAULT_AGE_BANDS.length];
+  const fallbackRange = parseAgeRangeConstraint(fallbackBand);
+
+  const exactAge = (!isNaN(parseInt(userPersonaConfig.exactAge, 10)))
+    ? parseInt(userPersonaConfig.exactAge, 10)
+    : null;
+  const minAge = userPersonaConfig.minAge ?? (parsedRange ? parsedRange.minAge : fallbackRange.minAge);
+  const maxAge = userPersonaConfig.maxAge ?? (parsedRange ? parsedRange.maxAge : fallbackRange.maxAge);
+
+  const picked = pickRespondentFromPool({
+    gender: targetGender,
+    exactAge,
+    minAge,
+    maxAge,
+    ageGroup: String(rawAgeHint || fallbackBand),
+    seed: userPersonaConfig.seed || `persona_iter_${iterationIndex}`,
+    usedState
+  });
+
+  const name = userPersonaConfig.name || picked.name;
+  const genderCode = requestedGender || picked.gender;
+  const genderFull = genderCode === '여' ? '여성' : '남성';
+  const ageNum = exactAge || picked.age;
+  const ageGroup = resolveAgeGroupLabel(ageNum);
+  const birthYear = 2026 - ageNum;
+  const ageDisplay = (typeof userPersonaConfig.age === 'string' && userPersonaConfig.age.trim() && isNaN(Number(userPersonaConfig.age)))
+    ? userPersonaConfig.age
+    : `${ageGroup} (만 ${ageNum}세)`;
+  const tone = TONES[(Math.max(1, iterationIndex) - 1) % TONES.length];
 
   return {
     id: `persona_${iterationIndex}`,
     iteration: iterationIndex,
-    age: baseAge,
-    gender: baseGender,
-    tone: tone,
-    customDescription: userPersonaConfig.description || '성실하고 일반적인 소비자',
-    summary: `${baseAge} ${baseGender} (${tone})`
+    seq: picked.seq,
+    name,
+    genderCode,
+    gender: genderFull,
+    ageNum,
+    ageGroup,
+    birthYear,
+    age: ageDisplay,
+    tone,
+    customDescription: userPersonaConfig.description || '성실하고 일반적인 응답자',
+    summary: `${name} (${genderCode}, 만 ${ageNum}세/${ageGroup}, ${tone})`
   };
 }

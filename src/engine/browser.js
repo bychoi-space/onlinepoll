@@ -11,6 +11,7 @@ import { generatePersona } from '../ai/persona.js';
 import { decideChoices } from '../ai/decision.js';
 import { generateTextAnswer } from '../ai/generator.js';
 import { matchBusinessField, matchBusinessOption } from '../ai/b2b-mapper.js';
+import { fillMissingRespondentProfile } from '../utils/respondent-pool.js';
 import { sleep, humanThinkDelay } from '../utils/delays.js';
 import { logger } from '../utils/logger.js';
 
@@ -28,9 +29,10 @@ export async function runSurveySession(options = {}) {
     url,
     topic,
     mode = 'b2c',
-    businessData = null,
+    businessData: rawBusinessData = null,
     selectedB2bFields = [],
     persona: userPersona = {},
+    respondentUsedState = null,
     positiveRatio = 70,
     neutralRatio = 20,
     negativeRatio = 10,
@@ -40,12 +42,29 @@ export async function runSurveySession(options = {}) {
     iterationIndex = 1
   } = options;
 
-  // 1. 회차별 페르소나 또는 사업자 정보 요약 로깅
-  const currentPersona = generatePersona(userPersona, iterationIndex);
+  // 1. 회차별 페르소나 또는 사업자 정보 요약 로깅 (마스터 응답자 DB 1,138명 자동 연동)
+  const businessData = rawBusinessData
+    ? fillMissingRespondentProfile(rawBusinessData, {
+        mode: mode === 'b2b' ? 'b2b' : 'auto',
+        usedState: respondentUsedState,
+        seedFallback: iterationIndex
+      })
+    : null;
+
+  const mergedPersonaConfig = businessData
+    ? {
+        ...userPersona,
+        name: businessData.name || businessData.respondentName || businessData.ceoName || userPersona.name,
+        gender: businessData.gender || businessData.ceoGender || userPersona.gender,
+        exactAge: businessData.age || businessData.ceoAge || userPersona.exactAge
+      }
+    : userPersona;
+
+  const currentPersona = generatePersona(mergedPersonaConfig, iterationIndex, respondentUsedState);
   if (mode === 'b2b' && businessData) {
-    logger.info(`[B2B 세션] 적용 사업자: "${businessData.companyName}" (${businessData.bizNumber || '번호없음'}) / 대표: ${businessData.ceoName}`);
+    logger.info(`[B2B 세션] 적용 사업자: "${businessData.companyName}" (${businessData.bizNumber || '번호없음'}) / 대표: ${businessData.ceoName} (${businessData.ceoGender || currentPersona.genderCode}, ${businessData.ceoAge || currentPersona.ageNum}세)`);
   } else {
-    logger.info(`[페르소나 지정] ${currentPersona.summary}`);
+    logger.info(`[응답자 페르소나 배정] ${currentPersona.summary}`);
   }
 
   // 2. 브라우저 런치
@@ -165,6 +184,29 @@ export async function runSurveySession(options = {}) {
               selectedOptions: selectedIndices.map(idx => q.options?.[idx] || idx)
             });
           } else if (q.type === 'textarea' || q.type === 'text') {
+            const titleText = String(q.title || '').trim();
+            let directDemographicVal = null;
+            if (/(응답자|본인|귀하|참여자)?\s*(성명|이름)/.test(titleText) && !/상호|사업체|회사|건물|학교|브랜드|제품/.test(titleText)) {
+              directDemographicVal = currentPersona.name;
+            } else if (/(출생\s*연도|출생년도|생년|태어난\s*해)/.test(titleText)) {
+              directDemographicVal = String(currentPersona.birthYear);
+            } else if (/(만\s*나이|연령|나이)/.test(titleText) && q.type === 'text' && !/이유|사유|의견/.test(titleText)) {
+              directDemographicVal = String(currentPersona.ageNum);
+            }
+
+            if (directDemographicVal) {
+              logger.info(`[응답자 DB 자동 주입] "${titleText.slice(0, 22)}..." -> "${directDemographicVal}"`);
+              chosenAnswer = directDemographicVal;
+              await answerQuestion(page, q, directDemographicVal);
+              sessionLog.answers.push({
+                page: pageNum,
+                title: q.title,
+                type: q.type,
+                textAnswer: directDemographicVal
+              });
+              continue;
+            }
+
             logger.info(`주관식 문항 답변 생성 중: "${q.title.slice(0, 20)}..."`);
             const generatedText = await generateTextAnswer({
               questionTitle: q.title,

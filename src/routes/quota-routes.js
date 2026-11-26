@@ -1343,5 +1343,95 @@ export function registerQuotaRoutes({
       res.status(500).json({ error: '캠페인 쿼터 보강 중 오류: ' + err.message });
     }
   });
+
+  // 통합 응답자 페르소나 마스터 DB(1,138명: 이름·성별·나이) 통계 및 조건별 목록 조회 API
+  app.get('/api/respondent-pool', async (req, res) => {
+    try {
+      const {
+        loadRespondentPersonaPool,
+        getRespondentPoolStats,
+        normalizePoolGender
+      } = await import('../utils/respondent-pool.js');
+
+      const stats = getRespondentPoolStats();
+      const allItems = loadRespondentPersonaPool();
+
+      const genderFilter = normalizePoolGender(req.query.gender);
+      const ageGroupFilter = String(req.query.ageGroup || '').trim();
+      const minAge = req.query.minAge !== undefined ? parseInt(req.query.minAge, 10) : null;
+      const maxAge = req.query.maxAge !== undefined ? parseInt(req.query.maxAge, 10) : null;
+      const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 1200, 2000));
+
+      const filtered = allItems.filter(it => {
+        if (genderFilter && it.gender !== genderFilter) return false;
+        if (ageGroupFilter && it.ageGroup !== ageGroupFilter) return false;
+        if (minAge !== null && !isNaN(minAge) && it.age < minAge) return false;
+        if (maxAge !== null && !isNaN(maxAge) && it.age > maxAge) return false;
+        return true;
+      });
+
+      res.json({
+        success: true,
+        ...stats,
+        filteredCount: filtered.length,
+        items: filtered.slice(0, limit)
+      });
+    } catch (err) {
+      logger.error('[응답자 풀 조회 오류]', err);
+      res.status(500).json({ error: '응답자 마스터 DB 조회 중 오류: ' + err.message });
+    }
+  });
+
+  // 캠페인 쿼터 내 누락/플레이스홀더(이름·성별·나이) 항목에 통합 응답자 마스터 DB 자동 배정 API
+  app.post('/api/campaigns/:id/allocate-respondents', async (req, res) => {
+    const campaign = CampaignStore.getCampaignById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+    }
+
+    const quotaDb = Array.isArray(campaign.quotaDatabase) ? campaign.quotaDatabase : [];
+    if (quotaDb.length === 0) {
+      return res.status(400).json({ error: '캠페인에 등록된 쿼터 데이터가 없습니다.' });
+    }
+
+    try {
+      const { allocateRespondentsForQuotaList } = await import('../utils/respondent-pool.js');
+      const mode = req.body?.mode || (campaign.quotaType === 'b2b' ? 'b2b' : 'auto');
+      const minAge = req.body?.minAge ?? null;
+      const maxAge = req.body?.maxAge ?? null;
+
+      let updatedCount = 0;
+      const updatedQuota = allocateRespondentsForQuotaList(quotaDb, { mode, minAge, maxAge }).map((nextItem, idx) => {
+        const prev = quotaDb[idx] || {};
+        if (
+          nextItem.name !== prev.name ||
+          nextItem.ceoName !== prev.ceoName ||
+          nextItem.gender !== prev.gender ||
+          nextItem.ceoGender !== prev.ceoGender ||
+          nextItem.age !== prev.age ||
+          nextItem.ceoAge !== prev.ceoAge
+        ) {
+          updatedCount++;
+        }
+        return nextItem;
+      });
+
+      CampaignStore.updateCampaign(campaign.id, {
+        quotaDatabase: updatedQuota,
+        lastEnrichedAt: new Date().toISOString()
+      });
+
+      logger.success(`[응답자 DB 배정 완료] "${campaign.title}" 총 ${updatedCount}건에 이름·성별·나이 배정 완료`);
+      res.json({
+        success: true,
+        message: `통합 응답자 마스터 DB(1,138명)에서 ${updatedCount}건의 이름·성별·나이가 중복 없이 배정되었습니다.`,
+        updatedCount,
+        quotaDatabase: updatedQuota
+      });
+    } catch (err) {
+      logger.error('[캠페인 응답자 배정 오류]', err);
+      res.status(500).json({ error: '캠페인 응답자 배정 중 오류: ' + err.message });
+    }
+  });
 }
 
