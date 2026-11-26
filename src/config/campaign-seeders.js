@@ -125,7 +125,7 @@ export function seedInitialCampaigns({
       'contractPowerKw', 'd21Raw', 'd21UseGas', 'estimatedGrossAreaM2', 'guideFromSheet',
       'selectionType', 'cellPriority', 'cellKey', 'quotaCode1', 'quotaCode2',
       'giftSigned', 'giftBrand', 'giftValue', 'giftSignerName', 'giftSignerPhone', 'giftStyleLabel',
-      'ceilingHeightM'
+      'ceilingHeightM', 'phoneDuplicateWarning'
     ];
 
     let sheetGuideOverlay = {};

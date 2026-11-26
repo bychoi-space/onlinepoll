@@ -51594,7 +51594,7 @@
     "areaScale": "5,000-10,000㎡",
     "sido": "경기",
     "sigungu": "남양주시",
-    "memo": "별내5로5번길 15 / 별내동 1097-1",
+    "memo": "별내5로5번길 15 / 별내동 1097-1 / 타 계정 완료분(701493:UID 801094)과 전화번호 중복",
     "roadAddress": "별내5로5번길 15",
     "jibunAddress": "별내동 1097-1",
     "sq12BuildingName": "신성프라자",
@@ -51632,7 +51632,8 @@
     "cellPriority": 4,
     "cellKey": "경기_1001_1002",
     "quotaCode1": "1001",
-    "quotaCode2": "1002"
+    "quotaCode2": "1002",
+    "phoneDuplicateWarning": true
   },
   "829747": {
     "buildingName": "성산 메디컬 타워",

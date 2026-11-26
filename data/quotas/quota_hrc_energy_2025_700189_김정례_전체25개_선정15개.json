@@ -14,7 +14,7 @@
   "selectedCount": 15,
   "subCount": 10,
   "backupCount": 10,
-  "updatedAt": "2026-11-24T07:41:38.332Z",
+  "updatedAt": "2026-11-26T03:11:41.404Z",
   "cellQuotas": [
     {
       "cellKey": "경기_1001_1001",
@@ -876,7 +876,7 @@
       "mainProducts": "5,000-10,000㎡",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
-      "memo": "별내5로5번길 15 / 별내동 1097-1",
+      "memo": "별내5로5번길 15 / 별내동 1097-1 / 타 계정 완료분(701493:UID 801094)과 전화번호 중복",
       "expectedTypeCode": "G2",
       "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
       "isPublicOrSchool": false,
@@ -911,12 +911,13 @@
       "surveyorName": "김정례",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=829746&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=829746&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
+      "status": "제외(연락처중복)",
+      "quotaStatus": "excluded",
       "progress": "0%",
       "siteStatus": "",
       "lastContactStatus": "",
-      "contactCount": "0"
+      "contactCount": "0",
+      "phoneDuplicateWarning": true
     },
     {
       "index": 13,
@@ -2619,7 +2620,7 @@
       "mainProducts": "5,000-10,000㎡",
       "quotaCode1": "1001",
       "quotaCode2": "1002",
-      "memo": "별내5로5번길 15 / 별내동 1097-1",
+      "memo": "별내5로5번길 15 / 별내동 1097-1 / 타 계정 완료분(701493:UID 801094)과 전화번호 중복",
       "expectedTypeCode": "G2",
       "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
       "isPublicOrSchool": false,
@@ -2654,12 +2655,13 @@
       "surveyorName": "김정례",
       "slotUrl": "https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=829746&page=1",
       "surveyUrl": "https://tapi.hrcglobal.com/q260342/Survey4?pid=829746&page=1",
-      "status": "대기",
-      "quotaStatus": "ready",
+      "status": "제외(연락처중복)",
+      "quotaStatus": "excluded",
       "progress": "0%",
       "siteStatus": "",
       "lastContactStatus": "",
-      "contactCount": "0"
+      "contactCount": "0",
+      "phoneDuplicateWarning": true
     },
     {
       "index": 13,

@@ -65,6 +65,41 @@ export function registerExecutionRoutes({
   quotasDir,
   reportsDir
 }) {
+  function findHrcPhoneConflict(targetSlot) {
+    const rawDigits = String(targetSlot?.phone || '').replace(/\D/g, '');
+    if (!rawDigits || rawDigits.length < 9) {
+      return { conflict: false };
+    }
+    const targetUid = String(targetSlot?.uid || '').trim();
+    const allCamps = CampaignStore.getAllCampaigns().filter(c => c.surveyType === 'hrc_energy');
+    for (const c of allCamps) {
+      for (const other of (c.quotaDatabase || [])) {
+        const otherUid = String(other?.uid || '').trim();
+        if (!otherUid || otherUid === targetUid) continue;
+        const isOtherActiveOrDone =
+          other.quotaStatus === 'completed' ||
+          other.quotaStatus === 'pilot_done' ||
+          other.quotaStatus === 'running' ||
+          other.status === '완료' ||
+          other.siteStatus === '완료' ||
+          other.progress === '100%' ||
+          Boolean(other.giftSigned);
+        if (!isOtherActiveOrDone) continue;
+        const otherPhones = [other.phone, other.giftSignerPhone]
+          .map(p => String(p || '').replace(/\D/g, ''))
+          .filter(Boolean);
+        if (otherPhones.includes(rawDigits)) {
+          return {
+            conflict: true,
+            otherUid,
+            otherAccount: other.surveyorId || c.loginId || c.id
+          };
+        }
+      }
+    }
+    return { conflict: false };
+  }
+
   // 범용 브라우저 설문 실행 API
   app.post('/api/campaigns/:id/start', async (req, res) => {
     const campaign = CampaignStore.getCampaignById(req.params.id);
@@ -367,6 +402,10 @@ export function registerExecutionRoutes({
             }
           });
         } else if (isHrcEnergy) {
+          const phoneCheck = findHrcPhoneConflict(targetBiz);
+          if (phoneCheck.conflict) {
+            throw new Error(`[중복 연락처 차단] UID ${targetBiz.uid}의 전화번호가 이미 완료/진행된 타 건물(계정 ${phoneCheck.otherAccount} · UID ${phoneCheck.otherUid})과 중복됩니다.`);
+          }
           logger.info(`[에너지총조사 파일럿 실행] 건물 부문 전용 러너 가동: "${targetBiz.buildingName || targetBiz.companyName}" (UID: ${targetBiz.uid})`);
           const hrcPol = campaign.hrcEnergyPolicy || policy || {};
           const hrcSafetyGuard = (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false;
@@ -1032,6 +1071,10 @@ export function registerExecutionRoutes({
                 }
               });
             } else if (isHrcEnergy) {
+              const bizPhoneCheck = findHrcPhoneConflict(biz);
+              if (bizPhoneCheck.conflict) {
+                throw new Error(`[중복 연락처 차단] UID ${biz.uid}의 전화번호가 이미 완료/진행된 타 건물(계정 ${bizPhoneCheck.otherAccount} · UID ${bizPhoneCheck.otherUid})과 중복됩니다.`);
+              }
               result = await runHrcEnergySurvey({
                 slotData: biz,
                 policy: effectivePolicy,
@@ -1056,13 +1099,18 @@ export function registerExecutionRoutes({
 
               if (!result?.success && effectivePolicy.autoFallbackToSub !== false && biz.selectionType === '선정' && biz.cellKey) {
                 const subCandidates = quotaDb
-                  .filter(s => s.selectionType === '대체' && s.cellKey === biz.cellKey && s.quotaStatus !== 'completed' && s.status !== '완료' && s.quotaStatus !== 'error')
+                  .filter(s => {
+                    if (s.selectionType !== '대체' || s.cellKey !== biz.cellKey) return false;
+                    if (s.quotaStatus === 'completed' || s.quotaStatus === 'excluded' || s.status === '완료' || s.quotaStatus === 'error') return false;
+                    if (s.phoneDuplicateWarning) return false;
+                    const subDigits = String(s.phone || '').replace(/\D/g, '');
+                    if (subDigits.length < 9) return false;
+                    return !findHrcPhoneConflict(s).conflict;
+                  })
                   .sort((a, b) => (a.cellPriority || 99) - (b.cellPriority || 99));
 
                 for (const sub of subCandidates) {
-                  logger.warn(`🔄 [선정➔대체 자동 승계] UID ${biz.uid} 오류 발생 ➔ 동일 표본층(${biz.cellKey}) 대체 후보 UID ${sub.uid} (${sub.buildingName || sub.roadAddress})로 자동 전환!`);
-                  if (!sub.contactName && biz.contactName) sub.contactName = biz.contactName;
-                  if (!sub.phone && biz.phone) sub.phone = biz.phone;
+                  logger.warn(`🔄 [선정➔대체 자동 승계] UID ${biz.uid} 오류 발생 ➔ 동일 표본층(${biz.cellKey}) 고유 연락처 보유 대체 후보 UID ${sub.uid} (${sub.buildingName || sub.roadAddress})로 자동 전환!`);
                   sub.quotaStatus = 'running';
                   CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
 
@@ -1744,10 +1792,15 @@ export function registerExecutionRoutes({
                   }
                 })
               : (isHrcEnergy
-                ? await runHrcEnergySurvey({
-                    slotData: refreshedTarget,
-                    policy: campaign.hrcEnergyPolicy || {},
-                    loginId: refreshedTarget.surveyorId || campaign.loginId || '700275',
+                ? await (async () => {
+                    const singlePhoneCheck = findHrcPhoneConflict(refreshedTarget);
+                    if (singlePhoneCheck.conflict) {
+                      throw new Error(`[중복 연락처 차단] UID ${refreshedTarget.uid}의 전화번호가 이미 완료/진행된 타 건물(계정 ${singlePhoneCheck.otherAccount} · UID ${singlePhoneCheck.otherUid})과 중복됩니다.`);
+                    }
+                    return runHrcEnergySurvey({
+                      slotData: refreshedTarget,
+                      policy: campaign.hrcEnergyPolicy || {},
+                      loginId: refreshedTarget.surveyorId || campaign.loginId || '700275',
                     loginPw: campaign.loginPw || refreshedTarget.surveyorId || campaign.loginId || '700275',
                     quotaIndex: refreshedTarget.index || quotaIndex,
                     pilotMode: (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false,
@@ -1761,7 +1814,8 @@ export function registerExecutionRoutes({
                         ...info
                       });
                     }
-                  })
+                    });
+                  })()
                 : (isKona
                   ? await runKonaSurvey({
                       surveyUrl: targetUrl,

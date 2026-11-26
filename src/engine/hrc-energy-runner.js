@@ -742,13 +742,16 @@ export async function runHrcEnergySurvey(options = {}) {
     page.on('dialog', async dialog => {
       try { await dialog.accept(); } catch (e) { console.warn('[Dialog accept 경고]', e.message); }
     });
-    const rawContactCandidate = String(slotData.contactName || slotData.ceoName || '').trim();
-    const fallbackName = isValidRespondentName(rawContactCandidate)
-      ? rawContactCandidate
-      : (rawContactCandidate && rawContactCandidate !== '관리소장'
-        ? rawContactCandidate
-        : pickRespondentFromPool({ minAge: 32, maxAge: 62, seed: uid }).name);
-    const [p1, p2, p3] = parsePhoneParts(slotData.phone || '010-7935-2414');
+    const rawSlotName = String(slotData.contactName || slotData.ceoName || '').trim();
+    const rawSlotPhoneDigits = String(slotData.phone || '').replace(/\D/g, '');
+    const fallbackName = isValidRespondentName(rawSlotName)
+      ? rawSlotName
+      : (rawSlotName && !/^(관리소장|담당자|없음)$/.test(rawSlotName)
+        ? rawSlotName
+        : (rawSlotPhoneDigits.length >= 9 ? pickRespondentFromPool({ gender: '남', minAge: 50, maxAge: 68, seed: uid }).name : ''));
+    const [p1, p2, p3] = rawSlotPhoneDigits.length >= 9
+      ? parsePhoneParts(slotData.phone)
+      : ['', '', ''];
     let basicInfoState = {
       contactName: fallbackName,
       tel1: p1,
@@ -809,7 +812,7 @@ export async function runHrcEnergySurvey(options = {}) {
       await page.waitForSelector('#survey', { timeout: 15000 });
       await page.waitForTimeout(300);
 
-      // [기본정보] 기존 입력값 보존하며 빈칸만 채우기 (문자/메일 발송 버튼 절대 클릭 금지!)
+      // [기본정보] 기존 입력값 보존하며 유효한 시트 값이 있을 때만 빈칸 채우기 (문자/메일 발송 버튼 절대 클릭 금지!)
       basicInfoState = await page.evaluate(({ fallbackName, p1, p2, p3, preserveExisting }) => {
         function fillIfEmpty(sel, val) {
           const el = document.querySelector(sel);
@@ -819,12 +822,13 @@ export async function runHrcEnergySurvey(options = {}) {
           if (preserveExisting && !isEmptyVal) {
             return cur;
           }
-          if (isEmptyVal) {
-            el.value = String(val);
+          const nextVal = String(val || '').trim();
+          if (isEmptyVal && nextVal !== '') {
+            el.value = nextVal;
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
           }
-          return el.value;
+          return (el.value || '').trim();
         }
 
         const finalName = fillIfEmpty('#contact1Name', fallbackName);
@@ -856,7 +860,7 @@ export async function runHrcEnergySurvey(options = {}) {
         }
         return {
           contactName: finalName || fallbackName,
-          tel1: finalP1 || p1,
+          tel1: (finalP1 && finalP1.toUpperCase() !== 'NONE') ? finalP1 : p1,
           tel2: finalP2 || p2,
           tel3: finalP3 || p3,
           buildingName: parsedBuildingName,
@@ -867,6 +871,13 @@ export async function runHrcEnergySurvey(options = {}) {
           bodySnippet: bodyText.slice(0, 600)
         };
       }, { fallbackName, p1, p2, p3, preserveExisting });
+
+      // 연락처/성명 결측 표본 안전 차단 (더미 폴백 번호 중복 주입 원천 방지)
+      const verifiedPhoneDigits = `${basicInfoState.tel1 || ''}${basicInfoState.tel2 || ''}${basicInfoState.tel3 || ''}`.replace(/\D/g, '');
+      const verifiedName = String(basicInfoState.contactName || '').trim();
+      if (!verifiedName || verifiedName === '관리소장' || verifiedName === '담당자' || verifiedPhoneDigits.length < 9) {
+        throw new Error(`[UID ${uid}] 응답자 성명("${verifiedName || '미입력'}") 또는 연락처("${verifiedPhoneDigits || '미입력'}")가 확인되지 않아 실행을 안전 중단합니다.`);
+      }
 
       // SQ12 건물명은 반드시 구글시트 원본(sq12BuildingName)을 보존하며 TAPI 기본정보로 덮어쓰지 않음
       if (!slotData.roadAddress && basicInfoState.roadAddress) {
@@ -959,6 +970,8 @@ export async function runHrcEnergySurvey(options = {}) {
     let trackedGrossFloorArea = Number(slotData.estimatedGrossAreaM2) || 2500;
     let trackedAboveGroundFloors = 5;
     let trackedCompletionYear = 2008;
+    let trackedElevatorCount = -1;
+    let trackedWeekendDays = 2;
 
     const ceilingPlan = await resolveHrcBuildingCeilingHeightM({
       slotData,
@@ -973,7 +986,18 @@ export async function runHrcEnergySurvey(options = {}) {
     const c1FloorSeed = Math.random();            // C1-1 기준층 랜덤 시드
     const c13SqmPerLed = randInt(5, 8);           // C1-3 LED 등기구 1개당 담당 면적(5~8㎡)
     const c13FlCount = randChoice([0, 0, 0, 2, 4, 6]);
-    const etcElecPct = randInt(2, 6);             // D1-7 기타(pc,사무기기) 2~6% 랜덤
+    const etcElecPct = randInt(2, 6);             // D1-7 기타 사무기기 2~6%
+    const etcElecLabel = randChoice([
+      '사무기기',
+      '전산·사무기기',
+      'OA기기',
+      '사무용기기',
+      'PC·사무기기',
+      '컴퓨터·사무기기'
+    ]);
+    const hotWaterElecPct = randInt(3, 7);
+    const ventElecPct = randInt(4, 8);
+    const liftPowerElecPct = randInt(12, 18);
     const e12RoleCode = randChoice(['1', '3']);   // E1-2 1(운영, 유지, 엔지니어링) vs 3(건물 관리[운영유지]) 랜덤
 
     // SQ12 건물명 (구글시트에 있는 이름으로 작성, 없으면 '없음')
@@ -993,6 +1017,12 @@ export async function runHrcEnergySurvey(options = {}) {
     const isPublicOrSchool = Boolean(slotData.isPublicOrSchool) ||
       /공공|교육|학교|관공서|도서관|청사/.test(mainUseFull) ||
       /교육|학교|공공/.test(String(slotData.expectedTypeDesc || ''));
+    const isStrictSchoolOrPublicOffice =
+      ['SC', 'PS'].includes(String(slotData.expectedTypeCode || '')) ||
+      /(초등학교|중학교|고등학교|행정복지센터|주민센터|구청|시청|세무서|보건소)/.test(`${sq12TargetName} ${mainUseFull}`);
+    const isSchoolBuilding =
+      String(slotData.expectedTypeCode || '') === 'SC' ||
+      /(초등학교|중학교|고등학교)/.test(`${sq12TargetName} ${mainUseFull}`);
 
     // A5-3 / A5-4 냉난방 설정온도: 민간(냉방 24~26℃ / 난방 20~22℃), 공공·학교(냉방 26~28℃ / 난방 18~20℃)
     const coolingTempC = isPublicOrSchool ? randInt(26, 28) : randInt(24, 26);
@@ -1082,8 +1112,9 @@ export async function runHrcEnergySurvey(options = {}) {
     }
 
     // D2-1 도시가스 사용 여부 (시트 S열 또는 B1-1에 도시가스 설비 포함 시 '1')
-    const GAS_B11_SET = new Set(['1', '2', '3', '5', '6']);
-    const useCityGas = (String(slotData.d21UseGas || '') === '1') || effectiveB11Codes.some(c => GAS_B11_SET.has(c));
+    const GAS_B11_SET = new Set(['1', '2', '3', '5', '6', '10']);
+    const hasGasHvacOrBoiler = effectiveB11Codes.some(c => GAS_B11_SET.has(c));
+    const useCityGas = (String(slotData.d21UseGas || '') === '1') || hasGasHvacOrBoiler;
     const useDistrictHeat = effectiveB11Codes.some(c => c === '7' || c === '14');
 
     // 용도별 냉난방 부하밀도 (kW/㎡)
@@ -1093,10 +1124,16 @@ export async function runHrcEnergySurvey(options = {}) {
         ? (0.11 + Math.random() * 0.04)
         : (isPublicOrSchool ? (0.08 + Math.random() * 0.04) : (0.10 + Math.random() * 0.04)));
 
+    const monthlyElecFactors = Array.from({ length: 12 }, () => Number((0.93 + Math.random() * 0.14).toFixed(4)));
+    const monthlyGasFactors = Array.from({ length: 12 }, () => Number((0.92 + Math.random() * 0.16).toFixed(4)));
+    const monthlyHeatFactors = Array.from({ length: 12 }, () => Number((0.93 + Math.random() * 0.14).toFixed(4)));
+
     const engPlan = {
       sq12TargetName,
       mainUseFull,
       isPublicOrSchool,
+      isStrictSchoolOrPublicOffice,
+      isSchoolBuilding,
       workerMultiplier,
       visitorMultiplier,
       effectiveA51Code,
@@ -1108,6 +1145,7 @@ export async function runHrcEnergySurvey(options = {}) {
       hvacStartHour,
       hvacEndHour,
       effectiveB11Codes,
+      hasGasHvacOrBoiler,
       hotWaterOnlyBoiler: Boolean(slotData.hotWaterOnlyBoiler),
       loadDensityKwPerM2,
       effectiveT71Codes,
@@ -1118,6 +1156,10 @@ export async function runHrcEnergySurvey(options = {}) {
       c13SqmPerLed,
       c13FlCount,
       etcElecPct,
+      etcElecLabel,
+      hotWaterElecPct,
+      ventElecPct,
+      liftPowerElecPct,
       useCityGas,
       useDistrictHeat,
       dieselMonthly,
@@ -1125,7 +1167,10 @@ export async function runHrcEnergySurvey(options = {}) {
       ceilingHeightM: ceilingPlan.value,
       ceilingHeightSource: ceilingPlan.source,
       isCulturalFacility: ceilingPlan.isCultural,
-      monthlyJitterSeed: 0.96 + Math.random() * 0.08
+      monthlyJitterSeed: 0.96 + Math.random() * 0.08,
+      monthlyElecFactors,
+      monthlyGasFactors,
+      monthlyHeatFactors
     };
 
     const ENFORCED_RULE_CVS = new Set([
@@ -1146,6 +1191,7 @@ export async function runHrcEnergySurvey(options = {}) {
       return (
         ENFORCED_RULE_CVS.has(s) ||
         (s === 'q1470' && engPlan.isCulturalFacility) ||
+        (s === 'q3900' && engPlan.isStrictSchoolOrPublicOffice) ||
         /^q6[89]\d{2}/.test(s) ||
         s.startsWith('q4200_r') ||
         s.startsWith('q4250_r') ||
@@ -1368,6 +1414,8 @@ export async function runHrcEnergySurvey(options = {}) {
           trackedGrossFloorArea,
           trackedAboveGroundFloors,
           trackedCompletionYear,
+          trackedElevatorCount,
+          trackedWeekendDays,
           engPlan
         }) => {
           function clickEl(el) {
@@ -1676,17 +1724,37 @@ export async function runHrcEnergySurvey(options = {}) {
             });
             return 'q2450: 소유주가 고용한 시설관리 용역업체에서 관리(3) 100% 응답';
           }
-          // [A3-3-1] 상근 근로자 = A3-1-1 점포수 × (2~7 다양하게), 1일 내방객 = 점포수 × (30~50명)
+          // [A3-3-1] 상근 근로자 및 1일 내방객 (단일기관 대형건물 과소치 보정 및 복합상가 과대치 상한 적용)
           if (cv === 'q2500') {
             document.querySelectorAll('#QuestionView input[type="checkbox"]').forEach(chk => uncheckEl(chk));
             const storeNum = Math.max(1, parseInt(String(trackedStoreCount).replace(/[^0-9]/g, ''), 10) || 10);
+            const grossArea = Math.max(500, Number(trackedGrossFloorArea) || 2500);
             const wMult = engPlan.workerMultiplier || 3;
             const vMult = engPlan.visitorMultiplier || 35;
-            const workerVal = String(storeNum * wMult);
-            const visitorVal = String(storeNum * vMult);
+
+            let calcWorkers = storeNum * wMult;
+            let calcVisitors = storeNum * vMult;
+
+            if (storeNum <= 3 && grossArea >= 2500) {
+              const useStr = String(engPlan.mainUseFull || '');
+              if (engPlan.isSchoolBuilding) {
+                calcWorkers = Math.max(calcWorkers, Math.round(grossArea / 170));
+                calcVisitors = Math.max(calcVisitors, Math.round(grossArea / 22));
+              } else if (/의료|병원/.test(useStr)) {
+                calcWorkers = Math.max(calcWorkers, Math.round(grossArea / 110));
+                calcVisitors = Math.max(calcVisitors, Math.round(grossArea / 32));
+              } else if (/문화|교육|숙박|판매|업무|방송/.test(useStr) || engPlan.isPublicOrSchool) {
+                calcWorkers = Math.max(calcWorkers, Math.round(grossArea / 210));
+                calcVisitors = Math.max(calcVisitors, Math.round(grossArea / 55));
+              }
+            }
+
+            const maxVisitors = grossArea >= 80000 ? 9500 : (grossArea >= 30000 ? 5500 : 3200);
+            const workerVal = String(Math.min(5000, Math.max(2, calcWorkers)));
+            const visitorVal = String(Math.min(maxVisitors, Math.max(10, calcVisitors)));
             setVal(document.querySelector('input[variable="q2500_op1"], #OpenList_q2500_op1_'), workerVal, true, true);
             setVal(document.querySelector('input[variable="q2500_op2"], #OpenList_q2500_op2_'), visitorVal, true, true);
-            return `q2500: 상근근로자 ${workerVal}명(${storeNum}×${wMult}), 1일 내방객 ${visitorVal}명(${storeNum}×${vMult})`;
+            return `q2500: 상근근로자 ${workerVal}명, 1일 내방객 ${visitorVal}명 (점포=${storeNum}, 연면적=${Math.round(grossArea)}㎡ 기준)`;
           }
           // [T32] 의료시설일 경우 '의료시설'(1), 그 외 '해당사항 없음'(77)
           if (cv === 'q2550') {
@@ -1789,15 +1857,24 @@ export async function runHrcEnergySurvey(options = {}) {
             ['1', '2', '3', '11', '12'].forEach(m => clickEl(document.querySelector(`input[variable="q3750_2"][value="${m}"], #q3750_2_${m}`)));
             return 'q3750: 냉방(6~9월), 난방(1~3,11~12월)';
           }
-          // [A5-6] 공조 가동시간 (9~18시 필수 포함 + 용도별 시작/종료 확장, A5-8 건물운영시간 범위 내 보장)
+          // [A5-6] 공조 가동시간 (9~18시 필수 포함 + 초중고·공공청사는 주말 미가동(77) 또는 단축 정합)
           if (cv === 'q3800') {
             const startH = Math.min(9, engPlan.hvacStartHour || 8);
             const endH = Math.max(18, engPlan.hvacEndHour || 19);
             for (const col of ['1', '2', '3', '4']) {
               const colEls = Array.from(document.querySelectorAll(`input[variable="q3800_${col}"]`)).filter(el => !el.disabled);
               if (colEls.length === 0) continue;
+              const isWeekendCol = (col === '2' || col === '4');
+              const opt77 = colEls.find(el => el.value === '77');
+              if (engPlan.isStrictSchoolOrPublicOffice && isWeekendCol && opt77) {
+                colEls.filter(el => el.value !== '77' && el.value !== '24').forEach(el => uncheckEl(el));
+                clickEl(opt77);
+                continue;
+              }
               // 먼저 '운영 안함'(77) 및 '9시-18시 일괄'(25)이 기존에 켜져 있을 때만 해제 ('24:전체선택/해제'는 절대 건드리지 않음)
               colEls.filter(el => el.value === '77' || el.value === '25').forEach(el => uncheckEl(el));
+              const colStart = (engPlan.isStrictSchoolOrPublicOffice && isWeekendCol) ? 9 : startH;
+              const colEnd = (engPlan.isStrictSchoolOrPublicOffice && isWeekendCol) ? 13 : endH;
               const hourBoxes = colEls.filter(el => {
                 const n = parseInt(el.value, 10);
                 return !Number.isNaN(n) && n >= 0 && n <= 23;
@@ -1805,7 +1882,7 @@ export async function runHrcEnergySurvey(options = {}) {
               if (hourBoxes.length >= 10) {
                 hourBoxes.forEach(el => {
                   const n = parseInt(el.value, 10);
-                  if (n >= startH && n <= endH) clickEl(el);
+                  if (n >= colStart && n <= colEnd) clickEl(el);
                   else uncheckEl(el);
                 });
               } else {
@@ -1813,21 +1890,40 @@ export async function runHrcEnergySurvey(options = {}) {
                 if (preset) clickEl(preset);
               }
             }
-            return `q3800: 공조 가동시간 ${startH}~${endH}시 (9~18시 포함)`;
+            return `q3800: 공조 가동시간 ${startH}~${endH}시${engPlan.isStrictSchoolOrPublicOffice ? ' (학교·청사 주말 미가동)' : ''}`;
           }
           if (cv === 'q3900') {
-            setVal(document.querySelector('input[variable="q3900_op1"]'), policy.weekdayDays || '5');
-            setVal(document.querySelector('input[variable="q3900_op2"]'), policy.weekendDays || '2');
-            return 'q3900: 주중 5일, 주말 2일';
+            const op1El = document.querySelector('input[variable="q3900_op1"]');
+            const op2El = document.querySelector('input[variable="q3900_op2"]');
+            setVal(op1El, policy.weekdayDays || '5', true, Boolean(engPlan.isStrictSchoolOrPublicOffice));
+            if (engPlan.isStrictSchoolOrPublicOffice && !policy.weekendDays) {
+              const ph2 = String(op2El?.getAttribute('placeholder') || '').trim();
+              const minMatch = ph2.match(/^(\d+)/);
+              const minAllowed = minMatch ? parseInt(minMatch[1], 10) : 0;
+              const wkndVal = minAllowed <= 0 ? '0' : '1';
+              setVal(op2El, wkndVal, true, true);
+              return `q3900: 학교·청사 주중 5일, 주말 ${wkndVal}일`;
+            }
+            setVal(op2El, policy.weekendDays || '2');
+            return `q3900: 주중 ${op1El?.value || '5'}일, 주말 ${op2El?.value || '2'}일`;
           }
-          // [A5-8] 건물 운영시간 (9~18시 필수 포함 + 용도별 5~9시 시작 ~ 18~21시 종료 랜덤)
+          // [A5-8] 건물 운영시간 (9~18시 필수 포함 + 초중고·공공청사 주말 정합)
           if (cv === 'q3950') {
             const startH = Math.min(9, engPlan.opStartHour || 8);
             const endH = Math.max(18, engPlan.opEndHour || 19);
             for (const col of ['1', '2', '3', '4']) {
               const colEls = Array.from(document.querySelectorAll(`input[variable="q3950_${col}"]`)).filter(el => !el.disabled);
               if (colEls.length === 0) continue;
+              const isWeekendCol = (col === '2' || col === '4');
+              const opt77 = colEls.find(el => el.value === '77');
+              if (engPlan.isStrictSchoolOrPublicOffice && isWeekendCol && Number(trackedWeekendDays) === 0 && opt77) {
+                colEls.filter(el => el.value !== '77' && el.value !== '24').forEach(el => uncheckEl(el));
+                clickEl(opt77);
+                continue;
+              }
               colEls.filter(el => el.value === '77' || el.value === '25').forEach(el => uncheckEl(el));
+              const colStart = (engPlan.isStrictSchoolOrPublicOffice && isWeekendCol) ? 9 : startH;
+              const colEnd = (engPlan.isStrictSchoolOrPublicOffice && isWeekendCol) ? 14 : endH;
               const hourBoxes = colEls.filter(el => {
                 const n = parseInt(el.value, 10);
                 return !Number.isNaN(n) && n >= 0 && n <= 23;
@@ -1835,7 +1931,7 @@ export async function runHrcEnergySurvey(options = {}) {
               if (hourBoxes.length >= 10) {
                 hourBoxes.forEach(el => {
                   const n = parseInt(el.value, 10);
-                  if (n >= startH && n <= endH) clickEl(el);
+                  if (n >= colStart && n <= colEnd) clickEl(el);
                   else uncheckEl(el);
                 });
               } else {
@@ -1843,7 +1939,7 @@ export async function runHrcEnergySurvey(options = {}) {
                 if (preset) clickEl(preset);
               }
             }
-            return `q3950: 건물 운영시간 ${startH}~${endH}시 (9~18시 포함)`;
+            return `q3950: 건물 운영시간 ${startH}~${endH}시${engPlan.isStrictSchoolOrPublicOffice ? ` (주말 ${trackedWeekendDays}일 정합)` : ''}`;
           }
 
           // --- [B. 에너지 설비 현황 파트] ---
@@ -2215,38 +2311,53 @@ export async function runHrcEnergySurvey(options = {}) {
             clickEl(document.querySelector(`#${cv}_1, input[variable="${cv}"][value="1"]`));
             return `${cv}: 단위 kWh(1)`;
           }
-          // [D1-5-1] 계약전력 비례 월별 전력소비량(kWh) 산출
+          // [D1-5-1] 계약전력 및 실제 연면적 비례 월별 전력소비량(kWh) 산출 (월별 독립 편차 반영)
           if (cv.startsWith('q6200_r')) {
-            const baseCurve = (engPlan.useCityGas || engPlan.useDistrictHeat)
-              ? [19000, 18000, 16000, 15000, 15500, 20000, 26000, 27500, 20000, 15500, 16500, 18500]
-              : [24500, 22500, 18000, 15000, 15000, 19500, 25500, 26500, 19000, 15000, 18500, 23500];
-            const scale = ((engPlan.contractPowerKw || 300) / 300) * (engPlan.monthlyJitterSeed || 1);
+            const grossArea = Math.max(400, Number(trackedGrossFloorArea) || 2500);
+            const effectiveKw = Math.max(Number(engPlan.contractPowerKw) || 300, Math.round(grossArea * 0.075));
+            const baseCurve = engPlan.isSchoolBuilding
+              ? [17200, 15800, 18400, 16200, 15600, 20400, 23800, 17900, 20800, 16500, 18900, 21400]
+              : ((engPlan.useCityGas && engPlan.hasGasHvacOrBoiler) || engPlan.useDistrictHeat
+                ? [19200, 17900, 16300, 15200, 15700, 20300, 26100, 27600, 20100, 15400, 16700, 18700]
+                : [24700, 22400, 18300, 15400, 14700, 19600, 25600, 26800, 19200, 15100, 18700, 23600]);
+            const scale = (effectiveKw / 300) * (engPlan.monthlyJitterSeed || 1);
+            const mFactors = Array.isArray(engPlan.monthlyElecFactors) && engPlan.monthlyElecFactors.length === 12
+              ? engPlan.monthlyElecFactors
+              : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+            const usedVals = new Set();
             baseCurve.forEach((v, i) => {
-              const scaledVal = String(Math.max(500, Math.round((v * scale) / 100) * 100));
-              setVal(document.querySelector(`#OpenList_${cv}_op${i + 1}_, input[variable="${cv}_op${i + 1}"]`), scaledVal, true, true);
+              let rounded = Math.max(500, Math.round((v * scale * (mFactors[i] || 1)) / 10) * 10);
+              while (usedVals.has(rounded)) {
+                rounded += 10;
+              }
+              usedVals.add(rounded);
+              setVal(document.querySelector(`#OpenList_${cv}_op${i + 1}_, input[variable="${cv}_op${i + 1}"]`), String(rounded), true, true);
             });
-            return `${cv}: 계약전력(${engPlan.contractPowerKw}kW) 비례 1~12월 전력소비량 입력`;
+            return `${cv}: 기준전력(${effectiveKw}kW) 비례 1~12월 전력소비량(월별 편차 반영) 입력`;
           }
           if (cv === 'q6250') {
             clickEl(document.querySelector('#q6250_1, input[variable="q6250"][value="1"]'));
             return 'q6250: 구성비 응답(1)';
           }
-          // [D1-7] 기타 항목에 'pc,사무기기' 입력 + 2~6% 랜덤 배분 (전체 합계 100% 정합성 보장)
+          // [D1-7] 기타 항목 명칭·설비별 전기 구성비 정합 배분 (전체 합계 100% 보장)
           if (cv === 'q6300') {
             const etcPct = Math.min(6, Math.max(2, Number(engPlan.etcElecPct) || 4));
+            const etcLabelStr = String(engPlan.etcElecLabel || '사무기기');
             const etcNameEl = document.querySelector('#OpenList_q6300_op97_, input[variable="q6300_op97"]');
             if (etcNameEl) {
-              setVal(etcNameEl, 'pc,사무기기', true, true);
+              setVal(etcNameEl, etcLabelStr, true, true);
             }
-            const hasGasOrDistHeat = Boolean(engPlan.useCityGas || engPlan.useDistrictHeat);
+            const hasThermalHeating = Boolean((engPlan.useCityGas && engPlan.hasGasHvacOrBoiler) || engPlan.useDistrictHeat);
             const b11Set = new Set((engPlan.effectiveB11Codes || []).map(String));
             const hasElecHeating = ['4', '8', '9'].some(c => b11Set.has(c));
-            const op1 = (hasGasOrDistHeat && !hasElecHeating) ? 0 : (hasGasOrDistHeat ? 10 : 25);
-            const op2 = b11Set.has('1') && !['4', '11', '12', '13', '15'].some(c => b11Set.has(c)) ? 10 : 30;
-            const op3 = 5;
+            const op1 = (hasThermalHeating && !hasElecHeating) ? 0 : (hasThermalHeating ? 10 : 24);
+            const op2 = b11Set.has('1') && !['4', '11', '12', '13', '15'].some(c => b11Set.has(c)) ? 10 : 28;
+            const op3 = hasThermalHeating ? 0 : Math.min(7, Math.max(3, Number(engPlan.hotWaterElecPct) || 5));
             const op4 = 0;
-            const op6 = 15;
-            const op7 = 5;
+            const op6 = Number(trackedElevatorCount) === 0
+              ? 0
+              : Math.min(18, Math.max(12, Number(engPlan.liftPowerElecPct) || 15));
+            const op7 = Math.min(8, Math.max(4, Number(engPlan.ventElecPct) || 5));
             const op5 = 100 - (op1 + op2 + op3 + op4 + op6 + op7 + etcPct);
             const ratios = {
               q6300_op1: String(op1),
@@ -2264,10 +2375,10 @@ export async function runHrcEnergySurvey(options = {}) {
             if (etcPctEl) {
               setVal(etcPctEl, String(etcPct), true, true);
             }
-            return `q6300: 전기 구성비 합계 100% 입력 (기타='pc,사무기기' ${etcPct}%)`;
+            return `q6300: 전기 구성비 합계 100% 입력 (기타='${etcLabelStr}' ${etcPct}%, 승강기동력=${op6}%)`;
           }
 
-          // [D2-1 ~ D2-6] 도시가스 사용 여부(구글 시트 S열) 및 면적별 예상 소비량·용도별 구성비
+          // [D2-1 ~ D2-6] 도시가스 사용 여부 및 설비(B1-1)·입점시설(T41) 정합 소비량·용도 구성비
           if (cv === 'q6350') {
             const code = engPlan.useCityGas ? '1' : '2';
             clickEl(document.querySelector(`#q6350_${code}, input[variable="q6350"][value="${code}"]`));
@@ -2285,16 +2396,40 @@ export async function runHrcEnergySurvey(options = {}) {
           if (cv.startsWith('q6600_r')) {
             const grossArea = Math.max(400, Number(trackedGrossFloorArea) || 2500);
             const b11Set = new Set((engPlan.effectiveB11Codes || []).map(String));
+            const hasGasHvacOrBoiler = Boolean(engPlan.hasGasHvacOrBoiler);
             const hasGasCooling = b11Set.has('1') || b11Set.has('3');
-            const weights = hasGasCooling
-              ? [0.16, 0.14, 0.09, 0.05, 0.04, 0.06, 0.09, 0.10, 0.05, 0.04, 0.07, 0.11]
-              : [0.21, 0.18, 0.11, 0.05, 0.03, 0.02, 0.02, 0.02, 0.02, 0.04, 0.11, 0.19];
-            const annualNm3 = Math.max(1200, Math.round(grossArea * 9.5 * (engPlan.monthlyJitterSeed || 1)));
+            const isHotWaterOnly = Boolean(engPlan.hotWaterOnlyBoiler) && !['1', '2', '3', '5', '10'].some(c => b11Set.has(c));
+            const gFactors = Array.isArray(engPlan.monthlyGasFactors) && engPlan.monthlyGasFactors.length === 12
+              ? engPlan.monthlyGasFactors
+              : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+
+            let weights;
+            let annualNm3;
+            if (!hasGasHvacOrBoiler) {
+              // 전기 EHP 단독 + 식당/급식실 취사용 도시가스 건물
+              weights = engPlan.isSchoolBuilding
+                ? [0.06, 0.06, 0.10, 0.10, 0.10, 0.09, 0.07, 0.05, 0.10, 0.09, 0.10, 0.08]
+                : [0.10, 0.09, 0.09, 0.08, 0.08, 0.07, 0.07, 0.07, 0.08, 0.08, 0.09, 0.10];
+              annualNm3 = Math.max(480, Math.round(grossArea * 1.45 * (engPlan.monthlyJitterSeed || 1)));
+            } else if (isHotWaterOnly) {
+              // 호텔·숙박 등 급탕용 중앙 온수보일러 건물
+              weights = [0.12, 0.11, 0.09, 0.08, 0.07, 0.06, 0.06, 0.06, 0.07, 0.08, 0.09, 0.11];
+              annualNm3 = Math.max(1400, Math.round(grossArea * 5.2 * (engPlan.monthlyJitterSeed || 1)));
+            } else {
+              weights = hasGasCooling
+                ? [0.16, 0.14, 0.09, 0.05, 0.04, 0.06, 0.09, 0.10, 0.05, 0.04, 0.07, 0.11]
+                : [0.21, 0.18, 0.11, 0.05, 0.03, 0.022, 0.018, 0.019, 0.021, 0.04, 0.11, 0.19];
+              annualNm3 = Math.max(1200, Math.round(grossArea * 9.5 * (engPlan.monthlyJitterSeed || 1)));
+            }
+
+            let prevVal = -1;
             weights.forEach((w, idx) => {
-              const mVal = String(Math.max(20, Math.round((annualNm3 * w) / 10) * 10));
-              setVal(document.querySelector(`#OpenList_${cv}_op${idx + 1}_, input[variable="${cv}_op${idx + 1}"]`), mVal, true, true);
+              let mNum = Math.max(15, Math.round(annualNm3 * w * (gFactors[idx] || 1)));
+              if (mNum === prevVal) mNum += 2;
+              prevVal = mNum;
+              setVal(document.querySelector(`#OpenList_${cv}_op${idx + 1}_, input[variable="${cv}_op${idx + 1}"]`), String(mNum), true, true);
             });
-            return `${cv}: 연면적(${Math.round(grossArea)}㎡) 비례 월별 도시가스 소비량(연 약 ${annualNm3}N㎥) 입력`;
+            return `${cv}: 설비(${hasGasHvacOrBoiler ? '보일러/공조' : '취사중심'}) 정합 월별 도시가스(연 약 ${annualNm3}N㎥) 입력`;
           }
           if (cv === 'q6650') {
             clickEl(document.querySelector('#q6650_1, input[variable="q6650"][value="1"]'));
@@ -2304,6 +2439,7 @@ export async function runHrcEnergySurvey(options = {}) {
             const b11Set = new Set((engPlan.effectiveB11Codes || []).map(String));
             const t41Set = new Set((slotData.t41Codes || []).map(String));
             const hasFood = t41Set.has('1');
+            const hasGasHvacOrBoiler = Boolean(engPlan.hasGasHvacOrBoiler);
             const hasGasCooling = b11Set.has('1') || b11Set.has('3');
             const hasChp = b11Set.has('2');
 
@@ -2311,7 +2447,16 @@ export async function runHrcEnergySurvey(options = {}) {
             let gOp2 = 0;   // 냉방
             let gOp3 = 0;   // 취사
             let gOp4 = 0;   // 자가발전(열병합)
-            if (hasChp) {
+            if (!hasGasHvacOrBoiler) {
+              // B1-1에 가스 난방/온수보일러 설비가 없는 건물은 식음료 취사용(100%)으로 설비-소비량 정합성 일치
+              if (hasFood) {
+                gOp1 = 0;
+                gOp3 = 100;
+              } else {
+                gOp1 = 100;
+                gOp3 = 0;
+              }
+            } else if (hasChp) {
               gOp4 = 45;
               gOp3 = hasFood ? 10 : 0;
               gOp2 = hasGasCooling ? 15 : 0;
@@ -2372,20 +2517,23 @@ export async function runHrcEnergySurvey(options = {}) {
               document.querySelectorAll('#QuestionView input[type="checkbox"]').forEach(chk => uncheckEl(chk));
               const grossArea = Math.max(500, Number(trackedGrossFloorArea) || 3000);
               const conditionedRatio = grossArea >= 50000 ? 0.55 : 0.80;
+              const hFactors = Array.isArray(engPlan.monthlyHeatFactors) && engPlan.monthlyHeatFactors.length === 12
+                ? engPlan.monthlyHeatFactors
+                : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
               const weights = isCoolRow
                 ? [0, 0, 0, 0.03, 0.10, 0.20, 0.28, 0.27, 0.10, 0.02, 0, 0]
                 : (hasDistCool
                   ? [0.16, 0.14, 0.09, 0.05, 0.03, 0.06, 0.10, 0.11, 0.05, 0.04, 0.07, 0.10]
-                  : [0.22, 0.19, 0.12, 0.05, 0.02, 0.01, 0.01, 0.01, 0.02, 0.04, 0.12, 0.19]);
+                  : [0.22, 0.19, 0.12, 0.05, 0.02, 0.012, 0.008, 0.009, 0.018, 0.043, 0.12, 0.19]);
               const annualGcal = Math.max(60, Math.round(grossArea * conditionedRatio * 0.075 * (engPlan.monthlyJitterSeed || 1)));
               weights.forEach((w, idx) => {
                 const el = document.querySelector(`#OpenList_${cv}_op${idx + 1}_, input[variable="${cv}_op${idx + 1}"]`);
                 if (!el) return;
                 const minZeroAllowed = (el.getAttribute('placeholder') || '').trim().startsWith('0');
-                const v = String(w === 0 && minZeroAllowed ? 0 : Math.max(1, Math.round(annualGcal * w)));
+                const v = String(w === 0 && minZeroAllowed ? 0 : Math.max(1, Math.round(annualGcal * w * (hFactors[idx] || 1))));
                 setVal(el, v, true, true);
               });
-              return `${cv}: 월별 열에너지 소비량(연 약 ${annualGcal}Gcal) 1~12월 입력`;
+              return `${cv}: 월별 열에너지 소비량(연 약 ${annualGcal}Gcal, 월별 편차 반영) 1~12월 입력`;
             }
 
             // 3) 용도별 구성비(%) 수치 입력 화면 (합계 100%)
@@ -2491,32 +2639,44 @@ export async function runHrcEnergySurvey(options = {}) {
             }
             return `${cv}: 담당업무 ${roleCode === '1' ? '운영, 유지, 엔지니어링(1)' : '건물 관리(3)'} 랜덤 체크`;
           }
-          // [E1-5] 응답자 정보 및 E-MAIL '9999999@naver.com' 응답
+          // [E1-5] 응답자 정보 및 E-MAIL 응답 (기입력 연락처·이메일 보존 및 더미 폴백 제거)
           if (cv.startsWith('q90020_r')) {
             const nameEl = document.querySelector(`#OpenList_${cv}_op3_, input[variable="${cv}_op3"]`);
             const existingName = nameEl && nameEl.value ? nameEl.value.trim() : '';
             const rName = (existingName && existingName !== '관리소장')
               ? existingName
-              : (basicInfoState.contactName || slotData.contactName || '관리소장');
+              : (basicInfoState.contactName || slotData.contactName || '');
             const tel1El = document.querySelector(`#${cv}_op4, input[variable="${cv}_op4"]`);
             const tel2El = document.querySelector(`#${cv}_op5, input[variable="${cv}_op5"]`);
             const tel3El = document.querySelector(`#${cv}_op6, input[variable="${cv}_op6"]`);
-            const t1 = (tel1El && tel1El.value ? tel1El.value.trim() : '') || basicInfoState.tel1 || '010';
-            const t2 = (tel2El && tel2El.value ? tel2El.value.trim() : '') || basicInfoState.tel2 || '7935';
-            const t3 = (tel3El && tel3El.value ? tel3El.value.trim() : '') || basicInfoState.tel3 || '2414';
-            setVal(nameEl, rName);
-            setVal(tel1El, t1);
-            setVal(tel2El, t2);
-            setVal(tel3El, t3);
-            setVal(document.querySelector(`#${cv}_op7, input[variable="${cv}_op7"]`), '9999999', true, true);
-            const sel = document.querySelector(`#${cv}_op9, select[variable="${cv}_op9"]`);
-            if (sel) {
-              sel.value = '4'; // naver.com
-              if (typeof window.domaincheck === 'function') window.domaincheck();
-              sel.dispatchEvent(new Event('change', { bubbles: true }));
+            const t1 = (tel1El && tel1El.value ? tel1El.value.trim() : '') || basicInfoState.tel1 || '';
+            const t2 = (tel2El && tel2El.value ? tel2El.value.trim() : '') || basicInfoState.tel2 || '';
+            const t3 = (tel3El && tel3El.value ? tel3El.value.trim() : '') || basicInfoState.tel3 || '';
+            if (rName) setVal(nameEl, rName);
+            if (t1) setVal(tel1El, t1);
+            if (t2) setVal(tel2El, t2);
+            if (t3) setVal(tel3El, t3);
+
+            const emailLocalEl = document.querySelector(`#${cv}_op7, input[variable="${cv}_op7"]`);
+            const emailDomEl = document.querySelector(`#${cv}_op8, input[variable="${cv}_op8"]`);
+            const existingLocal = emailLocalEl?.value?.trim() || '';
+            const existingDom = emailDomEl?.value?.trim() || '';
+            const hasRealExistingEmail = Boolean(existingLocal && existingDom && existingLocal !== '9999999');
+            if (!preserveExisting || !hasRealExistingEmail) {
+              const targetLocal = policy.respondentEmailMode === 'uid_based'
+                ? `bldg${String(slotData.uid || '800001').replace(/\D/g, '')}`
+                : '9999999';
+              setVal(emailLocalEl, targetLocal, true, true);
+              const sel = document.querySelector(`#${cv}_op9, select[variable="${cv}_op9"]`);
+              if (sel) {
+                sel.value = '4'; // naver.com
+                if (typeof window.domaincheck === 'function') window.domaincheck();
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              setVal(emailDomEl, 'naver.com', true, true);
+              return `${cv}: 응답자(${rName}) 및 E-MAIL(${targetLocal}@naver.com) 입력`;
             }
-            setVal(document.querySelector(`#${cv}_op8, input[variable="${cv}_op8"]`), 'naver.com', true, true);
-            return `${cv}: 응답자(${rName}) 및 E-MAIL(9999999@naver.com) 입력`;
+            return `${cv}: 응답자(${rName}) 및 기입력 E-MAIL(${existingLocal}@${existingDom}) 보존`;
           }
 
           // --- [범용 폴백: 예상치 못한 조건부 문항 대응] ---
@@ -2566,18 +2726,29 @@ export async function runHrcEnergySurvey(options = {}) {
           trackedGrossFloorArea,
           trackedAboveGroundFloors,
           trackedCompletionYear,
+          trackedElevatorCount,
+          trackedWeekendDays,
           engPlan
         });
       }
 
-      // A1-2(q1460) / A1-4(q1500) / A1-8(q1650) 입력 직후 최신 수치 재동기화
-      if (step.cv === 'q1460' || step.cv === 'q1500' || step.cv === 'q1650') {
+      // A1-2(q1460) / A1-4(q1500) / A1-8(q1650) / A1-9(q1700) / A5-7(q3900) 입력 직후 최신 수치 재동기화
+      if (step.cv === 'q1460' || step.cv === 'q1500' || step.cv === 'q1650' || step.cv === 'q1700' || step.cv === 'q3900') {
         const syncedDims = await page.evaluate(({ cv }) => {
           if (cv === 'q1460') {
             return { fl: document.querySelector('input[variable="q1460_op1"]')?.value || '' };
           }
           if (cv === 'q1500') {
             return { area: document.querySelector('input[variable="q1500_op3"]')?.value || '' };
+          }
+          if (cv === 'q1700') {
+            const noElev = Boolean(document.querySelector('input[variable="q1700"][value="1"]:checked, #q1700_1:checked'));
+            const op2 = document.querySelector('input[variable="q1700_op2"], #OpenList_q1700_op2_')?.value || '';
+            const op3 = document.querySelector('input[variable="q1700_op3"], #OpenList_q1700_op3_')?.value || '';
+            return { elev: noElev ? '0' : (op3 || op2 || '') };
+          }
+          if (cv === 'q3900') {
+            return { wknd: document.querySelector('input[variable="q3900_op2"]')?.value ?? '' };
           }
           return { yr: document.querySelector('input[variable="q1650_op1"]')?.value || '' };
         }, { cv: step.cv }).catch(err => {
@@ -2595,6 +2766,14 @@ export async function runHrcEnergySurvey(options = {}) {
         if (syncedDims?.yr) {
           const y = parseInt(String(syncedDims.yr).replace(/[^0-9]/g, ''), 10);
           if (y >= 1950) trackedCompletionYear = y;
+        }
+        if (syncedDims?.elev !== undefined && syncedDims.elev !== '') {
+          const elCnt = parseInt(String(syncedDims.elev).replace(/[^0-9]/g, ''), 10);
+          if (!Number.isNaN(elCnt)) trackedElevatorCount = elCnt;
+        }
+        if (syncedDims?.wknd !== undefined && syncedDims.wknd !== '') {
+          const wd = parseInt(String(syncedDims.wknd).replace(/[^0-9]/g, ''), 10);
+          if (!Number.isNaN(wd)) trackedWeekendDays = wd;
         }
       }
 
