@@ -727,15 +727,23 @@ if (expMilk !== '있음' || expFlavoredMilk !== '없음' || expNgo35 !== '없음
   throw new Error(`decideCategoryPurchaseExp isolation failed: milk=${expMilk}, flavored=${expFlavoredMilk}, ngo35=${expNgo35}`);
 }
 
-// HRC 에너지총조사 8계정(문선영-701492, 최미자-700550 전화번호 필터링) & 문화및집회시설 천장고 검증
+// HRC 에너지총조사 10계정(문선영-701492, 최미자-700550 72건, 김재순-701495 38건, 정소영-701497 39건 전화번호 필터링) & 문화및집회시설 천장고 검증
 const hrcRunnerMod = await import('../src/engine/hrc-energy-runner.js');
 const hrc701492 = JSON.parse(fsMod.default.readFileSync('data/quotas/quota_hrc_energy_2025_701492_문선영_전체478개_선정74개.json', 'utf8'));
-const hrc700550 = JSON.parse(fsMod.default.readFileSync('data/quotas/quota_hrc_energy_2025_700550_최미자_전체30개_선정30개.json', 'utf8'));
+const hrc700550 = JSON.parse(fsMod.default.readFileSync('data/quotas/quota_hrc_energy_2025_700550_최미자_전체72개_선정72개.json', 'utf8'));
+const hrc701495 = JSON.parse(fsMod.default.readFileSync('data/quotas/quota_hrc_energy_2025_701495_김재순_전체38개_선정38개.json', 'utf8'));
+const hrc701497 = JSON.parse(fsMod.default.readFileSync('data/quotas/quota_hrc_energy_2025_701497_정소영_전체39개_선정39개.json', 'utf8'));
 if ((hrc701492.data || []).length !== 478 || hrc701492.selectedCount !== 74) {
   throw new Error(`HRC 701492 quota count mismatch: total=${(hrc701492.data || []).length}, selected=${hrc701492.selectedCount}`);
 }
-if ((hrc700550.data || []).length !== 30 || (hrc700550.data || []).some(r => !r.phone)) {
+if ((hrc700550.data || []).length !== 72 || (hrc700550.data || []).some(r => !r.phone || !r.contactName)) {
   throw new Error(`HRC 700550 phone-filtered quota mismatch: total=${(hrc700550.data || []).length}`);
+}
+if ((hrc701495.data || []).length !== 38 || (hrc701495.data || []).some(r => !r.phone || !r.contactName || r.sido !== '경기')) {
+  throw new Error(`HRC 701495 phone-filtered quota mismatch: total=${(hrc701495.data || []).length}`);
+}
+if ((hrc701497.data || []).length !== 39 || (hrc701497.data || []).some(r => !r.phone || !r.contactName || r.sido !== '서울')) {
+  throw new Error(`HRC 701497 phone-filtered quota mismatch: total=${(hrc701497.data || []).length}`);
 }
 
 const ceilGen = await hrcRunnerMod.resolveHrcBuildingCeilingHeightM({
@@ -744,6 +752,9 @@ const ceilGen = await hrcRunnerMod.resolveHrcBuildingCeilingHeightM({
 const ceilSonje = await hrcRunnerMod.resolveHrcBuildingCeilingHeightM({
   slotData: { uid: '802027', mainUse: '문화및집회시설', buildingName: '선재서울미술관' }
 });
+const ceilKmca = await hrcRunnerMod.resolveHrcBuildingCeilingHeightM({
+  slotData: { uid: '802089', mainUse: '문화및집회시설', buildingName: 'KMCA미술관' }
+});
 const ceilUnnamedCultural = await hrcRunnerMod.resolveHrcBuildingCeilingHeightM({
   slotData: { uid: '802038', mainUse: '문화및집회시설', buildingName: '' },
   grossAreaM2: 4000
@@ -751,12 +762,13 @@ const ceilUnnamedCultural = await hrcRunnerMod.resolveHrcBuildingCeilingHeightM(
 if (
   parseFloat(ceilGen.value) < 2.6 || parseFloat(ceilGen.value) > 3.0 ||
   ceilSonje.value !== '3.9' ||
+  ceilKmca.value !== '5.0' ||
   parseFloat(ceilUnnamedCultural.value) <= 3.0
 ) {
-  throw new Error(`HRC ceiling height rule failed: gen=${ceilGen.value}, sonje=${ceilSonje.value}, unnamedCultural=${ceilUnnamedCultural.value}`);
+  throw new Error(`HRC ceiling height rule failed: gen=${ceilGen.value}, sonje=${ceilSonje.value}, kmca=${ceilKmca.value}, unnamedCultural=${ceilUnnamedCultural.value}`);
 }
 
-console.log('✅ [4/4] K-BPI v3.1 & 에너지총조사(701492·700550 DB, 문화시설 천장고 검색/추정, 700277 검증보정) 100% 통과');
+console.log('✅ [4/4] K-BPI v3.1 & 에너지총조사(10계정 통합 DB: 700550·701495·701497 반영, 문화시설 천장고 검색/추정) 100% 통과');
 
 // 5. 통합 응답자 페르소나 마스터 DB (1,138명: 이름·성별·나이) 및 배정 유틸 검증
 const respPoolMod = await import('../src/utils/respondent-pool.js');

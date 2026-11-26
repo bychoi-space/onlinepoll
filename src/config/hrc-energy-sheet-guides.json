@@ -15,6 +15,7 @@
     "expectedTypeCode": "G1",
     "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -45,7 +46,8 @@
     "cellPriority": 1,
     "cellKey": "서울_1001_1001",
     "quotaCode1": "1001",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "800018": {
     "buildingName": "",
@@ -63,6 +65,7 @@
     "expectedTypeCode": "G1",
     "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -93,7 +96,8 @@
     "cellPriority": 2,
     "cellKey": "서울_1001_1001",
     "quotaCode1": "1001",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "800019": {
     "buildingName": "이안타워(IAN TOWER)",
@@ -111,6 +115,7 @@
     "expectedTypeCode": "G1",
     "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -141,7 +146,8 @@
     "cellPriority": 3,
     "cellKey": "서울_1001_1001",
     "quotaCode1": "1001",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "800029": {
     "buildingName": "명신프라자",
@@ -159,6 +165,7 @@
     "expectedTypeCode": "G1",
     "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -189,7 +196,8 @@
     "cellPriority": 4,
     "cellKey": "서울_1001_1001",
     "quotaCode1": "1001",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "800030": {
     "buildingName": "유일빌딩",
@@ -207,6 +215,7 @@
     "expectedTypeCode": "G1",
     "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -237,7 +246,8 @@
     "cellPriority": 5,
     "cellKey": "서울_1001_1001",
     "quotaCode1": "1001",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "800089": {
     "buildingName": "",
@@ -2966,6 +2976,262 @@
     "expectedTypeCode": "G2",
     "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1001_1002",
+    "quotaCode1": "1001",
+    "quotaCode2": "1002",
+    "quotaStatus": "completed"
+  },
+  "800613": {
+    "buildingName": "경희당",
+    "contactName": "장현호",
+    "phone": "010-8366-0792",
+    "sampleType": "예비표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "경희당",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 6,
+    "cellKey": "서울_1001_1002",
+    "quotaCode1": "1001",
+    "quotaCode2": "1002",
+    "quotaStatus": "completed"
+  },
+  "800614": {
+    "buildingName": "축구회관",
+    "contactName": "이상재",
+    "phone": "010-5803-6435",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "축구회관",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1001_1002",
+    "quotaCode1": "1001",
+    "quotaCode2": "1002",
+    "quotaStatus": "completed"
+  },
+  "800629": {
+    "buildingName": "",
+    "contactName": "이종국",
+    "phone": "010-3965-3058",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1001_1002",
+    "quotaCode1": "1001",
+    "quotaCode2": "1002",
+    "quotaStatus": "completed"
+  },
+  "800630": {
+    "buildingName": "남산타운 스포츠센타",
+    "contactName": "김천규",
+    "phone": "010-6518-7791",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "남산타운 스포츠센타",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 4,
+    "cellKey": "서울_1001_1002",
+    "quotaCode1": "1001",
+    "quotaCode2": "1002",
+    "quotaStatus": "completed"
+  },
+  "800645": {
+    "buildingName": "제강빌딩",
+    "contactName": "문세준",
+    "phone": "010-8075-8165",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "성동구",
+    "memo": "",
+    "roadAddress": "서울 성동구 성수이로 113",
+    "jibunAddress": "서울 성동구 성수동2가 289-10",
+    "sq12BuildingName": "제강빌딩",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설, 방재실",
@@ -2999,91 +3265,43 @@
     "quotaCode1": "1001",
     "quotaCode2": "1002"
   },
-  "800613": {
-    "buildingName": "경희당",
-    "contactName": "장현호",
-    "phone": "010-8366-0792",
-    "sampleType": "예비표본",
-    "mainUse": "제1종근린생활시설",
-    "areaScale": "5,000-10,000㎡",
-    "sido": "서울",
-    "sigungu": "종로구",
-    "memo": "",
-    "roadAddress": "",
-    "jibunAddress": "",
-    "sq12BuildingName": "경희당",
-    "expectedTypeCode": "G2",
-    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
-    "isPublicOrSchool": false,
-    "a51Raw": "③ 개별방식",
-    "a51Code": "3",
-    "t41Raw": "식음료시설, 판매시설, 방재실",
-    "t41Codes": [
-      "1",
-      "2",
-      "10"
-    ],
-    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
-    "b11Codes": [
-      "4"
-    ],
-    "hotWaterOnlyBoiler": false,
-    "c52Raw": "없음 (참여 안함)",
-    "c52Codes": [
-      "9"
-    ],
-    "zebCheckAfter2020": false,
-    "renewableRaw": "없음",
-    "t71Codes": [
-      "10"
-    ],
-    "contractPowerKw": 750,
-    "d21Raw": "사용하지 않는다",
-    "d21UseGas": "2",
-    "estimatedGrossAreaM2": 7500,
-    "guideFromSheet": true,
-    "selectionType": "선정",
-    "cellPriority": 6,
-    "cellKey": "서울_1001_1002",
-    "quotaCode1": "1001",
-    "quotaCode2": "1002"
-  },
-  "800614": {
-    "buildingName": "축구회관",
-    "contactName": "이상재",
-    "phone": "010-5803-6435",
+  "800648": {
+    "buildingName": "동부경찰관기동대",
+    "contactName": "박민준",
+    "phone": "010-5605-4024",
     "sampleType": "본표본",
     "mainUse": "제1종근린생활시설",
     "areaScale": "5,000-10,000㎡",
     "sido": "서울",
-    "sigungu": "종로구",
-    "memo": "",
-    "roadAddress": "",
-    "jibunAddress": "",
-    "sq12BuildingName": "축구회관",
-    "expectedTypeCode": "G2",
-    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
-    "isPublicOrSchool": false,
+    "sigungu": "성동구",
+    "memo": "주소지 중복 표본 있음_8192",
+    "roadAddress": "서울 성동구 성수이로7길 11",
+    "jibunAddress": "서울 성동구 성수동2가 333-13",
+    "sq12BuildingName": "동부경찰관기동대",
+    "expectedTypeCode": "PS",
+    "expectedTypeDesc": "공공청사(행정복지센터 등)",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "2.9",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
-    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Raw": "해당 없음",
     "t41Codes": [
-      "1",
-      "2",
-      "10"
+      "77"
     ],
     "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
     "b11Codes": [
       "4"
     ],
     "hotWaterOnlyBoiler": false,
-    "c52Raw": "없음 (참여 안함)",
+    "c52Raw": "4.신재생에너지 지원사업, 6.그린리모델링",
     "c52Codes": [
-      "9"
+      "4",
+      "6"
     ],
     "zebCheckAfter2020": false,
-    "renewableRaw": "없음",
+    "renewableRaw": "태양광",
     "t71Codes": [
+      "1",
       "10"
     ],
     "contractPowerKw": 750,
@@ -3093,104 +3311,6 @@
     "guideFromSheet": true,
     "selectionType": "선정",
     "cellPriority": 2,
-    "cellKey": "서울_1001_1002",
-    "quotaCode1": "1001",
-    "quotaCode2": "1002"
-  },
-  "800629": {
-    "buildingName": "",
-    "contactName": "이종국",
-    "phone": "010-3965-3058",
-    "sampleType": "본표본",
-    "mainUse": "제1종근린생활시설",
-    "areaScale": "5,000-10,000㎡",
-    "sido": "서울",
-    "sigungu": "중구",
-    "memo": "",
-    "roadAddress": "",
-    "jibunAddress": "",
-    "sq12BuildingName": "없음",
-    "expectedTypeCode": "G2",
-    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
-    "isPublicOrSchool": false,
-    "a51Raw": "③ 개별방식",
-    "a51Code": "3",
-    "t41Raw": "식음료시설, 판매시설, 방재실",
-    "t41Codes": [
-      "1",
-      "2",
-      "10"
-    ],
-    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
-    "b11Codes": [
-      "4"
-    ],
-    "hotWaterOnlyBoiler": false,
-    "c52Raw": "없음 (참여 안함)",
-    "c52Codes": [
-      "9"
-    ],
-    "zebCheckAfter2020": false,
-    "renewableRaw": "없음",
-    "t71Codes": [
-      "10"
-    ],
-    "contractPowerKw": 750,
-    "d21Raw": "사용하지 않는다",
-    "d21UseGas": "2",
-    "estimatedGrossAreaM2": 7500,
-    "guideFromSheet": true,
-    "selectionType": "선정",
-    "cellPriority": 3,
-    "cellKey": "서울_1001_1002",
-    "quotaCode1": "1001",
-    "quotaCode2": "1002"
-  },
-  "800630": {
-    "buildingName": "남산타운 스포츠센타",
-    "contactName": "김천규",
-    "phone": "010-6518-7791",
-    "sampleType": "본표본",
-    "mainUse": "제1종근린생활시설",
-    "areaScale": "5,000-10,000㎡",
-    "sido": "서울",
-    "sigungu": "중구",
-    "memo": "",
-    "roadAddress": "",
-    "jibunAddress": "",
-    "sq12BuildingName": "남산타운 스포츠센타",
-    "expectedTypeCode": "G2",
-    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
-    "isPublicOrSchool": false,
-    "a51Raw": "③ 개별방식",
-    "a51Code": "3",
-    "t41Raw": "식음료시설, 판매시설, 방재실",
-    "t41Codes": [
-      "1",
-      "2",
-      "10"
-    ],
-    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
-    "b11Codes": [
-      "4"
-    ],
-    "hotWaterOnlyBoiler": false,
-    "c52Raw": "없음 (참여 안함)",
-    "c52Codes": [
-      "9"
-    ],
-    "zebCheckAfter2020": false,
-    "renewableRaw": "없음",
-    "t71Codes": [
-      "10"
-    ],
-    "contractPowerKw": 750,
-    "d21Raw": "사용하지 않는다",
-    "d21UseGas": "2",
-    "estimatedGrossAreaM2": 7500,
-    "guideFromSheet": true,
-    "selectionType": "선정",
-    "cellPriority": 4,
     "cellKey": "서울_1001_1002",
     "quotaCode1": "1001",
     "quotaCode2": "1002"
@@ -3211,6 +3331,7 @@
     "expectedTypeCode": "G2",
     "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설, 방재실",
@@ -3242,7 +3363,8 @@
     "cellPriority": 5,
     "cellKey": "서울_1001_1002",
     "quotaCode1": "1001",
-    "quotaCode2": "1002"
+    "quotaCode2": "1002",
+    "quotaStatus": "completed"
   },
   "800671": {
     "buildingName": "극장빌딩",
@@ -4307,6 +4429,56 @@
     "quotaCode1": "1001",
     "quotaCode2": "1002"
   },
+  "800832": {
+    "buildingName": "대명빌딩",
+    "contactName": "박원준",
+    "phone": "010-7694-4134",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "영등포구",
+    "memo": "",
+    "roadAddress": "서울 영등포구 양평로 99",
+    "jibunAddress": "서울 영등포구 양평동4가 68-1",
+    "sq12BuildingName": "대명빌딩",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1001_1002",
+    "quotaCode1": "1001",
+    "quotaCode2": "1002"
+  },
   "800893": {
     "buildingName": "Cross 143",
     "contactName": "김세현",
@@ -4645,6 +4817,7 @@
     "expectedTypeCode": "G2",
     "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설, 방재실",
@@ -4676,7 +4849,8 @@
     "cellPriority": 1,
     "cellKey": "서울_1001_1003",
     "quotaCode1": "1001",
-    "quotaCode2": "1003"
+    "quotaCode2": "1003",
+    "quotaStatus": "completed"
   },
   "801009": {
     "buildingName": "그랑빌아파트 주상가동",
@@ -4933,6 +5107,56 @@
     "guideFromSheet": false,
     "selectionType": "대체",
     "cellPriority": 4,
+    "cellKey": "서울_1001_1003",
+    "quotaCode1": "1001",
+    "quotaCode2": "1003"
+  },
+  "801082": {
+    "buildingName": "브이-샤르망",
+    "contactName": "박윤철",
+    "phone": "010-8024-3397",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "서초구",
+    "memo": "주소지 중복 표본 있음_7989",
+    "roadAddress": "서울 서초구 효령로55길 28",
+    "jibunAddress": "서울 서초구 서초동 1601-1",
+    "sq12BuildingName": "브이-샤르망",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
     "cellKey": "서울_1001_1003",
     "quotaCode1": "1001",
     "quotaCode2": "1003"
@@ -5366,6 +5590,7 @@
     "expectedTypeCode": "G2",
     "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설, 방재실",
@@ -5397,6 +5622,59 @@
     "cellPriority": 1,
     "cellKey": "서울_1001_1005",
     "quotaCode1": "1001",
+    "quotaCode2": "1005",
+    "quotaStatus": "completed"
+  },
+  "801117": {
+    "buildingName": "전력문화회관 및 345 케이브이신",
+    "contactName": "이지훈",
+    "phone": "010-5718-5364",
+    "sampleType": "전수층",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "서초구",
+    "memo": "주소지 중복 표본 있음_7907",
+    "roadAddress": "서울 서초구 효령로72길 60",
+    "jibunAddress": "서울 서초구 서초동 1355",
+    "sq12BuildingName": "전력문화회관 및 345 케이브이신",
+    "expectedTypeCode": "PB",
+    "expectedTypeDesc": "공공 문화·집회·복지시설",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 방재실",
+    "t41Codes": [
+      "1",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 4.신재생에너지 지원사업, 6.그린리모델링",
+    "c52Codes": [
+      "3",
+      "4",
+      "6"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 6000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1001_1005",
+    "quotaCode1": "1001",
     "quotaCode2": "1005"
   },
   "801179": {
@@ -5415,6 +5693,7 @@
     "expectedTypeCode": "G1",
     "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -5445,7 +5724,8 @@
     "cellPriority": 1,
     "cellKey": "서울_1002_1001",
     "quotaCode1": "1002",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "801180": {
     "buildingName": "힐스테이트 청량리 더퍼스트 힐스에비뉴동",
@@ -5463,6 +5743,7 @@
     "expectedTypeCode": "G1",
     "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -5493,7 +5774,8 @@
     "cellPriority": 2,
     "cellKey": "서울_1002_1001",
     "quotaCode1": "1002",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "801184": {
     "buildingName": "",
@@ -5511,6 +5793,7 @@
     "expectedTypeCode": "G1",
     "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -5541,7 +5824,8 @@
     "cellPriority": 3,
     "cellKey": "서울_1002_1001",
     "quotaCode1": "1002",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "801197": {
     "buildingName": "",
@@ -6627,6 +6911,104 @@
     "giftSignerPhone": "010-4291-2736",
     "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
   },
+  "801496": {
+    "buildingName": "서전빌딩",
+    "contactName": "임경수",
+    "phone": "010-7598-7921",
+    "sampleType": "본표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "서초구",
+    "memo": "",
+    "roadAddress": "서울 서초구 사임당로 173",
+    "jibunAddress": "서울 서초구 서초동 1330-9",
+    "sq12BuildingName": "서전빌딩",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1002_1001",
+    "quotaCode1": "1002",
+    "quotaCode2": "1001"
+  },
+  "801497": {
+    "buildingName": "우영빌딩",
+    "contactName": "정기훈",
+    "phone": "010-8221-6294",
+    "sampleType": "본표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "서초구",
+    "memo": "주소지 중복 표본 있음_7888",
+    "roadAddress": "서울 서초구 서초대로78길 50",
+    "jibunAddress": "서울 서초구 서초동 1330-13",
+    "sq12BuildingName": "우영빌딩",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1002_1001",
+    "quotaCode1": "1002",
+    "quotaCode2": "1001"
+  },
   "801648": {
     "buildingName": "도화서길디원",
     "contactName": "민난기",
@@ -6643,6 +7025,7 @@
     "expectedTypeCode": "G2",
     "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설, 방재실",
@@ -6674,7 +7057,8 @@
     "cellPriority": 3,
     "cellKey": "서울_1002_1002",
     "quotaCode1": "1002",
-    "quotaCode2": "1002"
+    "quotaCode2": "1002",
+    "quotaStatus": "completed"
   },
   "801686": {
     "buildingName": "웰빙프라자",
@@ -6692,6 +7076,7 @@
     "expectedTypeCode": "G2",
     "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설, 방재실",
@@ -6723,7 +7108,8 @@
     "cellPriority": 1,
     "cellKey": "서울_1002_1002",
     "quotaCode1": "1002",
-    "quotaCode2": "1002"
+    "quotaCode2": "1002",
+    "quotaStatus": "completed"
   },
   "801687": {
     "buildingName": "위지상2호",
@@ -6741,6 +7127,7 @@
     "expectedTypeCode": "G2",
     "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설, 방재실",
@@ -6772,7 +7159,8 @@
     "cellPriority": 2,
     "cellKey": "서울_1002_1002",
     "quotaCode1": "1002",
-    "quotaCode2": "1002"
+    "quotaCode2": "1002",
+    "quotaStatus": "completed"
   },
   "801690": {
     "buildingName": "우도빌딩",
@@ -7193,6 +7581,156 @@
     "giftSignerName": "신광훈",
     "giftSignerPhone": "010-8671-9728",
     "giftStyleLabel": "스타일 H · 초성 강조 흘림 사인체"
+  },
+  "801785": {
+    "buildingName": "",
+    "contactName": "김홍식",
+    "phone": "010-3906-4876",
+    "sampleType": "예비표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "영등포구",
+    "memo": "주소지 중복 표본 있음_8667",
+    "roadAddress": "서울 영등포구 국회대로74길 9",
+    "jibunAddress": "서울 영등포구 여의도동 13-2",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1002_1002",
+    "quotaCode1": "1002",
+    "quotaCode2": "1002"
+  },
+  "801786": {
+    "buildingName": "",
+    "contactName": "신광훈",
+    "phone": "010-3956-5973",
+    "sampleType": "예비표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "영등포구",
+    "memo": "주소지 중복 표본 있음_8675",
+    "roadAddress": "서울 영등포구 국회대로72길 22",
+    "jibunAddress": "서울 영등포구 여의도동 14-13",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 4,
+    "cellKey": "서울_1002_1002",
+    "quotaCode1": "1002",
+    "quotaCode2": "1002"
+  },
+  "801798": {
+    "buildingName": "미래타워",
+    "contactName": "김동열",
+    "phone": "010-8453-4794",
+    "sampleType": "본표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "영등포구",
+    "memo": "주소지 중복 표본 있음_8627",
+    "roadAddress": "서울 영등포구 영등포로 59",
+    "jibunAddress": "서울 영등포구 양평동1가 190",
+    "sq12BuildingName": "미래타워",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1002_1002",
+    "quotaCode1": "1002",
+    "quotaCode2": "1002"
   },
   "801842": {
     "buildingName": "와이타워",
@@ -7733,6 +8271,156 @@
     "quotaCode1": "1002",
     "quotaCode2": "1002"
   },
+  "801885": {
+    "buildingName": "센트로빌",
+    "contactName": "김재명",
+    "phone": "010-7618-4723",
+    "sampleType": "본표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "강동구",
+    "memo": "",
+    "roadAddress": "서울 강동구 구천면로 428",
+    "jibunAddress": "서울 강동구 명일동 327-1",
+    "sq12BuildingName": "센트로빌",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1002_1002",
+    "quotaCode1": "1002",
+    "quotaCode2": "1002"
+  },
+  "801923": {
+    "buildingName": "쌍문동 653 삼환프라자",
+    "contactName": "이석환",
+    "phone": "010-7537-4593",
+    "sampleType": "예비표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "도봉구",
+    "memo": "주소지 중복 표본 있음_7416",
+    "roadAddress": "서울 도봉구 도봉로 575",
+    "jibunAddress": "서울 도봉구 쌍문동 653",
+    "sq12BuildingName": "쌍문동 653 삼환프라자",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1002_1003",
+    "quotaCode1": "1002",
+    "quotaCode2": "1003"
+  },
+  "801975": {
+    "buildingName": "삼성라이온즈레포츠센타",
+    "contactName": "이상윤",
+    "phone": "010-2496-8413",
+    "sampleType": "본표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "서초구",
+    "memo": "",
+    "roadAddress": "서울 서초구 서초대로64길 76-21",
+    "jibunAddress": "서울 서초구 서초동 1645",
+    "sq12BuildingName": "삼성라이온즈레포츠센타",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1002_1003",
+    "quotaCode1": "1002",
+    "quotaCode2": "1003"
+  },
   "801987": {
     "buildingName": "극동타워",
     "contactName": "박재오",
@@ -7929,6 +8617,108 @@
     "quotaCode1": "1002",
     "quotaCode2": "1004"
   },
+  "802017": {
+    "buildingName": "LS용산타워",
+    "contactName": "임성민",
+    "phone": "010-2453-6185",
+    "sampleType": "전수층",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "용산구",
+    "memo": "주소지 중복 표본 있음_8873",
+    "roadAddress": "서울 용산구 한강대로 92",
+    "jibunAddress": "서울 용산구 한강로2가 191",
+    "sq12BuildingName": "LS용산타워",
+    "expectedTypeCode": "OL",
+    "expectedTypeDesc": "대형 오피스(서울 도심 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 7.DR (2020년 이후 준공이면 2.ZEB 인증 확인)",
+    "c52Codes": [
+      "3",
+      "7"
+    ],
+    "zebCheckAfter2020": true,
+    "renewableRaw": "태양광, 지열",
+    "t71Codes": [
+      "1",
+      "3",
+      "10"
+    ],
+    "contractPowerKw": 7500,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1002_1005",
+    "quotaCode1": "1002",
+    "quotaCode2": "1005"
+  },
+  "802019": {
+    "buildingName": "대림아크로빌 지하",
+    "contactName": "김종남",
+    "phone": "010-5808-5491",
+    "sampleType": "전수층",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "강남구",
+    "memo": "주소지 중복 표본 있음_6233",
+    "roadAddress": "서울 강남구 언주로30길 13",
+    "jibunAddress": "서울 강남구 도곡동 467-6",
+    "sq12BuildingName": "대림아크로빌 지하",
+    "expectedTypeCode": "OT",
+    "expectedTypeDesc": "오피스텔·주상복합",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉방 개별 15.패키지·룸에어콘[전기31] (또는 4.EHP)",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 4500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1002_1005",
+    "quotaCode1": "1002",
+    "quotaCode2": "1005"
+  },
   "802023": {
     "buildingName": "일민미술관",
     "contactName": "강희철",
@@ -7945,6 +8735,7 @@
     "expectedTypeCode": "CN",
     "expectedTypeDesc": "민간 문화집회(영화관 등)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "4.2",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -7975,7 +8766,8 @@
     "cellPriority": 2,
     "cellKey": "서울_1003_1001",
     "quotaCode1": "1003",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "802027": {
     "buildingName": "선재서울미술관",
@@ -7993,6 +8785,7 @@
     "expectedTypeCode": "CN",
     "expectedTypeDesc": "민간 문화집회(영화관 등)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "3.9",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -8023,7 +8816,8 @@
     "cellPriority": 3,
     "cellKey": "서울_1003_1001",
     "quotaCode1": "1003",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "802035": {
     "buildingName": "한국마사회 종로지사",
@@ -8041,6 +8835,7 @@
     "expectedTypeCode": "CN",
     "expectedTypeDesc": "민간 문화집회(영화관 등)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "4.2",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -8071,7 +8866,8 @@
     "cellPriority": 4,
     "cellKey": "서울_1003_1001",
     "quotaCode1": "1003",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "802038": {
     "buildingName": "",
@@ -8089,6 +8885,7 @@
     "expectedTypeCode": "CN",
     "expectedTypeDesc": "민간 문화집회(영화관 등)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "4.0",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -8119,7 +8916,8 @@
     "cellPriority": 1,
     "cellKey": "서울_1003_1001",
     "quotaCode1": "1003",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "802048": {
     "buildingName": "이태원111",
@@ -8137,6 +8935,7 @@
     "expectedTypeCode": "CN",
     "expectedTypeDesc": "민간 문화집회(영화관 등)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "6.6",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -8167,6 +8966,105 @@
     "cellPriority": 5,
     "cellKey": "서울_1003_1001",
     "quotaCode1": "1003",
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
+  },
+  "802089": {
+    "buildingName": "KMCA미술관",
+    "contactName": "박세화",
+    "phone": "010-7745-6085",
+    "sampleType": "예비표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "강남구",
+    "memo": "",
+    "roadAddress": "서울 강남구 선릉로 807",
+    "jibunAddress": "서울 강남구 신사동 666-32",
+    "sq12BuildingName": "KMCA미술관",
+    "expectedTypeCode": "CN",
+    "expectedTypeDesc": "민간 문화집회(영화관 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "5.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 480,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1003_1001",
+    "quotaCode1": "1003",
+    "quotaCode2": "1001"
+  },
+  "802093": {
+    "buildingName": "수서동 성당",
+    "contactName": "안인철",
+    "phone": "010-8075-8165",
+    "sampleType": "예비표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "강남구",
+    "memo": "",
+    "roadAddress": "서울 강남구 광평로 199",
+    "jibunAddress": "서울 강남구 수서동 739",
+    "sq12BuildingName": "수서동 성당",
+    "expectedTypeCode": "UN",
+    "expectedTypeDesc": "대학·교회·교육재단 등",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "4.5",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO",
+    "c52Codes": [
+      "3"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1003_1001",
+    "quotaCode1": "1003",
     "quotaCode2": "1001"
   },
   "802097": {
@@ -8185,6 +9083,7 @@
     "expectedTypeCode": "CN",
     "expectedTypeDesc": "민간 문화집회(영화관 등)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "4.0",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -8215,7 +9114,8 @@
     "cellPriority": 1,
     "cellKey": "서울_1003_1002",
     "quotaCode1": "1003",
-    "quotaCode2": "1002"
+    "quotaCode2": "1002",
+    "quotaStatus": "completed"
   },
   "802126": {
     "buildingName": "",
@@ -8315,6 +9215,104 @@
     "estimatedGrossAreaM2": 7500,
     "guideFromSheet": false,
     "selectionType": "대체",
+    "cellPriority": 2,
+    "cellKey": "서울_1003_1002",
+    "quotaCode1": "1003",
+    "quotaCode2": "1002"
+  },
+  "802163": {
+    "buildingName": "ASEM 및 한국종합무역센타단지 코엑스 아티움",
+    "contactName": "엄정식",
+    "phone": "010-8240-2463",
+    "sampleType": "본표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "강남구",
+    "memo": "주소지 중복 표본 있음_6297",
+    "roadAddress": "서울 강남구 영동대로 511",
+    "jibunAddress": "서울 강남구 삼성동 159",
+    "sq12BuildingName": "ASEM 및 한국종합무역센타단지 코엑스 아티움",
+    "expectedTypeCode": "CN",
+    "expectedTypeDesc": "민간 문화집회(영화관 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "5.5",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 900,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1003_1002",
+    "quotaCode1": "1003",
+    "quotaCode2": "1002"
+  },
+  "802164": {
+    "buildingName": "서경대학교",
+    "contactName": "윤대이",
+    "phone": "010-7388-1938",
+    "sampleType": "예비표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "강남구",
+    "memo": "주소지 중복 표본 있음_6371",
+    "roadAddress": "서울 강남구 논현로 848",
+    "jibunAddress": "서울 강남구 신사동 603-2",
+    "sq12BuildingName": "서경대학교",
+    "expectedTypeCode": "UN",
+    "expectedTypeDesc": "대학·교회·교육재단 등",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "6.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO",
+    "c52Codes": [
+      "3"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
     "cellPriority": 2,
     "cellKey": "서울_1003_1002",
     "quotaCode1": "1003",
@@ -8598,6 +9596,57 @@
     "expectedTypeCode": "CN",
     "expectedTypeDesc": "민간 문화집회(영화관 등)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "4.3",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1800,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1003_1003",
+    "quotaCode1": "1003",
+    "quotaCode2": "1003",
+    "quotaStatus": "completed"
+  },
+  "802219": {
+    "buildingName": "",
+    "contactName": "이영철",
+    "phone": "010-5129-0683",
+    "sampleType": "본표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "강남구",
+    "memo": "",
+    "roadAddress": "서울 강남구 압구정로30길 45",
+    "jibunAddress": "서울 강남구 신사동 602",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "CN",
+    "expectedTypeDesc": "민간 문화집회(영화관 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "4.8",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -8630,6 +9679,162 @@
     "quotaCode1": "1003",
     "quotaCode2": "1003"
   },
+  "802223": {
+    "buildingName": "역도경기장",
+    "contactName": "이재상",
+    "phone": "010-5639-5907",
+    "sampleType": "본표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "송파구",
+    "memo": "주소지 중복 표본 있음_8370",
+    "roadAddress": "서울 송파구 올림픽로 424",
+    "jibunAddress": "서울 송파구 방이동 88-2",
+    "sq12BuildingName": "역도경기장",
+    "expectedTypeCode": "PB",
+    "expectedTypeDesc": "공공 문화·집회·복지시설",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "6.5",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 방재실",
+    "t41Codes": [
+      "1",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 4.신재생에너지 지원사업, 6.그린리모델링",
+    "c52Codes": [
+      "3",
+      "4",
+      "6"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 1500,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1003_1003",
+    "quotaCode1": "1003",
+    "quotaCode2": "1003"
+  },
+  "802227": {
+    "buildingName": "한성백제박물관",
+    "contactName": "장준호",
+    "phone": "010-8387-1784",
+    "sampleType": "본표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "송파구",
+    "memo": "주소지 중복 표본 있음_8371",
+    "roadAddress": "서울 송파구 위례성대로 71",
+    "jibunAddress": "서울 송파구 방이동 88-20",
+    "sq12BuildingName": "한성백제박물관",
+    "expectedTypeCode": "PB",
+    "expectedTypeDesc": "공공 문화·집회·복지시설",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "4.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 방재실",
+    "t41Codes": [
+      "1",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 4.신재생에너지 지원사업, 6.그린리모델링",
+    "c52Codes": [
+      "3",
+      "4",
+      "6"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 1500,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1003_1003",
+    "quotaCode1": "1003",
+    "quotaCode2": "1003"
+  },
+  "802238": {
+    "buildingName": "체조경기장",
+    "contactName": "정윤호",
+    "phone": "010-5814-2973",
+    "sampleType": "예비표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "30,000-50,000㎡",
+    "sido": "서울",
+    "sigungu": "송파구",
+    "memo": "주소지 중복 표본 있음_8370",
+    "roadAddress": "서울 송파구 올림픽로 424",
+    "jibunAddress": "서울 송파구 방이동 88-2",
+    "sq12BuildingName": "체조경기장",
+    "expectedTypeCode": "PB",
+    "expectedTypeDesc": "공공 문화·집회·복지시설",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "8.5",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 방재실",
+    "t41Codes": [
+      "1",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 4.신재생에너지 지원사업, 6.그린리모델링",
+    "c52Codes": [
+      "3",
+      "4",
+      "6"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 4000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 38000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1003_1004",
+    "quotaCode1": "1003",
+    "quotaCode2": "1004"
+  },
   "802239": {
     "buildingName": "세종문화회관",
     "contactName": "신만식",
@@ -8646,6 +9851,157 @@
     "expectedTypeCode": "CN",
     "expectedTypeDesc": "민간 문화집회(영화관 등)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "6.5",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 7200,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1003_1005",
+    "quotaCode1": "1003",
+    "quotaCode2": "1005",
+    "quotaStatus": "completed"
+  },
+  "802240": {
+    "buildingName": "국립현대미술관 서울관",
+    "contactName": "김영숙",
+    "phone": "010-7681-2384",
+    "sampleType": "전수층",
+    "mainUse": "문화및집회시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "국립현대미술관 서울관",
+    "expectedTypeCode": "CN",
+    "expectedTypeDesc": "민간 문화집회(영화관 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "5.5",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 7200,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1003_1005",
+    "quotaCode1": "1003",
+    "quotaCode2": "1005",
+    "quotaStatus": "completed"
+  },
+  "802241": {
+    "buildingName": "동대문디자인플라자",
+    "contactName": "유은주",
+    "phone": "010-5861-3348",
+    "sampleType": "전수층",
+    "mainUse": "문화및집회시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "동대문디자인플라자",
+    "expectedTypeCode": "CN",
+    "expectedTypeDesc": "민간 문화집회(영화관 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "7.5",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 7200,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1003_1005",
+    "quotaCode1": "1003",
+    "quotaCode2": "1005",
+    "quotaStatus": "completed"
+  },
+  "802245": {
+    "buildingName": "기존컨벤션센타",
+    "contactName": "조준석",
+    "phone": "010-8301-7043",
+    "sampleType": "전수층",
+    "mainUse": "문화및집회시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "강남구",
+    "memo": "주소지 중복 표본 있음_6297",
+    "roadAddress": "서울 강남구 영동대로 511",
+    "jibunAddress": "서울 강남구 삼성동 159",
+    "sq12BuildingName": "기존컨벤션센타",
+    "expectedTypeCode": "CN",
+    "expectedTypeDesc": "민간 문화집회(영화관 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "7.5",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -8678,22 +10034,23 @@
     "quotaCode1": "1003",
     "quotaCode2": "1005"
   },
-  "802240": {
-    "buildingName": "국립현대미술관 서울관",
-    "contactName": "김영숙",
-    "phone": "010-7681-2384",
+  "802246": {
+    "buildingName": "ASEM 및 한국종합무역센타단지 컨벤션센터",
+    "contactName": "지병훈",
+    "phone": "010-2481-8474",
     "sampleType": "전수층",
     "mainUse": "문화및집회시설",
     "areaScale": "50,000㎡ 초과",
     "sido": "서울",
-    "sigungu": "종로구",
-    "memo": "",
-    "roadAddress": "",
-    "jibunAddress": "",
-    "sq12BuildingName": "국립현대미술관 서울관",
+    "sigungu": "강남구",
+    "memo": "주소지 중복 표본 있음_6297",
+    "roadAddress": "서울 강남구 영동대로 511",
+    "jibunAddress": "서울 강남구 삼성동 159",
+    "sq12BuildingName": "ASEM 및 한국종합무역센타단지 컨벤션센터",
     "expectedTypeCode": "CN",
     "expectedTypeDesc": "민간 문화집회(영화관 등)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "7.5",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -8726,54 +10083,6 @@
     "quotaCode1": "1003",
     "quotaCode2": "1005"
   },
-  "802241": {
-    "buildingName": "동대문디자인플라자",
-    "contactName": "유은주",
-    "phone": "010-5861-3348",
-    "sampleType": "전수층",
-    "mainUse": "문화및집회시설",
-    "areaScale": "50,000㎡ 초과",
-    "sido": "서울",
-    "sigungu": "중구",
-    "memo": "",
-    "roadAddress": "",
-    "jibunAddress": "",
-    "sq12BuildingName": "동대문디자인플라자",
-    "expectedTypeCode": "CN",
-    "expectedTypeDesc": "민간 문화집회(영화관 등)",
-    "isPublicOrSchool": false,
-    "a51Raw": "③ 개별방식",
-    "a51Code": "3",
-    "t41Raw": "식음료시설, 판매시설",
-    "t41Codes": [
-      "1",
-      "2"
-    ],
-    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
-    "b11Codes": [
-      "4"
-    ],
-    "hotWaterOnlyBoiler": false,
-    "c52Raw": "없음 (참여 안함)",
-    "c52Codes": [
-      "9"
-    ],
-    "zebCheckAfter2020": false,
-    "renewableRaw": "없음",
-    "t71Codes": [
-      "10"
-    ],
-    "contractPowerKw": 7200,
-    "d21Raw": "사용하지 않는다",
-    "d21UseGas": "2",
-    "estimatedGrossAreaM2": 60000,
-    "guideFromSheet": true,
-    "selectionType": "선정",
-    "cellPriority": 3,
-    "cellKey": "서울_1003_1005",
-    "quotaCode1": "1003",
-    "quotaCode2": "1005"
-  },
   "802256": {
     "buildingName": "을지로4구역 지하도상가",
     "contactName": "최재우",
@@ -8790,6 +10099,7 @@
     "expectedTypeCode": "G1",
     "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
     "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
     "a51Raw": "③ 개별방식",
     "a51Code": "3",
     "t41Raw": "식음료시설, 판매시설",
@@ -8820,7 +10130,8 @@
     "cellPriority": 1,
     "cellKey": "서울_1004_1001",
     "quotaCode1": "1004",
-    "quotaCode2": "1001"
+    "quotaCode2": "1001",
+    "quotaStatus": "completed"
   },
   "802317": {
     "buildingName": "",
@@ -9168,6 +10479,55 @@
     "guideFromSheet": false,
     "selectionType": "대체",
     "cellPriority": 6,
+    "cellKey": "서울_1004_1001",
+    "quotaCode1": "1004",
+    "quotaCode2": "1001"
+  },
+  "802344": {
+    "buildingName": "",
+    "contactName": "홍순문",
+    "phone": "010-8480-9573",
+    "sampleType": "본표본",
+    "mainUse": "판매시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "양천구",
+    "memo": "",
+    "roadAddress": "서울 양천구 화곡로 59",
+    "jibunAddress": "서울 양천구 신월동 26",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
     "cellKey": "서울_1004_1001",
     "quotaCode1": "1004",
     "quotaCode2": "1001"
@@ -9683,6 +11043,153 @@
     "quotaCode1": "1004",
     "quotaCode2": "1001"
   },
+  "802475": {
+    "buildingName": "DWP",
+    "contactName": "이윤재",
+    "phone": "010-5508-3937",
+    "sampleType": "본표본",
+    "mainUse": "판매시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "DWP",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1004_1002",
+    "quotaCode1": "1004",
+    "quotaCode2": "1002"
+  },
+  "802477": {
+    "buildingName": "남평화시장",
+    "contactName": "김동열",
+    "phone": "010-5751-8677",
+    "sampleType": "본표본",
+    "mainUse": "판매시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "남평화시장",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1004_1002",
+    "quotaCode1": "1004",
+    "quotaCode2": "1002"
+  },
+  "802493": {
+    "buildingName": "동서울농협 장안동지점",
+    "contactName": "김동완",
+    "phone": "010-7654-0475",
+    "sampleType": "본표본",
+    "mainUse": "판매시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "동대문구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "동서울농협 장안동지점",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1004_1002",
+    "quotaCode1": "1004",
+    "quotaCode2": "1002"
+  },
   "802495": {
     "buildingName": "MEGA BOX",
     "contactName": "",
@@ -9935,6 +11442,106 @@
     "quotaCode1": "1004",
     "quotaCode2": "1002"
   },
+  "802522": {
+    "buildingName": "e편한세상 독산 더타워 판매 및 근생동",
+    "contactName": "김동열",
+    "phone": "010-8268-3497",
+    "sampleType": "본표본",
+    "mainUse": "판매시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "금천구",
+    "memo": "주소지 중복 표본 있음_7292",
+    "roadAddress": "서울 금천구 범안로 1212",
+    "jibunAddress": "서울 금천구 독산동 1007-13",
+    "sq12BuildingName": "e편한세상 독산 더타워 판매 및 근생동",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1004_1002",
+    "quotaCode1": "1004",
+    "quotaCode2": "1002"
+  },
+  "802532": {
+    "buildingName": "대림아파트 상가A동",
+    "contactName": "김동영",
+    "phone": "010-2497-4018",
+    "sampleType": "본표본",
+    "mainUse": "판매시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "동작구",
+    "memo": "주소지 중복 표본 있음_7535",
+    "roadAddress": "서울 동작구 사당로17길 52",
+    "jibunAddress": "서울 동작구 사당동 169-8",
+    "sq12BuildingName": "대림아파트 상가A동",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1004_1002",
+    "quotaCode1": "1004",
+    "quotaCode2": "1002"
+  },
   "802555": {
     "buildingName": "카로시티2",
     "contactName": "윤정호",
@@ -10130,6 +11737,56 @@
     "cellKey": "서울_1004_1002",
     "quotaCode1": "1004",
     "quotaCode2": "1002"
+  },
+  "802602": {
+    "buildingName": "선인상가 22동",
+    "contactName": "김세준",
+    "phone": "010-4812-3781",
+    "sampleType": "본표본",
+    "mainUse": "판매시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "용산구",
+    "memo": "주소지 중복 표본 있음_8872",
+    "roadAddress": "서울 용산구 새창로 181",
+    "jibunAddress": "서울 용산구 한강로2가 15-14",
+    "sq12BuildingName": "선인상가 22동",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1004_1003",
+    "quotaCode1": "1004",
+    "quotaCode2": "1003"
   },
   "802632": {
     "buildingName": "와우쇼핑몰",
@@ -10553,6 +12210,60 @@
     "giftSignerPhone": "010-2077-7629",
     "giftStyleLabel": "스타일 D · 굵은 붓펜체 (강한 필압)"
   },
+  "802730": {
+    "buildingName": "롯데마트 양평점",
+    "contactName": "김영민",
+    "phone": "010-9287-9465",
+    "sampleType": "본표본",
+    "mainUse": "판매시설",
+    "areaScale": "30,000-50,000㎡",
+    "sido": "서울",
+    "sigungu": "영등포구",
+    "memo": "주소지 중복 표본 있음_8634",
+    "roadAddress": "서울 영등포구 선유로 138",
+    "jibunAddress": "서울 영등포구 양평동3가 45",
+    "sq12BuildingName": "롯데마트 양평점",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 8000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 38000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1004_1004",
+    "quotaCode1": "1004",
+    "quotaCode2": "1004"
+  },
   "802735": {
     "buildingName": "마제스타시티 서초애비뉴",
     "contactName": "오현종",
@@ -10658,6 +12369,330 @@
     "cellKey": "서울_1004_1004",
     "quotaCode1": "1004",
     "quotaCode2": "1004"
+  },
+  "802751": {
+    "buildingName": "현대시티타워",
+    "contactName": "최재섭",
+    "phone": "010-8103-4193",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "현대시티타워",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "802752": {
+    "buildingName": "굿모닝시티 쇼핑몰",
+    "contactName": "이정남",
+    "phone": "010-2388-2762",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "굿모닝시티 쇼핑몰",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "802757": {
+    "buildingName": "더샵스타시티 판매영업동",
+    "contactName": "박종길",
+    "phone": "010-4197-3284",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "광진구",
+    "memo": "주소지 중복 표본 있음_7033",
+    "roadAddress": "서울 광진구 아차산로 262",
+    "jibunAddress": "서울 광진구 자양동 227-7",
+    "sq12BuildingName": "더샵스타시티 판매영업동",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "802758": {
+    "buildingName": "더클래식500 판매시설동",
+    "contactName": "이정민",
+    "phone": "010-6201-2903",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "광진구",
+    "memo": "주소지 중복 표본 있음_7031",
+    "roadAddress": "서울 광진구 능동로 90",
+    "jibunAddress": "서울 광진구 자양동 227-342",
+    "sq12BuildingName": "더클래식500 판매시설동",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "802759": {
+    "buildingName": "이스트폴 판매시설(북측)및 지하주차장",
+    "contactName": "이정혁",
+    "phone": "010-2190-4278",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "광진구",
+    "memo": "주소지 중복 표본 있음_7043",
+    "roadAddress": "서울 광진구 아차산로 400",
+    "jibunAddress": "서울 광진구 자양동 870",
+    "sq12BuildingName": "이스트폴 판매시설(북측)및 지하주차장",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "802760": {
+    "buildingName": "한화(HANWHA)",
+    "contactName": "이준흥",
+    "phone": "010-8128-4095",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "동대문구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "한화(HANWHA)",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
   },
   "802765": {
     "buildingName": "월계동 이마트 이마트",
@@ -10885,6 +12920,114 @@
     "quotaCode1": "1004",
     "quotaCode2": "1005"
   },
+  "802783": {
+    "buildingName": "하이힐",
+    "contactName": "박춘성",
+    "phone": "010-7940-9684",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "금천구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "하이힐",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 4,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "802784": {
+    "buildingName": "마리오아울렛3",
+    "contactName": "서석준",
+    "phone": "010-8279-5974",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "금천구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "마리오아울렛3",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 5,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
   "802789": {
     "buildingName": "파크원 백화점",
     "contactName": "심성철",
@@ -10990,6 +13133,266 @@
     "cellKey": "서울_1004_1005",
     "quotaCode1": "1004",
     "quotaCode2": "1005"
+  },
+  "802798": {
+    "buildingName": "국제전자센터",
+    "contactName": "김재균",
+    "phone": "010-4326-9608",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "서초구",
+    "memo": "주소지 중복 표본 있음_7931",
+    "roadAddress": "서울 서초구 효령로 304",
+    "jibunAddress": "서울 서초구 서초동 1445-3",
+    "sq12BuildingName": "국제전자센터",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 4,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "802799": {
+    "buildingName": "현대백화점",
+    "contactName": "부기호",
+    "phone": "010-6786-5943",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "강남구",
+    "memo": "주소지 중복 표본 있음_6300",
+    "roadAddress": "서울 강남구 테헤란로 517",
+    "jibunAddress": "서울 강남구 삼성동 159-7",
+    "sq12BuildingName": "현대백화점",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 5,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "802800": {
+    "buildingName": "현대백화점본점",
+    "contactName": "송민규",
+    "phone": "010-9856-7742",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "강남구",
+    "memo": "주소지 중복 표본 있음_6388",
+    "roadAddress": "서울 강남구 압구정로 165",
+    "jibunAddress": "서울 강남구 압구정동 429",
+    "sq12BuildingName": "현대백화점본점",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 6,
+    "cellKey": "서울_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "802818": {
+    "buildingName": "장례식장 37",
+    "contactName": "심대성",
+    "phone": "010-7761-6813",
+    "sampleType": "본표본",
+    "mainUse": "의료시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "장례식장 37",
+    "expectedTypeCode": "H1",
+    "expectedTypeDesc": "병원 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+    "b11Codes": [
+      "5",
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 600,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1005_1001",
+    "quotaCode1": "1005",
+    "quotaCode2": "1001"
+  },
+  "802824": {
+    "buildingName": "",
+    "contactName": "배형수",
+    "phone": "010-5734-9243",
+    "sampleType": "본표본",
+    "mainUse": "의료시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "H1",
+    "expectedTypeDesc": "병원 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+    "b11Codes": [
+      "5",
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 600,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1005_1001",
+    "quotaCode1": "1005",
+    "quotaCode2": "1001"
   },
   "802844": {
     "buildingName": "",
@@ -11100,6 +13503,104 @@
     "giftSignerName": "이원복",
     "giftSignerPhone": "010-4967-4027",
     "giftStyleLabel": "스타일 G · 가로 넓은 안정 사인체"
+  },
+  "802937": {
+    "buildingName": "기쁨병원",
+    "contactName": "송지훈",
+    "phone": "010-3046-6024",
+    "sampleType": "본표본",
+    "mainUse": "의료시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "서초구",
+    "memo": "",
+    "roadAddress": "서울 서초구 서초중앙로 4",
+    "jibunAddress": "서울 서초구 서초동 1426-1",
+    "sq12BuildingName": "기쁨병원",
+    "expectedTypeCode": "H1",
+    "expectedTypeDesc": "병원 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+    "b11Codes": [
+      "5",
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 600,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1005_1001",
+    "quotaCode1": "1005",
+    "quotaCode2": "1001"
+  },
+  "802938": {
+    "buildingName": "",
+    "contactName": "엄윤성",
+    "phone": "010-4450-8146",
+    "sampleType": "본표본",
+    "mainUse": "의료시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "서초구",
+    "memo": "",
+    "roadAddress": "서울 서초구 명달로 102",
+    "jibunAddress": "서울 서초구 서초동 1515-4",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "H1",
+    "expectedTypeDesc": "병원 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+    "b11Codes": [
+      "5",
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 600,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1005_1001",
+    "quotaCode1": "1005",
+    "quotaCode2": "1001"
   },
   "802943": {
     "buildingName": "삼성동 52-17 의료시설(김승호)마디빌딩",
@@ -11581,6 +14082,157 @@
     "quotaCode1": "1005",
     "quotaCode2": "1001"
   },
+  "802965": {
+    "buildingName": "서재곤 링커병원",
+    "contactName": "이민규",
+    "phone": "010-2186-3175",
+    "sampleType": "본표본",
+    "mainUse": "의료시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "송파구",
+    "memo": "",
+    "roadAddress": "서울 송파구 백제고분로 436",
+    "jibunAddress": "서울 송파구 송파동 135-3",
+    "sq12BuildingName": "서재곤 링커병원",
+    "expectedTypeCode": "H1",
+    "expectedTypeDesc": "병원 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+    "b11Codes": [
+      "5",
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 600,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1005_1001",
+    "quotaCode1": "1005",
+    "quotaCode2": "1001"
+  },
+  "802998": {
+    "buildingName": "마동(요양동)",
+    "contactName": "하장희",
+    "phone": "010-9065-6036",
+    "sampleType": "본표본",
+    "mainUse": "의료시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "마동(요양동)",
+    "expectedTypeCode": "H2",
+    "expectedTypeDesc": "병원 중형",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+    "b11Codes": [
+      "5",
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1125,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1005_1002",
+    "quotaCode1": "1005",
+    "quotaCode2": "1002"
+  },
+  "803011": {
+    "buildingName": "양지빌딩 가동",
+    "contactName": "박규호",
+    "phone": "010-4526-6974",
+    "sampleType": "본표본",
+    "mainUse": "의료시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "동대문구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "양지빌딩 가동",
+    "expectedTypeCode": "H2",
+    "expectedTypeDesc": "병원 중형",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+    "b11Codes": [
+      "5",
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1125,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1005_1002",
+    "quotaCode1": "1005",
+    "quotaCode2": "1002"
+  },
   "803040": {
     "buildingName": "대감프라자",
     "contactName": "정용종",
@@ -11898,6 +14550,60 @@
     "quotaCode1": "1005",
     "quotaCode2": "1003"
   },
+  "803201": {
+    "buildingName": "서울대학교병원 대한외래",
+    "contactName": "김홍식",
+    "phone": "010-7368-5284",
+    "sampleType": "예비표본",
+    "mainUse": "의료시설",
+    "areaScale": "30,000-50,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "서울대학교병원 대한외래",
+    "expectedTypeCode": "HB",
+    "expectedTypeDesc": "대형병원",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 4.신재생에너지 지원사업, 7.DR",
+    "c52Codes": [
+      "3",
+      "4",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광, 지열",
+    "t71Codes": [
+      "1",
+      "3",
+      "10"
+    ],
+    "contractPowerKw": 7400,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 38000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1005_1004",
+    "quotaCode1": "1005",
+    "quotaCode2": "1004"
+  },
   "803208": {
     "buildingName": "",
     "contactName": "김강렬",
@@ -11957,6 +14663,60 @@
     "giftSignerName": "김강렬",
     "giftSignerPhone": "010-7543-3247",
     "giftStyleLabel": "스타일 B · 우상향 흘림체 (연속 필기)"
+  },
+  "803224": {
+    "buildingName": "서울대학교 병원 신본관",
+    "contactName": "김성재",
+    "phone": "010-8726-5261",
+    "sampleType": "전수층",
+    "mainUse": "의료시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "서울대학교 병원 신본관",
+    "expectedTypeCode": "HB",
+    "expectedTypeDesc": "대형병원",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 4.신재생에너지 지원사업, 7.DR",
+    "c52Codes": [
+      "3",
+      "4",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광, 지열",
+    "t71Codes": [
+      "1",
+      "3",
+      "10"
+    ],
+    "contractPowerKw": 11100,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1005_1005",
+    "quotaCode1": "1005",
+    "quotaCode2": "1005"
   },
   "803490": {
     "buildingName": "서일대학교 아이동",
@@ -14480,6 +17240,398 @@
     "quotaCode1": "1006",
     "quotaCode2": "1005"
   },
+  "806452": {
+    "buildingName": "대한유화공업(주)",
+    "contactName": "송현만",
+    "phone": "010-4805-9617",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "대한유화공업(주)",
+    "expectedTypeCode": "OF1",
+    "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1007_1001",
+    "quotaCode1": "1007",
+    "quotaCode2": "1001"
+  },
+  "806460": {
+    "buildingName": "돈의문박물관마을 K",
+    "contactName": "조준혁",
+    "phone": "010-5297-4706",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "돈의문박물관마을 K",
+    "expectedTypeCode": "OF1",
+    "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1007_1001",
+    "quotaCode1": "1007",
+    "quotaCode2": "1001"
+  },
+  "806478": {
+    "buildingName": "창경빌딩",
+    "contactName": "최재웅",
+    "phone": "010-6358-3709",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "창경빌딩",
+    "expectedTypeCode": "OF1",
+    "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1007_1001",
+    "quotaCode1": "1007",
+    "quotaCode2": "1001"
+  },
+  "806483": {
+    "buildingName": "대호빌딩 B동",
+    "contactName": "이기원",
+    "phone": "010-8740-7628",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "대호빌딩 B동",
+    "expectedTypeCode": "OF1",
+    "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 4,
+    "cellKey": "서울_1007_1001",
+    "quotaCode1": "1007",
+    "quotaCode2": "1001"
+  },
+  "806490": {
+    "buildingName": "",
+    "contactName": "신동현",
+    "phone": "010-8458-0452",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "OF1",
+    "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 5,
+    "cellKey": "서울_1007_1001",
+    "quotaCode1": "1007",
+    "quotaCode2": "1001"
+  },
+  "806504": {
+    "buildingName": "주건축물제1동",
+    "contactName": "정한용",
+    "phone": "010-3952-6814",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "주건축물제1동",
+    "expectedTypeCode": "OF1",
+    "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 6,
+    "cellKey": "서울_1007_1001",
+    "quotaCode1": "1007",
+    "quotaCode2": "1001"
+  },
+  "806506": {
+    "buildingName": "",
+    "contactName": "안상우",
+    "phone": "010-8029-0635",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "OF1",
+    "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 7,
+    "cellKey": "서울_1007_1001",
+    "quotaCode1": "1007",
+    "quotaCode2": "1001"
+  },
+  "806510": {
+    "buildingName": "더플레이스위종로",
+    "contactName": "김영환",
+    "phone": "010-2498-0946",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "더플레이스위종로",
+    "expectedTypeCode": "OF1",
+    "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 8,
+    "cellKey": "서울_1007_1001",
+    "quotaCode1": "1007",
+    "quotaCode2": "1001"
+  },
   "806816": {
     "buildingName": "",
     "contactName": "하장원",
@@ -15151,6 +18303,104 @@
     "cellKey": "서울_1007_1001",
     "quotaCode1": "1007",
     "quotaCode2": "1001"
+  },
+  "808227": {
+    "buildingName": "양우 내안애 애플",
+    "contactName": "이한규",
+    "phone": "010-2963-6247",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "동대문구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "양우 내안애 애플",
+    "expectedTypeCode": "OF1",
+    "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 938,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1007_1002",
+    "quotaCode1": "1007",
+    "quotaCode2": "1002"
+  },
+  "808233": {
+    "buildingName": "",
+    "contactName": "홍동의",
+    "phone": "010-7423-0962",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "동대문구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "OF1",
+    "expectedTypeDesc": "업무빌딩 중소(1만㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 938,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1007_1002",
+    "quotaCode1": "1007",
+    "quotaCode2": "1002"
   },
   "808250": {
     "buildingName": "브르넨상봉",
@@ -19641,6 +22891,159 @@
     "quotaCode1": "1007",
     "quotaCode2": "1002"
   },
+  "809248": {
+    "buildingName": "대림빌딩",
+    "contactName": "송용헌",
+    "phone": "010-3013-5955",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "대림빌딩",
+    "expectedTypeCode": "OF2",
+    "expectedTypeDesc": "업무빌딩 중대형(1만~3만㎡)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "7.DR",
+    "c52Codes": [
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 1875,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1007_1003",
+    "quotaCode1": "1007",
+    "quotaCode2": "1003"
+  },
+  "809296": {
+    "buildingName": "교원명동빌딩",
+    "contactName": "홍진구",
+    "phone": "010-9907-7194",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "교원명동빌딩",
+    "expectedTypeCode": "OF2",
+    "expectedTypeDesc": "업무빌딩 중대형(1만~3만㎡)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "7.DR",
+    "c52Codes": [
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 1875,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1007_1003",
+    "quotaCode1": "1007",
+    "quotaCode2": "1003"
+  },
+  "809332": {
+    "buildingName": "한국자유총연맹",
+    "contactName": "이정우",
+    "phone": "010-4323-2457",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "한국자유총연맹",
+    "expectedTypeCode": "OF2",
+    "expectedTypeDesc": "업무빌딩 중대형(1만~3만㎡)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "7.DR",
+    "c52Codes": [
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 1875,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1007_1003",
+    "quotaCode1": "1007",
+    "quotaCode2": "1003"
+  },
   "809481": {
     "buildingName": "한일써너스빌 104동",
     "contactName": "",
@@ -20696,6 +24099,59 @@
     "cellKey": "서울_1007_1003",
     "quotaCode1": "1007",
     "quotaCode2": "1003"
+  },
+  "810418": {
+    "buildingName": "한국기독교연합회관",
+    "contactName": "최준완",
+    "phone": "010-5149-7294",
+    "sampleType": "본표본",
+    "mainUse": "업무시설",
+    "areaScale": "30,000-50,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "한국기독교연합회관",
+    "expectedTypeCode": "OL",
+    "expectedTypeDesc": "대형 오피스(서울 도심 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 7.DR (2020년 이후 준공이면 2.ZEB 인증 확인)",
+    "c52Codes": [
+      "3",
+      "7"
+    ],
+    "zebCheckAfter2020": true,
+    "renewableRaw": "태양광, 지열",
+    "t71Codes": [
+      "1",
+      "3",
+      "10"
+    ],
+    "contractPowerKw": 5000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 38000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1007_1004",
+    "quotaCode1": "1007",
+    "quotaCode2": "1004"
   },
   "810548": {
     "buildingName": "SK허브수 B동",
@@ -22459,6 +25915,112 @@
     "quotaCode1": "1007",
     "quotaCode2": "1005"
   },
+  "810770": {
+    "buildingName": "청량리역 롯데캐슬 Sky-L65 타워",
+    "contactName": "윤동만",
+    "phone": "010-6894-9548",
+    "sampleType": "전수층",
+    "mainUse": "업무시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "동대문구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "청량리역 롯데캐슬 Sky-L65 타워",
+    "expectedTypeCode": "OL",
+    "expectedTypeDesc": "대형 오피스(서울 도심 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 7.DR (2020년 이후 준공이면 2.ZEB 인증 확인)",
+    "c52Codes": [
+      "3",
+      "7"
+    ],
+    "zebCheckAfter2020": true,
+    "renewableRaw": "태양광, 지열",
+    "t71Codes": [
+      "1",
+      "3",
+      "10"
+    ],
+    "contractPowerKw": 7500,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1007_1005",
+    "quotaCode1": "1007",
+    "quotaCode2": "1005"
+  },
+  "810771": {
+    "buildingName": "힐스테이트 장안 센트럴",
+    "contactName": "김승환",
+    "phone": "010-3914-8406",
+    "sampleType": "전수층",
+    "mainUse": "업무시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "동대문구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "힐스테이트 장안 센트럴",
+    "expectedTypeCode": "OL",
+    "expectedTypeDesc": "대형 오피스(서울 도심 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 7.DR (2020년 이후 준공이면 2.ZEB 인증 확인)",
+    "c52Codes": [
+      "3",
+      "7"
+    ],
+    "zebCheckAfter2020": true,
+    "renewableRaw": "태양광, 지열",
+    "t71Codes": [
+      "1",
+      "3",
+      "10"
+    ],
+    "contractPowerKw": 7500,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1007_1005",
+    "quotaCode1": "1007",
+    "quotaCode2": "1005"
+  },
   "810817": {
     "buildingName": "구로동복합건물OPUS1",
     "contactName": "이정우",
@@ -22562,6 +26124,104 @@
     "cellKey": "서울_1007_1005",
     "quotaCode1": "1007",
     "quotaCode2": "1005"
+  },
+  "810908": {
+    "buildingName": "메이플레이스호텔",
+    "contactName": "김전명",
+    "phone": "010-7608-9084",
+    "sampleType": "예비표본",
+    "mainUse": "숙박시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "메이플레이스호텔",
+    "expectedTypeCode": "HT",
+    "expectedTypeDesc": "호텔·숙박 소형",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 500,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1008_1001",
+    "quotaCode1": "1008",
+    "quotaCode2": "1001"
+  },
+  "810909": {
+    "buildingName": "비원관광호텔",
+    "contactName": "김영석",
+    "phone": "010-2316-8172",
+    "sampleType": "예비표본",
+    "mainUse": "숙박시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "비원관광호텔",
+    "expectedTypeCode": "HT",
+    "expectedTypeDesc": "호텔·숙박 소형",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 500,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1008_1001",
+    "quotaCode1": "1008",
+    "quotaCode2": "1001"
   },
   "810942": {
     "buildingName": "라코지 스테이 서울",
@@ -22968,6 +26628,202 @@
     "quotaCode1": "1008",
     "quotaCode2": "1001"
   },
+  "811029": {
+    "buildingName": "트레블로지 명동 을지로호텔",
+    "contactName": "홍승만",
+    "phone": "010-5894-6213",
+    "sampleType": "본표본",
+    "mainUse": "숙박시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "트레블로지 명동 을지로호텔",
+    "expectedTypeCode": "HT",
+    "expectedTypeDesc": "호텔·숙박 소형",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 938,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1008_1002",
+    "quotaCode1": "1008",
+    "quotaCode2": "1002"
+  },
+  "811030": {
+    "buildingName": "와이즈빌딩",
+    "contactName": "방성규",
+    "phone": "010-7581-6803",
+    "sampleType": "본표본",
+    "mainUse": "숙박시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "와이즈빌딩",
+    "expectedTypeCode": "HT",
+    "expectedTypeDesc": "호텔·숙박 소형",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 938,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1008_1002",
+    "quotaCode1": "1008",
+    "quotaCode2": "1002"
+  },
+  "811043": {
+    "buildingName": "",
+    "contactName": "김창남",
+    "phone": "010-2375-4391",
+    "sampleType": "본표본",
+    "mainUse": "숙박시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "HT",
+    "expectedTypeDesc": "호텔·숙박 소형",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 938,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1008_1002",
+    "quotaCode1": "1008",
+    "quotaCode2": "1002"
+  },
+  "811048": {
+    "buildingName": "Baiton Hotel",
+    "contactName": "박종길",
+    "phone": "010-3954-0684",
+    "sampleType": "본표본",
+    "mainUse": "숙박시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "Baiton Hotel",
+    "expectedTypeCode": "HT",
+    "expectedTypeDesc": "호텔·숙박 소형",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 938,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 4,
+    "cellKey": "서울_1008_1002",
+    "quotaCode1": "1008",
+    "quotaCode2": "1002"
+  },
   "811083": {
     "buildingName": "영혜빌딩 토요코인 서울 강남",
     "contactName": "",
@@ -23159,6 +27015,156 @@
     "cellKey": "서울_1008_1002",
     "quotaCode1": "1008",
     "quotaCode2": "1002"
+  },
+  "811102": {
+    "buildingName": "오라카이 대학로 호텔",
+    "contactName": "김형석",
+    "phone": "010-5714-9249",
+    "sampleType": "본표본",
+    "mainUse": "숙박시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "오라카이 대학로 호텔",
+    "expectedTypeCode": "HL",
+    "expectedTypeDesc": "관광호텔(1만㎡ 이상)",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 방재실",
+    "t41Codes": [
+      "1",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1875,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1008_1003",
+    "quotaCode1": "1008",
+    "quotaCode2": "1003"
+  },
+  "811120": {
+    "buildingName": "오리엔스",
+    "contactName": "김승훈",
+    "phone": "010-2498-6992",
+    "sampleType": "본표본",
+    "mainUse": "숙박시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "오리엔스",
+    "expectedTypeCode": "HL",
+    "expectedTypeDesc": "관광호텔(1만㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 방재실",
+    "t41Codes": [
+      "1",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1875,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1008_1003",
+    "quotaCode1": "1008",
+    "quotaCode2": "1003"
+  },
+  "811123": {
+    "buildingName": "호텔국도",
+    "contactName": "김광우",
+    "phone": "010-5759-7065",
+    "sampleType": "본표본",
+    "mainUse": "숙박시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "호텔국도",
+    "expectedTypeCode": "HL",
+    "expectedTypeDesc": "관광호텔(1만㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 방재실",
+    "t41Codes": [
+      "1",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1875,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "서울_1008_1003",
+    "quotaCode1": "1008",
+    "quotaCode2": "1003"
   },
   "811139": {
     "buildingName": "노블레스관광호텔",
@@ -23804,6 +27810,106 @@
     "quotaCode1": "1008",
     "quotaCode2": "1003"
   },
+  "811225": {
+    "buildingName": "로얄팰리스스위트",
+    "contactName": "박영준",
+    "phone": "010-8108-2096",
+    "sampleType": "전수층",
+    "mainUse": "숙박시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "종로구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "로얄팰리스스위트",
+    "expectedTypeCode": "HL",
+    "expectedTypeDesc": "관광호텔(1만㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 방재실",
+    "t41Codes": [
+      "1",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 7500,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1008_1005",
+    "quotaCode1": "1008",
+    "quotaCode2": "1005"
+  },
+  "811228": {
+    "buildingName": "",
+    "contactName": "황태진",
+    "phone": "010-3904-1941",
+    "sampleType": "전수층",
+    "mainUse": "숙박시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "서울",
+    "sigungu": "중구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "HL",
+    "expectedTypeDesc": "관광호텔(1만㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 방재실",
+    "t41Codes": [
+      "1",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31] + 급탕용 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "4",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": true,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 7500,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "서울_1008_1005",
+    "quotaCode1": "1008",
+    "quotaCode2": "1005"
+  },
   "811249": {
     "buildingName": "KT노원지사 본관동",
     "contactName": "강현수",
@@ -23857,6 +27963,54 @@
     "giftSignerName": "강현수",
     "giftSignerPhone": "010-2877-5408",
     "giftStyleLabel": "스타일 C · 속필 사인체 (빠른 흘림+밑줄)"
+  },
+  "811276": {
+    "buildingName": "KT 용산 데이터센터",
+    "contactName": "김명관",
+    "phone": "010-5820-6813",
+    "sampleType": "본표본",
+    "mainUse": "방송통신시설",
+    "areaScale": "30,000-50,000㎡",
+    "sido": "서울",
+    "sigungu": "용산구",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "",
+    "sq12BuildingName": "KT 용산 데이터센터",
+    "expectedTypeCode": "TL",
+    "expectedTypeDesc": "방송통신시설",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "방재실",
+    "t41Codes": [
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "7.DR",
+    "c52Codes": [
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 38000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "서울_1009_1004",
+    "quotaCode1": "1009",
+    "quotaCode2": "1004"
   },
   "818247": {
     "buildingName": "조흥빌딩",
@@ -46800,6 +50954,55 @@
     "quotaCode1": "1001",
     "quotaCode2": "1001"
   },
+  "828496": {
+    "buildingName": "리츠프라자제2동",
+    "contactName": "이대천",
+    "phone": "010-5798-4731",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 별내3로 318",
+    "jibunAddress": "경기 남양주시 별내동 826-10",
+    "sq12BuildingName": "리츠프라자제2동",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1001_1001",
+    "quotaCode1": "1001",
+    "quotaCode2": "1001"
+  },
   "828501": {
     "buildingName": "별내 마들프라자",
     "contactName": "박준형",
@@ -47184,6 +51387,106 @@
     "quotaCode1": "1001",
     "quotaCode2": "1001"
   },
+  "829344": {
+    "buildingName": "베스트프라자",
+    "contactName": "오재석",
+    "phone": "010-9604-4527",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "경기",
+    "sigungu": "의정부시",
+    "memo": "",
+    "roadAddress": "경기 의정부시 태평로99번길 17",
+    "jibunAddress": "경기 의정부시 의정부동 157-7",
+    "sq12BuildingName": "베스트프라자",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 4,
+    "cellKey": "경기_1001_1002",
+    "quotaCode1": "1001",
+    "quotaCode2": "1002"
+  },
+  "829734": {
+    "buildingName": "구리일군타워",
+    "contactName": "박진주",
+    "phone": "010-3301-6353",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "경기",
+    "sigungu": "구리시",
+    "memo": "주소지 중복 표본 있음_810",
+    "roadAddress": "경기 구리시 체육관로 140",
+    "jibunAddress": "경기 구리시 교문동 830",
+    "sq12BuildingName": "구리일군타워",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1001_1002",
+    "quotaCode1": "1001",
+    "quotaCode2": "1002"
+  },
   "829742": {
     "buildingName": "만복빌딩",
     "contactName": "이성훈",
@@ -47424,6 +51727,106 @@
     "guideFromSheet": true,
     "selectionType": "선정",
     "cellPriority": 2,
+    "cellKey": "경기_1001_1002",
+    "quotaCode1": "1001",
+    "quotaCode2": "1002"
+  },
+  "829771": {
+    "buildingName": "",
+    "contactName": "황지연",
+    "phone": "010-6751-7453",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 진접읍 해밀예당1로 219",
+    "jibunAddress": "경기 남양주시 진접읍 금곡리 1021-3",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "경기_1001_1002",
+    "quotaCode1": "1001",
+    "quotaCode2": "1002"
+  },
+  "829780": {
+    "buildingName": "수정빌딩",
+    "contactName": "전장식",
+    "phone": "010-6649-5836",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 진건읍 진건오남로 71",
+    "jibunAddress": "경기 남양주시 진건읍 용정리 778-9",
+    "sq12BuildingName": "수정빌딩",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
     "cellKey": "경기_1001_1002",
     "quotaCode1": "1001",
     "quotaCode2": "1002"
@@ -47669,6 +52072,56 @@
     "guideFromSheet": true,
     "selectionType": "선정",
     "cellPriority": 4,
+    "cellKey": "경기_1001_1003",
+    "quotaCode1": "1001",
+    "quotaCode2": "1003"
+  },
+  "830572": {
+    "buildingName": "덕소정수장",
+    "contactName": "권오성",
+    "phone": "010-9602-8491",
+    "sampleType": "본표본",
+    "mainUse": "제1종근린생활시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "경기 남양주시 와부읍 도곡리 산 102-1",
+    "sq12BuildingName": "덕소정수장",
+    "expectedTypeCode": "PS",
+    "expectedTypeDesc": "공공청사(행정복지센터 등)",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "해당 없음",
+    "t41Codes": [
+      "77"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "4.신재생에너지 지원사업, 6.그린리모델링",
+    "c52Codes": [
+      "4",
+      "6"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 1500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
     "cellKey": "경기_1001_1003",
     "quotaCode1": "1001",
     "quotaCode2": "1003"
@@ -48634,6 +53087,55 @@
     "quotaCode1": "1002",
     "quotaCode2": "1001"
   },
+  "831402": {
+    "buildingName": "",
+    "contactName": "조영래",
+    "phone": "010-2531-1291",
+    "sampleType": "본표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "구리시",
+    "memo": "주소지 중복 표본 있음_815",
+    "roadAddress": "경기 구리시 검배로 61",
+    "jibunAddress": "경기 구리시 수택동 504-2",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1002_1001",
+    "quotaCode1": "1002",
+    "quotaCode2": "1001"
+  },
   "831415": {
     "buildingName": "금곡종합상가",
     "contactName": "김준서",
@@ -48678,6 +53180,55 @@
     "guideFromSheet": true,
     "selectionType": "대체",
     "cellPriority": 3,
+    "cellKey": "경기_1002_1001",
+    "quotaCode1": "1002",
+    "quotaCode2": "1001"
+  },
+  "831425": {
+    "buildingName": "",
+    "contactName": "박정배",
+    "phone": "010-9947-2886",
+    "sampleType": "본표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 두물로11번길 40-40",
+    "jibunAddress": "경기 남양주시 별내동 932-8",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
     "cellKey": "경기_1002_1001",
     "quotaCode1": "1002",
     "quotaCode2": "1001"
@@ -48777,6 +53328,155 @@
     "cellKey": "경기_1002_1001",
     "quotaCode1": "1002",
     "quotaCode2": "1001"
+  },
+  "831465": {
+    "buildingName": "",
+    "contactName": "항재승",
+    "phone": "010-9564-5532",
+    "sampleType": "본표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 오남읍 진건오남로 903",
+    "jibunAddress": "경기 남양주시 오남읍 양지리 441-8",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "경기_1002_1001",
+    "quotaCode1": "1002",
+    "quotaCode2": "1001"
+  },
+  "832101": {
+    "buildingName": "",
+    "contactName": "윤동진",
+    "phone": "010-3094-7045",
+    "sampleType": "본표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "경기",
+    "sigungu": "의정부시",
+    "memo": "",
+    "roadAddress": "경기 의정부시 시민로131번길 16",
+    "jibunAddress": "경기 의정부시 의정부동 170-11",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1002_1002",
+    "quotaCode1": "1002",
+    "quotaCode2": "1002"
+  },
+  "832478": {
+    "buildingName": "성원메스티지상가",
+    "contactName": "김주성",
+    "phone": "010-9859-7863",
+    "sampleType": "예비표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "경기",
+    "sigungu": "구리시",
+    "memo": "",
+    "roadAddress": "경기 구리시 경춘로 274",
+    "jibunAddress": "경기 구리시 수택동 534-2",
+    "sq12BuildingName": "성원메스티지상가",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 750,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "경기_1002_1002",
+    "quotaCode1": "1002",
+    "quotaCode2": "1002"
   },
   "832490": {
     "buildingName": "드림프라자",
@@ -49019,6 +53719,56 @@
     "guideFromSheet": false,
     "selectionType": "대체",
     "cellPriority": 4,
+    "cellKey": "경기_1002_1003",
+    "quotaCode1": "1002",
+    "quotaCode2": "1003"
+  },
+  "833058": {
+    "buildingName": "민락동 해동II타워(주식회사신한은행)",
+    "contactName": "노기우",
+    "phone": "010-3395-3937",
+    "sampleType": "본표본",
+    "mainUse": "제2종근린생활시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "경기",
+    "sigungu": "의정부시",
+    "memo": "",
+    "roadAddress": "경기 의정부시 천보로 56",
+    "jibunAddress": "경기 의정부시 민락동 805-3",
+    "sq12BuildingName": "민락동 해동II타워(주식회사신한은행)",
+    "expectedTypeCode": "G2",
+    "expectedTypeDesc": "근생·상가 중대형(5천㎡ 이상)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1500,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
     "cellKey": "경기_1002_1003",
     "quotaCode1": "1002",
     "quotaCode2": "1003"
@@ -49997,6 +54747,104 @@
     "quotaCode1": "1003",
     "quotaCode2": "1001"
   },
+  "833531": {
+    "buildingName": "별내동 문화및집회시설 주건축물제1동",
+    "contactName": "장재영",
+    "phone": "010-9815-7838",
+    "sampleType": "예비표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 송산로310번길 33",
+    "jibunAddress": "경기 남양주시 별내동 892-3",
+    "sq12BuildingName": "별내동 문화및집회시설 주건축물제1동",
+    "expectedTypeCode": "CN",
+    "expectedTypeDesc": "민간 문화집회(영화관 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "4.2",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 480,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1003_1001",
+    "quotaCode1": "1003",
+    "quotaCode2": "1001"
+  },
+  "833533": {
+    "buildingName": "",
+    "contactName": "홍주형",
+    "phone": "010-2168-6448",
+    "sampleType": "예비표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 수동면 비룡로 801-9",
+    "jibunAddress": "경기 남양주시 수동면 운수리 358-34",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "CN",
+    "expectedTypeDesc": "민간 문화집회(영화관 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 480,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "경기_1003_1001",
+    "quotaCode1": "1003",
+    "quotaCode2": "1001"
+  },
   "833543": {
     "buildingName": "군포문화원",
     "contactName": "",
@@ -50281,6 +55129,104 @@
     "guideFromSheet": false,
     "selectionType": "대체",
     "cellPriority": 7,
+    "cellKey": "경기_1003_1002",
+    "quotaCode1": "1003",
+    "quotaCode2": "1002"
+  },
+  "833646": {
+    "buildingName": "은산빌딩",
+    "contactName": "한상완",
+    "phone": "010-9375-8619",
+    "sampleType": "예비표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "경기",
+    "sigungu": "구리시",
+    "memo": "주소지 중복 표본 있음_812",
+    "roadAddress": "경기 구리시 안골로 105",
+    "jibunAddress": "경기 구리시 수택동 424-21",
+    "sq12BuildingName": "은산빌딩",
+    "expectedTypeCode": "CN",
+    "expectedTypeDesc": "민간 문화집회(영화관 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "4.2",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 900,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "경기_1003_1002",
+    "quotaCode1": "1003",
+    "quotaCode2": "1002"
+  },
+  "833648": {
+    "buildingName": "",
+    "contactName": "서명훈",
+    "phone": "010-5049-8149",
+    "sampleType": "본표본",
+    "mainUse": "문화및집회시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 조안면 북한강로989번길 27-4",
+    "jibunAddress": "경기 남양주시 조안면 삼봉리 89-1",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "CN",
+    "expectedTypeDesc": "민간 문화집회(영화관 등)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 900,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
     "cellKey": "경기_1003_1002",
     "quotaCode1": "1003",
     "quotaCode2": "1002"
@@ -50861,6 +55807,104 @@
     "quotaCode1": "1003",
     "quotaCode2": "1004"
   },
+  "833761": {
+    "buildingName": "천원궁(본관동 및 전시 수장고동)",
+    "contactName": "김영권",
+    "phone": "010-9034-8619",
+    "sampleType": "전수층",
+    "mainUse": "문화및집회시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "경기",
+    "sigungu": "가평군",
+    "memo": "",
+    "roadAddress": "",
+    "jibunAddress": "경기 가평군 설악면 송산리 50",
+    "sq12BuildingName": "천원궁(본관동 및 전시 수장고동)",
+    "expectedTypeCode": "UN",
+    "expectedTypeDesc": "대학·교회·교육재단 등",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "6.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO",
+    "c52Codes": [
+      "3"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 6000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1003_1005",
+    "quotaCode1": "1003",
+    "quotaCode2": "1005"
+  },
+  "833762": {
+    "buildingName": "",
+    "contactName": "이진명",
+    "phone": "010-4528-4173",
+    "sampleType": "전수층",
+    "mainUse": "문화및집회시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "경기",
+    "sigungu": "가평군",
+    "memo": "주소지 중복 표본 있음_388",
+    "roadAddress": "경기 가평군 설악면 미사리로 258",
+    "jibunAddress": "경기 가평군 설악면 송산리 583-2",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "UN",
+    "expectedTypeDesc": "대학·교회·교육재단 등",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "5.5",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO",
+    "c52Codes": [
+      "3"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 6000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "경기_1003_1005",
+    "quotaCode1": "1003",
+    "quotaCode2": "1005"
+  },
   "833763": {
     "buildingName": "화서역 푸르지오 브리시엘 판매시설",
     "contactName": "권달우",
@@ -51245,6 +56289,104 @@
     "quotaCode1": "1004",
     "quotaCode2": "1001"
   },
+  "833833": {
+    "buildingName": "",
+    "contactName": "금복동",
+    "phone": "010-6583-4370",
+    "sampleType": "예비표본",
+    "mainUse": "판매시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "구리시",
+    "memo": "",
+    "roadAddress": "경기 구리시 안골로63번길 42-7",
+    "jibunAddress": "경기 구리시 수택동 382-5",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1004_1001",
+    "quotaCode1": "1004",
+    "quotaCode2": "1001"
+  },
+  "833834": {
+    "buildingName": "오예스몰",
+    "contactName": "정문기",
+    "phone": "010-4983-5391",
+    "sampleType": "예비표본",
+    "mainUse": "판매시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "구리시",
+    "memo": "",
+    "roadAddress": "경기 구리시 안골로85번길 29-7",
+    "jibunAddress": "경기 구리시 수택동 418-2",
+    "sq12BuildingName": "오예스몰",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "경기_1004_1001",
+    "quotaCode1": "1004",
+    "quotaCode2": "1001"
+  },
   "833847": {
     "buildingName": "주건축물제1동",
     "contactName": "",
@@ -51341,6 +56483,60 @@
     "quotaCode1": "1004",
     "quotaCode2": "1001"
   },
+  "834358": {
+    "buildingName": "이마트 남양주별내점",
+    "contactName": "조민재",
+    "phone": "010-5142-0658",
+    "sampleType": "예비표본",
+    "mainUse": "판매시설",
+    "areaScale": "30,000-50,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "주소지 중복 표본 있음_1010",
+    "roadAddress": "경기 남양주시 순화궁로 167",
+    "jibunAddress": "경기 남양주시 별내동 989",
+    "sq12BuildingName": "이마트 남양주별내점",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.9",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 8000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 38000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1004_1004",
+    "quotaCode1": "1004",
+    "quotaCode2": "1004"
+  },
   "834399": {
     "buildingName": "수원복합빌딩(터미널)터미널동",
     "contactName": "김선중",
@@ -51410,6 +56606,114 @@
     "expectedTypeCode": "RT",
     "expectedTypeDesc": "백화점·대형마트·아울렛",
     "isPublicOrSchool": false,
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "경기_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "834419": {
+    "buildingName": "의정부민자역사",
+    "contactName": "이준호",
+    "phone": "010-6573-0368",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "경기",
+    "sigungu": "의정부시",
+    "memo": "",
+    "roadAddress": "경기 의정부시 시민로 지하 100",
+    "jibunAddress": "경기 의정부시 의정부동 168-54",
+    "sq12BuildingName": "의정부민자역사",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "834420": {
+    "buildingName": "이마트 의정부점",
+    "contactName": "안금복",
+    "phone": "010-9605-0283",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "경기",
+    "sigungu": "의정부시",
+    "memo": "",
+    "roadAddress": "경기 의정부시 민락로 210",
+    "jibunAddress": "경기 의정부시 민락동 849",
+    "sq12BuildingName": "이마트 의정부점",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
     "a51Raw": "① 중앙+개별 모두 이용",
     "a51Code": "1",
     "t41Raw": "식음료시설, 판매시설, 방재실",
@@ -51659,6 +56963,222 @@
     "quotaCode1": "1004",
     "quotaCode2": "1005"
   },
+  "834487": {
+    "buildingName": "홈플러스 병점점",
+    "contactName": "한승열",
+    "phone": "010-2035-3851",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "경기",
+    "sigungu": "화성시 병점구",
+    "memo": "주소지 중복 표본 있음_3168",
+    "roadAddress": "경기 화성시 병점구 경기대로 985",
+    "jibunAddress": "경기 화성시 병점구 병점동 399-4",
+    "sq12BuildingName": "홈플러스 병점점",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "경기_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "834490": {
+    "buildingName": "화성 동탄 E-Mart",
+    "contactName": "명진호",
+    "phone": "010-8737-3718",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "경기",
+    "sigungu": "화성시 동탄구",
+    "memo": "",
+    "roadAddress": "경기 화성시 동탄구 동탄중앙로 376",
+    "jibunAddress": "경기 화성시 동탄구 석우동 44",
+    "sq12BuildingName": "화성 동탄 E-Mart",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 4,
+    "cellKey": "경기_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "834491": {
+    "buildingName": "라스플로레스",
+    "contactName": "김정한",
+    "phone": "010-9748-8586",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "경기",
+    "sigungu": "화성시 동탄구",
+    "memo": "주소지 중복 표본 있음_3075",
+    "roadAddress": "경기 화성시 동탄구 동탄대로 537",
+    "jibunAddress": "경기 화성시 동탄구 여울동 1019",
+    "sq12BuildingName": "라스플로레스",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 5,
+    "cellKey": "경기_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
+  "834492": {
+    "buildingName": "(주)이마트 트레이더스 동탄점",
+    "contactName": "박순철",
+    "phone": "010-2782-4242",
+    "sampleType": "전수층",
+    "mainUse": "판매시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "경기",
+    "sigungu": "화성시 동탄구",
+    "memo": "",
+    "roadAddress": "경기 화성시 동탄구 동탄대로 451",
+    "jibunAddress": "경기 화성시 동탄구 여울동 1022",
+    "sq12BuildingName": "(주)이마트 트레이더스 동탄점",
+    "expectedTypeCode": "RT",
+    "expectedTypeDesc": "백화점·대형마트·아울렛",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 중앙 1.흡수식 냉온수기[도시가스23] + 냉방 중앙 난방 중앙 6.온수보일러[도시가스23]",
+    "b11Codes": [
+      "1",
+      "6"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 5.EERS, 7.DR",
+    "c52Codes": [
+      "3",
+      "5",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 12000,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 6,
+    "cellKey": "경기_1004_1005",
+    "quotaCode1": "1004",
+    "quotaCode2": "1005"
+  },
   "834495": {
     "buildingName": "",
     "contactName": "",
@@ -51847,6 +57367,55 @@
     "guideFromSheet": false,
     "selectionType": "대체",
     "cellPriority": 10,
+    "cellKey": "경기_1005_1001",
+    "quotaCode1": "1005",
+    "quotaCode2": "1001"
+  },
+  "834530": {
+    "buildingName": "신곡동 664(이형석,이원석)주건축물제1동",
+    "contactName": "황성옹",
+    "phone": "010-3318-0759",
+    "sampleType": "본표본",
+    "mainUse": "의료시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "의정부시",
+    "memo": "",
+    "roadAddress": "경기 의정부시 회룡로 177",
+    "jibunAddress": "경기 의정부시 신곡동 664",
+    "sq12BuildingName": "신곡동 664(이형석,이원석)주건축물제1동",
+    "expectedTypeCode": "H1",
+    "expectedTypeDesc": "병원 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+    "b11Codes": [
+      "5",
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 600,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
     "cellKey": "경기_1005_1001",
     "quotaCode1": "1005",
     "quotaCode2": "1001"
@@ -52375,6 +57944,55 @@
     "guideFromSheet": false,
     "selectionType": "대체",
     "cellPriority": 21,
+    "cellKey": "경기_1005_1001",
+    "quotaCode1": "1005",
+    "quotaCode2": "1001"
+  },
+  "834599": {
+    "buildingName": "",
+    "contactName": "이운재",
+    "phone": "010-6889-0693",
+    "sampleType": "예비표본",
+    "mainUse": "의료시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 진건읍 진건오남로 421",
+    "jibunAddress": "경기 남양주시 진건읍 송능리 51-2",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "H1",
+    "expectedTypeDesc": "병원 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+    "b11Codes": [
+      "5",
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 600,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
     "cellKey": "경기_1005_1001",
     "quotaCode1": "1005",
     "quotaCode2": "1001"
@@ -53435,6 +59053,106 @@
     "quotaCode1": "1005",
     "quotaCode2": "1001"
   },
+  "834825": {
+    "buildingName": "",
+    "contactName": "김도일",
+    "phone": "010-3318-5705",
+    "sampleType": "예비표본",
+    "mainUse": "의료시설",
+    "areaScale": "5,000-10,000㎡",
+    "sido": "경기",
+    "sigungu": "구리시",
+    "memo": "",
+    "roadAddress": "경기 구리시 검배로 42",
+    "jibunAddress": "경기 구리시 수택동 486-4",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "H2",
+    "expectedTypeDesc": "병원 중형",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "① 중앙+개별 모두 이용",
+    "a51Code": "1",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "난방 중앙 5.증기보일러,냉난방 개별 4.시스템에어컨(EHP)[전기31] (또는 중앙 1.흡수식 냉온수기[도시가스23])",
+    "b11Codes": [
+      "5",
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1125,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 7500,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1005_1002",
+    "quotaCode1": "1005",
+    "quotaCode2": "1002"
+  },
+  "834942": {
+    "buildingName": "월드 본 타워",
+    "contactName": "서창민",
+    "phone": "010-7712-2753",
+    "sampleType": "본표본",
+    "mainUse": "의료시설",
+    "areaScale": "10,000-30,000㎡",
+    "sido": "경기",
+    "sigungu": "의정부시",
+    "memo": "",
+    "roadAddress": "경기 의정부시 용민로 198",
+    "jibunAddress": "경기 의정부시 민락동 806",
+    "sq12BuildingName": "월드 본 타워",
+    "expectedTypeCode": "MD",
+    "expectedTypeDesc": "메디컬빌딩(근생)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 1800,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 16000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1005_1003",
+    "quotaCode1": "1005",
+    "quotaCode2": "1003"
+  },
   "835036": {
     "buildingName": "아주대학교요양병원",
     "contactName": "강희철",
@@ -53487,6 +59205,60 @@
     "cellKey": "경기_1005_1004",
     "quotaCode1": "1005",
     "quotaCode2": "1004"
+  },
+  "835056": {
+    "buildingName": "중앙대학교 광명병원 의료동",
+    "contactName": "이진명",
+    "phone": "010-5706-3318",
+    "sampleType": "전수층",
+    "mainUse": "의료시설",
+    "areaScale": "50,000㎡ 초과",
+    "sido": "경기",
+    "sigungu": "광명시",
+    "memo": "주소지 중복 표본 있음_714",
+    "roadAddress": "경기 광명시 덕안로 110",
+    "jibunAddress": "경기 광명시 일직동 501",
+    "sq12BuildingName": "중앙대학교 광명병원 의료동",
+    "expectedTypeCode": "HB",
+    "expectedTypeDesc": "대형병원",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설, 방재실",
+    "t41Codes": [
+      "1",
+      "2",
+      "10"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO, 4.신재생에너지 지원사업, 7.DR",
+    "c52Codes": [
+      "3",
+      "4",
+      "7"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광, 지열",
+    "t71Codes": [
+      "1",
+      "3",
+      "10"
+    ],
+    "contractPowerKw": 11100,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 60000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1005_1005",
+    "quotaCode1": "1005",
+    "quotaCode2": "1005"
   },
   "835070": {
     "buildingName": "북수원도서관",
@@ -54448,6 +60220,55 @@
     "quotaCode1": "1006",
     "quotaCode2": "1001"
   },
+  "835252": {
+    "buildingName": "벽산프라자",
+    "contactName": "조광석",
+    "phone": "010-2401-4077",
+    "sampleType": "예비표본",
+    "mainUse": "교육연구시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "의정부시",
+    "memo": "",
+    "roadAddress": "경기 의정부시 능곡로 42",
+    "jibunAddress": "경기 의정부시 신곡동 493-3",
+    "sq12BuildingName": "벽산프라자",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 6,
+    "cellKey": "경기_1006_1001",
+    "quotaCode1": "1006",
+    "quotaCode2": "1001"
+  },
   "835617": {
     "buildingName": "과천고등학교 6호동",
     "contactName": "",
@@ -54492,6 +60313,251 @@
     "guideFromSheet": false,
     "selectionType": "대체",
     "cellPriority": 22,
+    "cellKey": "경기_1006_1001",
+    "quotaCode1": "1006",
+    "quotaCode2": "1001"
+  },
+  "835620": {
+    "buildingName": "도레미",
+    "contactName": "김병철",
+    "phone": "010-7789-5942",
+    "sampleType": "예비표본",
+    "mainUse": "교육연구시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "구리시",
+    "memo": "",
+    "roadAddress": "경기 구리시 체육관로80번길 19",
+    "jibunAddress": "경기 구리시 수택동 847-5",
+    "sq12BuildingName": "도레미",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.6",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 2,
+    "cellKey": "경기_1006_1001",
+    "quotaCode1": "1006",
+    "quotaCode2": "1001"
+  },
+  "835621": {
+    "buildingName": "씨엔씨빌딩",
+    "contactName": "김병만",
+    "phone": "010-5735-3352",
+    "sampleType": "예비표본",
+    "mainUse": "교육연구시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "구리시",
+    "memo": "",
+    "roadAddress": "경기 구리시 체육관로80번길 9",
+    "jibunAddress": "경기 구리시 수택동 847-7",
+    "sq12BuildingName": "씨엔씨빌딩",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 3,
+    "cellKey": "경기_1006_1001",
+    "quotaCode1": "1006",
+    "quotaCode2": "1001"
+  },
+  "835622": {
+    "buildingName": "",
+    "contactName": "박진태",
+    "phone": "010-8499-0862",
+    "sampleType": "본표본",
+    "mainUse": "교육연구시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "구리시",
+    "memo": "",
+    "roadAddress": "경기 구리시 체육관로74번길 33",
+    "jibunAddress": "경기 구리시 수택동 849-9",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.8",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 1,
+    "cellKey": "경기_1006_1001",
+    "quotaCode1": "1006",
+    "quotaCode2": "1001"
+  },
+  "835661": {
+    "buildingName": "",
+    "contactName": "김길준",
+    "phone": "010-8157-9037",
+    "sampleType": "예비표본",
+    "mainUse": "교육연구시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 오남읍 진건오남로 909",
+    "jibunAddress": "경기 남양주시 오남읍 양지리 441",
+    "sq12BuildingName": "없음",
+    "expectedTypeCode": "G1",
+    "expectedTypeDesc": "근생·상가 소형(5천㎡ 미만)",
+    "isPublicOrSchool": false,
+    "ceilingHeightM": "2.7",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설, 판매시설",
+    "t41Codes": [
+      "1",
+      "2"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "없음 (참여 안함)",
+    "c52Codes": [
+      "9"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "없음",
+    "t71Codes": [
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용하지 않는다",
+    "d21UseGas": "2",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 4,
+    "cellKey": "경기_1006_1001",
+    "quotaCode1": "1006",
+    "quotaCode2": "1001"
+  },
+  "835664": {
+    "buildingName": "주2동",
+    "contactName": "최완묵",
+    "phone": "010-4034-7879",
+    "sampleType": "예비표본",
+    "mainUse": "교육연구시설",
+    "areaScale": "3,000-5,000㎡",
+    "sido": "경기",
+    "sigungu": "남양주시",
+    "memo": "",
+    "roadAddress": "경기 남양주시 수동면 모꼬지로311번길 41",
+    "jibunAddress": "경기 남양주시 수동면 송천리 24-3",
+    "sq12BuildingName": "주2동",
+    "expectedTypeCode": "UN",
+    "expectedTypeDesc": "대학·교회·교육재단 등",
+    "isPublicOrSchool": true,
+    "ceilingHeightM": "3.0",
+    "a51Raw": "③ 개별방식",
+    "a51Code": "3",
+    "t41Raw": "식음료시설",
+    "t41Codes": [
+      "1"
+    ],
+    "b11Raw": "냉난방 개별 4.시스템에어컨(EHP)[전기31]",
+    "b11Codes": [
+      "4"
+    ],
+    "hotWaterOnlyBoiler": false,
+    "c52Raw": "3.ESCO",
+    "c52Codes": [
+      "3"
+    ],
+    "zebCheckAfter2020": false,
+    "renewableRaw": "태양광",
+    "t71Codes": [
+      "1",
+      "10"
+    ],
+    "contractPowerKw": 400,
+    "d21Raw": "사용한다",
+    "d21UseGas": "1",
+    "estimatedGrossAreaM2": 4000,
+    "guideFromSheet": true,
+    "selectionType": "선정",
+    "cellPriority": 5,
     "cellKey": "경기_1006_1001",
     "quotaCode1": "1006",
     "quotaCode2": "1001"

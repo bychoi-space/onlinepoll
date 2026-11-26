@@ -19,7 +19,9 @@ export const HRC_ACCOUNTS = {
   '700193': { loginId: '700193', loginPw: '700193', surveyorName: '강영미', filePrefix: 'quota_hrc_energy_2025_700193_강영미' },
   '700189': { loginId: '700189', loginPw: '700189', surveyorName: '김정례', filePrefix: 'quota_hrc_energy_2025_700189_김정례' },
   '701492': { loginId: '701492', loginPw: '701492', surveyorName: '문선영', filePrefix: 'quota_hrc_energy_2025_701492_문선영' },
-  '700550': { loginId: '700550', loginPw: '700550', surveyorName: '최미자', filePrefix: 'quota_hrc_energy_2025_700550_최미자' }
+  '700550': { loginId: '700550', loginPw: '700550', surveyorName: '최미자', filePrefix: 'quota_hrc_energy_2025_700550_최미자' },
+  '701495': { loginId: '701495', loginPw: '701495', surveyorName: '김재순', filePrefix: 'quota_hrc_energy_2025_701495_김재순' },
+  '701497': { loginId: '701497', loginPw: '701497', surveyorName: '정소영', filePrefix: 'quota_hrc_energy_2025_701497_정소영' }
 };
 
 /**
@@ -29,6 +31,17 @@ export function findHrcQuotaJsonPath(loginId) {
   if (!fs.existsSync(quotasDir)) return null;
   const files = fs.readdirSync(quotasDir).filter(f => f.startsWith(`quota_hrc_energy_2025_${loginId}_`) && f.endsWith('.json'));
   if (files.length === 0) return null;
+  files.sort((a, b) => {
+    const cntA = parseInt((a.match(/전체(\d+)개/) || [])[1] || '0', 10);
+    const cntB = parseInt((b.match(/전체(\d+)개/) || [])[1] || '0', 10);
+    if (cntB !== cntA) return cntB - cntA;
+    try {
+      const mA = fs.statSync(path.join(quotasDir, a)).mtimeMs;
+      const mB = fs.statSync(path.join(quotasDir, b)).mtimeMs;
+      if (mB !== mA) return mB - mA;
+    } catch (_) {}
+    return b.localeCompare(a);
+  });
   return path.join(quotasDir, files[0]);
 }
 
@@ -36,7 +49,7 @@ export function findHrcQuotaJsonPath(loginId) {
  * 한국리서치 TAPI (https://tapi.hrcglobal.com) 에너지총조사 [건물] 탭(List4) 전 페이지 슬롯 상태 스크래핑 및 동기화
  *
  * @param {object} options
- * @param {string} options.loginId - 조사원 ID ('700275' | '700277' | '701493' | '701494' | '700193' | '700189')
+ * @param {string} options.loginId - 조사원 ID ('700275' | '700277' | '701493' | '701494' | '700193' | '700189' | '701492' | '700550' | '701495' | '701497')
  * @param {string} options.loginPw - 비밀번호 (기본값: loginId와 동일)
  * @returns {Promise<object>}
  */

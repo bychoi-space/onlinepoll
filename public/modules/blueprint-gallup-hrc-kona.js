@@ -84,10 +84,10 @@ export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBasel
   if (legendWrap) legendWrap.style.display = 'none';
 
   const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
-  if (titleEl) titleEl.textContent = '2025년 기준 에너지총조사 [건물 부문] 구글시트 연동 엔지니어링 응답 가이드 (8개 계정 통합)';
+  if (titleEl) titleEl.textContent = '2025년 기준 에너지총조사 [건물 부문] 구글시트 연동 엔지니어링 응답 가이드 (10개 계정 통합)';
 
   const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
-  if (subtitleEl) subtitleEl.textContent = '한국리서치 TAPI(2026-89-0342C) 8개 계정(700275·700277·701493·701494·700193·700189·701492·700550) 구글시트 가이드 연동 및 연면적·용도별 엔지니어링 부하 추정 규칙입니다.';
+  if (subtitleEl) subtitleEl.textContent = '한국리서치 TAPI(2026-89-0342C) 10개 계정(700275·700277·701493·701494·700193·700189·701492·700550·701495·701497) 구글시트 가이드 연동 및 연면적·용도별 엔지니어링 부하 추정 규칙입니다.';
 
   if (badgeMasterStatus) {
     badgeMasterStatus.innerHTML = '<i class="fa-solid fa-shield-halved"></i> 구글시트 가이드 연동 · 문화시설 천장고 검색/추정 · 신세계 5천원 8종 서명 활성';
@@ -110,7 +110,7 @@ export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBasel
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <a href="${escapeHtml(gsheetUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary btn-pill-small font-bold" style="text-decoration: none;">
-            <i class="fa-solid fa-table text-success"></i> 구글 스프레드시트 열기 (8계정)
+            <i class="fa-solid fa-table text-success"></i> 구글 스프레드시트 열기 (10계정)
           </a>
           <span class="badge-status success"><i class="fa-solid fa-lock"></i> 상시 강제 적용</span>
         </div>

@@ -123,6 +123,16 @@ function mergeQuotaItem(prev, remoteItem) {
     status: resolvedStatus,
     completedAt: prev.completedAt || remoteItem.completedAt || '',
     pilotAt: remoteItem.pilotAt || prev.pilotAt || '',
+    ...(prev.giftSigned || remoteItem.giftSigned
+      ? {
+        giftSigned: true,
+        giftBrand: prev.giftBrand || remoteItem.giftBrand || '신세계',
+        giftValue: prev.giftValue || remoteItem.giftValue || '5000',
+        giftSignerName: prev.giftSignerName || remoteItem.giftSignerName || '',
+        giftSignerPhone: prev.giftSignerPhone || remoteItem.giftSignerPhone || '',
+        giftStyleLabel: prev.giftStyleLabel || remoteItem.giftStyleLabel || ''
+      }
+      : {}),
     capturedSteps: (Array.isArray(remoteItem.capturedSteps) && remoteItem.capturedSteps.length > 0)
       ? remoteItem.capturedSteps
       : (prev.capturedSteps || []),
@@ -147,10 +157,13 @@ function main() {
   }
 
   const jsonFiles = trackedFiles.filter(f => f.endsWith('.json'));
+  const trackedJsonBasenames = new Set(jsonFiles.map(f => path.basename(f)));
   const xlsxSet = new Set(trackedFiles.filter(f => f.endsWith('.xlsx')));
 
   for (const relPath of jsonFiles) {
     const absPath = path.resolve(relPath);
+    const dir = path.dirname(absPath);
+    const baseName = path.basename(relPath);
     let remoteRaw = '';
     try {
       remoteRaw = execFileSync('git', ['show', `${ref}:${relPath}`], {
@@ -162,8 +175,18 @@ function main() {
       continue;
     }
 
-    if (!fs.existsSync(absPath)) {
-      const dir = path.dirname(absPath);
+    // HRC 에너지총조사처럼 건수 변경으로 파일명이 바뀐 경우(예: 전체30개 ➔ 전체72개) 구버전 형제 파일 탐색
+    const hrcAccMatch = baseName.match(/^quota_hrc_energy_2025_(\d+)_/);
+    const staleSiblingFiles = (hrcAccMatch && fs.existsSync(dir))
+      ? fs.readdirSync(dir).filter(
+        f => f.startsWith(`quota_hrc_energy_2025_${hrcAccMatch[1]}_`) &&
+          f.endsWith('.json') &&
+          f !== baseName &&
+          !trackedJsonBasenames.has(f)
+      )
+      : [];
+
+    if (!fs.existsSync(absPath) && staleSiblingFiles.length === 0) {
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(absPath, remoteRaw, 'utf-8');
       console.log(`[SyncSeedQuotas] 신규 쿼터 시드 생성: ${relPath}`);
@@ -171,23 +194,41 @@ function main() {
     }
 
     let remoteObj;
-    let localObj;
+    let localObj = null;
     try {
       remoteObj = JSON.parse(remoteRaw);
-      localObj = JSON.parse(fs.readFileSync(absPath, 'utf-8'));
+      if (fs.existsSync(absPath)) {
+        localObj = JSON.parse(fs.readFileSync(absPath, 'utf-8'));
+      }
     } catch (err) {
       console.warn(`[SyncSeedQuotas] JSON 파싱 건너뜀 (${relPath}): ${err.message}`);
       continue;
     }
 
+    // 구버전 형제 파일에 저장된 런타임 상태(완료/수령증 서명 등)도 빠짐없이 흡수
+    const siblingRows = [];
+    for (const sibFile of staleSiblingFiles) {
+      try {
+        const sibObj = JSON.parse(fs.readFileSync(path.join(dir, sibFile), 'utf-8'));
+        const arr = Array.isArray(sibObj?.data)
+          ? sibObj.data
+          : (Array.isArray(sibObj?.rows) ? sibObj.rows : []);
+        siblingRows.push(...arr);
+        if (!localObj) localObj = sibObj;
+      } catch (_) {}
+    }
+
+    if (!localObj) continue;
+
     const remoteRows = Array.isArray(remoteObj?.data)
       ? remoteObj.data
       : (Array.isArray(remoteObj?.rows) ? remoteObj.rows : null);
-    const localRows = Array.isArray(localObj?.data)
+    const baseLocalRows = Array.isArray(localObj?.data)
       ? localObj.data
       : (Array.isArray(localObj?.rows) ? localObj.rows : null);
 
-    if (!remoteRows || !localRows) continue;
+    if (!remoteRows || !baseLocalRows) continue;
+    const localRows = siblingRows.length > 0 ? [...siblingRows, ...baseLocalRows] : baseLocalRows;
 
     const localByKey = new Map();
     for (const r of localRows) {
@@ -213,7 +254,13 @@ function main() {
     const remoteAccLen = Array.isArray(remoteObj.accounts) ? remoteObj.accounts.length : 0;
     const localAccLen = Array.isArray(localObj.accounts) ? localObj.accounts.length : 0;
 
-    if (!hasNewRemoteItems && !hasNewRemoteFields && remoteRows.length <= localRows.length && remoteAccLen <= localAccLen) {
+    if (
+      staleSiblingFiles.length === 0 &&
+      !hasNewRemoteItems &&
+      !hasNewRemoteFields &&
+      remoteRows.length <= baseLocalRows.length &&
+      remoteAccLen <= localAccLen
+    ) {
       continue;
     }
 
@@ -253,12 +300,24 @@ function main() {
       updatedAt: new Date().toISOString(),
       count: mergedRows.length,
       targetTotal: mergedRows.length,
+      ...(typeof remoteObj.totalCount === 'number' ? { totalCount: mergedRows.length } : {}),
       data: mergedRows,
+      ...(Array.isArray(remoteObj.items) || Array.isArray(localObj.items) ? { items: mergedRows } : {}),
       ...(Array.isArray(remoteObj.rows) || Array.isArray(localObj.rows) ? { rows: mergedRows } : {})
     };
 
     writeJsonAtomicSync(absPath, mergedDoc);
-    console.log(`[SyncSeedQuotas] 쿼터 시드 안전 병합 완료: ${relPath} (${localRows.length}건 ➔ ${mergedRows.length}건, 기존 응답 보존)`);
+    console.log(`[SyncSeedQuotas] 쿼터 시드 안전 병합 완료: ${relPath} (${baseLocalRows.length}건 ➔ ${mergedRows.length}건, 기존 응답 보존)`);
+
+    // 구버전 형제 파일(.json / .xlsx) 정리
+    for (const sibFile of staleSiblingFiles) {
+      try { fs.unlinkSync(path.join(dir, sibFile)); } catch (_) {}
+      const sibXlsx = sibFile.replace(/\.json$/i, '.xlsx');
+      if (!xlsxSet.has(`data/quotas/${sibXlsx}`) && fs.existsSync(path.join(dir, sibXlsx))) {
+        try { fs.unlinkSync(path.join(dir, sibXlsx)); } catch (_) {}
+      }
+      console.log(`[SyncSeedQuotas] 구버전 형제 쿼터 파일 마이그레이션 정리 완료: ${sibFile}`);
+    }
 
     // 대응하는 .xlsx 파일도 원격에 존재하면 최신화
     const matchingXlsx = relPath.replace(/\.json$/i, '.xlsx');

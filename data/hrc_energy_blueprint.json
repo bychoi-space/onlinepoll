@@ -2,8 +2,8 @@
   "surveyId": "hrc_energy_census_2025",
   "projectCode": "2026-89-0342C",
   "title": "2025년 기준 에너지총조사 (건물 부문)",
-  "description": "한국리서치 TAPI(tapi.hrcglobal.com) 및 RPS 웹설문(rpssurvey.hrcglobal.com) 건물 부문 전자조사표 자동화 블루프린트. 구글 스프레드시트(6개 조사원 계정 · 건물별 엔지니어링 가이드 M~U열 & 예상기준 프리셋) 1:1 연동 및 면적·용도별 부하 추정 규칙을 적용합니다.",
-  "version": "2.0.0",
+  "description": "한국리서치 TAPI(tapi.hrcglobal.com) 및 RPS 웹설문(rpssurvey.hrcglobal.com) 건물 부문 전자조사표 자동화 블루프린트. 구글 스프레드시트(10개 조사원 계정 · 건물별 엔지니어링 가이드 M~U열 & 예상기준 프리셋) 1:1 연동 및 면적·용도별 부하 추정 규칙을 적용합니다.",
+  "version": "2.1.0",
   "loginUrl": "https://tapi.hrcglobal.com/Home/Login",
   "googleSheetUrl": "https://docs.google.com/spreadsheets/d/1YW66qD-j8OHC7NyNWItVhmFDWBmt5jsOwSTOEr7wtm0/edit?gid=1994985141#gid=1994985141",
   "accounts": [
@@ -81,11 +81,31 @@
       "loginId": "700550",
       "loginPw": "700550",
       "surveyorName": "최미자",
-      "regionSummary": "서울 동대문·종로·중구·용산 외 (전화번호 확보분)",
-      "totalSlots": 30,
-      "selectedCount": 30,
+      "regionSummary": "서울 동대문·종로·중구·용산·금천 외 (전화번호 확보분)",
+      "totalSlots": 72,
+      "selectedCount": 72,
       "substituteCount": 0,
-      "quotaFile": "quota_hrc_energy_2025_700550_최미자_전체30개_선정30개.json"
+      "quotaFile": "quota_hrc_energy_2025_700550_최미자_전체72개_선정72개.json"
+    },
+    {
+      "loginId": "701495",
+      "loginPw": "701495",
+      "surveyorName": "김재순",
+      "regionSummary": "경기 남양주·구리·의정부·화성 외 (전화번호 확보분)",
+      "totalSlots": 38,
+      "selectedCount": 38,
+      "substituteCount": 0,
+      "quotaFile": "quota_hrc_energy_2025_701495_김재순_전체38개_선정38개.json"
+    },
+    {
+      "loginId": "701497",
+      "loginPw": "701497",
+      "surveyorName": "정소영",
+      "regionSummary": "서울 강남·서초·영등포·송파 외 서초/성북 열 (전화번호 확보분)",
+      "totalSlots": 39,
+      "selectedCount": 39,
+      "substituteCount": 0,
+      "quotaFile": "quota_hrc_energy_2025_701497_정소영_전체39개_선정39개.json"
     }
   ],
   "defaultPolicy": {

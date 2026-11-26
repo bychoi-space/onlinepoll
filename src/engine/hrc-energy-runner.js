@@ -7,6 +7,7 @@ import {
   selectKoreanSignatureStyle,
   buildKoreanSignatureStrokes
 } from '../utils/korean-signature.js';
+import { isValidRespondentName, pickRespondentFromPool } from '../utils/respondent-pool.js';
 
 const HRC_BASE_URL = 'https://tapi.hrcglobal.com';
 
@@ -556,7 +557,15 @@ const CULTURAL_FACILITY_CEILING_DB = [
   { pattern: /방문자\s*센터|도시\s*계획관/i, ceilingM: 3.8, source: '전시·방문자센터 평균' },
   { pattern: /111\s*CM/i, ceilingM: 4.2, source: '복합문화공간 천장고' },
   { pattern: /대순진리회/i, ceilingM: 4.2, source: '종교·집회회관 기준 추정치' },
-  { pattern: /인천보건고.*3동|학교.*강당|학교.*체육관/i, ceilingM: 4.5, source: '학교 강당·집회동 기준 추정치' }
+  { pattern: /인천보건고.*3동|학교.*강당|학교.*체육관/i, ceilingM: 4.5, source: '학교 강당·집회동 기준 추정치' },
+  { pattern: /KMCA\s*미술관|K\s*현대\s*미술관/i, ceilingM: 5.0, source: 'K현대미술관 전시실 층고 기준치' },
+  { pattern: /코엑스\s*아티움/i, ceilingM: 5.5, source: '코엑스 아티움 공연·전시 복합 평균' },
+  { pattern: /한성\s*백제\s*박물관/i, ceilingM: 4.8, source: '박물관 상설·기획전시실 기준치' },
+  { pattern: /체조\s*경기장/i, ceilingM: 8.5, source: '실내 대형경기장 복합 평균' },
+  { pattern: /역도\s*경기장/i, ceilingM: 6.5, source: '올림픽공원 공연·경기장 복합 평균' },
+  { pattern: /기존\s*컨벤션\s*센타|무역\s*센타.*컨벤션\s*센터|코엑스.*컨벤션/i, ceilingM: 7.5, source: '컨벤션·전시홀 복합 평균' },
+  { pattern: /천원궁/i, ceilingM: 6.0, source: '전시·집회 본관동 복합 평균' },
+  { pattern: /성당/i, ceilingM: 4.5, source: '성당 대성전·집회실 복합 평균' }
 ];
 
 const culturalSearchCache = new Map();
@@ -733,7 +742,12 @@ export async function runHrcEnergySurvey(options = {}) {
     page.on('dialog', async dialog => {
       try { await dialog.accept(); } catch (e) { console.warn('[Dialog accept 경고]', e.message); }
     });
-    const fallbackName = String(slotData.contactName || slotData.ceoName || '관리소장').trim() || '관리소장';
+    const rawContactCandidate = String(slotData.contactName || slotData.ceoName || '').trim();
+    const fallbackName = isValidRespondentName(rawContactCandidate)
+      ? rawContactCandidate
+      : (rawContactCandidate && rawContactCandidate !== '관리소장'
+        ? rawContactCandidate
+        : pickRespondentFromPool({ minAge: 32, maxAge: 62, seed: uid }).name);
     const [p1, p2, p3] = parsePhoneParts(slotData.phone || '010-7935-2414');
     let basicInfoState = {
       contactName: fallbackName,

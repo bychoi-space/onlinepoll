@@ -1,7 +1,7 @@
 /**
- * 2025년 기준 에너지총조사 (건물 부문) 구글 시트 쿼터 리스트 (6개 조사원 계정 전체)
- * - 강영미_700275, 강경옥_700277, 김정례_701493, 유희정-701494, 강영미-700193, 김정례_700189
- * - 시트 M~U열 건물별 엔지니어링 가이드(A5-1, T41, B1-1, C5-2, 신재생에너지, D1-2-1 계약전력, D2-1 도시가스, 예상유형코드, 주소/메모) 파싱
+ * 2025년 기준 에너지총조사 (건물 부문) 구글 시트 쿼터 리스트 (10개 조사원 계정 전체)
+ * - 강영미_700275, 강경옥_700277, 김정례_701493, 유희정-701494, 강영미-700193, 김정례_700189, 문선영-701492, 최미자-700550, 김재순701495, 정소영_701497
+ * - 시트 건물별 엔지니어링 가이드(A5-1, T41, B1-1, C5-2, 신재생에너지, D1-2-1 계약전력, D2-1 도시가스, 예상유형코드, 주소/메모) 파싱
  * - 대체 표본 등 가이드 공란 행은 '예상기준' 시트의 21개 유형 프리셋으로 자동 추론 보강
  * - 기존 data/quotas/ JSON에 기록된 완료/진행률/수령증 서명 상태를 100% 보존하여 병합 저장
  */
@@ -9,6 +9,12 @@ import fs from 'fs';
 import path from 'path';
 import * as XLSX from 'xlsx';
 import { fileURLToPath } from 'url';
+import {
+  createRespondentUsedState,
+  isValidRespondentName,
+  pickRespondentFromPool
+} from '../src/utils/respondent-pool.js';
+import { resolveHrcBuildingCeilingHeightM } from '../src/engine/hrc-energy-runner.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +33,29 @@ export const ACCOUNT_SHEETS = [
   { sheetName: '강영미-700193', accountId: '700193', surveyorName: '강영미', regionDesc: '서울 (노원구 · 건물 15부)', quotaTableCol: 21 },
   { sheetName: '김정례_700189', accountId: '700189', surveyorName: '김정례', regionDesc: '경기 (남양주시 · 건물 25부)', quotaTableCol: null },
   { sheetName: '문선영-701492', accountId: '701492', surveyorName: '문선영', regionDesc: '경기 (수원·안양·안산·화성·용인 등)', quotaTableCol: 26 },
-  { sheetName: '최미자-700550', accountId: '700550', surveyorName: '최미자', regionDesc: '서울 (동대문·종로·중구·용산 외 · 전화번호 확보분)', quotaTableCol: 26, requirePhone: true }
+  { sheetName: '최미자-700550', accountId: '700550', surveyorName: '최미자', regionDesc: '서울 (동대문·종로·중구·용산·금천 외 · 전화번호 확보분)', quotaTableCol: 26, requirePhone: true },
+  {
+    sheetName: '김재순701495',
+    accountId: '701495',
+    surveyorName: '김재순',
+    regionDesc: '경기 (남양주·구리·의정부·화성 외 · 전화번호 확보분)',
+    layout: 'compact_selected',
+    defaultSido: '경기',
+    quotaTableCol: 24,
+    quotaTableMode: 'no_sido',
+    requirePhone: true
+  },
+  {
+    sheetName: '정소영_701497',
+    accountId: '701497',
+    surveyorName: '정소영',
+    regionDesc: '서울 (강남·서초·영등포·송파 외 · 서초/성북 열 전화번호 확보분)',
+    layout: 'compact_selected_qcol',
+    defaultSido: '서울',
+    quotaTableCol: 25,
+    quotaTableMode: 'dual_quota_no_sido',
+    requirePhone: true
+  }
 ];
 
 const MAIN_USE_CODE_MAP = {
@@ -258,15 +286,107 @@ function loadExistingRuntimeMap(accountId) {
   return { map, oldFiles: files };
 }
 
-export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
+async function fetchTapiList4Map(accountId) {
+  const map = new Map();
+  try {
+    const cookies = new Map();
+    const saveCookies = (res) => {
+      const arr = res.headers.getSetCookie ? res.headers.getSetCookie() : [];
+      for (const c of arr) {
+        const [kv] = c.split(';');
+        const idx = kv.indexOf('=');
+        if (idx > 0) cookies.set(kv.slice(0, idx).trim(), kv.slice(idx + 1).trim());
+      }
+    };
+    const cookieHeader = () => [...cookies.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+
+    let res = await fetch('https://tapi.hrcglobal.com/Home/Login', {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(12000)
+    });
+    saveCookies(res);
+    res = await fetch('https://tapi.hrcglobal.com/Home/Login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Cookie: cookieHeader()
+      },
+      body: new URLSearchParams({ uid: accountId, password: accountId }).toString(),
+      redirect: 'manual',
+      signal: AbortSignal.timeout(12000)
+    });
+    saveCookies(res);
+
+    for (let p = 1; p <= 35; p++) {
+      const url = p === 1
+        ? 'https://tapi.hrcglobal.com/q260342/List4?page=1'
+        : `https://tapi.hrcglobal.com/q260342/List4?page=1&seoList4=page${p}%257cconditions11%257c0%257c3%257c2%257c3%257c5%257c3%257c6%257c3%257c7%257c3%257c8%257c3%257c9%257c3%257c10%257c3%257c11%257c3%257c12%257c3%257c13%257c3`;
+      const rp = await fetch(url, {
+        headers: { Cookie: cookieHeader() },
+        signal: AbortSignal.timeout(12000)
+      });
+      if (!rp.ok) break;
+      const html = await rp.text();
+      const rowMatches = [...html.matchAll(/<tr[^>]*id="List4_DXDataRow\d+"[^>]*>([\s\S]*?)<\/tr>/g)];
+      if (rowMatches.length === 0) break;
+      let newOnPage = 0;
+      for (const rm of rowMatches) {
+        const tds = [...rm[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(m =>
+          m[1].replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
+        );
+        const uid = tds[0] || '';
+        if (uid && !map.has(uid)) {
+          newOnPage++;
+          map.set(uid, {
+            siteStatus: tds[2] || '',
+            progress: tds[3] || '0%',
+            lastContactStatus: tds[5] || '',
+            contactCount: tds[6] || '0',
+            siteBuildingName: tds[7] || ''
+          });
+        }
+      }
+      if (newOnPage === 0) break;
+    }
+  } catch (err) {
+    console.warn(`[HRC TAPI List4 조회 경고: ${accountId}] ${err.message}`);
+  }
+  return map;
+}
+
+function buildFormattedAddress(sido, sigungu, roadAddress) {
+  const rd = String(roadAddress || '').trim();
+  const sd = String(sido || '').trim();
+  const sgg = String(sigungu || '').trim();
+  if (!rd) return `${sd} ${sgg}`.trim();
+  if (sd && rd.startsWith(sd)) return rd;
+  if (sgg && rd.startsWith(sgg)) return `${sd} ${rd}`.trim();
+  return `${sd} ${sgg} ${rd}`.trim();
+}
+
+export async function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx', options = {}) {
   if (!fs.existsSync(xlsxPath)) {
     throw new Error(`엑셀 파일을 찾을 수 없습니다: ${xlsxPath}`);
   }
+
+  const targetAccountIds = options.targetAccountIds
+    ? new Set(
+      (Array.isArray(options.targetAccountIds)
+        ? options.targetAccountIds
+        : String(options.targetAccountIds).split(',')
+      ).map(s => String(s).trim()).filter(Boolean)
+    )
+    : null;
+  const syncTapiStatus = options.syncTapiStatus !== false;
 
   const wb = XLSX.read(fs.readFileSync(xlsxPath), { type: 'buffer' });
   const summary = [];
 
   for (const meta of ACCOUNT_SHEETS) {
+    if (targetAccountIds && !targetAccountIds.has(meta.accountId)) {
+      continue;
+    }
+
     const ws = wb.Sheets[meta.sheetName];
     if (!ws) {
       console.warn(`시트를 찾을 수 없음: ${meta.sheetName}`);
@@ -274,41 +394,113 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
     }
 
     const { map: existingMap, oldFiles } = loadExistingRuntimeMap(meta.accountId);
+    const tapiMap = syncTapiStatus ? await fetchTapiList4Map(meta.accountId) : new Map();
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
     const items = [];
     const cellQuotas = [];
     let stopLeftList = false;
 
+    const layout = meta.layout || 'standard';
+    const isCompactSelected = layout === 'compact_selected' || layout === 'compact_selected_qcol';
+    const uidColIdx = isCompactSelected ? 2 : 3;
+    const nameColIdx = isCompactSelected ? 4 : 5;
+
+    // 캠페인 내 기존 실측 응답자 이름을 먼저 등록하여 결측 행 보완 시 이름 중복 원천 방지
+    const respondentUsedState = createRespondentUsedState();
+    for (let rIdx = 4; rIdx < rows.length; rIdx++) {
+      const r = rows[rIdx];
+      const u = String(r?.[uidColIdx] || '').trim();
+      if (!/^8\d+$/.test(u)) continue;
+      const nm = String(r?.[nameColIdx] || '').trim();
+      if (isValidRespondentName(nm)) {
+        respondentUsedState.usedNames.add(nm);
+      }
+    }
+
     for (let rIdx = 4; rIdx < rows.length; rIdx++) {
       const r = rows[rIdx];
       if (!r) continue;
 
-      // 우측 쿼터표 파싱 (시트별 시작 컬럼 대응)
+      // 우측 쿼터표 파싱 (시트별 시작 컬럼 및 포맷 대응)
       if (meta.quotaTableCol !== null) {
         const c0 = meta.quotaTableCol;
-        const qSido = String(r[c0] || '').trim();
-        const qCode1 = String(r[c0 + 1] || '').trim();
-        const qUse = String(r[c0 + 2] || '').trim();
-        const qCode2 = String(r[c0 + 3] || '').trim();
-        const qArea = String(r[c0 + 4] || '').trim();
-        const qTarget = Number(r[c0 + 5]) || 0;
-        const qSelected = Number(r[c0 + 6]) || 0;
-        const qSampleCount = Number(r[c0 + 7]) || 0;
-        const qDiff = Number(r[c0 + 8]) || (qSelected - qTarget);
+        if (meta.quotaTableMode === 'no_sido') {
+          const qSido = meta.defaultSido || '경기';
+          const qCode1 = String(r[c0] || '').trim();
+          const qUse = String(r[c0 + 1] || '').trim();
+          const qCode2 = String(r[c0 + 2] || '').trim();
+          const qArea = String(r[c0 + 3] || '').trim();
+          const qTarget = Number(r[c0 + 4]) || 0;
+          const qDonePrev = Number(r[c0 + 5]) || 0;
+          const qSampleCount = Number(r[c0 + 6]) || 0;
+          const qDiff = r[c0 + 7] !== '' && !isNaN(Number(r[c0 + 7]))
+            ? Number(r[c0 + 7])
+            : (qDonePrev + qSampleCount - qTarget);
+          if (/^\d+$/.test(qCode1) && /^\d+$/.test(qCode2)) {
+            cellQuotas.push({
+              cellKey: `${qSido}_${qCode1}_${qCode2}`,
+              sido: qSido,
+              quotaCode1: qCode1,
+              mainUse: qUse,
+              quotaCode2: qCode2,
+              areaScale: qArea,
+              targetQuota: qTarget,
+              selectedCount: qDonePrev,
+              sampleCount: qSampleCount,
+              diff: qDiff
+            });
+          }
+        } else if (meta.quotaTableMode === 'dual_quota_no_sido') {
+          const qSido = meta.defaultSido || '서울';
+          const qCode1 = String(r[c0] || '').trim();
+          const qUse = String(r[c0 + 1] || '').trim();
+          const qCode2 = String(r[c0 + 2] || '').trim();
+          const qArea = String(r[c0 + 3] || '').trim();
+          const qTarget = (Number(r[c0 + 4]) || 0) + (Number(r[c0 + 5]) || 0);
+          const qDonePrev = Number(r[c0 + 6]) || 0;
+          const qSampleCount = Number(r[c0 + 7]) || 0;
+          const qDiff = r[c0 + 8] !== '' && !isNaN(Number(r[c0 + 8]))
+            ? Number(r[c0 + 8])
+            : (qDonePrev + qSampleCount - qTarget);
+          if (/^\d+$/.test(qCode1) && /^\d+$/.test(qCode2)) {
+            cellQuotas.push({
+              cellKey: `${qSido}_${qCode1}_${qCode2}`,
+              sido: qSido,
+              quotaCode1: qCode1,
+              mainUse: qUse,
+              quotaCode2: qCode2,
+              areaScale: qArea,
+              targetQuota: qTarget,
+              selectedCount: qDonePrev,
+              sampleCount: qSampleCount,
+              diff: qDiff
+            });
+          }
+        } else {
+          const qSido = String(r[c0] || '').trim();
+          const qCode1 = String(r[c0 + 1] || '').trim();
+          const qUse = String(r[c0 + 2] || '').trim();
+          const qCode2 = String(r[c0 + 3] || '').trim();
+          const qArea = String(r[c0 + 4] || '').trim();
+          const qTarget = Number(r[c0 + 5]) || 0;
+          const qSelected = Number(r[c0 + 6]) || 0;
+          const qSampleCount = Number(r[c0 + 7]) || 0;
+          const qDiff = Number(r[c0 + 8]) || (qSelected - qTarget);
 
-        if (qSido && qSido !== '시도' && /^\d+$/.test(qCode1) && /^\d+$/.test(qCode2)) {
-          cellQuotas.push({
-            cellKey: `${qSido}_${qCode1}_${qCode2}`,
-            sido: qSido,
-            quotaCode1: qCode1,
-            mainUse: qUse,
-            quotaCode2: qCode2,
-            areaScale: qArea,
-            targetQuota: qTarget,
-            selectedCount: qSelected,
-            sampleCount: qSampleCount,
-            diff: qDiff
-          });
+          if (qSido && qSido !== '시도' && /^\d+$/.test(qCode1) && /^\d+$/.test(qCode2)) {
+            cellQuotas.push({
+              cellKey: `${qSido}_${qCode1}_${qCode2}`,
+              sido: qSido,
+              quotaCode1: qCode1,
+              mainUse: qUse,
+              quotaCode2: qCode2,
+              areaScale: qArea,
+              targetQuota: qTarget,
+              selectedCount: qSelected,
+              sampleCount: qSampleCount,
+              diff: qDiff
+            });
+          }
         }
       }
 
@@ -319,47 +511,156 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
       }
       if (stopLeftList) continue;
 
-      const uid = String(r[3] || '').trim();
-      const selectionType = String(r[1] || '').trim();
+      const uid = String(r[uidColIdx] || '').trim();
       if (!uid || !/^8\d+$/.test(uid)) continue;
 
-      const seq = Number(r[0]) || (items.length + 1);
-      const cellPriority = Number(r[2]) || 1;
-      const { buildingName, sq12BuildingName } = cleanSq12BuildingName(r[4]);
-      const contactName = String(r[5] || '').trim();
       const prev = existingMap.get(uid) || {};
-      const phone = String(r[6] || prev.phone || '').trim();
+      const tapiInfo = tapiMap.get(uid) || null;
+
+      let selectionType = '선정';
+      let cellPriority = 1;
+      let rawBuildingCell = '';
+      let rawContactName = '';
+      let rawPhone = '';
+      let sampleType = '';
+      let mainUse = '';
+      let areaScale = '';
+      let sido = '';
+      let sigungu = '';
+      let quotaColumn = '';
+      let roadAddress = '';
+      let jibunAddress = '';
+      let memo = '';
+      let a51Cell = '';
+      let t41Cell = '';
+      let b11Cell = '';
+      let c52Cell = '';
+      let renewCell = '';
+      let kwCell = '';
+      let d21Cell = '';
+      let sheetTypeCode = '';
+      let sheetContactStatus = '';
+      let sheetContactCount = '';
+
+      if (layout === 'compact_selected') {
+        selectionType = '선정';
+        cellPriority = Number(r[1]) || 1;
+        rawBuildingCell = r[3];
+        rawContactName = String(r[4] || '').trim();
+        rawPhone = String(r[5] || '').trim();
+        sampleType = String(r[6] || '').trim();
+        mainUse = String(r[7] || '').trim();
+        areaScale = String(r[8] || '').trim();
+        sido = meta.defaultSido || '경기';
+        sigungu = String(r[9] || '').trim();
+        roadAddress = String(r[10] || '').trim();
+        jibunAddress = String(r[11] || '').trim();
+        memo = String(r[12] || '').trim();
+        a51Cell = r[13];
+        t41Cell = r[14];
+        b11Cell = r[15];
+        c52Cell = r[16];
+        renewCell = r[17];
+        kwCell = r[18];
+        d21Cell = r[19];
+        sheetTypeCode = String(r[20] || '').trim();
+      } else if (layout === 'compact_selected_qcol') {
+        selectionType = '선정';
+        cellPriority = Number(r[1]) || 1;
+        rawBuildingCell = r[3];
+        rawContactName = String(r[4] || '').trim();
+        rawPhone = String(r[5] || '').trim();
+        sampleType = String(r[6] || '').trim();
+        mainUse = String(r[7] || '').trim();
+        areaScale = String(r[8] || '').trim();
+        sido = meta.defaultSido || '서울';
+        sigungu = String(r[9] || '').trim();
+        quotaColumn = String(r[10] || '').trim();
+        roadAddress = String(r[11] || '').trim();
+        jibunAddress = String(r[12] || '').trim();
+        memo = String(r[13] || '').trim();
+        a51Cell = r[14];
+        t41Cell = r[15];
+        b11Cell = r[16];
+        c52Cell = r[17];
+        renewCell = r[18];
+        kwCell = r[19];
+        d21Cell = r[20];
+        sheetTypeCode = String(r[21] || '').trim();
+      } else {
+        selectionType = String(r[1] || '').trim();
+        cellPriority = Number(r[2]) || 1;
+        rawBuildingCell = r[4];
+        rawContactName = String(r[5] || '').trim();
+        rawPhone = String(r[6] || '').trim();
+        sampleType = String(r[7] || '').trim();
+        mainUse = String(r[8] || '').trim();
+        areaScale = String(r[9] || '').trim();
+        sido = String(r[10] || '').trim();
+        sigungu = String(r[11] || '').trim();
+        a51Cell = r[12];
+        t41Cell = r[13];
+        b11Cell = r[14];
+        c52Cell = r[15];
+        renewCell = r[16];
+        kwCell = r[17];
+        d21Cell = r[18];
+        sheetTypeCode = String(r[19] || '').trim();
+
+        const col20Header = String(rows[3]?.[20] || '').trim();
+        const isCol20Contact = /접촉/.test(col20Header);
+        if (isCol20Contact) {
+          sheetContactStatus = String(r[20] || '').trim();
+          sheetContactCount = String(r[21] || '0').trim();
+        } else {
+          const parsedAddr = parseAddressMemoCol(r[20]);
+          roadAddress = parsedAddr.roadAddress;
+          jibunAddress = parsedAddr.jibunAddress;
+          memo = parsedAddr.memo;
+        }
+      }
+
+      const phone = String(rawPhone || prev.phone || '').trim();
       if (meta.requirePhone && !/\d{2,4}[-.\s]?\d{3,4}[-.\s]?\d{4}|\d{8,11}/.test(phone)) {
         continue;
       }
-      const sampleType = String(r[7] || '').trim();
-      const mainUse = String(r[8] || '').trim();
-      const areaScale = String(r[9] || '').trim();
-      const sido = String(r[10] || '').trim();
-      const sigungu = String(r[11] || '').trim();
+
+      const seq = meta.requirePhone ? (items.length + 1) : (Number(r[0]) || (items.length + 1));
+      const { buildingName, sq12BuildingName } = cleanSq12BuildingName(rawBuildingCell);
+
+      // 전화번호는 확보되었으나 시트 이름이 비어있는 경우(예: 700550 #803224) 마스터 페르소나 DB에서 중복 없이 결정론 배정
+      let resolvedContactName = rawContactName || prev.contactName || '';
+      if (!isValidRespondentName(resolvedContactName) && (!resolvedContactName || resolvedContactName === '관리소장') && phone) {
+        const picked = pickRespondentFromPool({
+          minAge: 32,
+          maxAge: 62,
+          seed: uid,
+          usedState: respondentUsedState
+        });
+        resolvedContactName = picked.name;
+      }
 
       const quotaCode1 = MAIN_USE_CODE_MAP[mainUse] || '1001';
       const quotaCode2 = AREA_SCALE_CODE_MAP[areaScale] || '1001';
       const cellKey = `${sido}_${quotaCode1}_${quotaCode2}`;
 
-      // M~T열 가이드 (공란인 대체 표본은 예상기준 프리셋으로 자동 추론)
-      const sheetTypeCode = String(r[19] || '').trim();
+      // 시트 엔지니어링 가이드 (공란인 대체 표본은 예상기준 프리셋으로 자동 추론)
       const expectedTypeCode = EXPECTED_TYPE_PRESETS[sheetTypeCode]
         ? sheetTypeCode
         : inferExpectedTypeCode({ mainUse, areaScale, sigungu, buildingName });
       const preset = EXPECTED_TYPE_PRESETS[expectedTypeCode] || EXPECTED_TYPE_PRESETS.G1;
 
-      const a51Raw = String(r[12] || '').trim() || preset.a51;
-      const t41Raw = String(r[13] || '').trim() || preset.t41;
-      const b11Raw = String(r[14] || '').trim() || preset.b11;
-      const c52Raw = String(r[15] || '').trim() || preset.c52;
-      const renewableRaw = String(r[16] || '').trim() || preset.renew;
-      const rawKwNum = parseInt(String(r[17] || '').replace(/[^0-9]/g, ''), 10);
+      const a51Raw = String(a51Cell || '').trim() || preset.a51;
+      const t41Raw = String(t41Cell || '').trim() || preset.t41;
+      const b11Raw = String(b11Cell || '').trim() || preset.b11;
+      const c52Raw = String(c52Cell || '').trim() || preset.c52;
+      const renewableRaw = String(renewCell || '').trim() || preset.renew;
+      const rawKwNum = parseInt(String(kwCell || '').replace(/[^0-9]/g, ''), 10);
       const midM2 = AREA_SCALE_MID_M2[areaScale] || 4000;
       const contractPowerKw = (!isNaN(rawKwNum) && rawKwNum > 0)
         ? rawKwNum
         : Math.max(100, Math.round((midM2 * (preset.kwFactor || 0.10)) / 50) * 50);
-      const d21Raw = String(r[18] || '').trim() || preset.gas;
+      const d21Raw = String(d21Cell || '').trim() || preset.gas;
 
       const a51Code = parseA51Code(a51Raw);
       const t41Codes = parseT41Codes(t41Raw);
@@ -374,14 +675,40 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
       const isPublicOrSchool = ['SC', 'UN', 'PB', 'PS'].includes(expectedTypeCode) ||
         /학교|대학|공공|청사|주민센터|행정복지|도서관|문화원|보건소/.test(`${mainUse} ${buildingName}`);
 
-      const col20Header = String(rows[3]?.[20] || '').trim();
-      const isCol20Contact = /접촉/.test(col20Header);
-      const { roadAddress, jibunAddress, memo } = isCol20Contact
-        ? { roadAddress: '', jibunAddress: '', memo: '' }
-        : parseAddressMemoCol(r[20]);
-      const sheetContactStatus = isCol20Contact ? String(r[20] || '').trim() : '';
-      const sheetContactCount = isCol20Contact ? String(r[21] || '0').trim() : '';
-      const isDone = prev.quotaStatus === 'completed' || prev.status === '완료' || prev.progress === '100%' || uid === '800715';
+      const ceilPlan = await resolveHrcBuildingCeilingHeightM({
+        slotData: {
+          uid,
+          mainUse,
+          quotaCode1,
+          buildingName,
+          sq12BuildingName,
+          sido,
+          sigungu,
+          estimatedGrossAreaM2: midM2
+        },
+        grossAreaM2: midM2
+      });
+      const ceilingHeightM = ceilPlan?.value || prev.ceilingHeightM || '2.8';
+
+      const isTapiDone = tapiInfo && (tapiInfo.siteStatus === '완료' || tapiInfo.progress === '100%');
+      const isDone = Boolean(
+        isTapiDone ||
+        prev.quotaStatus === 'completed' ||
+        prev.status === '완료' ||
+        prev.progress === '100%' ||
+        uid === '800715'
+      );
+      const resolvedProgress = isDone
+        ? '100%'
+        : ((tapiInfo && tapiInfo.progress && tapiInfo.progress !== '0%') ? tapiInfo.progress : (prev.progress || '0%'));
+      const resolvedStatus = isDone
+        ? '완료'
+        : ((tapiInfo && tapiInfo.siteStatus) ? tapiInfo.siteStatus : (prev.status || '대기'));
+      const resolvedQuotaStatus = isDone
+        ? 'completed'
+        : ((resolvedProgress !== '0%' && prev.quotaStatus === 'in_progress') ? 'in_progress' : (prev.quotaStatus || 'ready'));
+      const finalRoadAddr = roadAddress || prev.roadAddress || '';
+      const finalJibunAddr = jibunAddress || prev.jibunAddress || '';
 
       items.push({
         ...prev,
@@ -391,30 +718,35 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
         selectionType,
         cellPriority,
         cellKey,
+        ...(quotaColumn ? { quotaColumn } : {}),
         companyName: buildingName || `(${sigungu} ${mainUse} #${uid})`,
         buildingName,
         sq12BuildingName,
-        ceoName: contactName || prev.ceoName || '',
-        contactName: contactName || prev.contactName || '',
+        siteBuildingName: (tapiInfo && tapiInfo.siteBuildingName) || prev.siteBuildingName || buildingName || '',
+        ceoName: prev.giftSignerName || resolvedContactName || prev.ceoName || '',
+        contactName: resolvedContactName || prev.contactName || '',
         phone: phone || prev.phone || '',
         sampleType,
         industry: mainUse,
         mainUse,
         areaScale,
         estimatedGrossAreaM2: midM2,
+        ceilingHeightM,
         sido,
         sigungu,
-        roadAddress: roadAddress || prev.roadAddress || '',
-        jibunAddress: jibunAddress || prev.jibunAddress || '',
-        address: roadAddress ? `${sido} ${sigungu} ${roadAddress}`.trim() : `${sido} ${sigungu}`.trim(),
+        roadAddress: finalRoadAddr,
+        jibunAddress: finalJibunAddr,
+        address: buildFormattedAddress(sido, sigungu, finalRoadAddr),
         handledItems: mainUse,
         mainProducts: areaScale,
-        lastContactStatus: sheetContactStatus || prev.lastContactStatus || '',
-        contactCount: sheetContactCount || prev.contactCount || '0',
+        lastContactStatus: (tapiInfo && tapiInfo.lastContactStatus) || sheetContactStatus || prev.lastContactStatus || '',
+        contactCount: (tapiInfo && tapiInfo.contactCount && tapiInfo.contactCount !== '0')
+          ? tapiInfo.contactCount
+          : (sheetContactCount || prev.contactCount || '0'),
         quotaCode1,
         quotaCode2,
         memo: memo || prev.memo || '',
-        // 구글 시트 M~T열 엔지니어링 가이드 필드
+        // 구글 시트 건물별 엔지니어링 가이드 필드
         expectedTypeCode,
         expectedTypeDesc: preset.desc,
         isPublicOrSchool,
@@ -433,15 +765,17 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
         contractPowerKw,
         d21Raw: d21UseGas === '1' ? '사용한다' : '사용하지 않는다',
         d21UseGas,
-        guideFromSheet: Boolean(String(r[12] || '').trim() || String(r[14] || '').trim()),
+        guideFromSheet: Boolean(String(a51Cell || '').trim() || String(b11Cell || '').trim()),
         surveyorId: meta.accountId,
         surveyorAccount: meta.accountId,
         surveyorName: meta.surveyorName,
         slotUrl: `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${uid}&page=1`,
         surveyUrl: `https://tapi.hrcglobal.com/q260342/Survey4?pid=${uid}&page=1`,
-        status: isDone ? '완료' : (prev.status || '대기'),
-        quotaStatus: isDone ? 'completed' : (prev.quotaStatus || 'ready'),
-        progress: isDone ? '100%' : (prev.progress || '0%')
+        siteStatus: isDone ? '완료' : ((tapiInfo && tapiInfo.siteStatus) || prev.siteStatus || ''),
+        ...(isDone ? { surveyCompleted: '완료' } : {}),
+        status: resolvedStatus,
+        quotaStatus: resolvedQuotaStatus,
+        progress: resolvedProgress
       });
     }
 
@@ -526,6 +860,8 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
       '면적규모': it.areaScale,
       '시도': it.sido,
       '시군구': it.sigungu,
+      '도로명주소': it.roadAddress || '',
+      '천장고(m)': it.ceilingHeightM || '',
       'A5-1(공조방식)': it.a51Raw,
       'T41(입점시설)': it.t41Raw,
       'B1-1(설비현황)': it.b11Raw,
@@ -543,18 +879,21 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
     XLSX.utils.book_append_sheet(newWb, newWs, meta.sheetName);
     fs.writeFileSync(xlsxOutPath, XLSX.write(newWb, { type: 'buffer', bookType: 'xlsx' }));
 
+    const completedCount = items.filter(i => i.quotaStatus === 'completed').length;
     summary.push({
       accountId: meta.accountId,
       surveyorName: meta.surveyorName,
       totalCount: items.length,
       selectedCount: selectedItems.length,
       backupCount: backupItems.length,
+      completedCount,
+      pendingCount: items.length - completedCount,
       jsonFile: `${baseFileName}.json`,
       xlsxFile: `${baseFileName}.xlsx`
     });
   }
 
-  // src/config/hrc-energy-sheet-guides.json 통합 오버레이 자동 갱신 (contactName·phone·수령증 서명 상태 보존)
+  // src/config/hrc-energy-sheet-guides.json 통합 오버레이 자동 갱신 (contactName·phone·천장고·수령증 서명 상태 보존)
   const overlayPath = path.join(rootDir, 'src', 'config', 'hrc-energy-sheet-guides.json');
   let prevOverlay = {};
   if (fs.existsSync(overlayPath)) {
@@ -586,6 +925,7 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
         expectedTypeCode: it.expectedTypeCode,
         expectedTypeDesc: it.expectedTypeDesc,
         isPublicOrSchool: Boolean(it.isPublicOrSchool),
+        ceilingHeightM: it.ceilingHeightM || prevEntry.ceilingHeightM || '2.8',
         a51Raw: it.a51Raw,
         a51Code: it.a51Code,
         t41Raw: it.t41Raw,
@@ -624,6 +964,12 @@ export function importHrcEnergyQuotas(xlsxPath = '/tmp/energy_full.xlsx') {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const res = importHrcEnergyQuotas();
-  console.log('Imported HRC Energy Building Quotas (6 Accounts):', JSON.stringify(res, null, 2));
+  const xlsxArg = process.argv[2] || '/tmp/energy_full.xlsx';
+  const accArg = process.argv[3] || '';
+  importHrcEnergyQuotas(xlsxArg, { targetAccountIds: accArg || null }).then(res => {
+    console.log('Imported HRC Energy Building Quotas:', JSON.stringify(res, null, 2));
+  }).catch(err => {
+    console.error('Import failed:', err);
+    process.exit(1);
+  });
 }

@@ -99,8 +99,22 @@ export function seedInitialCampaigns({
         id: 'camp_hrc_energy_700550',
         loginId: '700550',
         surveyorName: '최미자',
-        title: '2025년 기준 에너지총조사 [건물] - 700550 (최미자 / 전화번호 확보 선정 30건)',
-        description: '한국리서치 TAPI(2026-89-0342C) 건물 부문 조사 · 서울 동대문·종로·중구·용산 외 (전화번호 확보 선정 30건 · 구글시트 가이드 연동)'
+        title: '2025년 기준 에너지총조사 [건물] - 700550 (최미자 / 전화번호 확보 선정 72건)',
+        description: '한국리서치 TAPI(2026-89-0342C) 건물 부문 조사 · 서울 동대문·종로·중구·용산·금천 외 (전화번호 확보 선정 72건 · 구글시트 가이드 연동)'
+      },
+      {
+        id: 'camp_hrc_energy_701495',
+        loginId: '701495',
+        surveyorName: '김재순',
+        title: '2025년 기준 에너지총조사 [건물] - 701495 (김재순 / 전화번호 확보 선정 38건)',
+        description: '한국리서치 TAPI(2026-89-0342C) 건물 부문 조사 · 경기 남양주·구리·의정부·화성 외 (전화번호 확보 선정 38건 · 구글시트 가이드 연동)'
+      },
+      {
+        id: 'camp_hrc_energy_701497',
+        loginId: '701497',
+        surveyorName: '정소영',
+        title: '2025년 기준 에너지총조사 [건물] - 701497 (정소영 / 전화번호 확보 선정 39건)',
+        description: '한국리서치 TAPI(2026-89-0342C) 건물 부문 조사 · 서울 강남·서초·영등포·송파 외 서초/성북 열 (전화번호 확보 선정 39건 · 구글시트 가이드 연동)'
       }
     ];
 
@@ -300,9 +314,18 @@ export function seedInitialCampaigns({
               needUpdate = true;
             }
           }
+          if (needUpdate) {
+            existingCamp.quotaDatabase.forEach((row, idx) => {
+              row.index = idx + 1;
+              if (!row.seq) row.seq = idx + 1;
+            });
+          }
         }
-        if (needUpdate || existingCamp.quotaSourceFile !== quotaSourceFile) {
+        const metaChanged = existingCamp.title !== spec.title || existingCamp.description !== spec.description;
+        if (needUpdate || metaChanged || existingCamp.quotaSourceFile !== quotaSourceFile) {
           CampaignStore.updateCampaign(existingCamp.id, {
+            title: spec.title,
+            description: spec.description,
             quotaDatabase: existingCamp.quotaDatabase,
             quotaSourceFile: quotaSourceFile || existingCamp.quotaSourceFile
           });
