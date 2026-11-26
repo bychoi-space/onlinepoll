@@ -87,6 +87,19 @@ export const Q3_RECOMMEND_REASON_POOLS = {
   ]
 };
 
+export const KBPI_DIAG_OPEN_TEXT_POOL = [
+  '품질이 우수하고 신뢰가 가서',
+  '인지도가 높고 평판이 좋아서',
+  '성능이 안정적이고 만족스러워서',
+  '주변에서 많이 사용하고 무난해서',
+  '사후관리와 서비스가 믿음직해서',
+  '내구성이 좋고 사용하기 편리해서',
+  '브랜드 이미지가 깔끔하고 친숙해서',
+  '기능이 실용적이고 만족도가 높아서',
+  '오래된 브랜드라 안심하고 쓸 수 있어서',
+  '전반적인 품질과 시스템이 탄탄해서'
+];
+
 export function resolveSmartChannelPool(categoryName = '', policy = {}, baseDict = {}) {
   const cleanCat = String(categoryName || '').replace(/브랜드$/g, '').trim();
   const customFoodChannels = String(policy.customFoodLivingChannels || '')
@@ -94,47 +107,220 @@ export function resolveSmartChannelPool(categoryName = '', policy = {}, baseDict
     .map(s => s.trim())
     .filter(Boolean);
 
-  if (/병원|의료원|의원|치과|안과|한의원|검진/.test(cleanCat)) {
-    return ['병원 직접 방문', '공식 홈페이지 예약', '전화 예약 후 방문'];
+  // 1) 전문/처방 중심 치료제 및 일반의약품 (온라인몰·편의점 절대 배제 -> 약국/병의원 전용)
+  if (/비만치료제|탈모치료제/.test(cleanCat)) {
+    return ['병원 진료 후 약국', '동네 약국', '의원 처방 후 약국'];
   }
-  if (/택배|물류|포장이사|퀵서비스/.test(cleanCat)) {
-    return ['편의점 접수', '공식 앱 예약', '온라인 쇼핑몰 배송'];
-  }
-  if (/사이버대학|온라인.*학원|AI.*학습|인강|온라인교육|이러닝|화상영어|학습앱/.test(cleanCat)) {
-    return ['공식 홈페이지', '모바일 공식 앱'];
-  }
-  if (/학원|학습지|어학원|교육|대학/.test(cleanCat)) {
-    return ['학원 직접 방문 상담', '공식 홈페이지 수강신청'];
-  }
-  if (/은행|카드|보험|증권|페이|결제|금융|저축|자산관리/.test(cleanCat)) {
-    return ['모바일 공식 앱', '공식 홈페이지', '영업점 직접 방문'];
-  }
-  if (/오픈마켓|소셜커머스|온라인쇼핑|배달앱|숙박앱|부동산앱|모빌리티|OTT|포털|음원|웹툰|초고속인터넷|IPTV|이동통신|알뜰폰/.test(cleanCat)) {
-    return ['모바일 공식 앱', '공식 웹사이트'];
-  }
-  if (/구호개발단체|NGO|자선/.test(cleanCat)) {
-    return ['공식 홈페이지 정기후원', '온라인 캠페인 참여'];
-  }
-  if (/백화점|대형할인점|면세점|편의점|슈퍼마켓|아울렛|복합쇼핑몰|창고형할인매장|드럭스토어|헬스앤뷰티/.test(cleanCat)) {
-    return ['오프라인 매장 직접 방문', '브랜드 공식 앱'];
-  }
-  if (/베이커리|제과|제빵|커피전문점|카페|치킨|피자|패스트푸드|외식|레스토랑|아이스크림전문점|영화관|호텔|리조트|콘도|주유소|렌터카|여행사|항공사/.test(cleanCat)) {
-    return ['오프라인 매장 직접 방문', '공식 모바일 앱', '공식 홈페이지 예약'];
-  }
-  if (/SPA|스포츠웨어|아웃도어|의류|패션|정장|캐주얼|구두|운동화|언더웨어|가방/.test(cleanCat)) {
-    return ['백화점 매장', '직영 오프라인 매장', '공식 온라인몰', '무신사'];
-  }
-  if (/화장품|뷰티|스킨케어|샴푸|바디|향수|염모제/.test(cleanCat)) {
-    return ['올리브영 매장', '백화점 매장', '공식 온라인몰', '쿠팡'];
-  }
-  if (/스마트워치|스마트폰|노트북|태블릿|이어폰|TV|냉장고|세탁기|에어컨|청소기|정수기|비데|처리기|밥솥|가전|침대|매트리스|가구|보일러|자동차|타이어/.test(cleanCat)) {
-    return ['브랜드 공식 스토어', '백화점 매장', '롯데하이마트', '쿠팡', '네이버 브랜드스토어'];
+  if (/변비약|소화제|소염진통제|해열진통제|진통제|위장약|감기약|점안액|인공눈물|상처\/흉터|흉터치료제|자양강장제|파스|연고|무좀약|구내염|치질약|알레르기약|멀미약|제산제|지사제/.test(cleanCat)) {
+    return ['동네 약국', '집 근처 약국', '약국 직접 방문'];
   }
 
+  // 2) 담배 · 궐련형/액상형 전자담배 (대한민국 법상 온라인 구매 불가 -> 오프라인 소매점 전용)
+  if (/담배/.test(cleanCat)) {
+    return ['편의점', 'GS25', 'CU', '세븐일레븐', '동네 마트'];
+  }
+
+  // 3) 생성형 AI · 모바일/웹 플랫폼 · 인터넷서점 · 통신 (오프라인 '병원'/'뷰티'/'중고차' 키워드보다 최우선 매칭)
+  if (/생성형\s*AI|인터넷서점/.test(cleanCat)) {
+    return ['공식 웹사이트', '모바일 공식 앱'];
+  }
+  if (/AI.*학습|사이버대학|온라인.*학원|인강|온라인교육|이러닝|화상영어|학습앱/.test(cleanCat)) {
+    return ['공식 홈페이지', '모바일 공식 앱'];
+  }
+  if (/통합금융플랫폼|모바일뱅킹|가상자산거래소|간편결제|다이렉트.*보험/.test(cleanCat)) {
+    return ['모바일 공식 앱', '공식 홈페이지'];
+  }
+  if (/플랫폼|오픈마켓|소셜커머스|온라인쇼핑|배달앱|숙박앱|부동산앱|모빌리티|카셰어링|OTT|포털|음원|웹툰/.test(cleanCat)) {
+    return ['모바일 공식 앱', '공식 웹사이트'];
+  }
+  if (/초고속인터넷|IPTV|이동통신|알뜰폰/.test(cleanCat)) {
+    return ['공식 홈페이지', '공식 대리점', '모바일 공식 앱', '고객센터 전화 신청'];
+  }
+
+  // 4) 병원 · 의료원 · 의원 · 치과 · 한방병원 · 건강검진 · 임플란트
+  if (/병원|의료원|의원|치과|안과|한의원|검진|임플란트/.test(cleanCat)) {
+    return ['병원 직접 방문', '전화 예약 후 방문', '공식 홈페이지 예약'];
+  }
+
+  // 5) 교육 · 학습지 · 학원 · 교재 · 문구
+  if (/스마트학습|초등교육|유아교육|학습지/.test(cleanCat)) {
+    return ['공식 홈페이지 수강·체험 신청', '전화 상담 신청'];
+  }
+  if (/학원|어학원|교육|대학/.test(cleanCat)) {
+    return ['학원 직접 방문 상담', '공식 홈페이지 수강신청'];
+  }
+  if (/중고등교재|참고서|문제집|교재/.test(cleanCat)) {
+    return ['대형 서점(교보문고·영풍문고)', '예스24', '교보문고 온라인', '알라딘'];
+  }
+  if (/종합문구|문구|필기구/.test(cleanCat)) {
+    return ['교보문고 핫트랙스', '동네 문구점', '아트박스', '쿠팡', '네이버쇼핑'];
+  }
+
+  // 6) 금융 · 은행 · PB · 카드 · 보험 · 증권 · 금거래소
+  if (/프라이빗뱅킹|은퇴설계|자산관리/.test(cleanCat)) {
+    return ['영업점 직접 방문 상담', 'PB센터 방문 상담', '모바일 공식 앱'];
+  }
+  if (/금거래소/.test(cleanCat)) {
+    return ['오프라인 직영 매장', '공식 온라인몰', '종로 매장 직접 방문'];
+  }
+  if (/은행|뱅킹|카드|보험|증권|페이|결제|금융|저축/.test(cleanCat)) {
+    return ['모바일 공식 앱', '공식 홈페이지', '영업점 직접 방문'];
+  }
+
+  // 7) 항공 · 여행 · 호텔 · 테마/워터파크 · 고속버스 · 휴게소 · 렌터카
+  if (/저비용항공|항공\(FSC\)|항공사|항공권/.test(cleanCat)) {
+    return ['항공사 공식 홈페이지', '공식 모바일 앱', '온라인 여행사 앱'];
+  }
+  if (/여행사/.test(cleanCat)) {
+    return ['공식 홈페이지', '공식 모바일 앱', '전화 상담 예약'];
+  }
+  if (/호텔|리조트|콘도/.test(cleanCat)) {
+    return ['공식 홈페이지 예약', '숙박 예약 앱', '공식 모바일 앱'];
+  }
+  if (/테마파크|워터파크/.test(cleanCat)) {
+    return ['공식 홈페이지 예매', '모바일 공식 앱 예매', '네이버 예약 후 방문'];
+  }
+  if (/고속버스/.test(cleanCat)) {
+    return ['고속버스 티머니 앱', '코버스 공식 홈페이지', '터미널 현장 발권'];
+  }
+  if (/휴게소/.test(cleanCat)) {
+    return ['고속도로 주행 중 직접 방문', '현장 매장 직접 방문'];
+  }
+  if (/렌터카/.test(cleanCat)) {
+    return ['공식 홈페이지 예약', '공식 모바일 앱', '지점 직접 방문'];
+  }
+
+  // 8) 자동차 · 모터사이클 · 주유 · 충전 · 정비 · 배터리 · 자동차용품
+  if (/전기차\s*충전/.test(cleanCat)) {
+    return ['충전소 현장 방문 및 전용 앱', '아파트 단지 내 충전기'];
+  }
+  if (/주유소|휘발유|경유|LPG/.test(cleanCat)) {
+    return ['주유소 직접 방문', '셀프주유소 직접 방문'];
+  }
+  if (/타이어|자동차정비|자동차배터리|엔진오일/.test(cleanCat)) {
+    return ['공식 정비소 직접 방문', '타이어·정비 전문 매장 방문', '카센터 직접 방문'];
+  }
+  if (/요소수|내비게이션|블랙박스|자동차용품/.test(cleanCat)) {
+    return ['온라인 쇼핑몰(쿠팡·네이버쇼핑)', '대형마트 자동차용품 코너', '장착 전문점 방문'];
+  }
+  if (/승용차|SUV|전기자동차|자동차|수입차|모터사이클/.test(cleanCat)) {
+    return ['공식 대리점(전시장) 방문', '직영 지점 방문 상담', '브랜드 공식 홈페이지'];
+  }
+
+  // 9) 주거 · 아파트 · 인테리어 · 건자재 · 설비 · 보안 · 도시가스
+  if (/아파트|오피스텔/.test(cleanCat)) {
+    return ['공인중개사 사무소', '모델하우스(견본주택) 방문', '청약홈 분양 신청'];
+  }
+  if (/엘리베이터|스마트홈네트워크/.test(cleanCat)) {
+    return ['아파트·건물 내 설치 시설 이용', '단지 내 기본 설치 시설 이용'];
+  }
+  if (/도시가스/.test(cleanCat)) {
+    return ['거주지 도시가스 고객센터 신청', '공식 홈페이지 및 모바일 앱'];
+  }
+  if (/방범보안/.test(cleanCat)) {
+    return ['공식 홈페이지 상담 신청', '고객센터 전화 상담 신청'];
+  }
+  if (/창호|벽지|리모델링|위생도기|바닥재|페인트|인테리어|부엌가구/.test(cleanCat)) {
+    return ['인테리어 대리점 방문 상담', '브랜드 공식 전시장 방문', '인테리어 시공업체 계약'];
+  }
+  if (/디지털도어락|도어락/.test(cleanCat)) {
+    return ['도어락 전문점 방문 설치', '네이버 브랜드스토어', '쿠팡 로켓설치'];
+  }
+
+  // 10) 가전 · 디지털 · 보일러 · 사무기기 · 가구 · 유모차 ('의류관리기/의류건조기/뷰티케어가전' 선행 매칭)
+  if (/가전렌탈/.test(cleanCat)) {
+    return ['브랜드 공식 홈페이지 신청', '공식 스토어 방문 상담', '고객센터 전화 렌탈 신청'];
+  }
+  if (/보일러|온수기/.test(cleanCat)) {
+    return ['공식 대리점 방문·전화 시공', '브랜드 공식 홈페이지 상담 신청'];
+  }
+  if (/사무용복합기|복합기|프린터/.test(cleanCat)) {
+    return ['공식 대리점 구매·임대', '공식 온라인몰', '오피스 용품 전문몰'];
+  }
+  if (/의류관리기|의류건조기|뷰티케어가전|스마트워치|스마트폰|노트북|태블릿|이어폰|빔프로젝터|프로젝터|TV|냉장고|세탁기|에어컨|환기청정기|공기청정기|제습기|청소기|정수기|비데|처리기|식기세척기|전기레인지|인덕션|가스레인지|복합오븐|오븐|커피머신|밥솥|안마의자|척추의료기기|의료기기|가전/.test(cleanCat)) {
+    return ['브랜드 공식 스토어', '백화점 매장', '롯데하이마트', '공식 온라인몰', '네이버 브랜드스토어'];
+  }
+  if (/침대|매트리스|가구/.test(cleanCat)) {
+    return ['브랜드 공식 대리점·전시장', '백화점 매장', '공식 온라인몰'];
+  }
+  if (/유모차|카시트/.test(cleanCat)) {
+    return ['백화점 유아동 매장', '베이비페어 및 공식 스토어', '공식 온라인몰'];
+  }
+
+  // 11) NGO · 사회공헌 · 시니어케어 · 세탁/택배 생활서비스
+  if (/구호개발단체|NGO|자선|사회공헌/.test(cleanCat)) {
+    return ['공식 홈페이지 참여·후원', '온라인 캠페인 참여'];
+  }
+  if (/시니어케어|시니어리빙/.test(cleanCat)) {
+    return ['공식 홈페이지 상담 신청', '센터 직접 방문 및 전화 상담'];
+  }
+  if (/의류관리서비스/.test(cleanCat)) {
+    return ['동네 가맹점 직접 방문', '모바일 공식 앱 수거 신청'];
+  }
+  if (/택배|물류|포장이사|퀵서비스/.test(cleanCat)) {
+    return ['편의점 택배 접수', '공식 모바일 앱 예약', '온라인 쇼핑몰 배송'];
+  }
+
+  // 12) 유통매장 · 홈쇼핑 · 전자전문점
+  if (/TV홈쇼핑|홈쇼핑/.test(cleanCat)) {
+    return ['TV 방송 시청 후 모바일 앱 주문', '홈쇼핑 공식 모바일 앱', 'ARS 전화 주문'];
+  }
+  if (/전자전문점/.test(cleanCat)) {
+    return ['오프라인 매장 직접 방문', '공식 온라인몰'];
+  }
+  if (/백화점|대형할인점|면세점|편의점|슈퍼마켓|아울렛|복합쇼핑몰|창고형할인매장|드럭스토어|헬스앤뷰티/.test(cleanCat)) {
+    return ['오프라인 매장 직접 방문', '브랜드 공식 모바일 앱'];
+  }
+
+  // 13) 영화관 · 외식 · 카페 · 베이커리
+  if (/영화관/.test(cleanCat)) {
+    return ['공식 모바일 앱 예매 후 방문', '현장 키오스크 발권'];
+  }
+  if (/베이커리|제과|제빵|커피전문점|카페|치킨|피자|패스트푸드|외식|레스토랑|아이스크림전문점/.test(cleanCat)) {
+    return ['오프라인 매장 직접 방문', '배달의민족', '공식 모바일 앱 주문'];
+  }
+
+  // 14) 패션 · 의류 · 교복 · 주얼리 · 침구
+  if (/학생교복|교복/.test(cleanCat)) {
+    return ['브랜드 공식 대리점 직접 방문', '학교 주관 공동구매 매장 방문'];
+  }
+  if (/리빙SPA|홈패션|침구/.test(cleanCat)) {
+    return ['백화점 매장', '브랜드 직영 오프라인 매장', '공식 온라인몰'];
+  }
+  if (/SPA|스포츠웨어|애슬레저|아웃도어|의류|웨어|패션|정장|캐주얼|구두|운동화|언더웨어|란제리|주얼리|가방/.test(cleanCat)) {
+    return ['백화점 매장', '직영 오프라인 매장', '공식 온라인몰', '무신사'];
+  }
+
+  // 15) 뷰티 · 화장품 · 더마코스메틱 · 아토피케어 · 샴푸
+  if (/화장품|코스메틱|아토피케어|뷰티|스킨케어|샴푸|바디|향수|염모제/.test(cleanCat)) {
+    return ['올리브영 매장', '백화점 매장', '공식 온라인몰', '쿠팡'];
+  }
+
+  // 16) 주류 · 숙취해소 · 건강기능식품 · 펫푸드 · 주방용품
+  if (/소주|맥주|전통주|막걸리|와인|위스키|주류/.test(cleanCat)) {
+    return ['편의점', '대형마트(이마트·홈플러스·롯데마트)', '동네슈퍼'];
+  }
+  if (/숙취해소/.test(cleanCat)) {
+    return ['편의점', '약국', '올리브영', '쿠팡'];
+  }
+  if (/건강기능식품|건강식품|비타민|영양제|유산균|보충제|에너지젤|환자영양식/.test(cleanCat)) {
+    return ['약국', '올리브영', '쿠팡', '네이버 브랜드스토어', '대형마트'];
+  }
+  if (/펫푸드|반려견|반려묘/.test(cleanCat)) {
+    return ['쿠팡', '네이버쇼핑', '반려동물용품 전문점(펫샵)', '이마트'];
+  }
+  if (/주방용품|밀폐용기|텀블러/.test(cleanCat)) {
+    return ['이마트', '쿠팡', '백화점·아울렛 매장', '네이버 브랜드스토어', '홈플러스'];
+  }
+  if (/농산물|축산물|수산물|냉장\/냉동육|참치액|식용유|자연조미료|장류|파스타소스|세탁세제|섬유유연제|화장지/.test(cleanCat)) {
+    return ['이마트', '홈플러스', '롯데마트', '하나로마트', '쿠팡', '컬리'];
+  }
+
+  // 17) 일반 식음료 · 간편식 · 생활소비재 기본 풀
   if (customFoodChannels.length > 0) {
     return customFoodChannels;
   }
-  return baseDict.channelPools?.food_living || ['편의점', '동네슈퍼', '이마트', '쿠팡', '홈플러스', '롯데마트'];
+  return baseDict.channelPools?.food_living || ['이마트', '쿠팡', '홈플러스', '롯데마트', '편의점', '동네슈퍼'];
 }
 
 function hashSeed(str = '') {
@@ -327,15 +513,61 @@ function saveLearnedCategoryBrands(categoryName, brands = []) {
   }
 }
 
-async function resolveCategoryMeta(categoryName, policy = {}) {
+export function resolveDomainAdjectives(categoryName = '') {
+  const cleanCat = String(categoryName || '').replace(/브랜드$/g, '').trim();
+  if (/약|진통제|치료제|점안액|인공눈물|장장제|검진|병원|한의원|임플란트/.test(cleanCat)) {
+    return ['믿음직하다', '신뢰가는', '편안함', '안심되는', '꼼꼼하다', '체계적임', '친숙함'];
+  }
+  if (/생성형\s*AI|플랫폼|앱|오픈마켓|뱅킹|거래소|페이|결제|인터넷|모빌리티|카셰어링|OTT/.test(cleanCat)) {
+    return ['빠르다', '편리함', '간편하다', '직관적인', '실용적임', '유용하다', '친숙함', '스마트한'];
+  }
+  if (/은행|카드|보험|증권|금융|은퇴설계/.test(cleanCat)) {
+    return ['믿음직하다', '든든함', '안전한', '신뢰가는', '체계적임', '편리하다', '탄탄함'];
+  }
+  if (/테마파크|워터파크|영화관|리조트|콘도|여행/.test(cleanCat)) {
+    return ['즐겁다', '신나는', '쾌적함', '활기찬', '편안하다', '기분좋은', '다양함'];
+  }
+  if (/호텔|백화점|면세점|프리미엄/.test(cleanCat)) {
+    return ['고급스럽다', '세련됨', '쾌적한', '깔끔함', '품격있는', '편안함', '만족스러운'];
+  }
+  if (/학원|교육|학습|대학|교재/.test(cleanCat)) {
+    return ['체계적인', '유익하다', '꼼꼼함', '전문적인', '믿음직함', '알차다', '탄탄한'];
+  }
+  if (/의류|웨어|패션|정장|캐주얼|구두|운동화|언더웨어|주얼리|교복|침구|SPA/.test(cleanCat)) {
+    return ['세련된', '편안하다', '깔끔함', '실용적인', '트렌디함', '무난하다', '예쁘다'];
+  }
+  if (/화장품|코스메틱|뷰티|샴푸|아토피|바디/.test(cleanCat)) {
+    return ['순하다', '촉촉함', '깔끔하다', '산뜻함', '부드러운', '향기롭다', '트렌디한'];
+  }
+  if (/냉장고|세탁기|건조기|관리기|에어컨|청소기|제습기|정수기|비데|식기세척기|레인지|인덕션|오븐|커피머신|밥솥|안마의자|보일러|도어락|복합기|프로젝터|이어폰|워치|스마트폰|노트북|TV|가전|창호|벽지|바닥재|위생도기|페인트|가구|침대|유모차/.test(cleanCat)) {
+    return ['튼튼하다', '편리함', '세련된', '실용적임', '깔끔하다', '성능좋은', '믿음직함', '안정적인'];
+  }
+  if (/라면|우유|요구르트|요거트|두유|주스|음료|생수|과자|아이스크림|만두|김치|김|소스|참치|국물|즉석밥|식용유|조미료|장류|농산물|축산물|수산물|육|간편식|베이커리|커피|치킨|피자|패스트푸드|레스토랑/.test(cleanCat)) {
+    return ['맛있다', '신선함', '깔끔하다', '친숙함', '고소한', '든든함', '익숙하다', '품질좋은'];
+  }
+  return [];
+}
+
+function isSafePartialDictMatch(cleanCat, dictKey) {
+  if (!cleanCat || !dictKey) return false;
+  // 역방향 부분일치('김치냉장고'.includes('김치')) 금지 — 정방향 cleanCat.includes(dictKey)만 허용하되 파생 이종 업종 제외
+  if (!cleanCat.includes(dictKey)) return false;
+  if (dictKey === '자동차' && /보험|배터리|정비|용품|충전|중고차|렌터카/.test(cleanCat)) return false;
+  if (dictKey === '라면' && /비빔|볶음/.test(cleanCat)) return false;
+  if (dictKey === '우유' && /가공|두유/.test(cleanCat)) return false;
+  if (dictKey === '세제' && /주방/.test(cleanCat)) return false;
+  return true;
+}
+
+export async function resolveCategoryMeta(categoryName, policy = {}) {
   const cleanCat = String(categoryName || '').replace(/브랜드$/g, '').trim() || '일반소비재';
   const { baseDict, learned } = loadBrandDictionary();
 
-  // 1) 정확히 일치하거나 가장 긴 키워드로 부분 일치하는 사전 항목 탐색 ('가공우유'가 '우유'에 오매칭되지 않도록 길이 내림차순)
+  // 1) 정확히 일치하거나 안전한 정방향 키워드 부분 일치 사전 항목 탐색 (역방향 '김치'->'김치냉장고' 오매칭 원천 차단)
   let matchedEntry = baseDict.categories?.[cleanCat] || null;
   if (!matchedEntry) {
     const keys = Object.keys(baseDict.categories || {}).sort((a, b) => b.length - a.length);
-    const partialKey = keys.find(k => cleanCat.includes(k) || k.includes(cleanCat));
+    const partialKey = keys.find(k => isSafePartialDictMatch(cleanCat, k));
     if (partialKey) matchedEntry = baseDict.categories[partialKey];
   }
 
@@ -365,7 +597,7 @@ async function resolveCategoryMeta(categoryName, policy = {}) {
           brands,
           adjectives: Array.isArray(parsed.adjectives) && parsed.adjectives.length >= 4
             ? Array.from(new Set(parsed.adjectives))
-            : (baseDict.defaultAdjectives?.positive || ['친숙하다', '믿음직함', '깔끔하다', '실용적임', '편리함', '안정적인']),
+            : Array.from(new Set([...resolveDomainAdjectives(cleanCat), ...(baseDict.defaultAdjectives?.positive || [])])),
           channels: resolveSmartChannelPool(cleanCat, policy, baseDict)
         };
       }
@@ -400,6 +632,7 @@ async function resolveCategoryMeta(categoryName, policy = {}) {
 
   const adjectives = Array.from(new Set([
     ...(matchedEntry?.adjectives || []),
+    ...resolveDomainAdjectives(cleanCat),
     ...(baseDict.defaultAdjectives?.positive || [])
   ]));
 
@@ -2885,20 +3118,28 @@ export async function runKmacKbpiSurvey({
             tables = findMatrixTables();
           }
 
-          // 상단 평가 브랜드 열 헤더 이름 파악 (헤더 드롭다운 선택값 최우선 + 고정 텍스트/인풋 병합)
-          const colBrandNames = headerBrandByCol.filter(b => b && !/^(없음|해당\s*없음|더\s*이상\s*없음|선택)$/.test(b));
+          // 상단 평가 브랜드 열 헤더 이름 파악 (헤더 드롭다운 선택값 최우선 + hidden/숫자코드 배제 고정 텍스트/인풋 병합)
+          const isValidHeaderBrandLabel = (txt) => {
+            const s = String(txt || '').trim();
+            if (!s || s.length > 40 || isPlaceholderOptText(s)) return false;
+            if (/평가항목|^\d+$/.test(s)) return false;
+            return true;
+          };
+          const colBrandNames = headerBrandByCol.filter(b => b && !/^(없음|해당\s*없음|더\s*이상\s*없음|선택)$/.test(b) && isValidHeaderBrandLabel(b));
           if (colBrandNames.length === 0) {
             tables.forEach(tb => {
-              tb.querySelectorAll('thead select, thead input, thead div, thead th, thead td, tbody tr:first-child select, tbody tr:first-child input, tbody tr:first-child td').forEach(el => {
+              tb.querySelectorAll('thead select, thead input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"]), thead div, thead th, thead td, tbody tr:first-child select, tbody tr:first-child input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"]), tbody tr:first-child td').forEach(el => {
                 const tr = el.closest('tr');
                 if (!isHeaderBrandRow(tr)) return;
                 let v = '';
                 if (el.tagName === 'SELECT') {
                   v = (el.options[el.selectedIndex]?.text || '').trim();
+                } else if (el.tagName === 'INPUT') {
+                  v = (el.value || '').trim();
                 } else {
-                  v = (el.value || el.innerText || '').trim();
+                  v = (el.innerText || '').trim();
                 }
-                if (v && v.length <= 40 && !isPlaceholderOptText(v) && !/평가항목|^[1-6]$/.test(v) && colBrandNames.length < 6) {
+                if (isValidHeaderBrandLabel(v) && colBrandNames.length < 6) {
                   if (!colBrandNames.includes(v)) colBrandNames.push(v);
                 }
               });
@@ -2921,13 +3162,13 @@ export async function runKmacKbpiSurvey({
               const trs = Array.from(tb.querySelectorAll('tbody tr')).filter(tr => tr.offsetParent !== null);
               for (const tr of trs) {
                 if (isHeaderBrandRow(tr)) {
-                  // 헤더 행의 고정 input 브랜드명만 보조 수집하고 덮어쓰기 절대 금지!
+                  // 헤더 행의 고정 input 브랜드명만 보조 수집하고 덮어쓰기 절대 금지! (hidden 숫자코드 배제)
                   if (!isRetryPass && colBrandNames.length === 0) {
                     tr.querySelectorAll('td, th').forEach(td => {
-                      const hdrInp = td.querySelector('input:not([type="radio"]):not([type="checkbox"])');
+                      const hdrInp = td.querySelector('input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"])');
                       const hdrSel = td.querySelector('select');
                       const bv = (hdrSel ? (hdrSel.options[hdrSel.selectedIndex]?.text || '') : (hdrInp?.value || td.innerText || '')).trim();
-                      if (bv && bv.length <= 40 && !isPlaceholderOptText(bv) && !/평가항목|^[1-6]$/.test(bv) && !colBrandNames.includes(bv) && colBrandNames.length < 6) {
+                      if (isValidHeaderBrandLabel(bv) && !colBrandNames.includes(bv) && colBrandNames.length < 6) {
                         colBrandNames.push(bv);
                       }
                     });
@@ -3927,13 +4168,14 @@ export async function runKmacKbpiSurvey({
               }
             }
 
-            // 주관식 텍스트 (기타 입력칸 제외)
-            box.querySelectorAll('input[type="text"]:not(:disabled), textarea:not(:disabled)').forEach(inp => {
+            // 주관식 텍스트 (기타 입력칸 제외 — 다수 응답자 간 동일 문구 중복 방지)
+            box.querySelectorAll('input[type="text"]:not(:disabled), textarea:not(:disabled)').forEach((inp, tIdx) => {
               if (inp.offsetParent === null || inp.readOnly) return;
               const cName = inp.getAttribute('custom-save-name') || inp.name || '';
               if (/_ETC$/i.test(cName) || inp.closest('[data-other]')) return;
               if (!String(inp.value || '').trim()) {
-                inp.value = '품질이 우수하고 신뢰가 감';
+                const pickedTxt = openPool[(sNum + tIdx) % openPool.length] || '품질이 우수하고 신뢰가 가서';
+                inp.value = pickedTxt;
                 inp.dispatchEvent(new Event('input', { bubbles: true }));
                 inp.dispatchEvent(new Event('change', { bubbles: true }));
                 if (typeof window.$ !== 'undefined') window.$(inp).val(inp.value).trigger('input').trigger('change');
@@ -3941,7 +4183,7 @@ export async function runKmacKbpiSurvey({
             });
             await waitMs(150);
           }
-        }, { isBoilerSkip: age <= 24, sNum: Math.floor(rng() * 100) });
+        }, { isBoilerSkip: age <= 24, sNum: Math.floor(rng() * 1000), openPool: KBPI_DIAG_OPEN_TEXT_POOL });
 
         await surveyPage.waitForTimeout(420);
         await clickNextButton(activeTarget);
