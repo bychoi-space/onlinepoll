@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K-BPI 설문 응답 현황 리포트 - AutoSurvey AI</title>
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261022">
+  <link rel="alternate icon" type="image/png" href="favicon.png?v=20261022">
+  <link rel="apple-touch-icon" href="favicon.png?v=20261022">
+
+  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <link rel="stylesheet" href="tokens.css?v=20261126_kbpi_rpt1">
+  <link rel="stylesheet" href="figma-base.css?v=20261126_kbpi_rpt1">
+  <link rel="stylesheet" href="campaign.css?v=20261126_kbpi_rpt1">
+  <link rel="stylesheet" href="custom-styles.css?v=20261126_kbpi_rpt1">
+  <link rel="stylesheet" href="kbpi-report.css?v=20261126_kbpi_rpt1">
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <nav class="figma-top-nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>AutoSurvey</span>
+        <span class="brand-badge">AI</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link-item"><i class="fa-solid fa-list-check"></i> 설문 캠페인</a></li>
+        <li><a href="survey-detail.html?id=camp_kmac_kbpi_5911000005645" id="nav-go-kbpi-detail" class="nav-link-item"><i class="fa-solid fa-sliders"></i> K-BPI 상세 작업실</a></li>
+        <li><a href="kbpi-report.html" class="nav-link-item active"><i class="fa-solid fa-clipboard-check"></i> K-BPI 응답 확인</a></li>
+        <li><a href="settlement.html" class="nav-link-item"><i class="fa-solid fa-coins"></i> 조사 정산</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button type="button" class="btn-pill-logout" id="btn-global-logout">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> 로그아웃
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="kbpi-rpt-container">
+    <!-- Hero Header -->
+    <header class="kbpi-rpt-hero">
+      <div class="kbpi-rpt-hero-left">
+        <div class="kbpi-rpt-badge-row">
+          <span class="kbpi-badge kbpi-badge-primary">KMAC CAPI ID: 230</span>
+          <span class="kbpi-badge kbpi-badge-muted kbpi-mono" id="rpt-login-id">계정: 5911000005645</span>
+          <span class="kbpi-badge kbpi-badge-ok" id="rpt-updated-at">실시간 서버 DB 연동</span>
+        </div>
+        <h1 class="kbpi-rpt-title" id="rpt-title">2027년 한국산업의브랜드파워(K-BPI) 설문조사 — 현재까지 응답 내용 확인</h1>
+        <p class="kbpi-rpt-subtitle">
+          운영 서버 실시간 DB 및 Survey 230 공식 산업군 코드북(533개 산업군) 연동 · 응답 완료분(완료직전 안전대기 포함) 및 전체 150명 배정 브랜드 현황을 실시간으로 확인합니다.
+        </p>
+      </div>
+
+      <div class="kbpi-rpt-actions">
+        <button type="button" id="btn-refresh-report" class="btn-pill btn-pill-secondary btn-pill-small">
+          <i class="fa-solid fa-rotate"></i> 새로고침
+        </button>
+        <button type="button" id="btn-sync-capi-readonly" class="btn-pill btn-pill-secondary btn-pill-small" title="제출이나 다음 클릭 없이 CAPI 서버에 저장된 Q1~ZQ6 실제 값을 읽어와 보강합니다.">
+          <i class="fa-solid fa-cloud-arrow-down"></i> CAPI 서버 응답 동기화
+        </button>
+        <button type="button" id="btn-export-done-csv" class="btn-pill btn-pill-primary btn-pill-small">
+          <i class="fa-solid fa-file-csv"></i> 상세 응답 CSV 저장
+        </button>
+        <button type="button" id="btn-export-all-csv" class="btn-pill btn-pill-secondary btn-pill-small">
+          <i class="fa-solid fa-table"></i> 150명 현황 CSV 저장
+        </button>
+        <a href="https://docs.google.com/spreadsheets/d/16XEpH7ru9A3eBpEHQqYm3cd3sMUWNBxqD-1tXoCR8Hg/edit" id="link-google-sheet" target="_blank" rel="noopener" class="btn-pill btn-pill-secondary btn-pill-small">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> 구글 시트 열기
+        </a>
+      </div>
+    </header>
+
+    <div id="rpt-status-banner" class="kbpi-banner-status kbpi-hidden"></div>
+
+    <!-- KPI Cards -->
+    <section class="kbpi-rpt-kpi-grid">
+      <div class="kbpi-rpt-kpi-card">
+        <span class="kbpi-rpt-kpi-label">전체 배정 표본</span>
+        <div class="kbpi-rpt-kpi-value" id="kpi-total">150<span class="kbpi-rpt-kpi-unit">명</span></div>
+        <span class="kbpi-rpt-kpi-sub" id="kpi-region-sub">서울 100명 · 인천 50명</span>
+      </div>
+      <div class="kbpi-rpt-kpi-card">
+        <span class="kbpi-rpt-kpi-label">본설문 응답 (완료직전 대기)</span>
+        <div class="kbpi-rpt-kpi-value kbpi-text-success" id="kpi-pilot-done">-</div>
+        <span class="kbpi-rpt-kpi-sub">마지막 ZQ6 입력 후 안전 정지</span>
+      </div>
+      <div class="kbpi-rpt-kpi-card">
+        <span class="kbpi-rpt-kpi-label">신상등록 · 브랜드 스캔완료</span>
+        <div class="kbpi-rpt-kpi-value kbpi-text-primary" id="kpi-scanned">-</div>
+        <span class="kbpi-rpt-kpi-sub">GP1~M_CHECK + 20개 품목 스캔</span>
+      </div>
+      <div class="kbpi-rpt-kpi-card">
+        <span class="kbpi-rpt-kpi-label">최종 제출 마감 (100%)</span>
+        <div class="kbpi-rpt-kpi-value" id="kpi-completed">-</div>
+        <span class="kbpi-rpt-kpi-sub">제출 전 CAPI 열람·수정 가능</span>
+      </div>
+      <div class="kbpi-rpt-kpi-card">
+        <span class="kbpi-rpt-kpi-label">검수 참고 포인트</span>
+        <div class="kbpi-rpt-kpi-value kbpi-text-warn" id="kpi-warn-slots">-</div>
+        <span class="kbpi-rpt-kpi-sub">채널 정합성 · 미기록 확인용</span>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <nav class="kbpi-rpt-tabs">
+      <button type="button" data-tab="done" class="kbpi-rpt-tab-btn active" id="tab-btn-done">
+        1. 본설문 응답 상세 확인
+      </button>
+      <button type="button" data-tab="all" class="kbpi-rpt-tab-btn" id="tab-btn-all">
+        2. 전체 150명 진행현황 &amp; 스캔된 출제 브랜드
+      </button>
+      <button type="button" data-tab="rules" class="kbpi-rpt-tab-btn" id="tab-btn-rules">
+        3. 문항별 자동 응답 규칙 명세 (GP1 ~ ZQ6)
+      </button>
+    </nav>
+
+    <!-- Panel 1: Answered Respondents Detail -->
+    <section id="panel-done">
+      <div class="kbpi-rpt-card">
+        <div>
+          <h2 class="kbpi-rule-title">본설문 응답 완료(완료직전 안전 대기 포함) 대상자별 상세 응답 내역</h2>
+          <p class="kbpi-rpt-subtitle">
+            각 응답자의 신상·GPS·조사동, 종결부 배경변인(ZQ1~ZQ6), 그리고 개인별 20개 출제 산업군에 대해 입력된 구입경험·응답 브랜드·주관식 구입경로를 표시합니다.
+            로컬 DB에 기록되지 않은 과거 실행 슬롯이 있는 경우 상단 <strong>[CAPI 서버 응답 동기화]</strong>를 클릭하면 제출 없이 CAPI 서버 저장값을 그대로 불러와 채웁니다.
+          </p>
+        </div>
+
+        <div class="kbpi-rpt-filter-bar">
+          <div id="done-person-chips" class="kbpi-rpt-chip-list"></div>
+          <div class="kbpi-rpt-controls">
+            <select id="done-exp-filter" class="kbpi-select">
+              <option value="all">구입경험 전체 (있음+없음)</option>
+              <option value="yes">구입경험 '있음' 품목만</option>
+              <option value="no">구입경험 '없음' 품목만</option>
+              <option value="warn">검수 참고 메모 있는 품목만</option>
+            </select>
+            <input type="text" id="done-search" class="kbpi-input" placeholder="품목명, 브랜드, 구입채널 검색..." />
+          </div>
+        </div>
+      </div>
+
+      <div id="done-cards-container" class="kbpi-person-stack"></div>
+    </section>
+
+    <!-- Panel 2: All 150 Respondents -->
+    <section id="panel-all" class="kbpi-hidden">
+      <div class="kbpi-rpt-card">
+        <div class="kbpi-rpt-badge-row">
+          <h2 class="kbpi-rule-title">지역 × 성별 × 연령대 구분자별 달성 현황</h2>
+          <span class="kbpi-muted">셀 표기: 본설문 응답 인원 / 배정 인원</span>
+        </div>
+        <div id="segment-matrix-wrap" class="kbpi-table-wrap"></div>
+      </div>
+
+      <div class="kbpi-rpt-card">
+        <div class="kbpi-rpt-filter-bar">
+          <div class="kbpi-rpt-controls">
+            <select id="all-region" class="kbpi-select">
+              <option value="all">지역 전체</option>
+              <option value="서울">서울</option>
+              <option value="인천">인천</option>
+            </select>
+            <select id="all-gender" class="kbpi-select">
+              <option value="all">성별 전체</option>
+              <option value="남">남성</option>
+              <option value="여">여성</option>
+            </select>
+            <select id="all-age" class="kbpi-select">
+              <option value="all">연령대 전체</option>
+              <option value="10대">10대</option>
+              <option value="20대">20대</option>
+              <option value="30대">30대</option>
+              <option value="40대">40대</option>
+              <option value="50대">50대</option>
+            </select>
+            <select id="all-status" class="kbpi-select">
+              <option value="all">진행상태 전체</option>
+              <option value="answered">본설문 응답 (완료직전/완료)</option>
+              <option value="scanned">신상등록·스캔완료</option>
+            </select>
+          </div>
+
+          <div class="kbpi-rpt-controls">
+            <input type="text" id="all-search" class="kbpi-input" placeholder="이름, 고유번호(UID), 행정동, 출제품목 검색..." />
+            <span id="all-count-label" class="kbpi-badge kbpi-badge-muted kbpi-mono">0명</span>
+          </div>
+        </div>
+
+        <p class="kbpi-rpt-subtitle">행을 클릭하면 해당 응답자의 배경변인·GPS 좌표와 스캔된 20개 출제 산업군(구입경험 설정 포함) 전체가 펼쳐집니다.</p>
+
+        <div class="kbpi-table-wrap">
+          <table class="kbpi-table">
+            <thead>
+              <tr>
+                <th>순번</th>
+                <th>진행상태</th>
+                <th>이름 (성별·나이)</th>
+                <th>지역 / 조사구·동</th>
+                <th>연락처</th>
+                <th>최종id / 고유번호(UID)</th>
+                <th>배경변인 요약</th>
+                <th>스캔 품목 (있음/없음)</th>
+              </tr>
+            </thead>
+            <tbody id="all-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 3: Rules Reference -->
+    <section id="panel-rules" class="kbpi-hidden">
+      <div class="kbpi-rpt-card">
+        <div>
+          <h2 class="kbpi-rule-title">K-BPI (Survey 230) 전 구간 자동 응답 입력 구조 요약</h2>
+          <p class="kbpi-rpt-subtitle">도입부 신상·지역 등록 ➔ 개인별 20개 출제 산업군 반복 평가(문항 1~8) ➔ 종결부 배경변인(DQ1, ZQ1~ZQ6) 응답 규칙입니다.</p>
+        </div>
+
+        <div class="kbpi-rules-grid">
+          <div class="kbpi-rule-box">
+            <h3 class="kbpi-rule-title">1단계. 도입부 · 신상/지역 등록</h3>
+            <ul class="kbpi-rule-list">
+              <li><strong>GP1 (위치인증):</strong> 서울=노원구청, 인천=인천광역시청 기준 반경 50~80m 응답자 고유 시드 미세분산 좌표 주입</li>
+              <li><strong>WOKERD_DUP (신상확인):</strong> 성명, 성별, 만나이, 연락처(010 휴대폰 / 지역번호 일반전화) 자동 분기 입력</li>
+              <li><strong>SQ1 ~ SQ3 (스크리닝):</strong> SQ1(부적격 업종 가족 종사)="모두 없다", SQ2 만나이·SQ3 성별 정합 입력</li>
+              <li><strong>M_CHECK (조사구·동):</strong> 서울=노원구(19개 행정동 분산), 인천=남동구(20개 행정동 분산)</li>
+              <li><strong>INDUSTRY_ORDER:</strong> 응답자 연령·성별 할당표에 맞춰 배정된 20개 산업군 코드 스캔</li>
+            </ul>
+          </div>
+
+          <div class="kbpi-rule-box">
+            <h3 class="kbpi-rule-title">2단계. 산업군별 본설문 (문항 1 ~ 8 × 20품목)</h3>
+            <ul class="kbpi-rule-list">
+              <li><strong>문항 1-1~1-4 (비보조상기):</strong> 해당 산업군 공식 브랜드 중 중복 없는 상위 3개 입력 (1-4는 35% 추가 1개, 65% '없음')</li>
+              <li><strong>문항 2 (보조인지):</strong> 문항 1 입력 브랜드 필수 포함 + 추가 2~4개 복수 선택</li>
+              <li><strong>문항 3 (브랜드 평가 매트릭스):</strong> 3-1~3-9(일렬 금지 3·4·5점 분산), 3-10(전반적 만족도 평균 반올림), 브랜드 맞춤 연상 형용사 및 추천 사유 입력. 구입경험 '있음' 시 1열 3-13='예' &amp; 3-11=4·5점, '없음' 시 전원 3-13='아니오' &amp; 3-11=1~3점</li>
+              <li><strong>문항 4 · 4-1 · 5:</strong> 구입경험 '있음' 시 문항 4(최근구입 브랜드) ➔ 문항 4-1(선택요인 + 품목별 맞춤 구입채널) ➔ 문항 5(문항 4 동일). '없음' 시 문항 4·5 모두 '없음'</li>
+              <li><strong>문항 6 ~ 8 (AI 검색):</strong> 생성형 AI 검색경험(아니오 80% : 예 20%), 해당 시 문항 7·8 1·2순위 응답</li>
+            </ul>
+          </div>
+
+          <div class="kbpi-rule-box">
+            <h3 class="kbpi-rule-title">3단계. 종결부 · 배경변인 &amp; 안전 대기</h3>
+            <ul class="kbpi-rule-list">
+              <li><strong>DQ1 (평소 정보습득 경로):</strong> 생성형 AI·신문잡지·기타를 제외한 일반 경로 중 랜덤 2개 복수 선택</li>
+              <li><strong>ZQ1 ~ ZQ5_2 (배경변인):</strong> 시트에 등록된 연령대(ZQ1)·학력(ZQ2)·직업(ZQ3)·가구소득(ZQ4)·결혼여부(ZQ5)·가족수(ZQ5_1)·자녀수(ZQ5_2) 1:1 매핑</li>
+              <li><strong>ZQ6 (패널 가입 의향):</strong> 전원 <strong>"2. 없다"</strong> 선택 직후 최종 완료 버튼을 누르지 않고 <strong>99% 완료직전 안전 대기</strong> 정지</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="nav-auth.js?v=20261126_kbpi_rpt1"></script>
+  <script type="module" src="kbpi-report.js?v=20261126_kbpi_rpt1"></script>
+</body>
+</html>

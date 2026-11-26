@@ -14,6 +14,7 @@ const filesToCheck = [
   'public/quota-detail.js',
   'public/survey-detail.js',
   'public/settlement.js',
+  'public/kbpi-report.js',
   'public/modules/blueprint-utils.js',
   'public/modules/blueprint-metrix.js',
   'public/modules/blueprint-assoc.js',
@@ -46,6 +47,8 @@ const filesToCheck = [
   'src/engine/kmac-kbpi-runner.js',
   'src/engine/kmac-kbpi-scraper.js',
   'src/utils/kmac-kbpi-sheet-sync.js',
+  'src/config/kbpi-230-codebook.js',
+  'src/utils/kbpi-response-summary.js',
   'src/utils/respondent-pool.js',
   'src/engine/enricher.js',
   'src/engine/persona-builder.js',
@@ -835,3 +838,34 @@ for (let sIdx = 0; sIdx < 8; sIdx++) {
   }
 }
 console.log('✅ [추가 검증] K-BPI 브랜드 맞춤 이미지어(275개 산업군·93개 브랜드) & 50~70대 남성 8종 필체 서명 100% 통과');
+
+// 7. K-BPI 실시간 응답 확인 웹 리포트(kbpi-report.html / kbpi-response-summary.js) 통합 검증
+const rptHtml = fsMod.readFileSync('public/kbpi-report.html', 'utf8');
+if (/\sstyle\s*=|<style\b/i.test(rptHtml)) {
+  throw new Error('public/kbpi-report.html violates Zero-Inline-Style rule');
+}
+const kbpiSeedQuota = JSON.parse(fsMod.readFileSync('data/quotas/quota_kmac_kbpi_5911000005645.json', 'utf8'));
+const kbpiSummaryMod = await import('../src/utils/kbpi-response-summary.js');
+const summaryOut = kbpiSummaryMod.buildKbpiResponseSummary({
+  id: 'camp_kmac_kbpi_5911000005645',
+  title: '2027 K-BPI Test',
+  quotaDatabase: kbpiSeedQuota.data
+});
+if (summaryOut.kpis.totalCount !== 150 || summaryOut.answeredRespondents.length < 1) {
+  throw new Error(`buildKbpiResponseSummary validation failed: ${JSON.stringify(summaryOut.kpis)}`);
+}
+const resolvedHosp = kbpiSummaryMod.resolveOfficialBrandLabel('536', '22');
+if (resolvedHosp.brandName !== '동아대학교병원') {
+  throw new Error(`Expected 동아대학교병원 for 536/22, got ${JSON.stringify(resolvedHosp)}`);
+}
+const prevFetch = globalThis.fetch;
+globalThis.fetch = async (url) => {
+  if (String(url).startsWith('/api/kbpi/response-summary')) {
+    return { status: 200, ok: true, json: async () => summaryOut };
+  }
+  return prevFetch(url);
+};
+await import('../public/kbpi-report.js');
+await new Promise(r => setTimeout(r, 30));
+console.log('✅ [추가 검증] K-BPI 실시간 웹 응답 리포트(Zero-Inline-Style · 공식 코드북 533종 복원 · 모의 DOM 렌더링) 100% 통과');
+

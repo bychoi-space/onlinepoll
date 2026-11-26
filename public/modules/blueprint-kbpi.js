@@ -143,6 +143,9 @@ export function refreshKbpiBrandScanGuidePanel({
         <button type="button" id="btn-kbpi-guide-push-sheet" class="btn-pill btn-pill-secondary btn-pill-small">
           <i class="fa-solid fa-cloud-arrow-up text-success-color"></i> 구글 시트로 내보내기
         </button>
+        <a href="kbpi-report.html" target="_blank" rel="noopener" class="btn-pill btn-pill-secondary btn-pill-small font-bold">
+          <i class="fa-solid fa-clipboard-check text-primary-color"></i> 응답 내용 리포트 보기
+        </a>
       </div>
     </div>
 

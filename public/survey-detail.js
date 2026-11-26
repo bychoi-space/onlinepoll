@@ -18,7 +18,7 @@ import {
   renderKmacKbpiBlueprint,
   refreshKbpiBrandScanGuidePanel,
   collectKmacKbpiPolicyFromDom
-} from './modules/blueprint-kbpi.js?v=20261124_kbpi_v31';
+} from './modules/blueprint-kbpi.js?v=20261126_kbpi_rpt1';
 import {
   renderUniversalStep3SegmentPanel,
   resolveSurveySegmentAxes,

@@ -22,6 +22,10 @@ import {
 } from '../services/task-manager.js';
 import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 import { logger } from '../utils/logger.js';
+import {
+  buildKbpiResponseSummary,
+  fetchReadOnlyKbpiCapiAnswers
+} from '../utils/kbpi-response-summary.js';
 
 export function registerCampaignRoutes({
   app,
@@ -1892,6 +1896,93 @@ export function registerCampaignRoutes({
       });
     } catch (err) {
       logger.error('[K-BPI 구입경험 일괄 변경 오류]', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // [KMAC 2027 K-BPI] 현재까지 응답한 내용 웹 확인용 실시간 요약 조회 API
+  const resolveTargetKbpiCampaign = (idParam = '') => {
+    const cleanId = String(idParam || '').trim();
+    if (cleanId) {
+      const byId = CampaignStore.getCampaignById(cleanId);
+      if (byId) return byId;
+    }
+    const defaultCamp = CampaignStore.getCampaignById('camp_kmac_kbpi_5911000005645');
+    if (defaultCamp) return defaultCamp;
+    const all = CampaignStore.getAllCampaigns() || [];
+    return all.find(c => c.surveyType === 'kmac_kbpi') || null;
+  };
+
+  app.get('/api/kbpi/response-summary', (req, res) => {
+    try {
+      const campaign = resolveTargetKbpiCampaign(req.query.id);
+      if (!campaign) {
+        return res.status(404).json({ error: 'K-BPI 설문 캠페인을 찾을 수 없습니다.' });
+      }
+      res.json(buildKbpiResponseSummary(campaign));
+    } catch (err) {
+      logger.error('[K-BPI 응답 리포트 조회 오류]', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/campaigns/:id/kbpi-response-summary', (req, res) => {
+    try {
+      const campaign = resolveTargetKbpiCampaign(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+      }
+      res.json(buildKbpiResponseSummary(campaign));
+    } catch (err) {
+      logger.error('[K-BPI 캠페인별 응답 리포트 조회 오류]', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // [KMAC 2027 K-BPI] CAPI 서버에 실제 저장된 응답(PREV_DATA) 읽기 전용 동기화 API (제출/수정 절대 없음)
+  app.post('/api/campaigns/:id/kbpi-sync-capi-answers', async (req, res) => {
+    try {
+      const campaign = resolveTargetKbpiCampaign(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+      }
+      if (isCampaignTaskRunning(campaign.id)) {
+        return res.status(409).json({ error: '현재 해당 캠페인의 자동화 배치가 실행 중입니다. 완료 후 조회해 주세요.' });
+      }
+
+      const quotaDb = Array.isArray(campaign.quotaDatabase) ? campaign.quotaDatabase : [];
+      const reqSeqs = Array.isArray(req.body?.targetSeqs)
+        ? new Set(req.body.targetSeqs.map(n => Number(n)).filter(n => !isNaN(n)))
+        : null;
+
+      const targetItems = quotaDb.filter((q, idx) => {
+        const seq = Number(q.seq || q.index || (idx + 1));
+        if (reqSeqs && reqSeqs.size > 0) return reqSeqs.has(seq);
+        const qs = String(q.quotaStatus || '');
+        const st = String(q.status || '');
+        return qs === 'pilot_done' || qs === 'completed' || /완료직전|^완료$/.test(st);
+      });
+
+      if (targetItems.length === 0) {
+        return res.status(400).json({ error: '동기화할 응답 완료(또는 완료직전 대기) 대상자가 없습니다.' });
+      }
+
+      const syncOut = await fetchReadOnlyKbpiCapiAnswers({
+        campaign,
+        targetItems,
+        onProgress: ({ message }) => logger.info(`[K-BPI 읽기전용 응답동기화] ${message}`)
+      });
+
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
+      persistKbpiQuotaDatabase({ quotaDatabase: quotaDb, quotasDir });
+
+      const summary = buildKbpiResponseSummary(campaign);
+      res.json({
+        ...summary,
+        syncedResults: syncOut.syncedResults
+      });
+    } catch (err) {
+      logger.error('[K-BPI CAPI 읽기전용 응답 동기화 오류]', err);
       res.status(500).json({ error: err.message });
     }
   });
