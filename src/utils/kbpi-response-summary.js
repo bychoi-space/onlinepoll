@@ -3,7 +3,11 @@
  * 실시간 응답 내역 요약 빌더 및 CAPI 서버 저장 응답(PREV_DATA) 읽기 전용 복원 유틸리티
  */
 import { KBPI_230_CODEBOOK } from '../config/kbpi-230-codebook.js';
-import { resolveKbpiZqAnswers } from '../engine/kmac-kbpi-runner.js';
+import {
+  resolveKbpiZqAnswers,
+  Q3_RECOMMEND_REASON_POOLS,
+  KBPI_DIAG_OPEN_TEXT_POOL
+} from '../engine/kmac-kbpi-runner.js';
 import { loginAndEnterKbpiCapiList } from '../engine/kmac-kbpi-scraper.js';
 import { KBPI_DEFAULT_LOGIN_ID, normalizeCategoryConfigs } from './kmac-kbpi-sheet-sync.js';
 import { launchChromium } from './chromium-launcher.js';
@@ -21,6 +25,14 @@ export const ZQ_OPTION_LABELS = {
   ZQ5_1: { '1': '1명(본인)', '2': '2명', '3': '3명', '4': '4명', '5': '5명 이상' },
   ZQ5_2: { '1': '1명', '2': '2명', '3': '3명', '4': '4명 이상', '5': '해당사항 없음' },
   ZQ6: { '1': '있다', '2': '없다' }
+};
+
+export const Q3_ATTITUDE_LABELS = {
+  '1': '전혀 모름',
+  '2': '이름만 앎',
+  '3': '가치 있는',
+  '4': '흔히 구입/이용',
+  '5': '가장 선호'
 };
 
 export const Q41_FACTOR_LABELS = {
@@ -48,16 +60,45 @@ export const DQ1_CHANNEL_LABELS = {
   '10': '기타'
 };
 
-export function resolveOfficialBrandLabel(industryKey = '', rawBrand = '', unaidedFirst = '') {
+const KNOWN_Q3_REASON_SET = new Set([
+  ...(Q3_RECOMMEND_REASON_POOLS?.positive || []),
+  ...(Q3_RECOMMEND_REASON_POOLS?.neutral || []),
+  ...(KBPI_DIAG_OPEN_TEXT_POOL || [])
+].map(s => String(s || '').trim()).filter(Boolean));
+
+function normBrandCmp(s = '') {
+  return String(s || '')
+    .replace(/브랜드$/g, '')
+    .replace(/[\s()[\]{}·•,./'"`’‘“”_-]+/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function unwrapSavedScalar(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+    return String(v).trim();
+  }
+  if (typeof v === 'object') {
+    return String(v.TEXT_1 ?? v.RESPONSE ?? v.VALUE ?? v['1'] ?? v.RADIO ?? '').trim();
+  }
+  return '';
+}
+
+export function resolveOfficialBrandLabel(industryKey = '', rawBrand = '', unaidedFirstOrList = '') {
   const tb = String(rawBrand ?? '').trim();
   if (!tb) return { brandName: '', brandCode: '' };
   if (tb === '없음' || tb === '99' || tb === '999') {
     return { brandName: '없음', brandCode: tb === '없음' ? '' : tb };
   }
   if (/^ETC(\d+)$/i.test(tb)) {
-    const idx = tb.replace(/\D/g, '') || '1';
+    const idxNum = Math.max(1, parseInt(tb.replace(/\D/g, ''), 10) || 1);
+    const unaidedArr = Array.isArray(unaidedFirstOrList)
+      ? unaidedFirstOrList
+      : (unaidedFirstOrList ? [String(unaidedFirstOrList)] : []);
+    const matchedUnaided = unaidedArr[idxNum - 1] || unaidedArr[0] || '';
     return {
-      brandName: unaidedFirst ? `${unaidedFirst} (문항1 상기 #${idx})` : `문항1 최초상기 입력 브랜드 (${tb})`,
+      brandName: matchedUnaided ? `${matchedUnaided} (문항1 상기 #${idxNum})` : `문항1 최초상기 입력 브랜드 (${tb})`,
       brandCode: tb
     };
   }
@@ -72,15 +113,296 @@ export function resolveOfficialBrandLabel(industryKey = '', rawBrand = '', unaid
   return { brandName: tb, brandCode: '' };
 }
 
-export function evaluateKbpiSlotReviewNotes({ respondent = {}, categoryName = '', purchaseExp = '', brandName = '', channel = '' }) {
-  const notes = [];
-  if (purchaseExp !== '있음') return notes;
+/**
+ * CAPI PREV_DATA 내 KBPI_Q3--{ik} 저장 객체에서 평가 열(1열~6열)별
+ * - 문항 3-12 떠오르는 이미지(형용사)
+ * - 평가 브랜드명, 10번 만족도, 11번 평소 태도, 6-1 추천사유, 13번 구입경험을 정밀 복원
+ */
+export function parseKbpiQ3SavedObject({
+  q3Obj = {},
+  qoQ3Meta = null,
+  industryKey = '',
+  q1Brands = [],
+  q2Obj = {}
+} = {}) {
+  const rawKeys = (q3Obj && typeof q3Obj === 'object') ? Object.keys(q3Obj) : [];
+  if (rawKeys.length === 0) {
+    return {
+      q3HasSavedData: false,
+      q3Cols: [],
+      q3Adjectives: [],
+      q3Summary: '',
+      col1ExpCode: ''
+    };
+  }
 
+  const ik = String(industryKey || '').trim();
+  const codebookBrands = KBPI_230_CODEBOOK[ik]?.brands || {};
+  const officialBrandNorms = new Set(
+    Object.values(codebookBrands).map(normBrandCmp).filter(Boolean)
+  );
+  q1Brands.forEach((b) => {
+    const nb = normBrandCmp(b);
+    if (nb) officialBrandNorms.add(nb);
+  });
+
+  const q2CheckedBrands = Object.keys(q2Obj || {})
+    .filter(k => /^\d+$/.test(k) && k !== '99' && k !== '999' && q2Obj[k])
+    .sort((a, b) => Number(a) - Number(b))
+    .map(k => codebookBrands[k] || '')
+    .filter(Boolean);
+
+  const candidateColBrands = [];
+  const seenCandNorms = new Set();
+  for (const b of [...(q1Brands || []), ...q2CheckedBrands]) {
+    const nb = normBrandCmp(b);
+    if (!nb || seenCandNorms.has(nb)) continue;
+    seenCandNorms.add(nb);
+    candidateColBrands.push(b);
+  }
+
+  // Q3_<a>_<b> 키에서 colFirst(열_행 vs 행_열) 방향 자동 판별 (기본: Q3_<열>_<행>)
+  let colFirstVotes = 0;
+  let rowFirstVotes = 0;
+  for (const k of rawKeys) {
+    const m = k.match(/^(?:KBPI_)?Q3_(\d+)_(\d+)$/i) || k.match(/^(\d+)_(\d+)$/);
+    if (!m) continue;
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (a <= 6 && b >= 7) colFirstVotes++;
+    else if (a >= 7 && b <= 6) rowFirstVotes++;
+  }
+  const isColFirst = colFirstVotes >= rowFirstVotes;
+
+  const byCol = new Map();
+  const headerByCol = new Map();
+  const explicitAdjByCol = new Map();
+  const explicitReasonByCol = new Map();
+
+  const ensureCol = (c) => {
+    if (!byCol.has(c)) byCol.set(c, []);
+    return byCol.get(c);
+  };
+
+  for (const k of rawKeys) {
+    const val = unwrapSavedScalar(q3Obj[k]);
+    if (!val) continue;
+
+    const hdrMatch = k.match(/^(?:KBPI_)?(?:Q3_)?(?:BRAND|HEADER|H|COL|SELECT)_?(\d+)$/i);
+    if (hdrMatch) {
+      const c = Number(hdrMatch[1]);
+      if (c >= 1 && c <= 6) {
+        headerByCol.set(c, val);
+        ensureCol(c);
+      }
+      continue;
+    }
+
+    const adjKeyMatch =
+      k.match(/^(?:KBPI_)?(?:Q3_)?(?:IMG|IMAGE|ADJ|WORD)_?(\d+)$/i) ||
+      k.match(/^(?:KBPI_)?Q3_(\d+)_(?:IMG|IMAGE|ADJ|WORD)$/i);
+    if (adjKeyMatch) {
+      const c = Number(adjKeyMatch[1]);
+      if (c >= 1 && c <= 6) {
+        explicitAdjByCol.set(c, val);
+        ensureCol(c);
+      }
+      continue;
+    }
+
+    const rsnKeyMatch =
+      k.match(/^(?:KBPI_)?(?:Q3_)?REASON_?(\d+)$/i) ||
+      k.match(/^(?:KBPI_)?Q3_(\d+)_REASON$/i);
+    if (rsnKeyMatch) {
+      const c = Number(rsnKeyMatch[1]);
+      if (c >= 1 && c <= 6) {
+        explicitReasonByCol.set(c, val);
+        ensureCol(c);
+      }
+      continue;
+    }
+
+    const pairMatch = k.match(/^(?:KBPI_)?Q3_(\d+)_(\d+)$/i) || k.match(/^(\d+)_(\d+)$/);
+    if (pairMatch) {
+      const n1 = Number(pairMatch[1]);
+      const n2 = Number(pairMatch[2]);
+      const col = isColFirst ? n1 : n2;
+      const row = isColFirst ? n2 : n1;
+      if (col >= 1 && col <= 6) {
+        if (row === 0) {
+          headerByCol.set(col, val);
+          ensureCol(col);
+        } else {
+          ensureCol(col).push({ row, key: k, val });
+        }
+      }
+    }
+  }
+
+  // QO HTML 메타데이터가 존재하는 경우 우선 반영
+  if (qoQ3Meta && typeof qoQ3Meta === 'object') {
+    (qoQ3Meta.adjKeys || []).forEach((ak, idx) => {
+      const v = unwrapSavedScalar(q3Obj[ak]);
+      if (v) {
+        explicitAdjByCol.set(idx + 1, v);
+        ensureCol(idx + 1);
+      }
+    });
+    (qoQ3Meta.reasonKeys || []).forEach((rk, idx) => {
+      const v = unwrapSavedScalar(q3Obj[rk]);
+      if (v) {
+        explicitReasonByCol.set(idx + 1, v);
+        ensureCol(idx + 1);
+      }
+    });
+    (qoQ3Meta.headerKeys || []).forEach((hk, idx) => {
+      const v = unwrapSavedScalar(q3Obj[hk]);
+      if (v) {
+        headerByCol.set(idx + 1, v);
+        ensureCol(idx + 1);
+      }
+    });
+  }
+
+  const isReasonPhrase = (txt = '') => {
+    const s = String(txt || '').trim();
+    if (!s) return false;
+    if (KNOWN_Q3_REASON_SET.has(s)) return true;
+    return s.length >= 7 && /\s/.test(s) && /(해서|가서|라서|여서|있어서|없어서|봐서|줘서|많아서|좋아서|편해서|느껴서|때문에)\s*[.!]?$/.test(s);
+  };
+
+  const sortedCols = Array.from(byCol.keys()).sort((a, b) => a - b);
+  const q3Cols = [];
+
+  for (const col of sortedCols) {
+    const entries = (byCol.get(col) || []).sort((a, b) => a.row - b.row);
+    const byRow = new Map(entries.map(e => [e.row, e.val]));
+    const maxRow = entries.length > 0 ? entries[entries.length - 1].row : 0;
+
+    // 1) 열 브랜드명 복원
+    let resolvedBrand = '';
+    const rawHdr = headerByCol.get(col) || '';
+    if (rawHdr && !/^(없음|해당\s*없음|더\s*이상\s*없음|99|999)$/.test(rawHdr)) {
+      const { brandName } = resolveOfficialBrandLabel(ik, rawHdr, q1Brands);
+      resolvedBrand = String(brandName || '').replace(/\s*\(문항1 상기 #\d+\)$/, '').trim();
+    } else if (entries[0] && entries[0].row === 1 && entries.length >= 13 && (/^ETC\d+$/i.test(entries[0].val) || officialBrandNorms.has(normBrandCmp(entries[0].val)))) {
+      const { brandName } = resolveOfficialBrandLabel(ik, entries[0].val, q1Brands);
+      resolvedBrand = String(brandName || '').replace(/\s*\(문항1 상기 #\d+\)$/, '').trim();
+    }
+    if (!resolvedBrand && candidateColBrands[col - 1]) {
+      resolvedBrand = candidateColBrands[col - 1];
+    }
+
+    // 2) 문항 3-12 떠오르는 이미지(형용사) 및 6-1 추천사유 분리 추출
+    let adjective = explicitAdjByCol.get(col) || '';
+    let reason = explicitReasonByCol.get(col) || '';
+
+    const textEntries = entries.filter((e) => {
+      const v = e.val;
+      if (!v || /^\d+$/.test(v) || /^ETC\d+$/i.test(v)) return false;
+      if (/^(없음|해당\s*없음|더\s*이상\s*없음)$/.test(v)) return false;
+      if (e.row <= 1 && officialBrandNorms.has(normBrandCmp(v))) return false;
+      return true;
+    });
+
+    if (!adjective || !reason) {
+      const adjCands = [];
+      const rsnCands = [];
+      for (const te of textEntries) {
+        if (isReasonPhrase(te.val)) rsnCands.push(te.val);
+        else adjCands.push(te.val);
+      }
+      if (!adjective) {
+        if (adjCands.length > 0) {
+          adjective = adjCands[adjCands.length - 1];
+        } else if (rsnCands.length === 1 && textEntries.length === 1 && maxRow <= 14 && !KNOWN_Q3_REASON_SET.has(rsnCands[0])) {
+          // 6-1 행이 없는 13행 표준 템플릿에서 유일한 주관식 입력값인 경우
+          adjective = rsnCands[0];
+        }
+      }
+      if (!reason && rsnCands.length > 0 && rsnCands[0] !== adjective) {
+        reason = rsnCands[0];
+      }
+    }
+
+    // 3) 만족도(10번) · 평소 태도(11번) · 이용경험(13번) 복원
+    const qoSatKey = qoQ3Meta?.satKeys?.[col - 1];
+    const qoAttKey = qoQ3Meta?.attKeys?.[col - 1];
+    const qoExpKey = qoQ3Meta?.expKeys?.[col - 1];
+
+    const expCode = (qoExpKey ? unwrapSavedScalar(q3Obj[qoExpKey]) : '') ||
+      (maxRow >= 13 ? (byRow.get(maxRow) || '') : '');
+    const sat = (qoSatKey ? unwrapSavedScalar(q3Obj[qoSatKey]) : '') ||
+      (maxRow >= 16 ? (byRow.get(14) || byRow.get(10) || '') : (byRow.get(10) || ''));
+    const rawAtt = (qoAttKey ? unwrapSavedScalar(q3Obj[qoAttKey]) : '') ||
+      (maxRow >= 16
+        ? ((/^[1-5]$/.test(byRow.get(15) || '') ? byRow.get(15) : byRow.get(11)) || '')
+        : (byRow.get(11) || ''));
+    const attitudeCode = /^[1-5]$/.test(rawAtt) ? rawAtt : '';
+    const attitudeLabel = attitudeCode ? (Q3_ATTITUDE_LABELS[attitudeCode] || attitudeCode) : '';
+
+    // 빈 미평가 열(예: 4~6열 미활성)은 제외
+    if (!adjective && !sat && !attitudeCode && !expCode && entries.length === 0) continue;
+
+    q3Cols.push({
+      col,
+      brand: resolvedBrand,
+      adjective,
+      attitudeCode,
+      attitudeLabel,
+      sat: /^[1-5]$/.test(sat) ? sat : '',
+      reason,
+      expCode: (expCode === '1' || expCode === '2') ? expCode : ''
+    });
+  }
+
+  const q3Adjectives = q3Cols.map(c => c.adjective).filter(Boolean);
+  const col1 = q3Cols[0] || {};
+  const summaryParts = [];
+  if (col1.sat) summaryParts.push(`만족도 ${col1.sat}점`);
+  if (col1.attitudeLabel) summaryParts.push(`태도: ${col1.attitudeLabel}`);
+  if (col1.reason) summaryParts.push(`추천사유: "${col1.reason}"`);
+
+  return {
+    q3HasSavedData: true,
+    q3Cols,
+    q3Adjectives,
+    q3Summary: summaryParts.join(' · '),
+    col1ExpCode: col1.expCode || String(q3Obj.Q3_1_17 || q3Obj.Q3_1_13 || '').trim()
+  };
+}
+
+export function evaluateKbpiSlotReviewNotes({
+  respondent = {},
+  categoryName = '',
+  purchaseExp = '',
+  brandName = '',
+  channel = '',
+  q3Adjectives = [],
+  q3HasSavedData = false
+}) {
+  const notes = [];
   const cat = String(categoryName || '').trim();
   const br = String(brandName || '').trim();
   const ch = String(channel || '').trim();
   const gender = String(respondent.gender || respondent.ceoGender || '').trim();
   const region = String(respondent.region || '').trim();
+  const adjs = Array.isArray(q3Adjectives) ? q3Adjectives.map(a => String(a || '').trim()).filter(Boolean) : [];
+
+  // 1) 문항 3-12 형용사(떠오르는 이미지) 정합성 검수 (구입경험 있음/없음 전 품목 공통 적용)
+  if (q3HasSavedData && adjs.length === 0) {
+    notes.push('문12 형용사 미감지 (확인 필요)');
+  } else if (adjs.length > 0) {
+    if (adjs.some(a => /^\d+$/.test(a))) {
+      notes.push('문12 형용사에 숫자값 입력 주의');
+    }
+    const normAdjs = adjs.map(a => a.replace(/\s+/g, ''));
+    if (normAdjs.length >= 2 && new Set(normAdjs).size < normAdjs.length) {
+      notes.push(`문12 형용사 열간 중복 (${adjs.join(', ')})`);
+    }
+  }
+
+  if (purchaseExp !== '있음') return notes;
 
   if (!br && !ch) {
     notes.push('로컬 DB 미기록 (상단 [CAPI 서버 응답 동기화] 실행 시 복원 가능)');
@@ -176,10 +498,22 @@ export function buildKbpiResponseSummary(campaign = {}) {
         exp = capiCat.purchaseExp;
       }
 
-      const unaidedList = Array.isArray(capiCat?.q1Brands) ? capiCat.q1Brands : [];
+      const unaidedList = Array.isArray(capiCat?.q1Brands) && capiCat.q1Brands.length > 0
+        ? capiCat.q1Brands
+        : (Array.isArray(cfg.q1Brands) ? cfg.q1Brands : []);
       const rawBrand = capiCat?.q4Code || cfg.topBrand || '';
-      const { brandName, brandCode } = resolveOfficialBrandLabel(ik, rawBrand, unaidedList[0] || '');
+      const { brandName, brandCode } = resolveOfficialBrandLabel(ik, rawBrand, unaidedList);
       const channel = String(capiCat?.channel ?? cfg.channel ?? '').trim();
+
+      const q3Cols = Array.isArray(capiCat?.q3Cols) && capiCat.q3Cols.length > 0
+        ? capiCat.q3Cols
+        : (Array.isArray(cfg.q3Cols) ? cfg.q3Cols : []);
+      const q3Adjectives = Array.isArray(capiCat?.q3Adjectives) && capiCat.q3Adjectives.length > 0
+        ? capiCat.q3Adjectives
+        : (Array.isArray(cfg.q3Adjectives) && cfg.q3Adjectives.length > 0
+            ? cfg.q3Adjectives
+            : q3Cols.map(c => c.adjective).filter(Boolean));
+      const q3HasSavedData = Boolean(capiCat?.q3HasSavedData);
 
       const reviewNotes = isAnswered
         ? evaluateKbpiSlotReviewNotes({
@@ -187,7 +521,9 @@ export function buildKbpiResponseSummary(campaign = {}) {
             categoryName: cn,
             purchaseExp: exp,
             brandName,
-            channel
+            channel,
+            q3Adjectives,
+            q3HasSavedData
           })
         : [];
 
@@ -205,7 +541,10 @@ export function buildKbpiResponseSummary(campaign = {}) {
         channel: exp === '없음' ? '' : channel,
         q1Brands: unaidedList,
         q2Count: capiCat?.q2Count ?? null,
-        q3Summary: capiCat?.q3Summary || '',
+        q3Adjectives,
+        q3Cols,
+        q3HasSavedData,
+        q3Summary: capiCat?.q3Summary || cfg.q3Summary || '',
         q41Factor: capiCat?.q41Factor || '',
         q6AiSearch: capiCat?.q6AiSearch || '',
         reviewNotes
@@ -259,6 +598,7 @@ export function buildKbpiResponseSummary(campaign = {}) {
         zq: buildFormattedZq(item),
         dq1Labels: item.capiSavedAnswers?.dq1Labels || [],
         warnCount: slots.filter(s => s.reviewNotes.length > 0).length,
+        adjSlotCount: slots.filter(s => Array.isArray(s.q3Adjectives) && s.q3Adjectives.length > 0).length,
         yesCount: slots.filter(s => s.purchaseExp === '있음').length,
         noCount: slots.filter(s => s.purchaseExp === '없음').length,
         slots
@@ -432,9 +772,86 @@ export async function fetchReadOnlyKbpiCapiAnswers({
         ).catch(err => console.warn('[K-BPI ReadOnly PREV_DATA 대기 경고]', err.message));
         await openedTab.waitForTimeout(800);
 
-        const rawDump = await openedTab.evaluate(() => {
+        const { rawDump, qoQ3MetaByInd } = await openedTab.evaluate(() => {
           const merged = Object.assign({}, window.A?.PREV_DATA || {}, window.AO || {});
-          return merged;
+          const qoMetaMap = {};
+          try {
+            const qoRoot = window.QO || {};
+            const parseHtmlRowKeys = (htmlStr) => {
+              if (!htmlStr || typeof htmlStr !== 'string' || !/<table|<tr/i.test(htmlStr)) return null;
+              const doc = new DOMParser().parseFromString(htmlStr, 'text/html');
+              const adjKeys = [];
+              const reasonKeys = [];
+              const attKeys = [];
+              const satKeys = [];
+              const expKeys = [];
+              const headerKeys = [];
+              const getSaveName = (el) => (
+                el.getAttribute('custom-save-name') ||
+                el.getAttribute('data-column') ||
+                el.getAttribute('name') ||
+                ''
+              ).trim();
+
+              doc.querySelectorAll('tr').forEach((tr) => {
+                const txt = (tr.textContent || '').replace(/\s+/g, ' ').trim();
+                const ctrls = Array.from(tr.querySelectorAll('input:not([type="hidden"]), select, textarea'));
+                if (ctrls.length === 0) return;
+
+                if (tr.closest('thead') || (!/^\d{1,2}(?:-\d+)?\s*[).]/.test(txt) && /평가항목/.test(txt))) {
+                  ctrls.filter(el => el.tagName === 'SELECT' || el.type === 'text').forEach((el) => {
+                    const sn = getSaveName(el);
+                    if (sn && !headerKeys.includes(sn)) headerKeys.push(sn);
+                  });
+                  return;
+                }
+                if (/(^|\s)12\s*\)|(^|\s)6\s*\)\s*떠오르는|떠오르는\s*이미지|형용사|단어|연상|생각나는\s*이미지/.test(txt)) {
+                  ctrls.forEach((el) => {
+                    const sn = getSaveName(el);
+                    if (sn && !adjKeys.includes(sn)) adjKeys.push(sn);
+                  });
+                } else if (/\b6-1\s*\)|점수를\s*주신\s*이유|이유는\s*무엇/.test(txt)) {
+                  ctrls.forEach((el) => {
+                    const sn = getSaveName(el);
+                    if (sn && !reasonKeys.includes(sn)) reasonKeys.push(sn);
+                  });
+                } else if (/(^|\s)11\s*\)|평소.*생각|선호\s*태도|편익.*동의/.test(txt)) {
+                  ctrls.forEach((el) => {
+                    const sn = getSaveName(el);
+                    if (sn && !attKeys.includes(sn)) attKeys.push(sn);
+                  });
+                } else if (/전반적으로\s*만족|전반적\s*만족/.test(txt)) {
+                  ctrls.forEach((el) => {
+                    const sn = getSaveName(el);
+                    if (sn && !satKeys.includes(sn)) satKeys.push(sn);
+                  });
+                } else if (/(^|\s)13\s*\)|이용\/구입해\s*보신|구입해\s*보신|이용해\s*보신|방문해\s*보신|후원을?\s*하신|후원\/이용해\s*본|진료/.test(txt)) {
+                  ctrls.forEach((el) => {
+                    const sn = getSaveName(el);
+                    if (sn && !expKeys.includes(sn)) expKeys.push(sn);
+                  });
+                }
+              });
+
+              if (!adjKeys.length && !reasonKeys.length && !headerKeys.length) return null;
+              return { adjKeys, reasonKeys, attKeys, satKeys, expKeys, headerKeys };
+            };
+
+            Object.keys(qoRoot).forEach((qKey) => {
+              const m = qKey.match(/^KBPI_Q3--(\d+)$/i);
+              if (!m) return;
+              const qEntry = qoRoot[qKey];
+              if (!qEntry || typeof qEntry !== 'object') return;
+              const htmlSource = [qEntry.HTML, qEntry.BODY, qEntry.DESC, qEntry.TITLE, qEntry.CUSTOM_HTML]
+                .filter(x => typeof x === 'string')
+                .join('\n');
+              const parsed = parseHtmlRowKeys(htmlSource);
+              if (parsed) qoMetaMap[m[1]] = parsed;
+            });
+          } catch (qoErr) {
+            // QO 파싱 실패 시에도 PREV_DATA 직접 파서가 안전하게 동작함
+          }
+          return { rawDump: merged, qoQ3MetaByInd: qoMetaMap };
         });
 
         await openedTab.close().catch(err => console.warn('[K-BPI ReadOnly 탭 닫기 경고]', err.message));
@@ -474,21 +891,28 @@ export async function fetchReadOnlyKbpiCapiAnswers({
           const q2Count = Object.keys(q2Obj).filter(k => /^\d+$/.test(k) && k !== '99' && q2Obj[k]).length;
 
           const q3Obj = rawDump[`KBPI_Q3--${ik}`] || {};
-          const q3Sat = String(q3Obj.Q3_1_14 || '').trim();
-          const q3Rec = String(q3Obj.Q3_1_15 || '').trim();
-          const q3Reason = String(q3Obj.Q3_1_16 || '').trim();
-          const q3ExpCode = String(q3Obj.Q3_1_17 || '').trim();
+          const q3Parsed = parseKbpiQ3SavedObject({
+            q3Obj,
+            qoQ3Meta: qoQ3MetaByInd?.[ik] || null,
+            industryKey: ik,
+            q1Brands,
+            q2Obj
+          });
 
           const q4Code = pickRadioVal(rawDump[`KBPI_Q4--${ik}`]);
           const q41Code = pickRadioVal(rawDump[`KBPI_Q41--${ik}`]);
           const channel = pickTextVal(rawDump[`KBPI_Q41_CHANNEL--${ik}`]);
           const q6Code = pickRadioVal(rawDump[`KBPI_Q6--${ik}`]);
 
+          const q3ExpCode = q3Parsed.col1ExpCode;
           const isNone = q4Code === '99' || q4Code === '999' || q3ExpCode === '2';
           categories[ik] = {
             q1Brands,
             q2Count,
-            q3Summary: q3Sat ? `만족도 ${q3Sat}점 · 추천 ${q3Rec}점${q3Reason ? ` ("${q3Reason}")` : ''}` : '',
+            q3HasSavedData: q3Parsed.q3HasSavedData,
+            q3Adjectives: q3Parsed.q3Adjectives,
+            q3Cols: q3Parsed.q3Cols,
+            q3Summary: q3Parsed.q3Summary,
             purchaseExp: q4Code ? (isNone ? '없음' : '있음') : (q3ExpCode === '1' ? '있음' : (q3ExpCode === '2' ? '없음' : '')),
             q4Code,
             q41Factor: Q41_FACTOR_LABELS[q41Code] || q41Code,
@@ -508,7 +932,7 @@ export async function fetchReadOnlyKbpiCapiAnswers({
           if (zv) zq[zk] = zv;
         }
 
-        // 로컬 categoryConfigs 결측 필드(예: #2 이휘진 슬롯 2~20) 안전 보강
+        // 로컬 categoryConfigs 결측 필드(예: #2 이휘진 슬롯 2~20) 및 문12 형용사 안전 보강
         const updatedConfigs = normalizeCategoryConfigs(item.categoryConfigs || [], 20);
         updatedConfigs.forEach((cfg) => {
           const ik = String(cfg.industryKey || '').trim();
@@ -516,11 +940,23 @@ export async function fetchReadOnlyKbpiCapiAnswers({
           if (!cData) return;
           if (cData.purchaseExp) cfg.purchaseExp = cData.purchaseExp;
           if (cData.q4Code) {
-            const { brandName } = resolveOfficialBrandLabel(ik, cData.q4Code, cData.q1Brands[0] || '');
+            const { brandName } = resolveOfficialBrandLabel(ik, cData.q4Code, cData.q1Brands);
             cfg.topBrand = cData.purchaseExp === '없음' ? '없음' : (brandName || cData.q4Code);
           }
           if (cData.channel) {
             cfg.channel = cData.channel;
+          }
+          if (Array.isArray(cData.q1Brands) && cData.q1Brands.length > 0) {
+            cfg.q1Brands = cData.q1Brands;
+          }
+          if (Array.isArray(cData.q3Adjectives) && cData.q3Adjectives.length > 0) {
+            cfg.q3Adjectives = cData.q3Adjectives;
+          }
+          if (Array.isArray(cData.q3Cols) && cData.q3Cols.length > 0) {
+            cfg.q3Cols = cData.q3Cols;
+          }
+          if (cData.q3Summary) {
+            cfg.q3Summary = cData.q3Summary;
           }
         });
         item.categoryConfigs = updatedConfigs;

@@ -202,14 +202,27 @@ export function normalizeCategoryConfigs(rawConfigs = [], maxSlots = 20) {
     } else if (expRaw === '있음' || expRaw.toLowerCase() === 'yes' || expRaw === 'O' || expRaw === '예') {
       purchaseExp = '있음';
     }
-    normalized.push({
+    const entry = {
       slot: i + 1,
       industryKey: String(src.industryKey || '').trim(),
       categoryName: String(src.categoryName || src.brandCategory || '').trim(),
       purchaseExp,
       topBrand: String(src.topBrand || '').trim(),
       channel: String(src.channel || '').trim()
-    });
+    };
+    if (Array.isArray(src.q1Brands) && src.q1Brands.length > 0) {
+      entry.q1Brands = src.q1Brands.map(s => String(s || '').trim()).filter(Boolean);
+    }
+    if (Array.isArray(src.q3Adjectives) && src.q3Adjectives.length > 0) {
+      entry.q3Adjectives = src.q3Adjectives.map(s => String(s || '').trim()).filter(Boolean);
+    }
+    if (Array.isArray(src.q3Cols) && src.q3Cols.length > 0) {
+      entry.q3Cols = src.q3Cols;
+    }
+    if (src.q3Summary) {
+      entry.q3Summary = String(src.q3Summary).trim();
+    }
+    normalized.push(entry);
   }
   return normalized;
 }

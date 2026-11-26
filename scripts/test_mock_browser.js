@@ -858,6 +858,22 @@ const resolvedHosp = kbpiSummaryMod.resolveOfficialBrandLabel('536', '22');
 if (resolvedHosp.brandName !== '동아대학교병원') {
   throw new Error(`Expected 동아대학교병원 for 536/22, got ${JSON.stringify(resolvedHosp)}`);
 }
+const parsedQ3Check = kbpiSummaryMod.parseKbpiQ3SavedObject({
+  q3Obj: {
+    Q3_1_7: '서비스와 품질이 우수해서', Q3_1_14: '5', Q3_1_15: '5', Q3_1_16: '실용적인', Q3_1_17: '1',
+    Q3_2_7: '주변 평판이 좋아서', Q3_2_14: '4', Q3_2_15: '4', Q3_2_16: '친숙하다', Q3_2_17: '1',
+    Q3_3_7: '무난하고 대중적이어서', Q3_3_14: '3', Q3_3_15: '2', Q3_3_16: '깔끔함', Q3_3_17: '2'
+  },
+  industryKey: '82',
+  q1Brands: ['제주항공', '진에어', '에어부산']
+});
+if (
+  parsedQ3Check.q3Adjectives.join(',') !== '실용적인,친숙하다,깔끔함' ||
+  parsedQ3Check.q3Cols[0]?.brand !== '제주항공' ||
+  parsedQ3Check.q3Cols[0]?.reason !== '서비스와 품질이 우수해서'
+) {
+  throw new Error(`parseKbpiQ3SavedObject validation failed: ${JSON.stringify(parsedQ3Check)}`);
+}
 const prevFetch = globalThis.fetch;
 globalThis.fetch = async (url) => {
   if (String(url).startsWith('/api/kbpi/response-summary')) {
@@ -867,5 +883,6 @@ globalThis.fetch = async (url) => {
 };
 await import('../public/kbpi-report.js');
 await new Promise(r => setTimeout(r, 30));
-console.log('✅ [추가 검증] K-BPI 실시간 웹 응답 리포트(Zero-Inline-Style · 공식 코드북 533종 복원 · 모의 DOM 렌더링) 100% 통과');
+console.log('✅ [추가 검증] K-BPI 실시간 웹 응답 리포트(Zero-Inline-Style · 공식 코드북 533종 · 문12 형용사 복원 · 모의 DOM 렌더링) 100% 통과');
+
 

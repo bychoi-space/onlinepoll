@@ -132,7 +132,11 @@ function renderDonePanel() {
       if (expFilter === 'no' && s.purchaseExp !== '없음') return false;
       if (expFilter === 'warn' && (!s.reviewNotes || s.reviewNotes.length === 0)) return false;
       if (query) {
-        const hay = `${s.categoryName} ${s.industryKey} ${s.brandName} ${s.brandCode} ${s.channel} ${(s.q1Brands || []).join(' ')} ${s.q3Summary || ''} ${(s.reviewNotes || []).join(' ')}`.toLowerCase();
+        const adjSearch = [
+          ...(s.q3Adjectives || []),
+          ...(s.q3Cols || []).map((c) => `${c.brand || ''} ${c.adjective || ''}`)
+        ].join(' ');
+        const hay = `${s.categoryName} ${s.industryKey} ${s.brandName} ${s.brandCode} ${s.channel} ${adjSearch} ${(s.q1Brands || []).join(' ')} ${s.q3Summary || ''} ${(s.reviewNotes || []).join(' ')}`.toLowerCase();
         if (!hay.includes(query)) return false;
       }
       return true;
@@ -152,7 +156,7 @@ function renderDonePanel() {
     const hasCapiExtra = (person.slots || []).some((s) => (s.q1Brands && s.q1Brands.length > 0) || s.q3Summary);
 
     const rowsHtml = filteredSlots.length === 0
-      ? `<tr><td colspan="${hasCapiExtra ? 7 : 6}" class="kbpi-muted">선택한 필터 조건에 해당하는 품목이 없습니다.</td></tr>`
+      ? `<tr><td colspan="${hasCapiExtra ? 8 : 7}" class="kbpi-muted">선택한 필터 조건에 해당하는 품목이 없습니다.</td></tr>`
       : filteredSlots.map((s) => {
           const hasWarn = s.reviewNotes && s.reviewNotes.length > 0;
           const expBadge = s.purchaseExp === '있음'
@@ -167,6 +171,23 @@ function renderDonePanel() {
           } else {
             brandCell = `<strong>${escapeHtml(s.brandName)}</strong>` +
               (s.brandCode ? ` <span class="kbpi-muted kbpi-mono">[코드:${escapeHtml(s.brandCode)}]</span>` : '');
+          }
+
+          let adjCell = '';
+          const colsWithAdj = Array.isArray(s.q3Cols) ? s.q3Cols.filter((c) => c && c.adjective) : [];
+          if (colsWithAdj.length > 0) {
+            adjCell = `<div class="kbpi-adj-list">${colsWithAdj.map((c) => {
+              const bLabel = c.brand ? `${escapeHtml(c.brand)}:` : `${c.col}열:`;
+              return `<span class="kbpi-adj-tag"><span class="kbpi-adj-brand">${bLabel}</span><strong>${escapeHtml(c.adjective)}</strong></span>`;
+            }).join('')}</div>`;
+          } else if (Array.isArray(s.q3Adjectives) && s.q3Adjectives.length > 0) {
+            adjCell = `<div class="kbpi-adj-list">${s.q3Adjectives.map((adj, aIdx) =>
+              `<span class="kbpi-adj-tag"><span class="kbpi-adj-brand">${aIdx + 1}열:</span><strong>${escapeHtml(adj)}</strong></span>`
+            ).join('')}</div>`;
+          } else if (person.capiSyncedAt || s.q3HasSavedData) {
+            adjCell = `<span class="kbpi-badge kbpi-badge-warn">미감지</span>`;
+          } else {
+            adjCell = `<span class="kbpi-muted">(상단 [CAPI 서버 응답 동기화] 클릭 시 표시)</span>`;
           }
 
           const chCell = s.purchaseExp === '없음'
@@ -189,6 +210,7 @@ function renderDonePanel() {
               <td class="kbpi-mono">#${String(s.slot).padStart(2, '0')}</td>
               <td><strong>${escapeHtml(s.categoryName)}</strong> <span class="kbpi-muted kbpi-mono">(${escapeHtml(s.industryKey)})</span></td>
               <td>${expBadge}</td>
+              <td>${adjCell}</td>
               <td>${brandCell}</td>
               <td>${chCell}</td>
               ${extraCol}
@@ -205,6 +227,7 @@ function renderDonePanel() {
               <strong class="kbpi-rpt-title">#${person.seq} ${escapeHtml(person.name)}</strong>
               <span class="kbpi-badge kbpi-badge-primary">${escapeHtml(person.region)} · ${escapeHtml(person.gender)} · ${escapeHtml(person.ageGroup)} (만 ${person.age}세)</span>
               <span class="kbpi-badge kbpi-badge-ok">${escapeHtml(person.status)} · ${escapeHtml(person.progress)}</span>
+              ${person.adjSlotCount > 0 ? `<span class="kbpi-badge kbpi-badge-primary">문12 형용사 ${person.adjSlotCount}/${(person.slots || []).length}품목 확인</span>` : ''}
               ${person.warnCount > 0 ? `<span class="kbpi-badge kbpi-badge-warn">검수 참고 ${person.warnCount}건</span>` : ''}
               ${person.capiSyncedAt ? `<span class="kbpi-badge kbpi-badge-primary">CAPI 실데이터 반영됨</span>` : ''}
             </div>
@@ -234,6 +257,7 @@ function renderDonePanel() {
                 <th>슬롯</th>
                 <th>출제 산업군 (코드)</th>
                 <th>구입경험</th>
+                <th>문항 3-12 연상 형용사 (브랜드별)</th>
                 <th>문항 4·5 최근구입 / 향후선호 브랜드</th>
                 <th>문항 4-1 주관식 구입경로</th>
                 ${hasCapiExtra ? '<th>문항 1 상기 · 문항 3 평가 요약</th>' : ''}
@@ -376,16 +400,22 @@ function handleExportDoneCsv() {
   const header = [
     '응답자순번', '이름', '지역', '조사구', '조사동', '성별', '연령대', '만나이', '전화번호', '최종id', '고유번호(UID)',
     '진행상태', '진행률', 'ZQ1_연령대', 'ZQ2_학력', 'ZQ3_직업', 'ZQ4_가구소득', 'ZQ5_결혼여부', 'ZQ5_1_가족수', 'ZQ5_2_자녀수', 'ZQ6_패널가입',
-    '품목슬롯', '산업군코드', '출제산업군명', '구입경험', '문항4_5_응답브랜드', '브랜드보기코드', '문항4_1_주관식구입채널', '검수참고메모'
+    '품목슬롯', '산업군코드', '출제산업군명', '구입경험', '문항3_12_연상형용사', '문항4_5_응답브랜드', '브랜드보기코드', '문항4_1_주관식구입채널',
+    '문항1_최초상기브랜드', '문항3_만족도_태도요약', '검수참고메모'
   ];
   const rows = [header];
   (state.data.answeredRespondents || []).forEach((p) => {
     const zq = p.zq || {};
     (p.slots || []).forEach((s) => {
+      const colsWithAdj = Array.isArray(s.q3Cols) ? s.q3Cols.filter((c) => c && c.adjective) : [];
+      const adjStr = colsWithAdj.length > 0
+        ? colsWithAdj.map((c) => `${c.brand || `${c.col}열`}:${c.adjective}`).join(' | ')
+        : ((s.q3Adjectives || []).join(' | '));
       rows.push([
         p.seq, p.name, p.region, p.surveyDistrict, p.surveyDong, p.gender, p.ageGroup, p.age, p.phone, p.finalId, p.uid,
         p.status, p.progress, zq.ZQ1 || '', zq.ZQ2 || '', zq.ZQ3 || '', zq.ZQ4 || '', zq.ZQ5 || '', zq.ZQ5_1 || '', zq.ZQ5_2 || '', zq.ZQ6 || '',
-        s.slot, s.industryKey, s.categoryName, s.purchaseExp, s.brandName, s.brandCode, s.channel, (s.reviewNotes || []).join(' / ')
+        s.slot, s.industryKey, s.categoryName, s.purchaseExp, adjStr, s.brandName, s.brandCode, s.channel,
+        (s.q1Brands || []).join(' | '), s.q3Summary || '', (s.reviewNotes || []).join(' / ')
       ]);
     });
   });

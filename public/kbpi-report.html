@@ -15,11 +15,11 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <link rel="stylesheet" href="tokens.css?v=20261126_kbpi_rpt1">
-  <link rel="stylesheet" href="figma-base.css?v=20261126_kbpi_rpt1">
-  <link rel="stylesheet" href="campaign.css?v=20261126_kbpi_rpt1">
-  <link rel="stylesheet" href="custom-styles.css?v=20261126_kbpi_rpt1">
-  <link rel="stylesheet" href="kbpi-report.css?v=20261126_kbpi_rpt1">
+  <link rel="stylesheet" href="tokens.css?v=20261126_kbpi_rpt2">
+  <link rel="stylesheet" href="figma-base.css?v=20261126_kbpi_rpt2">
+  <link rel="stylesheet" href="campaign.css?v=20261126_kbpi_rpt2">
+  <link rel="stylesheet" href="custom-styles.css?v=20261126_kbpi_rpt2">
+  <link rel="stylesheet" href="kbpi-report.css?v=20261126_kbpi_rpt2">
 </head>
 <body>
 
@@ -58,7 +58,7 @@
         </div>
         <h1 class="kbpi-rpt-title" id="rpt-title">2027년 한국산업의브랜드파워(K-BPI) 설문조사 — 현재까지 응답 내용 확인</h1>
         <p class="kbpi-rpt-subtitle">
-          운영 서버 실시간 DB 및 Survey 230 공식 산업군 코드북(533개 산업군) 연동 · 응답 완료분(완료직전 안전대기 포함) 및 전체 150명 배정 브랜드 현황을 실시간으로 확인합니다.
+          운영 서버 실시간 DB 및 Survey 230 공식 산업군 코드북(533개 산업군) 연동 · 응답 완료분(완료직전 안전대기 포함)의 <strong>문항 3-12번 연상 형용사</strong>, 응답 브랜드, 구입경로 및 전체 150명 배정 현황을 실시간으로 확인합니다.
         </p>
       </div>
 
@@ -66,7 +66,7 @@
         <button type="button" id="btn-refresh-report" class="btn-pill btn-pill-secondary btn-pill-small">
           <i class="fa-solid fa-rotate"></i> 새로고침
         </button>
-        <button type="button" id="btn-sync-capi-readonly" class="btn-pill btn-pill-secondary btn-pill-small" title="제출이나 다음 클릭 없이 CAPI 서버에 저장된 Q1~ZQ6 실제 값을 읽어와 보강합니다.">
+        <button type="button" id="btn-sync-capi-readonly" class="btn-pill btn-pill-secondary btn-pill-small" title="제출이나 다음 클릭 없이 CAPI 서버에 저장된 Q1~ZQ6 및 문12 형용사 실제 값을 읽어와 보강합니다.">
           <i class="fa-solid fa-cloud-arrow-down"></i> CAPI 서버 응답 동기화
         </button>
         <button type="button" id="btn-export-done-csv" class="btn-pill btn-pill-primary btn-pill-small">
@@ -103,12 +103,12 @@
       <div class="kbpi-rpt-kpi-card">
         <span class="kbpi-rpt-kpi-label">최종 제출 마감 (100%)</span>
         <div class="kbpi-rpt-kpi-value" id="kpi-completed">-</div>
-        <span class="kbpi-rpt-kpi-sub">제출 전 CAPI 열람·수정 가능</span>
+        <span class="kbpi-rpt-kpi-sub">제출 전 CAPI 열람 가능</span>
       </div>
       <div class="kbpi-rpt-kpi-card">
         <span class="kbpi-rpt-kpi-label">검수 참고 포인트</span>
         <div class="kbpi-rpt-kpi-value kbpi-text-warn" id="kpi-warn-slots">-</div>
-        <span class="kbpi-rpt-kpi-sub">채널 정합성 · 미기록 확인용</span>
+        <span class="kbpi-rpt-kpi-sub">문12 형용사 · 채널 정합성 확인</span>
       </div>
     </section>
 
@@ -131,8 +131,8 @@
         <div>
           <h2 class="kbpi-rule-title">본설문 응답 완료(완료직전 안전 대기 포함) 대상자별 상세 응답 내역</h2>
           <p class="kbpi-rpt-subtitle">
-            각 응답자의 신상·GPS·조사동, 종결부 배경변인(ZQ1~ZQ6), 그리고 개인별 20개 출제 산업군에 대해 입력된 구입경험·응답 브랜드·주관식 구입경로를 표시합니다.
-            로컬 DB에 기록되지 않은 과거 실행 슬롯이 있는 경우 상단 <strong>[CAPI 서버 응답 동기화]</strong>를 클릭하면 제출 없이 CAPI 서버 저장값을 그대로 불러와 채웁니다.
+            각 응답자의 신상·GPS·조사동, 종결부 배경변인(ZQ1~ZQ6), 그리고 개인별 20개 출제 산업군에 대해 입력된 <strong>문항 3-12번 연상 형용사(브랜드별)</strong>·구입경험·응답 브랜드·주관식 구입경로를 표시합니다.
+            이미 입력된 응답자의 문12 형용사를 확인하려면 상단 <strong>[CAPI 서버 응답 동기화]</strong>를 클릭하세요 (제출/수정 없이 CAPI 서버 저장값을 그대로 불러옵니다).
           </p>
         </div>
 
@@ -145,7 +145,7 @@
               <option value="no">구입경험 '없음' 품목만</option>
               <option value="warn">검수 참고 메모 있는 품목만</option>
             </select>
-            <input type="text" id="done-search" class="kbpi-input" placeholder="품목명, 브랜드, 구입채널 검색..." />
+            <input type="text" id="done-search" class="kbpi-input" placeholder="품목명, 브랜드, 문12 형용사, 구입채널 검색..." />
           </div>
         </div>
       </div>
@@ -263,7 +263,7 @@
     </section>
   </main>
 
-  <script type="module" src="nav-auth.js?v=20261126_kbpi_rpt1"></script>
-  <script type="module" src="kbpi-report.js?v=20261126_kbpi_rpt1"></script>
+  <script type="module" src="nav-auth.js?v=20261126_kbpi_rpt2"></script>
+  <script type="module" src="kbpi-report.js?v=20261126_kbpi_rpt2"></script>
 </body>
 </html>

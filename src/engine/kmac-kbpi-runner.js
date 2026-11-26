@@ -1650,7 +1650,7 @@ function mergeAssignedIndustriesIntoConfigs({
         teenAutoNone: policy.teenAutoNoneUnfitCategories !== false
       });
     }
-    return {
+    const mergedSlot = {
       slot: idx + 1,
       industryKey: itemKey || prevMatch.industryKey || '',
       categoryName: item.categoryName,
@@ -1658,6 +1658,11 @@ function mergeAssignedIndustriesIntoConfigs({
       topBrand: prevMatch.topBrand || '',
       channel: prevMatch.channel || ''
     };
+    if (Array.isArray(prevMatch.q1Brands) && prevMatch.q1Brands.length > 0) mergedSlot.q1Brands = prevMatch.q1Brands;
+    if (Array.isArray(prevMatch.q3Adjectives) && prevMatch.q3Adjectives.length > 0) mergedSlot.q3Adjectives = prevMatch.q3Adjectives;
+    if (Array.isArray(prevMatch.q3Cols) && prevMatch.q3Cols.length > 0) mergedSlot.q3Cols = prevMatch.q3Cols;
+    if (prevMatch.q3Summary) mergedSlot.q3Summary = prevMatch.q3Summary;
+    return mergedSlot;
   });
 
   categoryConfigs.splice(0, categoryConfigs.length, ...nextConfigs);
@@ -2818,6 +2823,9 @@ export async function runKmacKbpiSurvey({
         const actualUnaided = (q1Applied || []).filter(b => b && b !== '없음(NOA)');
         if (actualUnaided.length > 0) {
           catState.unaidedBrands = actualUnaided;
+          if (categoryConfigs[catState.slotIndex]) {
+            categoryConfigs[catState.slotIndex].q1Brands = actualUnaided;
+          }
         }
         emitLog(`[${catState.categoryName} - 문항 1] 중복 검증 통과 ➔ [${(q1Applied || []).map((v, i) => `1-${i + 1}="${v}"`).join(', ')}]`, 'info', 'Q1');
 
@@ -3660,6 +3668,16 @@ export async function runKmacKbpiSurvey({
         }
         for (const usedRsn of (matrixApplied.pickedReasons || [])) {
           if (usedRsn) respondentUsedReasons.add(usedRsn);
+        }
+
+        if (categoryConfigs[catState.slotIndex] && Array.isArray(matrixApplied.pickedAdjectives) && matrixApplied.pickedAdjectives.length > 0) {
+          const fallbackBrands = [...(catState.unaidedBrands || []), ...(catState.q2CheckedBrands || [])];
+          categoryConfigs[catState.slotIndex].q3Adjectives = matrixApplied.pickedAdjectives;
+          categoryConfigs[catState.slotIndex].q3Cols = matrixApplied.pickedAdjectives.map((adj, cIdx) => ({
+            col: cIdx + 1,
+            brand: matrixApplied.colBrandNames?.[cIdx] || fallbackBrands[cIdx] || '',
+            adjective: adj
+          }));
         }
 
         if (Array.isArray(matrixApplied.colBrandNames) && matrixApplied.colBrandNames.length > 0 && catState.purchaseExp === '있음') {

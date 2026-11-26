@@ -433,6 +433,32 @@
   color: var(--text-dim);
 }
 
+.kbpi-adj-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.kbpi-adj-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.kbpi-adj-brand {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
 @media (max-width: 1100px) {
   .kbpi-rpt-kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
