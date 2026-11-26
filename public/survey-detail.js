@@ -13,7 +13,7 @@ import {
   renderKonaBlueprint,
   renderHrcEnergyBlueprint,
   renderGallupReturnFarmBlueprint
-} from './modules/blueprint-gallup-hrc-kona.js?v=20261125_hrc_10acc';
+} from './modules/blueprint-gallup-hrc-kona.js?v=20261125_hrc_kbpi_v6';
 import {
   renderKmacKbpiBlueprint,
   refreshKbpiBrandScanGuidePanel,
@@ -45,7 +45,7 @@ import {
   renderMetrixSeoulQuotaTable,
   renderAssocQuotaTable,
   renderKmacKbpiQuotaTable
-} from './modules/quota-table-renderers.js?v=20261124_kbpi_v31';
+} from './modules/quota-table-renderers.js?v=20261125_hrc_kbpi_v6';
 import {
   showToast,
   showConfirmModal,

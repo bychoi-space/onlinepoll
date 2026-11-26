@@ -813,6 +813,25 @@ if (pIter1.genderCode !== '여' || pIter1.ageNum < 30 || pIter1.ageNum > 39 || g
 
 console.log(`✅ [추가 검증] 통합 응답자 마스터 DB(${poolStats.totalCount}명) 조회·배정·페르소나 연동 100% 통과`);
 
-
-
-
+// 6. K-BPI 브랜드별 맞춤 이미지어(275개 산업군 · 93개 대표브랜드) & 50~70대 남성 8종 서명 필체 검증
+const kbpiWaterMeta = await kbpiRunnerMod.resolveCategoryMeta('생수');
+const kbpiKimchiMeta = await kbpiRunnerMod.resolveCategoryMeta('김치');
+if (
+  kbpiWaterMeta.adjectives.includes('자신있는') ||
+  kbpiKimchiMeta.brands.includes('딤채') ||
+  !kbpiWaterMeta.brandAdjectives?.['제주삼다수']?.length
+) {
+  throw new Error('K-BPI category/brand adjective dictionary validation failed');
+}
+const sigMod = await import('../src/utils/korean-signature.js');
+if (sigMod.KOREAN_SIGNATURE_STYLES.length !== 8) {
+  throw new Error(`Expected 8 signature styles, got ${sigMod.KOREAN_SIGNATURE_STYLES.length}`);
+}
+for (let sIdx = 0; sIdx < 8; sIdx++) {
+  const st = sigMod.selectKoreanSignatureStyle(100 + sIdx, sIdx);
+  const strokes = sigMod.buildKoreanSignatureStrokes({ targetName: '박정호', seed: 5000 + sIdx * 19, styleCfg: st });
+  if (!Array.isArray(strokes) || strokes.length < 1) {
+    throw new Error(`Signature style ${sIdx} (${st.mode}) produced empty strokes`);
+  }
+}
+console.log('✅ [추가 검증] K-BPI 브랜드 맞춤 이미지어(275개 산업군·93개 브랜드) & 50~70대 남성 8종 필체 서명 100% 통과');

@@ -6,14 +6,14 @@ import { DEFAULT_GLOBALRI_AGE_POLICIES, resolveGlobalriAgeGroupKey } from './blu
 import { resolveSurveySegmentAxes, computeSegmentStats, isQuotaItemDone } from './quota-segment-filter.js';
 
 export const GALLUP_SIG_STYLES_LABELS = [
-  '정자체 (바른획)',
-  '흘림체 (우상향)',
-  '반흘림 (자연곡선)',
-  '둥근획 (부드러움)',
-  '날카로운 속기체',
-  '넓은자간 안정체',
-  '세로장체 (긴획)',
-  '이니셜 결합체'
+  '중장년 정자체 (각진획)',
+  '중년 행서 흘려쓰기',
+  '결재 싸인체 (루프밑줄)',
+  '굵은 붓펜 흘려쓰기',
+  '단순 약식체 (성씨+물결)',
+  '어르신 정자체 (세로장체)',
+  '초간단 일필 약식체',
+  '초성 강조 싸인체'
 ];
 
 export const HRC_T41_OPTIONS = [

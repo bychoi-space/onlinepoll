@@ -76,14 +76,37 @@ export const Q3_RECOMMEND_REASON_POOLS = {
     '전문성과 시스템이 믿음직해서',
     '기대만큼 만족도가 높아서',
     '대중적이고 평이 좋아서',
-    '안정적이고 믿을 수 있어서'
+    '안정적이고 믿을 수 있어서',
+    '전반적인 품질이 뛰어나서',
+    '오래 이용해 봐서 믿음이 가서',
+    '가성비와 만족도가 좋아서',
+    '접근성이 좋고 이용하기 편해서',
+    '브랜드 이미지가 깔끔하고 좋아서',
+    '기본기가 탄탄하고 실용적이어서',
+    '주변 지인들도 많이 이용해서',
+    '꾸준히 좋은 품질을 유지해서',
+    '타 브랜드보다 만족스러워서',
+    '실제로 써보니 기대 이상이어서',
+    '대중적으로 검증된 곳이라서',
+    '선택의 폭이 넓고 편리해서',
+    '늘 일정한 수준을 보여줘서',
+    '믿고 선택할 수 있는 브랜드라서',
+    '만족스러운 경험이 많아서',
+    '호감이 가고 친숙해서'
   ],
   neutral: [
     '무난하고 대중적이어서',
     '보통 수준이라고 생각해서',
     '익숙하지만 무난해서',
     '주변에서 종종 들어봐서',
-    '특별한 단점 없이 평범해서'
+    '특별한 단점 없이 평범해서',
+    '기본적인 수준은 갖추고 있어서',
+    '대체로 무난한 편이라서',
+    '익숙한 브랜드이긴 해서',
+    '크게 불편한 점은 없어서',
+    '평소 인식이 보통이라서',
+    '알고는 있지만 평범해서',
+    '평균적인 품질이라고 느껴서'
   ]
 };
 
@@ -554,9 +577,56 @@ function isSafePartialDictMatch(cleanCat, dictKey) {
   if (!cleanCat.includes(dictKey)) return false;
   if (dictKey === '자동차' && /보험|배터리|정비|용품|충전|중고차|렌터카/.test(cleanCat)) return false;
   if (dictKey === '라면' && /비빔|볶음/.test(cleanCat)) return false;
-  if (dictKey === '우유' && /가공|두유/.test(cleanCat)) return false;
+  if (dictKey === '우유' && /가공|두유|발효/.test(cleanCat)) return false;
   if (dictKey === '세제' && /주방/.test(cleanCat)) return false;
   return true;
+}
+
+export function pickBrandMatchedAdjective({
+  brandName = '',
+  categoryAdjectives = [],
+  brandAdjectivesMap = {},
+  usedInMatrix = new Set(),
+  priorUsed = new Set(),
+  fallback = '친숙하다'
+} = {}) {
+  const bTrim = String(brandName || '').trim();
+  const bNorm = normalizeKbpiBrandKey(bTrim);
+  let matchedBrandWords = [];
+
+  if (bTrim && brandAdjectivesMap && typeof brandAdjectivesMap === 'object') {
+    if (Array.isArray(brandAdjectivesMap[bTrim])) {
+      matchedBrandWords = brandAdjectivesMap[bTrim];
+    } else if (bNorm) {
+      const entries = Object.entries(brandAdjectivesMap);
+      const exactNorm = entries.find(([k]) => normalizeKbpiBrandKey(k) === bNorm);
+      if (exactNorm && Array.isArray(exactNorm[1])) {
+        matchedBrandWords = exactNorm[1];
+      } else {
+        const partial = entries
+          .filter(([k]) => {
+            const kn = normalizeKbpiBrandKey(k);
+            return kn.length >= 2 && (bNorm.includes(kn) || kn.includes(bNorm));
+          })
+          .sort((a, b) => b[0].length - a[0].length)[0];
+        if (partial && Array.isArray(partial[1])) {
+          matchedBrandWords = partial[1];
+        }
+      }
+    }
+  }
+
+  const candidates = Array.from(new Set([
+    ...matchedBrandWords,
+    ...(Array.isArray(categoryAdjectives) ? categoryAdjectives : []),
+    fallback
+  ].map(s => String(s || '').trim()).filter(Boolean)));
+
+  const freshPick = candidates.find(w => !usedInMatrix?.has(w) && !priorUsed?.has(w));
+  if (freshPick) return freshPick;
+  const matrixDistinctPick = candidates.find(w => !usedInMatrix?.has(w));
+  if (matrixDistinctPick) return matrixDistinctPick;
+  return candidates[0] || fallback;
 }
 
 export async function resolveCategoryMeta(categoryName, policy = {}) {
@@ -585,7 +655,7 @@ export async function resolveCategoryMeta(categoryName, policy = {}) {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const prompt = `한국능률협회컨설팅 K-BPI 소비자 브랜드 조사에서 "${cleanCat}" 산업군에 해당하는 대한민국 실제 유명 대표 브랜드명 6개(중복 없는 서로 다른 기업/단체 브랜드)와, 소비자가 떠올리는 짧은 이미지 표현(형용사/명사 혼합, 예: 깨끗하다, 편리함, 믿음직한) 8개, 실제 주 구매/이용 경로 4개를 JSON으로만 반환해줘. 형식: {"brands":["..."],"adjectives":["..."],"channels":["..."]}`;
+      const prompt = `한국능률협회컨설팅 K-BPI 소비자 브랜드 조사에서 "${cleanCat}" 산업군에 해당하는 대한민국 실제 유명 대표 브랜드명 6개(중복 없는 서로 다른 기업/단체 브랜드)와, 소비자가 떠올리는 짧은 이미지 표현(형용사/명사 혼합, 예: 깨끗하다, 편리함, 믿음직한) 12개, 실제 주 구매/이용 경로 4개를 JSON으로만 반환해줘. 형식: {"brands":["..."],"adjectives":["..."],"channels":["..."]}`;
       const resp = await model.generateContent(prompt);
       const txt = resp.response.text().replace(/```json|```/g, '').trim();
       const parsed = JSON.parse(txt);
@@ -598,6 +668,7 @@ export async function resolveCategoryMeta(categoryName, policy = {}) {
           adjectives: Array.isArray(parsed.adjectives) && parsed.adjectives.length >= 4
             ? Array.from(new Set(parsed.adjectives))
             : Array.from(new Set([...resolveDomainAdjectives(cleanCat), ...(baseDict.defaultAdjectives?.positive || [])])),
+          brandAdjectives: baseDict.brandAdjectives || {},
           channels: resolveSmartChannelPool(cleanCat, policy, baseDict)
         };
       }
@@ -630,16 +701,17 @@ export async function resolveCategoryMeta(categoryName, policy = {}) {
 
   const channels = resolveSmartChannelPool(cleanCat, policy, baseDict);
 
-  const adjectives = Array.from(new Set([
-    ...(matchedEntry?.adjectives || []),
-    ...resolveDomainAdjectives(cleanCat),
-    ...(baseDict.defaultAdjectives?.positive || [])
-  ]));
+  // 카테고리 전용 이미지어가 충분히(8개 이상) 있으면 전용 풀을 우선 유지하고, 부족하면 도메인별/기본 이미지어 병합
+  const catAdjs = Array.isArray(matchedEntry?.adjectives) ? matchedEntry.adjectives : [];
+  const adjectives = catAdjs.length >= 8
+    ? Array.from(new Set(catAdjs))
+    : Array.from(new Set([...catAdjs, ...resolveDomainAdjectives(cleanCat), ...(baseDict.defaultAdjectives?.positive || [])]));
 
   return {
     categoryName: cleanCat,
     brands,
     adjectives,
+    brandAdjectives: baseDict.brandAdjectives || {},
     channels
   };
 }
@@ -648,12 +720,16 @@ export async function resolveCategoryMeta(categoryName, policy = {}) {
  * 문항 3(1~9번) 점수 생성기:
  * - 절대 동일 점수 일렬(444444444 등) 금지!
  * - 3, 4, 5점 범위 내에서 자연스러운 분산 보장
+ * - 11번 태도(attitudeChoice)도 주 이용 열(col 0)과 보조 열(col 1~2) 간 획일화 방지
  */
-export function generateKbpiMatrixScores(rngOrOpts = Math.random, hasPurchaseExpArg = true) {
+export function generateKbpiMatrixScores(rngOrOpts = Math.random, hasPurchaseExpArg = true, colIdxArg = 0) {
   const isObj = rngOrOpts && typeof rngOrOpts === 'object';
   const rng = typeof rngOrOpts === 'function' ? rngOrOpts : (typeof rngOrOpts?.rng === 'function' ? rngOrOpts.rng : Math.random);
   const hasPurchaseExp = isObj ? (rngOrOpts.hasPurchaseExp !== false) : Boolean(hasPurchaseExpArg);
-  const pool = hasPurchaseExp ? [3, 4, 4, 4, 5, 5] : [3, 3, 3, 4, 4, 5];
+  const colIdx = isObj ? Number(rngOrOpts.colIdx || 0) : Number(colIdxArg || 0);
+  const pool = hasPurchaseExp
+    ? (colIdx === 0 ? [3, 4, 4, 5, 5, 5] : [3, 3, 4, 4, 4, 5])
+    : [3, 3, 3, 4, 4, 5];
   let scores = [];
   for (let attempt = 0; attempt < 10; attempt++) {
     scores = [];
@@ -670,14 +746,18 @@ export function generateKbpiMatrixScores(rngOrOpts = Math.random, hasPurchaseExp
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
   const overallSatisfaction = Math.max(3, Math.min(5, Math.round(avg)));
 
-  // 11번 평소 태도 보기 결정 (핵심 절대 규칙 반영):
+  // 11번 평소 태도 보기 결정 (핵심 절대 규칙 + 열 간 동일응답 분산):
   // - 구입경험이 '없음(아니오)'이면 4·5번 체크 절대 불가 -> 반드시 1, 2, 3번 중(2 또는 3번 우선) 선택!
-  // - 구입경험이 '있음(예)'이면 전반적 만족도 4~5일 때 4·5번, 3일 때 2·3번(3번 우선) 선택!
+  // - 구입경험이 '있음(예)'일 때 1번열(주 이용)은 4·5번 균형 배분, 2~3번열(보조 경험)은 3·4·5번 자연 분산!
   let attitudeChoice;
   if (!hasPurchaseExp) {
     attitudeChoice = rng() < 0.45 ? 2 : 3;
-  } else if (overallSatisfaction >= 4) {
-    attitudeChoice = (overallSatisfaction === 5 && rng() < 0.45) ? 5 : 4;
+  } else if (colIdx === 0) {
+    attitudeChoice = overallSatisfaction >= 4 ? (rng() < 0.48 ? 5 : 4) : 3;
+  } else if (overallSatisfaction === 5) {
+    attitudeChoice = rng() < 0.50 ? 5 : 4;
+  } else if (overallSatisfaction === 4) {
+    attitudeChoice = rng() < 0.45 ? 3 : 4;
   } else {
     attitudeChoice = rng() < 0.25 ? 2 : 3;
   }
@@ -1856,6 +1936,8 @@ export async function runKmacKbpiSurvey({
     const claimedConfigSlots = new Set();
     const respondentUsedBrandNorms = new Set();
     const respondentUsedBrandRoots = new Set();
+    const respondentUsedAdjectives = new Set();
+    const respondentUsedReasons = new Set();
 
     const syncAssignedIndustriesOnce = async (targetFrame) => {
       if (assignedIndustriesSynced) return;
@@ -1997,6 +2079,7 @@ export async function runKmacKbpiSurvey({
           allDistinctBrands: distinctBrands,
           q2CheckedBrands: [],
           adjectives: shuffledAdjs,
+          brandAdjectives: meta.brandAdjectives || {},
           posReasons: shuffledPosReasons,
           neuReasons: shuffledNeuReasons,
           selectedChannel: shuffledChannels[0] || '편의점',
@@ -2858,18 +2941,41 @@ export async function runKmacKbpiSurvey({
       // [문항 3] 다중 브랜드 매트릭스 (상단 '평가항목' 브랜드 드롭다운 선행 선택 + 표준 13행/확장 16행 통합 정합성 엔진)
       if (info.screenType === 'Q3_MATRIX') {
         const catState = await getOrInitCategoryState(info.categoryName, info.industryKey, activeTarget);
+        const freshCatAdjs = catState.adjectives.filter(w => !respondentUsedAdjectives.has(w));
+        const reusedCatAdjs = catState.adjectives.filter(w => respondentUsedAdjectives.has(w));
         const uniqueAdjs = Array.from(new Set([
-          ...catState.adjectives,
+          ...freshCatAdjs,
+          ...reusedCatAdjs,
           '신뢰가는', '믿음직함', '친숙하다', '깔끔함', '실용적인', '안정적인', '대중적인', '만족스러운'
         ]));
-        const uniquePosReasons = Array.from(new Set([
+
+        const allPosReasons = Array.from(new Set([
           ...catState.posReasons,
           ...Q3_RECOMMEND_REASON_POOLS.positive
         ]));
-        const uniqueNeuReasons = Array.from(new Set([
+        const uniquePosReasons = [
+          ...allPosReasons.filter(r => !respondentUsedReasons.has(r)),
+          ...allPosReasons.filter(r => respondentUsedReasons.has(r))
+        ];
+
+        const allNeuReasons = Array.from(new Set([
           ...catState.neuReasons,
           ...Q3_RECOMMEND_REASON_POOLS.neutral
         ]));
+        const uniqueNeuReasons = [
+          ...allNeuReasons.filter(r => !respondentUsedReasons.has(r)),
+          ...allNeuReasons.filter(r => respondentUsedReasons.has(r))
+        ];
+
+        const brandAdjectiveLookup = {};
+        for (const [bKey, bWords] of Object.entries(catState.brandAdjectives || {})) {
+          if (!Array.isArray(bWords) || bWords.length === 0) continue;
+          const shuffled = shuffleWithRng(bWords, rng);
+          brandAdjectiveLookup[bKey] = [
+            ...shuffled.filter(w => !respondentUsedAdjectives.has(w)),
+            ...shuffled.filter(w => respondentUsedAdjectives.has(w))
+          ];
+        }
 
         const colPlans = [];
         for (let colIdx = 0; colIdx < 6; colIdx++) {
@@ -2881,7 +2987,7 @@ export async function runKmacKbpiSurvey({
           } else {
             colHasExp = rng() < 0.75;
           }
-          const scorePlan = generateKbpiMatrixScores(rng, colHasExp);
+          const scorePlan = generateKbpiMatrixScores(rng, colHasExp, colIdx);
           const extraPool = colHasExp ? [3, 4, 4, 5, 4, 5] : [3, 3, 4, 3, 4, 5];
           const extendedScores = [...scorePlan.itemScores];
           for (let ex = 0; ex < 16; ex++) {
@@ -2905,10 +3011,21 @@ export async function runKmacKbpiSurvey({
             rec27NonUseIdx,
             ...scorePlan,
             extendedScores,
-            adjective: uniqueAdjs[colIdx] || `${uniqueAdjs[colIdx % uniqueAdjs.length]}${colIdx + 1}`,
+            adjective: uniqueAdjs[colIdx] || `${uniqueAdjs[colIdx % uniqueAdjs.length]}`,
             posReason: uniquePosReasons[colIdx % uniquePosReasons.length] || '인지도가 높고 신뢰가 가서',
             neuReason: uniqueNeuReasons[colIdx % uniqueNeuReasons.length] || '무난하고 대중적이어서'
           });
+        }
+
+        // 1~3열 태도(11번)가 우연히 모두 같은 번호로 겹치면 보조열을 자연 분산
+        if (colPlans.length >= 3 && colPlans[0].attitudeChoice === colPlans[1].attitudeChoice && colPlans[1].attitudeChoice === colPlans[2].attitudeChoice) {
+          if (colPlans[1].hasPurchaseExp) {
+            colPlans[1].attitudeChoice = colPlans[1].attitudeChoice === 4
+              ? (colPlans[1].overallSatisfaction >= 5 ? 5 : 3)
+              : 4;
+          } else {
+            colPlans[1].attitudeChoice = colPlans[1].attitudeChoice === 3 ? 2 : 3;
+          }
         }
 
         const preferredHeaderBrands = Array.from(new Set([
@@ -2917,7 +3034,15 @@ export async function runKmacKbpiSurvey({
           ...(catState.allDistinctBrands || [])
         ]));
 
-        const matrixApplied = await activeTarget.evaluate(async ({ plans, preferredBrands }) => {
+        const matrixApplied = await activeTarget.evaluate(async ({
+          plans,
+          preferredBrands,
+          brandAdjectivesMap,
+          categoryAdjs,
+          posReasonPool,
+          neuReasonPool,
+          priorUsedAdjs
+        }) => {
           const waitMs = (ms) => new Promise(res => setTimeout(res, ms));
           const normKey = (s) => String(s || '')
             .replace(/브랜드$/g, '')
@@ -3122,7 +3247,7 @@ export async function runKmacKbpiSurvey({
           const isValidHeaderBrandLabel = (txt) => {
             const s = String(txt || '').trim();
             if (!s || s.length > 40 || isPlaceholderOptText(s)) return false;
-            if (/평가항목|^\d+$/.test(s)) return false;
+            if (/평가항목|^(항목|구분|문항|\d+)$/.test(s)) return false;
             return true;
           };
           const colBrandNames = headerBrandByCol.filter(b => b && !/^(없음|해당\s*없음|더\s*이상\s*없음|선택)$/.test(b) && isValidHeaderBrandLabel(b));
@@ -3149,10 +3274,73 @@ export async function runKmacKbpiSurvey({
           const enteredScoresByCol = [[], [], [], [], [], []];
           const lastScoreByCol = [4, 4, 4, 4, 4, 4];
           const colActualHasExp = [null, null, null, null, null, null];
+          const priorUsedSet = new Set(Array.isArray(priorUsedAdjs) ? priorUsedAdjs : []);
+          const usedMatrixAdjs = new Set();
+          const assignedAdjByCol = [];
+          const usedMatrixReasons = new Set();
+          const assignedReasonByCol = [];
+          const chosenAttitudeIdxByCol = [];
           let filledTxt = 0;
           let filledSel = filledHeaderSel;
           let filledRad = 0;
           let processedRows = 0;
+
+          const pickColBrandAdjective = (colIdx, fallbackAdj = '친숙하다') => {
+            if (assignedAdjByCol[colIdx]) return assignedAdjByCol[colIdx];
+            const brandRaw = String(headerBrandByCol[colIdx] || colBrandNames[colIdx] || '').trim();
+            const brandNorm = normKey(brandRaw);
+            let matchedBrandPool = [];
+
+            if (brandRaw && brandAdjectivesMap && typeof brandAdjectivesMap === 'object') {
+              if (Array.isArray(brandAdjectivesMap[brandRaw])) {
+                matchedBrandPool = brandAdjectivesMap[brandRaw];
+              } else if (brandNorm) {
+                const entries = Object.entries(brandAdjectivesMap);
+                const exact = entries.find(([k]) => normKey(k) === brandNorm);
+                if (exact && Array.isArray(exact[1])) {
+                  matchedBrandPool = exact[1];
+                } else {
+                  const partial = entries
+                    .filter(([k]) => {
+                      const kn = normKey(k);
+                      return kn.length >= 2 && (brandNorm.includes(kn) || kn.includes(brandNorm));
+                    })
+                    .sort((a, b) => b[0].length - a[0].length)[0];
+                  if (partial && Array.isArray(partial[1])) {
+                    matchedBrandPool = partial[1];
+                  }
+                }
+              }
+            }
+
+            const candidates = Array.from(new Set([
+              ...matchedBrandPool,
+              ...(Array.isArray(categoryAdjs) ? categoryAdjs : []),
+              fallbackAdj
+            ].map(s => String(s || '').trim()).filter(Boolean)));
+
+            const chosen =
+              candidates.find(w => !usedMatrixAdjs.has(w) && !priorUsedSet.has(w)) ||
+              candidates.find(w => !usedMatrixAdjs.has(w)) ||
+              candidates[0] ||
+              fallbackAdj;
+
+            usedMatrixAdjs.add(chosen);
+            assignedAdjByCol[colIdx] = chosen;
+            return chosen;
+          };
+
+          const pickColReasonText = (colIdx, isPositive, fallbackReason) => {
+            if (assignedReasonByCol[colIdx]) return assignedReasonByCol[colIdx];
+            const pool = isPositive
+              ? (Array.isArray(posReasonPool) ? posReasonPool : [])
+              : (Array.isArray(neuReasonPool) ? neuReasonPool : []);
+            const candidates = Array.from(new Set([fallbackReason, ...pool].map(s => String(s || '').trim()).filter(Boolean)));
+            const chosen = candidates.find(r => !usedMatrixReasons.has(r)) || candidates[0] || fallbackReason;
+            usedMatrixReasons.add(chosen);
+            assignedReasonByCol[colIdx] = chosen;
+            return chosen;
+          };
 
           // =========================================================================
           // [Phase 2] 본문 1)~13) / 6-1~6-3 평가 행 정밀 기입 (동적 언하이드 행 2회 패스 지원)
@@ -3216,13 +3404,28 @@ export async function runKmacKbpiSurvey({
                     const validOpts = Array.from(sel.options).filter(o => o.value !== '' && !isPlaceholderOptText(o.text));
                     if (validOpts.length > 0) {
                       let choiceIdx = plan.attitudeChoice - 1;
+                      const dynAvg = colBucket.length > 0
+                        ? Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length)
+                        : (plan.overallSatisfaction || 4);
                       if (!plan.hasPurchaseExp) {
                         choiceIdx = Math.min(2, Math.max(0, choiceIdx)); // 구입경험 없음: 절대 4·5번(idx 3,4) 선택 금지!
-                      } else if (colBucket.length > 0) {
-                        const dynAvg = Math.round(colBucket.reduce((a, b) => a + b, 0) / colBucket.length);
+                      } else if (cIdx === 0) {
                         if (dynAvg >= 4 && choiceIdx < 3) choiceIdx = 3;
                         else if (dynAvg <= 3 && choiceIdx >= 3) choiceIdx = 2;
+                      } else {
+                        // 보조 열(cIdx >= 1): 구입경험이 있더라도 3번(가치 있는)·4번(흔히 구입)·5번(선호하는) 자연 분산 허용!
+                        if (dynAvg >= 4 && choiceIdx < 2) choiceIdx = 2;
+                        else if (dynAvg <= 3 && choiceIdx >= 3) choiceIdx = 2;
                       }
+                      // 앞선 모든 열과 완전히 동일한 태도 번호가 연속되면(예: 전 열 '내가 흔히 구입/이용하는') 보조열 분산 보정
+                      if (cIdx >= 2 && chosenAttitudeIdxByCol.slice(0, cIdx).length >= 2 && chosenAttitudeIdxByCol.slice(0, cIdx).every(v => v === choiceIdx)) {
+                        if (!plan.hasPurchaseExp) {
+                          choiceIdx = choiceIdx === 2 ? 1 : 2;
+                        } else {
+                          choiceIdx = choiceIdx === 3 ? (dynAvg >= 5 ? 4 : 2) : 3;
+                        }
+                      }
+                      chosenAttitudeIdxByCol[cIdx] = choiceIdx;
                       const targetOpt = validOpts[Math.max(0, Math.min(validOpts.length - 1, choiceIdx))] || validOpts[0];
                       if (setSelectVal(sel, targetOpt.value)) filledSel++;
                     }
@@ -3239,10 +3442,12 @@ export async function runKmacKbpiSurvey({
                     uncheckSkipCheckboxesInCell(td);
                     if (isReasonWordRow) {
                       const prevRecScore = lastScoreByCol[safeCol] || 4;
-                      const reasonText = prevRecScore >= 4 ? plan.posReason : plan.neuReason;
+                      const isPos = prevRecScore >= 4;
+                      const reasonText = pickColReasonText(safeCol, isPos, isPos ? plan.posReason : plan.neuReason);
                       if (triggerInput(txtInp, reasonText)) filledTxt++;
                     } else if (isImageWordRow) {
-                      if (triggerInput(txtInp, plan.adjective)) filledTxt++;
+                      const adjText = pickColBrandAdjective(safeCol, plan.adjective);
+                      if (triggerInput(txtInp, adjText)) filledTxt++;
                     } else if (isAttitudeRow11 && !plan.hasPurchaseExp) {
                       const cappedAtt = Math.min(3, Math.max(1, Number(plan.attitudeChoice || 2)));
                       if (triggerInput(txtInp, cappedAtt)) filledTxt++;
@@ -3393,18 +3598,19 @@ export async function runKmacKbpiSurvey({
             gIdx++;
           }
 
-          const usedFallbackWords = new Set();
+          const usedFallbackWords = new Set(usedMatrixAdjs);
           document.querySelectorAll('textarea, input[type="number"], input[type="text"], input:not([type])').forEach((inp, idx) => {
             if (inp.offsetParent === null || inp.disabled || inp.readOnly) return;
             if (['radio', 'checkbox', 'hidden', 'button', 'submit', 'reset', 'file'].includes(inp.type)) return;
             if (inp.classList.contains('input-etc') || /etc/i.test(inp.name || '') || /기타/.test((inp.closest('label, li, span')?.innerText || ''))) return;
             if (String(inp.value || '').trim() !== '') return;
             const trTxt = (inp.closest('tr, div')?.innerText || '').trim();
-            const plan = plans[idx % plans.length] || plans[0];
+            const colGuess = idx % plans.length;
+            const plan = plans[colGuess] || plans[0];
             let val = /6-1|이유/.test(trTxt)
-              ? plan.posReason
-              : (/이미지|형용사|단어/.test(trTxt) ? plan.adjective : plan.overallSatisfaction);
-            if (typeof val === 'string' && usedFallbackWords.has(val)) {
+              ? pickColReasonText(colGuess, true, plan.posReason)
+              : (/이미지|형용사|단어/.test(trTxt) ? pickColBrandAdjective(colGuess, plan.adjective) : plan.overallSatisfaction);
+            if (typeof val === 'string' && usedFallbackWords.has(val) && !/이미지|형용사|단어/.test(trTxt)) {
               val = `${val} 느낌`;
             }
             if (typeof val === 'string') usedFallbackWords.add(val);
@@ -3431,13 +3637,30 @@ export async function runKmacKbpiSurvey({
             filledHeaderSel,
             colBrandNames,
             colActualHasExp,
+            pickedAdjectives: assignedAdjByCol.filter(Boolean),
+            pickedReasons: assignedReasonByCol.filter(Boolean),
             rowCount: processedRows,
             filledTxt,
             filledSel,
             filledRad,
             emptyControls
           };
-        }, { plans: colPlans, preferredBrands: preferredHeaderBrands });
+        }, {
+          plans: colPlans,
+          preferredBrands: preferredHeaderBrands,
+          brandAdjectivesMap: brandAdjectiveLookup,
+          categoryAdjs: uniqueAdjs,
+          posReasonPool: uniquePosReasons,
+          neuReasonPool: uniqueNeuReasons,
+          priorUsedAdjs: Array.from(respondentUsedAdjectives)
+        });
+
+        for (const usedAdj of (matrixApplied.pickedAdjectives || [])) {
+          if (usedAdj) respondentUsedAdjectives.add(usedAdj);
+        }
+        for (const usedRsn of (matrixApplied.pickedReasons || [])) {
+          if (usedRsn) respondentUsedReasons.add(usedRsn);
+        }
 
         if (Array.isArray(matrixApplied.colBrandNames) && matrixApplied.colBrandNames.length > 0 && catState.purchaseExp === '있음') {
           const expColIdx = Array.isArray(matrixApplied.colActualHasExp)
@@ -3451,7 +3674,7 @@ export async function runKmacKbpiSurvey({
         }
 
         emitLog(
-          `[${catState.categoryName} - 문항 3] 평가 완료 (${matrixApplied.filledHeaderSel ? `평가항목브랜드선택=${matrixApplied.filledHeaderSel}열([${(matrixApplied.colBrandNames || []).join(', ')}]), ` : ''}행=${matrixApplied.rowCount}, 입력=${matrixApplied.filledTxt}, 선택=${matrixApplied.filledSel}, 라디오=${matrixApplied.filledRad}${matrixApplied.emptyControls?.length ? `, 미입력=${matrixApplied.emptyControls.join(',')}` : ''})`,
+          `[${catState.categoryName} - 문항 3] 평가 완료 (${matrixApplied.filledHeaderSel ? `평가항목브랜드선택=${matrixApplied.filledHeaderSel}열([${(matrixApplied.colBrandNames || []).join(', ')}]), ` : ''}${matrixApplied.pickedAdjectives?.length ? `이미지=[${matrixApplied.pickedAdjectives.join(', ')}], ` : ''}행=${matrixApplied.rowCount}, 입력=${matrixApplied.filledTxt}, 선택=${matrixApplied.filledSel}, 라디오=${matrixApplied.filledRad}${matrixApplied.emptyControls?.length ? `, 미입력=${matrixApplied.emptyControls.join(',')}` : ''})`,
           'info',
           'Q3'
         );

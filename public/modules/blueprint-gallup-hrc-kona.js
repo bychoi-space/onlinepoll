@@ -129,8 +129,8 @@ export function renderHrcEnergyBlueprint(data, { badgeMasterStatus, btnSaveBasel
           <div class="font-caption text-dim mt-4">A1-4 천장고(일반 2.6~3.0m / <strong>문화및집회시설은 건물명 검색 실측치 우선 · 미확인 시 3.5~9.5m 추정</strong>), A3-1-1 점포수(1~999 보정), A3-3-1 근로자(×2~7), A5-6/8 운영시간, D4-5-1 경유, E1-2 업무를 다양화합니다.</div>
         </div>
         <div class="assoc-rule-box mb-0">
-          <strong style="color: #8b5cf6;"><i class="fa-solid fa-signature"></i> 4. [답례품 지급] 신세계 5,000원 &amp; 8종 필체 자동 서명</strong>
-          <div class="font-caption text-dim mt-4">조사완료(100%) 시에만 [서명하기]에 진입해 <strong>신세계상품권 5,000원</strong>과 응답자 성명·연락처 <strong>8종 한글 자모 필체 서명</strong>을 저장합니다.</div>
+          <strong style="color: #8b5cf6;"><i class="fa-solid fa-signature"></i> 4. [답례품 지급] 신세계 5,000원 &amp; 50~70대 남성 8종 필체 서명</strong>
+          <div class="font-caption text-dim mt-4">조사완료(100%) 시에만 [서명하기]에 진입해 <strong>신세계상품권 5,000원</strong>과 응답자 성명·연락처 기반 <strong>8종 필체(정자체·흘려쓰기·결재 싸인·단순 약식체)</strong> 서명을 저장합니다.</div>
         </div>
       </div>
     </section>
@@ -284,7 +284,7 @@ export function renderGallupReturnFarmBlueprint(data, {
         <span class="badge-tag-tunable"><i class="fa-solid fa-signature"></i> 8종 필체 변주</span>
       </div>
       <div class="blueprint-stage-desc">
-        Page 7(<code>T3 답례품 인수증 서명</code>)의 <code>#signature_pad_Q3_1 canvas</code>에 대상자 성명 한글 자모를 베지어 곡선·필압·기울기·자간·획 굵기가 서로 다른 <strong>8가지 필체 스타일(정자체·우상향 흘림·둥근 굴림·힘찬 각진체·소폭 단아체·세로 장체·와이드 서명체·약자 연필체)</strong>과 응답자 고유 난수 시드로 그려 다른 사람이 직접 서명한 것처럼 업로드합니다.
+        Page 7(<code>T3 답례품 인수증 서명</code>)의 <code>#signature_pad_Q3_1 canvas</code>에 대상자 성명 한글 자모를 베지어 곡선·필압·기울기·자간·획 굵기가 서로 다른 <strong>8가지 필체 스타일(중장년 정자체·행서 흘려쓰기·결재 싸인체·굵은 붓펜 흘려쓰기·단순 약식체·어르신 정자체·초간단 일필 약식체·초성 강조 싸인체)</strong>과 응답자 고유 난수 시드로 그려 다른 사람이 직접 서명한 것처럼 업로드합니다.
       </div>
       <div class="p-14">
         <label class="figma-label font-bold">전자서명 필체 적용 방식</label>
