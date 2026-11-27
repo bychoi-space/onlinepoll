@@ -21,7 +21,7 @@ async function ensureMarketBzLogin(page, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       logger.info(`[MarketBz] 플랫폼 로그인 시도 (${attempt}/${maxRetries})...`);
-      await page.goto(`${MARKETBZ_BASE_URL}/loginPage?redirectUrl=%2Findex`, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await page.goto(`${MARKETBZ_BASE_URL}/loginPage?redirectUrl=%2Findex`, { waitUntil: 'load', timeout: 25000 });
       await page.waitForSelector('#username', { timeout: 10000 });
       await page.fill('#username', DEFAULT_ACCOUNT.username);
       await page.fill('#password', DEFAULT_ACCOUNT.password);
@@ -29,7 +29,7 @@ async function ensureMarketBzLogin(page, maxRetries = 3) {
 
       const successBtn = page.locator('#successButton, button:has-text("확인")').first();
       try {
-        await successBtn.waitFor({ state: 'visible', timeout: 6000 });
+        await successBtn.waitFor({ state: 'visible', timeout: 4500 });
         await successBtn.click();
       } catch (_) {}
       await sleep(1000, 1800);
@@ -140,8 +140,21 @@ export async function fetchMarketBzBusinesses({
         await page.goto(baseItem.detailUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
         await sleep(900, 1400);
 
+        const isLoggedOut = page.url().includes('loginPage') || await page.evaluate(() => {
+          return Boolean(document.body && document.body.innerHTML.includes('로그인·무료가입 후 보기'));
+        }).catch(err => {
+          console.warn('[MarketBz] 세션 점검 경고:', err.message);
+          return false;
+        });
+        if (isLoggedOut) {
+          await ensureMarketBzLogin(page, 2);
+          await page.goto(baseItem.detailUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+          await sleep(900, 1400);
+        }
+
         const detail = await page.evaluate((dynamicFields) => {
           const text = document.body ? document.body.innerText : '';
+          const fullText = document.body ? (document.body.textContent || '') : '';
           const res = {
             category: '정보통신/서비스',
             industry: '소프트웨어 및 IT',
@@ -154,32 +167,65 @@ export async function fetchMarketBzBusinesses({
             address: ''
           };
 
-          const titleEl = document.querySelector('h1, h2, .company-name');
-          if (titleEl) res.companyName = titleEl.innerText.trim();
+          const cleanTxt = (el) => {
+            if (!el) return '';
+            const clone = el.cloneNode(true);
+            clone.querySelectorAll('script, style, button, i.mbz-icon').forEach(n => n.remove());
+            return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+          };
 
-          const bizM = text.match(/사업자번호\s*\|\s*([\d-]+)/) || text.match(/사업자번호\s*([\d-]+)/);
-          if (bizM) res.bizNumber = bizM[1].trim();
+          const titleEl = document.querySelector('h1, .company-name');
+          if (titleEl) res.companyName = cleanTxt(titleEl);
 
-          const ceoM = text.match(/대표자\s*\|\s*([가-힣A-Za-z\s]+?)(?=\s*\||\n|$)/);
-          if (ceoM) res.ceoName = ceoM[1].trim();
+          const labelNodes = Array.from(document.querySelectorAll('dt, th'));
+          for (const el of labelNodes) {
+            const k = cleanTxt(el);
+            const next = el.nextElementSibling;
+            if (!k || !next) continue;
+            const v = cleanTxt(next);
+            if (!v) continue;
+            if (!res.bizNumber && k === '사업자번호') res.bizNumber = v;
+            if (!res.ceoName && (k === '대표자' || k === '대표자명') && !v.includes('*') && /^[가-힣A-Za-z]{2,10}$/.test(v)) res.ceoName = v;
+            if (!res.openingDate && (k === '설립일' || k.startsWith('설립일'))) {
+              const dm = v.match(/(\d{4}[\.\-\s/년]+\d{1,2}[\.\-\s/월]+\d{1,2})/);
+              if (dm) res.openingDate = dm[1].replace(/[년월]/g, '.').replace(/\s+/g, '').replace(/\.$/, '');
+            }
+            if (!res.subIndustry && k.startsWith('등록 산업분류')) res.subIndustry = v;
+            if (!res.phone && k.startsWith('대표전화번호')) res.phone = v;
+            if (!res.address && k.startsWith('주소(도로명)')) {
+              res.address = v.replace(/주소정보\s*갱신/g, '').replace(/\s+/g, ' ').trim();
+            }
+          }
 
-          const dateM = text.match(/설립일[^\d]*(\d{4}[년\.\-/\s]+\d{1,2}[월\.\-/\s]+\d{1,2}일?)/);
-          if (dateM) res.openingDate = dateM[1].trim();
+          if (!res.bizNumber) {
+            const bizM = fullText.match(/사업자번호\s*[:\|]?\s*([\d-]{10,12})/);
+            if (bizM) res.bizNumber = bizM[1].trim();
+          }
+          if (!res.ceoName) {
+            const ceoM = fullText.match(/대표자\s*\|\s*([가-힣A-Za-z\s]+?)(?=\s*\||\n|$)/);
+            if (ceoM && !ceoM[1].includes('*')) res.ceoName = ceoM[1].trim();
+          }
+          if (!res.openingDate) {
+            const dateM = fullText.match(/설립일[^\d]*(\d{4}[년\.\-/\s]+\d{1,2}[월\.\-/\s]+\d{1,2}일?)/);
+            if (dateM) res.openingDate = dateM[1].trim();
+          }
+          if (!res.subIndustry) {
+            const descM = fullText.match(/소재하며[,\s]+([가-힣0-9\s]+)을 영위하는/);
+            if (descM) res.subIndustry = descM[1].trim();
+          }
+          if (!res.address) {
+            const addrM = text.match(/((?:서울특별시|부산광역시|대구광역시|인천광역시|광주광역시|대전광역시|울산광역시|세종특별자치시|경기도|강원특별자치도|충청북도|충청남도|전라북도|전라남도|경상북도|경상남도|제주특별자치도)[가-힣0-9\s]+(?:구|시|군)[가-힣0-9\s]*)/);
+            if (addrM) res.address = addrM[1].replace(/주소정보\s*갱신/g, '').trim().split('\n')[0].slice(0, 50);
+          }
 
-          const descM = text.match(/소재하며[,\s]+([가-힣0-9\s]+)을 영위하는/);
-          if (descM) res.subIndustry = descM[1].trim();
-
-          const addrM = text.match(/((?:서울특별시|부산광역시|대구광역시|인천광역시|광주광역시|대전광역시|울산광역시|세종특별자치시|경기도|강원특별자치도|충청북도|충청남도|전라북도|전라남도|경상북도|경상남도|제주특별자치도)[가-힣0-9\s]+(?:구|시|군)[가-힣0-9\s]*)/);
-          if (addrM) res.address = addrM[1].replace(/주소정보\s*갱신/g, '').trim().split('\n')[0].slice(0, 50);
-
-          const indM = text.match(/(소프트웨어개발|도소매업|제조업|정보통신업|건설업|숙박음식점업|서비스업)/);
+          const indM = fullText.match(/(소프트웨어개발|도소매업|제조업|정보통신업|건설업|숙박음식점업|서비스업)/);
           if (indM) res.industry = indM[1].trim();
 
           if (dynamicFields && Array.isArray(dynamicFields)) {
             dynamicFields.forEach(fieldName => {
               const safeField = fieldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
               const regex = new RegExp(`${safeField}\\s*[:\\|]?\\s*([^\\n\\|]+)`);
-              const match = text.match(regex);
+              const match = text.match(regex) || fullText.match(regex);
               if (match) {
                 res[fieldName] = match[1].trim().slice(0, 50);
               } else {

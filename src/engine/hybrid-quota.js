@@ -56,6 +56,10 @@ function formatPhoneNumber(raw) {
 
   // 010, 031, 032, 051 등
   if (digits.length === 11) {
+    // 031-1800-5110 처럼 지역번호 뒤에 전국대표번호(15xx/16xx/18xx)가 잘못 결합된 경우 대표번호 8자리만 추출하거나 제외
+    if (!digits.startsWith('010') && /^1[568]\d\d$/.test(digits.slice(3, 7))) {
+      return null;
+    }
     return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
   } else if (digits.length === 10) {
     return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
@@ -365,16 +369,16 @@ async function ensureMarketBzLogin(page, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       logger.info(`[Step 2/2] 마켓비즈 플랫폼 인증 진행 중 (${MARKETBZ_CREDENTIALS.username}, 시도 ${attempt}/${maxRetries})...`);
-      await page.goto(MARKETBZ_LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await page.goto(MARKETBZ_LOGIN_URL, { waitUntil: 'load', timeout: 25000 });
       await page.waitForSelector('#username', { timeout: 10000 });
       await page.fill('#username', MARKETBZ_CREDENTIALS.username);
       await page.fill('#password', MARKETBZ_CREDENTIALS.password);
       await page.click('button.btn-login');
-      await page.waitForTimeout(1500);
+      await page.waitForTimeout(1800);
 
       const okBtn = page.locator('#successButton, button:has-text("확인")').first();
       try {
-        await okBtn.waitFor({ state: 'visible', timeout: 5000 });
+        await okBtn.waitFor({ state: 'visible', timeout: 4000 });
         await okBtn.click();
         await page.waitForTimeout(800);
       } catch (_) {}
@@ -644,8 +648,17 @@ export async function buildHybridOnnuriQuota({
             await page.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 18000 });
             await sleep(700, 1200);
 
-            // 만약 로그인 페이지로 리다이렉트되었다면 재로그인 후 다시 이동
-            if (page.url().includes('loginPage')) {
+            // 만약 로그인 페이지로 리다이렉트되었거나, 동시접속 등으로 세션이 해제되어 비로그인 화면('로그인·무료가입 후 보기')이 노출된 경우 즉시 재로그인 후 재조회
+            const isLoggedOutView = page.url().includes('loginPage') || await page.evaluate(() => {
+              const html = document.body ? document.body.innerHTML : '';
+              return html.includes('로그인·무료가입 후 보기');
+            }).catch(err => {
+              console.warn('[Hybrid Quota] 비로그인 상태 점검 경고:', err.message);
+              return false;
+            });
+
+            if (isLoggedOutView) {
+              logger.info(`[Hybrid Quota] 마켓비즈 세션 만료/타세션 해제 감지 ➔ 재인증 후 "${merchant.companyName}" 재조회...`);
               mbzLoggedIn = await ensureMarketBzLogin(page, 2);
               await page.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 18000 });
               await sleep(700, 1200);
@@ -653,79 +666,121 @@ export async function buildHybridOnnuriQuota({
 
             marketBzDetail = await page.evaluate((dynamicFields) => {
               const bodyText = document.body ? document.body.innerText : '';
+              const fullText = document.body ? (document.body.textContent || '') : '';
               const res = {
                 mbzIndustry: null,
                 mbzOpenDate: null,
                 mbzCeoName: null,
+                mbzFemaleBadge: false,
                 mbzAddress: null,
                 mbzRoadAddress: null,
                 mbzPhone: null
               };
 
-              const coreIdx = bodyText.indexOf('기업 핵심정보');
-              const coreText = coreIdx !== -1 ? bodyText.slice(coreIdx, coreIdx + 1200) : bodyText;
-
-              const indM = coreText.match(/등록 산업분류\s*[:\n\|]?\s*([^\n\|]+)/) ||
-                           coreText.match(/영위하는\s*([^\n,]+?)개인사업자/) ||
-                           coreText.match(/영위하는\s*([^\n,]+?)법인사업자/);
-              if (indM) {
-                const val = indM[1].trim();
-                if (val && !val.includes('메뉴') && !val.includes('로그아웃')) {
-                  res.mbzIndustry = val;
-                }
+              if (fullText.includes('여성대표자기업')) {
+                res.mbzFemaleBadge = true;
               }
 
-              const dateM = coreText.match(/설립일[^\d]*(\d{4}[\.\-\s/]\d{1,2}[\.\-\s/]\d{1,2})/);
-              if (dateM) {
-                res.mbzOpenDate = dateM[1].trim();
-              }
+              // 1) R41 신규 구조(<section class="mbz-company-entity-summary">) 및 숨김 탭(.mbz-source-stash 포함)의 모든 dt/dd, th/td 키-값 추출 (textContent 사용으로 display:none 및 .sr-only 완벽 대응)
+              const cleanTxt = (el) => {
+                if (!el) return '';
+                const clone = el.cloneNode(true);
+                clone.querySelectorAll('script, style, button, i.mbz-icon').forEach(n => n.remove());
+                return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+              };
 
-              const ceoM = coreText.match(/대표자\s*[:\n\|]?\s*([가-힣A-Za-z]{2,10})(?=\s*\||\n|$)/);
-              if (ceoM) {
-                const val = ceoM[1].trim();
-                if (!['연락처', '대표자', '서비스', '소재지', '사업자', '설립일', '등록', '기업', '기본', '핵심'].includes(val)) {
-                  res.mbzCeoName = val;
-                }
-              }
+              const labelNodes = Array.from(document.querySelectorAll('dt, th'));
+              for (const el of labelNodes) {
+                const key = cleanTxt(el);
+                const next = el.nextElementSibling;
+                if (!key || !next) continue;
+                const val = cleanTxt(next);
+                if (!val) continue;
 
-              const ths = Array.from(document.querySelectorAll('th, td, dt, dd'));
-              for (let el of ths) {
-                const txt = el.innerText.trim();
-                if (txt === '대표전화번호' || txt.startsWith('대표전화번호')) {
-                  const next = el.nextElementSibling;
-                  if (next && next.innerText.trim()) {
-                    res.mbzPhone = next.innerText.trim();
+                if (!res.mbzOpenDate && (key === '설립일' || key.startsWith('설립일'))) {
+                  const dm = val.match(/(\d{4}[\.\-\s/년]+\d{1,2}[\.\-\s/월]+\d{1,2})/);
+                  if (dm) {
+                    res.mbzOpenDate = dm[1]
+                      .replace(/[년월]/g, '.')
+                      .replace(/\s+/g, '')
+                      .replace(/\.$/, '');
                   }
                 }
-                if (txt === '주소(도로명)' || txt.startsWith('주소(도로명)')) {
-                  const next = el.nextElementSibling;
-                  if (next && next.innerText.trim()) {
-                    const spanEl = next.querySelector('span.pdt5');
-                    let addrText = spanEl ? spanEl.innerText : next.innerText;
-                    addrText = addrText.replace(/주소정보\s*갱신/g, '').replace(/\s+/g, ' ').trim();
-                    if (addrText) {
-                      res.mbzRoadAddress = addrText;
-                    }
+                if (!res.mbzCeoName && (key === '대표자' || key === '대표자명')) {
+                  if (!val.includes('*') && /^[가-힣A-Za-z]{2,10}$/.test(val) &&
+                      !['연락처', '대표자', '서비스', '소재지', '사업자', '설립일', '등록', '기업', '기본', '핵심'].includes(val)) {
+                    res.mbzCeoName = val;
+                  }
+                }
+                if (!res.mbzIndustry && (key === '등록 산업분류' || key.startsWith('등록 산업분류'))) {
+                  if (!val.includes('메뉴') && !val.includes('로그아웃')) {
+                    res.mbzIndustry = val;
+                  }
+                }
+                if (!res.mbzAddress && (key === '소재지' || key.startsWith('소재지'))) {
+                  if (!val.includes('메뉴')) {
+                    res.mbzAddress = val;
+                  }
+                }
+                if (!res.mbzPhone && (key === '대표전화번호' || key.startsWith('대표전화번호'))) {
+                  res.mbzPhone = val;
+                }
+                if (!res.mbzRoadAddress && (key === '주소(도로명)' || key.startsWith('주소(도로명)'))) {
+                  const spanEl = next.querySelector('span.pdt5');
+                  let addrText = spanEl ? cleanTxt(spanEl) : val;
+                  addrText = addrText.replace(/주소정보\s*갱신/g, '').replace(/\s+/g, ' ').trim();
+                  if (addrText) {
+                    res.mbzRoadAddress = addrText;
+                  }
+                }
+              }
+
+              // 2) 보조 정규식 폴백 (summaryEl 또는 전체 텍스트 기반)
+              const summaryEl = document.querySelector('.mbz-company-entity-summary');
+              const coreIdx = bodyText.indexOf('기업 핵심정보');
+              const coreText = summaryEl
+                ? cleanTxt(summaryEl)
+                : (coreIdx !== -1 ? bodyText.slice(coreIdx, coreIdx + 1200) : fullText.slice(0, 4000));
+
+              if (!res.mbzIndustry) {
+                const indM = coreText.match(/등록 산업분류\s*[:\n\|]?\s*([^\n\|]+)/) ||
+                             coreText.match(/영위하는\s*([^\n,]+?)개인사업자/) ||
+                             coreText.match(/영위하는\s*([^\n,]+?)법인사업자/);
+                if (indM) {
+                  const val = indM[1].trim();
+                  if (val && !val.includes('메뉴') && !val.includes('로그아웃')) {
+                    res.mbzIndustry = val;
+                  }
+                }
+              }
+
+              if (!res.mbzOpenDate) {
+                const dateM = coreText.match(/설립일[^\d]*(\d{4}[\.\-\s/]\d{1,2}[\.\-\s/]\d{1,2})/);
+                if (dateM) {
+                  res.mbzOpenDate = dateM[1].trim();
+                }
+              }
+
+              if (!res.mbzCeoName) {
+                const ceoM = coreText.match(/대표자\s*[:\n\|]?\s*([가-힣A-Za-z]{2,10})(?=\s*\||\n|$)/);
+                if (ceoM) {
+                  const val = ceoM[1].trim();
+                  if (!val.includes('*') && !['연락처', '대표자', '서비스', '소재지', '사업자', '설립일', '등록', '기업', '기본', '핵심'].includes(val)) {
+                    res.mbzCeoName = val;
                   }
                 }
               }
 
               if (!res.mbzPhone) {
-                const pMatch = bodyText.match(/대표전화번호\s*[\t\:\n]?\s*([\d-]{8,14})/);
+                const pMatch = fullText.match(/대표전화번호\s*[\t\:\n]?\s*([\d-]{8,14})/);
                 if (pMatch) res.mbzPhone = pMatch[1].trim();
-              }
-
-              const addrM = coreText.match(/소재지\s*[:\n\|]?\s*([^\n]+)/);
-              if (addrM) {
-                const val = addrM[1].trim();
-                if (val && !val.includes('메뉴')) res.mbzAddress = val;
               }
 
               if (dynamicFields && Array.isArray(dynamicFields)) {
                 dynamicFields.forEach(fieldName => {
                   const safeField = fieldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                   const regex = new RegExp(`${safeField}\\s*[:\\|]?\\s*([^\\n\\|]+)`);
-                  const match = bodyText.match(regex);
+                  const match = bodyText.match(regex) || fullText.match(regex);
                   if (match) {
                     res[fieldName] = match[1].trim().slice(0, 50);
                   } else {
@@ -812,7 +867,7 @@ export async function buildHybridOnnuriQuota({
         bizNumber: merchant.bizNumber || null,
         rawBizNumber: merchant.rawBizNumber || (merchant.bizNumber ? merchant.bizNumber.replace(/\D/g, '') : null),
         ceoName: finalCeoName,
-        ceoGender: null,
+        ceoGender: marketBzDetail.mbzFemaleBadge ? '여' : null,
         ceoAge: null,
         phone: finalPhone,
         openDate: formattedOpenDate,
@@ -826,6 +881,7 @@ export async function buildHybridOnnuriQuota({
       };
 
       delete mergedItem.mbzCeoName;
+      delete mergedItem.mbzFemaleBadge;
       delete mergedItem.mbzIndustry;
       delete mergedItem.mbzOpenDate;
       delete mergedItem.mbzAddress;
