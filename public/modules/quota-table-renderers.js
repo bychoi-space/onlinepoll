@@ -52,6 +52,7 @@ export const HRC_B11_OPTIONS = [
 
 export function renderQuotaTableHead({
   quotaTableHead,
+  isGallupAgriwork,
   isKmacKbpi,
   isGallupReturnFarm,
   isGlobalriLiteracy,
@@ -62,7 +63,28 @@ export function renderQuotaTableHead({
   isAssoc
 }) {
   if (!quotaTableHead) return;
-  if (isKmacKbpi) {
+  if (isGallupAgriwork) {
+    quotaTableHead.innerHTML = `
+      <tr>
+        <th class="th-no text-center" style="width: 44px;">
+          <input type="checkbox" id="cb-agriwork-check-all" title="현재 미완료 쿼터 전체 선택/해제" style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+        </th>
+        <th class="th-no">순번</th>
+        <th>설문구분</th>
+        <th>담당조사원 · 지역</th>
+        <th>리스트ID (고유키)</th>
+        <th>응답자 성명 (성별·생년)</th>
+        <th>대상 · 층화</th>
+        <th>재배품목 · 갤럽공식코드</th>
+        <th>평수(규모) · 수입</th>
+        <th>고용 · 근로자유형</th>
+        <th>방문일시 · GPS</th>
+        <th>연락처 · 주소</th>
+        <th class="th-status">진행 상태</th>
+        <th class="text-center" style="min-width: 112px;">개별 실행</th>
+      </tr>
+    `;
+  } else if (isKmacKbpi) {
     quotaTableHead.innerHTML = `
       <tr>
         <th class="th-no text-center kbpi-th-check">
@@ -242,6 +264,7 @@ export function renderQuotaTableHead({
 
 export function renderEmptyQuotaTableRow({
   quotaTableBody,
+  isGallupAgriwork,
   isKmacKbpi,
   isGallupReturnFarm,
   isGlobalriLiteracy,
@@ -252,14 +275,18 @@ export function renderEmptyQuotaTableRow({
   isAssoc
 }) {
   if (!quotaTableBody) return;
-  const colSpan = isKmacKbpi
-    ? 10
-    : ((isMetrix || isMetrixSeoul || isGallupReturnFarm || isGlobalriLiteracy || isHrcEnergy)
-      ? 15
-      : (isAssoc ? 11 : (isKona ? 9 : 13)));
+  const colSpan = isGallupAgriwork
+    ? 14
+    : (isKmacKbpi
+      ? 10
+      : ((isMetrix || isMetrixSeoul || isGallupReturnFarm || isGlobalriLiteracy || isHrcEnergy)
+        ? 15
+        : (isAssoc ? 11 : (isKona ? 9 : 13))));
 
   let emptyMsg = '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.';
-  if (isKmacKbpi) {
+  if (isGallupAgriwork) {
+    emptyMsg = '아직 장착된 농업고용인력 실태조사 쿼터가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 <code>quota_gallup_agriwork_2025</code>를 선택해 장착해 주세요.';
+  } else if (isKmacKbpi) {
     emptyMsg = '아직 장착된 K-BPI 조사 응답자 쿼터가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 K-BPI 쿼터를 선택해 장착해 주세요.';
   } else if (isGallupReturnFarm) {
     emptyMsg = '아직 장착된 귀농실태조사 대상자가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong> 또는 <strong>[Kstat 진행 현황 실시간 동기화]</strong> 버튼으로 선정명단을 불러와 주세요.';
@@ -284,6 +311,227 @@ export function renderEmptyQuotaTableRow({
       </td>
     </tr>
   `;
+}
+
+export function renderGallupAgriworkQuotaTable({
+  db,
+  quotaTableBody,
+  checkedAgriworkSeqs,
+  completed,
+  onReRender,
+  onSelectionChange,
+  onTriggerBatchRun,
+  onSyncPortal
+}) {
+  const tableScrollContainer = quotaTableBody.closest('.table-scroll-container');
+  let agriBar = document.getElementById('agriwork-step1-check-bar');
+  if (!agriBar && tableScrollContainer && tableScrollContainer.parentNode) {
+    agriBar = document.createElement('div');
+    agriBar.id = 'agriwork-step1-check-bar';
+    agriBar.className = 'globalri-check-toolbar';
+    tableScrollContainer.parentNode.insertBefore(agriBar, tableScrollContainer);
+  }
+
+  const isDoneFn = (i) => i.quotaStatus === 'completed' || i.status === '완료' || i.status === '조사완료';
+  const uncompletedItems = db.filter(i => !isDoneFn(i));
+  const ownerUncompleted = uncompletedItems.filter(i => i.surveySubType === 'owner');
+  const workerUncompleted = uncompletedItems.filter(i => i.surveySubType === 'worker');
+  const yangjuUncompleted = uncompletedItems.filter(i => i.surveyorId === '40878');
+  const dongducheonUncompleted = uncompletedItems.filter(i => i.surveyorId === '47837');
+  const pilotWaitItems = uncompletedItems.filter(i => i.quotaStatus === 'pilot_done' || String(i.status || '').includes('완료직전'));
+  const checkedCount = checkedAgriworkSeqs.size;
+
+  if (agriBar) {
+    agriBar.style.display = 'flex';
+    agriBar.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+        <span style="font-size: 13px; font-weight: 800; color: #15803d; margin-right: 4px;">
+          <i class="fa-solid fa-tractor"></i> 빠른 구분 선택:
+        </span>
+        <button type="button" class="globalri-quick-check-btn agriwork-quick-check-btn" data-quick-check="owner_ready">경영체 미완료 (${ownerUncompleted.length}건)</button>
+        <button type="button" class="globalri-quick-check-btn agriwork-quick-check-btn" data-quick-check="worker_ready">내국인근로자 미완료 (${workerUncompleted.length}건)</button>
+        <button type="button" class="globalri-quick-check-btn agriwork-quick-check-btn" data-quick-check="yangju_ready">양주·안재은 미완료 (${yangjuUncompleted.length}건)</button>
+        <button type="button" class="globalri-quick-check-btn agriwork-quick-check-btn" data-quick-check="dongducheon_ready">동두천·김미경 미완료 (${dongducheonUncompleted.length}건)</button>
+        <button type="button" class="globalri-quick-check-btn agriwork-quick-check-btn" data-quick-check="all_ready">미완료 전체 (${uncompletedItems.length}건)</button>
+        <button type="button" class="globalri-quick-check-btn agriwork-quick-check-btn" data-quick-check="none" style="color: #64748b;">선택 해제</button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span id="badge-agriwork-checked-count" class="badge-status ready font-bold" style="padding: 5px 12px; font-size: 12.5px;">
+          체크됨: <strong>${checkedCount}건</strong> · 직전대기: <strong>${pilotWaitItems.length}건</strong> · 완료: <strong>${completed}건</strong>
+        </span>
+        <button type="button" id="btn-agriwork-top-sync" class="btn-pill btn-pill-secondary btn-pill-small font-bold">
+          <i class="fa-solid fa-arrows-rotate text-primary-color"></i> 포털 현황 동기화
+        </button>
+        <button type="button" id="btn-agriwork-jump-step2" class="btn-pill btn-pill-primary btn-pill-small font-bold">
+          <i class="fa-solid fa-sliders"></i> ↓ 자동화 정책 (STEP 2)
+        </button>
+        <button type="button" id="btn-agriwork-top-batch-run" class="btn-pill btn-pill-success btn-pill-small font-bold">
+          <i class="fa-solid fa-rocket"></i> 체크한 대상 (${checkedCount}건) 일괄 실행
+        </button>
+      </div>
+    `;
+  }
+
+  quotaTableBody.innerHTML = db.map((item, idx) => {
+    const seq = Number(item.index || item.seq || (idx + 1));
+    const st = item.quotaStatus || 'ready';
+    const isDone = isDoneFn(item);
+    const isPilotWait = (st === 'pilot_done' || String(item.status || '').includes('완료직전'));
+    const isRowRunning = (st === 'running');
+    const isChecked = checkedAgriworkSeqs.has(seq);
+    const isWorker = item.surveySubType === 'worker';
+
+    const subBadge = isWorker
+      ? `<span class="badge-status pilot font-bold" style="padding: 2px 8px; background: #ede9fe; color: #6d28d9;">내국인 근로자</span>`
+      : `<span class="badge-status success font-bold" style="padding: 2px 8px;">경영체 설문</span>`;
+
+    let statusHtml = `<span class="badge-status ready"><i class="fa-regular fa-clock"></i> ${escapeHtml(item.status || '대기')}</span>`;
+    if (isDone) {
+      statusHtml = `<span class="badge-status success"><i class="fa-solid fa-check-double"></i> 완료 (100%)</span>`;
+    } else if (isRowRunning) {
+      statusHtml = `<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 진행중 (${escapeHtml(item.progress || '')})</span>`;
+    } else if (isPilotWait) {
+      statusHtml = `<span class="badge-status pilot"><i class="fa-solid fa-flag-checkered"></i> 완료직전 대기</span>`;
+    } else if (st === 'error') {
+      statusHtml = `<span class="badge-status error" title="${escapeHtml(item.error || '')}">오류</span>`;
+    }
+
+    const scaleText = isWorker
+      ? `<span class="text-dim font-caption">${escapeHtml(item.employerName || '')} 농장</span>`
+      : `<strong>${escapeHtml(item.areaPyeong || '-')}</strong>평 · <strong>${escapeHtml(item.incomeManwon || '-')}</strong>만원`;
+
+    const empBadge = !item.hasEmployed
+      ? `<span class="badge-status ready" style="padding: 2px 7px;">고용없음</span>`
+      : `<span class="badge-tag-tunable" style="padding: 2px 7px;">${escapeHtml(item.workerTypeLabel || '일용근로자')}</span>`;
+
+    const gpsStr = (item.gpsLat && item.gpsLng)
+      ? `${Number(item.gpsLat).toFixed(4)}, ${Number(item.gpsLng).toFixed(4)}`
+      : '-';
+
+    let actionHtml = '';
+    if (isDone) {
+      actionHtml = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45; cursor:not-allowed;">제출완료</button>`;
+    } else if (isRowRunning) {
+      actionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small" disabled><i class="fa-solid fa-spinner fa-spin"></i> 진행중</button>`;
+    } else {
+      actionHtml = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-row-pilot-agriwork" data-seq="${seq}" title="${escapeHtml(item.name || '')} (${escapeHtml(item.uid || '')}) 단건 실행">${isPilotWait ? '↻ 마무리실행' : '▷ 단건실행'}</button>`;
+    }
+
+    return `
+      <tr data-row-idx="${seq}" class="${isChecked ? 'globalri-row-checked' : ''}">
+        <td class="text-center">
+          <input type="checkbox" class="cb-agriwork-quota-row" data-seq="${seq}" ${isChecked ? 'checked' : ''} ${isDone ? 'disabled' : ''} style="width: 17px; height: 17px; cursor: pointer; accent-color: #2563eb;" />
+        </td>
+        <td class="text-center font-mono font-bold">${seq}</td>
+        <td class="text-center">${subBadge}</td>
+        <td class="text-center">
+          <strong>${escapeHtml(item.surveyorName || '-')}</strong><span class="font-mono text-dim" style="font-size:11px;">(${escapeHtml(item.surveyorId || '')})</span>
+          <div class="font-caption text-dim">${escapeHtml(item.sigungu || '')} ${escapeHtml(item.eupMyeon || '')}</div>
+        </td>
+        <td class="text-center font-mono font-bold text-primary-color">
+          ${escapeHtml(item.listId || '-')}
+          ${isWorker ? `<div class="font-caption" style="color:#6d28d9;">(${escapeHtml(item.uid)})</div>` : ''}
+        </td>
+        <td class="text-center">
+          <strong>${escapeHtml(item.name || '-')}</strong>
+          <div class="font-caption text-dim">${escapeHtml(item.gender || '-')} · ${escapeHtml(String(item.birthYear || '-'))}년생</div>
+        </td>
+        <td class="text-center">
+          <span class="font-bold">${escapeHtml(item.entityType || '농가')}</span>
+          <div class="font-caption text-dim">${escapeHtml(item.strata || '-')}</div>
+        </td>
+        <td>
+          <strong>${escapeHtml(item.cropName || '-')}</strong>
+          <div class="font-caption font-mono text-primary-color">${escapeHtml(item.gallupItemLabel || '-')}</div>
+        </td>
+        <td class="text-center">${scaleText}</td>
+        <td class="text-center">${empBadge}</td>
+        <td class="text-center font-mono" style="font-size: 11.5px;">
+          <div>${escapeHtml(item.visitDate || '')} ${escapeHtml(item.visitTime || '')}</div>
+          <div class="text-dim">${escapeHtml(gpsStr)}</div>
+        </td>
+        <td style="max-width: 210px;">
+          <div class="font-mono font-bold" style="font-size:12px;">${escapeHtml(item.phone || '-')}</div>
+          <div class="font-caption text-dim" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(item.address || '')}">${escapeHtml(item.address || '-')}</div>
+        </td>
+        <td class="text-center">${statusHtml}</td>
+        <td class="text-center">${actionHtml}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const cbAll = document.getElementById('cb-agriwork-check-all');
+  const uncompletedSeqs = uncompletedItems.map((item, idx) => Number(item.index || item.seq || (idx + 1)));
+  if (cbAll) {
+    cbAll.checked = uncompletedSeqs.length > 0 && uncompletedSeqs.every(s => checkedAgriworkSeqs.has(s));
+    cbAll.onchange = () => {
+      if (cbAll.checked) {
+        uncompletedSeqs.forEach(s => checkedAgriworkSeqs.add(s));
+      } else {
+        checkedAgriworkSeqs.clear();
+      }
+      if (typeof onReRender === 'function') onReRender(db);
+    };
+  }
+
+  quotaTableBody.querySelectorAll('.cb-agriwork-quota-row').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const seq = Number(cb.getAttribute('data-seq'));
+      if (cb.checked) checkedAgriworkSeqs.add(seq);
+      else checkedAgriworkSeqs.delete(seq);
+      const tr = cb.closest('tr');
+      if (tr) tr.classList.toggle('globalri-row-checked', cb.checked);
+      const badgeEl = document.getElementById('badge-agriwork-checked-count');
+      if (badgeEl) {
+        badgeEl.innerHTML = `체크됨: <strong>${checkedAgriworkSeqs.size}건</strong> · 직전대기: <strong>${pilotWaitItems.length}건</strong> · 완료: <strong>${completed}건</strong>`;
+      }
+      const topBatchBtn = document.getElementById('btn-agriwork-top-batch-run');
+      if (topBatchBtn) {
+        topBatchBtn.innerHTML = `<i class="fa-solid fa-rocket"></i> 체크한 대상 (${checkedAgriworkSeqs.size}건) 일괄 실행`;
+      }
+      if (typeof onSelectionChange === 'function') onSelectionChange();
+    });
+  });
+
+  if (agriBar) {
+    agriBar.querySelectorAll('.agriwork-quick-check-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-quick-check');
+        checkedAgriworkSeqs.clear();
+        if (mode === 'owner_ready') {
+          ownerUncompleted.forEach(i => checkedAgriworkSeqs.add(Number(i.index || i.seq)));
+        } else if (mode === 'worker_ready') {
+          workerUncompleted.forEach(i => checkedAgriworkSeqs.add(Number(i.index || i.seq)));
+        } else if (mode === 'yangju_ready') {
+          yangjuUncompleted.forEach(i => checkedAgriworkSeqs.add(Number(i.index || i.seq)));
+        } else if (mode === 'dongducheon_ready') {
+          dongducheonUncompleted.forEach(i => checkedAgriworkSeqs.add(Number(i.index || i.seq)));
+        } else if (mode === 'all_ready') {
+          uncompletedItems.forEach(i => checkedAgriworkSeqs.add(Number(i.index || i.seq)));
+        }
+        if (typeof onReRender === 'function') onReRender(db);
+        if (typeof onSelectionChange === 'function') onSelectionChange();
+      });
+    });
+
+    const topSyncBtn = document.getElementById('btn-agriwork-top-sync');
+    if (topSyncBtn && typeof onSyncPortal === 'function') {
+      topSyncBtn.addEventListener('click', () => onSyncPortal());
+    }
+
+    const jumpBtn = document.getElementById('btn-agriwork-jump-step2');
+    if (jumpBtn) {
+      jumpBtn.addEventListener('click', () => {
+        const sec = document.getElementById('section-master-blueprint');
+        if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+
+    const topBatchBtn = document.getElementById('btn-agriwork-top-batch-run');
+    if (topBatchBtn && typeof onTriggerBatchRun === 'function') {
+      topBatchBtn.addEventListener('click', () => onTriggerBatchRun());
+    }
+  }
 }
 
 export function renderGallupQuotaTable({

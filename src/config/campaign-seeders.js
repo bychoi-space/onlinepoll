@@ -31,7 +31,7 @@ export function seedInitialCampaigns({
             needSave = true;
           }
         });
-        if (camp.status === 'completed' && (camp.surveyType === 'globalri_literacy' || camp.surveyType === 'gallup_return_farm' || camp.surveyType === 'kmac_kbpi')) {
+        if (camp.status === 'completed' && (camp.surveyType === 'globalri_literacy' || camp.surveyType === 'gallup_return_farm' || camp.surveyType === 'gallup_agriwork' || camp.surveyType === 'kmac_kbpi')) {
           const hasUnrunReady = camp.quotaDatabase.some(q => !q.quotaStatus || q.quotaStatus === 'ready');
           if (hasUnrunReady) {
             camp.status = 'ready';
@@ -998,6 +998,87 @@ export function seedInitialCampaigns({
       }
     } catch (kbpiErr) {
       console.warn('[CampaignSeeder] K-BPI 캠페인 시드 경고:', kbpiErr.message);
+    }
+
+    // [한국갤럽] 2025년 기준 농업고용인력 실태조사 (양주 안재은 40878 · 동두천 김미경 47837 = 경영체 88건 + 내국인 근로자 39건, 총 127건) 자동 시드
+    try {
+      const agriCampId = 'camp_gallup_agriwork_2025';
+      const agriFile = 'quota_gallup_agriwork_2025.json';
+      const agriPath = path.join(quotasDir, agriFile);
+      if (fs.existsSync(agriPath)) {
+        const agriJson = JSON.parse(fs.readFileSync(agriPath, 'utf-8'));
+        const agriList = (agriJson.data || []).map((item, idx) => ({
+          ...item,
+          index: item.index || idx + 1,
+          seq: item.seq || idx + 1,
+          quotaStatus: item.quotaStatus || (String(item.status || '').includes('완료') ? 'completed' : 'ready')
+        }));
+        if (agriList.length > 0) {
+          const existingAgri = CampaignStore.getCampaignById(agriCampId);
+          if (!existingAgri) {
+            CampaignStore.createCampaign({
+              id: agriCampId,
+              title: `[한국갤럽] 2025년 기준 농업고용인력 실태조사 - 양주 안재은 · 동두천 김미경 (총 ${agriList.length}건)`,
+              description: '한국갤럽 G-CAPI V3 · 경영체 설문(20260168, 88건) + 내국인 근로자 부수 설문(20260193, 39건) 통합 · 시트 기초값 정합 시나리오 · 기존 서명 보존 및 8종 필체 전자서명 · 읍면동 GPS 주입 · 최종 [조사완료] 100% 제출 지원',
+              quotaType: 'b2b',
+              surveyType: 'gallup_agriwork',
+              loginId: '40878,47837',
+              surveyorName: '안재은·김미경',
+              googleSheetUrl: 'https://docs.google.com/spreadsheets/d/1ONQZjGIa2xIopaMbYS-27B_DMHBH8MlOK7tdDTC6Gz0/edit?gid=481207785#gid=481207785',
+              quotaSourceFile: agriFile,
+              hasMasterBlueprint: true,
+              guidelineConfig: {
+                surveyUrl: 'https://agriwork.gallup.co.kr/survey/login.asp',
+                topic: '2025년 기준 농업고용인력 실태조사',
+                engine: 'gallup_agriwork',
+                headless: true
+              },
+              quotaDatabase: agriList
+            });
+          } else if (!Array.isArray(existingAgri.quotaDatabase) || existingAgri.quotaDatabase.length === 0) {
+            CampaignStore.updateCampaign(agriCampId, {
+              quotaDatabase: agriList,
+              quotaSourceFile: agriFile,
+              hasMasterBlueprint: true
+            });
+          } else {
+            let agriNeedUpdate = false;
+            const existingByUid = new Map(existingAgri.quotaDatabase.map(q => [String(q.uid || q.id || '').trim(), q]));
+            for (const seedItem of agriList) {
+              const uidKey = String(seedItem.uid || seedItem.id || '').trim();
+              const target = existingByUid.get(uidKey);
+              if (!target) {
+                const nextSeq = existingAgri.quotaDatabase.length + 1;
+                existingAgri.quotaDatabase.push({ ...seedItem, index: nextSeq, seq: nextSeq });
+                agriNeedUpdate = true;
+              } else {
+                // 정제된 주소 및 갤럽 공식 코드 보강 (런타임 완료 상태는 100% 보존)
+                for (const syncK of ['address', 'roadAddress', 'gallupItemLabel', 'gallupItemCode', 'gallupItemEtcText', 'gpsLat', 'gpsLng']) {
+                  if (seedItem[syncK] !== undefined && target[syncK] !== seedItem[syncK]) {
+                    target[syncK] = seedItem[syncK];
+                    agriNeedUpdate = true;
+                  }
+                }
+                if (seedItem.quotaStatus === 'completed' && target.quotaStatus !== 'completed') {
+                  target.quotaStatus = 'completed';
+                  target.status = '완료';
+                  target.progress = '100%';
+                  agriNeedUpdate = true;
+                }
+              }
+            }
+            if (agriNeedUpdate) {
+              CampaignStore.updateCampaign(agriCampId, {
+                quotaDatabase: existingAgri.quotaDatabase,
+                quotaSourceFile: existingAgri.quotaSourceFile || agriFile,
+                hasMasterBlueprint: true
+              });
+            }
+          }
+        }
+      }
+    } catch (agriErr) {
+      console.warn('[CampaignSeeder] 농업고용인력 캠페인 시드 경고:', agriErr.message);
     }
   } catch (err) {
     console.warn('[CampaignSeeder] 초기 캠페인 시드 처리 경고:', err.message);

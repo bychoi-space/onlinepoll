@@ -54,6 +54,8 @@ const filesToCheck = [
   'src/engine/persona-builder.js',
   'src/engine/browser.js',
   'src/engine/kona-runner.js',
+  'src/engine/gallup-agriwork-runner.js',
+  'scripts/build_gallup_agriwork_quota.js',
   'src/ai/persona.js',
   'src/ai/decision.js'
 ];
@@ -885,4 +887,56 @@ await import('../public/kbpi-report.js');
 await new Promise(r => setTimeout(r, 30));
 console.log('✅ [추가 검증] K-BPI 실시간 웹 응답 리포트(Zero-Inline-Style · 공식 코드북 533종 · 문12 형용사 복원 · 모의 DOM 렌더링) 100% 통과');
 
-
+// 한국갤럽 2025년 기준 농업고용인력 실태조사 (gallup_agriwork) 검증
+const { readFileSync } = await import('fs');
+const { join: pathJoin } = await import('path');
+const agriRunnerMod = await import('../src/engine/gallup-agriwork-runner.js');
+const agriBpMod = await import('../public/modules/blueprint-gallup-hrc-kona.js');
+const agriQuotaRaw = JSON.parse(readFileSync(pathJoin(process.cwd(), 'data', 'quotas', 'quota_gallup_agriwork_2025.json'), 'utf-8'));
+const agriRows = agriQuotaRaw.data || [];
+if (
+  typeof agriRunnerMod.runGallupAgriworkSurvey !== 'function' ||
+  typeof agriRunnerMod.syncGallupAgriworkStatuses !== 'function' ||
+  agriRows.length !== 127 ||
+  agriRows.filter(r => r.surveySubType === 'owner').length !== 88 ||
+  agriRows.filter(r => r.surveySubType === 'worker').length !== 39
+) {
+  throw new Error(`gallup_agriwork quota/runner check failed: len=${agriRows.length}`);
+}
+if (agriRunnerMod.cleanAgriworkAddress('경기도 양주시 남면 삼일로 100 (박정용(자):010-8869-8754)').includes('010')) {
+  throw new Error('cleanAgriworkAddress failed to strip nested phone memo');
+}
+const agriAxes = segMod.resolveSurveySegmentAxes('gallup_agriwork', agriRows);
+if (agriAxes.length < 4 || agriAxes[0].id !== 'surveyor_subtype_worker') {
+  throw new Error(`gallup_agriwork segment axes check failed: ${JSON.stringify(agriAxes)}`);
+}
+const agriBpContainer = makeEl('agri-bp-test');
+agriBpMod.renderGallupAgriworkBlueprint(
+  { surveyType: 'gallup_agriwork', policy: { submitComplete: true, safetyGuard: false } },
+  {
+    getCurrentCampaign: () => ({ surveyType: 'gallup_agriwork', quotaDatabase: agriRows }),
+    checkedAgriworkSeqs: new Set([1, 2]),
+    badgeMasterStatus: badgeEl,
+    btnSaveBaseline: saveBtnEl,
+    blueprintStageGrid: agriBpContainer
+  }
+);
+const agriTbody = makeEl('agri-tbody-test');
+const agriMixedSample = [
+  ...agriRows.filter(r => r.quotaStatus === 'completed').slice(0, 2),
+  ...agriRows.filter(r => r.quotaStatus === 'ready').slice(0, 3)
+];
+quotaRenderers.renderGallupAgriworkQuotaTable({
+  db: agriMixedSample,
+  quotaTableBody: agriTbody,
+  checkedAgriworkSeqs: new Set([1]),
+  completed: 19,
+  onReRender: () => {},
+  onSelectionChange: () => {},
+  onTriggerBatchRun: () => {},
+  onSyncPortal: () => {}
+});
+if (!agriBpContainer.innerHTML.includes('20260168') || !agriTbody.innerHTML.includes('btn-row-pilot-agriwork') || !agriTbody.innerHTML.includes('제출완료')) {
+  throw new Error('gallup_agriwork blueprint/table mock DOM render failed');
+}
+console.log('✅ [추가 검증] 2025년 농업고용인력 실태조사(경영체 88 + 내국인근로자 39 = 127건 · 구분자 4축 · 모의 DOM) 100% 통과');

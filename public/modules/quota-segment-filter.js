@@ -86,6 +86,44 @@ export function resolveSurveySegmentAxes(surveyType = '', db = []) {
     ];
   }
 
+  if (surveyType === 'gallup_agriwork') {
+    return [
+      {
+        id: 'surveyor_subtype_worker',
+        label: '조사원 · 설문구분 · 근로자유형별 (권장)',
+        shortLabel: '조사원·구분·고용',
+        extractor: (it) => {
+          const sv = it.surveyorId === '47837' ? '김미경(동두천)' : '안재은(양주)';
+          const sub = it.surveySubType === 'worker' ? '내국인근로자' : '경영체';
+          const wt = it.workerTypeLabel || it.employedLabel || '고용없음';
+          return `${sv} · ${sub} · ${wt}`;
+        }
+      },
+      {
+        id: 'subtype_surveyor',
+        label: '설문구분 · 담당 조사원별 (경영체 / 내국인근로자)',
+        shortLabel: '설문구분·조사원',
+        extractor: (it) => {
+          const sv = it.surveyorId === '47837' ? '김미경(동두천)' : '안재은(양주)';
+          const sub = it.surveySubType === 'worker' ? '내국인 근로자 설문' : '경영체 설문';
+          return `${sub} - ${sv}`;
+        }
+      },
+      {
+        id: 'strata_group',
+        label: '층화(재배품목군 · 축산)별',
+        shortLabel: '층화·품목군',
+        extractor: (it) => String(it.strata || '기타품목').trim()
+      },
+      {
+        id: 'sigungu_eup',
+        label: '시군구 · 읍면동별',
+        shortLabel: '지역(읍면동)',
+        extractor: (it) => `${it.sigungu || '양주시'} · ${it.eupMyeon || '기타'}`
+      }
+    ];
+  }
+
   if (surveyType === 'gallup_return_farm') {
     return [
       {

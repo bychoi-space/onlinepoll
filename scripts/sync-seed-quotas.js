@@ -48,15 +48,15 @@ function mergeQuotaItem(prev, remoteItem) {
   const isEitherDone =
     prev.quotaStatus === 'completed' ||
     remoteItem.quotaStatus === 'completed' ||
-    String(prev.status || '').includes('완료') ||
-    String(remoteItem.status || '').includes('완료');
+    (!/직전|대기/.test(String(prev.status || '')) && String(prev.status || '').includes('완료')) ||
+    (!/직전|대기/.test(String(remoteItem.status || '')) && String(remoteItem.status || '').includes('완료'));
 
   const isPrevSafeWait =
-    /98%|99%/.test(String(prev.status || '')) ||
-    /98%|99%/.test(String(prev.quotaStatus || ''));
+    /98%|99%|완료직전/.test(String(prev.status || '')) ||
+    /98%|99%|pilot_done/.test(String(prev.quotaStatus || ''));
   const isRemSafeWait =
-    /98%|99%/.test(String(remoteItem.status || '')) ||
-    /98%|99%/.test(String(remoteItem.quotaStatus || ''));
+    /98%|99%|완료직전/.test(String(remoteItem.status || '')) ||
+    /98%|99%|pilot_done/.test(String(remoteItem.quotaStatus || ''));
   const isSafeWait = isPrevSafeWait || isRemSafeWait;
 
   const resolvedStatus = isEitherDone

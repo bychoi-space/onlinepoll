@@ -68,6 +68,7 @@ async function initQuotaDetailPage() {
     if (isAssocQuota()) return 'kstat_assoc';
     const metaStr = `${originalQuota?.surveyType || ''} ${originalQuota?.type || ''} ${fileName || ''} ${originalQuota?.title || ''}`.toLowerCase();
     const sample = currentData[0] || {};
+    if (metaStr.includes('agriwork') || metaStr.includes('농업고용') || sample.surveySubType !== undefined) return 'gallup_agriwork';
     if (metaStr.includes('hrc') || metaStr.includes('에너지') || sample.buildingName !== undefined || sample.selectionType !== undefined) return 'hrc_energy';
     if (metaStr.includes('globalri') || metaStr.includes('문해') || sample.lid !== undefined || sample.memberUid !== undefined) return 'globalri_literacy';
     if (metaStr.includes('gallup') || metaStr.includes('귀농') || sample.eupMyeon !== undefined) return 'gallup_return_farm';
@@ -87,7 +88,7 @@ async function initQuotaDetailPage() {
     return [
       item.companyName, item.buildingName, item.memberName, item.name,
       item.industry, item.marketType, item.selectionType, item.ageGroupLabel,
-      item.ceoName, item.phone, item.bizNumber, item.uid, item.lid, item.resid, item.id, item.idx,
+      item.ceoName, item.phone, item.bizNumber, item.uid, item.lid, item.resid, item.id, item.idx, item.listId, item.cropName,
       item.handledItems, item.mainProducts, item.address, item.eupMyeon, item.surveyorId, item.surveyorName
     ].some(v => String(v || '').toLowerCase().includes(term));
   }
@@ -235,6 +236,7 @@ async function initQuotaDetailPage() {
 
     if (nonKstat) {
       const schemaLabels = {
+        gallup_agriwork: '한국갤럽 농업고용인력 실태조사 표본',
         hrc_energy: '한국리서치 에너지총조사 표본',
         globalri_literacy: '글로벌리서치 성인문해 표본',
         gallup_return_farm: '한국갤럽 귀농실태조사 표본',

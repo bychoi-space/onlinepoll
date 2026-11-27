@@ -322,3 +322,197 @@ export function renderGallupReturnFarmBlueprint(data, {
   }
 }
 
+export function renderGallupAgriworkBlueprint(data, {
+  getCurrentCampaign,
+  checkedAgriworkSeqs,
+  badgeMasterStatus,
+  btnSaveBaseline,
+  blueprintStageGrid,
+  triggerBatchRun,
+  onSyncPortal,
+  onToggleSafetyGuard,
+  hasCampaignContext: explicitHasContext,
+  quotaCount: explicitQuotaCount
+}) {
+  const currentCampaign = typeof getCurrentCampaign === 'function' ? getCurrentCampaign() : null;
+  const hasCampaignContext = explicitHasContext !== undefined ? explicitHasContext : Boolean(currentCampaign);
+  const quotaCount = explicitQuotaCount !== undefined ? explicitQuotaCount : (currentCampaign?.quotaDatabase?.length || 0);
+  const bpSection = document.getElementById('section-master-blueprint');
+  if (bpSection && (!hasCampaignContext || quotaCount > 0)) {
+    bpSection.classList.remove('hidden');
+    bpSection.style.display = 'block';
+  }
+
+  const groupNav = document.querySelector('.blueprint-group-nav-container');
+  if (groupNav) groupNav.style.display = 'none';
+  const presetGroup = document.querySelector('.blueprint-preset-group');
+  if (presetGroup) presetGroup.style.display = 'none';
+  const tplPicker = document.querySelector('.blueprint-template-picker');
+  if (tplPicker) tplPicker.style.display = 'none';
+  const legendWrap = document.querySelector('.blueprint-legend-inline');
+  if (legendWrap) legendWrap.style.display = 'none';
+
+  const titleEl = document.querySelector('#section-master-blueprint .step-card-title');
+  if (titleEl) titleEl.textContent = '2025년 기준 농업고용인력 실태조사 (경영체 + 내국인 근로자) · 시트 정합 시나리오 & 자동완주 정책';
+
+  const subtitleEl = document.querySelector('#section-master-blueprint .blueprint-header-subtitle');
+  if (subtitleEl) subtitleEl.textContent = '마스터 구글시트 기초값(방문일시·성명·생년·경력·평수·수입·품목·고용유형) 100% 정합 시나리오, 현장 기존서명 보존 + 8종 전자서명 자동생성, 포털 2계정(안재은·김미경) 연동 정책입니다.';
+
+  const pol = data.policy || currentCampaign?.gallupAgriworkPolicy || currentCampaign?.masterBaseline?.policy || {};
+  const isFullSubmit = pol.safetyGuard !== true && pol.submitComplete !== false;
+
+  if (badgeMasterStatus) {
+    badgeMasterStatus.innerHTML = isFullSubmit
+      ? '<i class="fa-solid fa-check-double"></i> 시트 정합 시나리오 · 기존서명 보존 · 최종 [조사완료] 100% 제출 활성'
+      : '<i class="fa-solid fa-flag-checkered"></i> 시트 정합 시나리오 · 기존서명 보존 · Page LAST 완료직전 대기 활성';
+    badgeMasterStatus.className = 'badge-status badge-blueprint ready';
+  }
+
+  if (btnSaveBaseline) {
+    btnSaveBaseline.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> 농업고용인력 자동화 정책 저장';
+  }
+
+  if (!blueprintStageGrid) return;
+  const qDb = currentCampaign?.quotaDatabase || [];
+  const ownerTotal = qDb.filter(q => q.surveySubType === 'owner').length;
+  const ownerDone = qDb.filter(q => q.surveySubType === 'owner' && (q.quotaStatus === 'completed' || q.status === '완료')).length;
+  const workerTotal = qDb.filter(q => q.surveySubType === 'worker').length;
+  const workerDone = qDb.filter(q => q.surveySubType === 'worker' && (q.quotaStatus === 'completed' || q.status === '완료')).length;
+  const checkedCount = checkedAgriworkSeqs ? checkedAgriworkSeqs.size : 0;
+  const gsheetUrl = data.googleSheetUrl || currentCampaign?.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1ONQZjGIa2xIopaMbYS-27B_DMHBH8MlOK7tdDTC6Gz0/edit?gid=481207785#gid=481207785';
+
+  blueprintStageGrid.innerHTML = `
+    <section class="blueprint-card full-width-card globalri-step2-target-banner">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <span class="blueprint-step-pill" style="background: #dcfce7; color: #15803d; font-weight: 800;">
+            <i class="fa-solid fa-tractor"></i> 한국갤럽 G-CAPI V3 (경영체 20260168 · 내국인근로자 20260193)
+          </span>
+          <strong style="font-size: 15px; color: #0f172a; margin-left: 8px;">
+            경영체 ${ownerTotal}건(완료 ${ownerDone}/미완료 ${ownerTotal - ownerDone}) + 내국인 근로자 ${workerTotal}건(완료 ${workerDone}/미완료 ${workerTotal - workerDone}) · 체크됨: <span style="color: #2563eb;">${checkedCount}건</span>
+          </strong>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" id="btn-agriwork-step2-sync" class="btn-pill btn-pill-primary font-bold" style="padding: 9px 15px; font-size: 13px;">
+            <i class="fa-solid fa-arrows-rotate"></i> 포털(안재은·김미경) 실시간 현황 동기화
+          </button>
+          <button type="button" id="btn-agriwork-step2-batch" class="btn-pill btn-pill-success font-bold" style="padding: 9px 18px; font-size: 13.5px;">
+            <i class="fa-solid fa-rocket"></i> 🚀 체크한 대상 (${checkedCount}건) ${isFullSubmit ? '100% 조사완료' : '완료직전 대기'} 일괄 실행
+          </button>
+          <a href="${escapeHtml(gsheetUrl)}" target="_blank" rel="noopener noreferrer" class="btn-pill btn-pill-secondary font-bold" style="padding: 9px 15px; font-size: 13px; text-decoration: none;">
+            <i class="fa-solid fa-table text-success"></i> 마스터 구글 시트 열기
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="blueprint-card">
+      <div class="blueprint-card-header">
+        <div class="blueprint-card-title-group">
+          <span class="blueprint-step-pill">규칙 1 · 완료 제출 모드</span>
+          <h3 class="blueprint-stage-title">1. 최종 [조사완료] 100% 제출 vs 완료 직전(Page LAST) 대기</h3>
+        </div>
+        <span class="badge-status ${isFullSubmit ? 'success' : 'pilot'}">
+          <i class="fa-solid ${isFullSubmit ? 'fa-check-double' : 'fa-pause'}"></i> ${isFullSubmit ? '100% 최종완료' : 'Page LAST 대기'}
+        </span>
+      </div>
+      <div class="blueprint-stage-desc">
+        <code>Page LAST</code>에서 성명·연락처·주소 입력 및 <code>ajax/phoneChk.asp</code> 중복 검증 통과 후, <code>moveLast()</code> ➔ <code>moveEnd()</code>(GPS 주입)까지 실행하고 포털(<code>main.asp</code>) 완료 반영을 실측 검증합니다.
+      </div>
+      <div class="p-14">
+        <label class="figma-label font-bold">완료 처리 방식</label>
+        <select id="sel-agriwork-submit-mode" class="figma-select w-full">
+          <option value="submit_complete" ${isFullSubmit ? 'selected' : ''}>최종 [조사완료] 버튼까지 클릭하여 100% 제출 완료 처리 (승인됨)</option>
+          <option value="stop_before_submit" ${!isFullSubmit ? 'selected' : ''}>Page LAST (연락처 검증 완료) 상태에서 제출 직전 안전 대기 (99%)</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="blueprint-card">
+      <div class="blueprint-card-header">
+        <div class="blueprint-card-title-group">
+          <span class="blueprint-step-pill">규칙 2 · 서명·기입력 보존</span>
+          <h3 class="blueprint-stage-title">2. 현장 기수집 서명·응답 보존 및 8종 한글 필체 자동서명</h3>
+        </div>
+        <span class="badge-tag-tunable"><i class="fa-solid fa-signature"></i> 보존 + 자동서명</span>
+      </div>
+      <div class="blueprint-stage-desc">
+        현장에서 이미 받아둔 개인정보 동의서명(<code>Z1/P2</code>)·문1~문2 응답은 100% 원본 보존하고, 비어 있는 서명 패드(동의서 및 답례품 수령증 <code>MZ1/SIGN</code>)에만 8종 필체 한글 전자서명을 생성·업로드(<code>signsave_N.asp</code>)합니다.
+      </div>
+      <div class="p-14">
+        <label class="figma-label font-bold">기입력 문항 및 서명 보존 정책</label>
+        <select id="sel-agriwork-preserve-mode" class="figma-select w-full">
+          <option value="preserve_all" ${pol.preserveExistingSignatures !== false ? 'selected' : ''}>현장 기수집 서명·응답 100% 보존 + 미서명 캔버스만 자동 생성 (필수 권장)</option>
+          <option value="overwrite_inputs" ${pol.preserveExistingInputs === false ? 'selected' : ''}>기존 서명만 보존하고 일반 문항은 시트 시나리오로 재보정</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="blueprint-card">
+      <div class="blueprint-card-header">
+        <div class="blueprint-card-title-group">
+          <span class="blueprint-step-pill">규칙 3 · 고용·근로자 시나리오</span>
+          <h3 class="blueprint-stage-title">3. 시트 19열 미기재 '고용 있음' 농가의 기본 근로자 유형</h3>
+        </div>
+        <span class="badge-status success"><i class="fa-solid fa-users-gear"></i> 정합 시나리오</span>
+      </div>
+      <div class="blueprint-stage-desc">
+        구글시트 17열이 <code>있음</code>이고 19열(상근/임시/일용)이 명시된 39건은 경영체 설문 + 내국인 근로자 부수 설문(통합 페르소나 DB 1,138명 비중복 배정)을 모두 수행하며, 19열이 비어 있는 '고용 있음' 농가는 아래 기본 유형으로 경영체 고용 문항(문A6~A9)을 완주합니다.
+      </div>
+      <div class="p-14">
+        <label class="figma-label font-bold">19열 공란 '고용 있음' 경영체의 기본 근로자 유형</label>
+        <select id="sel-agriwork-blank-worker" class="figma-select w-full">
+          <option value="3" ${String(pol.defaultBlankWorkerType || '3') === '3' ? 'selected' : ''}>일용근로자 (내국인 · AA6_1_5, 권장)</option>
+          <option value="2" ${String(pol.defaultBlankWorkerType || '3') === '2' ? 'selected' : ''}>임시근로자 (내국인 · AA6_1_3)</option>
+          <option value="1" ${String(pol.defaultBlankWorkerType || '3') === '1' ? 'selected' : ''}>상용근로자 (내국인 · AA6_1_1)</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="blueprint-card">
+      <div class="blueprint-card-header">
+        <div class="blueprint-card-title-group">
+          <span class="blueprint-step-pill">규칙 4 · 품목코드·농작업·인력부족</span>
+          <h3 class="blueprint-stage-title">4. 75종 작물·축산 공식코드 매핑 및 인력수급 차질(문A10)</h3>
+        </div>
+        <span class="badge-status ready"><i class="fa-solid fa-seedling"></i> 45개 품목 검증완료</span>
+      </div>
+      <div class="blueprint-stage-desc">
+        논벼·식량·노지/시설채소·과수(<code>ZQ7</code> 적과 활성화)·특용/버섯·화훼·축산(단위 자동매칭)을 갤럽 공식 코드로 매핑하여 문A2~A4를 채우고, 문A10(월별 인력수급 차질) 및 태블릿 번호를 설정합니다.
+      </div>
+      <div class="p-14" style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+        <div>
+          <label class="figma-label font-bold">문A10 월별 인력수급 차질 시나리오</label>
+          <select id="sel-agriwork-shortage-mode" class="figma-select w-full">
+            <option value="none" ${pol.shortageMode !== '6to9' ? 'selected' : ''}>1~12월 전체 차질 없음 (간결·무결점 경로, 권장)</option>
+            <option value="6to9" ${pol.shortageMode === '6to9' ? 'selected' : ''}>성수기(6~9월) 차질 있음(일용 2명 부족) · 나머지 없음</option>
+          </select>
+        </div>
+        <div>
+          <label class="figma-label font-bold">태블릿 번호 (선택)</label>
+          <input type="text" id="inp-agriwork-tablet-no" class="figma-input w-full" placeholder="비워두기 가능" value="${escapeHtml(pol.tabletNo || '')}" />
+        </div>
+      </div>
+    </section>
+  `;
+
+  const submitSel = document.getElementById('sel-agriwork-submit-mode');
+  if (submitSel) {
+    submitSel.addEventListener('change', () => {
+      const nextGuard = submitSel.value === 'stop_before_submit';
+      if (typeof onToggleSafetyGuard === 'function') onToggleSafetyGuard(nextGuard);
+    });
+  }
+
+  const btnSync = document.getElementById('btn-agriwork-step2-sync');
+  if (btnSync && typeof onSyncPortal === 'function') {
+    btnSync.addEventListener('click', () => onSyncPortal());
+  }
+
+  const btnStep2Batch = document.getElementById('btn-agriwork-step2-batch');
+  if (btnStep2Batch && typeof triggerBatchRun === 'function') {
+    btnStep2Batch.addEventListener('click', () => triggerBatchRun());
+  }
+}
+
+

@@ -837,14 +837,24 @@ export function registerQuotaRoutes({
           const industryDist = {};
           const isHrcEnergy = content.type === 'HRC_ENERGY_BUILDING' || content.surveyType === 'hrc_energy' || lowerFile.includes('hrc_energy');
           const isGlobalriLiteracy = content.type === 'GLOBALRI_ADULT_LITERACY' || content.surveyType === 'globalri_literacy' || lowerFile.includes('globalri_adult_literacy');
-          const isGallupReturnFarm = content.type === 'GALLUP_RETURN_FARM' || content.surveyType === 'gallup_return_farm' || lowerFile.includes('gallup_20263603') || lowerFile.includes('gallup');
+          const isGallupAgriwork = content.type === 'GALLUP_AGRIWORK_2025' || content.surveyType === 'gallup_agriwork' || lowerFile.includes('agriwork');
+          const isGallupReturnFarm = !isGallupAgriwork && (content.type === 'GALLUP_RETURN_FARM' || content.surveyType === 'gallup_return_farm' || lowerFile.includes('gallup_20263603') || lowerFile.includes('gallup'));
           const isAssoc = content.type === 'KSTAT_ASSOC' || content.surveyType === 'kstat_assoc' || lowerFile.startsWith('quota_assoc_');
           const isMetrixSeoul = content.type === 'METRIX_SEOUL_PANEL' || content.surveyType === 'metrix_seoul_panel' || content.pnum === 'S21401' || lowerFile.includes('seoul_panel') || lowerFile.includes('metrix_seoul') || lowerFile.includes('s21401');
           const isMetrix = !isMetrixSeoul && (content.type === 'METRIX_PANEL' || content.surveyType === 'metrix_panel' || lowerFile.includes('metrix'));
           const isKona = content.type === 'KONA_YOUTH' || content.surveyType === 'kona_youth' || lowerFile.includes('kona');
           const isKmacKbpi = content.type === 'KMAC_KBPI' || content.surveyType === 'kmac_kbpi' || lowerFile.includes('kbpi') || lowerFile.includes('kmac');
 
-          if (isKmacKbpi) {
+          if (isGallupAgriwork) {
+            const ownerItems = data.filter(item => item.surveySubType === 'owner');
+            const workerItems = data.filter(item => item.surveySubType === 'worker');
+            const doneCnt = data.filter(item => item.status === '완료' || item.quotaStatus === 'completed').length;
+            industryDist['경영체 설문'] = ownerItems.length;
+            industryDist['내국인 근로자'] = workerItems.length;
+            industryDist['양주(안재은)'] = data.filter(item => item.surveyorId === '40878').length;
+            industryDist['동두천(김미경)'] = data.filter(item => item.surveyorId === '47837').length;
+            if (doneCnt > 0) industryDist['조사완료'] = doneCnt;
+          } else if (isKmacKbpi) {
             data.forEach(item => {
               const reg = String(item.region || '기타').trim();
               const ag = String(item.ageGroup || '').trim();
@@ -936,15 +946,15 @@ export function registerQuotaRoutes({
             mtimeMs: stat.mtimeMs,
             size: stat.size,
             title: content.title || content.name || f,
-            rawType: content.type || (isKmacKbpi ? 'KMAC_KBPI' : (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : (isGlobalriLiteracy ? 'GLOBALRI_ADULT_LITERACY' : (isGallupReturnFarm ? 'GALLUP_RETURN_FARM' : (isMetrixSeoul ? 'METRIX_SEOUL_PANEL' : (isMetrix ? 'METRIX_PANEL' : 'MARKETBZ_DIRECT'))))))),
+            rawType: content.type || (isGallupAgriwork ? 'GALLUP_AGRIWORK_2025' : (isKmacKbpi ? 'KMAC_KBPI' : (isAssoc ? 'KSTAT_ASSOC' : (isHrcEnergy ? 'HRC_ENERGY_BUILDING' : (isGlobalriLiteracy ? 'GLOBALRI_ADULT_LITERACY' : (isGallupReturnFarm ? 'GALLUP_RETURN_FARM' : (isMetrixSeoul ? 'METRIX_SEOUL_PANEL' : (isMetrix ? 'METRIX_PANEL' : 'MARKETBZ_DIRECT')))))))),
             rawSurveyType: content.surveyType || null,
-            fallbackSurveyType: isKmacKbpi ? 'kmac_kbpi' : (isGallupReturnFarm ? 'gallup_return_farm' : (isGlobalriLiteracy ? 'globalri_literacy' : (isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrixSeoul ? 'metrix_seoul_panel' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))))))),
+            fallbackSurveyType: isGallupAgriwork ? 'gallup_agriwork' : (isKmacKbpi ? 'kmac_kbpi' : (isGallupReturnFarm ? 'gallup_return_farm' : (isGlobalriLiteracy ? 'globalri_literacy' : (isHrcEnergy ? 'hrc_energy' : (isKona ? 'kona_youth' : (isMetrixSeoul ? 'metrix_seoul_panel' : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store')))))))),
             rawLinkedCampaignId: content.linkedCampaignId || null,
             selectedCount: content.selectedCount || null,
             substituteCount: content.substituteCount || null,
             surveyorId: content.surveyorId || null,
             surveyorName: content.surveyorName || null,
-            marketName: content.marketName || (isKmacKbpi ? '2027 K-BPI 조사 (서울 100 · 인천 50)' : (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : (isGlobalriLiteracy ? `성인문해능력조사 · ${content.surveyorName || ''}` : (isGallupReturnFarm ? `귀농귀촌 실태조사 · ${content.surveyorName || ''}` : (isMetrixSeoul ? '서울시 소상공인 사업체패널 5차' : null)))))),
+            marketName: content.marketName || (isGallupAgriwork ? '한국갤럽 농업고용인력 (양주 안재은 · 동두천 김미경)' : (isKmacKbpi ? '2027 K-BPI 조사 (서울 100 · 인천 50)' : (isAssoc ? `전통시장 상인회 · ${content.surveyorId || ''}` : (isHrcEnergy ? `에너지총조사 [건물] · ${content.surveyorName || ''} (${content.surveyorId || ''})` : (isGlobalriLiteracy ? `성인문해능력조사 · ${content.surveyorName || ''}` : (isGallupReturnFarm ? `귀농귀촌 실태조사 · ${content.surveyorName || ''}` : (isMetrixSeoul ? '서울시 소상공인 사업체패널 5차' : null))))))),
             keyword: content.keyword,
             count: content.count || data.length,
             targetTotal,

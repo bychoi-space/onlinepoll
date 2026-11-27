@@ -25,6 +25,7 @@ import {
   syncSeoulPanelAnswersToGoogleSheet
 } from '../utils/seoul-panel-answer-excel.js';
 import { syncGallupReturnFarmStatuses } from '../engine/gallup-return-farm-runner.js';
+import { syncGallupAgriworkStatuses } from '../engine/gallup-agriwork-runner.js';
 import {
   scrapeMetrix622AllAccounts,
   verifyBizStatusViaHometax,
@@ -910,6 +911,50 @@ export function registerSyncRoutes({
     } catch (err) {
       logger.error('[K-BPI 구글시트 동기화 오류]', err);
       return res.status(500).json({ error: '구글 시트 동기화 실패: ' + err.message });
+    }
+  });
+
+  // [한국갤럽 농업고용인력 실태조사] 포털(agriwork.gallup.co.kr) 안재은(40878)·김미경(47837) 실시간 완료/진행 현황 동기화 API
+  app.post('/api/campaigns/:id/sync-gallup-agriwork', async (req, res) => {
+    try {
+      const campaign = CampaignStore.getCampaignById(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+      }
+      const quotaDb = campaign.quotaDatabase || [];
+      logger.info(`[농업고용인력 포털 동기화] 캠페인 "${campaign.title}" 안재은(40878)·김미경(47837) 실시간 완료 현황 조회 시작...`);
+
+      const syncRes = await syncGallupAgriworkStatuses({ quotaDatabase: quotaDb });
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: syncRes.quotaDatabase });
+
+      const agriQuotaPath = path.join(quotasDir, 'quota_gallup_agriwork_2025.json');
+      if (fs.existsSync(agriQuotaPath)) {
+        try {
+          const agriJson = JSON.parse(fs.readFileSync(agriQuotaPath, 'utf-8'));
+          agriJson.data = syncRes.quotaDatabase;
+          agriJson.updatedAt = new Date().toISOString();
+          writeJsonAtomicSync(agriQuotaPath, agriJson);
+        } catch (fileErr) {
+          logger.warn(`[농업고용인력 쿼터 JSON 저장 경고] ${fileErr.message}`);
+        }
+      }
+
+      logger.broadcast({
+        type: 'QUOTA_UPDATED',
+        campaignId: campaign.id,
+        quotaDatabase: syncRes.quotaDatabase
+      });
+
+      const msg = `포털 실시간 동기화 완료! (경영체 완료 ${syncRes.ownerCompletedCount}건 · 내국인 근로자 완료 ${syncRes.workerCompletedCount}건 · 상태 갱신 ${syncRes.updatedCount}건)`;
+      logger.success(`[농업고용인력 포털 동기화 완료] ${msg}`);
+      return res.json({
+        success: true,
+        message: msg,
+        ...syncRes
+      });
+    } catch (err) {
+      logger.error('[농업고용인력 포털 동기화 실패]', err);
+      return res.status(500).json({ success: false, error: '포털 동기화 실패: ' + err.message });
     }
   });
 }

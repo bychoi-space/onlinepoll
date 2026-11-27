@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const desc = String(c.description || '').toLowerCase();
 
     // 1순위: surveyType 명시적 판별
-    if (['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'kona_youth', 'kmac_kbpi'].includes(type)) {
+    if (['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'gallup_agriwork', 'kona_youth', 'kmac_kbpi'].includes(type)) {
       return 'special';
     }
     if (type === 'metrix_panel' || type === 'metrix_seoul_panel') return 'smallbiz';
@@ -209,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
       title.includes('문해능력') ||
       title.includes('문해력') ||
       title.includes('귀농') ||
+      title.includes('농업고용') ||
       title.includes('청소년') ||
       title.includes('브랜드파워') ||
       title.includes('k-bpi')
@@ -228,6 +229,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const sType = String(surveyType || '').toLowerCase();
     if (sType === 'kmac_kbpi') {
       return { label: '2027 K-BPI 브랜드파워', icon: 'fa-award', class: 'special' };
+    }
+    if (sType === 'gallup_agriwork') {
+      return { label: '농업고용인력 실태조사', icon: 'fa-tractor', class: 'special' };
     }
     if (sType === 'metrix_seoul_panel') {
       return { label: '서울시 소상공인 패널 (5차)', icon: 'fa-building-user', class: 'smallbiz' };
@@ -367,6 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isHrcEnergy = (sType === 'hrc_energy');
     const isGlobalriLiteracy = (sType === 'globalri_literacy');
     const isGallupReturnFarm = (sType === 'gallup_return_farm');
+    const isGallupAgriwork = (sType === 'gallup_agriwork');
     const isKmacKbpi = (sType === 'kmac_kbpi');
     const isAssoc = (cat === 'assoc');
     const isSmallBiz = (cat === 'smallbiz');
@@ -387,7 +392,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const isMetrixSeoul = (sType === 'metrix_seoul_panel');
     let quotaLabel = '점포 경영실태 (15단계)';
-    if (isKmacKbpi) {
+    if (isGallupAgriwork) {
+      const owCnt = (c.quotaDatabase || []).filter(q => q.surveySubType === 'owner').length;
+      const wkCnt = (c.quotaDatabase || []).filter(q => q.surveySubType === 'worker').length;
+      quotaLabel = `경영체 ${owCnt} · 내국인근로자 ${wkCnt} (완료 ${doneItemCount}/${dbCount}건)`;
+    } else if (isKmacKbpi) {
       quotaLabel = `서울 100 · 인천 50 (총 ${dbCount}명 · 구분자별 분할 배치)`;
     } else if (isGlobalriLiteracy) {
       quotaLabel = `대상자 ${dbCount}명 (완료 ${doneItemCount}명) · 연령대 가이드`;
@@ -411,19 +420,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const quotaBadgeClass = (isKmacKbpi || isKona || isGlobalriLiteracy || isGallupReturnFarm)
       ? 'b2c'
       : (isAssoc ? 'assoc' : 'b2b');
-    const quotaIcon = isKmacKbpi
-      ? 'fa-award'
-      : (isGlobalriLiteracy
-        ? 'fa-book-open-reader'
-        : (isHrcEnergy
-          ? 'fa-building-circle-check'
-          : (isGallupReturnFarm
-            ? 'fa-tractor'
-            : (isKona
-              ? 'fa-user-graduate'
-              : (isAssoc
-                ? 'fa-sitemap'
-                : (isSmallBiz ? 'fa-building-user' : 'fa-store'))))));
+    const quotaIcon = isGallupAgriwork
+      ? 'fa-tractor'
+      : (isKmacKbpi
+        ? 'fa-award'
+        : (isGlobalriLiteracy
+          ? 'fa-book-open-reader'
+          : (isHrcEnergy
+            ? 'fa-building-circle-check'
+            : (isGallupReturnFarm
+              ? 'fa-tractor'
+              : (isKona
+                ? 'fa-user-graduate'
+                : (isAssoc
+                  ? 'fa-sitemap'
+                  : (isSmallBiz ? 'fa-building-user' : 'fa-store')))))));
 
     const liveTask = getLiveTaskForCampaign(c.id) || c.liveTask || null;
     const isRunning = isCampaignLiveRunning(c);
@@ -1515,10 +1526,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const market = String(q.marketName || '').toLowerCase();
 
     if (
-      ['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'kona_youth', 'kmac_kbpi'].includes(sType) ||
-      ['HRC_ENERGY_BUILDING', 'GLOBALRI_ADULT_LITERACY', 'GALLUP_RETURN_FARM', 'KONA_YOUTH', 'KMAC_KBPI_2027'].includes(qType) ||
+      ['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'gallup_agriwork', 'kona_youth', 'kmac_kbpi'].includes(sType) ||
+      ['HRC_ENERGY_BUILDING', 'GLOBALRI_ADULT_LITERACY', 'GALLUP_RETURN_FARM', 'GALLUP_AGRIWORK_2025', 'KONA_YOUTH', 'KMAC_KBPI_2027'].includes(qType) ||
       fileName.includes('hrc_energy') ||
       fileName.includes('globalri') ||
+      fileName.includes('agriwork') ||
       fileName.includes('gallup') ||
       fileName.includes('kona') ||
       fileName.includes('kmac_kbpi')
@@ -1666,27 +1678,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const isAssoc = (cat === 'assoc' || q.type === 'KSTAT_ASSOC' || sType === 'kstat_assoc' || String(q.fileName || '').startsWith('quota_assoc_'));
     const isHrcEnergy = (q.type === 'HRC_ENERGY_BUILDING' || sType === 'hrc_energy' || String(q.fileName || '').includes('hrc_energy'));
     const isGlobalri = (q.type === 'GLOBALRI_ADULT_LITERACY' || sType === 'globalri_literacy' || String(q.fileName || '').includes('globalri'));
-    const isGallup = (q.type === 'GALLUP_RETURN_FARM' || sType === 'gallup_return_farm' || String(q.fileName || '').includes('gallup'));
+    const isGallupAgriwork = (q.type === 'GALLUP_AGRIWORK_2025' || sType === 'gallup_agriwork' || String(q.fileName || '').includes('agriwork'));
+    const isGallup = !isGallupAgriwork && (q.type === 'GALLUP_RETURN_FARM' || sType === 'gallup_return_farm' || String(q.fileName || '').includes('gallup'));
     const isKmacKbpi = (q.type === 'KMAC_KBPI_2027' || sType === 'kmac_kbpi' || String(q.fileName || '').includes('kmac_kbpi'));
 
     const catMeta = getCategoryMeta(cat, sType);
     const compInfo = getQuotaCompletionInfo(q);
     const dateStr = formatShortDate(compInfo.isCompleted ? (compInfo.completedAt || q.createdAt) : q.createdAt);
-    const marketName = q.marketName || (isKmacKbpi ? 'KMA Research CAPI 표본' : (isHrcEnergy ? '한국리서치 TAPI 건물표본' : (isGlobalri ? '글로벌리서치 성인문해 표본' : (isGallup ? '한국갤럽 귀농귀촌 표본' : (cat === 'smallbiz' ? '경기도 소상공인 패널' : (cat === 'assoc' ? '전통시장 상인회' : '일반 사업자'))))));
+    const marketName = q.marketName || (isGallupAgriwork ? '한국갤럽 농업고용인력 (양주·동두천)' : (isKmacKbpi ? 'KMA Research CAPI 표본' : (isHrcEnergy ? '한국리서치 TAPI 건물표본' : (isGlobalri ? '글로벌리서치 성인문해 표본' : (isGallup ? '한국갤럽 귀농귀촌 표본' : (cat === 'smallbiz' ? '경기도 소상공인 패널' : (cat === 'assoc' ? '전통시장 상인회' : '일반 사업자')))))));
     const isStratified = isQuotaStratified(q);
     const isExcelUpload = (q.requestParams?.samplingMode === 'excel_upload' || String(q.title || '').includes('엑셀업로드'));
 
     const modeBadgeText = isAssoc
       ? 'Kstat 상인회 슬롯'
-      : (isKmacKbpi
-        ? 'K-BPI 150명 표본'
-        : (isHrcEnergy
-          ? 'TAPI 건물 표본'
-          : (isGlobalri
-            ? 'GIFT 가구원 표본'
-            : (isGallup
-              ? 'G-CAII 귀농 표본'
-              : (isStratified ? '9대 업종 층화' : (isExcelUpload ? '엑셀 업로드' : '단순 수집'))))));
+      : (isGallupAgriwork
+        ? '갤럽 경영체+근로자 표본'
+        : (isKmacKbpi
+          ? 'K-BPI 150명 표본'
+          : (isHrcEnergy
+            ? 'TAPI 건물 표본'
+            : (isGlobalri
+              ? 'GIFT 가구원 표본'
+              : (isGallup
+                ? 'G-CAII 귀농 표본'
+                : (isStratified ? '9대 업종 층화' : (isExcelUpload ? '엑셀 업로드' : '단순 수집')))))));
 
     const iconMap = {
       '★선정(우선)': '⭐', '대체(예비)': '🔄', '조사완료': '✅', '조사완료(99)': '✅', '대기(진행대상)': '⏳', '대기(미진행)': '⏳',

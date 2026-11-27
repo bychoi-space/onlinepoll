@@ -1,0 +1,66 @@
+{
+  "surveyId": "gallup_agriwork_2025",
+  "surveyType": "gallup_agriwork",
+  "title": "[한국갤럽] 2025년 기준 농업고용인력 실태조사 (경영체 20260168 · 내국인 근로자 20260193)",
+  "portalUrl": "https://agriwork.gallup.co.kr/survey/login.asp",
+  "googleSheetId": "1ONQZjGIa2xIopaMbYS-27B_DMHBH8MlOK7tdDTC6Gz0",
+  "googleSheetUrl": "https://docs.google.com/spreadsheets/d/1ONQZjGIa2xIopaMbYS-27B_DMHBH8MlOK7tdDTC6Gz0/edit?gid=481207785#gid=481207785",
+  "accounts": [
+    {
+      "surveyorId": "40878",
+      "surveyorName": "안재은",
+      "region": "경기도 양주시",
+      "sheetTab": "양주_안재은",
+      "gid": "481207785"
+    },
+    {
+      "surveyorId": "47837",
+      "surveyorName": "김미경",
+      "region": "경기도 동두천시",
+      "sheetTab": "김미경",
+      "gid": "2101238121"
+    }
+  ],
+  "defaultPolicy": {
+    "preserveExistingInputs": true,
+    "preserveExistingSignatures": true,
+    "skipCompletedSlots": true,
+    "defaultBlankWorkerType": "3",
+    "submitComplete": true,
+    "safetyGuard": false,
+    "shortageMode": "none",
+    "tabletNo": ""
+  },
+  "stages": [
+    {
+      "stageId": "PORTAL_PREP",
+      "title": "0단계: 포털 방문기록·고용여부·내국인근로자 사전 검증",
+      "description": "agriwork.gallup.co.kr 로그인 후 방문일시(RESU010001), SQ1(농가/법인), SQ2(고용유무), 내국인근로자 체크(chk_employedYN) 자동 동기화"
+    },
+    {
+      "stageId": "CONSENT_AND_PROFILE",
+      "title": "1단계: 개인정보 동의·전자서명 보존/생성 및 경영체 기본현황(문1~문1-3D)",
+      "description": "현장 기수집 서명/응답 100% 보존, 미서명 시 8종 필체 한글 전자서명(signsave_N.asp) 생성, 농가/농업법인별 성별·출생(설립)연도·경력 정합 입력"
+    },
+    {
+      "stageId": "PRODUCTION_AND_LABOR",
+      "title": "2단계: 농축산물 생산현황(문A2)·농작업 일정(문A3)·자가노동력(문A4)",
+      "description": "시트 층화·재배품목을 갤럽 공식 코드(100~914, 기타 텍스트·축산 단위 포함)로 매핑하고 75종 작물 농작업 캘린더 및 월별 자가노동력 일수 자동 산출"
+    },
+    {
+      "stageId": "EMPLOYED_WORKERS",
+      "title": "3단계: 고용 근로자 현황(상용·임시·일용 문A6~A9) 및 인력부족·복지·교육",
+      "description": "고용유무 및 근로자 유형(19열 미기재 시 기본 일용근로자)에 맞춘 채용경로 100% 비율, 월별 연인원, 성별 근무시간·임금(만원/원 단위 구분) 정합 응답"
+    },
+    {
+      "stageId": "DOMESTIC_WORKER_SURVEY",
+      "title": "4단계: 내국인 근로자 부수 설문(rsid=3111898935, Page 1~73~LAST)",
+      "description": "통합 응답자 페르소나 DB(1,138명) 비중복 배정, 순위형(ranking_2)·근로조건(Q122)·계약/안전/만족도·조사일시(Q133) 완주"
+    },
+    {
+      "stageId": "GIFT_SIGN_AND_SUBMIT",
+      "title": "5단계: 답례품 수령 서명·조사일시(TIME)·연락처 중복검증 및 최종 [조사완료]",
+      "description": "답례품 서명(MZ1/SIGN), 시트 방문일시·주소 정합 기록, ajax/phoneChk.asp 중복 방어 후 정책에 따라 [조사완료] 100% 제출 또는 직전 대기"
+    }
+  ]
+}

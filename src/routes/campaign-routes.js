@@ -651,6 +651,61 @@ export function registerCampaignRoutes({
       });
     }
 
+    // 한국갤럽 2025년 기준 농업고용인력 실태조사 전용 블루프린트 분기
+    if (campaign.surveyType === 'gallup_agriwork') {
+      const agriBlueprintPath = path.join(dataDir, 'gallup_agriwork_blueprint.json');
+      let agriBlueprint = null;
+      if (fs.existsSync(agriBlueprintPath)) {
+        try {
+          agriBlueprint = JSON.parse(fs.readFileSync(agriBlueprintPath, 'utf-8'));
+        } catch (err) {
+          console.error('농업고용인력 블루프린트 파일 파싱 실패:', err);
+        }
+      }
+      const defaultAgriPolicy = agriBlueprint?.defaultPolicy || {
+        preserveExistingInputs: true,
+        preserveExistingSignatures: true,
+        skipCompletedSlots: true,
+        defaultBlankWorkerType: '3',
+        submitComplete: true,
+        safetyGuard: false,
+        shortageMode: 'none',
+        tabletNo: ''
+      };
+      const effectivePolicy = {
+        ...defaultAgriPolicy,
+        ...(campaign.gallupAgriworkPolicy || campaign.masterBaseline?.policy || {})
+      };
+      const db = campaign.quotaDatabase || [];
+      const ownerTotal = db.filter(q => q.surveySubType === 'owner').length;
+      const ownerDone = db.filter(q => q.surveySubType === 'owner' && (q.quotaStatus === 'completed' || q.status === '완료')).length;
+      const workerTotal = db.filter(q => q.surveySubType === 'worker').length;
+      const workerDone = db.filter(q => q.surveySubType === 'worker' && (q.quotaStatus === 'completed' || q.status === '완료')).length;
+
+      return res.json({
+        surveyType: 'gallup_agriwork',
+        policy: effectivePolicy,
+        blueprint: agriBlueprint || {
+          title: '[한국갤럽] 2025년 기준 농업고용인력 실태조사',
+          defaultPolicy: defaultAgriPolicy,
+          stages: []
+        },
+        stats: {
+          total: db.length,
+          ownerTotal,
+          ownerDone,
+          ownerReady: ownerTotal - ownerDone,
+          workerTotal,
+          workerDone,
+          workerReady: workerTotal - workerDone
+        },
+        googleSheetUrl: campaign.googleSheetUrl || 'https://docs.google.com/spreadsheets/d/1ONQZjGIa2xIopaMbYS-27B_DMHBH8MlOK7tdDTC6Gz0/edit?gid=481207785#gid=481207785',
+        campaignTitle: campaign.title,
+        slotCount: db.length,
+        hasCustomBaseline: !!(campaign.gallupAgriworkPolicy || campaign.masterBaseline)
+      });
+    }
+
     // 한국갤럽 20263603 귀농귀촌 실태조사(귀농) 전용 블루프린트 분기
     if (campaign.surveyType === 'gallup_return_farm') {
       const gallupTemplatesPath = path.join(dataDir, 'gallup_20263603_templates.json');
@@ -820,6 +875,7 @@ export function registerCampaignRoutes({
     const isHrcEnergy = (campaign.surveyType === 'hrc_energy');
     const isGlobalriLiteracy = (campaign.surveyType === 'globalri_literacy');
     const isGallupReturnFarm = (campaign.surveyType === 'gallup_return_farm');
+    const isGallupAgriwork = (campaign.surveyType === 'gallup_agriwork');
     const isKmacKbpi = (campaign.surveyType === 'kmac_kbpi');
 
     CampaignStore.updateCampaign(campaign.id, {
@@ -837,31 +893,36 @@ export function registerCampaignRoutes({
       ...(isGallupReturnFarm ? {
         gallupReturnFarmPolicy: req.body.policy || req.body.gallupReturnFarmPolicy || req.body
       } : {}),
+      ...(isGallupAgriwork ? {
+        gallupAgriworkPolicy: req.body.policy || req.body.gallupAgriworkPolicy || req.body
+      } : {}),
       ...(isKmacKbpi ? {
         kbpiPolicy: baseline.policy || baseline.kbpiPolicy || baseline
       } : {})
     });
 
-    logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isKmacKbpi ? '2027 K-BPI 응답 가이드' : (isGallupReturnFarm ? '귀농귀촌 실태조사(귀농) 응답 가이드' : (isMetrixSeoul ? '서울시 소상공인 패널조사(5차) 응답 가이드' : (isGlobalriLiteracy ? '제5차 성인문해능력조사 나이대별 그룹 가이드' : (isHrcEnergy ? '에너지총조사 건물 부문 응답 규칙' : (isKona ? '코나체인 청소년 설문 기준 가이드' : (isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점')))))))}이 저장되었습니다! 🎯`);
+    logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isGallupAgriwork ? '2025 농업고용인력 실태조사 응답 정책' : (isKmacKbpi ? '2027 K-BPI 응답 가이드' : (isGallupReturnFarm ? '귀농귀촌 실태조사(귀농) 응답 가이드' : (isMetrixSeoul ? '서울시 소상공인 패널조사(5차) 응답 가이드' : (isGlobalriLiteracy ? '제5차 성인문해능력조사 나이대별 그룹 가이드' : (isHrcEnergy ? '에너지총조사 건물 부문 응답 규칙' : (isKona ? '코나체인 청소년 설문 기준 가이드' : (isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점'))))))))}이 저장되었습니다! 🎯`);
     res.json({
       success: true,
-      message: isKmacKbpi
-        ? '2027년 K-BPI 브랜드파워 조사 응답 가이드라인이 성공적으로 저장되었습니다.'
-        : (isGallupReturnFarm
-        ? '2026년 귀농귀촌 실태조사(귀농) 응답 가이드라인이 성공적으로 저장되었습니다.'
-        : (isMetrixSeoul
-          ? '서울시 소상공인 사업체 패널조사(5차) 응답 가이드라인 및 구글 시트 설정이 성공적으로 저장되었습니다.'
-          : (isGlobalriLiteracy
-            ? '제5차 성인문해능력조사 나이대별(20대/30대/40대/50대/60대/70대+) 그룹 가이드라인이 성공적으로 저장되었습니다.'
-            : (isHrcEnergy
-              ? '2025년 기준 에너지총조사 [건물 부문] 응답 기준 가이드라인(기입력 보존 정책 포함)이 성공적으로 저장되었습니다.'
-              : (isKona
-                ? '화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-                : (isMetrix
+      message: isGallupAgriwork
+        ? '2025년 기준 농업고용인력 실태조사 응답 정책이 성공적으로 저장되었습니다.'
+        : (isKmacKbpi
+          ? '2027년 K-BPI 브랜드파워 조사 응답 가이드라인이 성공적으로 저장되었습니다.'
+          : (isGallupReturnFarm
+            ? '2026년 귀농귀촌 실태조사(귀농) 응답 가이드라인이 성공적으로 저장되었습니다.'
+            : (isMetrixSeoul
+              ? '서울시 소상공인 사업체 패널조사(5차) 응답 가이드라인 및 구글 시트 설정이 성공적으로 저장되었습니다.'
+              : (isGlobalriLiteracy
+                ? '제5차 성인문해능력조사 나이대별(20대/30대/40대/50대/60대/70대+) 그룹 가이드라인이 성공적으로 저장되었습니다.'
+                : (isHrcEnergy
+                  ? '2025년 기준 에너지총조사 [건물 부문] 응답 기준 가이드라인(기입력 보존 정책 포함)이 성공적으로 저장되었습니다.'
+                  : (isKona
+                    ? '화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+                    : (isMetrix
                   ? '메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
                   : (isAssoc
                     ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
-                    : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.'))))))),
+                    : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.')))))))),
       baseline
     });
   });
@@ -1147,7 +1208,8 @@ export function registerCampaignRoutes({
       );
       const isAssoc = (quotaMeta.type === 'KSTAT_ASSOC' || quotaMeta.surveyType === 'kstat_assoc' || safeFilename.startsWith('quota_assoc_'));
       const isGlobalriLiteracy = (quotaMeta.type === 'GLOBALRI_ADULT_LITERACY' || quotaMeta.surveyType === 'globalri_literacy' || lowerName.includes('globalri_adult_literacy'));
-      const isGallupReturnFarm = (quotaMeta.type === 'GALLUP_RETURN_FARM' || quotaMeta.surveyType === 'gallup_return_farm' || lowerName.includes('gallup'));
+      const isGallupAgriwork = (quotaMeta.type === 'GALLUP_AGRIWORK_2025' || quotaMeta.surveyType === 'gallup_agriwork' || lowerName.includes('agriwork'));
+      const isGallupReturnFarm = !isGallupAgriwork && (quotaMeta.type === 'GALLUP_RETURN_FARM' || quotaMeta.surveyType === 'gallup_return_farm' || lowerName.includes('gallup'));
       const isHrcEnergy = (quotaMeta.type === 'HRC_ENERGY_BUILDING' || quotaMeta.surveyType === 'hrc_energy' || lowerName.includes('hrc_energy'));
       const isKona = (quotaMeta.type === 'KONA_YOUTH' || quotaMeta.surveyType === 'kona_youth' || lowerName.includes('kona'));
       const isKmacKbpi = (quotaMeta.type === 'KMAC_KBPI' || quotaMeta.surveyType === 'kmac_kbpi' || lowerName.includes('kbpi') || lowerName.includes('kmac'));
@@ -1171,6 +1233,12 @@ export function registerCampaignRoutes({
         status: 'ready',
         quotaType: (isGlobalriLiteracy || isGallupReturnFarm || isKona || isKmacKbpi) ? 'b2c' : 'b2b',
         quotaSourceFile: safeFilename,
+        ...(isGallupAgriwork ? {
+          surveyType: 'gallup_agriwork',
+          loginId: '40878,47837',
+          surveyorName: '안재은·김미경',
+          googleSheetUrl: `https://docs.google.com/spreadsheets/d/${quotaMeta.googleSheetId || '1ONQZjGIa2xIopaMbYS-27B_DMHBH8MlOK7tdDTC6Gz0'}/edit?gid=481207785#gid=481207785`
+        } : {}),
         ...(isKmacKbpi ? {
           surveyType: 'kmac_kbpi',
           loginId: quotaMeta.loginId || campaign.loginId || '5911000005645',
@@ -1278,45 +1346,50 @@ export function registerCampaignRoutes({
       const isAssoc = (quotaMeta.type === 'KSTAT_ASSOC' || quotaMeta.surveyType === 'kstat_assoc' || safeFilename.startsWith('quota_assoc_'));
       const isKona = (quotaMeta.type === 'KONA_YOUTH' || quotaMeta.surveyType === 'kona_youth' || lowerName.includes('kona'));
       const isHrcEnergy = (quotaMeta.type === 'HRC_ENERGY_BUILDING' || quotaMeta.surveyType === 'hrc_energy' || lowerName.includes('hrc_energy'));
-      const isGallupReturnFarm = (quotaMeta.type === 'GALLUP_RETURN_FARM' || quotaMeta.surveyType === 'gallup_return_farm' || lowerName.includes('gallup'));
+      const isGallupAgriwork = (quotaMeta.type === 'GALLUP_AGRIWORK_2025' || quotaMeta.surveyType === 'gallup_agriwork' || lowerName.includes('agriwork'));
+      const isGallupReturnFarm = !isGallupAgriwork && (quotaMeta.type === 'GALLUP_RETURN_FARM' || quotaMeta.surveyType === 'gallup_return_farm' || lowerName.includes('gallup'));
       const isGlobalriLiteracy = (quotaMeta.type === 'GLOBALRI_ADULT_LITERACY' || quotaMeta.surveyType === 'globalri_literacy' || lowerName.includes('globalri_adult_literacy'));
       const isKmacKbpi = (quotaMeta.type === 'KMAC_KBPI' || quotaMeta.surveyType === 'kmac_kbpi' || lowerName.includes('kbpi') || lowerName.includes('kmac'));
 
       const newCamp = CampaignStore.createCampaign({
         title: campTitle,
-        description: isKmacKbpi
-          ? `KMA Research CAPI(ID:230) 2027년 한국산업의브랜드파워(K-BPI) 조사 · 서울 노원구청/인천시청 미세분산 GPS · 품목별 구입경험 연동`
-          : (isGallupReturnFarm
-          ? `한국갤럽 G-CAII(20263603) 2026년 귀농귀촌 실태조사(귀농) · 강원 홍천군 GPS 자동 주입 · 방문기록 검증 · 8종 필체 전자서명 · 완료 직전(Page 118) 안전 정지`
-          : (isMetrixSeoul
-            ? `메트릭스 Surveybox(S21401by41s3) 2026년 서울시 소상공인 사업체 패널조사(5차) · 동의서(svyA115.asp, 99%) 안전 대기`
-            : (isGlobalriLiteracy
-              ? `글로벌리서치 통합조사시스템(GIFT) 제5차 성인문해능력조사 (${quotaMeta.surveyorName || ''})`
-              : (isHrcEnergy
-                ? `한국리서치 TAPI(2026-89-0342C) 건물 부문 에너지총조사 (조사원: ${quotaMeta.surveyorId || ''} ${quotaMeta.surveyorName || ''} · 기입력 항목 보존)`
-                : (isKona
-                  ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치플랫폼)'
-                  : (isMetrix
-                    ? '메트릭스 경기도 소상공인 사업체패널 3차조사'
-                    : (isAssoc
-                      ? `2026년 전통시장 및 상점가 조사 (상인회 전용 · 조사원: ${quotaMeta.surveyorId || businesses[0]?.surveyorAccount || ''})`
-                      : (quotaMeta.marketName
-                        ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
-                        : `${quotaMeta.keyword || '사업주'} 대상 설문조사`)))))))),
+        description: isGallupAgriwork
+          ? '한국갤럽 G-CAPI V3 · 2025년 기준 농업고용인력 실태조사 (경영체 20260168 + 내국인 근로자 20260193 · 양주 안재은 / 동두천 김미경)'
+          : (isKmacKbpi
+            ? `KMA Research CAPI(ID:230) 2027년 한국산업의브랜드파워(K-BPI) 조사 · 서울 노원구청/인천시청 미세분산 GPS · 품목별 구입경험 연동`
+            : (isGallupReturnFarm
+              ? `한국갤럽 G-CAII(20263603) 2026년 귀농귀촌 실태조사(귀농) · 강원 홍천군 GPS 자동 주입 · 방문기록 검증 · 8종 필체 전자서명 · 완료 직전(Page 118) 안전 정지`
+              : (isMetrixSeoul
+                ? `메트릭스 Surveybox(S21401by41s3) 2026년 서울시 소상공인 사업체 패널조사(5차) · 동의서(svyA115.asp, 99%) 안전 대기`
+                : (isGlobalriLiteracy
+                  ? `글로벌리서치 통합조사시스템(GIFT) 제5차 성인문해능력조사 (${quotaMeta.surveyorName || ''})`
+                  : (isHrcEnergy
+                    ? `한국리서치 TAPI(2026-89-0342C) 건물 부문 에너지총조사 (조사원: ${quotaMeta.surveyorId || ''} ${quotaMeta.surveyorName || ''} · 기입력 항목 보존)`
+                    : (isKona
+                      ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치플랫폼)'
+                      : (isMetrix
+                        ? '메트릭스 경기도 소상공인 사업체패널 3차조사'
+                        : (isAssoc
+                          ? `2026년 전통시장 및 상점가 조사 (상인회 전용 · 조사원: ${quotaMeta.surveyorId || businesses[0]?.surveyorAccount || ''})`
+                          : (quotaMeta.marketName
+                            ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
+                            : `${quotaMeta.keyword || '사업주'} 대상 설문조사`))))))))),
         quotaType: (isKona || isGallupReturnFarm || isGlobalriLiteracy || isKmacKbpi) ? 'b2c' : 'b2b',
-        surveyType: isKmacKbpi
-          ? 'kmac_kbpi'
-          : (isGallupReturnFarm
-          ? 'gallup_return_farm'
-          : (isMetrixSeoul
-            ? 'metrix_seoul_panel'
-            : (isGlobalriLiteracy
-              ? 'globalri_literacy'
-              : (isHrcEnergy
-                ? 'hrc_energy'
-                : (isKona
-                  ? 'kona_youth'
-                  : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))))))),
+        surveyType: isGallupAgriwork
+          ? 'gallup_agriwork'
+          : (isKmacKbpi
+            ? 'kmac_kbpi'
+            : (isGallupReturnFarm
+              ? 'gallup_return_farm'
+              : (isMetrixSeoul
+                ? 'metrix_seoul_panel'
+                : (isGlobalriLiteracy
+                  ? 'globalri_literacy'
+                  : (isHrcEnergy
+                    ? 'hrc_energy'
+                    : (isKona
+                      ? 'kona_youth'
+                      : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store')))))))),
         quotaSourceFile: safeFilename,
         ...(isKmacKbpi ? {
           loginId: quotaMeta.loginId || '5911000005645',
