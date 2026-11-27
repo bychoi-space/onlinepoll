@@ -35,11 +35,17 @@ function writeJsonAtomicSync(filePath, obj) {
   fs.renameSync(tmpPath, filePath);
 }
 
+function countSubmittedAnswers(val) {
+  if (Array.isArray(val)) return val.length;
+  if (val && typeof val === 'object') return Object.keys(val).length;
+  return 0;
+}
+
 function mergeQuotaItem(prev, remoteItem) {
   if (!prev) return remoteItem;
 
-  const prevAnsLen = Array.isArray(prev.submittedAnswers) ? prev.submittedAnswers.length : 0;
-  const remAnsLen = Array.isArray(remoteItem.submittedAnswers) ? remoteItem.submittedAnswers.length : 0;
+  const prevAnsLen = countSubmittedAnswers(prev.submittedAnswers);
+  const remAnsLen = countSubmittedAnswers(remoteItem.submittedAnswers);
 
   const manualClosed = Boolean(prev.manualClosedOverride);
   const resolvedClosed = manualClosed ? Boolean(prev.isClosedBiz) : Boolean(remoteItem.isClosedBiz);
@@ -74,7 +80,7 @@ function mergeQuotaItem(prev, remoteItem) {
     : (isEitherDone
       ? 'completed'
       : (isSafeWait
-        ? '진행중(98%)'
+        ? (prev.quotaStatus === 'pilot_done' || remoteItem.quotaStatus === 'pilot_done' ? 'pilot_done' : '진행중(98%)')
         : (prev.quotaStatus && prev.quotaStatus !== 'ready' && prev.quotaStatus !== 'excluded'
           ? prev.quotaStatus
           : (remoteItem.quotaStatus || 'ready'))));
@@ -100,9 +106,17 @@ function mergeQuotaItem(prev, remoteItem) {
     }
   }
 
+  const baseSpread = (isEitherDone || isPrevSafeWait)
+    ? { ...remoteItem, ...prev }
+    : { ...prev, ...remoteItem };
+
+  const fallbackEmptyAns = (prev.submittedAnswers && !Array.isArray(prev.submittedAnswers) && typeof prev.submittedAnswers === 'object') ||
+    (remoteItem.submittedAnswers && !Array.isArray(remoteItem.submittedAnswers) && typeof remoteItem.submittedAnswers === 'object')
+    ? {}
+    : [];
+
   return {
-    ...prev,
-    ...remoteItem,
+    ...baseSpread,
     ...(mergedCategoryConfigs ? { categoryConfigs: mergedCategoryConfigs } : {}),
     education: prev.education || remoteItem.education || '',
     job: prev.job || remoteItem.job || '',
@@ -137,8 +151,8 @@ function mergeQuotaItem(prev, remoteItem) {
       ? remoteItem.capturedSteps
       : (prev.capturedSteps || []),
     submittedAnswers: remAnsLen > prevAnsLen
-      ? (remoteItem.submittedAnswers || [])
-      : (prev.submittedAnswers || [])
+      ? (remoteItem.submittedAnswers ?? fallbackEmptyAns)
+      : (prev.submittedAnswers ?? fallbackEmptyAns)
   };
 }
 
@@ -248,6 +262,8 @@ function main() {
       const fk = getFallbackIdKey(r);
       const prev = (k && localByKey.get(k)) || (!r.surveyorId && fk ? localByKey.get(fk) : null);
       if (!prev) return false;
+      if (r.mbzEnrichedAt && r.mbzEnrichedAt !== prev.mbzEnrichedAt) return true;
+      if (r.financialSource && r.financialSource !== prev.financialSource) return true;
       return ['education', 'job', 'householdIncome', 'maritalStatus', 'familySize', 'childrenCount', 'surveyDistrict', 'surveyDong', 'ceilingHeightM', 'phoneDuplicateWarning']
         .some(field => r[field] && !prev[field]);
     });

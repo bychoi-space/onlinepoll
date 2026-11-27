@@ -1134,6 +1134,42 @@ export function seedInitialCampaigns({
               surveyBlueprintPolicy: existingRelim.surveyBlueprintPolicy || defaultRelimPolicy,
               hasMasterBlueprint: true
             });
+          } else {
+            const seedByResid = new Map(relimList.map(it => [String(it.resid), it]));
+            const mbzSyncFields = [
+              'financialSource', 'mbzEnrichedAt', 'openYear', 'openMonth',
+              'ceoName', 'ceoGender', 'ceoGenderCode', 'corpRegNo', 'orgTypeCode', 'orgTypeLabel',
+              'q11FinStmtCode', 'phone', 'forestryRatioPct', 'otherRatioPct',
+              'sales2025M', 'forestrySales2025M', 'otherSales2025M',
+              'assets2025M', 'capital2025M', 'debt2025M', 'opCost2025M', 'opProfit2025M', 'netProfit2025M',
+              'sales2024M', 'forestrySales2024M', 'otherSales2024M',
+              'q17A1Code', 'q17A1Label', 'q17A2Text',
+              'totalWorkers', 'forestryWorkers', 'workerBreakdown', 'avgSalaryManwon'
+            ];
+            let relimChanged = false;
+            for (const curItem of existingRelim.quotaDatabase) {
+              const isLocked =
+                curItem.quotaStatus === 'pilot_done' ||
+                curItem.quotaStatus === 'completed' ||
+                String(curItem.status || '').includes('99%') ||
+                String(curItem.status || '').includes('완료');
+              if (isLocked || curItem.isClosedBiz) continue;
+              const seedItem = seedByResid.get(String(curItem.resid));
+              if (!seedItem) continue;
+              if (seedItem.mbzEnrichedAt && seedItem.mbzEnrichedAt !== curItem.mbzEnrichedAt) {
+                for (const fk of mbzSyncFields) {
+                  if (seedItem[fk] !== undefined) curItem[fk] = seedItem[fk];
+                }
+                relimChanged = true;
+              }
+            }
+            if (relimChanged) {
+              CampaignStore.updateCampaign(relimCampId, {
+                quotaDatabase: existingRelim.quotaDatabase,
+                quotaSourceFile: existingRelim.quotaSourceFile || relimFile,
+                hasMasterBlueprint: true
+              });
+            }
           }
         }
       }

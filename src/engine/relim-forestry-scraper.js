@@ -130,6 +130,8 @@ export function persistRelimForestryQuota({ quotaDatabase = [], quotasDir, accou
       memoParts.push(`선정(${it.substituteForResid})대체투입`);
     }
     if (it.financialSource === '사람인(NICE공시)') memoParts.push('NICE재무실측');
+    else if (it.financialSource === '마켓비즈(재무실측)') memoParts.push('마켓비즈재무실측');
+    else if (it.financialSource === '마켓비즈(고용·기초실측)') memoParts.push('마켓비즈고용실측');
 
     return {
       '구분': it.selectionType,
@@ -332,6 +334,8 @@ export async function syncRelimForestryToGoogleSheet({
       memoParts.push(`선정(${it.substituteForResid})대체투입`);
     }
     if (it.financialSource === '사람인(NICE공시)') memoParts.push('NICE재무실측');
+    else if (it.financialSource === '마켓비즈(재무실측)') memoParts.push('마켓비즈재무실측');
+    else if (it.financialSource === '마켓비즈(고용·기초실측)') memoParts.push('마켓비즈고용실측');
 
     const rowCells = [
       sanitizeCell(it.status || '대기'),
