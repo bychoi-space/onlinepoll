@@ -69,6 +69,7 @@ async function initQuotaDetailPage() {
     const metaStr = `${originalQuota?.surveyType || ''} ${originalQuota?.type || ''} ${fileName || ''} ${originalQuota?.title || ''}`.toLowerCase();
     const sample = currentData[0] || {};
     if (metaStr.includes('agriwork') || metaStr.includes('농업고용') || sample.surveySubType !== undefined) return 'gallup_agriwork';
+    if (metaStr.includes('relim') || metaStr.includes('산림') || metaStr.includes('s21629') || sample.ksicCode !== undefined) return 'relim_forestry';
     if (metaStr.includes('hrc') || metaStr.includes('에너지') || sample.buildingName !== undefined || sample.selectionType !== undefined) return 'hrc_energy';
     if (metaStr.includes('globalri') || metaStr.includes('문해') || sample.lid !== undefined || sample.memberUid !== undefined) return 'globalri_literacy';
     if (metaStr.includes('gallup') || metaStr.includes('귀농') || sample.eupMyeon !== undefined) return 'gallup_return_farm';
@@ -87,9 +88,9 @@ async function initQuotaDetailPage() {
     if (!term) return true;
     return [
       item.companyName, item.buildingName, item.memberName, item.name,
-      item.industry, item.marketType, item.selectionType, item.ageGroupLabel,
-      item.ceoName, item.phone, item.bizNumber, item.uid, item.lid, item.resid, item.id, item.idx, item.listId, item.cropName,
-      item.handledItems, item.mainProducts, item.address, item.eupMyeon, item.surveyorId, item.surveyorName
+      item.industry, item.ksicCode, item.ksicName, item.effectiveRole, item.marketType, item.selectionType, item.ageGroupLabel,
+      item.ceoName, item.phone, item.bizNumber, item.bizNo, item.uid, item.lid, item.resid, item.id, item.idx, item.listId, item.cropName,
+      item.handledItems, item.mainProducts, item.address, item.region, item.eupMyeon, item.surveyorId, item.surveyorName
     ].some(v => String(v || '').toLowerCase().includes(term));
   }
 
@@ -237,6 +238,7 @@ async function initQuotaDetailPage() {
     if (nonKstat) {
       const schemaLabels = {
         gallup_agriwork: '한국갤럽 농업고용인력 실태조사 표본',
+        relim_forestry: '산림·정원산업조사 선정·예비 표본',
         hrc_energy: '한국리서치 에너지총조사 표본',
         globalri_literacy: '글로벌리서치 성인문해 표본',
         gallup_return_farm: '한국갤럽 귀농실태조사 표본',
@@ -426,20 +428,21 @@ async function initQuotaDetailPage() {
         const seq = Number(item.seq || item.index || (idx + 1));
         const isChecked = selectedSeqSet.has(seq);
         const primaryName = item.companyName || item.buildingName || item.memberName || item.name || '-';
-        const typeLabel = item.selectionType || item.ageGroupLabel || item.industry || item.eupMyeon || '-';
-        const uniqueCode = item.uid || item.memberUid || item.lid || item.resid || item.id || item.idx || item.bizNumber || '-';
+        const typeLabel = item.effectiveRole ? `${item.effectiveRole} · ${item.ksicCode || ''}` : (item.selectionType || item.ageGroupLabel || item.industry || item.eupMyeon || '-');
+        const uniqueCode = item.uid || item.memberUid || item.lid || item.resid || item.id || item.idx || item.bizNumber || item.bizNo || '-';
         const personName = item.ceoName || item.memberName || item.name || '-';
         const genderVal = item.ceoGender || item.gender || '-';
-        const ageVal = item.ceoAge || item.age || item.birthYear || '-';
+        const ageVal = item.ceoAgeDecade || item.ceoAge || item.age || item.birthYear || '-';
         const phoneVal = item.phone || item.mobile || item.tel || '-';
-        const addrRaw = item.address || item.roadAddress || item.eupMyeon || '-';
+        const addrRaw = item.address || item.roadAddress || item.region || item.eupMyeon || '-';
         const addrShort = addrRaw.length > 32 ? addrRaw.slice(0, 32) + '...' : addrRaw;
         const surveyorVal = item.surveyorName || item.surveyorId || item.accountKey || item.loginId || '-';
         const stRaw = item.status || item.quotaStatus || '대기';
         const isDone = stRaw === '완료' || stRaw === '조사완료' || item.quotaStatus === 'completed' || String(stRaw).includes('완료(100%)');
         const isWait = item.quotaStatus === 'pilot_done' || /98%|99%|완료직전|F05_2/.test(String(stRaw));
-        const stBadgeClass = isDone ? 'success' : (isWait ? 'running' : 'ready');
-        const stText = isDone ? '완료' : (isWait ? String(stRaw) : '대기');
+        const isExcluded = Boolean(item.isClosedBiz || item.quotaStatus === 'excluded');
+        const stBadgeClass = isDone ? 'success' : (isWait ? 'running' : (isExcluded ? 'error' : 'ready'));
+        const stText = isDone ? '완료' : (isWait ? String(stRaw) : (isExcluded ? (item.bizStatus || '제외') : '대기'));
 
         return `
           <tr data-seq="${seq}" class="${isChecked ? 'row-focused' : ''}">

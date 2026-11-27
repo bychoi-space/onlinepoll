@@ -1080,6 +1080,66 @@ export function seedInitialCampaigns({
     } catch (agriErr) {
       console.warn('[CampaignSeeder] 농업고용인력 캠페인 시드 경고:', agriErr.message);
     }
+
+    // [산림청·한국임업진흥원] 2025년 기준 산림·정원산업조사 (S21629axjxr5 · 2009 지연옥 · 선정 197건 / 예비 145건 = 총 342건) 자동 시드
+    try {
+      const relimCampId = 'camp_relim_forestry_2009';
+      const relimFile = 'quota_relim_forestry_2009.json';
+      const relimPath = path.join(quotasDir, relimFile);
+      if (fs.existsSync(relimPath)) {
+        const relimJson = JSON.parse(fs.readFileSync(relimPath, 'utf-8'));
+        const relimList = relimJson.data || relimJson.items || [];
+        if (relimList.length > 0) {
+          const allNow = CampaignStore.getAllCampaigns();
+          const existingRelim = allNow.find(c => c.id === relimCampId);
+          const defaultRelimPolicy = {
+            preserveExistingInputs: true,
+            stopBeforeFinalSubmit: true,
+            haltOnUnhandledSubjective: true,
+            targetSelectionOnly: true,
+            ksic46101_46104FullForestry: true,
+            unknownFinancialsUseDontKnow: true,
+            maxSubjectiveLength: 10,
+            q43DefaultText: '없음',
+            autoSyncGoogleSheet: true
+          };
+          if (!existingRelim) {
+            CampaignStore.createCampaign({
+              id: relimCampId,
+              title: '2025년 기준 산림·정원산업조사 - 2009 지연옥 (선정 197건 · 예비 145건)',
+              description: 'SurveyBox SP7(S21629axjxr5) · 구글 시트 선정명단(유효 197건: 선정 186 + 대체투입 11) 연동 · 기업검색 기반 기초·재무·종사자 정합 매핑 · KSIC 46101·46104 산림비중 100% 고정 · 미대응 주관식 즉시 중단 및 DQ(99%) 완료 직전 안전 대기',
+              quotaType: 'b2b',
+              surveyType: 'relim_forestry',
+              loginId: '2009',
+              accountKeys: ['2009'],
+              surveyorName: '지연옥',
+              googleSheetUrl: 'https://docs.google.com/spreadsheets/d/12JbrVKTAEyAmEzPOp9W7HvdLa2ghN6cES3wFbikIa4g/edit?gid=2054505699#gid=2054505699',
+              quotaSourceFile: relimFile,
+              relimPolicy: defaultRelimPolicy,
+              surveyBlueprintPolicy: defaultRelimPolicy,
+              hasMasterBlueprint: true,
+              guidelineConfig: {
+                surveyUrl: 'https://relim.svybx.kr/sp7/S21629axjxr5/mlist.asp',
+                topic: '2025년 기준 산림·정원산업조사',
+                engine: 'relim_forestry',
+                headless: true
+              },
+              quotaDatabase: relimList
+            });
+          } else if (!Array.isArray(existingRelim.quotaDatabase) || existingRelim.quotaDatabase.length === 0) {
+            CampaignStore.updateCampaign(relimCampId, {
+              quotaDatabase: relimList,
+              quotaSourceFile: relimFile,
+              relimPolicy: existingRelim.relimPolicy || defaultRelimPolicy,
+              surveyBlueprintPolicy: existingRelim.surveyBlueprintPolicy || defaultRelimPolicy,
+              hasMasterBlueprint: true
+            });
+          }
+        }
+      }
+    } catch (relimErr) {
+      console.warn('[CampaignSeeder] 산림·정원산업조사 캠페인 시드 경고:', relimErr.message);
+    }
   } catch (err) {
     console.warn('[CampaignSeeder] 초기 캠페인 시드 처리 경고:', err.message);
   }

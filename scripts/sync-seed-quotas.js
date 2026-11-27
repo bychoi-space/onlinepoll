@@ -16,14 +16,14 @@ import { execFileSync } from 'child_process';
 function getItemKey(item) {
   if (!item || typeof item !== 'object') return '';
   const scope = String(item.surveyorId || item.accountKey || item.loginId || '').trim();
-  const id = String(item.uid ?? item.finalId ?? item.id ?? item.listId ?? '').trim();
+  const id = String(item.uid ?? item.finalId ?? item.id ?? item.listId ?? item.resid ?? '').trim();
   if (!id) return '';
   return `${scope}::${id}`;
 }
 
 function getFallbackIdKey(item) {
   if (!item || typeof item !== 'object') return '';
-  const id = String(item.uid ?? item.finalId ?? item.id ?? item.listId ?? '').trim();
+  const id = String(item.uid ?? item.finalId ?? item.id ?? item.listId ?? item.resid ?? '').trim();
   return id ? `::${id}` : '';
 }
 

@@ -7,6 +7,13 @@ import { runKstatAssocSurvey } from '../engine/kstat-assoc-runner.js';
 import { runKstatAssocEvaluation } from '../engine/kstat-assoc-eval-runner.js';
 import { runMetrixSurvey } from '../engine/metrix-runner.js';
 import { runMetrixSeoulSurvey } from '../engine/metrix-seoul-runner.js';
+import { runRelimForestrySurvey } from '../engine/relim-forestry-runner.js';
+import {
+  RELIM_FORESTRY_PID,
+  RELIM_FORESTRY_SHEET_URL,
+  persistRelimForestryQuota,
+  syncRelimForestryToGoogleSheet
+} from '../engine/relim-forestry-scraper.js';
 import { runKonaSurvey } from '../engine/kona-runner.js';
 import { runHrcEnergySurvey } from '../engine/hrc-energy-runner.js';
 import { runGlobalriLiteracySurvey } from '../engine/globalri-literacy-runner.js';
@@ -265,6 +272,7 @@ export function registerExecutionRoutes({
     const isGallupReturnFarmCampaign = (campaign.surveyType === 'gallup_return_farm');
     const isGallupAgriworkCampaign = (campaign.surveyType === 'gallup_agriwork');
     const isKmacKbpiCampaign = (campaign.surveyType === 'kmac_kbpi');
+    const isRelimForestryCampaign = (campaign.surveyType === 'relim_forestry');
 
     if (isKmacKbpiCampaign) {
       try {
@@ -283,15 +291,15 @@ export function registerExecutionRoutes({
 
     const isPilotTargetStrictlyDone = (b) => b.isClosedBiz || b.quotaStatus === 'excluded' || b.quotaStatus === 'completed' || (!/직전|대기/.test(String(b.status || '')) && String(b.status || '').includes('완료')) || (isMetrixCampaign && String(b.status || '').includes('98%'));
     let targetBiz = quotaDb.find(b => Number(b.index || b.seq) === Number(quotaIndex)) || quotaDb[Math.max(0, quotaIndex - 1)];
-    if ((isMetrixCampaign || isKonaCampaign || isGlobalriLiteracyCampaign || isGallupReturnFarmCampaign || isGallupAgriworkCampaign || isMetrixSeoulCampaign || isKmacKbpiCampaign) && targetBiz && isPilotTargetStrictlyDone(targetBiz)) {
-      const firstReady = quotaDb.find(b => !isPilotTargetStrictlyDone(b));
+    if ((isMetrixCampaign || isKonaCampaign || isGlobalriLiteracyCampaign || isGallupReturnFarmCampaign || isGallupAgriworkCampaign || isMetrixSeoulCampaign || isKmacKbpiCampaign || isRelimForestryCampaign) && targetBiz && isPilotTargetStrictlyDone(targetBiz)) {
+      const firstReady = quotaDb.find(b => !isPilotTargetStrictlyDone(b) && (!isRelimForestryCampaign || b.selectionType === '선정' || b.isSubstituteActive));
       if (firstReady) targetBiz = firstReady;
     }
     if (!targetBiz) {
       return res.status(400).json({ error: '실행 대상 쿼터를 찾을 수 없습니다.' });
     }
 
-    const targetUrl = targetBiz.surveyUrl || targetBiz.slotUrl || targetBiz.householdUrl || (isGallupAgriworkCampaign ? AGRIWORK_DEFAULT_PORTAL_URL : (isKmacKbpiCampaign ? KBPI_DEFAULT_URL : (isMetrixSeoulCampaign ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${targetBiz.resid}&fwid=S21401by41s3${targetBiz.accountKey || targetBiz.akey || '2010'}` : (isGallupReturnFarmCampaign ? GALLUP_20263603_DEFAULT_URL : (isKonaCampaign ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : (isGlobalriLiteracyCampaign ? 'https://gift.globalri.it/login' : ''))))));
+    const targetUrl = targetBiz.surveyUrl || targetBiz.slotUrl || targetBiz.householdUrl || (isGallupAgriworkCampaign ? AGRIWORK_DEFAULT_PORTAL_URL : (isRelimForestryCampaign ? `https://relim.svybx.kr/?pid=${RELIM_FORESTRY_PID}&grpid=list&resid=${targetBiz.resid}&fwid=${RELIM_FORESTRY_PID}${targetBiz.accountKey || '2009'}` : (isKmacKbpiCampaign ? KBPI_DEFAULT_URL : (isMetrixSeoulCampaign ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${targetBiz.resid}&fwid=S21401by41s3${targetBiz.accountKey || targetBiz.akey || '2010'}` : (isGallupReturnFarmCampaign ? GALLUP_20263603_DEFAULT_URL : (isKonaCampaign ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : (isGlobalriLiteracyCampaign ? 'https://gift.globalri.it/login' : '')))))));
     if (!targetUrl) {
       return res.status(400).json({
         error: isMetrixCampaign
@@ -312,7 +320,7 @@ export function registerExecutionRoutes({
     targetBiz.quotaStatus = 'running';
     CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb, status: 'running' });
     logger.runWithCampaignContext(campaign.id, () => {
-      logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상: "${targetBiz.companyName}" (${targetBiz.uid || targetBiz.idx || targetBiz.bizNumber || ''}) (슬롯: ${targetBiz.slotIndex ? '#' + targetBiz.slotIndex : '단독'} · 가동 슬롯: ${getActiveTasksList().length}/${MAX_CONCURRENT_TASKS})`);
+      logger.info(`[파일럿 검증 시작] 캠페인 "${campaign.title}" ➔ 대상: "${targetBiz.companyName}" (${targetBiz.resid || targetBiz.uid || targetBiz.idx || targetBiz.bizNumber || ''}) (슬롯: ${targetBiz.slotIndex ? '#' + targetBiz.slotIndex : '단독'} · 가동 슬롯: ${getActiveTasksList().length}/${MAX_CONCURRENT_TASKS})`);
       logger.broadcast({
         type: 'QUOTA_UPDATED',
         campaignId: campaign.id,
@@ -340,6 +348,7 @@ export function registerExecutionRoutes({
         const isGallupReturnFarm = (campaign.surveyType === 'gallup_return_farm');
         const isGallupAgriwork = (campaign.surveyType === 'gallup_agriwork');
         const isKmacKbpi = (campaign.surveyType === 'kmac_kbpi');
+        const isRelimForestry = (campaign.surveyType === 'relim_forestry');
         let result;
 
         if (isGallupAgriwork) {
@@ -356,6 +365,26 @@ export function registerExecutionRoutes({
             reportDir: path.join(reportsDir, campaign.id, `agriwork_item_${targetBiz.index || quotaIndex}_${targetBiz.uid || targetBiz.listId || ''}`),
             onProgress: (info) => {
               logger.info(`[농업고용인력 파일럿 - ${info.step}] ${info.message}`);
+              logger.broadcast({
+                type: 'PILOT_PROGRESS',
+                campaignId: campaign.id,
+                quotaIndex: targetBiz.index,
+                ...info
+              });
+            }
+          });
+        } else if (isRelimForestry) {
+          logger.info(`[산림·정원산업조사 파일럿 실행] 러너 가동: "${targetBiz.companyName}" (resid: ${targetBiz.resid}, KSIC: ${targetBiz.ksicCode})`);
+          const relimPol = campaign.relimPolicy || campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || policy || {};
+          result = await runRelimForestrySurvey({
+            campaign,
+            policy: relimPol,
+            slotUrl: targetUrl,
+            slotData: targetBiz,
+            mode: 'pilot',
+            reportDir: path.join(reportsDir, campaign.id, `relim_item_${targetBiz.index || quotaIndex}_${targetBiz.resid || ''}`),
+            onProgress: (info) => {
+              logger.info(`[산림산업조사 파일럿 - ${info.step}] ${info.message}`);
               logger.broadcast({
                 type: 'PILOT_PROGRESS',
                 campaignId: campaign.id,
@@ -577,6 +606,34 @@ export function registerExecutionRoutes({
             }
             persistGallupAgriworkQuotaDatabase({ quotaDatabase: quotaDb });
             logger.success(`🎉 [농업고용인력 파일럿 완료] "${targetBiz.respondentName || targetBiz.name}" (${targetBiz.uid}) ${targetBiz.status} 달성!`);
+          } else if (isRelimForestry) {
+            if (result.alreadyCompleted) {
+              targetBiz.quotaStatus = 'completed';
+              targetBiz.status = '완료(100%)';
+              targetBiz.progress = '100%';
+            } else {
+              targetBiz.quotaStatus = 'pilot_done';
+              targetBiz.status = '완료직전대기(99%)';
+              targetBiz.progress = '99%';
+            }
+            targetBiz.pilotAt = new Date().toISOString();
+            if (result.submittedAnswers && Object.keys(result.submittedAnswers).length > 0) {
+              targetBiz.submittedAnswers = result.submittedAnswers;
+            }
+            try {
+              persistRelimForestryQuota({ quotaDatabase: quotaDb, quotasDir });
+              const relimPol = campaign.relimPolicy || campaign.surveyBlueprintPolicy || policy || {};
+              if (relimPol.autoSyncGoogleSheet !== false) {
+                syncRelimForestryToGoogleSheet({
+                  quotaDatabase: quotaDb,
+                  sheetUrl: campaign.googleSheetUrl || RELIM_FORESTRY_SHEET_URL,
+                  quotasDir
+                }).catch(syncErr => logger.warn(`[산림산업조사 구글시트 기록 경고] ${syncErr.message}`));
+              }
+            } catch (exErr) {
+              logger.warn(`[산림산업조사 로컬 쿼터 저장 경고] ${exErr.message}`);
+            }
+            logger.success(`🎉 [산림·정원산업조사 파일럿 완료] "${targetBiz.companyName}" (resid=${targetBiz.resid}) ${targetBiz.status} 달성!`);
           } else if (isKmacKbpi) {
             targetBiz.quotaStatus = result.quotaStatus || (result.completed ? 'completed' : (result.stoppedAt === 'Q4' ? 'q4_wait' : 'pilot_done'));
             targetBiz.status = result.statusLabel || (result.completed ? '완료' : '완료직전 대기(ZQ6)');
@@ -722,7 +779,7 @@ export function registerExecutionRoutes({
             targetBiz.capturedSteps = result.capturedSteps;
           }
 
-          if (!isGallupAgriwork && !isKmacKbpi && !isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
+          if (!isGallupAgriwork && !isRelimForestry && !isKmacKbpi && !isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
             const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
             if (evalUrl) {
               logger.info(`[파일럿 2단계] "${targetBiz.marketName || targetBiz.companyName}" 상인회 조사원 평가 작성 자동 연계 시작...`);
@@ -761,7 +818,7 @@ export function registerExecutionRoutes({
                 logger.warn(`[파일럿 평가 경고] 상인회 조사원 평가 연계 중 예외: ${evalErr.message}`);
               }
             }
-          } else if (!isGallupAgriwork && !isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
+          } else if (!isGallupAgriwork && !isRelimForestry && !isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
             const evalUrl = targetBiz.evalUrl || (targetBiz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${targetBiz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
             if (evalUrl) {
               logger.info(`[파일럿 2단계] "${targetBiz.companyName}" 조사원 평가항목 작성 자동 연계 시작...`);
@@ -802,7 +859,7 @@ export function registerExecutionRoutes({
             }
           }
 
-          if (!isGallupAgriwork && !isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
+          if (!isGallupAgriwork && !isRelimForestry && !isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
             const targetPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
             await syncKstatSlotStatus({
               pridSel: targetPridSel,
@@ -897,6 +954,7 @@ export function registerExecutionRoutes({
     const isGallupReturnFarm = (campaign.surveyType === 'gallup_return_farm');
     const isGallupAgriwork = (campaign.surveyType === 'gallup_agriwork');
     const isKmacKbpi = (campaign.surveyType === 'kmac_kbpi');
+    const isRelimForestry = (campaign.surveyType === 'relim_forestry');
 
     if (isKmacKbpi) {
       try {
@@ -915,19 +973,21 @@ export function registerExecutionRoutes({
 
     const effectivePolicy = isGallupAgriwork
       ? (campaign.gallupAgriworkPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
-      : (isKmacKbpi
-        ? (campaign.kbpiPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
-        : (isMetrixSeoul
-          ? (campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
-          : (isGallupReturnFarm
-            ? (campaign.gallupReturnFarmPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
-            : (isGlobalriLiteracy
-              ? (campaign.globalriLiteracyPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
-              : (isHrcEnergy
-                ? (campaign.hrcEnergyPolicy || policy || {})
-                : (isKona
-                  ? (campaign.konaPolicy || policy || {})
-                  : (isMetrix ? (campaign.metrixPolicy || policy || {}) : (isAssoc ? (campaign.assocPolicy || policy || {}) : policy))))))));
+      : (isRelimForestry
+        ? (campaign.relimPolicy || campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || policy || {})
+        : (isKmacKbpi
+          ? (campaign.kbpiPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
+          : (isMetrixSeoul
+            ? (campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
+            : (isGallupReturnFarm
+              ? (campaign.gallupReturnFarmPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
+              : (isGlobalriLiteracy
+                ? (campaign.globalriLiteracyPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || policy || {})
+                : (isHrcEnergy
+                  ? (campaign.hrcEnergyPolicy || policy || {})
+                  : (isKona
+                    ? (campaign.konaPolicy || policy || {})
+                    : (isMetrix ? (campaign.metrixPolicy || policy || {}) : (isAssoc ? (campaign.assocPolicy || policy || {}) : policy)))))))));
 
     const skipCompletedSlots = (effectivePolicy.skipCompletedSlots !== false);
     const skipSlotIndices = (effectivePolicy.skipSlotIndices || '')
@@ -954,22 +1014,26 @@ export function registerExecutionRoutes({
 
     const targets = quotaDb.filter(b => {
       const idx = Number(b.index || b.seq || b.slotIndex || 1);
-      if (b.isClosedBiz || String(b.bizStatus || '').includes('폐업') || b.quotaStatus === 'excluded') {
+      if (b.isClosedBiz || String(b.bizStatus || '').includes('폐업') || String(b.bizStatus || '').includes('휴업') || b.quotaStatus === 'excluded') {
         return false;
       }
       if (selectedIndexSet) {
         if (!selectedIndexSet.has(idx)) return false;
         if (isItemStrictlyCompleted(b)) return false;
+        if (isRelimForestry && (b.quotaStatus === 'pilot_done' || String(b.status || '').includes('99%'))) return false;
         return true;
       }
       if (idx < startIndex) return false;
       if (skipSlotIndices.includes(idx)) return false;
-      if ((isGallupAgriwork || isKmacKbpi || isMetrix || isMetrixSeoul || isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm) && (b.uid || b.resid || b.memberUid || b.idx || b.id) && skipSlotUids.includes(String(b.memberUid || b.resid || b.uid || b.idx || b.id))) return false;
+      if ((isGallupAgriwork || isRelimForestry || isKmacKbpi || isMetrix || isMetrixSeoul || isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm) && (b.uid || b.resid || b.memberUid || b.idx || b.id) && skipSlotUids.includes(String(b.memberUid || b.resid || b.uid || b.idx || b.id))) return false;
+      if (isRelimForestry && effectivePolicy.targetSelectionOnly !== false && b.selectionType !== '선정' && !b.isSubstituteActive) {
+        return false;
+      }
       if (isHrcEnergy && effectivePolicy.onlySelectedByDefault !== false && b.selectionType && b.selectionType !== '선정') {
         return false;
       }
       if (isItemStrictlyCompleted(b)) return false;
-      if ((isGallupReturnFarm || isMetrixSeoul) && (b.quotaStatus === 'pilot_done' || String(b.status || '').includes('동의서대기'))) return false;
+      if ((isGallupReturnFarm || isMetrixSeoul || isRelimForestry) && (b.quotaStatus === 'pilot_done' || String(b.status || '').includes('동의서대기') || String(b.status || '').includes('완료직전대기'))) return false;
       if (skipCompletedSlots && isItemStrictlyCompleted(b)) {
         return false;
       }
@@ -991,7 +1055,7 @@ export function registerExecutionRoutes({
       return res.status(400).json({ error: '연속 실행할 잔여 쿼터가 없습니다. (이미 완료되었거나 안전 대기 상태임)' });
     }
 
-    const unmapped = (isGallupAgriwork || isKmacKbpi || isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
+    const unmapped = (isGallupAgriwork || isRelimForestry || isKmacKbpi || isKona || isHrcEnergy || isGlobalriLiteracy || isGallupReturnFarm || isMetrixSeoul) ? [] : targets.filter(b => !b.slotUrl && !b.surveyUrl);
     if (unmapped.length > 0) {
       return res.status(400).json({
         error: isMetrix
@@ -1030,7 +1094,7 @@ export function registerExecutionRoutes({
           };
 
           const biz = targets[i];
-          const bizUrl = biz.slotUrl || biz.surveyUrl || (isGallupAgriwork ? AGRIWORK_DEFAULT_PORTAL_URL : (isKmacKbpi ? KBPI_DEFAULT_URL : (isMetrixSeoul ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${biz.resid}&fwid=S21401by41s3${biz.accountKey || biz.akey || '2010'}` : (isGallupReturnFarm ? GALLUP_20263603_DEFAULT_URL : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${biz.uid}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''))))));
+          const bizUrl = biz.slotUrl || biz.surveyUrl || (isGallupAgriwork ? AGRIWORK_DEFAULT_PORTAL_URL : (isRelimForestry ? `https://relim.svybx.kr/?pid=${RELIM_FORESTRY_PID}&grpid=list&resid=${biz.resid}&fwid=${RELIM_FORESTRY_PID}${biz.accountKey || '2009'}` : (isKmacKbpi ? KBPI_DEFAULT_URL : (isMetrixSeoul ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${biz.resid}&fwid=S21401by41s3${biz.accountKey || biz.akey || '2010'}` : (isGallupReturnFarm ? GALLUP_20263603_DEFAULT_URL : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${biz.uid}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '')))))));
           if (!bizUrl) {
             logger.error(`[배치 ${i + 1}/${targets.length}] "${biz.companyName}"에 할당된 설문 URL이 없습니다.`);
             biz.quotaStatus = 'error';
@@ -1065,6 +1129,26 @@ export function registerExecutionRoutes({
                 reportDir: path.join(reportsDir, campaign.id, `agriwork_item_${biz.index || (i + startIndex)}_${biz.uid || biz.listId || ''}`),
                 onProgress: (info) => {
                   logger.info(`[농업고용인력 배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
+                  logger.broadcast({
+                    type: 'BATCH_PROGRESS',
+                    campaignId: campaign.id,
+                    quotaIndex: biz.index || (i + startIndex),
+                    itemNumber: i + 1,
+                    totalItems: targets.length,
+                    ...info
+                  });
+                }
+              });
+            } else if (isRelimForestry) {
+              result = await runRelimForestrySurvey({
+                campaign,
+                policy: effectivePolicy,
+                slotUrl: bizUrl,
+                slotData: biz,
+                mode: 'batch',
+                reportDir: path.join(reportsDir, campaign.id, `relim_item_${biz.index || (i + startIndex)}_${biz.resid || ''}`),
+                onProgress: (info) => {
+                  logger.info(`[산림산업조사 배치 #${biz.index || (i + startIndex)}] [${info.step}] ${info.message}`);
                   logger.broadcast({
                     type: 'BATCH_PROGRESS',
                     campaignId: campaign.id,
@@ -1356,6 +1440,34 @@ export function registerExecutionRoutes({
               }
               persistGallupAgriworkQuotaDatabase({ quotaDatabase: quotaDb });
               logger.success(`🎉 [농업고용인력 배치 ${i + 1}/${targets.length} 완료] "${biz.respondentName || biz.name}" (${biz.uid} · ${biz.surveySubTypeLabel || '경영체'}) ${biz.status} 달성!`);
+            } else if (isRelimForestry) {
+              if (result.alreadyCompleted) {
+                biz.quotaStatus = 'completed';
+                biz.status = '완료(100%)';
+                biz.progress = '100%';
+              } else {
+                biz.quotaStatus = 'pilot_done';
+                biz.status = '완료직전대기(99%)';
+                biz.progress = '99%';
+              }
+              biz.completedAt = new Date().toISOString();
+              if (result.submittedAnswers && Object.keys(result.submittedAnswers).length > 0) {
+                biz.submittedAnswers = result.submittedAnswers;
+              }
+              try {
+                persistRelimForestryQuota({ quotaDatabase: quotaDb, quotasDir });
+                const isPeriodicOrLast = ((i + 1) % 5 === 0) || (i === targets.length - 1);
+                if (effectivePolicy.autoSyncGoogleSheet !== false && isPeriodicOrLast) {
+                  await syncRelimForestryToGoogleSheet({
+                    quotaDatabase: quotaDb,
+                    sheetUrl: campaign.googleSheetUrl || RELIM_FORESTRY_SHEET_URL,
+                    quotasDir
+                  }).catch(syncErr => logger.warn(`[산림산업조사 배치 구글시트 기록 경고] ${syncErr.message}`));
+                }
+              } catch (exErr) {
+                logger.warn(`[산림산업조사 로컬 쿼터 저장 경고] ${exErr.message}`);
+              }
+              logger.success(`🎉 [산림·정원산업조사 배치 ${i + 1}/${targets.length} 완료] "${biz.companyName}" (resid=${biz.resid}, KSIC=${biz.ksicCode}) ${biz.status} 달성!`);
             } else if (isKmacKbpi) {
               biz.quotaStatus = result.quotaStatus || (result.completed ? 'completed' : 'pilot_done');
               biz.status = result.statusLabel || (result.completed ? '완료' : '검증대기(완료직전)');
@@ -1504,7 +1616,7 @@ export function registerExecutionRoutes({
               biz.capturedSteps = result.capturedSteps;
             }
 
-            if (!isGallupAgriwork && !isKmacKbpi && !isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
+            if (!isGallupAgriwork && !isRelimForestry && !isKmacKbpi && !isKona && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
               const evalUrl = biz.evalUrl || (biz.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${biz.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
               if (evalUrl) {
                 logger.info(`[배치 #${biz.index || (i + startIndex)} 2단계] "${biz.marketName || biz.companyName}" 상인회 조사원 평가 연계 시작...`);
@@ -1547,7 +1659,7 @@ export function registerExecutionRoutes({
               } else {
                 logger.success(`[상인회 배치 ${i + 1}/${targets.length} 완료] "${biz.marketName || biz.companyName}" 본 설문 완료!`);
               }
-            } else if (!isGallupAgriwork && !isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
+            } else if (!isGallupAgriwork && !isRelimForestry && !isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
               const evalUrl = biz.evalUrl || (biz.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${biz.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
               if (evalUrl) {
                 logger.info(`[배치 #${biz.index || (i + startIndex)} 2단계] "${biz.companyName}" 조사원 평가 작성 연계 시작...`);
@@ -1592,7 +1704,7 @@ export function registerExecutionRoutes({
               }
             }
 
-            if (!isGallupAgriwork && !isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
+            if (!isGallupAgriwork && !isRelimForestry && !isKmacKbpi && !isKona && !isMetrix && !isMetrixSeoul && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm) {
               const batchPridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
               await syncKstatSlotStatus({
                 pridSel: batchPridSel,
@@ -1637,11 +1749,18 @@ export function registerExecutionRoutes({
                 biz.submittedAnswers = result.submittedAnswers;
               }
               logger.error(`[배치 ${i + 1}/${targets.length} 실패] "${biz.name || biz.buildingName || biz.marketName || biz.companyName}": ${result?.error || '설문 실행 오류'}`);
-              if (isMetrix || isKmacKbpi) {
-                const haltNotice = `🛑 [배치 즉시 중단] "${biz.name || biz.companyName}" (${biz.uid || '-'}) 진행 중 차단/오류가 발생하여 배치를 안전하게 중단했습니다. 사유: ${result?.error || '설문 진행 차단'}`;
+              if (isMetrix || isKmacKbpi || isRelimForestry) {
+                const haltNotice = `🛑 [배치 즉시 중단] "${biz.name || biz.companyName}" (${biz.resid || biz.uid || '-'}) 진행 중 차단/오류가 발생하여 배치를 안전하게 중단했습니다. 사유: ${result?.error || '설문 진행 차단'}`;
                 haltedByBlock = true;
                 haltedReason = haltNotice;
                 logger.error(haltNotice);
+                if (isRelimForestry) {
+                  try {
+                    persistRelimForestryQuota({ quotaDatabase: quotaDb, quotasDir });
+                  } catch (pErr) {
+                    logger.warn(`[산림산업조사 중단 시 로컬저장 경고] ${pErr.message}`);
+                  }
+                }
                 CampaignStore.updateCampaign(campaign.id, { quotaDatabase: quotaDb });
                 logger.broadcast({
                   type: 'QUOTA_UPDATED',
@@ -1670,7 +1789,9 @@ export function registerExecutionRoutes({
 
         const checkPool = isHrcEnergy
           ? quotaDb.filter(b => b.selectionType === '선정')
-          : quotaDb;
+          : (isRelimForestry
+            ? quotaDb.filter(b => b.effectiveRole === '선정(유효)' || b.effectiveRole === '예비(선정대체)')
+            : quotaDb);
         const allQuotasFinished = checkPool.length > 0 && checkPool.every(b =>
           b.isClosedBiz ||
           b.quotaStatus === 'excluded' ||
@@ -1758,6 +1879,7 @@ export function registerExecutionRoutes({
     const isGallupAgriwork = (campaign.surveyType === 'gallup_agriwork');
     const isMetrixSeoul = (campaign.surveyType === 'metrix_seoul_panel');
     const isKmacKbpi = (campaign.surveyType === 'kmac_kbpi');
+    const isRelimForestry = (campaign.surveyType === 'relim_forestry');
 
     if (isKmacKbpi) {
       try {
@@ -1775,7 +1897,7 @@ export function registerExecutionRoutes({
     }
 
     const refreshedTarget = quotaDb.find(b => Number(b.index || b.seq) === Number(quotaIndex)) || targetBiz;
-    const targetUrl = refreshedTarget.slotUrl || refreshedTarget.surveyUrl || refreshedTarget.householdUrl || (isGallupAgriwork ? AGRIWORK_DEFAULT_PORTAL_URL : (isKmacKbpi ? KBPI_DEFAULT_URL : (isMetrixSeoul ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${refreshedTarget.resid}&fwid=S21401by41s3${refreshedTarget.accountKey || refreshedTarget.akey || '2010'}` : (isGallupReturnFarm ? GALLUP_20263603_DEFAULT_URL : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${refreshedTarget.uid}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''))))));
+    const targetUrl = refreshedTarget.slotUrl || refreshedTarget.surveyUrl || refreshedTarget.householdUrl || (isGallupAgriwork ? AGRIWORK_DEFAULT_PORTAL_URL : (isRelimForestry ? `https://relim.svybx.kr/?pid=${RELIM_FORESTRY_PID}&grpid=list&resid=${refreshedTarget.resid}&fwid=${RELIM_FORESTRY_PID}${refreshedTarget.accountKey || '2009'}` : (isKmacKbpi ? KBPI_DEFAULT_URL : (isMetrixSeoul ? `https://metrix.svybx.kr/?pid=S21401by41s3&grpid=list&resid=${refreshedTarget.resid}&fwid=S21401by41s3${refreshedTarget.accountKey || refreshedTarget.akey || '2010'}` : (isGallupReturnFarm ? GALLUP_20263603_DEFAULT_URL : (isHrcEnergy ? `https://tapi.hrcglobal.com/q260342/AnswerInfo4?pid=${refreshedTarget.uid}&page=1` : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '')))))));
     if (!targetUrl) {
       return res.status(400).json({
         error: `[${refreshedTarget.marketName || refreshedTarget.companyName}] 쿼터에 설문 URL이 매핑되지 않았습니다.`
@@ -1827,66 +1949,14 @@ export function registerExecutionRoutes({
                 });
               }
             })
-          : (isKmacKbpi
-          ? await runKmacKbpiSurvey({
-              campaign,
-              slotData: refreshedTarget,
-              policy: campaign.kbpiPolicy || campaign.masterBaseline?.policy || {},
-              quotaIndex: refreshedTarget.index || quotaIndex,
-              pilotMode: kbpiSinglePilotMode,
-              safetyGuard: (safetyGuard !== false),
-              onProgress: (info) => {
-                logger.broadcast({
-                  type: 'PILOT_PROGRESS',
-                  campaignId: campaign.id,
-                  quotaIndex: refreshedTarget.index,
-                  ...info
-                });
-              }
-            })
-          : (isMetrix
-          ? await runMetrixSurvey({
-              surveyUrl: targetUrl,
-              slotData: refreshedTarget,
-              policy: campaign.metrixPolicy || campaign.masterBaseline?.policy || {},
-              quotaIndex: refreshedTarget.index || quotaIndex,
-              pilotMode: true,
-              safetyGuard: (safetyGuard !== false),
-              haltOnBlock: true,
-              reportDir: path.join(reportsDir, campaign.id, `metrix_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.uid || ''}`),
-              onProgress: (info) => {
-                logger.broadcast({
-                  type: 'PILOT_PROGRESS',
-                  campaignId: campaign.id,
-                  quotaIndex: refreshedTarget.index,
-                  ...info
-                });
-              }
-            })
-          : (isMetrixSeoul
-          ? await runMetrixSeoulSurvey({
-              campaign,
-              policy: campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || {},
-              slotUrl: targetUrl,
-              slotData: refreshedTarget,
-              mode: 'pilot',
-              onProgress: (info) => {
-                logger.broadcast({
-                  type: 'PILOT_PROGRESS',
-                  campaignId: campaign.id,
-                  quotaIndex: refreshedTarget.index,
-                  ...info
-                });
-              }
-            })
-          : (isGallupReturnFarm
-            ? await runGallupReturnFarmSurvey({
+          : (isRelimForestry
+            ? await runRelimForestrySurvey({
+                campaign,
+                policy: campaign.relimPolicy || campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || {},
+                slotUrl: targetUrl,
                 slotData: refreshedTarget,
-                policy: campaign.gallupReturnFarmPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || {},
-                quotaIndex: refreshedTarget.index || quotaIndex,
-                pilotMode: true,
-                safetyGuard: true,
-                reportDir: path.join(reportsDir, campaign.id, `gallup_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.id || refreshedTarget.uid || ''}`),
+                mode: 'pilot',
+                reportDir: path.join(reportsDir, campaign.id, `relim_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.resid || ''}`),
                 onProgress: (info) => {
                   logger.broadcast({
                     type: 'PILOT_PROGRESS',
@@ -1896,14 +1966,66 @@ export function registerExecutionRoutes({
                   });
                 }
               })
-            : (isGlobalriLiteracy
-              ? await runGlobalriLiteracySurvey({
+            : (isKmacKbpi
+            ? await runKmacKbpiSurvey({
+                campaign,
+                slotData: refreshedTarget,
+                policy: campaign.kbpiPolicy || campaign.masterBaseline?.policy || {},
+                quotaIndex: refreshedTarget.index || quotaIndex,
+                pilotMode: kbpiSinglePilotMode,
+                safetyGuard: (safetyGuard !== false),
+                onProgress: (info) => {
+                  logger.broadcast({
+                    type: 'PILOT_PROGRESS',
+                    campaignId: campaign.id,
+                    quotaIndex: refreshedTarget.index,
+                    ...info
+                  });
+                }
+              })
+            : (isMetrix
+            ? await runMetrixSurvey({
+                surveyUrl: targetUrl,
+                slotData: refreshedTarget,
+                policy: campaign.metrixPolicy || campaign.masterBaseline?.policy || {},
+                quotaIndex: refreshedTarget.index || quotaIndex,
+                pilotMode: true,
+                safetyGuard: (safetyGuard !== false),
+                haltOnBlock: true,
+                reportDir: path.join(reportsDir, campaign.id, `metrix_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.uid || ''}`),
+                onProgress: (info) => {
+                  logger.broadcast({
+                    type: 'PILOT_PROGRESS',
+                    campaignId: campaign.id,
+                    quotaIndex: refreshedTarget.index,
+                    ...info
+                  });
+                }
+              })
+            : (isMetrixSeoul
+            ? await runMetrixSeoulSurvey({
+                campaign,
+                policy: campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || {},
+                slotUrl: targetUrl,
+                slotData: refreshedTarget,
+                mode: 'pilot',
+                onProgress: (info) => {
+                  logger.broadcast({
+                    type: 'PILOT_PROGRESS',
+                    campaignId: campaign.id,
+                    quotaIndex: refreshedTarget.index,
+                    ...info
+                  });
+                }
+              })
+            : (isGallupReturnFarm
+              ? await runGallupReturnFarmSurvey({
                   slotData: refreshedTarget,
-                  policy: campaign.globalriLiteracyPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || {},
+                  policy: campaign.gallupReturnFarmPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || {},
                   quotaIndex: refreshedTarget.index || quotaIndex,
-                  pilotMode: safetyGuard,
-                  safetyGuard,
-                  reportDir: path.join(reportsDir, campaign.id, `globalri_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.memberUid || refreshedTarget.uid || ''}`),
+                  pilotMode: true,
+                  safetyGuard: true,
+                  reportDir: path.join(reportsDir, campaign.id, `gallup_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.id || refreshedTarget.uid || ''}`),
                   onProgress: (info) => {
                     logger.broadcast({
                       type: 'PILOT_PROGRESS',
@@ -1913,21 +2035,14 @@ export function registerExecutionRoutes({
                     });
                   }
                 })
-              : (isHrcEnergy
-                ? await (async () => {
-                    const singlePhoneCheck = findHrcPhoneConflict(refreshedTarget);
-                    if (singlePhoneCheck.conflict) {
-                      throw new Error(`[중복 연락처 차단] UID ${refreshedTarget.uid}의 전화번호가 이미 완료/진행된 타 건물(계정 ${singlePhoneCheck.otherAccount} · UID ${singlePhoneCheck.otherUid})과 중복됩니다.`);
-                    }
-                    return runHrcEnergySurvey({
-                      slotData: refreshedTarget,
-                      policy: campaign.hrcEnergyPolicy || {},
-                      loginId: refreshedTarget.surveyorId || campaign.loginId || '700275',
-                    loginPw: campaign.loginPw || refreshedTarget.surveyorId || campaign.loginId || '700275',
+              : (isGlobalriLiteracy
+                ? await runGlobalriLiteracySurvey({
+                    slotData: refreshedTarget,
+                    policy: campaign.globalriLiteracyPolicy || campaign.masterBaseline?.policy || campaign.masterBaseline || {},
                     quotaIndex: refreshedTarget.index || quotaIndex,
-                    pilotMode: (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false,
-                    safetyGuard: (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false,
-                    reportDir: path.join(reportsDir, campaign.id, `hrc_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.uid || ''}`),
+                    pilotMode: safetyGuard,
+                    safetyGuard,
+                    reportDir: path.join(reportsDir, campaign.id, `globalri_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.memberUid || refreshedTarget.uid || ''}`),
                     onProgress: (info) => {
                       logger.broadcast({
                         type: 'PILOT_PROGRESS',
@@ -1936,37 +2051,41 @@ export function registerExecutionRoutes({
                         ...info
                       });
                     }
-                    });
-                  })()
-                : (isKona
-                  ? await runKonaSurvey({
-                      surveyUrl: targetUrl,
-                      slotData: refreshedTarget,
-                      policy: campaign.konaPolicy || {},
-                      quotaIndex: refreshedTarget.index || quotaIndex,
-                      pilotMode: safetyGuard,
-                      safetyGuard,
-                      reportDir: path.join(reportsDir, campaign.id, `kona_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.idx || ''}`),
-                      onProgress: (info) => {
-                        logger.broadcast({
-                          type: 'PILOT_PROGRESS',
-                          campaignId: campaign.id,
-                          quotaIndex: refreshedTarget.index,
-                          ...info
-                        });
+                  })
+                : (isHrcEnergy
+                  ? await (async () => {
+                      const singlePhoneCheck = findHrcPhoneConflict(refreshedTarget);
+                      if (singlePhoneCheck.conflict) {
+                        throw new Error(`[중복 연락처 차단] UID ${refreshedTarget.uid}의 전화번호가 이미 완료/진행된 타 건물(계정 ${singlePhoneCheck.otherAccount} · UID ${singlePhoneCheck.otherUid})과 중복됩니다.`);
                       }
-                    })
-                  : (isAssoc
-                    ? await runKstatAssocSurvey({
-                        surveyUrl: targetUrl,
-                        assocData: refreshedTarget,
+                      return runHrcEnergySurvey({
+                        slotData: refreshedTarget,
+                        policy: campaign.hrcEnergyPolicy || {},
+                        loginId: refreshedTarget.surveyorId || campaign.loginId || '700275',
+                        loginPw: campaign.loginPw || refreshedTarget.surveyorId || campaign.loginId || '700275',
                         quotaIndex: refreshedTarget.index || quotaIndex,
-                        policy: assocPol,
-                        surveyorAccount: refreshedTarget.surveyorAccount || campaign.kstatLoginId || '가온이강윤',
-                        preserveExistingInputs: (assocPol.preserveExistingInputs !== false),
-                        pilotMode: true,
-                        safetyGuard: Boolean(safetyGuard),
-                        reportDir: path.join(reportsDir, campaign.id, `assoc_item_${refreshedTarget.index || quotaIndex}`),
+                        pilotMode: (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false,
+                        safetyGuard: (req.body.safetyGuard !== undefined) ? Boolean(req.body.safetyGuard) : false,
+                        reportDir: path.join(reportsDir, campaign.id, `hrc_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.uid || ''}`),
+                        onProgress: (info) => {
+                          logger.broadcast({
+                            type: 'PILOT_PROGRESS',
+                            campaignId: campaign.id,
+                            quotaIndex: refreshedTarget.index,
+                            ...info
+                          });
+                        }
+                      });
+                    })()
+                  : (isKona
+                    ? await runKonaSurvey({
+                        surveyUrl: targetUrl,
+                        slotData: refreshedTarget,
+                        policy: campaign.konaPolicy || {},
+                        quotaIndex: refreshedTarget.index || quotaIndex,
+                        pilotMode: safetyGuard,
+                        safetyGuard,
+                        reportDir: path.join(reportsDir, campaign.id, `kona_item_${refreshedTarget.index || quotaIndex}_${refreshedTarget.idx || ''}`),
                         onProgress: (info) => {
                           logger.broadcast({
                             type: 'PILOT_PROGRESS',
@@ -1976,27 +2095,47 @@ export function registerExecutionRoutes({
                           });
                         }
                       })
-                    : await runKstatSurvey({
-                        surveyUrl: targetUrl,
-                        bizData: refreshedTarget,
-                        quotaIndex: refreshedTarget.index || quotaIndex,
-                        guidelineConfig: {
-                          ...(campaign.guidelineConfig || {}),
-                          masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
-                        },
-                        policy: campaign.guidelineConfig?.policy || {},
-                        pilotMode: true,
-                        safetyGuard: Boolean(safetyGuard),
-                        reportDir: path.join(reportsDir, campaign.id, `item_${refreshedTarget.index || quotaIndex}`),
-                        onProgress: (info) => {
-                          logger.broadcast({
-                            type: 'PILOT_PROGRESS',
-                            campaignId: campaign.id,
-                            quotaIndex: refreshedTarget.index,
-                            ...info
-                          });
-                        }
-                      })))))))));
+                    : (isAssoc
+                      ? await runKstatAssocSurvey({
+                          surveyUrl: targetUrl,
+                          assocData: refreshedTarget,
+                          quotaIndex: refreshedTarget.index || quotaIndex,
+                          policy: assocPol,
+                          surveyorAccount: refreshedTarget.surveyorAccount || campaign.kstatLoginId || '가온이강윤',
+                          preserveExistingInputs: (assocPol.preserveExistingInputs !== false),
+                          pilotMode: true,
+                          safetyGuard: Boolean(safetyGuard),
+                          reportDir: path.join(reportsDir, campaign.id, `assoc_item_${refreshedTarget.index || quotaIndex}`),
+                          onProgress: (info) => {
+                            logger.broadcast({
+                              type: 'PILOT_PROGRESS',
+                              campaignId: campaign.id,
+                              quotaIndex: refreshedTarget.index,
+                              ...info
+                            });
+                          }
+                        })
+                      : await runKstatSurvey({
+                          surveyUrl: targetUrl,
+                          bizData: refreshedTarget,
+                          quotaIndex: refreshedTarget.index || quotaIndex,
+                          guidelineConfig: {
+                            ...(campaign.guidelineConfig || {}),
+                            masterBaseline: campaign.masterBaseline || campaign.guidelineConfig?.masterBaseline
+                          },
+                          policy: campaign.guidelineConfig?.policy || {},
+                          pilotMode: true,
+                          safetyGuard: Boolean(safetyGuard),
+                          reportDir: path.join(reportsDir, campaign.id, `item_${refreshedTarget.index || quotaIndex}`),
+                          onProgress: (info) => {
+                            logger.broadcast({
+                              type: 'PILOT_PROGRESS',
+                              campaignId: campaign.id,
+                              quotaIndex: refreshedTarget.index,
+                              ...info
+                            });
+                          }
+                        }))))))))));
 
         if (result?.success) {
           if (isGallupAgriwork) {
@@ -2011,6 +2150,33 @@ export function registerExecutionRoutes({
               refreshedTarget.submittedAnswers = result.submittedAnswers;
             }
             persistGallupAgriworkQuotaDatabase({ quotaDatabase: quotaDb });
+          } else if (isRelimForestry) {
+            if (result.alreadyCompleted) {
+              refreshedTarget.quotaStatus = 'completed';
+              refreshedTarget.status = '완료(100%)';
+              refreshedTarget.progress = '100%';
+            } else {
+              refreshedTarget.quotaStatus = 'pilot_done';
+              refreshedTarget.status = '완료직전대기(99%)';
+              refreshedTarget.progress = '99%';
+            }
+            refreshedTarget.completedAt = new Date().toISOString();
+            if (result.submittedAnswers && Object.keys(result.submittedAnswers).length > 0) {
+              refreshedTarget.submittedAnswers = result.submittedAnswers;
+            }
+            try {
+              persistRelimForestryQuota({ quotaDatabase: quotaDb, quotasDir });
+              const relimPol = campaign.relimPolicy || campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || {};
+              if (relimPol.autoSyncGoogleSheet !== false) {
+                await syncRelimForestryToGoogleSheet({
+                  quotaDatabase: quotaDb,
+                  sheetUrl: campaign.googleSheetUrl || RELIM_FORESTRY_SHEET_URL,
+                  quotasDir
+                }).catch(syncErr => logger.warn(`[산림산업조사 단건 구글시트 기록 경고] ${syncErr.message}`));
+              }
+            } catch (exErr) {
+              logger.warn(`[산림산업조사 로컬 쿼터 저장 경고] ${exErr.message}`);
+            }
           } else if (isKmacKbpi) {
             refreshedTarget.quotaStatus = result.quotaStatus || (result.completed ? 'completed' : 'pilot_done');
             refreshedTarget.status = result.statusLabel || (result.completed ? '완료' : '검증대기(완료직전)');
@@ -2139,7 +2305,7 @@ export function registerExecutionRoutes({
           refreshedTarget.capturedSteps = result.capturedSteps;
           logger.success(`[개별 쿼터 테스트 성공] "${refreshedTarget.name || refreshedTarget.respondentName || refreshedTarget.buildingName || refreshedTarget.marketName || refreshedTarget.companyName}" 완주 완료!`);
 
-          if (!isGallupAgriwork && !isKmacKbpi && !isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
+          if (!isGallupAgriwork && !isRelimForestry && !isKmacKbpi && !isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul && isAssoc) {
             if (!safetyGuard) {
               const evalUrl = refreshedTarget.evalUrl || (refreshedTarget.ranId ? `https://kstat.surveys.kr/2026/P26042401AA/index.asp?KID=${refreshedTarget.ranId}&type=tapi&prid=2026070801&mnid=900001364&srt=2` : null);
               if (evalUrl) {
@@ -2177,7 +2343,7 @@ export function registerExecutionRoutes({
                 }
               }
             }
-          } else if (!isGallupAgriwork && !isKmacKbpi && !isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) {
+          } else if (!isGallupAgriwork && !isRelimForestry && !isKmacKbpi && !isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) {
             const evalUrl = refreshedTarget.evalUrl || (refreshedTarget.ranId ? `https://kstat.surveys.kr/2026/P26042401BA/index.asp?KID=${refreshedTarget.ranId}&type=tapi&prid=2026070802&mnid=900001346&srt=2` : null);
             if (evalUrl) {
               try {
@@ -2207,7 +2373,7 @@ export function registerExecutionRoutes({
             }
           }
 
-          if (!isGallupAgriwork && !isKmacKbpi && !isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) {
+          if (!isGallupAgriwork && !isRelimForestry && !isKmacKbpi && !isKona && !isMetrix && !isHrcEnergy && !isGlobalriLiteracy && !isGallupReturnFarm && !isMetrixSeoul) {
             const singlePridSel = isAssoc ? '2026070801' : (campaign.targetPrid || '2026070802');
             await syncKstatSlotStatus({
               pridSel: singlePridSel,

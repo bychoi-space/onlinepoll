@@ -940,3 +940,69 @@ if (!agriBpContainer.innerHTML.includes('20260168') || !agriTbody.innerHTML.incl
   throw new Error('gallup_agriwork blueprint/table mock DOM render failed');
 }
 console.log('✅ [추가 검증] 2025년 농업고용인력 실태조사(경영체 88 + 내국인근로자 39 = 127건 · 구분자 4축 · 모의 DOM) 100% 통과');
+
+// 2025년 기준 산림·정원산업조사(relim_forestry) 전용 블루프린트 + 쿼터 정합성 + 구분자 분할 렌더링 검증
+const relimQuotaRaw = JSON.parse(fsMod.readFileSync('data/quotas/quota_relim_forestry_2009.json', 'utf8'));
+const relimRows = relimQuotaRaw.data || [];
+if (relimRows.length !== 342) {
+  throw new Error(`Expected 342 relim_forestry rows, got ${relimRows.length}`);
+}
+const effTargets = relimRows.filter(r => r.effectiveRole === '선정(유효)' || r.effectiveRole === '예비(선정대체)');
+if (effTargets.length !== 197) {
+  throw new Error(`Expected 197 effective active targets (186 selected + 11 substitutes), got ${effTargets.length}`);
+}
+for (const r of relimRows) {
+  if (r.ksicCode === '46101' || r.ksicCode === '46104') {
+    if (Number(r.forestryRatioPct) !== 100 || Number(r.forestryWorkers) !== Number(r.totalWorkers)) {
+      throw new Error(`KSIC ${r.ksicCode} 100% invariant violated on resid=${r.resid}`);
+    }
+  }
+  for (const subjKey of ['q17A2Text', 'q35_1Text', 'q36_1a_1Text', 'q36_1a_2Text']) {
+    const txt = String(r[subjKey] || '');
+    if (!txt || txt.length > 10) {
+      throw new Error(`Subjective length/non-empty rule violated on resid=${r.resid} (${subjKey}="${txt}")`);
+    }
+  }
+}
+
+const relimBpMod = await import('../public/modules/blueprint-relim-forestry.js');
+const relimBlueprintJson = JSON.parse(fsMod.readFileSync('data/relim_forestry_blueprint.json', 'utf8'));
+const relimPol = relimBpMod.renderRelimForestryBlueprint(
+  { surveyType: 'relim_forestry', blueprint: relimBlueprintJson, policy: {} },
+  {
+    quotaDatabase: relimRows,
+    blueprintStageGrid: container,
+    badgeMasterStatus: badgeEl,
+    btnSaveBaseline: saveBtnEl
+  }
+);
+if (
+  !relimPol.stopBeforeFinalSubmit ||
+  !relimPol.haltOnUnhandledSubjective ||
+  !container.innerHTML.includes('46101') ||
+  !container.innerHTML.includes('svyI058.asp')
+) {
+  throw new Error('relim_forestry blueprint render failed');
+}
+
+const relimAxes = segMod.resolveSurveySegmentAxes('relim_forestry', relimRows);
+if (relimAxes.length < 4 || relimAxes[0].id !== 'role_ksic') {
+  throw new Error('relim_forestry segment axes failed');
+}
+
+const relimTbody = makeEl('quota-table-body');
+const pilotSample = relimRows.find(r => String(r.resid) === '72616') || relimRows[0];
+quotaRenderers.renderRelimForestryQuotaTable({
+  db: [relimRows[0], pilotSample],
+  quotaTableBody: relimTbody,
+  checkedRelimSeqs: new Set([1]),
+  activeAxisId: 'role_ksic',
+  selectedSegments: new Set(),
+  onReRender: () => {},
+  onSelectionChange: () => {},
+  onTriggerBatchRun: () => {}
+});
+if (!relimTbody.innerHTML.includes(relimRows[0].companyName.slice(0, 4)) || !relimTbody.innerHTML.includes('99%')) {
+  throw new Error('relim_forestry quota table render failed');
+}
+console.log('✅ [추가 검증] 2025년 산림·정원산업조사(342건 기초데이터 · 유효목표 197건 · KSIC 46101/46104 100% 정합 · ≤10자 주관식 · DQ 99% 안전대기 · 모의 DOM) 100% 통과');

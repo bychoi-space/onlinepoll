@@ -16,6 +16,7 @@ data/*
 !data/gallup_20263603_templates.json
 !data/gallup_agriwork_blueprint.json
 !data/kbpi_2027_brand_dict.json
+!data/relim_forestry_blueprint.json
 !data/sample_metrix_sign.png
 !data/ceo_persona_pool.json
 !data/respondent_persona_pool.json

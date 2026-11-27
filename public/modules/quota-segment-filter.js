@@ -9,21 +9,25 @@ export function isQuotaItemExcluded(item = {}) {
   return Boolean(
     item.isClosedBiz ||
     String(item.bizStatus || '').includes('폐업') ||
+    String(item.bizStatus || '').includes('휴업') ||
+    String(item.bizStatus || '').includes('결번') ||
     item.quotaStatus === 'excluded' ||
     String(item.status || '').includes('인원초과') ||
     String(item.quotaStatus || '').includes('인원초과') ||
-    item.substitutedByUid
+    item.substitutedByUid ||
+    item.substitutedByResid
   );
 }
 
 export function isQuotaItemDone(item = {}, surveyType = '') {
   if (isQuotaItemExcluded(item)) return true;
+  if (surveyType === 'relim_forestry' && item.effectiveRole === '예비(대기)') return true;
   const qs = String(item.quotaStatus || '');
   const st = String(item.status || '');
   if (qs === 'completed' || st === '완료' || st === '조사완료' || st.includes('완료(100%)')) {
     return true;
   }
-  if (surveyType === 'metrix_seoul_panel' || surveyType === 'gallup_return_farm') {
+  if (surveyType === 'metrix_seoul_panel' || surveyType === 'gallup_return_farm' || surveyType === 'relim_forestry') {
     if (qs === 'pilot_done' || st.includes('99%') || st.includes('완료직전')) return true;
   }
   if (surveyType === 'metrix_panel') {
@@ -56,6 +60,35 @@ function compareSegmentKeys(a, b) {
  */
 export function resolveSurveySegmentAxes(surveyType = '', db = []) {
   if (!Array.isArray(db) || db.length === 0) return [];
+
+  if (surveyType === 'relim_forestry') {
+    return [
+      {
+        id: 'role_ksic',
+        label: '실행구분 · KSIC 업종별 (권장 · 할당셀 정합)',
+        shortLabel: '실행구분·KSIC',
+        extractor: (it) => `${it.effectiveRole || it.selectionType || '선정'} · ${it.ksicCode || ''} ${it.ksicName || ''}`.trim()
+      },
+      {
+        id: 'ksic_region',
+        label: 'KSIC × 지역별 (25개 쿼터검증 셀)',
+        shortLabel: 'KSIC×지역',
+        extractor: (it) => `${it.ksicCode || ''} ${it.ksicName || ''} · ${it.region || '지역'}`.trim()
+      },
+      {
+        id: 'effective_role',
+        label: '선정 / 예비대체 / 대기 구분별',
+        shortLabel: '실행구분',
+        extractor: (it) => String(it.effectiveRole || it.selectionType || '기타').trim()
+      },
+      {
+        id: 'stratum_only',
+        label: '종사자 규모층별 (1~5층)',
+        shortLabel: '규모층',
+        extractor: (it) => `규모층 ${it.stratum || 1}층`
+      }
+    ];
+  }
 
   if (surveyType === 'kmac_kbpi') {
     return [

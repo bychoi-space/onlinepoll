@@ -53,6 +53,7 @@ export const HRC_B11_OPTIONS = [
 export function renderQuotaTableHead({
   quotaTableHead,
   isGallupAgriwork,
+  isRelimForestry,
   isKmacKbpi,
   isGallupReturnFarm,
   isGlobalriLiteracy,
@@ -82,6 +83,26 @@ export function renderQuotaTableHead({
         <th>연락처 · 주소</th>
         <th class="th-status">진행 상태</th>
         <th class="text-center" style="min-width: 112px;">개별 실행</th>
+      </tr>
+    `;
+  } else if (isRelimForestry) {
+    quotaTableHead.innerHTML = `
+      <tr>
+        <th class="th-no text-center" style="width: 44px;">
+          <input type="checkbox" id="cb-relim-check-all" class="seg-card-checkbox" title="현재 필터 목록 실행가능 항목 전체 선택/해제" />
+        </th>
+        <th class="th-no">순번</th>
+        <th>실행구분 · 셀순번</th>
+        <th>RESID</th>
+        <th>KSIC 업종 · 지역 · 규모층</th>
+        <th>사업체명 · 사업자/법인번호</th>
+        <th>대표자 (성별 · 추정연령 · 65세+)</th>
+        <th>홈페이지 · 업태 / 종목</th>
+        <th>산림비중 · 2025/2024 매출</th>
+        <th>종사자(산림/전체) · 자격증</th>
+        <th>개별 단답 주관식 (≤10자)</th>
+        <th class="th-status">진행 상태</th>
+        <th class="text-center" style="min-width: 115px;">개별 실행</th>
       </tr>
     `;
   } else if (isKmacKbpi) {
@@ -265,6 +286,7 @@ export function renderQuotaTableHead({
 export function renderEmptyQuotaTableRow({
   quotaTableBody,
   isGallupAgriwork,
+  isRelimForestry,
   isKmacKbpi,
   isGallupReturnFarm,
   isGlobalriLiteracy,
@@ -277,15 +299,19 @@ export function renderEmptyQuotaTableRow({
   if (!quotaTableBody) return;
   const colSpan = isGallupAgriwork
     ? 14
-    : (isKmacKbpi
-      ? 10
-      : ((isMetrix || isMetrixSeoul || isGallupReturnFarm || isGlobalriLiteracy || isHrcEnergy)
-        ? 15
-        : (isAssoc ? 11 : (isKona ? 9 : 13))));
+    : (isRelimForestry
+      ? 13
+      : (isKmacKbpi
+        ? 10
+        : ((isMetrix || isMetrixSeoul || isGallupReturnFarm || isGlobalriLiteracy || isHrcEnergy)
+          ? 15
+          : (isAssoc ? 11 : (isKona ? 9 : 13)))));
 
   let emptyMsg = '아직 구축된 사업자 DB가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 쿼터를 선택해 장착해 주세요.';
   if (isGallupAgriwork) {
     emptyMsg = '아직 장착된 농업고용인력 실태조사 쿼터가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 <code>quota_gallup_agriwork_2025</code>를 선택해 장착해 주세요.';
+  } else if (isRelimForestry) {
+    emptyMsg = '아직 장착된 산림·정원산업조사 사업체 표본이 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 <code>quota_relim_forestry_2009.json</code>을 선택하거나 <strong>[실시간 현황 + 구글 시트 동기화]</strong>를 클릭해 주세요.';
   } else if (isKmacKbpi) {
     emptyMsg = '아직 장착된 K-BPI 조사 응답자 쿼터가 없습니다.<br>상단의 <strong>[기존 쿼터 불러오기]</strong>에서 K-BPI 쿼터를 선택해 장착해 주세요.';
   } else if (isGallupReturnFarm) {
@@ -2574,6 +2600,274 @@ export function renderKmacKbpiQuotaTable({
     }
   }
 }
+
+export function renderRelimForestryQuotaTable({
+  db = [],
+  quotaTableBody,
+  activeAxisId = 'role_ksic',
+  selectedSegments = new Set(),
+  checkedRelimSeqs = new Set(),
+  onAxisChange = null,
+  onReRender = null,
+  onSelectionChange = null,
+  onTriggerBatchRun = null,
+  onSyncSheet = null,
+  onRunSingle = null
+}) {
+  const tableScrollContainer = quotaTableBody.closest('.table-scroll-container');
+  let relimBar = document.getElementById('relim-step1-segment-bar');
+  if (!relimBar && tableScrollContainer && tableScrollContainer.parentNode) {
+    relimBar = document.createElement('div');
+    relimBar.id = 'relim-step1-segment-bar';
+    relimBar.className = 'metrix-slim-toolbar kbpi-segment-toolbar';
+    tableScrollContainer.parentNode.insertBefore(relimBar, tableScrollContainer);
+  } else if (relimBar) {
+    relimBar.classList.remove('d-none');
+  }
+
+  const axes = resolveSurveySegmentAxes('relim_forestry', db);
+  const currentAxis = axes.find(a => a.id === activeAxisId) || axes[0];
+  const segStats = computeSegmentStats({ db, surveyType: 'relim_forestry', axis: currentAxis });
+  const validSegSet = new Set(segStats.map(s => s.segName));
+  Array.from(selectedSegments).forEach(s => {
+    if (!validSegSet.has(s)) selectedSegments.delete(s);
+  });
+
+  const indexedDb = db.map((item, idx) => ({
+    item,
+    seq: Number(item.index || item.seq || (idx + 1)),
+    segName: currentAxis ? String(currentAxis.extractor(item, idx) || '기타').trim() : '전체',
+    done: isQuotaItemDone(item, 'relim_forestry'),
+    isClosed: Boolean(item.isClosedBiz || item.quotaStatus === 'excluded')
+  }));
+
+  const isAllMode = (selectedSegments.size === 0);
+  const visibleIndexed = isAllMode
+    ? indexedDb
+    : indexedDb.filter(r => selectedSegments.has(r.segName));
+
+  const actionableCheckedCount = indexedDb.filter(r => !r.isClosed && r.item.quotaStatus !== 'completed' && checkedRelimSeqs.has(r.seq)).length;
+  const effTargetCount = db.filter(it => it.effectiveRole === '선정(유효)' || it.effectiveRole === '예비(선정대체)').length;
+  const wait99Count = db.filter(it => it.quotaStatus === 'pilot_done' || String(it.status || '').includes('99%')).length;
+
+  if (relimBar) {
+    relimBar.innerHTML = `
+      <div class="kbpi-bar-top-row">
+        <div class="kbpi-bar-left">
+          <span class="kbpi-bar-label"><i class="fa-solid fa-filter text-primary-color"></i> 구분자 필터:</span>
+          <select id="sel-relim-step1-axis" class="figma-select seg-axis-select">
+            ${axes.map(ax => `<option value="${escapeHtml(ax.id)}" ${ax.id === currentAxis?.id ? 'selected' : ''}>${escapeHtml(ax.shortLabel)} 기준</option>`).join('')}
+          </select>
+          <button type="button" class="hrc-use-chip ${isAllMode ? 'is-active' : ''}" data-relim-seg="__ALL__">
+            <span>전체</span>
+            <span class="hrc-use-chip-count">${db.length}건 (유효목표 ${effTargetCount} · 99%대기 ${wait99Count})</span>
+          </button>
+          ${segStats.map(st => {
+            const active = selectedSegments.has(st.segName);
+            const doneCls = st.pending === 0 ? 'is-all-done' : '';
+            return `
+              <button type="button" class="hrc-use-chip ${active ? 'is-active' : ''} ${doneCls}" data-relim-seg="${escapeHtml(st.segName)}">
+                <span>${escapeHtml(st.segName)}</span>
+                <span class="hrc-use-chip-count">${st.pending}/${st.total}</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+        <div class="kbpi-bar-right">
+          <button type="button" class="btn-pill btn-pill-secondary btn-pill-small" id="btn-relim-step1-sync-sheet" title="컨택시스템(mlist.asp) 실시간 현황을 조회하고 구글 시트('선정명단') J~AN열을 즉시 갱신합니다">
+            <i class="fa-solid fa-arrows-rotate text-success-color"></i> 실시간 현황 + 구글 시트 동기화
+          </button>
+          <button
+            type="button"
+            class="btn-pill btn-pill-primary btn-pill-small font-bold"
+            id="btn-relim-top-batch-run"
+            data-has-targets="${actionableCheckedCount > 0 ? '1' : '0'}"
+            ${actionableCheckedCount === 0 ? 'disabled' : ''}
+          >
+            <i class="fa-solid fa-play"></i> 선택 구분 99% 안전 배치 실행 (${actionableCheckedCount}건)
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  quotaTableBody.innerHTML = visibleIndexed.map(({ item, seq, isClosed }) => {
+    const isChecked = checkedRelimSeqs.has(seq);
+    const qs = item.quotaStatus || 'ready';
+    const stStr = String(item.status || '대기');
+    const isCompleted = (qs === 'completed' || stStr.includes('완료(100%)') || stStr === '완료');
+    const isWait99 = (!isCompleted && (qs === 'pilot_done' || stStr.includes('99%')));
+    const isRunning = (qs === 'running');
+
+    let statusBadge = '<span class="badge-status ready">대기</span>';
+    if (isRunning) {
+      statusBadge = '<span class="badge-status running"><i class="fa-solid fa-spinner fa-spin"></i> 진행중</span>';
+    } else if (isCompleted) {
+      statusBadge = '<span class="badge-status completed">완료(100%)</span>';
+    } else if (isWait99) {
+      statusBadge = '<span class="badge-status pilot">완료직전(99%)</span>';
+    } else if (isClosed) {
+      statusBadge = `<span class="badge-status error" title="${escapeHtml(item.bizStatus || '제외')}">${escapeHtml(item.bizStatus || '휴폐업제외')}</span>`;
+    } else if (qs === 'error') {
+      statusBadge = `<span class="badge-status error" title="${escapeHtml(item.error || '')}">오류</span>`;
+    }
+
+    const roleStr = item.effectiveRole || item.selectionType || '선정';
+    let roleBadgeCls = 'ready';
+    if (roleStr === '선정(유효)') roleBadgeCls = 'success';
+    else if (roleStr === '예비(선정대체)') roleBadgeCls = 'pilot';
+    else if (isClosed) roleBadgeCls = 'error';
+
+    const ksic100 = (item.ksicCode === '46101' || item.ksicCode === '46104');
+    const surveyUrl = item.slotUrl || `https://relim.svybx.kr/?pid=S21629axjxr5&grpid=list&resid=${item.resid}&fwid=S21629axjxr5${item.accountKey || '2009'}`;
+    const hpHtml = item.hasHomepage === '있음' && item.homepageUrl
+      ? `<a href="${escapeHtml(item.homepageUrl)}" target="_blank" rel="noopener noreferrer" class="text-primary-color font-bold" title="${escapeHtml(item.homepageUrl)}">있음 ↗</a>`
+      : '<span class="text-dim">없음</span>';
+
+    const niceTag = String(item.financialSource || '').includes('NICE')
+      ? '<span class="kbpi-income-tag" title="NICE/사람인 공시 재무제표 실측">NICE실측</span>'
+      : '';
+
+    let actionBtn = '';
+    if (isClosed) {
+      actionBtn = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45;">제외대상</button>`;
+    } else if (isCompleted) {
+      actionBtn = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small" disabled style="opacity:0.45;">제출완료</button>`;
+    } else if (isRunning) {
+      actionBtn = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small" disabled><i class="fa-solid fa-spinner fa-spin"></i> 실행중</button>`;
+    } else if (isWait99) {
+      actionBtn = `<button type="button" class="btn-pill btn-pill-secondary btn-pill-small btn-relim-run-single" data-seq="${seq}" title="svyI058.asp(DQ 99%) 상태 재검증">↻ 99% 재검증</button>`;
+    } else {
+      actionBtn = `<button type="button" class="btn-pill btn-pill-primary btn-pill-small btn-relim-run-single" data-seq="${seq}" title="svyI001~svyI058(DQ 99%) 단건 안전 실행">▷ 99% 실행</button>`;
+    }
+
+    return `
+      <tr class="${isChecked ? 'globalri-row-checked' : ''}" data-row-idx="${seq}">
+        <td class="text-center">
+          <input type="checkbox" class="cb-relim-row seg-card-checkbox" data-seq="${seq}" ${isChecked ? 'checked' : ''} ${(isClosed || isCompleted) ? 'disabled' : ''} />
+        </td>
+        <td class="text-center font-mono font-bold">${seq}</td>
+        <td>
+          <span class="badge-status ${roleBadgeCls}">${escapeHtml(roleStr)}</span>
+          <div class="font-caption font-mono text-dim mt-2">셀순번 #${escapeHtml(String(item.cellSeq || 1))}${item.substituteForResid ? ` (←${escapeHtml(String(item.substituteForResid))})` : ''}</div>
+        </td>
+        <td class="font-mono">
+          <div><strong class="text-primary-color">${escapeHtml(String(item.resid || '-'))}</strong></div>
+          <a href="${escapeHtml(surveyUrl)}" target="_blank" rel="noopener noreferrer" class="font-caption text-dim">설문창 ↗</a>
+        </td>
+        <td>
+          <div><strong>${escapeHtml(item.ksicCode || '')}</strong> ${escapeHtml(item.ksicName || '')}</div>
+          <div class="font-caption text-dim">${escapeHtml(item.region || '')} · 규모 ${escapeHtml(String(item.stratum || 1))}층</div>
+        </td>
+        <td>
+          <div><strong>${escapeHtml(item.companyName || '-')}</strong></div>
+          <div class="font-caption font-mono text-dim">${escapeHtml(item.bizNo || '-')}${item.corpRegNo ? ` · 법인 ${escapeHtml(item.corpRegNo)}` : ''}</div>
+        </td>
+        <td>
+          <div><strong>${escapeHtml(item.ceoName || '-')}</strong> (${escapeHtml(item.ceoGender || '-')})</div>
+          <div class="font-caption text-dim">${escapeHtml(item.ceoAgeDecade || '-')} · 65세+:${escapeHtml(item.is65PlusLabel || '비해당')}</div>
+        </td>
+        <td>
+          <div>홈페이지: ${hpHtml}</div>
+          <div class="font-caption text-dim" title="${escapeHtml(`${item.bizCategory || ''} / ${item.bizItem || ''}`)}">${escapeHtml((item.bizCategory || '-').slice(0, 12))} / ${escapeHtml((item.bizItem || '-').slice(0, 16))}</div>
+        </td>
+        <td>
+          <div>산림비중: <strong class="${ksic100 ? 'text-primary-color' : ''}">${escapeHtml(String(item.forestryRatioPct ?? 100))}%</strong> ${niceTag}</div>
+          <div class="font-caption font-mono">25년:${escapeHtml(String(item.sales2025M || 0))}M / 24년:${escapeHtml(String(item.sales2024M || 0))}M (${escapeHtml(item.q17A1Label || '-')})</div>
+        </td>
+        <td>
+          <div>산림 <strong>${escapeHtml(String(item.forestryWorkers || 1))}</strong> / 전체 <strong>${escapeHtml(String(item.totalWorkers || 1))}명</strong></div>
+          <div class="font-caption text-dim">자격증(Q21): ${escapeHtml(String(item.q21CertCount || 0))}명</div>
+        </td>
+        <td>
+          <div class="font-caption">변동: <strong>${escapeHtml(item.q17A2Text || '-')}</strong> · 전망: <strong>${escapeHtml(item.q35_1Text || '-')}</strong></div>
+          <div class="font-caption text-dim">애로: ${escapeHtml(item.q36_1a_1Text || '-')} / ${escapeHtml(item.q36_1a_2Text || '-')}</div>
+        </td>
+        <td class="text-center">${statusBadge}</td>
+        <td class="text-center">${actionBtn}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const syncCheckedBySegments = () => {
+    checkedRelimSeqs.clear();
+    if (selectedSegments.size === 0) return;
+    indexedDb.forEach(r => {
+      if (!r.done && !r.isClosed && selectedSegments.has(r.segName)) {
+        checkedRelimSeqs.add(r.seq);
+      }
+    });
+  };
+
+  const cbAll = document.getElementById('cb-relim-check-all');
+  const visibleSelectableSeqs = visibleIndexed
+    .filter(r => !r.done && !r.isClosed)
+    .map(r => r.seq);
+  if (cbAll) {
+    cbAll.checked = visibleSelectableSeqs.length > 0 && visibleSelectableSeqs.every(s => checkedRelimSeqs.has(s));
+    cbAll.onchange = () => {
+      if (cbAll.checked) visibleSelectableSeqs.forEach(s => checkedRelimSeqs.add(s));
+      else visibleSelectableSeqs.forEach(s => checkedRelimSeqs.delete(s));
+      if (typeof onReRender === 'function') onReRender(db);
+      if (typeof onSelectionChange === 'function') onSelectionChange();
+    };
+  }
+
+  quotaTableBody.querySelectorAll('.cb-relim-row').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const seq = Number(cb.getAttribute('data-seq'));
+      if (cb.checked) checkedRelimSeqs.add(seq);
+      else checkedRelimSeqs.delete(seq);
+      if (typeof onReRender === 'function') onReRender(db);
+      if (typeof onSelectionChange === 'function') onSelectionChange();
+    });
+  });
+
+  quotaTableBody.querySelectorAll('.btn-relim-run-single').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const seq = Number(btn.getAttribute('data-seq'));
+      if (seq && typeof onRunSingle === 'function') onRunSingle(seq);
+    });
+  });
+
+  if (relimBar) {
+    const axisSel = relimBar.querySelector('#sel-relim-step1-axis');
+    if (axisSel) {
+      axisSel.addEventListener('change', () => {
+        selectedSegments.clear();
+        checkedRelimSeqs.clear();
+        if (typeof onAxisChange === 'function') onAxisChange(axisSel.value);
+      });
+    }
+
+    relimBar.querySelectorAll('[data-relim-seg]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const seg = chip.getAttribute('data-relim-seg');
+        if (seg === '__ALL__') {
+          selectedSegments.clear();
+          checkedRelimSeqs.clear();
+        } else if (seg) {
+          if (selectedSegments.has(seg)) selectedSegments.delete(seg);
+          else selectedSegments.add(seg);
+          syncCheckedBySegments();
+        }
+        if (typeof onReRender === 'function') onReRender(db);
+        if (typeof onSelectionChange === 'function') onSelectionChange();
+      });
+    });
+
+    const btnSync = relimBar.querySelector('#btn-relim-step1-sync-sheet');
+    if (btnSync && typeof onSyncSheet === 'function') {
+      btnSync.addEventListener('click', () => onSyncSheet());
+    }
+
+    const btnTopRun = relimBar.querySelector('#btn-relim-top-batch-run');
+    if (btnTopRun && typeof onTriggerBatchRun === 'function') {
+      btnTopRun.addEventListener('click', () => onTriggerBatchRun('selected'));
+    }
+  }
+}
+
 
 
 

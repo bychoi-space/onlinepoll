@@ -1,0 +1,90 @@
+{
+  "surveyId": "relim_forestry_2025",
+  "projectCode": "S21629axjxr5",
+  "title": "2025년 기준 산림·정원산업조사",
+  "description": "산림청·한국임업진흥원 국가승인통계(제136038호) SurveyBox SP7(relim.svybx.kr) 전자조사표 자동화 블루프린트. 구글 시트(선정 197건 / 예비 145건) 연동, 기업검색 기반 기초·재무·종사자 정합 매핑, KSIC 46101·46104 산림비중 100% 고정, 10자 이내 단문 주관식 다변화, 미대응 주관식 즉시 중단 가드 및 DQ(완료 직전 99%) 안전 대기 정책을 적용합니다.",
+  "version": "2.0.0",
+  "loginUrl": "https://relim.svybx.kr/sp7/S21629axjxr5/mlist.asp",
+  "googleSheetUrl": "https://docs.google.com/spreadsheets/d/12JbrVKTAEyAmEzPOp9W7HvdLa2ghN6cES3wFbikIa4g/edit?gid=2054505699#gid=2054505699",
+  "accounts": [
+    {
+      "accountKey": "2009",
+      "surveyorName": "지연옥",
+      "totalSlots": 342,
+      "selectedCount": 197,
+      "reserveCount": 145,
+      "quotaFile": "quota_relim_forestry_2009.json"
+    }
+  ],
+  "defaultPolicy": {
+    "preserveExistingInputs": true,
+    "stopBeforeFinalSubmit": true,
+    "haltOnUnhandledSubjective": true,
+    "targetSelectionOnly": true,
+    "ksic46101_46104FullForestry": true,
+    "unknownFinancialsUseDontKnow": true,
+    "maxSubjectiveLength": 10,
+    "q43DefaultText": "없음",
+    "autoSyncGoogleSheet": true
+  },
+  "stages": [
+    {
+      "stage": 1,
+      "pages": "svyI001 ~ svyI004",
+      "title": "기본현황 · 대표자 성별/연령 · 홈페이지 · 업태/종목",
+      "rules": [
+        "대표자명(Q2) 실측 명부 수집 및 성명 기반 성별(Q3)·연령대(Q4_1: 40~70대)·65세 이상(Q4_2) 정합 추정",
+        "기업검색(bizno) 기반 실제 홈페이지 보유 시에만 '있음'+URL 기재, 미확인 시 '없음' 체크 (가짜 URL 생성 금지)",
+        "사업자등록 업태(Q8/Q10_1)·종목(Q8a/Q10_2) 기재 및 법인등록번호(13자리) 확인 시에만 법인(Q13=2/3) 선택"
+      ]
+    },
+    {
+      "stage": 2,
+      "pages": "svyI005 ~ svyI010",
+      "title": "산림산업 특수분류(Q14) · 2025 재무(Q15) · 매출변동(Q17)",
+      "rules": [
+        "KSIC 46101(원목·목재 중개), 46104(종자·묘목 중개)는 산림산업 매출 비중 무조건 100%(Q14_1=2, Q14_2_1_3=100)",
+        "사람인/NICE 공시 재무 실측값 우선 반영, 미확인 재무 세부항목은 '모름/무응답' 체크 허용 및 산림비중과 100% 일치",
+        "Q17_A1(2025 vs 2024 매출 증감) 자동 비교 체크 및 Q17_A2 변동사유 10자 이내 업체별 다변화 기재"
+      ]
+    },
+    {
+      "stage": 3,
+      "pages": "svyI011 ~ svyI016",
+      "title": "종사자 현황(Q18~Q20) · 65세+ 연동(Q19_2a) · 자격증(Q21)",
+      "rules": [
+        "종사자 수 실측(국민연금/규모층) 반영, 남성 비율 우위·내국인 위주 배분 및 합계 100% 일치",
+        "산림산업 종사자(Q20)는 산림매출 비중만큼 배정하며, KSIC 46101·46104는 전체 종사자 = 산림산업 종사자 일치",
+        "Q21 관련 자격증은 조경·나무의사·종자·산림기술 등 필요 업종만 보유 인원 기재, 일반 도소매·제조는 0명 처리"
+      ]
+    },
+    {
+      "stage": 4,
+      "pages": "svyI017 ~ svyI041",
+      "title": "연구개발 · 운영 애로사항(Q25_6) · 국내외 거래현황",
+      "rules": [
+        "업종 특성에 맞춘 연구개발·원자재 조달·유통경로 일관 응답",
+        "Q25_6(기타 애로사항 활성 시) 10자 이내 단답('인건비 상승', '유류비 상승', '원자재 상승' 등) 업체별 다변화"
+      ]
+    },
+    {
+      "stage": 5,
+      "pages": "svyI042 ~ svyI057",
+      "title": "경기전망(Q35_1) · 경영애로 사유(Q36_1a) · 제도개선(Q43)",
+      "rules": [
+        "Q35_1(전망 사유) 선택 방향(개선/동일/악화)에 맞춰 10자 이내 다변화 기재 ('변동없음', '인건비 상승' 등)",
+        "Q36_1a_1·2(1·2순위 경영애로 세부사유) 선택 코드와 1:1 매칭되는 10자 이내 다변화 단답 기재",
+        "Q43(건의사항) '없음' 허용 및 미정의 주관식 문항 출현 시 스킵 절대 금지 · 자동조사 즉시 중단"
+      ]
+    },
+    {
+      "stage": 6,
+      "pages": "svyI058.asp (DQ)",
+      "title": "대표자 기본정보(DQ) 기입 & 완료 직전 99% 안전 대기",
+      "rules": [
+        "DQ1(응답자 성명=대표자명), DQ2(부서), DQ3(전화번호), DQ4(직위=대표) 기입",
+        "최종 제출 버튼(#BtnNextPage -> svyI059.asp) 클릭 직전 99% 상태에서 안전 정지하여 사용자 사전 검수 보장"
+      ]
+    }
+  ]
+}

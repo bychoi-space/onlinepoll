@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const desc = String(c.description || '').toLowerCase();
 
     // 1순위: surveyType 명시적 판별
-    if (['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'gallup_agriwork', 'kona_youth', 'kmac_kbpi'].includes(type)) {
+    if (['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'gallup_agriwork', 'kona_youth', 'kmac_kbpi', 'relim_forestry'].includes(type)) {
       return 'special';
     }
     if (type === 'metrix_panel' || type === 'metrix_seoul_panel') return 'smallbiz';
@@ -212,7 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
       title.includes('농업고용') ||
       title.includes('청소년') ||
       title.includes('브랜드파워') ||
-      title.includes('k-bpi')
+      title.includes('k-bpi') ||
+      title.includes('산림') ||
+      title.includes('정원산업')
     ) {
       return 'special';
     }
@@ -227,6 +229,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getCategoryMeta(catKey, surveyType = '') {
     const sType = String(surveyType || '').toLowerCase();
+    if (sType === 'relim_forestry') {
+      return { label: '산림·정원산업조사', icon: 'fa-tree', class: 'special' };
+    }
     if (sType === 'kmac_kbpi') {
       return { label: '2027 K-BPI 브랜드파워', icon: 'fa-award', class: 'special' };
     }
@@ -373,6 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isGallupReturnFarm = (sType === 'gallup_return_farm');
     const isGallupAgriwork = (sType === 'gallup_agriwork');
     const isKmacKbpi = (sType === 'kmac_kbpi');
+    const isRelimForestry = (sType === 'relim_forestry');
     const isAssoc = (cat === 'assoc');
     const isSmallBiz = (cat === 'smallbiz');
     const isCompleted = (c.status === 'completed');
@@ -387,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ? (c.quotaDatabase || []).filter(q => q.selectionType === '선정' && (q.quotaStatus === 'completed' || q.status === '완료')).length
       : 0;
     const doneItemCount = (c.quotaDatabase || []).filter(q =>
-      q.quotaStatus === 'completed' || q.quotaStatus === 'used' || q.status === '완료' || q.surveyCompleted === true || q.serverStatus === '99'
+      q.quotaStatus === 'completed' || q.quotaStatus === 'used' || q.status === '완료' || String(q.status || '').includes('완료(100%)') || q.surveyCompleted === true || q.serverStatus === '99'
     ).length;
 
     const isMetrixSeoul = (sType === 'metrix_seoul_panel');
@@ -396,6 +402,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const owCnt = (c.quotaDatabase || []).filter(q => q.surveySubType === 'owner').length;
       const wkCnt = (c.quotaDatabase || []).filter(q => q.surveySubType === 'worker').length;
       quotaLabel = `경영체 ${owCnt} · 내국인근로자 ${wkCnt} (완료 ${doneItemCount}/${dbCount}건)`;
+    } else if (isRelimForestry) {
+      const wait99Count = (c.quotaDatabase || []).filter(q => q.quotaStatus === 'pilot_done' || String(q.status || '').includes('99%')).length;
+      const effCount = (c.quotaDatabase || []).filter(q => q.effectiveRole === '선정(유효)' || q.effectiveRole === '예비(선정대체)').length || 197;
+      quotaLabel = `산림·정원산업조사 (유효목표 ${effCount}건 · 99%대기 ${wait99Count}건 / 완료 ${doneItemCount}건)`;
     } else if (isKmacKbpi) {
       quotaLabel = `서울 100 · 인천 50 (총 ${dbCount}명 · 구분자별 분할 배치)`;
     } else if (isGlobalriLiteracy) {
@@ -422,19 +432,21 @@ document.addEventListener('DOMContentLoaded', () => {
       : (isAssoc ? 'assoc' : 'b2b');
     const quotaIcon = isGallupAgriwork
       ? 'fa-tractor'
-      : (isKmacKbpi
-        ? 'fa-award'
-        : (isGlobalriLiteracy
-          ? 'fa-book-open-reader'
-          : (isHrcEnergy
-            ? 'fa-building-circle-check'
-            : (isGallupReturnFarm
-              ? 'fa-tractor'
-              : (isKona
-                ? 'fa-user-graduate'
-                : (isAssoc
-                  ? 'fa-sitemap'
-                  : (isSmallBiz ? 'fa-building-user' : 'fa-store')))))));
+      : (isRelimForestry
+        ? 'fa-tree'
+        : (isKmacKbpi
+          ? 'fa-award'
+          : (isGlobalriLiteracy
+            ? 'fa-book-open-reader'
+            : (isHrcEnergy
+              ? 'fa-building-circle-check'
+              : (isGallupReturnFarm
+                ? 'fa-tractor'
+                : (isKona
+                  ? 'fa-user-graduate'
+                  : (isAssoc
+                    ? 'fa-sitemap'
+                    : (isSmallBiz ? 'fa-building-user' : 'fa-store'))))))));
 
     const liveTask = getLiveTaskForCampaign(c.id) || c.liveTask || null;
     const isRunning = isCampaignLiveRunning(c);
@@ -1526,14 +1538,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const market = String(q.marketName || '').toLowerCase();
 
     if (
-      ['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'gallup_agriwork', 'kona_youth', 'kmac_kbpi'].includes(sType) ||
-      ['HRC_ENERGY_BUILDING', 'GLOBALRI_ADULT_LITERACY', 'GALLUP_RETURN_FARM', 'GALLUP_AGRIWORK_2025', 'KONA_YOUTH', 'KMAC_KBPI_2027'].includes(qType) ||
+      ['hrc_energy', 'globalri_literacy', 'gallup_return_farm', 'gallup_agriwork', 'kona_youth', 'kmac_kbpi', 'relim_forestry'].includes(sType) ||
+      ['HRC_ENERGY_BUILDING', 'GLOBALRI_ADULT_LITERACY', 'GALLUP_RETURN_FARM', 'GALLUP_AGRIWORK_2025', 'KONA_YOUTH', 'KMAC_KBPI_2027', 'RELIM_FORESTRY_2025'].includes(qType) ||
       fileName.includes('hrc_energy') ||
       fileName.includes('globalri') ||
       fileName.includes('agriwork') ||
       fileName.includes('gallup') ||
       fileName.includes('kona') ||
-      fileName.includes('kmac_kbpi')
+      fileName.includes('kmac_kbpi') ||
+      fileName.includes('relim_forestry')
     ) {
       return 'special';
     }
@@ -1681,11 +1694,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const isGallupAgriwork = (q.type === 'GALLUP_AGRIWORK_2025' || sType === 'gallup_agriwork' || String(q.fileName || '').includes('agriwork'));
     const isGallup = !isGallupAgriwork && (q.type === 'GALLUP_RETURN_FARM' || sType === 'gallup_return_farm' || String(q.fileName || '').includes('gallup'));
     const isKmacKbpi = (q.type === 'KMAC_KBPI_2027' || sType === 'kmac_kbpi' || String(q.fileName || '').includes('kmac_kbpi'));
+    const isRelimForestry = (q.type === 'RELIM_FORESTRY_2025' || sType === 'relim_forestry' || String(q.fileName || '').includes('relim_forestry'));
 
     const catMeta = getCategoryMeta(cat, sType);
     const compInfo = getQuotaCompletionInfo(q);
     const dateStr = formatShortDate(compInfo.isCompleted ? (compInfo.completedAt || q.createdAt) : q.createdAt);
-    const marketName = q.marketName || (isGallupAgriwork ? '한국갤럽 농업고용인력 (양주·동두천)' : (isKmacKbpi ? 'KMA Research CAPI 표본' : (isHrcEnergy ? '한국리서치 TAPI 건물표본' : (isGlobalri ? '글로벌리서치 성인문해 표본' : (isGallup ? '한국갤럽 귀농귀촌 표본' : (cat === 'smallbiz' ? '경기도 소상공인 패널' : (cat === 'assoc' ? '전통시장 상인회' : '일반 사업자')))))));
+    const marketName = q.marketName || (isGallupAgriwork ? '한국갤럽 농업고용인력 (양주·동두천)' : (isRelimForestry ? '산림·정원산업조사 선정·예비 표본' : (isKmacKbpi ? 'KMA Research CAPI 표본' : (isHrcEnergy ? '한국리서치 TAPI 건물표본' : (isGlobalri ? '글로벌리서치 성인문해 표본' : (isGallup ? '한국갤럽 귀농귀촌 표본' : (cat === 'smallbiz' ? '경기도 소상공인 패널' : (cat === 'assoc' ? '전통시장 상인회' : '일반 사업자'))))))));
     const isStratified = isQuotaStratified(q);
     const isExcelUpload = (q.requestParams?.samplingMode === 'excel_upload' || String(q.title || '').includes('엑셀업로드'));
 
@@ -1693,6 +1707,8 @@ document.addEventListener('DOMContentLoaded', () => {
       ? 'Kstat 상인회 슬롯'
       : (isGallupAgriwork
         ? '갤럽 경영체+근로자 표본'
+        : (isRelimForestry
+          ? 'SP7 선정 197 + 예비 145'
         : (isKmacKbpi
           ? 'K-BPI 150명 표본'
           : (isHrcEnergy
@@ -1701,7 +1717,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ? 'GIFT 가구원 표본'
               : (isGallup
                 ? 'G-CAII 귀농 표본'
-                : (isStratified ? '9대 업종 층화' : (isExcelUpload ? '엑셀 업로드' : '단순 수집')))))));
+                : (isStratified ? '9대 업종 층화' : (isExcelUpload ? '엑셀 업로드' : '단순 수집'))))))));
 
     const iconMap = {
       '★선정(우선)': '⭐', '대체(예비)': '🔄', '조사완료': '✅', '조사완료(99)': '✅', '대기(진행대상)': '⏳', '대기(미진행)': '⏳',

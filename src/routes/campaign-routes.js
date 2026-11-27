@@ -26,6 +26,10 @@ import {
   buildKbpiResponseSummary,
   fetchReadOnlyKbpiCapiAnswers
 } from '../utils/kbpi-response-summary.js';
+import {
+  RELIM_FORESTRY_MLIST_URL,
+  RELIM_FORESTRY_SHEET_URL
+} from '../engine/relim-forestry-scraper.js';
 
 export function registerCampaignRoutes({
   app,
@@ -629,6 +633,42 @@ export function registerCampaignRoutes({
       });
     }
 
+    // 2025년 기준 산림·정원산업조사(relim_forestry / S21629axjxr5) 전용 블루프린트 분기
+    if (campaign.surveyType === 'relim_forestry') {
+      const relimBpPath = path.join(dataDir, 'relim_forestry_blueprint.json');
+      let relimBlueprint = {
+        title: '[한국산림복지진흥원·한국임업진흥원] 2025년 기준 산림·정원산업조사',
+        defaultPolicy: {
+          stopBeforeFinalSubmit: true,
+          haltOnUnhandledSubjective: true,
+          autoSyncGoogleSheet: true,
+          ksic100PercentCodes: ['46101', '46104'],
+          subjectiveMaxChars: 10
+        },
+        stages: []
+      };
+      if (fs.existsSync(relimBpPath)) {
+        try {
+          relimBlueprint = JSON.parse(fs.readFileSync(relimBpPath, 'utf-8'));
+        } catch (err) {
+          logger.warn(`[RelimBlueprint] 파싱 경고: ${err.message}`);
+        }
+      }
+      const effectivePolicy = {
+        ...(relimBlueprint.defaultPolicy || {}),
+        ...(campaign.relimPolicy || campaign.surveyBlueprintPolicy || campaign.masterBaseline?.policy || {})
+      };
+      return res.json({
+        surveyType: 'relim_forestry',
+        policy: effectivePolicy,
+        blueprint: relimBlueprint,
+        googleSheetUrl: campaign.googleSheetUrl || RELIM_FORESTRY_SHEET_URL,
+        campaignTitle: campaign.title,
+        slotCount: (campaign.quotaDatabase || []).length,
+        hasCustomBaseline: !!(campaign.relimPolicy || campaign.surveyBlueprintPolicy || campaign.masterBaseline)
+      });
+    }
+
     // KMAC 2027년 한국산업의브랜드파워(K-BPI) 조사 전용 블루프린트 분기
     if (campaign.surveyType === 'kmac_kbpi') {
       const effectiveKbpiPolicy = {
@@ -877,6 +917,7 @@ export function registerCampaignRoutes({
     const isGallupReturnFarm = (campaign.surveyType === 'gallup_return_farm');
     const isGallupAgriwork = (campaign.surveyType === 'gallup_agriwork');
     const isKmacKbpi = (campaign.surveyType === 'kmac_kbpi');
+    const isRelimForestry = (campaign.surveyType === 'relim_forestry');
 
     CampaignStore.updateCampaign(campaign.id, {
       masterBaseline: baseline,
@@ -885,6 +926,11 @@ export function registerCampaignRoutes({
       ...(isMetrix ? { metrixPolicy: baseline.policy || baseline } : {}),
       ...(isMetrixSeoul ? {
         surveyBlueprintPolicy: baseline.policy || baseline,
+        ...(baseline.googleSheetUrl ? { googleSheetUrl: baseline.googleSheetUrl } : {})
+      } : {}),
+      ...(isRelimForestry ? {
+        relimPolicy: baseline.policy || baseline.relimPolicy || baseline,
+        surveyBlueprintPolicy: baseline.policy || baseline.relimPolicy || baseline,
         ...(baseline.googleSheetUrl ? { googleSheetUrl: baseline.googleSheetUrl } : {})
       } : {}),
       ...(isKona ? { konaPolicy: baseline.policy || baseline } : {}),
@@ -901,28 +947,30 @@ export function registerCampaignRoutes({
       } : {})
     });
 
-    logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isGallupAgriwork ? '2025 농업고용인력 실태조사 응답 정책' : (isKmacKbpi ? '2027 K-BPI 응답 가이드' : (isGallupReturnFarm ? '귀농귀촌 실태조사(귀농) 응답 가이드' : (isMetrixSeoul ? '서울시 소상공인 패널조사(5차) 응답 가이드' : (isGlobalriLiteracy ? '제5차 성인문해능력조사 나이대별 그룹 가이드' : (isHrcEnergy ? '에너지총조사 건물 부문 응답 규칙' : (isKona ? '코나체인 청소년 설문 기준 가이드' : (isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점'))))))))}이 저장되었습니다! 🎯`);
+    logger.success(`[마스터 기준점 저장] 캠페인 "${campaign.title}"의 ${isGallupAgriwork ? '2025 농업고용인력 실태조사 응답 정책' : (isRelimForestry ? '산림·정원산업조사 응답 정합성 가이드' : (isKmacKbpi ? '2027 K-BPI 응답 가이드' : (isGallupReturnFarm ? '귀농귀촌 실태조사(귀농) 응답 가이드' : (isMetrixSeoul ? '서울시 소상공인 패널조사(5차) 응답 가이드' : (isGlobalriLiteracy ? '제5차 성인문해능력조사 나이대별 그룹 가이드' : (isHrcEnergy ? '에너지총조사 건물 부문 응답 규칙' : (isKona ? '코나체인 청소년 설문 기준 가이드' : (isMetrix ? '메트릭스 패널조사 기준 가이드' : (isAssoc ? '상인회 25단계 정책 가이드' : '17단계 마스터 기준점')))))))))}이 저장되었습니다! 🎯`);
     res.json({
       success: true,
       message: isGallupAgriwork
         ? '2025년 기준 농업고용인력 실태조사 응답 정책이 성공적으로 저장되었습니다.'
-        : (isKmacKbpi
-          ? '2027년 K-BPI 브랜드파워 조사 응답 가이드라인이 성공적으로 저장되었습니다.'
-          : (isGallupReturnFarm
-            ? '2026년 귀농귀촌 실태조사(귀농) 응답 가이드라인이 성공적으로 저장되었습니다.'
-            : (isMetrixSeoul
-              ? '서울시 소상공인 사업체 패널조사(5차) 응답 가이드라인 및 구글 시트 설정이 성공적으로 저장되었습니다.'
-              : (isGlobalriLiteracy
-                ? '제5차 성인문해능력조사 나이대별(20대/30대/40대/50대/60대/70대+) 그룹 가이드라인이 성공적으로 저장되었습니다.'
-                : (isHrcEnergy
-                  ? '2025년 기준 에너지총조사 [건물 부문] 응답 기준 가이드라인(기입력 보존 정책 포함)이 성공적으로 저장되었습니다.'
-                  : (isKona
-                    ? '화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-                    : (isMetrix
-                  ? '메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
-                  : (isAssoc
-                    ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
-                    : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.')))))))),
+        : (isRelimForestry
+          ? '2025년 기준 산림·정원산업조사 응답 정합성 가이드라인 및 구글 시트 연동 설정이 성공적으로 저장되었습니다.'
+          : (isKmacKbpi
+            ? '2027년 K-BPI 브랜드파워 조사 응답 가이드라인이 성공적으로 저장되었습니다.'
+            : (isGallupReturnFarm
+              ? '2026년 귀농귀촌 실태조사(귀농) 응답 가이드라인이 성공적으로 저장되었습니다.'
+              : (isMetrixSeoul
+                ? '서울시 소상공인 사업체 패널조사(5차) 응답 가이드라인 및 구글 시트 설정이 성공적으로 저장되었습니다.'
+                : (isGlobalriLiteracy
+                  ? '제5차 성인문해능력조사 나이대별(20대/30대/40대/50대/60대/70대+) 그룹 가이드라인이 성공적으로 저장되었습니다.'
+                  : (isHrcEnergy
+                    ? '2025년 기준 에너지총조사 [건물 부문] 응답 기준 가이드라인(기입력 보존 정책 포함)이 성공적으로 저장되었습니다.'
+                    : (isKona
+                      ? '화성특례시 청소년 설문조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+                      : (isMetrix
+                        ? '메트릭스 패널조사 기준 가이드라인이 성공적으로 저장되었습니다.'
+                        : (isAssoc
+                          ? '상인회 정책 가이드라인이 성공적으로 저장되었습니다.'
+                          : '마스터 기준점(Baseline)이 성공적으로 저장되었습니다. 이제 전체 배치 자동화를 가동할 수 있습니다.'))))))))),
       baseline
     });
   });
@@ -1213,6 +1261,7 @@ export function registerCampaignRoutes({
       const isHrcEnergy = (quotaMeta.type === 'HRC_ENERGY_BUILDING' || quotaMeta.surveyType === 'hrc_energy' || lowerName.includes('hrc_energy'));
       const isKona = (quotaMeta.type === 'KONA_YOUTH' || quotaMeta.surveyType === 'kona_youth' || lowerName.includes('kona'));
       const isKmacKbpi = (quotaMeta.type === 'KMAC_KBPI' || quotaMeta.surveyType === 'kmac_kbpi' || lowerName.includes('kbpi') || lowerName.includes('kmac'));
+      const isRelimForestry = (quotaMeta.type === 'RELIM_FORESTRY_2025' || quotaMeta.surveyType === 'relim_forestry' || quotaMeta.projectCode === 'S21629axjxr5' || lowerName.includes('relim_forestry'));
 
       if (businesses.length === 0) {
         return res.status(400).json({ error: '쿼터 파일 내에 사업자 데이터가 없습니다.' });
@@ -1238,6 +1287,13 @@ export function registerCampaignRoutes({
           loginId: '40878,47837',
           surveyorName: '안재은·김미경',
           googleSheetUrl: `https://docs.google.com/spreadsheets/d/${quotaMeta.googleSheetId || '1ONQZjGIa2xIopaMbYS-27B_DMHBH8MlOK7tdDTC6Gz0'}/edit?gid=481207785#gid=481207785`
+        } : {}),
+        ...(isRelimForestry ? {
+          surveyType: 'relim_forestry',
+          accountKey: quotaMeta.accountKey || campaign.accountKey || '2009',
+          surveyorName: quotaMeta.surveyorName || campaign.surveyorName || '지연옥',
+          surveyUrl: quotaMeta.surveyUrl || campaign.surveyUrl || RELIM_FORESTRY_MLIST_URL,
+          googleSheetUrl: quotaMeta.googleSheetUrl || campaign.googleSheetUrl || RELIM_FORESTRY_SHEET_URL
         } : {}),
         ...(isKmacKbpi ? {
           surveyType: 'kmac_kbpi',
@@ -1350,47 +1406,63 @@ export function registerCampaignRoutes({
       const isGallupReturnFarm = !isGallupAgriwork && (quotaMeta.type === 'GALLUP_RETURN_FARM' || quotaMeta.surveyType === 'gallup_return_farm' || lowerName.includes('gallup'));
       const isGlobalriLiteracy = (quotaMeta.type === 'GLOBALRI_ADULT_LITERACY' || quotaMeta.surveyType === 'globalri_literacy' || lowerName.includes('globalri_adult_literacy'));
       const isKmacKbpi = (quotaMeta.type === 'KMAC_KBPI' || quotaMeta.surveyType === 'kmac_kbpi' || lowerName.includes('kbpi') || lowerName.includes('kmac'));
+      const isRelimForestry = (quotaMeta.type === 'RELIM_FORESTRY_2025' || quotaMeta.surveyType === 'relim_forestry' || quotaMeta.projectCode === 'S21629axjxr5' || lowerName.includes('relim_forestry'));
 
       const newCamp = CampaignStore.createCampaign({
         title: campTitle,
         description: isGallupAgriwork
           ? '한국갤럽 G-CAPI V3 · 2025년 기준 농업고용인력 실태조사 (경영체 20260168 + 내국인 근로자 20260193 · 양주 안재은 / 동두천 김미경)'
-          : (isKmacKbpi
-            ? `KMA Research CAPI(ID:230) 2027년 한국산업의브랜드파워(K-BPI) 조사 · 서울 노원구청/인천시청 미세분산 GPS · 품목별 구입경험 연동`
-            : (isGallupReturnFarm
-              ? `한국갤럽 G-CAII(20263603) 2026년 귀농귀촌 실태조사(귀농) · 강원 홍천군 GPS 자동 주입 · 방문기록 검증 · 8종 필체 전자서명 · 완료 직전(Page 118) 안전 정지`
-              : (isMetrixSeoul
-                ? `메트릭스 Surveybox(S21401by41s3) 2026년 서울시 소상공인 사업체 패널조사(5차) · 동의서(svyA115.asp, 99%) 안전 대기`
-                : (isGlobalriLiteracy
-                  ? `글로벌리서치 통합조사시스템(GIFT) 제5차 성인문해능력조사 (${quotaMeta.surveyorName || ''})`
-                  : (isHrcEnergy
-                    ? `한국리서치 TAPI(2026-89-0342C) 건물 부문 에너지총조사 (조사원: ${quotaMeta.surveyorId || ''} ${quotaMeta.surveyorName || ''} · 기입력 항목 보존)`
-                    : (isKona
-                      ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치플랫폼)'
-                      : (isMetrix
-                        ? '메트릭스 경기도 소상공인 사업체패널 3차조사'
-                        : (isAssoc
-                          ? `2026년 전통시장 및 상점가 조사 (상인회 전용 · 조사원: ${quotaMeta.surveyorId || businesses[0]?.surveyorAccount || ''})`
-                          : (quotaMeta.marketName
-                            ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
-                            : `${quotaMeta.keyword || '사업주'} 대상 설문조사`))))))))),
+          : (isRelimForestry
+            ? `SurveyBox SP7(S21629axjxr5) 2025년 기준 산림·정원산업조사 · 선정 197 + 예비 145건 · KSIC 46101/46104 산림비중 100% · DQ(svyI058.asp, 99%) 완료직전 안전대기`
+            : (isKmacKbpi
+              ? `KMA Research CAPI(ID:230) 2027년 한국산업의브랜드파워(K-BPI) 조사 · 서울 노원구청/인천시청 미세분산 GPS · 품목별 구입경험 연동`
+              : (isGallupReturnFarm
+                ? `한국갤럽 G-CAII(20263603) 2026년 귀농귀촌 실태조사(귀농) · 강원 홍천군 GPS 자동 주입 · 방문기록 검증 · 8종 필체 전자서명 · 완료 직전(Page 118) 안전 정지`
+                : (isMetrixSeoul
+                  ? `메트릭스 Surveybox(S21401by41s3) 2026년 서울시 소상공인 사업체 패널조사(5차) · 동의서(svyA115.asp, 99%) 안전 대기`
+                  : (isGlobalriLiteracy
+                    ? `글로벌리서치 통합조사시스템(GIFT) 제5차 성인문해능력조사 (${quotaMeta.surveyorName || ''})`
+                    : (isHrcEnergy
+                      ? `한국리서치 TAPI(2026-89-0342C) 건물 부문 에너지총조사 (조사원: ${quotaMeta.surveyorId || ''} ${quotaMeta.surveyorName || ''} · 기입력 항목 보존)`
+                      : (isKona
+                        ? '화성특례시 만족도 청소년 설문조사 (코나체인 리서치플랫폼)'
+                        : (isMetrix
+                          ? '메트릭스 경기도 소상공인 사업체패널 3차조사'
+                          : (isAssoc
+                            ? `2026년 전통시장 및 상점가 조사 (상인회 전용 · 조사원: ${quotaMeta.surveyorId || businesses[0]?.surveyorAccount || ''})`
+                            : (quotaMeta.marketName
+                              ? `${quotaMeta.marketName} 온누리상품권 가맹 소상공인 대상 설문조사`
+                              : `${quotaMeta.keyword || '사업주'} 대상 설문조사`)))))))))),
         quotaType: (isKona || isGallupReturnFarm || isGlobalriLiteracy || isKmacKbpi) ? 'b2c' : 'b2b',
         surveyType: isGallupAgriwork
           ? 'gallup_agriwork'
-          : (isKmacKbpi
-            ? 'kmac_kbpi'
-            : (isGallupReturnFarm
-              ? 'gallup_return_farm'
-              : (isMetrixSeoul
-                ? 'metrix_seoul_panel'
-                : (isGlobalriLiteracy
-                  ? 'globalri_literacy'
-                  : (isHrcEnergy
-                    ? 'hrc_energy'
-                    : (isKona
-                      ? 'kona_youth'
-                      : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store')))))))),
+          : (isRelimForestry
+            ? 'relim_forestry'
+            : (isKmacKbpi
+              ? 'kmac_kbpi'
+              : (isGallupReturnFarm
+                ? 'gallup_return_farm'
+                : (isMetrixSeoul
+                  ? 'metrix_seoul_panel'
+                  : (isGlobalriLiteracy
+                    ? 'globalri_literacy'
+                    : (isHrcEnergy
+                      ? 'hrc_energy'
+                      : (isKona
+                        ? 'kona_youth'
+                        : (isMetrix ? 'metrix_panel' : (isAssoc ? 'kstat_assoc' : 'kstat_store'))))))))),
         quotaSourceFile: safeFilename,
+        ...(isGallupAgriwork ? {
+          loginId: '40878,47837',
+          surveyorName: '안재은·김미경',
+          googleSheetUrl: `https://docs.google.com/spreadsheets/d/${quotaMeta.googleSheetId || '1ONQZjGIa2xIopaMbYS-27B_DMHBH8MlOK7tdDTC6Gz0'}/edit?gid=481207785#gid=481207785`
+        } : {}),
+        ...(isRelimForestry ? {
+          accountKey: quotaMeta.accountKey || '2009',
+          surveyorName: quotaMeta.surveyorName || '지연옥',
+          surveyUrl: quotaMeta.surveyUrl || RELIM_FORESTRY_MLIST_URL,
+          googleSheetUrl: quotaMeta.googleSheetUrl || RELIM_FORESTRY_SHEET_URL
+        } : {}),
         ...(isKmacKbpi ? {
           loginId: quotaMeta.loginId || '5911000005645',
           loginPw: quotaMeta.loginId || '5911000005645',
@@ -1441,7 +1513,7 @@ export function registerCampaignRoutes({
       // 기존 캠페인 중 사용자가 커스텀 설정한 masterBaseline이 있으면 신규 캠페인에 자동 복제 장착
       let inheritedBaseline = null;
       const allCamps = CampaignStore.getAllCampaigns();
-      const bestSource = (isMetrixSeoul || isGallupReturnFarm || isMetrix || isHrcEnergy || isKona)
+      const bestSource = (isGallupAgriwork || isRelimForestry || isMetrixSeoul || isGallupReturnFarm || isMetrix || isHrcEnergy || isKona)
         ? allCamps.find(c => c.id !== newCamp.id && c.surveyType === newCamp.surveyType && c.masterBaseline)
         : (isGlobalriLiteracy
           ? allCamps.find(c => c.id !== newCamp.id && c.surveyType === 'globalri_literacy' && c.masterBaseline)

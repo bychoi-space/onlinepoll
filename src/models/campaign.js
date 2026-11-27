@@ -79,6 +79,7 @@ export function createCampaign(data = {}) {
   const isGlobalriLiteracy = (data.surveyType === 'globalri_literacy');
   const isGallupReturnFarm = (data.surveyType === 'gallup_return_farm');
   const isGallupAgriwork = (data.surveyType === 'gallup_agriwork');
+  const isRelimForestry = (data.surveyType === 'relim_forestry');
   const isGenericB2c = (data.surveyType === 'generic_b2c' || data.quotaType === 'b2c');
 
   let defaultGallupAgriworkPolicy = null;
@@ -184,43 +185,47 @@ export function createCampaign(data = {}) {
   const resolvedQuotaType = data.quotaType || (
     isGallupReturnFarm || isGlobalriLiteracy || isKona || isGenericB2c
       ? 'b2c'
-      : (isGallupAgriwork || isAssoc || isMetrix || isMetrixSeoul || isHrcEnergy || resolvedSurveyType === 'kstat_store' ? 'b2b' : 'b2c')
+      : (isGallupAgriwork || isRelimForestry || isAssoc || isMetrix || isMetrixSeoul || isHrcEnergy || resolvedSurveyType === 'kstat_store' ? 'b2b' : 'b2c')
   );
 
   const defaultSurveyUrl = isGallupAgriwork
     ? 'https://agriwork.gallup.co.kr/survey/login.asp'
-    : (isGallupReturnFarm
-      ? 'https://www.gallup.co.kr'
-      : (isMetrixSeoul
-        ? 'https://metrix.svybx.kr/sp7/S21401by41s3/mlist.asp'
-        : (isGlobalriLiteracy
-          ? 'https://gift.globalri.it/login'
-          : (isHrcEnergy
-            ? 'https://tapi.hrcglobal.com/Home/Login'
-            : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : '')))));
+    : (isRelimForestry
+      ? 'https://relim.svybx.kr/sp7/S21629axjxr5/mlist.asp'
+      : (isGallupReturnFarm
+        ? 'https://www.gallup.co.kr'
+        : (isMetrixSeoul
+          ? 'https://metrix.svybx.kr/sp7/S21401by41s3/mlist.asp'
+          : (isGlobalriLiteracy
+            ? 'https://gift.globalri.it/login'
+            : (isHrcEnergy
+              ? 'https://tapi.hrcglobal.com/Home/Login'
+              : (isKona ? 'https://voting.konachain.co.kr/s-a/IADHBGDHCEFBJQCL' : ''))))));
 
   const newCampaign = {
     id: data.id || ('camp_' + Date.now()),
     title: data.title || (
       isGallupAgriwork
         ? '[한국갤럽] 2025년 기준 농업고용인력 실태조사 (양주 안재은 · 동두천 김미경)'
-        : (isGallupReturnFarm
-          ? '[한국갤럽 20263603] 2026년 귀농귀촌 실태조사(귀농)'
-          : (isMetrixSeoul
-            ? '[메트릭스] (신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차)'
-            : (isGlobalriLiteracy
-              ? '[GR20260618-1-001-02] 제5차 성인문해능력조사'
-              : (isHrcEnergy
-                ? '2025년 기준 에너지총조사 (건물 부문)'
-                : (isKona
-                  ? '2026 화성특례시 만족도 청소년 설문조사'
-                  : (isMetrix
-                    ? '2026 메트릭스 경기도 소상공인 패널조사'
-                    : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인')))))))
+        : (isRelimForestry
+          ? '2025년 기준 산림·정원산업조사 - 2009 지연옥'
+          : (isGallupReturnFarm
+            ? '[한국갤럽 20263603] 2026년 귀농귀촌 실태조사(귀농)'
+            : (isMetrixSeoul
+              ? '[메트릭스] (신규/유지) 2026년 서울시 소상공인 사업체 패널조사(5차)'
+              : (isGlobalriLiteracy
+                ? '[GR20260618-1-001-02] 제5차 성인문해능력조사'
+                : (isHrcEnergy
+                  ? '2025년 기준 에너지총조사 (건물 부문)'
+                  : (isKona
+                    ? '2026 화성특례시 만족도 청소년 설문조사'
+                    : (isMetrix
+                      ? '2026 메트릭스 경기도 소상공인 패널조사'
+                      : (isAssoc ? '2026 상인회 조사 캠페인' : '새로운 설문조사 캠페인'))))))))
     ),
     description: data.description || '',
     quotaType: resolvedQuotaType,
-    surveyType: resolvedSurveyType, // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'metrix_seoul_panel' | 'kona_youth' | 'hrc_energy' | 'globalri_literacy' | 'gallup_return_farm' | 'gallup_agriwork' | 'generic_b2c'
+    surveyType: resolvedSurveyType, // 'kstat_store' | 'kstat_assoc' | 'metrix_panel' | 'metrix_seoul_panel' | 'kona_youth' | 'hrc_energy' | 'globalri_literacy' | 'gallup_return_farm' | 'gallup_agriwork' | 'relim_forestry' | 'generic_b2c'
     status: 'ready',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

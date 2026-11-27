@@ -37,6 +37,13 @@ import {
   pullKbpiSheetOverrides,
   syncKbpiProgressToGoogleSheet
 } from '../utils/kmac-kbpi-sheet-sync.js';
+import {
+  RELIM_FORESTRY_SHEET_URL,
+  RELIM_FORESTRY_QUOTA_XLSX,
+  persistRelimForestryQuota,
+  fetchRelimLiveStatus,
+  syncRelimForestryToGoogleSheet
+} from '../engine/relim-forestry-scraper.js';
 import { logger } from '../utils/logger.js';
 import { writeJsonAtomicSync } from '../utils/atomic-file.js';
 
@@ -631,6 +638,20 @@ export function registerSyncRoutes({
         return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
       }
       const quotaDb = campaign.quotaDatabase || [];
+      if (campaign.surveyType === 'relim_forestry') {
+        const persisted = persistRelimForestryQuota({
+          quotaDatabase: quotaDb,
+          quotasDir,
+          accountKey: campaign.accountKey || '2009',
+          surveyorName: campaign.surveyorName || '지연옥'
+        });
+        const xlsxPath = persisted?.xlsxPath || path.join(quotasDir, RELIM_FORESTRY_QUOTA_XLSX);
+        const buffer = fs.readFileSync(xlsxPath);
+        const downloadName = encodeURIComponent(`2025년_기준_산림정원산업조사_선정명단_${campaign.accountKey || '2009'}_${campaign.surveyorName || '지연옥'}.xlsx`);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${downloadName}`);
+        return res.send(buffer);
+      }
       if (campaign.surveyType === 'metrix_seoul_panel') {
         const ansXlsxPath = path.join(quotasDir, 'seoul_panel_answers_163.xlsx');
         const buffer = buildSeoulPanelAnswersExcel({ quotaDatabase: quotaDb, filePath: ansXlsxPath });
@@ -955,6 +976,84 @@ export function registerSyncRoutes({
     } catch (err) {
       logger.error('[농업고용인력 포털 동기화 실패]', err);
       return res.status(500).json({ success: false, error: '포털 동기화 실패: ' + err.message });
+    }
+  });
+
+  // [2025년 기준 산림·정원산업조사 (S21629axjxr5)] 컨택시스템 실시간 현황 조회 + 구글 스프레드시트('선정명단') 동기화 API
+  app.post('/api/campaigns/:id/sync-relim-forestry', async (req, res) => {
+    try {
+      const campaign = CampaignStore.getCampaignById(req.params.id);
+      if (!campaign) {
+        return res.status(404).json({ error: '캠페인을 찾을 수 없습니다.' });
+      }
+      const quotaDb = Array.isArray(campaign.quotaDatabase) ? campaign.quotaDatabase : [];
+      const checkLive = req.body?.checkLive !== false;
+      const syncSheet = req.body?.syncSheet !== false;
+
+      let updatedCount = 0;
+      let ksicQuotaMap = {};
+      if (checkLive) {
+        const liveRes = await fetchRelimLiveStatus({ accountKey: campaign.accountKey || '2009' });
+        ksicQuotaMap = liveRes.ksicQuotaMap || {};
+        const webMap = liveRes.webStatusByResid || {};
+        for (const it of quotaDb) {
+          const st = webMap[String(it.resid)];
+          if (st) {
+            if (st.webStatus === 'Complete' && it.quotaStatus !== 'completed') {
+              it.quotaStatus = 'completed';
+              it.status = '완료(100%)';
+              it.progress = '100%';
+              updatedCount++;
+            } else if (st.webStatus === 'Drop' && (!it.quotaStatus || it.quotaStatus === 'ready')) {
+              it.quotaStatus = 'pilot_done';
+              it.status = '완료직전대기(99%)';
+              it.progress = '99%';
+              updatedCount++;
+            }
+          }
+        }
+      }
+
+      const persisted = persistRelimForestryQuota({
+        quotaDatabase: quotaDb,
+        quotasDir,
+        accountKey: campaign.accountKey || '2009',
+        surveyorName: campaign.surveyorName || '지연옥'
+      });
+      const nextDb = persisted?.items || quotaDb;
+      CampaignStore.updateCampaign(campaign.id, { quotaDatabase: nextDb });
+      logger.broadcast({
+        type: 'QUOTA_UPDATED',
+        campaignId: campaign.id,
+        quotaDatabase: nextDb
+      });
+
+      let sheetRes = null;
+      if (syncSheet) {
+        sheetRes = await syncRelimForestryToGoogleSheet({
+          quotaDatabase: nextDb,
+          sheetUrl: campaign.googleSheetUrl || RELIM_FORESTRY_SHEET_URL,
+          quotasDir
+        });
+      }
+
+      const wait99Cnt = nextDb.filter(x => x.quotaStatus === 'pilot_done' || String(x.status || '').includes('99%')).length;
+      const doneCnt = nextDb.filter(x => x.quotaStatus === 'completed' || String(x.status || '').includes('완료(100%)')).length;
+      logger.success(`[산림·정원산업조사 동기화 완료] 총 ${nextDb.length}건 (완료직전 99% ${wait99Cnt}건 · 완료 ${doneCnt}건 · 실시간 반영 ${updatedCount}건)`);
+
+      return res.json({
+        success: true,
+        message: `산림·정원산업조사 실시간 현황 조회 및 구글 시트('선정명단') 동기화가 완료되었습니다! (완료직전 99%: ${wait99Cnt}건 · 완료: ${doneCnt}건)`,
+        updatedCount,
+        wait99Count: wait99Cnt,
+        completedCount: doneCnt,
+        ksicQuotaMap,
+        sheetResult: sheetRes,
+        quotaDatabase: nextDb
+      });
+    } catch (err) {
+      logger.error('[산림·정원산업조사 동기화 오류]', err);
+      return res.status(500).json({ success: false, error: err.message });
     }
   });
 }
